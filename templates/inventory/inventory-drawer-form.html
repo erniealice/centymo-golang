@@ -1,0 +1,85 @@
+{{/*
+Inventory drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+Data: .Name, .SKU, .OnHand, .Reserved, .ReorderLevel, .UnitOfMeasure, .LocationID, .Notes, .Active, .ID, .FormAction, .IsEdit, .CommonLabels
+*/}}
+{{define "inventory-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="location_id" value="{{.LocationID}}">
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "product_name"
+                "Label" .Labels.Product
+                "Value" .Name
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "sku"
+                "Label" .Labels.SKU
+                "Value" .SKU
+                "Placeholder" .Labels.SKUPlaceholder
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "quantity_on_hand"
+                "Label" .Labels.OnHand
+                "Value" .OnHand
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "quantity_reserved"
+                "Label" .Labels.Reserved
+                "Value" .Reserved
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "reorder_level"
+                "Label" .Labels.ReorderLevel
+                "Value" .ReorderLevel
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "unit_of_measure"
+                "Label" .Labels.UnitOfMeasure
+                "Value" .UnitOfMeasure
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" .Labels.Notes
+                "Value" .Notes
+                "Placeholder" .Labels.NotesPlaceholder
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "toggle" (dict
+                "Name" "active"
+                "Label" .Labels.Active
+                "Checked" .Active
+                "Value" "true"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

@@ -2,7 +2,20 @@ module leapfor.xyz/centymo
 
 go 1.25.1
 
-require github.com/erniealice/pyeza-golang v0.0.6-alpha
+require (
+	github.com/erniealice/pyeza-golang v0.0.6-alpha
+	leapfor.xyz/esqyma v0.0.0
+)
+
+require (
+	github.com/yuin/goldmark v1.7.16 // indirect
+	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
+	google.golang.org/grpc v1.74.2 // indirect
+	google.golang.org/protobuf v1.36.7 // indirect
+)
 
 replace leapfor.xyz/copya => ../../../master-monorepo-v2/packages/copya
 

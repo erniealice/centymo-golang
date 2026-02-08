@@ -1,0 +1,44 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "sales-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "sales-detail-content"}}
+<div class="page-content">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h3>{{.Labels.Detail.InvoiceInfo}}</h3>
+        </div>
+        <div class="detail-grid">
+            <div class="detail-field">
+                <label>{{.Labels.Columns.Reference}}</label>
+                <span>{{index .Revenue "reference_number"}}</span>
+            </div>
+            <div class="detail-field">
+                <label>{{.Labels.Columns.Customer}}</label>
+                <span>{{index .Revenue "name"}}</span>
+            </div>
+            <div class="detail-field">
+                <label>{{.Labels.Columns.Date}}</label>
+                <span>{{index .Revenue "revenue_date_string"}}</span>
+            </div>
+            <div class="detail-field">
+                <label>{{.Labels.Columns.Amount}}</label>
+                <span>{{index .Revenue "currency"}} {{index .Revenue "total_amount"}}</span>
+            </div>
+            <div class="detail-field">
+                <label>{{.Labels.Columns.Status}}</label>
+                <span class="badge badge--{{if eq (index .Revenue "status") "completed"}}success{{else if eq (index .Revenue "status") "cancelled"}}warning{{else}}info{{end}}">{{index .Revenue "status"}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-card" style="margin-top: var(--spacing-lg);">
+        <div class="detail-header">
+            <h3>{{.Labels.Detail.LineItems}}</h3>
+        </div>
+        {{template "table-card" .LineItemTable}}
+    </div>
+</div>
+{{end}}

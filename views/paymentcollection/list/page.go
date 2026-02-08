@@ -8,6 +8,7 @@ import (
 	"leapfor.xyz/centymo"
 
 	"github.com/erniealice/pyeza-golang/types"
+	"github.com/erniealice/pyeza-golang/view"
 )
 
 // Deps holds view dependencies.
@@ -23,8 +24,8 @@ type PageData struct {
 }
 
 // NewView creates the payment collection list view.
-func NewView(deps *Deps) centymo.View {
-	return centymo.ViewFunc(func(ctx context.Context, viewCtx *centymo.ViewContext) centymo.ViewResult {
+func NewView(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "pending"
@@ -33,7 +34,7 @@ func NewView(deps *Deps) centymo.View {
 		records, err := deps.DB.ListSimple(ctx, "payment_collection")
 		if err != nil {
 			log.Printf("Failed to list payment collections: %v", err)
-			return centymo.Error(fmt.Errorf("failed to load payment collections: %w", err))
+			return view.Error(fmt.Errorf("failed to load payment collections: %w", err))
 		}
 
 		columns := paymentCollectionColumns()
@@ -70,7 +71,7 @@ func NewView(deps *Deps) centymo.View {
 			},
 		}
 
-		return centymo.OK("paymentcollection-list", pageData)
+		return view.OK("paymentcollection-list", pageData)
 	})
 }
 

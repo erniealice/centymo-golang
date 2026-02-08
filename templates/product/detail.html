@@ -1,0 +1,107 @@
+{{define "product-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{define "product-detail-content"}}
+<div class="page-content">
+    {{/* Back link */}}
+    <div style="margin-bottom: var(--spacing-md);">
+        <a href="/app/products/list/active" class="btn btn--ghost btn--sm">
+            ← Back to Products
+        </a>
+    </div>
+
+    {{/* Tab navigation */}}
+    <div class="tabs">
+        <div class="tabs__list" role="tablist">
+            {{range .Tabs}}
+            <button class="tabs__tab{{if .Active}} tabs__tab--active{{end}}"
+                    role="tab"
+                    hx-get="{{.URL}}"
+                    hx-target="#tab-content"
+                    hx-swap="innerHTML"
+                    aria-selected="{{.Active}}">
+                {{.Label}}
+            </button>
+            {{end}}
+        </div>
+    </div>
+
+    {{/* Tab content */}}
+    <div id="tab-content" class="tabs__panel">
+        {{if eq .ActiveTab "basic"}}
+        {{template "product-detail-basic" .}}
+        {{else if eq .ActiveTab "history"}}
+        {{template "product-detail-history" .}}
+        {{else if eq .ActiveTab "depreciation"}}
+        {{template "product-detail-depreciation" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* Basic Information Tab */}}
+{{define "product-detail-basic"}}
+<div class="detail-card">
+    <div class="detail-header">
+        <h3>Basic Information</h3>
+    </div>
+    <div class="detail-grid">
+        <div class="detail-field">
+            <label>Name</label>
+            <span>{{index .Product "name"}}</span>
+        </div>
+        <div class="detail-field">
+            <label>Description</label>
+            <span>{{if index .Product "description"}}{{index .Product "description"}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-field">
+            <label>Price</label>
+            <span>{{index .Product "currency"}} {{index .Product "price"}}</span>
+        </div>
+        <div class="detail-field">
+            <label>Status</label>
+            <span class="badge badge--{{if index .Product "active"}}success{{else}}warning{{end}}">
+                {{if index .Product "active"}}Active{{else}}Inactive{{end}}
+            </span>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{/* History Tab */}}
+{{define "product-detail-history"}}
+<div class="detail-card">
+    <div class="detail-header">
+        <h3>History</h3>
+    </div>
+    <div class="detail-grid">
+        <div class="detail-field">
+            <label>Date Created</label>
+            <span>{{if index .Product "date_created_string"}}{{index .Product "date_created_string"}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-field">
+            <label>Last Modified</label>
+            <span>{{if index .Product "date_modified_string"}}{{index .Product "date_modified_string"}}{{else}}—{{end}}</span>
+        </div>
+    </div>
+    <div style="padding: var(--spacing-lg); color: var(--color-text-muted); text-align: center;">
+        Activity log will be available in a future update.
+    </div>
+</div>
+{{end}}
+
+{{/* Depreciation Tab */}}
+{{define "product-detail-depreciation"}}
+<div class="detail-card">
+    <div class="detail-header">
+        <h3>Depreciation</h3>
+    </div>
+    <div style="padding: var(--spacing-xl); color: var(--color-text-muted); text-align: center;">
+        <p>Depreciation tracking will be available in a future update.</p>
+        <p style="margin-top: var(--spacing-sm); font-size: var(--font-size-sm);">
+            This section will include depreciation method, useful life, salvage value, and depreciation schedule.
+        </p>
+    </div>
+</div>
+{{end}}

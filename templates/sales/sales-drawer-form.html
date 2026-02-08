@@ -1,0 +1,94 @@
+{{/*
+Sales drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+Data: .Name, .ReferenceNumber, .Date, .Amount, .Currency, .Status, .Notes, .Active, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
+*/}}
+{{define "sales-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.Customer
+                "Value" .Name
+                "Required" true
+                "Placeholder" "Customer name"
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "reference_number"
+                "Label" .Labels.Reference
+                "Value" .ReferenceNumber
+                "Required" true
+                "Placeholder" .Labels.ReferencePlaceholder
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "revenue_date_string"
+                "Label" .Labels.Date
+                "Value" .Date
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "total_amount"
+                "Label" .Labels.Amount
+                "Value" .Amount
+                "Required" true
+                "Placeholder" "0.00"
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "currency"
+                "Label" .Labels.Currency
+                "Value" .Currency
+                "Placeholder" "PHP"
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "status"
+                "Label" .Labels.Status
+                "Value" .Status
+                "Options" (slice
+                    (dict "Value" "active" "Label" "Active")
+                    (dict "Value" "completed" "Label" "Completed")
+                    (dict "Value" "cancelled" "Label" "Cancelled")
+                )
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" .Labels.Notes
+                "Value" .Notes
+                "Placeholder" .Labels.NotesPlaceholder
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "toggle" (dict
+                "Name" "active"
+                "Label" .Labels.Active
+                "Checked" .Active
+                "Value" "true"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

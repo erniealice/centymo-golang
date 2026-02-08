@@ -5,14 +5,22 @@ import (
 	"fmt"
 	"log"
 
-	"leapfor.xyz/centymo"
-
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
+	"github.com/erniealice/pyeza-golang/view"
+
+	productpb "leapfor.xyz/esqyma/golang/v1/domain/product/product"
+
+	"leapfor.xyz/centymo"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB centymo.DataSource
+	ListProducts func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	RefreshURL   string
+	Labels       centymo.ProductLabels
+	CommonLabels pyeza.CommonLabels
+	TableLabels  types.TableLabels
 }
 
 // PageData holds the data for the product list page.
@@ -23,125 +31,210 @@ type PageData struct {
 }
 
 // NewView creates the product list view.
-func NewView(deps *Deps) centymo.View {
-	return centymo.ViewFunc(func(ctx context.Context, viewCtx *centymo.ViewContext) centymo.ViewResult {
+func NewView(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
 		}
 
-		records, err := deps.DB.ListSimple(ctx, "product")
+		resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
 		if err != nil {
 			log.Printf("Failed to list products: %v", err)
-			return centymo.Error(fmt.Errorf("failed to load products: %w", err))
+			return view.Error(fmt.Errorf("failed to load products: %w", err))
 		}
 
-		columns := productColumns()
-		rows := buildTableRows(records, status)
+		l := deps.Labels
+		columns := productColumns(l)
+		rows := buildTableRows(resp.GetData(), status, l)
 		types.ApplyColumnStyles(columns, rows)
+
+		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+		bulkCfg.Actions = []types.BulkAction{
+			{
+				Key:            "delete",
+				Label:          l.Bulk.Delete,
+				Icon:           "icon-trash-2",
+				Variant:        "danger",
+				Endpoint:       centymo.ProductBulkDeleteURL,
+				ConfirmTitle:   l.Bulk.Delete,
+				ConfirmMessage: "Are you sure you want to delete {{count}} product(s)? This action cannot be undone.",
+			},
+		}
+
+		tableConfig := &types.TableConfig{
+			ID:                   "products-table",
+			RefreshURL:           deps.RefreshURL,
+			Columns:              columns,
+			Rows:                 rows,
+			ShowSearch:           true,
+			ShowActions:          true,
+			ShowFilters:          true,
+			ShowSort:             true,
+			ShowColumns:          true,
+			ShowExport:           true,
+			ShowDensity:          true,
+			ShowEntries:          true,
+			DefaultSortColumn:    "name",
+			DefaultSortDirection: "asc",
+			Labels:               deps.TableLabels,
+			EmptyState: types.TableEmptyState{
+				Title:   statusEmptyTitle(l, status),
+				Message: statusEmptyMessage(l, status),
+			},
+			PrimaryAction: &types.PrimaryAction{
+				Label:     l.Buttons.AddProduct,
+				ActionURL: centymo.ProductAddURL,
+				Icon:      "icon-plus",
+			},
+			BulkActions: &bulkCfg,
+		}
+		types.ApplyTableSettings(tableConfig)
 
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          statusTitle(status),
+				Title:          statusPageTitle(l, status),
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      "products",
 				ActiveSubNav:   status,
-				HeaderTitle:    statusTitle(status),
-				HeaderSubtitle: statusSubtitle(status),
+				HeaderTitle:    statusPageTitle(l, status),
+				HeaderSubtitle: statusPageCaption(l, status),
 				HeaderIcon:     "icon-package",
+				CommonLabels:   deps.CommonLabels,
 			},
 			ContentTemplate: "product-list-content",
-			Table: &types.TableConfig{
-				ID:          "products-table",
-				Columns:     columns,
-				Rows:        rows,
-				ShowSearch:  true,
-				ShowActions: true,
-				EmptyState: types.TableEmptyState{
-					Title:   "No products found",
-					Message: "No " + status + " products to display.",
-				},
-				PrimaryAction: &types.PrimaryAction{
-					Label:     "Add Product",
-					ActionURL: "/action/products/add",
-					Icon:      "icon-plus",
-				},
-			},
+			Table:           tableConfig,
 		}
 
-		return centymo.OK("product-list", pageData)
+		return view.OK("product-list", pageData)
 	})
 }
 
-func productColumns() []types.TableColumn {
+func productColumns(l centymo.ProductLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: "Name", Sortable: true},
-		{Key: "sku", Label: "SKU", Sortable: true, Width: "150px"},
-		{Key: "price", Label: "Price", Sortable: true, Width: "120px"},
-		{Key: "status", Label: "Status", Sortable: true, Width: "120px"},
+		{Key: "name", Label: l.Columns.Name, Sortable: true},
+		{Key: "description", Label: l.Columns.Description, Sortable: false},
+		{Key: "price", Label: l.Columns.Price, Sortable: true, Width: "150px"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 }
 
-func buildTableRows(records []map[string]any, status string) []types.TableRow {
+func buildTableRows(products []*productpb.Product, status string, l centymo.ProductLabels) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, record := range records {
-		recordStatus, _ := record["status"].(string)
-		if recordStatus != "" && recordStatus != status {
+	for _, p := range products {
+		active := p.GetActive()
+		recordStatus := "active"
+		if !active {
+			recordStatus = "inactive"
+		}
+		if recordStatus != status {
 			continue
 		}
 
-		id, _ := record["id"].(string)
-		name, _ := record["name"].(string)
-		sku, _ := record["sku"].(string)
-		price, _ := record["price"].(string)
-		if recordStatus == "" {
-			recordStatus = status
-		}
+		id := p.GetId()
+		name := p.GetName()
+		description := p.GetDescription()
+		price := formatPrice(p.GetCurrency(), p.GetPrice())
 
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
-				{Type: "text", Value: sku},
+				{Type: "text", Value: description},
 				{Type: "text", Value: price},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"name":   name,
-				"sku":    sku,
 				"price":  price,
 				"status": recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: "View Product", Action: "view", Href: "/app/products/" + id},
-				{Type: "edit", Label: "Edit Product", Action: "edit", URL: "/action/products/edit/" + id, DrawerTitle: "Edit Product"},
-				{Type: "delete", Label: "Delete Product", Action: "delete", URL: "/action/products/delete", ItemName: name},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/products/" + id},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/products/edit/" + id, DrawerTitle: l.Actions.Edit},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/products/delete", ItemName: name},
 			},
 		})
 	}
 	return rows
 }
 
-func statusTitle(status string) string {
+func formatPrice(currency string, price float64) string {
+	if currency == "" {
+		currency = "PHP"
+	}
+	// Format with 2 decimal places, then insert commas for thousands
+	raw := fmt.Sprintf("%.2f", price)
+	parts := splitDecimal(raw)
+	intPart := parts[0]
+	decPart := parts[1]
+
+	// Insert commas
+	n := len(intPart)
+	if n <= 3 {
+		return currency + " " + intPart + "." + decPart
+	}
+	var result []byte
+	for i, c := range intPart {
+		if i > 0 && (n-i)%3 == 0 {
+			result = append(result, ',')
+		}
+		result = append(result, byte(c))
+	}
+	return currency + " " + string(result) + "." + decPart
+}
+
+func splitDecimal(s string) [2]string {
+	for i, c := range s {
+		if c == '.' {
+			return [2]string{s[:i], s[i+1:]}
+		}
+	}
+	return [2]string{s, "00"}
+}
+
+func statusPageTitle(l centymo.ProductLabels, status string) string {
 	switch status {
 	case "active":
-		return "Active Products"
+		return l.Page.HeadingActive
 	case "inactive":
-		return "Inactive Products"
+		return l.Page.HeadingInactive
 	default:
-		return "Products"
+		return l.Page.Heading
 	}
 }
 
-func statusSubtitle(status string) string {
+func statusPageCaption(l centymo.ProductLabels, status string) string {
 	switch status {
 	case "active":
-		return "Manage your active products"
+		return l.Page.CaptionActive
 	case "inactive":
-		return "View discontinued products"
+		return l.Page.CaptionInactive
 	default:
-		return "Product management"
+		return l.Page.Caption
+	}
+}
+
+func statusEmptyTitle(l centymo.ProductLabels, status string) string {
+	switch status {
+	case "active":
+		return l.Empty.ActiveTitle
+	case "inactive":
+		return l.Empty.InactiveTitle
+	default:
+		return l.Empty.ActiveTitle
+	}
+}
+
+func statusEmptyMessage(l centymo.ProductLabels, status string) string {
+	switch status {
+	case "active":
+		return l.Empty.ActiveMessage
+	case "inactive":
+		return l.Empty.InactiveMessage
+	default:
+		return l.Empty.ActiveMessage
 	}
 }
 
