@@ -9,7 +9,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	"leapfor.xyz/centymo"
+	"github.com/erniealice/centymo-golang"
 )
 
 // Deps holds view dependencies.

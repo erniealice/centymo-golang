@@ -8,7 +8,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	productpb "leapfor.xyz/esqyma/golang/v1/domain/product/product"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 )
 
 // Deps holds view dependencies.

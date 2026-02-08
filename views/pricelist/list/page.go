@@ -9,28 +9,28 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
+	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 
 	"github.com/erniealice/centymo-golang"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	ListProducts func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	RefreshURL   string
-	Labels       centymo.ProductLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	ListPriceLists func(ctx context.Context, req *pricelistpb.ListPriceListsRequest) (*pricelistpb.ListPriceListsResponse, error)
+	RefreshURL     string
+	Labels         centymo.PriceListLabels
+	CommonLabels   pyeza.CommonLabels
+	TableLabels    types.TableLabels
 }
 
-// PageData holds the data for the product list page.
+// PageData holds the data for the price list list page.
 type PageData struct {
 	types.PageData
 	ContentTemplate string
 	Table           *types.TableConfig
 }
 
-// NewView creates the product list view.
+// NewView creates the price list list view.
 func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
@@ -38,14 +38,14 @@ func NewView(deps *Deps) view.View {
 			status = "active"
 		}
 
-		resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+		resp, err := deps.ListPriceLists(ctx, &pricelistpb.ListPriceListsRequest{})
 		if err != nil {
-			log.Printf("Failed to list products: %v", err)
-			return view.Error(fmt.Errorf("failed to load products: %w", err))
+			log.Printf("Failed to list price lists: %v", err)
+			return view.Error(fmt.Errorf("failed to load price lists: %w", err))
 		}
 
 		l := deps.Labels
-		columns := productColumns(l)
+		columns := priceListColumns(l)
 		rows := buildTableRows(resp.GetData(), status, l)
 		types.ApplyColumnStyles(columns, rows)
 
@@ -56,14 +56,14 @@ func NewView(deps *Deps) view.View {
 				Label:          l.Bulk.Delete,
 				Icon:           "icon-trash-2",
 				Variant:        "danger",
-				Endpoint:       centymo.ProductBulkDeleteURL,
+				Endpoint:       centymo.PriceListBulkDeleteURL,
 				ConfirmTitle:   l.Bulk.Delete,
-				ConfirmMessage: "Are you sure you want to delete {{count}} product(s)? This action cannot be undone.",
+				ConfirmMessage: "Are you sure you want to delete {{count}} price list(s)? This action cannot be undone.",
 			},
 		}
 
 		tableConfig := &types.TableConfig{
-			ID:                   "products-table",
+			ID:                   "price-lists-table",
 			RefreshURL:           deps.RefreshURL,
 			Columns:              columns,
 			Rows:                 rows,
@@ -83,8 +83,8 @@ func NewView(deps *Deps) view.View {
 				Message: statusEmptyMessage(l, status),
 			},
 			PrimaryAction: &types.PrimaryAction{
-				Label:     l.Buttons.AddProduct,
-				ActionURL: centymo.ProductAddURL,
+				Label:     l.Buttons.AddPriceList,
+				ActionURL: centymo.PriceListAddURL,
 				Icon:      "icon-plus",
 			},
 			BulkActions: &bulkCfg,
@@ -96,34 +96,34 @@ func NewView(deps *Deps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          statusPageTitle(l, status),
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "products",
+				ActiveNav:      "price-lists",
 				ActiveSubNav:   status,
 				HeaderTitle:    statusPageTitle(l, status),
 				HeaderSubtitle: statusPageCaption(l, status),
-				HeaderIcon:     "icon-package",
+				HeaderIcon:     "icon-tag",
 				CommonLabels:   deps.CommonLabels,
 			},
-			ContentTemplate: "product-list-content",
+			ContentTemplate: "pricelist-list-content",
 			Table:           tableConfig,
 		}
 
-		return view.OK("product-list", pageData)
+		return view.OK("pricelist-list", pageData)
 	})
 }
 
-func productColumns(l centymo.ProductLabels) []types.TableColumn {
+func priceListColumns(l centymo.PriceListLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "description", Label: l.Columns.Description, Sortable: false},
-		{Key: "price", Label: l.Columns.Price, Sortable: true, Width: "150px"},
+		{Key: "date_start", Label: l.Columns.DateStart, Sortable: true, Width: "150px"},
+		{Key: "date_end", Label: l.Columns.DateEnd, Sortable: true, Width: "150px"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 }
 
-func buildTableRows(products []*productpb.Product, status string, l centymo.ProductLabels) []types.TableRow {
+func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centymo.PriceListLabels) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, p := range products {
-		active := p.GetActive()
+	for _, pl := range priceLists {
+		active := pl.GetActive()
 		recordStatus := "active"
 		if !active {
 			recordStatus = "inactive"
@@ -132,69 +132,37 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 			continue
 		}
 
-		id := p.GetId()
-		name := p.GetName()
-		description := p.GetDescription()
-		price := formatPrice(p.GetCurrency(), p.GetPrice())
+		id := pl.GetId()
+		name := pl.GetName()
+		dateStart := pl.GetDateStartString()
+		dateEnd := pl.GetDateEndString()
+		if dateEnd == "" {
+			dateEnd = "—"
+		}
 
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
-				{Type: "text", Value: description},
-				{Type: "text", Value: price},
+				{Type: "text", Value: dateStart},
+				{Type: "text", Value: dateEnd},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"name":   name,
-				"price":  price,
 				"status": recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/products/" + id},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/products/edit/" + id, DrawerTitle: l.Actions.Edit},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/products/delete", ItemName: name},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/price-lists/" + id},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/price-lists/edit/" + id, DrawerTitle: l.Actions.Edit},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/price-lists/delete", ItemName: name},
 			},
 		})
 	}
 	return rows
 }
 
-func formatPrice(currency string, price float64) string {
-	if currency == "" {
-		currency = "PHP"
-	}
-	// Format with 2 decimal places, then insert commas for thousands
-	raw := fmt.Sprintf("%.2f", price)
-	parts := splitDecimal(raw)
-	intPart := parts[0]
-	decPart := parts[1]
-
-	// Insert commas
-	n := len(intPart)
-	if n <= 3 {
-		return currency + " " + intPart + "." + decPart
-	}
-	var result []byte
-	for i, c := range intPart {
-		if i > 0 && (n-i)%3 == 0 {
-			result = append(result, ',')
-		}
-		result = append(result, byte(c))
-	}
-	return currency + " " + string(result) + "." + decPart
-}
-
-func splitDecimal(s string) [2]string {
-	for i, c := range s {
-		if c == '.' {
-			return [2]string{s[:i], s[i+1:]}
-		}
-	}
-	return [2]string{s, "00"}
-}
-
-func statusPageTitle(l centymo.ProductLabels, status string) string {
+func statusPageTitle(l centymo.PriceListLabels, status string) string {
 	switch status {
 	case "active":
 		return l.Page.HeadingActive
@@ -205,7 +173,7 @@ func statusPageTitle(l centymo.ProductLabels, status string) string {
 	}
 }
 
-func statusPageCaption(l centymo.ProductLabels, status string) string {
+func statusPageCaption(l centymo.PriceListLabels, status string) string {
 	switch status {
 	case "active":
 		return l.Page.CaptionActive
@@ -216,7 +184,7 @@ func statusPageCaption(l centymo.ProductLabels, status string) string {
 	}
 }
 
-func statusEmptyTitle(l centymo.ProductLabels, status string) string {
+func statusEmptyTitle(l centymo.PriceListLabels, status string) string {
 	switch status {
 	case "active":
 		return l.Empty.ActiveTitle
@@ -227,7 +195,7 @@ func statusEmptyTitle(l centymo.ProductLabels, status string) string {
 	}
 }
 
-func statusEmptyMessage(l centymo.ProductLabels, status string) string {
+func statusEmptyMessage(l centymo.PriceListLabels, status string) string {
 	switch status {
 	case "active":
 		return l.Empty.ActiveMessage

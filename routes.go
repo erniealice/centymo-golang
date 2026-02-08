@@ -29,4 +29,12 @@ const (
 	SalesEditURL       = "/action/sales/edit/{id}"
 	SalesDeleteURL     = "/action/sales/delete"
 	SalesBulkDeleteURL = "/action/sales/bulk-delete"
+
+	// Price List routes
+	PriceListListURL       = "/app/price-lists/list/{status}"
+	PriceListDetailURL     = "/app/price-lists/{id}"
+	PriceListAddURL        = "/action/price-lists/add"
+	PriceListEditURL       = "/action/price-lists/edit/{id}"
+	PriceListDeleteURL     = "/action/price-lists/delete"
+	PriceListBulkDeleteURL = "/action/price-lists/bulk-delete"
 )

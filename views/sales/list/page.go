@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"leapfor.xyz/centymo"
+	"github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"

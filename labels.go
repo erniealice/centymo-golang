@@ -213,6 +213,76 @@ type ProductBulkLabels struct {
 }
 
 // ---------------------------------------------------------------------------
+// Price List labels
+// ---------------------------------------------------------------------------
+
+// PriceListLabels holds all translatable strings for the price list module.
+type PriceListLabels struct {
+	Page    PriceListPageLabels    `json:"page"`
+	Buttons PriceListButtonLabels  `json:"buttons"`
+	Columns PriceListColumnLabels  `json:"columns"`
+	Empty   PriceListEmptyLabels   `json:"empty"`
+	Form    PriceListFormLabels    `json:"form"`
+	Actions PriceListActionLabels  `json:"actions"`
+	Bulk    PriceListBulkLabels    `json:"bulkActions"`
+	Detail  PriceListDetailLabels  `json:"detail"`
+}
+
+type PriceListPageLabels struct {
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+}
+
+type PriceListButtonLabels struct {
+	AddPriceList string `json:"addPriceList"`
+}
+
+type PriceListColumnLabels struct {
+	Name      string `json:"name"`
+	DateStart string `json:"dateStart"`
+	DateEnd   string `json:"dateEnd"`
+	Status    string `json:"status"`
+}
+
+type PriceListEmptyLabels struct {
+	ActiveTitle     string `json:"activeTitle"`
+	ActiveMessage   string `json:"activeMessage"`
+	InactiveTitle   string `json:"inactiveTitle"`
+	InactiveMessage string `json:"inactiveMessage"`
+}
+
+type PriceListFormLabels struct {
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	DescPlaceholder string `json:"descriptionPlaceholder"`
+	DateStart       string `json:"dateStart"`
+	DateEnd         string `json:"dateEnd"`
+	Active          string `json:"active"`
+}
+
+type PriceListActionLabels struct {
+	View   string `json:"view"`
+	Edit   string `json:"edit"`
+	Delete string `json:"delete"`
+}
+
+type PriceListBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type PriceListDetailLabels struct {
+	BasicInfo   string `json:"basicInfo"`
+	Prices      string `json:"prices"`
+	ProductName string `json:"productName"`
+	Amount      string `json:"amount"`
+	Currency    string `json:"currency"`
+}
+
+// ---------------------------------------------------------------------------
 // Mapping helpers
 // ---------------------------------------------------------------------------
 
