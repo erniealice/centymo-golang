@@ -1,0 +1,109 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "sales-dashboard"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "sales-dashboard-content"}}
+<div class="page-content" data-page-css="/assets/css/dashboard.css?v={{.CacheVersion}}">
+    <!-- Stats Row -->
+    <div class="stats-row">
+        {{template "stat-card" dict "Icon" "icon-shopping-bag" "Value" "156" "Label" "Total Sales" "Trend" "+18%" "TrendUp" true "Color" "terracotta"}}
+        {{template "stat-card" dict "Icon" "icon-dollar-sign" "Value" "$284K" "Label" "Revenue" "Trend" "+12%" "TrendUp" true "Color" "sage"}}
+        {{template "stat-card" dict "Icon" "icon-check-circle" "Value" "89" "Label" "Completed" "Trend" "+7" "TrendUp" true "Color" "navy"}}
+        {{template "stat-card" dict "Icon" "icon-clock" "Value" "42" "Label" "Active" "Trend" "+3" "TrendUp" true "Color" "amber"}}
+    </div>
+
+    <!-- Main Grid -->
+    <div class="dashboard-grid">
+        <!-- Revenue Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Revenue Trend</h2>
+                <div class="card-actions">
+                    <button class="card-btn">Week</button>
+                    <button class="card-btn">Month</button>
+                    <button class="card-btn primary">Year</button>
+                </div>
+            </div>
+            <div class="chart-area">
+                <div class="chart-placeholder">
+                    <div class="chart-line">
+                        <svg viewBox="0 0 400 200" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#C4654A;stop-opacity:0.3" />
+                                    <stop offset="100%" style="stop-color:#C4654A;stop-opacity:0" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M0,150 Q50,120 100,130 T200,90 T300,100 T400,40" fill="none" stroke="#C4654A" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M0,150 Q50,120 100,130 T200,90 T300,100 T400,40 L400,200 L0,200 Z" fill="url(#chartGradient)"/>
+                        </svg>
+                    </div>
+                    <div class="chart-labels">
+                        <span class="chart-label">Jan</span>
+                        <span class="chart-label">Mar</span>
+                        <span class="chart-label">May</span>
+                        <span class="chart-label">Jul</span>
+                        <span class="chart-label">Sep</span>
+                        <span class="chart-label">Nov</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sales -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Recent Sales</h2>
+                <button class="card-btn">View All</button>
+            </div>
+            <div class="activity-list">
+                <div class="activity-item">
+                    <div class="activity-icon client">
+                        {{template "icon-shopping-bag"}}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">New Sale Created</div>
+                        <div class="activity-desc">REF-2024-001 — PHP 12,500</div>
+                    </div>
+                    <span class="activity-time">30m ago</span>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon quote">
+                        {{template "icon-check-circle"}}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">Sale Completed</div>
+                        <div class="activity-desc">REF-2024-098 — PHP 45,000</div>
+                    </div>
+                    <span class="activity-time">2h ago</span>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon award">
+                        {{template "icon-edit"}}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">Sale Updated</div>
+                        <div class="activity-desc">REF-2024-095 amount adjusted</div>
+                    </div>
+                    <span class="activity-time">4h ago</span>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon integration">
+                        {{template "icon-x-circle"}}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">Sale Cancelled</div>
+                        <div class="activity-desc">REF-2024-087 — PHP 8,200</div>
+                    </div>
+                    <span class="activity-time">1d ago</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

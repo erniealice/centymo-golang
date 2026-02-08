@@ -137,7 +137,8 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 		amountDisplay := currency + " " + amount
 
 		rows = append(rows, types.TableRow{
-			ID: id,
+			ID:   id,
+			Href: "/app/sales/" + id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: name},

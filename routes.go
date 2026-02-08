@@ -10,7 +10,8 @@ const (
 	PaymentCollectionListURL = "/app/payment-collections/list/{status}"
 
 	// Inventory routes — list is per-location
-	InventoryListURL       = "/app/inventory/list/{location}"
+	InventoryDashboardURL = "/app/inventory/dashboard"
+	InventoryListURL      = "/app/inventory/list/{location}"
 	InventoryAddURL        = "/action/inventory/add"
 	InventoryEditURL       = "/action/inventory/edit/{id}"
 	InventoryDeleteURL     = "/action/inventory/delete"
@@ -23,6 +24,7 @@ const (
 	ProductBulkDeleteURL = "/action/products/bulk-delete"
 
 	// Sales (revenue) routes
+	SalesDashboardURL  = "/app/sales/dashboard"
 	SalesListURL       = "/app/sales/list/{status}"
 	SalesDetailURL     = "/app/sales/{id}"
 	SalesAddURL        = "/action/sales/add"

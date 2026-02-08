@@ -145,10 +145,40 @@ type SalesDetailLabels struct {
 	Description string `json:"description"`
 	Quantity    string `json:"quantity"`
 	UnitPrice   string `json:"unitPrice"`
+	CostPrice   string `json:"costPrice"`
+	GrossProfit string `json:"grossProfit"`
 	Total       string `json:"total"`
 	Discount    string `json:"discount"`
 	SubTotal    string `json:"subTotal"`
 	GrandTotal  string `json:"grandTotal"`
+
+	// Tab labels
+	TabBasicInfo  string `json:"tabBasicInfo"`
+	TabLineItems  string `json:"tabLineItems"`
+	TabPayment    string `json:"tabPayment"`
+	TabAuditTrail string `json:"tabAuditTrail"`
+
+	// Basic info fields
+	Customer string `json:"customer"`
+	Date     string `json:"date"`
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+	Status   string `json:"status"`
+	Notes    string `json:"notes"`
+
+	// Payment fields
+	PaymentMethod  string `json:"paymentMethod"`
+	AmountPaid     string `json:"amountPaid"`
+	CardDetails    string `json:"cardDetails"`
+	PaymentDate    string `json:"paymentDate"`
+	ReceivedBy     string `json:"receivedBy"`
+	PaymentInfo    string `json:"paymentInfo"`
+
+	// Audit trail
+	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+
+	// Totals
+	TotalGrossProfit string `json:"totalGrossProfit"`
 }
 
 // ---------------------------------------------------------------------------
