@@ -1,0 +1,233 @@
+/* centymo — sales detail page layout and styling */
+
+.page-content.sale-detail-layout {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--header-height));
+    overflow: hidden;
+}
+.sale-detail-tabs {
+    margin-bottom: 0;
+    border-bottom: var(--border-width) solid var(--border-light);
+    flex-shrink: 0;
+}
+.sale-detail-body {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1.75rem;
+    background: var(--bg-card);
+    border: var(--border-width) solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    animation: tabContentFadeIn 0.25s ease;
+}
+.tab-scroll {
+    flex: 1 1 0;
+    overflow-y: auto;
+    min-height: 0;
+}
+.tab-fixed {
+    flex-shrink: 0;
+}
+.sale-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 1.5rem;
+}
+.sale-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+.sale-info-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+}
+.sale-info-value {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+}
+.sale-info-value.mono {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9375rem;
+}
+.sale-section-title {
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1.25rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: var(--border-width) solid var(--border-light);
+}
+.sale-notes-block {
+    background: var(--bg-sidebar);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    border-left: 3px solid var(--accent-primary);
+}
+.sale-summary-row {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+    border-top: 2px solid var(--border);
+}
+.sale-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--accent-primary-light);
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-md);
+}
+.sale-summary-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+}
+.sale-summary-value {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+.payment-card {
+    background: var(--bg-sidebar);
+    border: var(--border-width) solid var(--border-light);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.payment-card-header {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.payment-card-header-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+}
+.payment-card-amount {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+.payment-card-body {
+    padding: 1.5rem;
+}
+.payment-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 1.5rem;
+}
+.payment-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-card);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.card-mask {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+}
+.coming-soon-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+.coming-soon-icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: var(--radius-round);
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+}
+.coming-soon-icon svg {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+.coming-soon-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+.coming-soon-text {
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    max-width: 24rem;
+}
+.receiver-block {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.receiver-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-round);
+    background: var(--accent-sage-light);
+    color: var(--accent-sage);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+.receiver-info {
+    display: flex;
+    flex-direction: column;
+}
+.receiver-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.receiver-role {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+@media (max-width: 768px) {
+    .sale-detail-body { padding: 1.25rem; }
+    .sale-info-grid { grid-template-columns: 1fr 1fr; }
+    .payment-detail-grid { grid-template-columns: 1fr; }
+    .sale-summary-row { justify-content: stretch; }
+    .sale-summary-item { justify-content: space-between; width: 100%; }
+}
+@media (max-width: 480px) {
+    .sale-info-grid { grid-template-columns: 1fr; }
+}

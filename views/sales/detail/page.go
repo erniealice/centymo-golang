@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
-
 	"github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -40,9 +38,10 @@ type PageData struct {
 	Labels          centymo.SalesLabels
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
-	LineItemTable   *types.TableConfig
-	TotalGrossProfit string
-	Payment         *PaymentInfo
+	LineItemTable *types.TableConfig
+	TotalAmount   string
+	Payment       *PaymentInfo
+	AuditTable    *types.TableConfig
 }
 
 // NewView creates the sales detail view.
@@ -98,7 +97,8 @@ func NewView(deps *Deps) view.View {
 			lineItems := filterLineItems(allLineItems, id)
 			currency, _ := revenue["currency"].(string)
 			pageData.LineItemTable = buildLineItemTable(lineItems, l, deps.TableLabels, currency)
-			pageData.TotalGrossProfit = calcTotalGrossProfit(lineItems, currency)
+			totalAmount, _ := revenue["total_amount"].(string)
+			pageData.TotalAmount = currency + " " + totalAmount
 
 		case "payment":
 			allPayments, err := deps.DB.ListSimple(ctx, "revenue_payment")
@@ -109,7 +109,7 @@ func NewView(deps *Deps) view.View {
 			pageData.Payment = findPayment(allPayments, id, revenue)
 
 		case "audit":
-			// Coming soon — no data to load
+			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
 		}
 
 		return view.OK("sales-detail", pageData)
@@ -145,7 +145,6 @@ func buildLineItemTable(items []map[string]any, l centymo.SalesLabels, tableLabe
 		{Key: "unit_price", Label: l.Detail.UnitPrice, Sortable: false, Width: "130px"},
 		{Key: "discount", Label: l.Detail.Discount, Sortable: false, Width: "100px"},
 		{Key: "total", Label: l.Detail.Total, Sortable: false, Width: "130px"},
-		{Key: "gross_profit", Label: l.Detail.GrossProfit, Sortable: false, Width: "130px"},
 	}
 
 	rows := []types.TableRow{}
@@ -158,8 +157,6 @@ func buildLineItemTable(items []map[string]any, l centymo.SalesLabels, tableLabe
 		discount, _ := item["discount"].(string)
 		total, _ := item["total"].(string)
 
-		grossProfit := calcGrossProfit(unitPrice, costPrice, quantity, discount)
-
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
@@ -169,7 +166,6 @@ func buildLineItemTable(items []map[string]any, l centymo.SalesLabels, tableLabe
 				{Type: "text", Value: currency + " " + unitPrice},
 				{Type: "text", Value: discount},
 				{Type: "text", Value: currency + " " + total},
-				{Type: "text", Value: currency + " " + grossProfit},
 			},
 		})
 	}
@@ -188,34 +184,36 @@ func buildLineItemTable(items []map[string]any, l centymo.SalesLabels, tableLabe
 	}
 }
 
-// calcGrossProfit computes (unitPrice - costPrice) * quantity - discount for a single line item.
-func calcGrossProfit(unitPriceStr, costPriceStr, quantityStr, discountStr string) string {
-	unitPrice, _ := strconv.ParseFloat(unitPriceStr, 64)
-	costPrice, _ := strconv.ParseFloat(costPriceStr, 64)
-	quantity, _ := strconv.ParseFloat(quantityStr, 64)
-	discount, _ := strconv.ParseFloat(discountStr, 64)
-
-	gp := (unitPrice-costPrice)*quantity - discount
-	return fmt.Sprintf("%.2f", gp)
-}
-
-// calcTotalGrossProfit sums gross profit across all line items.
-func calcTotalGrossProfit(items []map[string]any, currency string) string {
-	var total float64
-	for _, item := range items {
-		unitPrice, _ := item["unit_price"].(string)
-		costPrice, _ := item["cost_price"].(string)
-		quantity, _ := item["quantity"].(string)
-		discount, _ := item["discount"].(string)
-
-		up, _ := strconv.ParseFloat(unitPrice, 64)
-		cp, _ := strconv.ParseFloat(costPrice, 64)
-		q, _ := strconv.ParseFloat(quantity, 64)
-		d, _ := strconv.ParseFloat(discount, 64)
-
-		total += (up-cp)*q - d
+// buildAuditTable creates the audit trail table.
+func buildAuditTable(l centymo.SalesLabels, tableLabels types.TableLabels) *types.TableConfig {
+	columns := []types.TableColumn{
+		{Key: "date", Label: l.Detail.Date, Sortable: true, Width: "160px"},
+		{Key: "action", Label: l.Detail.AuditAction, Sortable: true},
+		{Key: "user", Label: l.Detail.AuditUser, Sortable: true, Width: "180px"},
+		{Key: "description", Label: l.Detail.Description, Sortable: false},
 	}
-	return currency + " " + fmt.Sprintf("%.2f", total)
+
+	rows := []types.TableRow{}
+
+	types.ApplyColumnStyles(columns, rows)
+
+	cfg := &types.TableConfig{
+		ID:                   "audit-trail-table",
+		Columns:              columns,
+		Rows:                 rows,
+		ShowSearch:           true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "date",
+		DefaultSortDirection: "desc",
+		Labels:               tableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   l.Detail.AuditEmptyTitle,
+			Message: l.Detail.AuditEmptyMessage,
+		},
+	}
+	types.ApplyTableSettings(cfg)
+
+	return cfg
 }
 
 // findPayment finds the payment record for a given revenue ID.

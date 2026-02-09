@@ -176,6 +176,10 @@ type SalesDetailLabels struct {
 
 	// Audit trail
 	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+	AuditAction          string `json:"auditAction"`
+	AuditUser            string `json:"auditUser"`
+	AuditEmptyTitle      string `json:"auditEmptyTitle"`
+	AuditEmptyMessage    string `json:"auditEmptyMessage"`
 
 	// Totals
 	TotalGrossProfit string `json:"totalGrossProfit"`

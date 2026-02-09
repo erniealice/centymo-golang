@@ -1,0 +1,162 @@
+/* centymo — sales dashboard layout */
+
+/* ========================================
+   STATS ROW
+   ======================================== */
+
+.centymo-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+/* ========================================
+   DASHBOARD GRID
+   ======================================== */
+
+.centymo-dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+}
+
+/* ========================================
+   CHART AREA
+   ======================================== */
+
+.centymo-chart-area {
+    padding: 1.5rem;
+    height: 20rem;
+    position: relative;
+}
+
+.centymo-chart-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent-terracotta-light) 0%, transparent 100%);
+    border-radius: 0.75rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.centymo-chart-line {
+    position: absolute;
+    bottom: 20%;
+    left: 0;
+    right: 0;
+    height: 60%;
+}
+
+.centymo-chart-line svg {
+    width: 100%;
+    height: 100%;
+}
+
+.centymo-chart-labels {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 1rem;
+}
+
+.centymo-chart-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ========================================
+   ACTIVITY LIST
+   ======================================== */
+
+.centymo-activity-list {
+    padding: 0.5rem;
+}
+
+.centymo-activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    transition: background 0.2s ease;
+}
+
+.centymo-activity-item:hover {
+    background: var(--bg-base);
+}
+
+.centymo-activity-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.625rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.centymo-activity-icon.client { background: var(--accent-terracotta-light); color: var(--accent-terracotta); }
+.centymo-activity-icon.quote { background: var(--accent-sage-light); color: var(--accent-sage); }
+.centymo-activity-icon.award { background: var(--accent-amber-light); color: var(--accent-amber); }
+.centymo-activity-icon.integration { background: var(--accent-navy-light); color: var(--accent-navy); }
+
+.centymo-activity-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.centymo-activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.centymo-activity-title {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.125rem;
+}
+
+.centymo-activity-desc {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.centymo-activity-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+.centymo-stats-row .stat-card:nth-child(1) { animation: fadeInUp 0.5s ease-out 0.15s both; }
+.centymo-stats-row .stat-card:nth-child(2) { animation: fadeInUp 0.5s ease-out 0.2s both; }
+.centymo-stats-row .stat-card:nth-child(3) { animation: fadeInUp 0.5s ease-out 0.25s both; }
+.centymo-stats-row .stat-card:nth-child(4) { animation: fadeInUp 0.5s ease-out 0.3s both; }
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 1200px) {
+    .centymo-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .centymo-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .centymo-stats-row {
+        grid-template-columns: 1fr;
+    }
+}

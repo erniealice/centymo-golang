@@ -5,9 +5,9 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "sales-dashboard-content"}}
-<div class="page-content" data-page-css="/assets/css/dashboard.css?v={{.CacheVersion}}">
+<div class="page-content" data-page-css="/assets/css/centymo/centymo-sales-dashboard.css?v={{.CacheVersion}}">
     <!-- Stats Row -->
-    <div class="stats-row">
+    <div class="centymo-stats-row">
         {{template "stat-card" dict "Icon" "icon-shopping-bag" "Value" "156" "Label" "Total Sales" "Trend" "+18%" "TrendUp" true "Color" "terracotta"}}
         {{template "stat-card" dict "Icon" "icon-dollar-sign" "Value" "$284K" "Label" "Revenue" "Trend" "+12%" "TrendUp" true "Color" "sage"}}
         {{template "stat-card" dict "Icon" "icon-check-circle" "Value" "89" "Label" "Completed" "Trend" "+7" "TrendUp" true "Color" "navy"}}
@@ -15,7 +15,7 @@
     </div>
 
     <!-- Main Grid -->
-    <div class="dashboard-grid">
+    <div class="centymo-dashboard-grid">
         <!-- Revenue Chart -->
         <div class="card">
             <div class="card-header">
@@ -26,9 +26,9 @@
                     <button class="card-btn primary">Year</button>
                 </div>
             </div>
-            <div class="chart-area">
-                <div class="chart-placeholder">
-                    <div class="chart-line">
+            <div class="centymo-chart-area">
+                <div class="centymo-chart-placeholder">
+                    <div class="centymo-chart-line">
                         <svg viewBox="0 0 400 200" preserveAspectRatio="none">
                             <defs>
                                 <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -40,13 +40,13 @@
                             <path d="M0,150 Q50,120 100,130 T200,90 T300,100 T400,40 L400,200 L0,200 Z" fill="url(#chartGradient)"/>
                         </svg>
                     </div>
-                    <div class="chart-labels">
-                        <span class="chart-label">Jan</span>
-                        <span class="chart-label">Mar</span>
-                        <span class="chart-label">May</span>
-                        <span class="chart-label">Jul</span>
-                        <span class="chart-label">Sep</span>
-                        <span class="chart-label">Nov</span>
+                    <div class="centymo-chart-labels">
+                        <span class="centymo-chart-label">Jan</span>
+                        <span class="centymo-chart-label">Mar</span>
+                        <span class="centymo-chart-label">May</span>
+                        <span class="centymo-chart-label">Jul</span>
+                        <span class="centymo-chart-label">Sep</span>
+                        <span class="centymo-chart-label">Nov</span>
                     </div>
                 </div>
             </div>
@@ -58,49 +58,49 @@
                 <h2 class="card-title">Recent Sales</h2>
                 <button class="card-btn">View All</button>
             </div>
-            <div class="activity-list">
-                <div class="activity-item">
-                    <div class="activity-icon client">
+            <div class="centymo-activity-list">
+                <div class="centymo-activity-item">
+                    <div class="centymo-activity-icon client">
                         {{template "icon-shopping-bag"}}
                     </div>
-                    <div class="activity-content">
-                        <div class="activity-title">New Sale Created</div>
-                        <div class="activity-desc">REF-2024-001 — PHP 12,500</div>
+                    <div class="centymo-activity-content">
+                        <div class="centymo-activity-title">New Sale Created</div>
+                        <div class="centymo-activity-desc">REF-2024-001 — PHP 12,500</div>
                     </div>
-                    <span class="activity-time">30m ago</span>
+                    <span class="centymo-activity-time">30m ago</span>
                 </div>
 
-                <div class="activity-item">
-                    <div class="activity-icon quote">
+                <div class="centymo-activity-item">
+                    <div class="centymo-activity-icon quote">
                         {{template "icon-check-circle"}}
                     </div>
-                    <div class="activity-content">
-                        <div class="activity-title">Sale Completed</div>
-                        <div class="activity-desc">REF-2024-098 — PHP 45,000</div>
+                    <div class="centymo-activity-content">
+                        <div class="centymo-activity-title">Sale Completed</div>
+                        <div class="centymo-activity-desc">REF-2024-098 — PHP 45,000</div>
                     </div>
-                    <span class="activity-time">2h ago</span>
+                    <span class="centymo-activity-time">2h ago</span>
                 </div>
 
-                <div class="activity-item">
-                    <div class="activity-icon award">
+                <div class="centymo-activity-item">
+                    <div class="centymo-activity-icon award">
                         {{template "icon-edit"}}
                     </div>
-                    <div class="activity-content">
-                        <div class="activity-title">Sale Updated</div>
-                        <div class="activity-desc">REF-2024-095 amount adjusted</div>
+                    <div class="centymo-activity-content">
+                        <div class="centymo-activity-title">Sale Updated</div>
+                        <div class="centymo-activity-desc">REF-2024-095 amount adjusted</div>
                     </div>
-                    <span class="activity-time">4h ago</span>
+                    <span class="centymo-activity-time">4h ago</span>
                 </div>
 
-                <div class="activity-item">
-                    <div class="activity-icon integration">
+                <div class="centymo-activity-item">
+                    <div class="centymo-activity-icon integration">
                         {{template "icon-x-circle"}}
                     </div>
-                    <div class="activity-content">
-                        <div class="activity-title">Sale Cancelled</div>
-                        <div class="activity-desc">REF-2024-087 — PHP 8,200</div>
+                    <div class="centymo-activity-content">
+                        <div class="centymo-activity-title">Sale Cancelled</div>
+                        <div class="centymo-activity-desc">REF-2024-087 — PHP 8,200</div>
                     </div>
-                    <span class="activity-time">1d ago</span>
+                    <span class="centymo-activity-time">1d ago</span>
                 </div>
             </div>
         </div>
