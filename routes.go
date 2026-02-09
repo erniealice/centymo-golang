@@ -16,6 +16,7 @@ const (
 	InventoryEditURL       = "/action/inventory/edit/{id}"
 	InventoryDeleteURL     = "/action/inventory/delete"
 	InventoryBulkDeleteURL = "/action/inventory/bulk-delete"
+	InventoryDetailURL     = "/app/inventory/{id}"
 
 	// Product action routes
 	ProductAddURL        = "/action/products/add"

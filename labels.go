@@ -18,6 +18,7 @@ type InventoryLabels struct {
 	Form    InventoryFormLabels    `json:"form"`
 	Actions InventoryActionLabels  `json:"actions"`
 	Bulk    InventoryBulkLabels    `json:"bulkActions"`
+	Detail  InventoryDetailLabels  `json:"detail"`
 }
 
 type InventoryPageLabels struct {
@@ -65,6 +66,70 @@ type InventoryActionLabels struct {
 
 type InventoryBulkLabels struct {
 	Delete string `json:"delete"`
+}
+
+// InventoryDetailLabels holds all translatable strings for the inventory detail page.
+type InventoryDetailLabels struct {
+	// Tab labels
+	TabBasicInfo    string `json:"tabBasicInfo"`
+	TabAttributes   string `json:"tabAttributes"`
+	TabSerials      string `json:"tabSerials"`
+	TabTransactions string `json:"tabTransactions"`
+	TabAuditTrail   string `json:"tabAuditTrail"`
+
+	// Info fields
+	ItemInfo      string `json:"itemInfo"`
+	ProductName   string `json:"productName"`
+	SKU           string `json:"sku"`
+	Location      string `json:"location"`
+	OnHand        string `json:"onHand"`
+	Reserved      string `json:"reserved"`
+	Available     string `json:"available"`
+	ReorderLevel  string `json:"reorderLevel"`
+	UnitOfMeasure string `json:"unitOfMeasure"`
+	Status        string `json:"status"`
+	Notes         string `json:"notes"`
+
+	// Attribute labels
+	AttributeName  string `json:"attributeName"`
+	AttributeValue string `json:"attributeValue"`
+
+	// Serial columns
+	SerialNumber  string `json:"serialNumber"`
+	IMEI          string `json:"imei"`
+	SerialStatus  string `json:"serialStatus"`
+	WarrantyEnd   string `json:"warrantyEnd"`
+	PurchaseOrder string `json:"purchaseOrder"`
+	SaleReference string `json:"saleReference"`
+
+	// Serial summary
+	TotalUnits     string `json:"totalUnits"`
+	AvailableUnits string `json:"availableUnits"`
+	SoldUnits      string `json:"soldUnits"`
+	ReservedUnits  string `json:"reservedUnits"`
+
+	// Transaction columns
+	Date        string `json:"date"`
+	Type        string `json:"type"`
+	Quantity    string `json:"quantity"`
+	Reference   string `json:"reference"`
+	Serial      string `json:"serial"`
+	PerformedBy string `json:"performedBy"`
+
+	// Audit columns
+	AuditAction string `json:"auditAction"`
+	AuditUser   string `json:"auditUser"`
+	Description string `json:"description"`
+
+	// Empty states
+	AttributeEmptyTitle     string `json:"attributeEmptyTitle"`
+	AttributeEmptyMessage   string `json:"attributeEmptyMessage"`
+	SerialEmptyTitle        string `json:"serialEmptyTitle"`
+	SerialEmptyMessage      string `json:"serialEmptyMessage"`
+	TransactionEmptyTitle   string `json:"transactionEmptyTitle"`
+	TransactionEmptyMessage string `json:"transactionEmptyMessage"`
+	AuditEmptyTitle         string `json:"auditEmptyTitle"`
+	AuditEmptyMessage       string `json:"auditEmptyMessage"`
 }
 
 // ---------------------------------------------------------------------------

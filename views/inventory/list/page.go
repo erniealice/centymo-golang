@@ -139,7 +139,8 @@ func buildTableRows(records []map[string]any, location string, l centymo.Invento
 		status := inventoryStatus(record)
 
 		rows = append(rows, types.TableRow{
-			ID: id,
+			ID:   id,
+			Href: "/app/inventory/" + id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
 				{Type: "text", Value: sku},
@@ -158,7 +159,7 @@ func buildTableRows(records []map[string]any, location string, l centymo.Invento
 				"status":      status,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/products/" + id},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/inventory/" + id},
 				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/inventory/edit/" + id, DrawerTitle: l.Actions.Edit},
 				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/inventory/delete", ItemName: name},
 			},
