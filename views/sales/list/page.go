@@ -48,17 +48,7 @@ func NewView(deps *Deps) view.View {
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = []types.BulkAction{
-			{
-				Key:            "delete",
-				Label:          deps.CommonLabels.Bulk.Delete,
-				Icon:           "icon-trash-2",
-				Variant:        "danger",
-				Endpoint:       "/action/sales/bulk-delete",
-				ConfirmTitle:   deps.CommonLabels.Bulk.Delete,
-				ConfirmMessage: "Are you sure you want to delete {{count}} sale(s)? This action cannot be undone.",
-			},
-		}
+		bulkCfg.Actions = buildBulkActions(deps.CommonLabels, status)
 
 		tableConfig := &types.TableConfig{
 			ID:                   "sales-table",
@@ -136,6 +126,29 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 
 		amountDisplay := currency + " " + amount
 
+		actions := []types.TableAction{
+			{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/sales/" + id},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/sales/edit/" + id, DrawerTitle: l.Actions.Edit},
+		}
+		if recordStatus == "active" {
+			actions = append(actions, types.TableAction{
+				Type: "deactivate", Label: "Deactivate", Action: "deactivate",
+				URL: "/action/sales/set-status?status=inactive", ItemName: refNumber,
+				ConfirmTitle:   "Deactivate",
+				ConfirmMessage: fmt.Sprintf("Are you sure you want to deactivate %s?", refNumber),
+			})
+		} else {
+			actions = append(actions, types.TableAction{
+				Type: "activate", Label: "Activate", Action: "activate",
+				URL: "/action/sales/set-status?status=active", ItemName: refNumber,
+				ConfirmTitle:   "Activate",
+				ConfirmMessage: fmt.Sprintf("Are you sure you want to activate %s?", refNumber),
+			})
+		}
+		actions = append(actions, types.TableAction{
+			Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/sales/delete", ItemName: refNumber,
+		})
+
 		rows = append(rows, types.TableRow{
 			ID:   id,
 			Href: "/app/sales/" + id,
@@ -153,11 +166,7 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 				"amount":    amountDisplay,
 				"status":    recordStatus,
 			},
-			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/sales/" + id},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/sales/edit/" + id, DrawerTitle: l.Actions.Edit},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/sales/delete", ItemName: refNumber},
-			},
+			Actions: actions,
 		})
 	}
 	return rows
@@ -226,4 +235,45 @@ func statusVariant(status string) string {
 	default:
 		return "default"
 	}
+}
+
+func buildBulkActions(common pyeza.CommonLabels, status string) []types.BulkAction {
+	actions := []types.BulkAction{}
+
+	switch status {
+	case "active":
+		actions = append(actions, types.BulkAction{
+			Key:             "deactivate",
+			Label:           "Deactivate",
+			Icon:            "icon-pause",
+			Variant:         "warning",
+			Endpoint:        "/action/sales/bulk-set-status",
+			ConfirmTitle:    "Deactivate",
+			ConfirmMessage:  "Are you sure you want to deactivate {{count}} sale(s)?",
+			ExtraParamsJSON: `{"target_status":"inactive"}`,
+		})
+	case "completed", "cancelled":
+		actions = append(actions, types.BulkAction{
+			Key:             "activate",
+			Label:           "Activate",
+			Icon:            "icon-play",
+			Variant:         "primary",
+			Endpoint:        "/action/sales/bulk-set-status",
+			ConfirmTitle:    "Activate",
+			ConfirmMessage:  "Are you sure you want to activate {{count}} sale(s)?",
+			ExtraParamsJSON: `{"target_status":"active"}`,
+		})
+	}
+
+	actions = append(actions, types.BulkAction{
+		Key:            "delete",
+		Label:          common.Bulk.Delete,
+		Icon:           "icon-trash-2",
+		Variant:        "danger",
+		Endpoint:       "/action/sales/bulk-delete",
+		ConfirmTitle:   common.Bulk.Delete,
+		ConfirmMessage: "Are you sure you want to delete {{count}} sale(s)? This action cannot be undone.",
+	})
+
+	return actions
 }

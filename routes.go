@@ -30,8 +30,10 @@ const (
 	SalesDetailURL     = "/app/sales/{id}"
 	SalesAddURL        = "/action/sales/add"
 	SalesEditURL       = "/action/sales/edit/{id}"
-	SalesDeleteURL     = "/action/sales/delete"
-	SalesBulkDeleteURL = "/action/sales/bulk-delete"
+	SalesDeleteURL        = "/action/sales/delete"
+	SalesBulkDeleteURL    = "/action/sales/bulk-delete"
+	SalesSetStatusURL     = "/action/sales/set-status"
+	SalesBulkSetStatusURL = "/action/sales/bulk-set-status"
 
 	// Price List routes
 	PriceListListURL       = "/app/price-lists/list/{status}"
@@ -40,4 +42,8 @@ const (
 	PriceListEditURL       = "/action/price-lists/edit/{id}"
 	PriceListDeleteURL     = "/action/price-lists/delete"
 	PriceListBulkDeleteURL = "/action/price-lists/bulk-delete"
+
+	// Price Product routes (within price list detail)
+	PriceProductAddURL    = "/action/price-lists/{id}/products/add"
+	PriceProductDeleteURL = "/action/price-lists/{id}/products/delete"
 )

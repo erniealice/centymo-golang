@@ -1,0 +1,55 @@
+{{/*
+Price product drawer form -- loaded into #sheetContent via HTMX.
+Used by the Add Price Product action on the price list detail prices tab.
+Data: .FormAction, .PriceListID, .Products, .CommonLabels
+*/}}
+{{define "price-product-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label" for="product_id">Product <span class="form-required">*</span></label>
+                <select class="form-select" name="product_id" id="product_id" required onchange="PriceProductForm.onProductChange(this)">
+                    <option value="">Select a product...</option>
+                    {{range .Products}}
+                    <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+
+        <input type="hidden" name="name" id="price_product_name" value="">
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "amount"
+                "Label" "Amount"
+                "Value" ""
+                "Required" true
+                "Placeholder" "0"
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "currency"
+                "Label" "Currency"
+                "Value" "PHP"
+                "Required" true
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
+</form>
+<script>
+window.PriceProductForm = {
+    onProductChange: function(select) {
+        var nameInput = document.getElementById('price_product_name');
+        if (nameInput && select.selectedIndex > 0) {
+            nameInput.value = select.options[select.selectedIndex].text;
+        }
+    }
+};
+</script>
+{{end}}

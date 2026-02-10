@@ -120,10 +120,12 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string) (*typ
 	}
 
 	rows := []types.TableRow{}
+	deleteURL := fmt.Sprintf("/action/price-lists/%s/products/delete", priceListID)
 	for _, pp := range resp.GetData() {
 		// Filter price products belonging to this price list
-		// The price_product proto doesn't have a direct price_list_id field in its
-		// ListPriceProductsRequest, so we filter client-side for now
+		if pp.GetPriceListId() != priceListID {
+			continue
+		}
 		id := pp.GetId()
 		productName := pp.GetName()
 		amount := fmt.Sprintf("%d", pp.GetAmount())
@@ -136,10 +138,14 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string) (*typ
 				{Type: "text", Value: amount},
 				{Type: "text", Value: currency},
 			},
+			Actions: []types.TableAction{
+				{Type: "delete", Label: "Remove", Action: "delete", URL: deleteURL, ItemName: productName},
+			},
 		})
 	}
 	types.ApplyColumnStyles(columns, rows)
 
+	addURL := fmt.Sprintf("/action/price-lists/%s/products/add", priceListID)
 	tableConfig := &types.TableConfig{
 		ID:                   "price-products-table",
 		Columns:              columns,
@@ -152,6 +158,11 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string) (*typ
 		EmptyState: types.TableEmptyState{
 			Title:   "No prices configured",
 			Message: "Add products to this price list to configure pricing.",
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:     "Add Price",
+			ActionURL: addURL,
+			Icon:      "icon-plus",
 		},
 	}
 	types.ApplyTableSettings(tableConfig)
