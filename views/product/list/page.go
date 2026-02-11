@@ -52,6 +52,26 @@ func NewView(deps *Deps) view.View {
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
 		bulkCfg.Actions = []types.BulkAction{
 			{
+				Key:             "activate",
+				Label:           l.Status.Activate,
+				Icon:            "icon-check-circle",
+				Variant:         "success",
+				Endpoint:        centymo.ProductBulkSetStatusURL,
+				ExtraParamsJSON: `{"target_status":"active"}`,
+				ConfirmTitle:    l.Status.Activate,
+				ConfirmMessage:  "Are you sure you want to activate {{count}} product(s)?",
+			},
+			{
+				Key:             "deactivate",
+				Label:           l.Status.Deactivate,
+				Icon:            "icon-x-circle",
+				Variant:         "warning",
+				Endpoint:        centymo.ProductBulkSetStatusURL,
+				ExtraParamsJSON: `{"target_status":"inactive"}`,
+				ConfirmTitle:    l.Status.Deactivate,
+				ConfirmMessage:  "Are you sure you want to deactivate {{count}} product(s)?",
+			},
+			{
 				Key:            "delete",
 				Label:          l.Bulk.Delete,
 				Icon:           "icon-trash-2",
@@ -151,7 +171,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 				"status": recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/products/" + id},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/products/detail/" + id},
 				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/products/edit/" + id, DrawerTitle: l.Actions.Edit},
 				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/products/delete", ItemName: name},
 			},

@@ -11,6 +11,16 @@
     margin-bottom: 2rem;
 }
 
+/* 8-widget variant: 4 columns x 2 rows */
+.centymo-stats-row--8 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.centymo-stats-row--8 .stat-card:nth-child(5) { animation: fadeInUp 0.5s ease-out 0.35s both; }
+.centymo-stats-row--8 .stat-card:nth-child(6) { animation: fadeInUp 0.5s ease-out 0.4s both; }
+.centymo-stats-row--8 .stat-card:nth-child(7) { animation: fadeInUp 0.5s ease-out 0.45s both; }
+.centymo-stats-row--8 .stat-card:nth-child(8) { animation: fadeInUp 0.5s ease-out 0.5s both; }
+
 /* ========================================
    DASHBOARD GRID
    ======================================== */

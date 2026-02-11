@@ -50,6 +50,26 @@ func NewView(deps *Deps) view.View {
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
 		bulkCfg.Actions = []types.BulkAction{
 			{
+				Key:             "activate",
+				Label:           l.Status.Activate,
+				Icon:            "icon-check-circle",
+				Variant:         "success",
+				Endpoint:        "/action/inventory/bulk-set-status",
+				ConfirmTitle:    l.Status.Activate,
+				ConfirmMessage:  "Are you sure you want to activate {{count}} item(s)?",
+				ExtraParamsJSON: `{"target_status":"active"}`,
+			},
+			{
+				Key:             "deactivate",
+				Label:           l.Status.Deactivate,
+				Icon:            "icon-x-circle",
+				Variant:         "warning",
+				Endpoint:        "/action/inventory/bulk-set-status",
+				ConfirmTitle:    l.Status.Deactivate,
+				ConfirmMessage:  "Are you sure you want to deactivate {{count}} item(s)?",
+				ExtraParamsJSON: `{"target_status":"inactive"}`,
+			},
+			{
 				Key:            "delete",
 				Label:          deps.CommonLabels.Bulk.Delete,
 				Icon:           "icon-trash-2",
@@ -113,6 +133,7 @@ func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.ProductName, Sortable: true},
 		{Key: "sku", Label: l.Columns.SKU, Sortable: true, Width: "150px"},
+		{Key: "item_type", Label: "Type", Sortable: true, Width: "130px"},
 		{Key: "on_hand", Label: l.Columns.OnHand, Sortable: true, Width: "120px"},
 		{Key: "available", Label: l.Columns.Available, Sortable: true, Width: "120px"},
 		{Key: "reorder_level", Label: l.Columns.ReorderLvl, Sortable: true, Width: "140px"},
@@ -134,24 +155,40 @@ func buildTableRows(records []map[string]any, location string, l centymo.Invento
 		onHand := anyToString(record["quantity_on_hand"])
 		reserved := anyToString(record["quantity_reserved"])
 		reorderLvl := anyToString(record["reorder_level"])
+		itemType, _ := record["item_type"].(string)
+		if itemType == "" {
+			itemType = "non_serialized"
+		}
 
 		available := computeAvailable(record["quantity_on_hand"], record["quantity_reserved"])
 		status := inventoryStatus(record)
 
+		// Low stock alert: if available quantity is at or below reorder level
+		reorderDisplay := reorderLvl
+		availFloat := toFloat64(record["quantity_on_hand"]) - toFloat64(record["quantity_reserved"])
+		reorderFloat := toFloat64(record["reorder_level"])
+		if reorderFloat > 0 && availFloat <= reorderFloat {
+			reorderDisplay = reorderLvl + " (!)"
+		}
+
+		detailURL := "/app/inventory/detail/" + id
+
 		rows = append(rows, types.TableRow{
 			ID:   id,
-			Href: "/app/inventory/" + id,
+			Href: detailURL,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
 				{Type: "text", Value: sku},
+				{Type: "badge", Value: itemTypeLabel(itemType, l), Variant: itemTypeVariant(itemType)},
 				{Type: "text", Value: onHand},
 				{Type: "text", Value: available},
-				{Type: "text", Value: reorderLvl},
+				{Type: "text", Value: reorderDisplay},
 				{Type: "badge", Value: status, Variant: statusVariant(status)},
 			},
 			DataAttrs: map[string]string{
 				"name":        name,
 				"sku":         sku,
+				"item_type":   itemType,
 				"on_hand":     onHand,
 				"reserved":    reserved,
 				"available":   available,
@@ -159,13 +196,39 @@ func buildTableRows(records []map[string]any, location string, l centymo.Invento
 				"status":      status,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/inventory/" + id},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
 				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/inventory/edit/" + id, DrawerTitle: l.Actions.Edit},
 				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/inventory/delete", ItemName: name},
 			},
 		})
 	}
 	return rows
+}
+
+func itemTypeLabel(itemType string, l centymo.InventoryLabels) string {
+	switch itemType {
+	case "serialized":
+		return l.ItemType.Serialized
+	case "non_serialized":
+		return l.ItemType.NonSerialized
+	case "consumable":
+		return l.ItemType.Consumable
+	default:
+		return itemType
+	}
+}
+
+func itemTypeVariant(itemType string) string {
+	switch itemType {
+	case "serialized":
+		return "info"
+	case "non_serialized":
+		return "default"
+	case "consumable":
+		return "success"
+	default:
+		return "default"
+	}
 }
 
 func inventoryStatus(record map[string]any) string {

@@ -1,107 +1,149 @@
+{{/* Full page — for direct access / non-HTMX */}}
 {{define "product-detail"}}
 {{template "app-shell" .}}
 {{end}}
 
+{{/* Content-only partial — for HTMX navigation */}}
 {{define "product-detail-content"}}
-<div class="page-content">
-    {{/* Back link */}}
-    <div style="margin-bottom: var(--spacing-md);">
-        <a href="/app/products/list/active" class="btn btn--ghost btn--sm">
-            ← Back to Products
-        </a>
-    </div>
-
-    {{/* Tab navigation */}}
-    <div class="tabs">
-        <div class="tabs__list" role="tablist">
-            {{range .Tabs}}
-            <button class="tabs__tab{{if .Active}} tabs__tab--active{{end}}"
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/product-detail.css?v={{.CacheVersion}}">
+    {{/* --- HTMX Tab Buttons --- */}}
+    <div class="detail-tabs">
+        <div class="tabs" id="product-detail-tabs" role="tablist">
+            {{range .TabItems}}
+            <button type="button"
+                    class="tab{{if eq .Key $.ActiveTab}} active{{end}}{{if .Disabled}} disabled{{end}}"
                     role="tab"
-                    hx-get="{{.URL}}"
-                    hx-target="#tab-content"
+                    aria-selected="{{if eq .Key $.ActiveTab}}true{{else}}false{{end}}"
+                    data-tab="{{.Key}}"
+                    hx-get="/action/products/detail/{{$.ID}}/tab/{{.Key}}"
+                    hx-target="#tabContent"
                     hx-swap="innerHTML"
-                    aria-selected="{{.Active}}">
+                    hx-trigger="click"
+                    hx-push-url="/app/products/detail/{{$.ID}}?tab={{.Key}}"
+                    {{if .Disabled}}aria-disabled="true" disabled{{end}}>
                 {{.Label}}
+                {{if .Count}}<span class="tab-badge">{{.Count}}</span>{{end}}
             </button>
             {{end}}
         </div>
     </div>
 
-    {{/* Tab content */}}
-    <div id="tab-content" class="tabs__panel">
-        {{if eq .ActiveTab "basic"}}
-        {{template "product-detail-basic" .}}
-        {{else if eq .ActiveTab "history"}}
-        {{template "product-detail-history" .}}
-        {{else if eq .ActiveTab "depreciation"}}
-        {{template "product-detail-depreciation" .}}
+    {{/* --- Tab Content Area --- */}}
+    <div id="tabContent" class="detail-body">
+        {{if eq .ActiveTab "info"}}
+            {{template "product-tab-info" .}}
+        {{else if eq .ActiveTab "variants"}}
+            {{template "product-tab-variants" .}}
+        {{else if eq .ActiveTab "attributes"}}
+            {{template "product-tab-attributes" .}}
+        {{else if eq .ActiveTab "pricing"}}
+            {{template "product-tab-pricing" .}}
         {{end}}
     </div>
 </div>
+{{template "sheet-form" .}}
+<script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}
 
-{{/* Basic Information Tab */}}
-{{define "product-detail-basic"}}
-<div class="detail-card">
-    <div class="detail-header">
-        <h3>Basic Information</h3>
-    </div>
-    <div class="detail-grid">
-        <div class="detail-field">
-            <label>Name</label>
-            <span>{{index .Product "name"}}</span>
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "product-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">{{.Labels.Tabs.Info}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Name}}</span>
+            <span class="detail-info-value">{{.ProductName}}</span>
         </div>
-        <div class="detail-field">
-            <label>Description</label>
-            <span>{{if index .Product "description"}}{{index .Product "description"}}{{else}}—{{end}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Description}}</span>
+            <span class="detail-info-value">{{if .ProductDesc}}{{.ProductDesc}}{{else}}—{{end}}</span>
         </div>
-        <div class="detail-field">
-            <label>Price</label>
-            <span>{{index .Product "currency"}} {{index .Product "price"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Price}}</span>
+            <span class="detail-info-value">{{.ProductPrice}}</span>
         </div>
-        <div class="detail-field">
-            <label>Status</label>
-            <span class="badge badge--{{if index .Product "active"}}success{{else}}warning{{end}}">
-                {{if index .Product "active"}}Active{{else}}Inactive{{end}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Currency}}</span>
+            <span class="detail-info-value">{{.ProductCurrency}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
+            <span>
+                <span class="badge badge--{{.StatusVariant}}">
+                    {{.ProductStatus}}
+                </span>
             </span>
         </div>
+        {{if .Collections}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Collections}}</span>
+            <span class="detail-info-value">
+                {{range .Collections}}
+                <span class="badge badge--info">{{.}}</span>
+                {{end}}
+            </span>
+        </div>
+        {{end}}
+    </div>
+
+    <div class="detail-actions" style="margin-top: var(--spacing-lg);">
+        <a class="btn btn--ghost btn--sm"
+           hx-get="/action/products/edit/{{.ID}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           data-sheet-title="{{.Labels.Actions.Edit}}">
+            {{.Labels.Actions.Edit}}
+        </a>
     </div>
 </div>
 {{end}}
 
-{{/* History Tab */}}
-{{define "product-detail-history"}}
-<div class="detail-card">
-    <div class="detail-header">
-        <h3>History</h3>
-    </div>
-    <div class="detail-grid">
-        <div class="detail-field">
-            <label>Date Created</label>
-            <span>{{if index .Product "date_created_string"}}{{index .Product "date_created_string"}}{{else}}—{{end}}</span>
+{{/* =============================================
+     TAB PARTIAL: Variants
+     ============================================= */}}
+{{define "product-tab-variants"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .VariantsTable}}
+        {{template "table-card" .VariantsTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">{{.Labels.Variant.Empty}}</div>
+            <p class="coming-soon-text">No variants have been added to this product yet.</p>
         </div>
-        <div class="detail-field">
-            <label>Last Modified</label>
-            <span>{{if index .Product "date_modified_string"}}{{index .Product "date_modified_string"}}{{else}}—{{end}}</span>
-        </div>
-    </div>
-    <div style="padding: var(--spacing-lg); color: var(--color-text-muted); text-align: center;">
-        Activity log will be available in a future update.
-    </div>
+    {{end}}
 </div>
 {{end}}
 
-{{/* Depreciation Tab */}}
-{{define "product-detail-depreciation"}}
-<div class="detail-card">
-    <div class="detail-header">
-        <h3>Depreciation</h3>
-    </div>
-    <div style="padding: var(--spacing-xl); color: var(--color-text-muted); text-align: center;">
-        <p>Depreciation tracking will be available in a future update.</p>
-        <p style="margin-top: var(--spacing-sm); font-size: var(--font-size-sm);">
-            This section will include depreciation method, useful life, salvage value, and depreciation schedule.
-        </p>
-    </div>
+{{/* =============================================
+     TAB PARTIAL: Attributes
+     ============================================= */}}
+{{define "product-tab-attributes"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .AttributesTable}}
+        {{template "table-card" .AttributesTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">{{.Labels.Attribute.Empty}}</div>
+            <p class="coming-soon-text">No attributes have been assigned to this product yet.</p>
+        </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Pricing
+     ============================================= */}}
+{{define "product-tab-pricing"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .PricingTable}}
+        {{template "table-card" .PricingTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">No Price Lists</div>
+            <p class="coming-soon-text">This product has not been added to any price lists yet. Manage pricing from the Price Lists section.</p>
+        </div>
+    {{end}}
 </div>
 {{end}}

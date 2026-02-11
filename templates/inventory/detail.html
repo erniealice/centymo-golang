@@ -1,168 +1,243 @@
-{{/* Full page — for direct access / non-HTMX */}}
+{{/* Full page -- for direct access / non-HTMX */}}
 {{define "inventory-detail"}}
 {{template "app-shell" .}}
 {{end}}
 
-{{/* Content-only partial — for HTMX navigation */}}
+{{/* Content-only partial -- for HTMX navigation */}}
 {{define "inventory-detail-content"}}
 <div class="page-content inv-detail-layout" data-page-css="/assets/css/centymo/inventory-detail.css?v={{.CacheVersion}}">
-    {{/* ─── Tabs ─── */}}
+    {{/* --- Tabs --- */}}
     <div class="inv-detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "inv-tabs")}}
     </div>
 
-    {{/* ─── Tab Body ─── */}}
-    <div class="inv-detail-body">
+    {{/* --- Tab Body (HTMX target) --- */}}
+    <div class="inv-detail-body" id="tabContent">
+        {{if eq .ActiveTab "info"}}{{template "inventory-tab-info" .}}{{end}}
+        {{if eq .ActiveTab "attributes"}}{{template "inventory-tab-attributes" .}}{{end}}
+        {{if eq .ActiveTab "serials"}}{{template "inventory-tab-serials" .}}{{end}}
+        {{if eq .ActiveTab "transactions"}}{{template "inventory-tab-transactions" .}}{{end}}
+        {{if eq .ActiveTab "depreciation"}}{{template "inventory-tab-depreciation" .}}{{end}}
+        {{if eq .ActiveTab "audit"}}{{template "inventory-tab-audit" .}}{{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
 
-        {{/* ═══════════════════════════════════════════════
-             TAB: Basic Information
-             ═══════════════════════════════════════════════ */}}
-        {{if eq .ActiveTab "info"}}
-        <div class="tab-scroll">
-        <h4 class="inv-section-title">{{.Labels.Detail.ItemInfo}}</h4>
-        <div class="inv-info-grid">
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.ProductName}}</span>
-                <span class="inv-info-value">{{index .Item "name"}}</span>
-            </div>
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.SKU}}</span>
-                <span class="inv-info-value mono">{{index .Item "sku"}}</span>
-            </div>
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.Location}}</span>
-                <span class="inv-info-value">{{index .Item "location_id"}}</span>
-            </div>
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.OnHand}}</span>
-                <span class="inv-info-value mono">{{index .Item "quantity_on_hand"}}</span>
-            </div>
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.Reserved}}</span>
-                <span class="inv-info-value mono">{{index .Item "quantity_reserved"}}</span>
-            </div>
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.Available}}</span>
-                <span class="inv-info-value mono">{{index .Item "quantity_available"}}</span>
-            </div>
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.ReorderLevel}}</span>
-                <span class="inv-info-value mono">{{index .Item "reorder_level"}}</span>
-            </div>
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.UnitOfMeasure}}</span>
-                <span class="inv-info-value">{{index .Item "unit_of_measure"}}</span>
-            </div>
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Labels.Detail.Status}}</span>
-                <span>
-                    {{if index .Item "active"}}
-                    <span class="badge badge--success">active</span>
-                    {{else}}
-                    <span class="badge badge--warning">inactive</span>
-                    {{end}}
-                </span>
-            </div>
+{{/* ======================================================================
+     TAB: Basic Information
+     ====================================================================== */}}
+{{define "inventory-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="inv-section-title">{{.Labels.Detail.ItemInfo}}</h4>
+    <div class="inv-info-grid">
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.ProductName}}</span>
+            <span class="inv-info-value">{{index .Item "name"}}</span>
         </div>
-
-        {{if index .Item "notes"}}
-        <div style="margin-top: 1.75rem;">
-            <h4 class="inv-section-title">{{.Labels.Detail.Notes}}</h4>
-            <div class="inv-notes-block">{{index .Item "notes"}}</div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.SKU}}</span>
+            <span class="inv-info-value mono">{{index .Item "sku"}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">Type</span>
+            <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.Location}}</span>
+            <span class="inv-info-value">{{.LocationName}}</span>
+        </div>
+        {{if index .Item "product_id"}}
+        <div class="inv-info-item">
+            <span class="inv-info-label">Product</span>
+            <span class="inv-info-value">
+                <a href="/app/products/detail/{{index .Item "product_id"}}">View Product</a>
+            </span>
         </div>
         {{end}}
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.OnHand}}</span>
+            <span class="inv-info-value mono">{{index .Item "quantity_on_hand"}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.Reserved}}</span>
+            <span class="inv-info-value mono">{{index .Item "quantity_reserved"}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.Available}}</span>
+            <span class="inv-info-value mono">{{.AvailableQty}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.ReorderLevel}}</span>
+            <span class="inv-info-value mono">{{index .Item "reorder_level"}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.UnitOfMeasure}}</span>
+            <span class="inv-info-value">{{index .Item "unit_of_measure"}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Detail.Status}}</span>
+            <span>
+                {{if index .Item "active"}}
+                <span class="badge badge--success">active</span>
+                {{else}}
+                <span class="badge badge--warning">inactive</span>
+                {{end}}
+            </span>
+        </div>
+    </div>
+
+    {{if index .Item "notes"}}
+    <div style="margin-top: 1.75rem;">
+        <h4 class="inv-section-title">{{.Labels.Detail.Notes}}</h4>
+        <div class="inv-notes-block">{{index .Item "notes"}}</div>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* ======================================================================
+     TAB: Attributes
+     ====================================================================== */}}
+{{define "inventory-tab-attributes"}}
+<div class="tab-scroll">
+    {{if .Attributes}}
+    <h4 class="inv-section-title">{{.Labels.Detail.TabAttributes}}</h4>
+    <div class="inv-info-grid">
+        {{range .Attributes}}
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Name}}</span>
+            <span class="inv-info-value">{{.Value}}</span>
         </div>
         {{end}}
+    </div>
+    {{else}}
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">{{.Labels.Detail.AttributeEmptyTitle}}</div>
+        <p class="coming-soon-text">{{.Labels.Detail.AttributeEmptyMessage}}</p>
+    </div>
+    {{end}}
+</div>
+{{end}}
 
-        {{/* ═══════════════════════════════════════════════
-             TAB: Attributes
-             ═══════════════════════════════════════════════ */}}
-        {{if eq .ActiveTab "attributes"}}
-        <div class="tab-scroll">
-        {{if .Attributes}}
-        <h4 class="inv-section-title">{{.Labels.Detail.TabAttributes}}</h4>
-        <div class="inv-info-grid">
-            {{range .Attributes}}
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Name}}</span>
-                <span class="inv-info-value">{{.Value}}</span>
-            </div>
-            {{end}}
+{{/* ======================================================================
+     TAB: Serial Numbers
+     ====================================================================== */}}
+{{define "inventory-tab-serials"}}
+{{if .SerialTable}}
+    <div class="tab-scroll">
+        {{template "table-card" .SerialTable}}
+    </div>
+    {{if .SerialSummary}}
+    <div class="inv-summary-row tab-fixed">
+        <div class="inv-summary-item">
+            <span class="inv-summary-label">{{.Labels.Detail.TotalUnits}}</span>
+            <span class="inv-summary-value">{{.SerialSummary.Total}}</span>
         </div>
-        {{else}}
+        <div class="inv-summary-item inv-summary-item--success">
+            <span class="inv-summary-label">{{.Labels.Detail.AvailableUnits}}</span>
+            <span class="inv-summary-value">{{.SerialSummary.Available}}</span>
+        </div>
+        <div class="inv-summary-item inv-summary-item--default">
+            <span class="inv-summary-label">{{.Labels.Detail.SoldUnits}}</span>
+            <span class="inv-summary-value">{{.SerialSummary.Sold}}</span>
+        </div>
+        <div class="inv-summary-item inv-summary-item--info">
+            <span class="inv-summary-label">{{.Labels.Detail.ReservedUnits}}</span>
+            <span class="inv-summary-value">{{.SerialSummary.Reserved}}</span>
+        </div>
+    </div>
+    {{end}}
+{{else}}
+    <div class="tab-scroll">
         <div class="coming-soon-panel">
-            <div class="coming-soon-title">{{.Labels.Detail.AttributeEmptyTitle}}</div>
-            <p class="coming-soon-text">{{.Labels.Detail.AttributeEmptyMessage}}</p>
+            <div class="coming-soon-title">{{.Labels.Detail.SerialEmptyTitle}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.SerialEmptyMessage}}</p>
         </div>
-        {{end}}
+    </div>
+{{end}}
+{{end}}
+
+{{/* ======================================================================
+     TAB: Transactions
+     ====================================================================== */}}
+{{define "inventory-tab-transactions"}}
+<div class="tab-scroll">
+    {{if .TransactionTable}}
+        {{template "table-card" .TransactionTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">{{.Labels.Detail.TransactionEmptyTitle}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.TransactionEmptyMessage}}</p>
         </div>
-        {{end}}
+    {{end}}
+</div>
+{{end}}
 
-        {{/* ═══════════════════════════════════════════════
-             TAB: Serial Numbers
-             ═══════════════════════════════════════════════ */}}
-        {{if eq .ActiveTab "serials"}}
-        {{if .SerialTable}}
-            <div class="tab-scroll">
-                {{template "table-card" .SerialTable}}
-            </div>
-            {{if .SerialSummary}}
-            <div class="inv-summary-row tab-fixed">
-                <div class="inv-summary-item">
-                    <span class="inv-summary-label">{{.Labels.Detail.TotalUnits}}</span>
-                    <span class="inv-summary-value">{{.SerialSummary.Total}}</span>
-                </div>
-                <div class="inv-summary-item inv-summary-item--success">
-                    <span class="inv-summary-label">{{.Labels.Detail.AvailableUnits}}</span>
-                    <span class="inv-summary-value">{{.SerialSummary.Available}}</span>
-                </div>
-                <div class="inv-summary-item inv-summary-item--default">
-                    <span class="inv-summary-label">{{.Labels.Detail.SoldUnits}}</span>
-                    <span class="inv-summary-value">{{.SerialSummary.Sold}}</span>
-                </div>
-                <div class="inv-summary-item inv-summary-item--info">
-                    <span class="inv-summary-label">{{.Labels.Detail.ReservedUnits}}</span>
-                    <span class="inv-summary-value">{{.SerialSummary.Reserved}}</span>
-                </div>
-            </div>
-            {{end}}
-        {{else}}
-            <div class="tab-scroll">
-                <div class="coming-soon-panel">
-                    <div class="coming-soon-title">{{.Labels.Detail.SerialEmptyTitle}}</div>
-                    <p class="coming-soon-text">{{.Labels.Detail.SerialEmptyMessage}}</p>
-                </div>
-            </div>
-        {{end}}
-        {{end}}
-
-        {{/* ═══════════════════════════════════════════════
-             TAB: Transactions
-             ═══════════════════════════════════════════════ */}}
-        {{if eq .ActiveTab "transactions"}}
-        <div class="tab-scroll">
-            {{if .TransactionTable}}
-                {{template "table-card" .TransactionTable}}
-            {{else}}
-                <div class="coming-soon-panel">
-                    <div class="coming-soon-title">{{.Labels.Detail.TransactionEmptyTitle}}</div>
-                    <p class="coming-soon-text">{{.Labels.Detail.TransactionEmptyMessage}}</p>
-                </div>
-            {{end}}
+{{/* ======================================================================
+     TAB: Depreciation
+     ====================================================================== */}}
+{{define "inventory-tab-depreciation"}}
+<div class="tab-scroll">
+    {{if .Depreciation}}
+    <h4 class="inv-section-title">{{.Labels.Depreciation.Title}}</h4>
+    <div class="inv-info-grid">
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Depreciation.Method}}</span>
+            <span class="inv-info-value">{{.Depreciation.Method}}</span>
         </div>
-        {{end}}
-
-        {{/* ═══════════════════════════════════════════════
-             TAB: Audit Trail
-             ═══════════════════════════════════════════════ */}}
-        {{if eq .ActiveTab "audit"}}
-        <div class="tab-scroll">
-            {{if .AuditTable}}
-                {{template "table-card" .AuditTable}}
-            {{end}}
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Depreciation.CostBasis}}</span>
+            <span class="inv-info-value mono">{{.Depreciation.CostBasis}}</span>
         </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Depreciation.SalvageValue}}</span>
+            <span class="inv-info-value mono">{{.Depreciation.SalvageVal}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Depreciation.UsefulLife}}</span>
+            <span class="inv-info-value mono">{{.Depreciation.UsefulLife}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Depreciation.StartDate}}</span>
+            <span class="inv-info-value">{{.Depreciation.StartDate}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Depreciation.Accumulated}}</span>
+            <span class="inv-info-value mono">{{.Depreciation.Accumulated}}</span>
+        </div>
+        <div class="inv-info-item">
+            <span class="inv-info-label">{{.Labels.Depreciation.BookValue}}</span>
+            <span class="inv-info-value mono">{{.Depreciation.BookValue}}</span>
+        </div>
+    </div>
+    {{else}}
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">{{.Labels.Depreciation.NotConfigured}}</div>
+        <p class="coming-soon-text">{{.Labels.Depreciation.Title}}</p>
+        {{if index .Item "id"}}
+        <button class="btn btn--primary btn--sm"
+                hx-get="/action/inventory/detail/{{index .Item "id"}}/depreciation/assign"
+                hx-target="#sheetContent"
+                hx-swap="innerHTML"
+                onclick="Sheet.open(this)">
+            {{.Labels.Depreciation.Configure}}
+        </button>
         {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}
 
+{{/* ======================================================================
+     TAB: Audit Trail
+     ====================================================================== */}}
+{{define "inventory-tab-audit"}}
+<div class="tab-scroll">
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">{{.Labels.Detail.AuditEmptyTitle}}</div>
+        <p class="coming-soon-text">{{.Labels.Detail.AuditEmptyMessage}}</p>
     </div>
 </div>
 {{end}}

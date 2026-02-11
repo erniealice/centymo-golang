@@ -1,0 +1,58 @@
+{{/*
+Depreciation configuration drawer form -- loaded into #sheetContent via HTMX.
+Data: .FormAction, .IsEdit, .ID, .Method, .CostBasis, .SalvageValue, .UsefulLife, .StartDate, .Labels, .MethodOptions, .CommonLabels
+*/}}
+{{define "depreciation-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "method"
+                "Label" .Labels.Method
+                "Value" .Method
+                "Options" .MethodOptions
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "cost_basis"
+                "Label" .Labels.CostBasis
+                "Value" .CostBasis
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "salvage_value"
+                "Label" .Labels.SalvageValue
+                "Value" .SalvageValue
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "useful_life_months"
+                "Label" .Labels.UsefulLife
+                "Value" .UsefulLife
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "start_date"
+                "Label" .Labels.StartDate
+                "Value" .StartDate
+                "Required" true
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

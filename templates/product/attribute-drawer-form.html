@@ -1,0 +1,50 @@
+{{/*
+Product attribute drawer form — loaded into #sheetContent via HTMX.
+Used by the Assign action to add an attribute to a product.
+Data: .ProductID, .FormAction, .CommonLabels, .Labels, .AvailableAttributes
+*/}}
+{{define "attribute-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    <input type="hidden" name="product_id" value="{{.ProductID}}">
+
+    <div class="sheet-body">
+        {{if .AvailableAttributes}}
+        <div class="form-row single">
+            <label class="form-label" for="attribute_id">{{.Labels.Title}}</label>
+            <select name="attribute_id" id="attribute_id" class="form-select" required>
+                <option value="">— Select attribute —</option>
+                {{range .AvailableAttributes}}
+                <option value="{{.ID}}">{{.Name}} ({{.Code}})</option>
+                {{end}}
+            </select>
+        </div>
+        {{else}}
+        <div class="form-row single">
+            <p style="color: var(--color-text-muted); padding: var(--spacing-md);">
+                All available attributes have already been assigned to this product.
+            </p>
+        </div>
+        {{end}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "default_value"
+                "Label" .Labels.DefaultValue
+                "Value" ""
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "toggle" (dict
+                "Name" "active"
+                "Label" "Active"
+                "Checked" true
+                "Value" "true"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
+</form>
+{{end}}

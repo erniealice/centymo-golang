@@ -1,0 +1,42 @@
+/* centymo — product detail page layout and styling
+ *
+ * Re-uses .detail-layout, .detail-tabs, .detail-body, .detail-section-title,
+ * .detail-info-grid, .detail-info-item, .detail-info-label, .detail-info-value
+ * from entydad-user-detail.css (shared via app-shell).
+ *
+ * Only product-specific overrides live here.
+ */
+
+.detail-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* Tab scroll for table-containing tabs */
+.tab-scroll--table {
+    flex: 1 1 0;
+    overflow: auto;
+}
+
+/* Coming-soon placeholder panels */
+.coming-soon-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl) var(--spacing-lg);
+    text-align: center;
+    min-height: 200px;
+}
+.coming-soon-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+.coming-soon-text {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    max-width: 32rem;
+}

@@ -1,0 +1,76 @@
+{{/*
+Serial drawer form -- loaded into #sheetContent via HTMX.
+Used by both Assign and Edit serial actions.
+Data: .FormAction, .IsEdit, .ID, .SerialNumber, .IMEI, .Status, .WarrantyStart, .WarrantyEnd, .PurchaseOrder, .SoldReference, .Labels, .CommonLabels
+*/}}
+{{define "serial-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "serial_number"
+                "Label" .Labels.SerialNumber
+                "Value" .SerialNumber
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "imei"
+                "Label" .Labels.IMEI
+                "Value" .IMEI
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "status"
+                "Label" .Labels.Status
+                "Value" .Status
+                "Options" .StatusOptions
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "warranty_start"
+                "Label" .Labels.WarrantyStart
+                "Value" .WarrantyStart
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "warranty_end"
+                "Label" .Labels.WarrantyEnd
+                "Value" .WarrantyEnd
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "purchase_order"
+                "Label" .Labels.PurchaseOrder
+                "Value" .PurchaseOrder
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "sold_reference"
+                "Label" .Labels.SoldReference
+                "Value" .SoldReference
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

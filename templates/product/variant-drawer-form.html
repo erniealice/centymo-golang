@@ -1,0 +1,60 @@
+{{/*
+Product variant drawer form — loaded into #sheetContent via HTMX.
+Used by both Assign (create) and Edit actions.
+Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .CommonLabels, .Labels
+*/}}
+{{define "variant-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="product_id" value="{{.ProductID}}">
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "sku"
+                "Label" .Labels.SKU
+                "Value" .SKU
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "price_override"
+                "Label" .Labels.PriceOverride
+                "Value" .PriceOverride
+                "Placeholder" "Leave empty to use base price"
+            )}}
+        </div>
+
+        {{if .AttributeOptions}}
+        <div class="form-row single">
+            <label class="form-label">{{.Labels.Attributes}}</label>
+            {{range .AttributeOptions}}
+            <div class="form-row single" style="margin-top: var(--spacing-xs);">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" (printf "attr_%s" .Code)
+                    "Label" .Name
+                    "Value" .Value
+                )}}
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+
+        <div class="form-row single">
+            {{template "toggle" (dict
+                "Name" "active"
+                "Label" "Active"
+                "Checked" .Active
+                "Value" "true"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

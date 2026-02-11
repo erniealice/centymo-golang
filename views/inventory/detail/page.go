@@ -34,6 +34,18 @@ type SerialSummary struct {
 	Reserved  int
 }
 
+// DepreciationInfo holds depreciation policy data for display.
+type DepreciationInfo struct {
+	ID          string
+	Method      string
+	CostBasis   string
+	SalvageVal  string
+	UsefulLife  string
+	StartDate   string
+	Accumulated string
+	BookValue   string
+}
+
 // PageData holds the data for the inventory detail page.
 type PageData struct {
 	types.PageData
@@ -42,10 +54,17 @@ type PageData struct {
 	Labels           centymo.InventoryLabels
 	ActiveTab        string
 	TabItems         []pyeza.TabItem
+	IsSerialized     bool
+	ItemType         string
+	ItemTypeLabel    string
+	ItemTypeVariant  string
+	LocationName     string
+	AvailableQty     string
 	Attributes       []AttributeEntry
 	SerialTable      *types.TableConfig
 	SerialSummary    *SerialSummary
 	TransactionTable *types.TableConfig
+	Depreciation     *DepreciationInfo
 	AuditTable       *types.TableConfig
 }
 
@@ -63,7 +82,7 @@ func NewView(deps *Deps) view.View {
 		name, _ := item["name"].(string)
 		locationID, _ := item["location_id"].(string)
 		locationName := centymo.LocationDisplayName(locationID)
-		headerTitle := name + " — " + locationName
+		headerTitle := name + " \u2014 " + locationName
 
 		activeTab := viewCtx.QueryParams["tab"]
 		if activeTab == "" {
@@ -71,7 +90,14 @@ func NewView(deps *Deps) view.View {
 		}
 
 		l := deps.Labels
-		tabItems := buildTabItems(l, id)
+		itemType, _ := item["item_type"].(string)
+		if itemType == "" {
+			itemType = "non_serialized"
+		}
+		isSerialized := itemType == "serialized"
+		tabItems := buildTabItems(l, id, isSerialized)
+
+		available := computeAvailable(item["quantity_on_hand"], item["quantity_reserved"])
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -89,6 +115,12 @@ func NewView(deps *Deps) view.View {
 			Labels:          l,
 			ActiveTab:       activeTab,
 			TabItems:        tabItems,
+			IsSerialized:    isSerialized,
+			ItemType:        itemType,
+			ItemTypeLabel:   itemTypeDisplayLabel(itemType, l),
+			ItemTypeVariant: itemTypeDisplayVariant(itemType),
+			LocationName:    locationName,
+			AvailableQty:    available,
 		}
 
 		// Load tab-specific data
@@ -101,11 +133,14 @@ func NewView(deps *Deps) view.View {
 
 		case "serials":
 			serials := loadSerials(ctx, deps.DB, id)
-			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels)
+			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id)
 			pageData.SerialSummary = computeSerialSummary(serials)
 
 		case "transactions":
 			pageData.TransactionTable = buildTransactionTable(ctx, deps.DB, id, l, deps.TableLabels)
+
+		case "depreciation":
+			pageData.Depreciation = loadDepreciation(ctx, deps.DB, id, l)
 
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
@@ -115,14 +150,100 @@ func NewView(deps *Deps) view.View {
 	})
 }
 
-func buildTabItems(l centymo.InventoryLabels, id string) []pyeza.TabItem {
-	base := "/app/inventory/" + id
-	return []pyeza.TabItem{
-		{Key: "info", Label: l.Detail.TabBasicInfo, Href: base + "?tab=info", Icon: "icon-info"},
-		{Key: "attributes", Label: l.Detail.TabAttributes, Href: base + "?tab=attributes", Icon: "icon-layers"},
-		{Key: "serials", Label: l.Detail.TabSerials, Href: base + "?tab=serials", Icon: "icon-hash"},
-		{Key: "transactions", Label: l.Detail.TabTransactions, Href: base + "?tab=transactions", Icon: "icon-repeat"},
-		{Key: "audit", Label: l.Detail.TabAuditTrail, Href: base + "?tab=audit", Icon: "icon-clock"},
+// NewTabAction creates an HTMX tab action view that returns only the tab content partial.
+func NewTabAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		id := viewCtx.Request.PathValue("id")
+		tab := viewCtx.Request.PathValue("tab")
+
+		item, err := deps.DB.Read(ctx, "inventory_item", id)
+		if err != nil {
+			log.Printf("Failed to read inventory_item %s: %v", id, err)
+			return view.Error(fmt.Errorf("failed to load inventory item: %w", err))
+		}
+
+		l := deps.Labels
+		itemType, _ := item["item_type"].(string)
+		if itemType == "" {
+			itemType = "non_serialized"
+		}
+
+		available := computeAvailable(item["quantity_on_hand"], item["quantity_reserved"])
+
+		pageData := &PageData{
+			Item:            item,
+			Labels:          l,
+			ActiveTab:       tab,
+			IsSerialized:    itemType == "serialized",
+			ItemType:        itemType,
+			ItemTypeLabel:   itemTypeDisplayLabel(itemType, l),
+			ItemTypeVariant: itemTypeDisplayVariant(itemType),
+			LocationName:    centymo.LocationDisplayName(mustString(item["location_id"])),
+			AvailableQty:    available,
+		}
+
+		switch tab {
+		case "info":
+			// item map has everything
+		case "attributes":
+			pageData.Attributes = loadAttributes(ctx, deps.DB, item)
+		case "serials":
+			serials := loadSerials(ctx, deps.DB, id)
+			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id)
+			pageData.SerialSummary = computeSerialSummary(serials)
+		case "transactions":
+			pageData.TransactionTable = buildTransactionTable(ctx, deps.DB, id, l, deps.TableLabels)
+		case "depreciation":
+			pageData.Depreciation = loadDepreciation(ctx, deps.DB, id, l)
+		case "audit":
+			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
+		}
+
+		templateName := "inventory-tab-" + tab
+		return view.OK(templateName, pageData)
+	})
+}
+
+func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool) []pyeza.TabItem {
+	base := "/app/inventory/detail/" + id
+	tabs := []pyeza.TabItem{
+		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", Icon: "icon-info"},
+		{Key: "attributes", Label: l.Tabs.Attributes, Href: base + "?tab=attributes", Icon: "icon-layers"},
+	}
+	if isSerialized {
+		tabs = append(tabs, pyeza.TabItem{Key: "serials", Label: l.Tabs.Serials, Href: base + "?tab=serials", Icon: "icon-hash"})
+	}
+	tabs = append(tabs,
+		pyeza.TabItem{Key: "transactions", Label: l.Tabs.Transactions, Href: base + "?tab=transactions", Icon: "icon-repeat"},
+		pyeza.TabItem{Key: "depreciation", Label: l.Tabs.Depreciation, Href: base + "?tab=depreciation", Icon: "icon-trending-down"},
+		pyeza.TabItem{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", Icon: "icon-clock"},
+	)
+	return tabs
+}
+
+func itemTypeDisplayLabel(itemType string, l centymo.InventoryLabels) string {
+	switch itemType {
+	case "serialized":
+		return l.ItemType.Serialized
+	case "non_serialized":
+		return l.ItemType.NonSerialized
+	case "consumable":
+		return l.ItemType.Consumable
+	default:
+		return itemType
+	}
+}
+
+func itemTypeDisplayVariant(itemType string) string {
+	switch itemType {
+	case "serialized":
+		return "info"
+	case "non_serialized":
+		return "default"
+	case "consumable":
+		return "success"
+	default:
+		return "default"
 	}
 }
 
@@ -215,7 +336,7 @@ func loadSerials(ctx context.Context, db centymo.DataSource, inventoryItemID str
 	return filterByField(all, "inventory_item_id", inventoryItemID)
 }
 
-func buildSerialTable(serials []map[string]any, l centymo.InventoryLabels, tableLabels types.TableLabels) *types.TableConfig {
+func buildSerialTable(serials []map[string]any, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "serial_number", Label: l.Detail.SerialNumber, Sortable: true},
 		{Key: "imei", Label: l.Detail.IMEI, Sortable: false, Width: "180px"},
@@ -245,6 +366,10 @@ func buildSerialTable(serials []map[string]any, l centymo.InventoryLabels, table
 				{Type: "text", Value: po},
 				{Type: "text", Value: soldRef},
 			},
+			Actions: []types.TableAction{
+				{Type: "edit", Label: l.Serial.Edit, Action: "edit", URL: "/action/inventory/detail/" + inventoryItemID + "/serials/edit/" + id, DrawerTitle: l.Serial.Edit},
+				{Type: "delete", Label: l.Serial.Remove, Action: "delete", URL: "/action/inventory/detail/" + inventoryItemID + "/serials/remove", ItemName: serial},
+			},
 		})
 	}
 
@@ -252,6 +377,7 @@ func buildSerialTable(serials []map[string]any, l centymo.InventoryLabels, table
 
 	cfg := &types.TableConfig{
 		ID:                   "serial-table",
+		RefreshURL:           "/action/inventory/detail/" + inventoryItemID + "/serials/table",
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
@@ -262,6 +388,11 @@ func buildSerialTable(serials []map[string]any, l centymo.InventoryLabels, table
 		EmptyState: types.TableEmptyState{
 			Title:   l.Detail.SerialEmptyTitle,
 			Message: l.Detail.SerialEmptyMessage,
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:     l.Serial.Assign,
+			ActionURL: "/action/inventory/detail/" + inventoryItemID + "/serials/assign",
+			Icon:      "icon-plus",
 		},
 	}
 	types.ApplyTableSettings(cfg)
@@ -276,7 +407,7 @@ func serialStatusVariant(status string) string {
 	case "sold":
 		return "default"
 	case "reserved":
-		return "info"
+		return "warning"
 	case "defective":
 		return "danger"
 	case "returned":
@@ -328,7 +459,7 @@ func buildTransactionTable(ctx context.Context, db centymo.DataSource, inventory
 		id, _ := t["id"].(string)
 		txDate, _ := t["transaction_date"].(string)
 		txType, _ := t["transaction_type"].(string)
-		qty := fmt.Sprintf("%v", t["quantity"])
+		qty := formatQuantity(t["quantity"], txType)
 		ref, _ := t["reference"].(string)
 		serial, _ := t["serial_number"].(string)
 		performer, _ := t["performed_by"].(string)
@@ -350,6 +481,7 @@ func buildTransactionTable(ctx context.Context, db centymo.DataSource, inventory
 
 	cfg := &types.TableConfig{
 		ID:                   "transaction-table",
+		RefreshURL:           "/action/inventory/detail/" + inventoryItemID + "/transactions/table",
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
@@ -360,6 +492,11 @@ func buildTransactionTable(ctx context.Context, db centymo.DataSource, inventory
 		EmptyState: types.TableEmptyState{
 			Title:   l.Detail.TransactionEmptyTitle,
 			Message: l.Detail.TransactionEmptyMessage,
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:     l.Transaction.Record,
+			ActionURL: "/action/inventory/detail/" + inventoryItemID + "/transactions/assign",
+			Icon:      "icon-plus",
 		},
 	}
 	types.ApplyTableSettings(cfg)
@@ -379,8 +516,74 @@ func txTypeVariant(txType string) string {
 		return "warning"
 	case "returned":
 		return "danger"
+	case "write_off":
+		return "danger"
 	default:
 		return "default"
+	}
+}
+
+// formatQuantity formats the quantity with +/- prefix based on transaction type.
+func formatQuantity(qty any, txType string) string {
+	val := fmt.Sprintf("%v", qty)
+	switch txType {
+	case "received", "returned":
+		return "+" + val
+	case "sold", "transferred", "write_off":
+		return "-" + val
+	default:
+		return val
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Depreciation tab
+// ---------------------------------------------------------------------------
+
+func loadDepreciation(ctx context.Context, db centymo.DataSource, inventoryItemID string, l centymo.InventoryLabels) *DepreciationInfo {
+	all, err := db.ListSimple(ctx, "inventory_depreciation")
+	if err != nil {
+		log.Printf("Failed to list inventory_depreciation: %v", err)
+		return nil
+	}
+
+	records := filterByField(all, "inventory_item_id", inventoryItemID)
+	if len(records) == 0 {
+		return nil
+	}
+
+	r := records[0]
+	id, _ := r["id"].(string)
+	method, _ := r["method"].(string)
+	costBasis := fmt.Sprintf("%v", r["cost_basis"])
+	salvageVal := fmt.Sprintf("%v", r["salvage_value"])
+	usefulLife := fmt.Sprintf("%v", r["useful_life_months"])
+	startDate, _ := r["start_date"].(string)
+	accumulated := fmt.Sprintf("%v", r["accumulated_depreciation"])
+	bookValue := fmt.Sprintf("%v", r["book_value"])
+
+	return &DepreciationInfo{
+		ID:          id,
+		Method:      depreciationMethodLabel(method, l),
+		CostBasis:   costBasis,
+		SalvageVal:  salvageVal,
+		UsefulLife:  usefulLife + " months",
+		StartDate:   startDate,
+		Accumulated: accumulated,
+		BookValue:   bookValue,
+	}
+}
+
+func depreciationMethodLabel(method string, l centymo.InventoryLabels) string {
+	switch method {
+	case "straight_line":
+		return l.Depreciation.MethodStraightLine
+	case "declining_balance":
+		return l.Depreciation.MethodDecliningBalance
+	case "sum_of_years":
+		return l.Depreciation.MethodSumOfYears
+	default:
+		return method
 	}
 }
 
@@ -431,4 +634,37 @@ func filterByField(records []map[string]any, field, value string) []map[string]a
 		}
 	}
 	return result
+}
+
+func mustString(v any) string {
+	s, _ := v.(string)
+	return s
+}
+
+func computeAvailable(onHandVal, reservedVal any) string {
+	onHand := toFloat64(onHandVal)
+	reserved := toFloat64(reservedVal)
+	avail := onHand - reserved
+	if avail < 0 {
+		avail = 0
+	}
+	if avail == float64(int64(avail)) {
+		return fmt.Sprintf("%d", int64(avail))
+	}
+	return fmt.Sprintf("%.2f", avail)
+}
+
+func toFloat64(v any) float64 {
+	switch n := v.(type) {
+	case float64:
+		return n
+	case float32:
+		return float64(n)
+	case int:
+		return float64(n)
+	case int64:
+		return float64(n)
+	default:
+		return 0
+	}
 }

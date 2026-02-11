@@ -11,14 +11,22 @@ import (
 
 // InventoryLabels holds all translatable strings for the inventory module.
 type InventoryLabels struct {
-	Page    InventoryPageLabels    `json:"page"`
-	Buttons InventoryButtonLabels  `json:"buttons"`
-	Columns InventoryColumnLabels  `json:"columns"`
-	Empty   InventoryEmptyLabels   `json:"empty"`
-	Form    InventoryFormLabels    `json:"form"`
-	Actions InventoryActionLabels  `json:"actions"`
-	Bulk    InventoryBulkLabels    `json:"bulkActions"`
-	Detail  InventoryDetailLabels  `json:"detail"`
+	Page         InventoryPageLabels         `json:"page"`
+	Buttons      InventoryButtonLabels       `json:"buttons"`
+	Columns      InventoryColumnLabels       `json:"columns"`
+	Empty        InventoryEmptyLabels        `json:"empty"`
+	Form         InventoryFormLabels         `json:"form"`
+	Actions      InventoryActionLabels       `json:"actions"`
+	Bulk         InventoryBulkLabels         `json:"bulkActions"`
+	Detail       InventoryDetailLabels       `json:"detail"`
+	Tabs         InventoryTabLabels          `json:"tabs"`
+	ItemType     InventoryItemTypeLabels     `json:"itemType"`
+	Status       InventoryStatusLabels       `json:"status"`
+	Serial       InventorySerialLabels       `json:"serial"`
+	Transaction  InventoryTransactionLabels  `json:"transaction"`
+	Depreciation InventoryDepreciationLabels `json:"depreciation"`
+	Dashboard    InventoryDashboardLabels    `json:"dashboard"`
+	Movements    InventoryMovementsLabels    `json:"movements"`
 }
 
 type InventoryPageLabels struct {
@@ -130,6 +138,97 @@ type InventoryDetailLabels struct {
 	TransactionEmptyMessage string `json:"transactionEmptyMessage"`
 	AuditEmptyTitle         string `json:"auditEmptyTitle"`
 	AuditEmptyMessage       string `json:"auditEmptyMessage"`
+}
+
+type InventoryTabLabels struct {
+	Info         string `json:"info"`
+	Attributes   string `json:"attributes"`
+	Serials      string `json:"serials"`
+	Transactions string `json:"transactions"`
+	Depreciation string `json:"depreciation"`
+	Audit        string `json:"audit"`
+}
+
+type InventoryItemTypeLabels struct {
+	Serialized    string `json:"serialized"`
+	NonSerialized string `json:"nonSerialized"`
+	Consumable    string `json:"consumable"`
+}
+
+type InventoryStatusLabels struct {
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type InventorySerialLabels struct {
+	Title           string `json:"title"`
+	SerialNumber    string `json:"serialNumber"`
+	IMEI            string `json:"imei"`
+	Status          string `json:"status"`
+	WarrantyStart   string `json:"warrantyStart"`
+	WarrantyEnd     string `json:"warrantyEnd"`
+	PurchaseOrder   string `json:"purchaseOrder"`
+	SoldReference   string `json:"soldReference"`
+	Assign          string `json:"assign"`
+	Edit            string `json:"edit"`
+	Remove          string `json:"remove"`
+	Empty           string `json:"empty"`
+	StatusAvailable string `json:"statusAvailable"`
+	StatusSold      string `json:"statusSold"`
+	StatusReserved  string `json:"statusReserved"`
+	StatusDefective string `json:"statusDefective"`
+	StatusReturned  string `json:"statusReturned"`
+}
+
+type InventoryTransactionLabels struct {
+	Title           string `json:"title"`
+	Type            string `json:"type"`
+	Quantity        string `json:"quantity"`
+	Date            string `json:"date"`
+	Reference       string `json:"reference"`
+	PerformedBy     string `json:"performedBy"`
+	Record          string `json:"record"`
+	Empty           string `json:"empty"`
+	TypeReceived    string `json:"typeReceived"`
+	TypeSold        string `json:"typeSold"`
+	TypeAdjusted    string `json:"typeAdjusted"`
+	TypeTransferred string `json:"typeTransferred"`
+	TypeReturned    string `json:"typeReturned"`
+	TypeWriteOff    string `json:"typeWriteOff"`
+}
+
+type InventoryDepreciationLabels struct {
+	Title                  string `json:"title"`
+	Method                 string `json:"method"`
+	CostBasis              string `json:"costBasis"`
+	SalvageValue           string `json:"salvageValue"`
+	UsefulLife             string `json:"usefulLife"`
+	StartDate              string `json:"startDate"`
+	Accumulated            string `json:"accumulated"`
+	BookValue              string `json:"bookValue"`
+	Configure              string `json:"configure"`
+	Edit                   string `json:"edit"`
+	NotConfigured          string `json:"notConfigured"`
+	MethodStraightLine     string `json:"methodStraightLine"`
+	MethodDecliningBalance string `json:"methodDecliningBalance"`
+	MethodSumOfYears       string `json:"methodSumOfYears"`
+}
+
+type InventoryDashboardLabels struct {
+	Title                string `json:"title"`
+	TotalStockValue      string `json:"totalStockValue"`
+	LowStockAlerts       string `json:"lowStockAlerts"`
+	StockTurnover        string `json:"stockTurnover"`
+	ItemsByLocation      string `json:"itemsByLocation"`
+	DepreciationSummary  string `json:"depreciationSummary"`
+	SerialUnitStatus     string `json:"serialUnitStatus"`
+	RecentMovements      string `json:"recentMovements"`
+	CategoryDistribution string `json:"categoryDistribution"`
+}
+
+type InventoryMovementsLabels struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
 }
 
 // ---------------------------------------------------------------------------
@@ -263,6 +362,11 @@ type ProductLabels struct {
 	Form    ProductFormLabels    `json:"form"`
 	Actions ProductActionLabels  `json:"actions"`
 	Bulk    ProductBulkLabels    `json:"bulkActions"`
+	Tabs    ProductTabLabels     `json:"tabs"`
+	Detail  ProductDetailLabels  `json:"detail"`
+	Status  ProductStatusLabels  `json:"status"`
+	Variant ProductVariantLabels `json:"variant"`
+	Attribute ProductAttributeLabels `json:"attribute"`
 }
 
 type ProductPageLabels struct {
@@ -309,6 +413,45 @@ type ProductActionLabels struct {
 
 type ProductBulkLabels struct {
 	Delete string `json:"delete"`
+}
+
+type ProductTabLabels struct {
+	Info       string `json:"info"`
+	Variants   string `json:"variants"`
+	Attributes string `json:"attributes"`
+	Pricing    string `json:"pricing"`
+}
+
+type ProductDetailLabels struct {
+	Price        string `json:"price"`
+	Currency     string `json:"currency"`
+	Collections  string `json:"collections"`
+	VariantCount string `json:"variantCount"`
+	Status       string `json:"status"`
+}
+
+type ProductStatusLabels struct {
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type ProductVariantLabels struct {
+	Title         string `json:"title"`
+	SKU           string `json:"sku"`
+	PriceOverride string `json:"priceOverride"`
+	Attributes    string `json:"attributes"`
+	Assign        string `json:"assign"`
+	Edit          string `json:"edit"`
+	Remove        string `json:"remove"`
+	Empty         string `json:"empty"`
+}
+
+type ProductAttributeLabels struct {
+	Title        string `json:"title"`
+	DefaultValue string `json:"defaultValue"`
+	Assign       string `json:"assign"`
+	Remove       string `json:"remove"`
+	Empty        string `json:"empty"`
 }
 
 // ---------------------------------------------------------------------------

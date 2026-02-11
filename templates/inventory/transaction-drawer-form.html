@@ -1,0 +1,65 @@
+{{/*
+Transaction (stock movement) drawer form -- loaded into #sheetContent via HTMX.
+Data: .FormAction, .Labels, .TypeOptions, .CommonLabels
+*/}}
+{{define "transaction-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "transaction_type"
+                "Label" .Labels.Type
+                "Value" ""
+                "Options" .TypeOptions
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "quantity"
+                "Label" .Labels.Quantity
+                "Value" ""
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "transaction_date"
+                "Label" .Labels.Date
+                "Value" .Today
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "reference"
+                "Label" .Labels.Reference
+                "Value" ""
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "serial_number"
+                "Label" "Serial Number"
+                "Value" ""
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" "Notes"
+                "Value" ""
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
+</form>
+{{end}}

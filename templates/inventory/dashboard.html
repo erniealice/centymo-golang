@@ -1,17 +1,16 @@
-{{/* Full page — for direct access / non-HTMX */}}
+{{/* Full page -- for direct access / non-HTMX */}}
 {{define "inventory-dashboard"}}
 {{template "app-shell" .}}
 {{end}}
 
-{{/* Content-only partial — for HTMX navigation */}}
+{{/* Content-only partial -- for HTMX navigation */}}
 {{define "inventory-dashboard-content"}}
 <div class="page-content" data-page-css="/assets/css/centymo/centymo-inventory-dashboard.css?v={{.CacheVersion}}">
-    <!-- Stats Row -->
-    <div class="centymo-stats-row">
-        {{template "stat-card" dict "Icon" "icon-briefcase" "Value" "1,247" "Label" "Total Items" "Trend" "+24" "TrendUp" true "Color" "terracotta"}}
-        {{template "stat-card" dict "Icon" "icon-check-circle" "Value" "1,102" "Label" "In Stock" "Trend" "+18" "TrendUp" true "Color" "sage"}}
-        {{template "stat-card" dict "Icon" "icon-alert-triangle" "Value" "89" "Label" "Low Stock" "Trend" "+6" "TrendUp" false "Color" "navy"}}
-        {{template "stat-card" dict "Icon" "icon-x-circle" "Value" "56" "Label" "Out of Stock" "Trend" "-3" "TrendUp" false "Color" "amber"}}
+    <!-- Stats Row: 8 KPI Widgets -->
+    <div class="centymo-stats-row centymo-stats-row--8">
+        {{range .Widgets}}
+        {{template "stat-card" dict "Icon" .Icon "Value" .Value "Label" .Label "Trend" .Trend "TrendUp" .TrendUp "Color" .Color}}
+        {{end}}
     </div>
 
     <!-- Main Grid -->
@@ -56,16 +55,20 @@
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">Recent Activity</h2>
-                <button class="card-btn">View All</button>
+                <a class="card-btn" href="/app/inventory/movements">View All</a>
             </div>
-            <div class="centymo-activity-list">
+            <div class="centymo-activity-list"
+                 hx-get="/action/inventory/dashboard/movements"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <!-- Loaded async via HTMX -->
                 <div class="centymo-activity-item">
                     <div class="centymo-activity-icon client">
                         {{template "icon-plus"}}
                     </div>
                     <div class="centymo-activity-content">
                         <div class="centymo-activity-title">Stock Received</div>
-                        <div class="centymo-activity-desc">50 units — SKU-1042 at Ayala Central</div>
+                        <div class="centymo-activity-desc">50 units -- SKU-1042 at Ayala Central</div>
                     </div>
                     <span class="centymo-activity-time">1h ago</span>
                 </div>
