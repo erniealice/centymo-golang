@@ -33,7 +33,7 @@ func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
-			status = "active"
+			status = "ongoing"
 		}
 
 		records, err := deps.DB.ListSimple(ctx, "revenue")
@@ -127,22 +127,22 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 		amountDisplay := currency + " " + amount
 
 		actions := []types.TableAction{
-			{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/sales/" + id},
+			{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/sales/detail/" + id},
 			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/sales/edit/" + id, DrawerTitle: l.Actions.Edit},
 		}
-		if recordStatus == "active" {
+		if recordStatus == "ongoing" {
 			actions = append(actions, types.TableAction{
-				Type: "deactivate", Label: "Deactivate", Action: "deactivate",
-				URL: "/action/sales/set-status?status=inactive", ItemName: refNumber,
-				ConfirmTitle:   "Deactivate",
-				ConfirmMessage: fmt.Sprintf("Are you sure you want to deactivate %s?", refNumber),
+				Type: "deactivate", Label: "Complete", Action: "deactivate",
+				URL: "/action/sales/status/set?status=complete", ItemName: refNumber,
+				ConfirmTitle:   "Complete",
+				ConfirmMessage: fmt.Sprintf("Are you sure you want to mark %s as complete?", refNumber),
 			})
 		} else {
 			actions = append(actions, types.TableAction{
-				Type: "activate", Label: "Activate", Action: "activate",
-				URL: "/action/sales/set-status?status=active", ItemName: refNumber,
-				ConfirmTitle:   "Activate",
-				ConfirmMessage: fmt.Sprintf("Are you sure you want to activate %s?", refNumber),
+				Type: "activate", Label: "Reactivate", Action: "activate",
+				URL: "/action/sales/status/set?status=ongoing", ItemName: refNumber,
+				ConfirmTitle:   "Reactivate",
+				ConfirmMessage: fmt.Sprintf("Are you sure you want to reactivate %s?", refNumber),
 			})
 		}
 		actions = append(actions, types.TableAction{
@@ -151,7 +151,7 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 
 		rows = append(rows, types.TableRow{
 			ID:   id,
-			Href: "/app/sales/" + id,
+			Href: "/app/sales/detail/" + id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: name},
@@ -174,10 +174,10 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 
 func statusPageTitle(l centymo.SalesLabels, status string) string {
 	switch status {
-	case "active":
-		return l.Page.HeadingActive
-	case "completed":
-		return l.Page.HeadingCompleted
+	case "ongoing":
+		return l.Page.HeadingOngoing
+	case "complete":
+		return l.Page.HeadingComplete
 	case "cancelled":
 		return l.Page.HeadingCancelled
 	default:
@@ -187,10 +187,10 @@ func statusPageTitle(l centymo.SalesLabels, status string) string {
 
 func statusPageCaption(l centymo.SalesLabels, status string) string {
 	switch status {
-	case "active":
-		return l.Page.CaptionActive
-	case "completed":
-		return l.Page.CaptionCompleted
+	case "ongoing":
+		return l.Page.CaptionOngoing
+	case "complete":
+		return l.Page.CaptionComplete
 	case "cancelled":
 		return l.Page.CaptionCancelled
 	default:
@@ -200,35 +200,35 @@ func statusPageCaption(l centymo.SalesLabels, status string) string {
 
 func statusEmptyTitle(l centymo.SalesLabels, status string) string {
 	switch status {
-	case "active":
-		return l.Empty.ActiveTitle
-	case "completed":
-		return l.Empty.CompletedTitle
+	case "ongoing":
+		return l.Empty.OngoingTitle
+	case "complete":
+		return l.Empty.CompleteTitle
 	case "cancelled":
 		return l.Empty.CancelledTitle
 	default:
-		return l.Empty.ActiveTitle
+		return l.Empty.OngoingTitle
 	}
 }
 
 func statusEmptyMessage(l centymo.SalesLabels, status string) string {
 	switch status {
-	case "active":
-		return l.Empty.ActiveMessage
-	case "completed":
-		return l.Empty.CompletedMessage
+	case "ongoing":
+		return l.Empty.OngoingMessage
+	case "complete":
+		return l.Empty.CompleteMessage
 	case "cancelled":
 		return l.Empty.CancelledMessage
 	default:
-		return l.Empty.ActiveMessage
+		return l.Empty.OngoingMessage
 	}
 }
 
 func statusVariant(status string) string {
 	switch status {
-	case "active":
+	case "ongoing":
 		return "info"
-	case "completed":
+	case "complete":
 		return "success"
 	case "cancelled":
 		return "warning"
@@ -241,27 +241,27 @@ func buildBulkActions(common pyeza.CommonLabels, status string) []types.BulkActi
 	actions := []types.BulkAction{}
 
 	switch status {
-	case "active":
+	case "ongoing":
 		actions = append(actions, types.BulkAction{
-			Key:             "deactivate",
-			Label:           "Deactivate",
-			Icon:            "icon-pause",
+			Key:             "complete",
+			Label:           "Mark Complete",
+			Icon:            "icon-check-circle",
 			Variant:         "warning",
-			Endpoint:        "/action/sales/bulk-set-status",
-			ConfirmTitle:    "Deactivate",
-			ConfirmMessage:  "Are you sure you want to deactivate {{count}} sale(s)?",
-			ExtraParamsJSON: `{"target_status":"inactive"}`,
+			Endpoint:        "/action/sales/status/set/bulk",
+			ConfirmTitle:    "Mark Complete",
+			ConfirmMessage:  "Are you sure you want to mark {{count}} sale(s) as complete?",
+			ExtraParamsJSON: `{"target_status":"complete"}`,
 		})
-	case "completed", "cancelled":
+	case "complete", "cancelled":
 		actions = append(actions, types.BulkAction{
-			Key:             "activate",
-			Label:           "Activate",
+			Key:             "reactivate",
+			Label:           "Reactivate",
 			Icon:            "icon-play",
 			Variant:         "primary",
-			Endpoint:        "/action/sales/bulk-set-status",
-			ConfirmTitle:    "Activate",
-			ConfirmMessage:  "Are you sure you want to activate {{count}} sale(s)?",
-			ExtraParamsJSON: `{"target_status":"active"}`,
+			Endpoint:        "/action/sales/status/set/bulk",
+			ConfirmTitle:    "Reactivate",
+			ConfirmMessage:  "Are you sure you want to reactivate {{count}} sale(s)?",
+			ExtraParamsJSON: `{"target_status":"ongoing"}`,
 		})
 	}
 
@@ -270,7 +270,7 @@ func buildBulkActions(common pyeza.CommonLabels, status string) []types.BulkActi
 		Label:          common.Bulk.Delete,
 		Icon:           "icon-trash-2",
 		Variant:        "danger",
-		Endpoint:       "/action/sales/bulk-delete",
+		Endpoint:       "/action/sales/delete/bulk",
 		ConfirmTitle:   common.Bulk.Delete,
 		ConfirmMessage: "Are you sure you want to delete {{count}} sale(s)? This action cannot be undone.",
 	})

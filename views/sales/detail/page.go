@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
+	"strconv"
+	"strings"
+
 	"github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -38,10 +42,17 @@ type PageData struct {
 	Labels          centymo.SalesLabels
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
-	LineItemTable *types.TableConfig
-	TotalAmount   string
-	Payment       *PaymentInfo
-	AuditTable    *types.TableConfig
+	LineItemTable       *types.TableConfig
+	LineItemAddURL      string
+	LineItemDiscountURL string
+	TotalAmount         string
+	Payment             *PaymentInfo
+	PaymentTable     *types.TableConfig
+	PaymentAddURL    string
+	TotalPaid        string
+	RemainingBalance string
+	PaymentStatus    string
+	AuditTable       *types.TableConfig
 }
 
 // NewView creates the sales detail view.
@@ -96,7 +107,9 @@ func NewView(deps *Deps) view.View {
 			}
 			lineItems := filterLineItems(allLineItems, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.LineItemTable = buildLineItemTable(lineItems, l, deps.TableLabels, currency)
+			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id)
+			pageData.LineItemAddURL = fmt.Sprintf("/action/sales/detail/%s/items/add", id)
+			pageData.LineItemDiscountURL = fmt.Sprintf("/action/sales/detail/%s/items/add-discount", id)
 			totalAmount, _ := revenue["total_amount"].(string)
 			pageData.TotalAmount = currency + " " + totalAmount
 
@@ -106,6 +119,27 @@ func NewView(deps *Deps) view.View {
 				log.Printf("Failed to list payments for revenue %s: %v", id, err)
 				allPayments = []map[string]any{}
 			}
+			payments := filterPayments(allPayments, id)
+			currency, _ := revenue["currency"].(string)
+			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id)
+			pageData.PaymentAddURL = fmt.Sprintf("/action/sales/detail/%s/payment/add", id)
+
+			// Calculate totals
+			totalAmount, _ := revenue["total_amount"].(string)
+			totalPaid := sumPayments(payments)
+			totalAmountFloat := parseAmount(totalAmount)
+			remaining := totalAmountFloat - totalPaid
+
+			pageData.TotalPaid = currency + " " + formatAmount(totalPaid)
+			pageData.RemainingBalance = currency + " " + formatAmount(remaining)
+			if remaining <= 0 {
+				pageData.PaymentStatus = "paid"
+			} else if totalPaid > 0 {
+				pageData.PaymentStatus = "partial"
+			} else {
+				pageData.PaymentStatus = "unpaid"
+			}
+			// Keep legacy field for backward compat
 			pageData.Payment = findPayment(allPayments, id, revenue)
 
 		case "audit":
@@ -117,7 +151,7 @@ func NewView(deps *Deps) view.View {
 }
 
 func buildTabItems(l centymo.SalesLabels, id string) []pyeza.TabItem {
-	base := "/app/sales/" + id
+	base := "/app/sales/detail/" + id
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Detail.TabBasicInfo, Href: base + "?tab=info", Icon: "icon-info"},
 		{Key: "items", Label: l.Detail.TabLineItems, Href: base + "?tab=items", Icon: "icon-list"},
@@ -214,6 +248,96 @@ func buildAuditTable(l centymo.SalesLabels, tableLabels types.TableLabels) *type
 	types.ApplyTableSettings(cfg)
 
 	return cfg
+}
+
+// filterPayments filters payments belonging to a specific revenue.
+func filterPayments(all []map[string]any, revenueID string) []map[string]any {
+	result := []map[string]any{}
+	for _, p := range all {
+		rid, _ := p["revenue_id"].(string)
+		if rid == revenueID {
+			result = append(result, p)
+		}
+	}
+	return result
+}
+
+// buildPaymentTable creates the payment table config for the payment tab.
+func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string) *types.TableConfig {
+	columns := []types.TableColumn{
+		{Key: "method", Label: l.Detail.PaymentMethod, Sortable: false},
+		{Key: "amount", Label: l.Detail.AmountPaid, Sortable: false, Width: "140px"},
+		{Key: "reference", Label: "Reference", Sortable: false, Width: "160px"},
+		{Key: "received_by", Label: l.Detail.ReceivedBy, Sortable: false, Width: "150px"},
+		{Key: "date", Label: l.Detail.PaymentDate, Sortable: false, Width: "140px"},
+	}
+
+	rows := []types.TableRow{}
+	for _, p := range payments {
+		id, _ := p["id"].(string)
+		method, _ := p["payment_method"].(string)
+		amount, _ := p["amount_paid"].(string)
+		refNum, _ := p["reference_number"].(string)
+		receivedBy, _ := p["received_by"].(string)
+		paymentDate, _ := p["payment_date"].(string)
+
+		rows = append(rows, types.TableRow{
+			ID: id,
+			Cells: []types.TableCell{
+				{Type: "text", Value: method},
+				{Type: "text", Value: currency + " " + amount},
+				{Type: "text", Value: refNum},
+				{Type: "text", Value: receivedBy},
+				{Type: "text", Value: paymentDate},
+			},
+			Actions: []types.TableAction{
+				{Type: "edit", Label: "Edit", Action: "edit", URL: fmt.Sprintf("/action/sales/detail/%s/payment/edit/%s", revenueID, id), DrawerTitle: "Edit Payment"},
+				{Type: "delete", Label: "Remove", Action: "delete", URL: fmt.Sprintf("/action/sales/detail/%s/payment/remove", revenueID), ItemName: method},
+			},
+		})
+	}
+
+	types.ApplyColumnStyles(columns, rows)
+
+	return &types.TableConfig{
+		ID:      "payment-table",
+		Columns: columns,
+		Rows:    rows,
+		Labels:  tableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   "No payments recorded",
+			Message: "Record a payment to track collections for this sale.",
+		},
+	}
+}
+
+// sumPayments totals the amount_paid across all payment records.
+func sumPayments(payments []map[string]any) float64 {
+	total := 0.0
+	for _, p := range payments {
+		amount, _ := p["amount_paid"].(string)
+		total += parseAmount(amount)
+	}
+	return total
+}
+
+// parseAmount converts a string amount to float64.
+func parseAmount(s string) float64 {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return f
+}
+
+// formatAmount formats a float64 as a 2-decimal string.
+func formatAmount(f float64) string {
+	f = math.Round(f*100) / 100
+	return strconv.FormatFloat(f, 'f', 2, 64)
 }
 
 // findPayment finds the payment record for a given revenue ID.

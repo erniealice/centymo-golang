@@ -1,0 +1,85 @@
+{{/*
+Sales line item drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .InventoryItemID, .InventoryItems, .ID, .RevenueID, .FormAction, .IsEdit, .CommonLabels, .Labels
+*/}}
+{{define "sales-line-item-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="revenue_id" value="{{.RevenueID}}">
+
+    <div class="sheet-body">
+        {{if .InventoryItems}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label" for="inventory_item_id">{{.Labels.InventoryItem}}</label>
+                <select class="form-select" id="inventory_item_id" name="inventory_item_id">
+                    <option value="">-- Select inventory item --</option>
+                    {{range .InventoryItems}}
+                    <option value="{{.Value}}" {{if eq .Value $.InventoryItemID}}selected{{end}}>{{.Label}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+        {{end}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "description"
+                "Label" .Labels.Description
+                "Value" .Description
+                "Required" true
+                "Placeholder" "Item description"
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "quantity"
+                "Label" .Labels.Quantity
+                "Value" .Quantity
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "unit_price"
+                "Label" .Labels.UnitPrice
+                "Value" .UnitPrice
+                "Required" true
+                "Placeholder" "0.00"
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "cost_price"
+                "Label" .Labels.CostPrice
+                "Value" .CostPrice
+                "Placeholder" "0.00"
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "discount"
+                "Label" .Labels.Discount
+                "Value" .Discount
+                "Placeholder" "0.00"
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" "Notes"
+                "Value" .Notes
+                "Placeholder" "Optional notes"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

@@ -44,7 +44,7 @@
             <div class="sale-info-item">
                 <span class="sale-info-label">{{.Labels.Detail.Status}}</span>
                 <span>
-                    <span class="badge badge--{{if eq (index .Revenue "status") "completed"}}success{{else if eq (index .Revenue "status") "cancelled"}}warning{{else}}info{{end}}">
+                    <span class="badge badge--{{if eq (index .Revenue "status") "complete"}}success{{else if eq (index .Revenue "status") "cancelled"}}warning{{else}}info{{end}}">
                         {{index .Revenue "status"}}
                     </span>
                 </span>
@@ -64,21 +64,33 @@
              TAB: Line Items
              ═══════════════════════════════════════════════ */}}
         {{if eq .ActiveTab "items"}}
+        <div class="line-items-toolbar" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
+            <div class="sale-summary-item">
+                <span class="sale-summary-label">{{.Labels.Detail.GrandTotal}}</span>
+                <span class="sale-summary-value">{{.TotalAmount}}</span>
+            </div>
+            <div style="display:flex;gap:0.5rem;">
+                <button type="button" class="btn btn--ghost btn--sm"
+                    hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+                    onclick="Sheet.open('{{.Labels.Detail.AddDiscount}}')">
+                    {{.Labels.Detail.AddDiscount}}
+                </button>
+                <button type="button" class="btn btn-primary toolbar-primary-action"
+                    hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+                    onclick="Sheet.open('{{.Labels.Detail.AddItem}}')">
+                    {{.Labels.Detail.AddItem}}
+                </button>
+            </div>
+        </div>
         {{if .LineItemTable}}
             <div class="tab-scroll">
                 {{template "table-card" .LineItemTable}}
             </div>
-            <div class="sale-summary-row tab-fixed">
-                <div class="sale-summary-item">
-                    <span class="sale-summary-label">{{.Labels.Detail.Total}}</span>
-                    <span class="sale-summary-value">{{.TotalAmount}}</span>
-                </div>
-            </div>
         {{else}}
             <div class="tab-scroll">
                 <div class="coming-soon-panel">
-                    <div class="coming-soon-title">No line items</div>
-                    <p class="coming-soon-text">This sale has no line items.</p>
+                    <div class="coming-soon-title">{{.Labels.Detail.ItemEmptyTitle}}</div>
+                    <p class="coming-soon-text">{{.Labels.Detail.ItemEmptyMessage}}</p>
                 </div>
             </div>
         {{end}}
@@ -88,61 +100,38 @@
              TAB: Payment
              ═══════════════════════════════════════════════ */}}
         {{if eq .ActiveTab "payment"}}
-        <div class="tab-scroll">
-        {{if .Payment}}
-        <div class="payment-card">
-            <div class="payment-card-header">
-                <span class="payment-card-header-title">{{.Labels.Detail.PaymentInfo}}</span>
-                <span class="payment-card-amount">{{.Payment.AmountPaid}}</span>
+        {{if .PaymentTable}}
+            <div class="payment-toolbar" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
+                <div class="payment-summary" style="display:flex;gap:1.5rem;align-items:center;">
+                    <span class="sale-summary-item">
+                        <span class="sale-summary-label">Total Paid</span>
+                        <span class="sale-summary-value payment-total-paid">{{.TotalPaid}}</span>
+                    </span>
+                    <span class="sale-summary-item">
+                        <span class="sale-summary-label">Remaining</span>
+                        <span class="sale-summary-value payment-remaining">{{.RemainingBalance}}</span>
+                    </span>
+                    <span class="badge badge--{{if eq .PaymentStatus "paid"}}success{{else if eq .PaymentStatus "partial"}}warning{{else}}info{{end}} payment-status-badge">
+                        {{.PaymentStatus}}
+                    </span>
+                </div>
+                <button type="button" class="btn btn-primary toolbar-primary-action"
+                    hx-get="{{.PaymentAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+                    onclick="Sheet.open('Record Payment')">
+                    Record Payment
+                </button>
             </div>
-            <div class="payment-card-body">
-                <div class="payment-detail-grid">
-                    <div class="sale-info-item">
-                        <span class="sale-info-label">{{.Labels.Detail.PaymentMethod}}</span>
-                        <div class="payment-icon-badge">{{.Payment.Method}}</div>
-                    </div>
-                    <div class="sale-info-item">
-                        <span class="sale-info-label">{{.Labels.Detail.AmountPaid}}</span>
-                        <span class="sale-info-value mono">{{.Payment.AmountPaid}}</span>
-                    </div>
-                    {{if .Payment.CardLast4}}
-                    <div class="sale-info-item">
-                        <span class="sale-info-label">{{.Labels.Detail.CardDetails}}</span>
-                        <span class="card-mask">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; {{.Payment.CardLast4}}</span>
-                    </div>
-                    {{end}}
-                    <div class="sale-info-item">
-                        <span class="sale-info-label">{{.Labels.Detail.PaymentDate}}</span>
-                        <span class="sale-info-value">{{.Payment.PaymentDate}}</span>
-                    </div>
-                    {{if .Payment.ReceivedBy}}
-                    <div class="sale-info-item">
-                        <span class="sale-info-label">{{.Labels.Detail.ReceivedBy}}</span>
-                        <div class="receiver-block">
-                            <div class="receiver-avatar">
-                                {{if .Payment.ReceivedBy}}
-                                    {{slice .Payment.ReceivedBy 0 1}}
-                                {{end}}
-                            </div>
-                            <div class="receiver-info">
-                                <span class="receiver-name">{{.Payment.ReceivedBy}}</span>
-                                {{if .Payment.ReceivedRole}}
-                                <span class="receiver-role">{{.Payment.ReceivedRole}}</span>
-                                {{end}}
-                            </div>
-                        </div>
-                    </div>
-                    {{end}}
+            <div class="tab-scroll">
+                {{template "table-card" .PaymentTable}}
+            </div>
+        {{else}}
+            <div class="tab-scroll">
+                <div class="coming-soon-panel">
+                    <div class="coming-soon-title">No payment information</div>
+                    <p class="coming-soon-text">Payment details are not yet available for this sale.</p>
                 </div>
             </div>
-        </div>
-        {{else}}
-        <div class="coming-soon-panel">
-            <div class="coming-soon-title">No payment information</div>
-            <p class="coming-soon-text">Payment details are not yet available for this sale.</p>
-        </div>
         {{end}}
-        </div>
         {{end}}
 
         {{/* ═══════════════════════════════════════════════
@@ -158,4 +147,6 @@
 
     </div>
 </div>
+{{template "sheet-form" .}}
+<script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}

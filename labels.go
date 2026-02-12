@@ -249,12 +249,12 @@ type SalesLabels struct {
 
 type SalesPageLabels struct {
 	Heading          string `json:"heading"`
-	HeadingActive    string `json:"headingActive"`
-	HeadingCompleted string `json:"headingCompleted"`
+	HeadingOngoing   string `json:"headingOngoing"`
+	HeadingComplete  string `json:"headingComplete"`
 	HeadingCancelled string `json:"headingCancelled"`
 	Caption          string `json:"caption"`
-	CaptionActive    string `json:"captionActive"`
-	CaptionCompleted string `json:"captionCompleted"`
+	CaptionOngoing   string `json:"captionOngoing"`
+	CaptionComplete  string `json:"captionComplete"`
 	CaptionCancelled string `json:"captionCancelled"`
 }
 
@@ -271,25 +271,26 @@ type SalesColumnLabels struct {
 }
 
 type SalesEmptyLabels struct {
-	ActiveTitle      string `json:"activeTitle"`
-	ActiveMessage    string `json:"activeMessage"`
-	CompletedTitle   string `json:"completedTitle"`
-	CompletedMessage string `json:"completedMessage"`
+	OngoingTitle     string `json:"ongoingTitle"`
+	OngoingMessage   string `json:"ongoingMessage"`
+	CompleteTitle    string `json:"completeTitle"`
+	CompleteMessage  string `json:"completeMessage"`
 	CancelledTitle   string `json:"cancelledTitle"`
 	CancelledMessage string `json:"cancelledMessage"`
 }
 
 type SalesFormLabels struct {
-	Customer          string `json:"customer"`
-	Date              string `json:"date"`
-	Amount            string `json:"amount"`
-	Currency          string `json:"currency"`
-	Reference         string `json:"reference"`
+	Customer             string `json:"customer"`
+	Date                 string `json:"date"`
+	Amount               string `json:"amount"`
+	Currency             string `json:"currency"`
+	Reference            string `json:"reference"`
 	ReferencePlaceholder string `json:"referencePlaceholder"`
-	Status            string `json:"status"`
-	Notes             string `json:"notes"`
-	NotesPlaceholder  string `json:"notesPlaceholder"`
-	Active            string `json:"active"`
+	Status               string `json:"status"`
+	Notes                string `json:"notes"`
+	NotesPlaceholder     string `json:"notesPlaceholder"`
+	Active               string `json:"active"`
+	Location             string `json:"location"`
 }
 
 type SalesActionLabels struct {
@@ -347,6 +348,19 @@ type SalesDetailLabels struct {
 
 	// Totals
 	TotalGrossProfit string `json:"totalGrossProfit"`
+
+	// Line item management
+	AddItem         string `json:"addItem"`
+	AddDiscount     string `json:"addDiscount"`
+	EditItem        string `json:"editItem"`
+	RemoveItem      string `json:"removeItem"`
+	ItemType        string `json:"itemType"`
+	ItemTypeItem    string `json:"itemTypeItem"`
+	ItemTypeDiscount string `json:"itemTypeDiscount"`
+	InventoryItem   string `json:"inventoryItem"`
+	SerialNumber    string `json:"serialNumber"`
+	ItemEmptyTitle   string `json:"itemEmptyTitle"`
+	ItemEmptyMessage string `json:"itemEmptyMessage"`
 }
 
 // ---------------------------------------------------------------------------

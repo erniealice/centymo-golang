@@ -1,0 +1,79 @@
+{{/*
+Payment drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit payment actions.
+Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
+      .ReferenceNumber, .Notes, .ReceivedBy, .ReceivedRole, .PaymentMethods, .CommonLabels
+*/}}
+{{define "sales-payment-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "collection_method_id"
+                "Label" "Payment Method"
+                "Value" .CollectionMethodID
+                "Required" true
+                "Options" .PaymentMethods
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "amount_paid"
+                "Label" "Amount"
+                "Value" .AmountPaid
+                "Required" true
+                "Placeholder" "0.00"
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "currency"
+                "Label" "Currency"
+                "Value" .Currency
+                "Placeholder" "PHP"
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "reference_number"
+                "Label" "Reference Number"
+                "Value" .ReferenceNumber
+                "Placeholder" "OR/Transaction ID"
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "received_by"
+                "Label" "Received By"
+                "Value" .ReceivedBy
+                "Readonly" .IsEdit
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "received_role"
+                "Label" "Role"
+                "Value" .ReceivedRole
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" "Notes"
+                "Value" .Notes
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

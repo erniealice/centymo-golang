@@ -79,15 +79,28 @@ const (
 	InventoryTableURL = "/action/inventory/table/{location}"
 
 	// Sales (revenue) routes
-	SalesDashboardURL  = "/app/sales/dashboard"
-	SalesListURL       = "/app/sales/list/{status}"
-	SalesDetailURL     = "/app/sales/{id}"
-	SalesAddURL        = "/action/sales/add"
-	SalesEditURL       = "/action/sales/edit/{id}"
+	SalesDashboardURL     = "/app/sales/dashboard"
+	SalesListURL          = "/app/sales/list/{status}"
+	SalesDetailURL        = "/app/sales/detail/{id}"
+	SalesAddURL           = "/action/sales/add"
+	SalesEditURL          = "/action/sales/edit/{id}"
 	SalesDeleteURL        = "/action/sales/delete"
-	SalesBulkDeleteURL    = "/action/sales/bulk-delete"
-	SalesSetStatusURL     = "/action/sales/set-status"
-	SalesBulkSetStatusURL = "/action/sales/bulk-set-status"
+	SalesBulkDeleteURL    = "/action/sales/delete/bulk"
+	SalesSetStatusURL     = "/action/sales/status/set"
+	SalesBulkSetStatusURL = "/action/sales/status/set/bulk"
+
+	// Sales line item routes (within sale detail)
+	SalesLineItemTableURL    = "/action/sales/detail/{id}/items/table"
+	SalesLineItemAddURL      = "/action/sales/detail/{id}/items/add"
+	SalesLineItemEditURL     = "/action/sales/detail/{id}/items/edit/{itemId}"
+	SalesLineItemRemoveURL   = "/action/sales/detail/{id}/items/remove"
+	SalesLineItemDiscountURL = "/action/sales/detail/{id}/items/add-discount"
+
+	// Sales payment routes (within sale detail)
+	SalesPaymentTableURL  = "/action/sales/detail/{id}/payment/table"
+	SalesPaymentAddURL    = "/action/sales/detail/{id}/payment/add"
+	SalesPaymentEditURL   = "/action/sales/detail/{id}/payment/edit/{pid}"
+	SalesPaymentRemoveURL = "/action/sales/detail/{id}/payment/remove"
 
 	// Price List routes
 	PriceListListURL       = "/app/price-lists/list/{status}"

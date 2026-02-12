@@ -1,0 +1,36 @@
+{{/*
+Sales discount drawer form — loaded into #sheetContent via HTMX.
+For adding discount line items to a sale.
+Data: .Description, .Amount, .RevenueID, .FormAction, .CommonLabels, .Labels
+*/}}
+{{define "sales-line-item-discount-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    <input type="hidden" name="revenue_id" value="{{.RevenueID}}">
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "description"
+                "Label" .Labels.Description
+                "Value" .Description
+                "Required" true
+                "Placeholder" "Discount description"
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "amount"
+                "Label" .Labels.Discount
+                "Value" .Amount
+                "Required" true
+                "Placeholder" "0.00"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
+</form>
+{{end}}
