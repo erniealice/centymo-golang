@@ -206,17 +206,18 @@ func NewTabAction(deps *Deps) view.View {
 
 func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool) []pyeza.TabItem {
 	base := "/app/inventory/detail/" + id
+	action := "/action/inventory/detail/" + id + "/tab/"
 	tabs := []pyeza.TabItem{
-		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", Icon: "icon-info"},
-		{Key: "attributes", Label: l.Tabs.Attributes, Href: base + "?tab=attributes", Icon: "icon-layers"},
+		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "attributes", Label: l.Tabs.Attributes, Href: base + "?tab=attributes", HxGet: action + "attributes", Icon: "icon-layers"},
 	}
 	if isSerialized {
-		tabs = append(tabs, pyeza.TabItem{Key: "serials", Label: l.Tabs.Serials, Href: base + "?tab=serials", Icon: "icon-hash"})
+		tabs = append(tabs, pyeza.TabItem{Key: "serials", Label: l.Tabs.Serials, Href: base + "?tab=serials", HxGet: action + "serials", Icon: "icon-hash"})
 	}
 	tabs = append(tabs,
-		pyeza.TabItem{Key: "transactions", Label: l.Tabs.Transactions, Href: base + "?tab=transactions", Icon: "icon-repeat"},
-		pyeza.TabItem{Key: "depreciation", Label: l.Tabs.Depreciation, Href: base + "?tab=depreciation", Icon: "icon-trending-down"},
-		pyeza.TabItem{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", Icon: "icon-clock"},
+		pyeza.TabItem{Key: "transactions", Label: l.Tabs.Transactions, Href: base + "?tab=transactions", HxGet: action + "transactions", Icon: "icon-repeat"},
+		pyeza.TabItem{Key: "depreciation", Label: l.Tabs.Depreciation, Href: base + "?tab=depreciation", HxGet: action + "depreciation", Icon: "icon-trending-down"},
+		pyeza.TabItem{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 	)
 	return tabs
 }

@@ -27,16 +27,6 @@ type Deps struct {
 	DB centymo.DataSource
 }
 
-// TabItem represents a tab in the detail view.
-type TabItem struct {
-	Key      string
-	Label    string
-	Href     string
-	Icon     string
-	Count    int
-	Disabled bool
-}
-
 // PageData holds the data for the product detail page.
 type PageData struct {
 	types.PageData
@@ -44,7 +34,7 @@ type PageData struct {
 	Product         *productpb.Product
 	Labels          centymo.ProductLabels
 	ActiveTab       string
-	TabItems        []TabItem
+	TabItems        []pyeza.TabItem
 	ID              string
 	ProductName     string
 	ProductDesc     string
@@ -207,13 +197,14 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 	return pageData, nil
 }
 
-func buildTabItems(id string, l centymo.ProductLabels, variantCount, attributeCount int) []TabItem {
+func buildTabItems(id string, l centymo.ProductLabels, variantCount, attributeCount int) []pyeza.TabItem {
 	base := "/app/products/detail/" + id
-	return []TabItem{
-		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", Icon: "icon-info", Count: 0, Disabled: false},
-		{Key: "variants", Label: l.Tabs.Variants, Href: base + "?tab=variants", Icon: "icon-layers", Count: variantCount, Disabled: false},
-		{Key: "attributes", Label: l.Tabs.Attributes, Href: base + "?tab=attributes", Icon: "icon-sliders", Count: attributeCount, Disabled: false},
-		{Key: "pricing", Label: l.Tabs.Pricing, Href: base + "?tab=pricing", Icon: "icon-tag", Count: 0, Disabled: false},
+	action := "/action/products/detail/" + id + "/tab/"
+	return []pyeza.TabItem{
+		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
+		{Key: "variants", Label: l.Tabs.Variants, Href: base + "?tab=variants", HxGet: action + "variants", Icon: "icon-layers", Count: variantCount, Disabled: false},
+		{Key: "attributes", Label: l.Tabs.Attributes, Href: base + "?tab=attributes", HxGet: action + "attributes", Icon: "icon-sliders", Count: attributeCount, Disabled: false},
+		{Key: "pricing", Label: l.Tabs.Pricing, Href: base + "?tab=pricing", HxGet: action + "pricing", Icon: "icon-tag", Count: 0, Disabled: false},
 	}
 }
 

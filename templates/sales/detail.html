@@ -7,146 +7,146 @@
 {{define "sales-detail-content"}}
 <div class="page-content sale-detail-layout" data-page-css="/assets/css/centymo/sales-detail.css?v={{.CacheVersion}}">
     {{/* ─── Tabs ─── */}}
-    <div class="sale-detail-tabs">
+    <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "sale-tabs")}}
     </div>
 
     {{/* ─── Tab Body ─── */}}
-    <div class="sale-detail-body">
-
-        {{/* ═══════════════════════════════════════════════
-             TAB: Basic Information
-             ═══════════════════════════════════════════════ */}}
+    <div id="tabContent" class="sale-detail-body">
         {{if eq .ActiveTab "info"}}
-        <div class="tab-scroll">
-        <h4 class="sale-section-title">{{.Labels.Detail.InvoiceInfo}}</h4>
-        <div class="sale-info-grid">
-            <div class="sale-info-item">
-                <span class="sale-info-label">{{.Labels.Columns.Reference}}</span>
-                <span class="sale-info-value mono">{{index .Revenue "reference_number"}}</span>
-            </div>
-            <div class="sale-info-item">
-                <span class="sale-info-label">{{.Labels.Detail.Customer}}</span>
-                <span class="sale-info-value">{{index .Revenue "name"}}</span>
-            </div>
-            <div class="sale-info-item">
-                <span class="sale-info-label">{{.Labels.Detail.Date}}</span>
-                <span class="sale-info-value">{{index .Revenue "revenue_date_string"}}</span>
-            </div>
-            <div class="sale-info-item">
-                <span class="sale-info-label">{{.Labels.Detail.Amount}}</span>
-                <span class="sale-info-value mono">{{index .Revenue "currency"}} {{index .Revenue "total_amount"}}</span>
-            </div>
-            <div class="sale-info-item">
-                <span class="sale-info-label">{{.Labels.Detail.Currency}}</span>
-                <span class="sale-info-value">{{index .Revenue "currency"}}</span>
-            </div>
-            <div class="sale-info-item">
-                <span class="sale-info-label">{{.Labels.Detail.Status}}</span>
-                <span>
-                    <span class="badge badge--{{if eq (index .Revenue "status") "complete"}}success{{else if eq (index .Revenue "status") "cancelled"}}warning{{else}}info{{end}}">
-                        {{index .Revenue "status"}}
-                    </span>
-                </span>
-            </div>
-        </div>
-
-        {{if index .Revenue "notes"}}
-        <div style="margin-top: 1.75rem;">
-            <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
-            <div class="sale-notes-block">{{index .Revenue "notes"}}</div>
-        </div>
+        {{template "sales-tab-info" .}}
+        {{else if eq .ActiveTab "items"}}
+        {{template "sales-tab-items" .}}
+        {{else if eq .ActiveTab "payment"}}
+        {{template "sales-tab-payment" .}}
+        {{else if eq .ActiveTab "audit"}}
+        {{template "sales-tab-audit" .}}
         {{end}}
-        </div>
-        {{end}}
-
-        {{/* ═══════════════════════════════════════════════
-             TAB: Line Items
-             ═══════════════════════════════════════════════ */}}
-        {{if eq .ActiveTab "items"}}
-        <div class="line-items-toolbar" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
-            <div class="sale-summary-item">
-                <span class="sale-summary-label">{{.Labels.Detail.GrandTotal}}</span>
-                <span class="sale-summary-value">{{.TotalAmount}}</span>
-            </div>
-            <div style="display:flex;gap:0.5rem;">
-                <button type="button" class="btn btn--ghost btn--sm"
-                    hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-                    onclick="Sheet.open('{{.Labels.Detail.AddDiscount}}')">
-                    {{.Labels.Detail.AddDiscount}}
-                </button>
-                <button type="button" class="btn btn-primary toolbar-primary-action"
-                    hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-                    onclick="Sheet.open('{{.Labels.Detail.AddItem}}')">
-                    {{.Labels.Detail.AddItem}}
-                </button>
-            </div>
-        </div>
-        {{if .LineItemTable}}
-            <div class="tab-scroll">
-                {{template "table-card" .LineItemTable}}
-            </div>
-        {{else}}
-            <div class="tab-scroll">
-                <div class="coming-soon-panel">
-                    <div class="coming-soon-title">{{.Labels.Detail.ItemEmptyTitle}}</div>
-                    <p class="coming-soon-text">{{.Labels.Detail.ItemEmptyMessage}}</p>
-                </div>
-            </div>
-        {{end}}
-        {{end}}
-
-        {{/* ═══════════════════════════════════════════════
-             TAB: Payment
-             ═══════════════════════════════════════════════ */}}
-        {{if eq .ActiveTab "payment"}}
-        {{if .PaymentTable}}
-            <div class="payment-toolbar" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
-                <div class="payment-summary" style="display:flex;gap:1.5rem;align-items:center;">
-                    <span class="sale-summary-item">
-                        <span class="sale-summary-label">Total Paid</span>
-                        <span class="sale-summary-value payment-total-paid">{{.TotalPaid}}</span>
-                    </span>
-                    <span class="sale-summary-item">
-                        <span class="sale-summary-label">Remaining</span>
-                        <span class="sale-summary-value payment-remaining">{{.RemainingBalance}}</span>
-                    </span>
-                    <span class="badge badge--{{if eq .PaymentStatus "paid"}}success{{else if eq .PaymentStatus "partial"}}warning{{else}}info{{end}} payment-status-badge">
-                        {{.PaymentStatus}}
-                    </span>
-                </div>
-                <button type="button" class="btn btn-primary toolbar-primary-action"
-                    hx-get="{{.PaymentAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-                    onclick="Sheet.open('Record Payment')">
-                    Record Payment
-                </button>
-            </div>
-            <div class="tab-scroll">
-                {{template "table-card" .PaymentTable}}
-            </div>
-        {{else}}
-            <div class="tab-scroll">
-                <div class="coming-soon-panel">
-                    <div class="coming-soon-title">No payment information</div>
-                    <p class="coming-soon-text">Payment details are not yet available for this sale.</p>
-                </div>
-            </div>
-        {{end}}
-        {{end}}
-
-        {{/* ═══════════════════════════════════════════════
-             TAB: Audit Trail
-             ═══════════════════════════════════════════════ */}}
-        {{if eq .ActiveTab "audit"}}
-        <div class="tab-scroll">
-            {{if .AuditTable}}
-                {{template "table-card" .AuditTable}}
-            {{end}}
-        </div>
-        {{end}}
-
     </div>
 </div>
 {{template "sheet-form" .}}
 <script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
+
+{{/* Basic Information Tab */}}
+{{define "sales-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="sale-section-title">{{.Labels.Detail.InvoiceInfo}}</h4>
+    <div class="sale-info-grid">
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Columns.Reference}}</span>
+            <span class="sale-info-value mono">{{index .Revenue "reference_number"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Customer}}</span>
+            <span class="sale-info-value">{{index .Revenue "name"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Date}}</span>
+            <span class="sale-info-value">{{index .Revenue "revenue_date_string"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Amount}}</span>
+            <span class="sale-info-value mono">{{index .Revenue "currency"}} {{index .Revenue "total_amount"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Currency}}</span>
+            <span class="sale-info-value">{{index .Revenue "currency"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Status}}</span>
+            <span>
+                <span class="badge badge--{{if eq (index .Revenue "status") "complete"}}success{{else if eq (index .Revenue "status") "cancelled"}}warning{{else}}info{{end}}">
+                    {{index .Revenue "status"}}
+                </span>
+            </span>
+        </div>
+    </div>
+
+    {{if index .Revenue "notes"}}
+    <div style="margin-top: 1.75rem;">
+        <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
+        <div class="sale-notes-block">{{index .Revenue "notes"}}</div>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Line Items Tab */}}
+{{define "sales-tab-items"}}
+<div class="line-items-toolbar" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
+    <div class="sale-summary-item">
+        <span class="sale-summary-label">{{.Labels.Detail.GrandTotal}}</span>
+        <span class="sale-summary-value">{{.TotalAmount}}</span>
+    </div>
+    <div style="display:flex;gap:0.5rem;">
+        <button type="button" class="btn btn--ghost btn--sm"
+            hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="Sheet.open('{{.Labels.Detail.AddDiscount}}')">
+            {{.Labels.Detail.AddDiscount}}
+        </button>
+        <button type="button" class="btn btn-primary toolbar-primary-action"
+            hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="Sheet.open('{{.Labels.Detail.AddItem}}')">
+            {{.Labels.Detail.AddItem}}
+        </button>
+    </div>
+</div>
+{{if .LineItemTable}}
+    <div class="tab-scroll">
+        {{template "table-card" .LineItemTable}}
+    </div>
+{{else}}
+    <div class="tab-scroll">
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">{{.Labels.Detail.ItemEmptyTitle}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.ItemEmptyMessage}}</p>
+        </div>
+    </div>
+{{end}}
+{{end}}
+
+{{/* Payment Tab */}}
+{{define "sales-tab-payment"}}
+{{if .PaymentTable}}
+    <div class="payment-toolbar" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
+        <div class="payment-summary" style="display:flex;gap:1.5rem;align-items:center;">
+            <span class="sale-summary-item">
+                <span class="sale-summary-label">Total Paid</span>
+                <span class="sale-summary-value payment-total-paid">{{.TotalPaid}}</span>
+            </span>
+            <span class="sale-summary-item">
+                <span class="sale-summary-label">Remaining</span>
+                <span class="sale-summary-value payment-remaining">{{.RemainingBalance}}</span>
+            </span>
+            <span class="badge badge--{{if eq .PaymentStatus "paid"}}success{{else if eq .PaymentStatus "partial"}}warning{{else}}info{{end}} payment-status-badge">
+                {{.PaymentStatus}}
+            </span>
+        </div>
+        <button type="button" class="btn btn-primary toolbar-primary-action"
+            hx-get="{{.PaymentAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="Sheet.open('Record Payment')">
+            Record Payment
+        </button>
+    </div>
+    <div class="tab-scroll">
+        {{template "table-card" .PaymentTable}}
+    </div>
+{{else}}
+    <div class="tab-scroll">
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">No payment information</div>
+            <p class="coming-soon-text">Payment details are not yet available for this sale.</p>
+        </div>
+    </div>
+{{end}}
+{{end}}
+
+{{/* Audit Trail Tab */}}
+{{define "sales-tab-audit"}}
+<div class="tab-scroll">
+    {{if .AuditTable}}
+        {{template "table-card" .AuditTable}}
+    {{end}}
+</div>
 {{end}}

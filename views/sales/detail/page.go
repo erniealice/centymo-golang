@@ -152,12 +152,93 @@ func NewView(deps *Deps) view.View {
 
 func buildTabItems(l centymo.SalesLabels, id string) []pyeza.TabItem {
 	base := "/app/sales/detail/" + id
+	action := "/action/sales/detail/" + id + "/tab/"
 	return []pyeza.TabItem{
-		{Key: "info", Label: l.Detail.TabBasicInfo, Href: base + "?tab=info", Icon: "icon-info"},
-		{Key: "items", Label: l.Detail.TabLineItems, Href: base + "?tab=items", Icon: "icon-list"},
-		{Key: "payment", Label: l.Detail.TabPayment, Href: base + "?tab=payment", Icon: "icon-credit-card"},
-		{Key: "audit", Label: l.Detail.TabAuditTrail, Href: base + "?tab=audit", Icon: "icon-clock"},
+		{Key: "info", Label: l.Detail.TabBasicInfo, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "items", Label: l.Detail.TabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
+		{Key: "payment", Label: l.Detail.TabPayment, Href: base + "?tab=payment", HxGet: action + "payment", Icon: "icon-credit-card"},
+		{Key: "audit", Label: l.Detail.TabAuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 	}
+}
+
+// NewTabAction creates the tab action view (partial — returns only the tab content).
+func NewTabAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		id := viewCtx.Request.PathValue("id")
+		tab := viewCtx.Request.PathValue("tab")
+		if tab == "" {
+			tab = "info"
+		}
+
+		revenue, err := deps.DB.Read(ctx, "revenue", id)
+		if err != nil {
+			log.Printf("Failed to read revenue %s: %v", id, err)
+			return view.Error(fmt.Errorf("failed to load sale: %w", err))
+		}
+
+		l := deps.Labels
+		pageData := &PageData{
+			PageData: types.PageData{
+				CacheVersion: viewCtx.CacheVersion,
+				CommonLabels: deps.CommonLabels,
+			},
+			Revenue:   revenue,
+			Labels:    l,
+			ActiveTab: tab,
+			TabItems:  buildTabItems(l, id),
+		}
+
+		switch tab {
+		case "info":
+			// revenue map has everything
+		case "items":
+			allLineItems, err := deps.DB.ListSimple(ctx, "revenue_line_item")
+			if err != nil {
+				log.Printf("Failed to list line items for revenue %s: %v", id, err)
+				allLineItems = []map[string]any{}
+			}
+			lineItems := filterLineItems(allLineItems, id)
+			currency, _ := revenue["currency"].(string)
+			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id)
+			pageData.LineItemAddURL = fmt.Sprintf("/action/sales/detail/%s/items/add", id)
+			pageData.LineItemDiscountURL = fmt.Sprintf("/action/sales/detail/%s/items/add-discount", id)
+			totalAmount, _ := revenue["total_amount"].(string)
+			pageData.TotalAmount = currency + " " + totalAmount
+
+		case "payment":
+			allPayments, err := deps.DB.ListSimple(ctx, "revenue_payment")
+			if err != nil {
+				log.Printf("Failed to list payments for revenue %s: %v", id, err)
+				allPayments = []map[string]any{}
+			}
+			payments := filterPayments(allPayments, id)
+			currency, _ := revenue["currency"].(string)
+			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id)
+			pageData.PaymentAddURL = fmt.Sprintf("/action/sales/detail/%s/payment/add", id)
+
+			totalAmount, _ := revenue["total_amount"].(string)
+			totalPaid := sumPayments(payments)
+			totalAmountFloat := parseAmount(totalAmount)
+			remaining := totalAmountFloat - totalPaid
+
+			pageData.TotalPaid = currency + " " + formatAmount(totalPaid)
+			pageData.RemainingBalance = currency + " " + formatAmount(remaining)
+			if remaining <= 0 {
+				pageData.PaymentStatus = "paid"
+			} else if totalPaid > 0 {
+				pageData.PaymentStatus = "partial"
+			} else {
+				pageData.PaymentStatus = "unpaid"
+			}
+			pageData.Payment = findPayment(allPayments, id, revenue)
+
+		case "audit":
+			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
+		}
+
+		templateName := "sales-tab-" + tab
+		return view.OK(templateName, pageData)
+	})
 }
 
 func filterLineItems(all []map[string]any, revenueID string) []map[string]any {

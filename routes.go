@@ -89,6 +89,9 @@ const (
 	SalesSetStatusURL     = "/action/sales/status/set"
 	SalesBulkSetStatusURL = "/action/sales/status/set/bulk"
 
+	// Sales tab action route
+	SalesTabActionURL = "/action/sales/detail/{id}/tab/{tab}"
+
 	// Sales line item routes (within sale detail)
 	SalesLineItemTableURL    = "/action/sales/detail/{id}/items/table"
 	SalesLineItemAddURL      = "/action/sales/detail/{id}/items/add"
@@ -109,6 +112,8 @@ const (
 	PriceListEditURL       = "/action/price-lists/edit/{id}"
 	PriceListDeleteURL     = "/action/price-lists/delete"
 	PriceListBulkDeleteURL = "/action/price-lists/bulk-delete"
+
+	PriceListTabActionURL = "/action/price-lists/{id}/tab/{tab}"
 
 	// Price Product routes (within price list detail)
 	PriceProductAddURL    = "/action/price-lists/{id}/products/add"

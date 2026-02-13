@@ -30,17 +30,10 @@ type PageData struct {
 	ContentTemplate string
 	PriceList       *pricelistpb.PriceList
 	ActiveTab       string
-	Tabs            []TabConfig
+	TabItems        []pyeza.TabItem
+	ID              string
 	PricesTable     *types.TableConfig
 	Labels          centymo.PriceListLabels
-}
-
-// TabConfig defines a single tab in the detail view.
-type TabConfig struct {
-	Key    string
-	Label  string
-	Active bool
-	URL    string
 }
 
 // NewView creates the price list detail view.
@@ -70,17 +63,14 @@ func NewView(deps *Deps) view.View {
 		name := priceList.GetName()
 		description := priceList.GetDescription()
 
-		tabs := []TabConfig{
-			{Key: "basic", Label: deps.Labels.Detail.BasicInfo, Active: tab == "basic", URL: fmt.Sprintf("/app/price-lists/%s?tab=basic", id)},
-			{Key: "prices", Label: deps.Labels.Detail.Prices, Active: tab == "prices", URL: fmt.Sprintf("/app/price-lists/%s?tab=prices", id)},
-		}
+		tabItems := buildTabItems(id, deps.Labels)
 
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          name,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "price-lists",
+				ActiveNav:      "sales",
 				HeaderTitle:    name,
 				HeaderSubtitle: description,
 				HeaderIcon:     "icon-tag",
@@ -89,7 +79,8 @@ func NewView(deps *Deps) view.View {
 			ContentTemplate: "pricelist-detail-content",
 			PriceList:       priceList,
 			ActiveTab:       tab,
-			Tabs:            tabs,
+			TabItems:        tabItems,
+			ID:              id,
 			Labels:          deps.Labels,
 		}
 
@@ -104,6 +95,64 @@ func NewView(deps *Deps) view.View {
 
 		return view.OK("pricelist-detail", pageData)
 	})
+}
+
+// NewTabAction creates the tab action view (partial — returns only the tab content).
+// Handles GET /action/price-lists/{id}/tab/{tab}
+func NewTabAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		id := viewCtx.Request.PathValue("id")
+		tab := viewCtx.Request.PathValue("tab")
+		if tab == "" {
+			tab = "basic"
+		}
+
+		resp, err := deps.ReadPriceList(ctx, &pricelistpb.ReadPriceListRequest{
+			Data: &pricelistpb.PriceList{Id: id},
+		})
+		if err != nil {
+			log.Printf("Failed to read price list %s: %v", id, err)
+			return view.Error(fmt.Errorf("failed to load price list: %w", err))
+		}
+
+		data := resp.GetData()
+		if len(data) == 0 {
+			return view.Error(fmt.Errorf("price list not found"))
+		}
+		priceList := data[0]
+
+		pageData := &PageData{
+			PageData: types.PageData{
+				CacheVersion: viewCtx.CacheVersion,
+				CommonLabels: deps.CommonLabels,
+			},
+			PriceList: priceList,
+			ActiveTab: tab,
+			TabItems:  buildTabItems(id, deps.Labels),
+			ID:        id,
+			Labels:    deps.Labels,
+		}
+
+		if tab == "prices" {
+			pricesTable, err := buildPricesTable(ctx, deps, id)
+			if err != nil {
+				log.Printf("Failed to load price products for price list %s: %v", id, err)
+			}
+			pageData.PricesTable = pricesTable
+		}
+
+		templateName := "pricelist-detail-" + tab
+		return view.OK(templateName, pageData)
+	})
+}
+
+func buildTabItems(id string, labels centymo.PriceListLabels) []pyeza.TabItem {
+	base := "/app/price-lists/" + id
+	action := "/action/price-lists/" + id + "/tab/"
+	return []pyeza.TabItem{
+		{Key: "basic", Label: labels.Detail.BasicInfo, Href: base + "?tab=basic", HxGet: action + "basic"},
+		{Key: "prices", Label: labels.Detail.Prices, Href: base + "?tab=prices", HxGet: action + "prices"},
+	}
 }
 
 func buildPricesTable(ctx context.Context, deps *Deps, priceListID string) (*types.TableConfig, error) {

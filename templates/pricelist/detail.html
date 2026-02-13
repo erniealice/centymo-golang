@@ -3,32 +3,14 @@
 {{end}}
 
 {{define "pricelist-detail-content"}}
-<div class="page-content">
-    {{/* Back link */}}
-    <div style="margin-bottom: var(--spacing-md);">
-        <a href="/app/price-lists/list/active" class="btn btn--ghost btn--sm">
-            ← Back to Price Lists
-        </a>
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/pricelist-detail.css?v={{.CacheVersion}}">
+    {{/* --- HTMX Tab Buttons --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "pricelist-detail-tabs")}}
     </div>
 
-    {{/* Tab navigation */}}
-    <div class="tabs">
-        <div class="tabs__list" role="tablist">
-            {{range .Tabs}}
-            <button class="tabs__tab{{if .Active}} tabs__tab--active{{end}}"
-                    role="tab"
-                    hx-get="{{.URL}}"
-                    hx-target="#tab-content"
-                    hx-swap="innerHTML"
-                    aria-selected="{{.Active}}">
-                {{.Label}}
-            </button>
-            {{end}}
-        </div>
-    </div>
-
-    {{/* Tab content */}}
-    <div id="tab-content" class="tabs__panel">
+    {{/* --- Tab Content Area --- */}}
+    <div id="tabContent" class="detail-body">
         {{if eq .ActiveTab "basic"}}
         {{template "pricelist-detail-basic" .}}
         {{else if eq .ActiveTab "prices"}}
@@ -40,31 +22,31 @@
 
 {{/* Basic Information Tab */}}
 {{define "pricelist-detail-basic"}}
-<div class="detail-card">
-    <div class="detail-header">
-        <h3>{{.Labels.Detail.BasicInfo}}</h3>
-    </div>
-    <div class="detail-grid">
-        <div class="detail-field">
-            <label>{{.Labels.Form.Name}}</label>
-            <span>{{.PriceList.GetName}}</span>
+<div class="tab-scroll">
+    <h4 class="detail-section-title">{{.Labels.Detail.BasicInfo}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Name}}</span>
+            <span class="detail-info-value">{{.PriceList.GetName}}</span>
         </div>
-        <div class="detail-field">
-            <label>{{.Labels.Form.Description}}</label>
-            <span>{{if .PriceList.GetDescription}}{{.PriceList.GetDescription}}{{else}}—{{end}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Description}}</span>
+            <span class="detail-info-value">{{if .PriceList.GetDescription}}{{.PriceList.GetDescription}}{{else}}—{{end}}</span>
         </div>
-        <div class="detail-field">
-            <label>{{.Labels.Form.DateStart}}</label>
-            <span>{{.PriceList.GetDateStartString}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.DateStart}}</span>
+            <span class="detail-info-value">{{.PriceList.GetDateStartString}}</span>
         </div>
-        <div class="detail-field">
-            <label>{{.Labels.Form.DateEnd}}</label>
-            <span>{{if .PriceList.GetDateEndString}}{{.PriceList.GetDateEndString}}{{else}}—{{end}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.DateEnd}}</span>
+            <span class="detail-info-value">{{if .PriceList.GetDateEndString}}{{.PriceList.GetDateEndString}}{{else}}—{{end}}</span>
         </div>
-        <div class="detail-field">
-            <label>{{.Labels.Columns.Status}}</label>
-            <span class="badge badge--{{if .PriceList.GetActive}}success{{else}}warning{{end}}">
-                {{if .PriceList.GetActive}}Active{{else}}Inactive{{end}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span>
+                <span class="badge badge--{{if .PriceList.GetActive}}success{{else}}warning{{end}}">
+                    {{if .PriceList.GetActive}}Active{{else}}Inactive{{end}}
+                </span>
             </span>
         </div>
     </div>
@@ -78,13 +60,9 @@
     {{template "table-card" .PricesTable}}
 </div>
 {{else}}
-<div class="detail-card">
-    <div style="padding: var(--spacing-xl); color: var(--color-text-muted); text-align: center;">
-        <p>No prices configured for this price list.</p>
-        <p style="margin-top: var(--spacing-sm); font-size: var(--font-size-sm);">
-            Add products to this price list to configure pricing.
-        </p>
-    </div>
+<div class="coming-soon-panel">
+    <div class="coming-soon-title">No prices configured</div>
+    <p class="coming-soon-text">Add products to this price list to configure pricing.</p>
 </div>
 {{end}}
 {{end}}
