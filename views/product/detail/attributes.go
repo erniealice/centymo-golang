@@ -11,6 +11,9 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	productattributepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_attribute"
 )
 
 // AvailableAttribute represents a global attribute that can be assigned to a product.
@@ -41,22 +44,15 @@ type AttributeDeps struct {
 	Labels       centymo.ProductLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
-}
 
-// NewAttributesTableView returns a view that renders only the attributes table (for HTMX refresh).
-func NewAttributesTableView(deps *AttributeDeps) view.View {
-	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		productID := viewCtx.Request.PathValue("id")
+	// Typed proto funcs for global attributes
+	ListAttributes func(ctx context.Context, req *commonpb.ListAttributesRequest) (*commonpb.ListAttributesResponse, error)
+	ReadAttribute  func(ctx context.Context, req *commonpb.ReadAttributeRequest) (*commonpb.ReadAttributeResponse, error)
 
-		detailDeps := &Deps{
-			DB:          deps.DB,
-			Labels:      deps.Labels,
-			TableLabels: deps.TableLabels,
-		}
-
-		tableConfig := buildAttributesTable(ctx, detailDeps, productID)
-		return view.OK("table-card", tableConfig)
-	})
+	// Typed proto funcs for product_attribute
+	ListProductAttributes  func(ctx context.Context, req *productattributepb.ListProductAttributesRequest) (*productattributepb.ListProductAttributesResponse, error)
+	CreateProductAttribute func(ctx context.Context, req *productattributepb.CreateProductAttributeRequest) (*productattributepb.CreateProductAttributeResponse, error)
+	DeleteProductAttribute func(ctx context.Context, req *productattributepb.DeleteProductAttributeRequest) (*productattributepb.DeleteProductAttributeResponse, error)
 }
 
 // NewAttributeAssignView creates the attribute assign action (GET = form, POST = create).
@@ -67,32 +63,34 @@ func NewAttributeAssignView(deps *AttributeDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			// Load all global attributes
 			var available []AvailableAttribute
-			if deps.DB != nil {
-				allAttrs, err := deps.DB.ListSimple(ctx, "attribute")
+			if deps.ListAttributes != nil {
+				attrResp, err := deps.ListAttributes(ctx, &commonpb.ListAttributesRequest{})
 				if err != nil {
 					log.Printf("Failed to list global attributes: %v", err)
 				} else {
 					// Load already-assigned attributes for this product
 					assigned := make(map[string]bool)
-					productAttrs, err := deps.DB.ListSimple(ctx, "product_attribute")
-					if err == nil {
-						for _, pa := range productAttrs {
-							if pid, _ := pa["product_id"].(string); pid == productID {
-								if aid, _ := pa["attribute_id"].(string); aid != "" {
-									assigned[aid] = true
+					if deps.ListProductAttributes != nil {
+						paResp, err := deps.ListProductAttributes(ctx, &productattributepb.ListProductAttributesRequest{})
+						if err == nil {
+							for _, pa := range paResp.GetData() {
+								if pa.GetProductId() == productID {
+									if aid := pa.GetAttributeId(); aid != "" {
+										assigned[aid] = true
+									}
 								}
 							}
 						}
 					}
 
 					// Filter to unassigned only
-					for _, a := range allAttrs {
-						aid, _ := a["id"].(string)
+					for _, a := range attrResp.GetData() {
+						aid := a.GetId()
 						if assigned[aid] {
 							continue
 						}
-						name, _ := a["name"].(string)
-						code, _ := a["code"].(string)
+						name := a.GetName()
+						code := a.GetCode()
 						available = append(available, AvailableAttribute{
 							ID:   aid,
 							Name: name,
@@ -117,44 +115,48 @@ func NewAttributeAssignView(deps *AttributeDeps) view.View {
 
 		// POST — create product_attribute record
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return htmxError("Invalid form data")
+			return HtmxError("Invalid form data")
 		}
 
 		r := viewCtx.Request
 		attributeID := r.FormValue("attribute_id")
 		if attributeID == "" {
-			return htmxError("Please select an attribute")
+			return HtmxError("Please select an attribute")
 		}
-
-		active := r.FormValue("active") == "true"
 
 		// Look up attribute name and code for denormalized storage
 		attrName := ""
 		attrCode := ""
-		if deps.DB != nil {
-			attr, err := deps.DB.Read(ctx, "attribute", attributeID)
-			if err == nil {
-				attrName, _ = attr["name"].(string)
-				attrCode, _ = attr["code"].(string)
+		if deps.ReadAttribute != nil {
+			readResp, err := deps.ReadAttribute(ctx, &commonpb.ReadAttributeRequest{
+				Data: &commonpb.Attribute{Id: attributeID},
+			})
+			if err == nil && len(readResp.GetData()) > 0 {
+				attr := readResp.GetData()[0]
+				attrName = attr.GetName()
+				attrCode = attr.GetCode()
 			}
 		}
 
-		data := map[string]any{
-			"product_id":     productID,
-			"attribute_id":   attributeID,
-			"attribute_name": attrName,
-			"attribute_code": attrCode,
-			"default_value":  r.FormValue("default_value"),
-			"active":         active,
-		}
+		defaultValue := r.FormValue("default_value")
 
-		_, err := deps.DB.Create(ctx, "product_attribute", data)
+		_, err := deps.CreateProductAttribute(ctx, &productattributepb.CreateProductAttributeRequest{
+			Data: &productattributepb.ProductAttribute{
+				ProductId:    productID,
+				AttributeId:  attributeID,
+				Value:        defaultValue,
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to create product attribute: %v", err)
-			return htmxError("Failed to assign attribute")
+			return HtmxError("Failed to assign attribute")
 		}
 
-		return htmxSuccess("product-attributes-table")
+		// attrName and attrCode are looked up for logging/debugging but stored via the Attribute relation
+		_ = attrName
+		_ = attrCode
+
+		return HtmxSuccess("product-attributes-table")
 	})
 }
 
@@ -167,15 +169,25 @@ func NewAttributeRemoveView(deps *AttributeDeps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return htmxError("Product attribute ID is required")
+			return HtmxError("Product attribute ID is required")
 		}
 
-		err := deps.DB.Delete(ctx, "product_attribute", id)
+		_, err := deps.DeleteProductAttribute(ctx, &productattributepb.DeleteProductAttributeRequest{
+			Data: &productattributepb.ProductAttribute{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to delete product attribute %s: %v", id, err)
-			return htmxError("Failed to remove attribute")
+			return HtmxError("Failed to remove attribute")
 		}
 
-		return htmxSuccess("product-attributes-table")
+		return HtmxSuccess("product-attributes-table")
 	})
+}
+
+// strPtr returns a pointer to the string, or nil if empty.
+func strPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

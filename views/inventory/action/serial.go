@@ -8,6 +8,8 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+
+	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 )
 
 // SerialFormLabels holds i18n labels for the serial drawer form.
@@ -87,18 +89,17 @@ func NewSerialAssignAction(deps *Deps) view.View {
 		}
 
 		r := viewCtx.Request
-		data := map[string]any{
-			"inventory_item_id": inventoryItemID,
-			"serial_number":     r.FormValue("serial_number"),
-			"imei":              r.FormValue("imei"),
-			"status":            r.FormValue("status"),
-			"warranty_start":    r.FormValue("warranty_start"),
-			"warranty_end":      r.FormValue("warranty_end"),
-			"purchase_order":    r.FormValue("purchase_order"),
-			"sold_reference":    r.FormValue("sold_reference"),
+		data := &inventoryserialpb.InventorySerial{
+			InventoryItemId: inventoryItemID,
+			SerialNumber:    r.FormValue("serial_number"),
+			Imei:            strPtr(r.FormValue("imei")),
+			Status:          r.FormValue("status"),
+			WarrantyStart:   strPtr(r.FormValue("warranty_start")),
+			WarrantyEnd:     strPtr(r.FormValue("warranty_end")),
+			PurchaseOrder:   strPtr(r.FormValue("purchase_order")),
 		}
 
-		_, err := deps.DB.Create(ctx, "inventory_serial", data)
+		_, err := deps.CreateInventorySerial(ctx, &inventoryserialpb.CreateInventorySerialRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create serial: %v", err)
 			return centymo.HTMXError("Failed to create serial")
@@ -115,31 +116,29 @@ func NewSerialEditAction(deps *Deps) view.View {
 		serialID := viewCtx.Request.PathValue("sid")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			record, err := deps.DB.Read(ctx, "inventory_serial", serialID)
+			resp, err := deps.ReadInventorySerial(ctx, &inventoryserialpb.ReadInventorySerialRequest{
+				Data: &inventoryserialpb.InventorySerial{Id: serialID},
+			})
 			if err != nil {
 				log.Printf("Failed to read serial %s: %v", serialID, err)
 				return centymo.HTMXError("Serial not found")
 			}
-
-			serialNumber, _ := record["serial_number"].(string)
-			imei, _ := record["imei"].(string)
-			status, _ := record["status"].(string)
-			warrantyStart, _ := record["warranty_start"].(string)
-			warrantyEnd, _ := record["warranty_end"].(string)
-			po, _ := record["purchase_order"].(string)
-			soldRef, _ := record["sold_reference"].(string)
+			records := resp.GetData()
+			if len(records) == 0 {
+				return centymo.HTMXError("Serial not found")
+			}
+			record := records[0]
 
 			return view.OK("serial-drawer-form", &SerialFormData{
 				FormAction:    "/action/inventory/detail/" + inventoryItemID + "/serials/edit/" + serialID,
 				IsEdit:        true,
 				ID:            serialID,
-				SerialNumber:  serialNumber,
-				IMEI:          imei,
-				Status:        status,
-				WarrantyStart: warrantyStart,
-				WarrantyEnd:   warrantyEnd,
-				PurchaseOrder: po,
-				SoldReference: soldRef,
+				SerialNumber:  record.GetSerialNumber(),
+				IMEI:          record.GetImei(),
+				Status:        record.GetStatus(),
+				WarrantyStart: record.GetWarrantyStart(),
+				WarrantyEnd:   record.GetWarrantyEnd(),
+				PurchaseOrder: record.GetPurchaseOrder(),
 				Labels:        serialFormLabels(viewCtx.T),
 				StatusOptions: serialStatusOptions(viewCtx.T),
 				CommonLabels:  nil,
@@ -152,17 +151,17 @@ func NewSerialEditAction(deps *Deps) view.View {
 		}
 
 		r := viewCtx.Request
-		data := map[string]any{
-			"serial_number":  r.FormValue("serial_number"),
-			"imei":           r.FormValue("imei"),
-			"status":         r.FormValue("status"),
-			"warranty_start": r.FormValue("warranty_start"),
-			"warranty_end":   r.FormValue("warranty_end"),
-			"purchase_order": r.FormValue("purchase_order"),
-			"sold_reference": r.FormValue("sold_reference"),
+		data := &inventoryserialpb.InventorySerial{
+			Id:            serialID,
+			SerialNumber:  r.FormValue("serial_number"),
+			Imei:          strPtr(r.FormValue("imei")),
+			Status:        r.FormValue("status"),
+			WarrantyStart: strPtr(r.FormValue("warranty_start")),
+			WarrantyEnd:   strPtr(r.FormValue("warranty_end")),
+			PurchaseOrder: strPtr(r.FormValue("purchase_order")),
 		}
 
-		_, err := deps.DB.Update(ctx, "inventory_serial", serialID, data)
+		_, err := deps.UpdateInventorySerial(ctx, &inventoryserialpb.UpdateInventorySerialRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to update serial %s: %v", serialID, err)
 			return centymo.HTMXError("Failed to update serial")
@@ -184,7 +183,9 @@ func NewSerialRemoveAction(deps *Deps) view.View {
 			return centymo.HTMXError("Serial ID is required")
 		}
 
-		err := deps.DB.Delete(ctx, "inventory_serial", id)
+		_, err := deps.DeleteInventorySerial(ctx, &inventoryserialpb.DeleteInventorySerialRequest{
+			Data: &inventoryserialpb.InventorySerial{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to delete serial %s: %v", id, err)
 			return centymo.HTMXError("Failed to delete serial")

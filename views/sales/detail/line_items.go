@@ -12,6 +12,8 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 )
 
 // LineItemFormData is the template data for the line item drawer form.
@@ -51,10 +53,13 @@ type SelectOption struct {
 
 // LineItemDeps holds dependencies for line item action handlers.
 type LineItemDeps struct {
-	DB           centymo.DataSource
+	DB           centymo.DataSource // KEEP — used for revenue_line_item operations
 	Labels       centymo.SalesLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+
+	// Typed inventory operations
+	ListInventoryItems func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
 }
 
 // NewLineItemTableView returns a view that renders only the line items table (for HTMX refresh).
@@ -86,7 +91,7 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		revenueID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			inventoryItems := loadInventoryItems(ctx, deps.DB, revenueID)
+			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
 			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
 				FormAction:      fmt.Sprintf("/action/sales/detail/%s/items/add", revenueID),
 				RevenueID:       revenueID,
@@ -158,7 +163,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 			notes, _ := record["notes"].(string)
 			inventoryItemID, _ := record["inventory_item_id"].(string)
 
-			inventoryItems := loadInventoryItems(ctx, deps.DB, revenueID)
+			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
 
 			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
 				FormAction:      fmt.Sprintf("/action/sales/detail/%s/items/edit/%s", revenueID, itemID),
@@ -371,22 +376,22 @@ func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels
 }
 
 // loadInventoryItems loads inventory items for the select dropdown.
-func loadInventoryItems(ctx context.Context, db centymo.DataSource, revenueID string) []SelectOption {
-	allItems, err := db.ListSimple(ctx, "inventory_item")
+func loadInventoryItems(ctx context.Context, listFn func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)) []SelectOption {
+	resp, err := listFn(ctx, &inventoryitempb.ListInventoryItemsRequest{})
 	if err != nil {
 		log.Printf("Failed to list inventory items: %v", err)
 		return nil
 	}
 
 	options := []SelectOption{}
-	for _, item := range allItems {
-		id, _ := item["id"].(string)
-		productName, _ := item["product_name"].(string)
-		sku, _ := item["sku"].(string)
+	for _, item := range resp.GetData() {
+		id := item.GetId()
+		name := item.GetName()
+		sku := item.GetSku()
 
-		label := productName
+		label := name
 		if sku != "" {
-			label = productName + " (" + sku + ")"
+			label = name + " (" + sku + ")"
 		}
 		if label == "" {
 			label = id

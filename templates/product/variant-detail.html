@@ -1,0 +1,127 @@
+{{/* Full page — wraps app-shell */}}
+{{define "variant-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content partial */}}
+{{define "variant-detail-content"}}
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/variant-detail.css?v={{.CacheVersion}}">
+    {{/* Breadcrumb */}}
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        {{range $i, $bc := .Breadcrumbs}}
+            {{if $bc.Href}}
+                <a href="{{$bc.Href}}" class="breadcrumb-link">{{$bc.Label}}</a>
+                <span class="breadcrumb-sep">/</span>
+            {{else}}
+                <span class="breadcrumb-current">{{$bc.Label}}</span>
+            {{end}}
+        {{end}}
+    </nav>
+
+    {{/* Tabs */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "variant-detail-tabs")}}
+    </div>
+
+    {{/* Tab Content Area */}}
+    <div id="tabContent" class="detail-body">
+        {{if eq .ActiveTab "info"}}
+            {{template "variant-tab-info" .}}
+        {{else if eq .ActiveTab "pricing"}}
+            {{template "variant-tab-pricing" .}}
+        {{else if eq .ActiveTab "stock"}}
+            {{template "variant-tab-stock" .}}
+        {{else if eq .ActiveTab "audit-trail"}}
+            {{template "variant-tab-audit-trail" .}}
+        {{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "variant-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">Variant Information</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Variant.SKU}}</span>
+            <span class="detail-info-value mono">{{.VariantSKU}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Variant.PriceOverride}}</span>
+            <span class="detail-info-value">{{if .VariantPrice}}{{.VariantPrice}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Status</span>
+            <span><span class="badge badge--{{.StatusVariant}}">{{.VariantStatus}}</span></span>
+        </div>
+    </div>
+
+    {{if .OptionEntries}}
+    <h4 class="detail-section-title">Options</h4>
+    <div class="detail-info-grid">
+        {{range .OptionEntries}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Name}}</span>
+            <span class="detail-info-value">{{.Value}}</span>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+
+    <div class="detail-actions">
+        <a class="btn btn--ghost btn--sm"
+           hx-get="/action/products/detail/{{.ProductID}}/variants/edit/{{.VariantID}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           hx-push-url="false"
+           onclick="Sheet.open('{{.Labels.Variant.Edit}}')">
+            {{.Labels.Variant.Edit}}
+        </a>
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Pricing (placeholder)
+     ============================================= */}}
+{{define "variant-tab-pricing"}}
+<div class="tab-scroll">
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">Variant Pricing</div>
+        <p class="coming-soon-text">Pricing data will be available from Price Lists. Variant-level pricing is coming soon.</p>
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Stock
+     ============================================= */}}
+{{define "variant-tab-stock"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .StockTable}}
+        {{template "table-card" .StockTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">Inventory Stock</div>
+            <p class="coming-soon-text">Stock data for this variant will be available once inventory items are linked.</p>
+        </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Audit Trail (placeholder)
+     ============================================= */}}
+{{define "variant-tab-audit-trail"}}
+<div class="tab-scroll">
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">Audit Trail</div>
+        <p class="coming-soon-text">Audit trail for variant changes is coming soon.</p>
+    </div>
+</div>
+{{end}}

@@ -2,12 +2,16 @@ package action
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+
+	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 )
 
 // DepreciationFormLabels holds i18n labels for the depreciation drawer form.
@@ -73,16 +77,20 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 		}
 
 		r := viewCtx.Request
-		data := map[string]any{
-			"inventory_item_id": inventoryItemID,
-			"method":            r.FormValue("method"),
-			"cost_basis":        r.FormValue("cost_basis"),
-			"salvage_value":     r.FormValue("salvage_value"),
-			"useful_life_months": r.FormValue("useful_life_months"),
-			"start_date":        r.FormValue("start_date"),
+		costBasis, _ := strconv.ParseFloat(r.FormValue("cost_basis"), 64)
+		salvageValue, _ := strconv.ParseFloat(r.FormValue("salvage_value"), 64)
+		usefulLife, _ := strconv.ParseInt(r.FormValue("useful_life_months"), 10, 32)
+
+		data := &inventorydepreciationpb.InventoryDepreciation{
+			InventoryItemId:  inventoryItemID,
+			Method:           r.FormValue("method"),
+			CostBasis:        costBasis,
+			SalvageValue:     salvageValue,
+			UsefulLifeMonths: int32(usefulLife),
+			StartDate:        r.FormValue("start_date"),
 		}
 
-		_, err := deps.DB.Create(ctx, "inventory_depreciation", data)
+		_, err := deps.CreateInventoryDepreciation(ctx, &inventorydepreciationpb.CreateInventoryDepreciationRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create depreciation: %v", err)
 			return centymo.HTMXError("Failed to configure depreciation")
@@ -106,27 +114,28 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 		depreciationID := viewCtx.Request.PathValue("did")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			record, err := deps.DB.Read(ctx, "inventory_depreciation", depreciationID)
+			resp, err := deps.ReadInventoryDepreciation(ctx, &inventorydepreciationpb.ReadInventoryDepreciationRequest{
+				Data: &inventorydepreciationpb.InventoryDepreciation{Id: depreciationID},
+			})
 			if err != nil {
 				log.Printf("Failed to read depreciation %s: %v", depreciationID, err)
 				return centymo.HTMXError("Depreciation record not found")
 			}
-
-			method, _ := record["method"].(string)
-			costBasis := anyToString(record["cost_basis"])
-			salvageValue := anyToString(record["salvage_value"])
-			usefulLife := anyToString(record["useful_life_months"])
-			startDate, _ := record["start_date"].(string)
+			records := resp.GetData()
+			if len(records) == 0 {
+				return centymo.HTMXError("Depreciation record not found")
+			}
+			record := records[0]
 
 			return view.OK("depreciation-drawer-form", &DepreciationFormData{
 				FormAction:    "/action/inventory/detail/" + inventoryItemID + "/depreciation/edit/" + depreciationID,
 				IsEdit:        true,
 				ID:            depreciationID,
-				Method:        method,
-				CostBasis:     costBasis,
-				SalvageValue:  salvageValue,
-				UsefulLife:    usefulLife,
-				StartDate:     startDate,
+				Method:        record.GetMethod(),
+				CostBasis:     fmt.Sprintf("%g", record.GetCostBasis()),
+				SalvageValue:  fmt.Sprintf("%g", record.GetSalvageValue()),
+				UsefulLife:    fmt.Sprintf("%d", record.GetUsefulLifeMonths()),
+				StartDate:     record.GetStartDate(),
 				Labels:        depreciationFormLabels(viewCtx.T),
 				MethodOptions: depreciationMethodOptions(viewCtx.T),
 				CommonLabels:  nil,
@@ -139,15 +148,20 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 		}
 
 		r := viewCtx.Request
-		data := map[string]any{
-			"method":            r.FormValue("method"),
-			"cost_basis":        r.FormValue("cost_basis"),
-			"salvage_value":     r.FormValue("salvage_value"),
-			"useful_life_months": r.FormValue("useful_life_months"),
-			"start_date":        r.FormValue("start_date"),
+		costBasis, _ := strconv.ParseFloat(r.FormValue("cost_basis"), 64)
+		salvageValue, _ := strconv.ParseFloat(r.FormValue("salvage_value"), 64)
+		usefulLife, _ := strconv.ParseInt(r.FormValue("useful_life_months"), 10, 32)
+
+		data := &inventorydepreciationpb.InventoryDepreciation{
+			Id:               depreciationID,
+			Method:           r.FormValue("method"),
+			CostBasis:        costBasis,
+			SalvageValue:     salvageValue,
+			UsefulLifeMonths: int32(usefulLife),
+			StartDate:        r.FormValue("start_date"),
 		}
 
-		_, err := deps.DB.Update(ctx, "inventory_depreciation", depreciationID, data)
+		_, err := deps.UpdateInventoryDepreciation(ctx, &inventorydepreciationpb.UpdateInventoryDepreciationRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to update depreciation %s: %v", depreciationID, err)
 			return centymo.HTMXError("Failed to update depreciation")

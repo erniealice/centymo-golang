@@ -1,0 +1,20 @@
+/* centymo — variant detail page layout and styling
+ *
+ * Reuses .detail-layout, .detail-tabs, .detail-body, .detail-section-title,
+ * .detail-info-grid, .detail-info-item, .detail-info-label, .detail-info-value
+ * from entydad-user-detail.css.
+ *
+ * Inherits .coming-soon-panel, .tab-scroll--table, .detail-actions
+ * from product-detail.css.
+ */
+@import url("../entydad/entydad-user-detail.css");
+@import url("product-detail.css");
+
+/* Widen gap between info tab sections (Variant Information → Options → Actions) */
+.tab-scroll .detail-info-grid + .detail-section-title {
+    margin-top: 2.5rem;
+}
+
+.tab-scroll .detail-info-grid + .detail-actions {
+    margin-top: 2.5rem;
+}

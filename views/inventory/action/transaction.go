@@ -10,6 +10,9 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
 )
 
 // TransactionFormLabels holds i18n labels for the transaction drawer form.
@@ -22,10 +25,10 @@ type TransactionFormLabels struct {
 
 // TransactionFormData is the template data for the transaction drawer form.
 type TransactionFormData struct {
-	FormAction  string
-	Labels      TransactionFormLabels
-	TypeOptions []SelectOption
-	Today       string
+	FormAction   string
+	Labels       TransactionFormLabels
+	TypeOptions  []SelectOption
+	Today        string
 	CommonLabels any
 }
 
@@ -56,10 +59,10 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("transaction-drawer-form", &TransactionFormData{
-				FormAction:  "/action/inventory/detail/" + inventoryItemID + "/transactions/assign",
-				Labels:      transactionFormLabels(viewCtx.T),
-				TypeOptions: transactionTypeOptions(viewCtx.T),
-				Today:       time.Now().Format("2006-01-02"),
+				FormAction:   "/action/inventory/detail/" + inventoryItemID + "/transactions/assign",
+				Labels:       transactionFormLabels(viewCtx.T),
+				TypeOptions:  transactionTypeOptions(viewCtx.T),
+				Today:        time.Now().Format("2006-01-02"),
 				CommonLabels: nil,
 			})
 		}
@@ -73,27 +76,30 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 		qty, _ := strconv.ParseFloat(r.FormValue("quantity"), 64)
 		txType := r.FormValue("transaction_type")
 
-		data := map[string]any{
-			"inventory_item_id": inventoryItemID,
-			"transaction_type":  txType,
-			"quantity":          qty,
-			"transaction_date":  r.FormValue("transaction_date"),
-			"reference":         r.FormValue("reference"),
-			"serial_number":     r.FormValue("serial_number"),
-			"notes":             r.FormValue("notes"),
-			"performed_by":      "system", // TODO: current user
+		data := &inventorytransactionpb.InventoryTransaction{
+			InventoryItemId:       inventoryItemID,
+			TransactionType:       txType,
+			Quantity:              qty,
+			TransactionDateString: strPtr(r.FormValue("transaction_date")),
+			ReferenceType:         strPtr(r.FormValue("reference")),
+			SerialNumber:          strPtr(r.FormValue("serial_number")),
+			Notes:                 strPtr(r.FormValue("notes")),
+			PerformedBy:           strPtr("system"), // TODO: current user
 		}
 
-		_, err := deps.DB.Create(ctx, "inventory_transaction", data)
+		_, err := deps.CreateInventoryTransaction(ctx, &inventorytransactionpb.CreateInventoryTransactionRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create transaction: %v", err)
 			return centymo.HTMXError("Failed to record stock movement")
 		}
 
 		// Update inventory quantities based on transaction type
-		item, err := deps.DB.Read(ctx, "inventory_item", inventoryItemID)
-		if err == nil {
-			currentOnHand := toFloat64FromAny(item["quantity_on_hand"])
+		itemResp, err := deps.ReadInventoryItem(ctx, &inventoryitempb.ReadInventoryItemRequest{
+			Data: &inventoryitempb.InventoryItem{Id: inventoryItemID},
+		})
+		if err == nil && len(itemResp.GetData()) > 0 {
+			item := itemResp.GetData()[0]
+			currentOnHand := item.GetQuantityOnHand()
 			switch txType {
 			case "received", "returned":
 				currentOnHand += qty
@@ -103,8 +109,11 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 					currentOnHand = 0
 				}
 			}
-			_, _ = deps.DB.Update(ctx, "inventory_item", inventoryItemID, map[string]any{
-				"quantity_on_hand": currentOnHand,
+			_, _ = deps.UpdateInventoryItem(ctx, &inventoryitempb.UpdateInventoryItemRequest{
+				Data: &inventoryitempb.InventoryItem{
+					Id:             inventoryItemID,
+					QuantityOnHand: currentOnHand,
+				},
 			})
 		}
 
@@ -117,19 +126,4 @@ func NewTransactionTableAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		return centymo.HTMXSuccess("transaction-table")
 	})
-}
-
-func toFloat64FromAny(v any) float64 {
-	switch n := v.(type) {
-	case float64:
-		return n
-	case float32:
-		return float64(n)
-	case int:
-		return float64(n)
-	case int64:
-		return float64(n)
-	default:
-		return 0
-	}
 }

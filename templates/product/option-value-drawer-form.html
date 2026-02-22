@@ -1,0 +1,76 @@
+{{/*
+Product option value drawer form — loaded into #sheetContent via HTMX.
+Used by both Add (create) and Edit actions.
+Data: .Label, .Value, .SortOrder, .ColorHex, .Active, .ID, .ProductID, .OptionID, .OptionName, .OptionRequired, .FormAction, .IsEdit, .IsColorType, .CommonLabels, .Labels
+*/}}
+{{define "option-value-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="product_option_id" value="{{.OptionID}}">
+
+    <div class="sheet-body">
+        {{if .OptionName}}
+        <div class="form-row single">
+            <div class="form-group">
+                <span class="form-label">Option</span>
+                <span class="detail-info-value">{{.OptionName}}{{if .OptionRequired}} <span class="badge badge--warning" style="font-size:0.7rem">Required</span>{{end}}</span>
+            </div>
+        </div>
+        {{end}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "label"
+                "Label" .Labels.Label
+                "Value" .Label
+                "Placeholder" .Labels.LabelPlaceholder
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "value"
+                "Label" .Labels.Value
+                "Value" .Value
+                "Placeholder" .Labels.ValuePlaceholder
+                "Required" true
+            )}}
+        </div>
+
+        {{if .IsColorType}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "color"
+                "Name" "color_hex"
+                "Label" .Labels.ColorHex
+                "Value" .ColorHex
+                "Placeholder" .Labels.ColorHexPlaceholder
+            )}}
+        </div>
+        {{end}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "sort_order"
+                "Label" .Labels.SortOrder
+                "Value" .SortOrder
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "toggle" (dict
+                "Name" "active"
+                "Label" .Labels.Active
+                "Checked" .Active
+                "Value" "true"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

@@ -10,13 +10,21 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
+	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
+	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB               centymo.DataSource
-	Labels           centymo.InventoryLabels
-	CommonLabels     pyeza.CommonLabels
+	ListInventoryItems         func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
+	ListInventorySerials       func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
+	ListInventoryTransactions  func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
+	ListInventoryDepreciations func(ctx context.Context, req *inventorydepreciationpb.ListInventoryDepreciationsRequest) (*inventorydepreciationpb.ListInventoryDepreciationsResponse, error)
+	Labels                     centymo.InventoryLabels
+	CommonLabels               pyeza.CommonLabels
 }
 
 // WidgetData holds a single KPI widget's data.
@@ -43,7 +51,7 @@ func NewView(deps *Deps) view.View {
 		l := deps.Labels
 
 		// Load dashboard data
-		widgets := buildDashboardWidgets(ctx, deps.DB, l)
+		widgets := buildDashboardWidgets(ctx, deps, l)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -68,7 +76,7 @@ func NewView(deps *Deps) view.View {
 // NewDashboardStatsAction returns stats widget partials via HTMX.
 func NewDashboardStatsAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		widgets := buildDashboardWidgets(ctx, deps.DB, deps.Labels)
+		widgets := buildDashboardWidgets(ctx, deps, deps.Labels)
 		return view.OK("inventory-dashboard-stats", map[string]any{
 			"Widgets": widgets,
 			"Labels":  deps.Labels,
@@ -88,19 +96,37 @@ func NewDashboardChartAction(deps *Deps) view.View {
 // NewDashboardMovementsAction returns the recent movements widget partial.
 func NewDashboardMovementsAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		txns, err := deps.DB.ListSimple(ctx, "inventory_transaction")
+		resp, err := deps.ListInventoryTransactions(ctx, &inventorytransactionpb.ListInventoryTransactionsRequest{})
 		if err != nil {
 			log.Printf("Failed to list transactions for dashboard: %v", err)
-			txns = []map[string]any{}
 		}
 
-		// Take last 10 sorted by date (most recent first)
+		var txns []*inventorytransactionpb.InventoryTransaction
+		if resp != nil {
+			txns = resp.GetData()
+		}
+
+		// Take last 10 (most recent)
 		if len(txns) > 10 {
 			txns = txns[len(txns)-10:]
 		}
 
+		// Convert to map[string]any for template backward compat
+		txnMaps := make([]map[string]any, 0, len(txns))
+		for _, t := range txns {
+			txnMaps = append(txnMaps, map[string]any{
+				"id":                t.GetId(),
+				"transaction_type":  t.GetTransactionType(),
+				"quantity":          t.GetQuantity(),
+				"transaction_date":  t.GetTransactionDateString(),
+				"serial_number":     t.GetSerialNumber(),
+				"performed_by":     t.GetPerformedBy(),
+				"inventory_item_id": t.GetInventoryItemId(),
+			})
+		}
+
 		return view.OK("inventory-dashboard-movements", map[string]any{
-			"Transactions": txns,
+			"Transactions": txnMaps,
 			"Labels":       deps.Labels,
 		})
 	})
@@ -109,20 +135,34 @@ func NewDashboardMovementsAction(deps *Deps) view.View {
 // NewDashboardAlertsAction returns the low stock alerts widget partial.
 func NewDashboardAlertsAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		items, err := deps.DB.ListSimple(ctx, "inventory_item")
+		resp, err := deps.ListInventoryItems(ctx, &inventoryitempb.ListInventoryItemsRequest{})
 		if err != nil {
 			log.Printf("Failed to list items for alerts: %v", err)
-			items = []map[string]any{}
 		}
 
+		var items []*inventoryitempb.InventoryItem
+		if resp != nil {
+			items = resp.GetData()
+		}
+
+		// Convert low-stock items to map[string]any for template backward compat
 		alerts := []map[string]any{}
 		for _, item := range items {
-			onHand := toFloat64(item["quantity_on_hand"])
-			reserved := toFloat64(item["quantity_reserved"])
-			reorderLvl := toFloat64(item["reorder_level"])
+			onHand := item.GetQuantityOnHand()
+			reserved := item.GetQuantityReserved()
+			reorderLvl := item.GetReorderLevel()
 			available := onHand - reserved
 			if reorderLvl > 0 && available <= reorderLvl {
-				alerts = append(alerts, item)
+				alerts = append(alerts, map[string]any{
+					"id":                item.GetId(),
+					"name":              item.GetName(),
+					"sku":               item.GetSku(),
+					"quantity_on_hand":  onHand,
+					"quantity_reserved": reserved,
+					"reorder_level":     reorderLvl,
+					"item_type":         item.GetItemType(),
+					"location_id":       item.GetLocationId(),
+				})
 			}
 		}
 
@@ -133,11 +173,14 @@ func NewDashboardAlertsAction(deps *Deps) view.View {
 	})
 }
 
-func buildDashboardWidgets(ctx context.Context, db centymo.DataSource, l centymo.InventoryLabels) []WidgetData {
-	items, err := db.ListSimple(ctx, "inventory_item")
+func buildDashboardWidgets(ctx context.Context, deps *Deps, l centymo.InventoryLabels) []WidgetData {
+	resp, err := deps.ListInventoryItems(ctx, &inventoryitempb.ListInventoryItemsRequest{})
 	if err != nil {
 		log.Printf("Dashboard: Failed to list inventory items: %v", err)
-		items = []map[string]any{}
+	}
+	var items []*inventoryitempb.InventoryItem
+	if resp != nil {
+		items = resp.GetData()
 	}
 
 	// Calculate stats
@@ -147,9 +190,9 @@ func buildDashboardWidgets(ctx context.Context, db centymo.DataSource, l centymo
 	categoryCount := map[string]int{}
 
 	for _, item := range items {
-		onHand := toFloat64(item["quantity_on_hand"])
-		reserved := toFloat64(item["quantity_reserved"])
-		reorderLvl := toFloat64(item["reorder_level"])
+		onHand := item.GetQuantityOnHand()
+		reserved := item.GetQuantityReserved()
+		reorderLvl := item.GetReorderLevel()
 		available := onHand - reserved
 
 		// Approximate stock value (quantity * a base price)
@@ -159,7 +202,7 @@ func buildDashboardWidgets(ctx context.Context, db centymo.DataSource, l centymo
 			lowStockCount++
 		}
 
-		itemType, _ := item["item_type"].(string)
+		itemType := item.GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
@@ -167,29 +210,34 @@ func buildDashboardWidgets(ctx context.Context, db centymo.DataSource, l centymo
 	}
 
 	// Load serials for status distribution
-	serials, err := db.ListSimple(ctx, "inventory_serial")
+	serialResp, err := deps.ListInventorySerials(ctx, &inventoryserialpb.ListInventorySerialsRequest{})
 	if err != nil {
 		log.Printf("Dashboard: Failed to list serials: %v", err)
-		serials = []map[string]any{}
+	}
+	var serials []*inventoryserialpb.InventorySerial
+	if serialResp != nil {
+		serials = serialResp.GetData()
 	}
 	serialAvailable := 0
 	for _, s := range serials {
-		status, _ := s["status"].(string)
-		if status == "available" {
+		if s.GetStatus() == "available" {
 			serialAvailable++
 		}
 	}
 
 	// Load depreciation data
-	depreciations, err := db.ListSimple(ctx, "inventory_depreciation")
+	depResp, err := deps.ListInventoryDepreciations(ctx, &inventorydepreciationpb.ListInventoryDepreciationsRequest{})
 	if err != nil {
 		log.Printf("Dashboard: Failed to list depreciations: %v", err)
-		depreciations = []map[string]any{}
+	}
+	var depreciations []*inventorydepreciationpb.InventoryDepreciation
+	if depResp != nil {
+		depreciations = depResp.GetData()
 	}
 	var totalCostBasis, totalBookValue float64
 	for _, d := range depreciations {
-		totalCostBasis += toFloat64(d["cost_basis"])
-		totalBookValue += toFloat64(d["book_value"])
+		totalCostBasis += d.GetCostBasis()
+		totalBookValue += d.GetBookValue()
 	}
 
 	return []WidgetData{
@@ -199,22 +247,7 @@ func buildDashboardWidgets(ctx context.Context, db centymo.DataSource, l centymo
 		{Icon: "icon-map-pin", Value: fmt.Sprintf("%d", len(centymo.LocationMap)), Label: l.Dashboard.ItemsByLocation, Color: "navy"},
 		{Icon: "icon-trending-down", Value: fmt.Sprintf("%.0f / %.0f", totalCostBasis, totalBookValue), Label: l.Dashboard.DepreciationSummary, Color: "terracotta"},
 		{Icon: "icon-hash", Value: fmt.Sprintf("%d / %d", serialAvailable, len(serials)), Label: l.Dashboard.SerialUnitStatus, Color: "sage"},
-		{Icon: "icon-activity", Value: "—", Label: l.Dashboard.RecentMovements, Color: "navy"},
+		{Icon: "icon-activity", Value: "\u2014", Label: l.Dashboard.RecentMovements, Color: "navy"},
 		{Icon: "icon-pie-chart", Value: fmt.Sprintf("%d types", len(categoryCount)), Label: l.Dashboard.CategoryDistribution, Color: "amber"},
-	}
-}
-
-func toFloat64(v any) float64 {
-	switch n := v.(type) {
-	case float64:
-		return n
-	case float32:
-		return float64(n)
-	case int:
-		return float64(n)
-	case int64:
-		return float64(n)
-	default:
-		return 0
 	}
 }

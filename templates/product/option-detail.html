@@ -1,0 +1,55 @@
+{{/* Full page — wraps app-shell */}}
+{{define "option-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content partial */}}
+{{define "option-detail-content"}}
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/product-detail.css?v={{.CacheVersion}}">
+    {{/* Breadcrumb */}}
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        {{range $i, $bc := .Breadcrumbs}}
+            {{if $bc.Href}}
+                <a href="{{$bc.Href}}" class="breadcrumb-link">{{$bc.Label}}</a>
+                <span class="breadcrumb-sep">/</span>
+            {{else}}
+                <span class="breadcrumb-current">{{$bc.Label}}</span>
+            {{end}}
+        {{end}}
+    </nav>
+
+    {{/* Option info header */}}
+    <div class="detail-info-grid" style="margin-bottom: var(--spacing-lg);">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Options.Columns.Name}}</span>
+            <span class="detail-info-value">{{.OptionName}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Options.Columns.Code}}</span>
+            <span class="detail-info-value">{{.OptionCode}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Options.Columns.DataType}}</span>
+            <span><span class="badge badge--info">{{.OptionDataType}}</span></span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Options.Columns.Status}}</span>
+            <span><span class="badge badge--{{.StatusVariant}}">{{.OptionStatus}}</span></span>
+        </div>
+    </div>
+
+    {{/* Values table */}}
+    <div class="tab-scroll tab-scroll--table">
+        {{if .ValuesTable}}
+            {{template "table-card" .ValuesTable}}
+        {{else}}
+            <div class="coming-soon-panel">
+                <div class="coming-soon-title">{{.Labels.Options.Empty.ValueTitle}}</div>
+                <p class="coming-soon-text">{{.Labels.Options.Empty.ValueMessage}}</p>
+            </div>
+        {{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}

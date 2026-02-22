@@ -227,8 +227,16 @@ type InventoryDashboardLabels struct {
 }
 
 type InventoryMovementsLabels struct {
-	Title    string `json:"title"`
-	Subtitle string `json:"subtitle"`
+	Title          string `json:"title"`
+	Subtitle       string `json:"subtitle"`
+	DateRange      string `json:"dateRange"`
+	LocationFilter string `json:"locationFilter"`
+	TypeFilter     string `json:"typeFilter"`
+	ProductSearch  string `json:"productSearch"`
+	ClearAll       string `json:"clearAll"`
+	ExportCsv      string `json:"exportCsv"`
+	AllLocations   string `json:"allLocations"`
+	AllTypes       string `json:"allTypes"`
 }
 
 // ---------------------------------------------------------------------------
@@ -381,6 +389,7 @@ type ProductLabels struct {
 	Status  ProductStatusLabels  `json:"status"`
 	Variant ProductVariantLabels `json:"variant"`
 	Attribute ProductAttributeLabels `json:"attribute"`
+	Options   ProductOptionLabels    `json:"options"`
 }
 
 type ProductPageLabels struct {
@@ -434,6 +443,7 @@ type ProductTabLabels struct {
 	Variants   string `json:"variants"`
 	Attributes string `json:"attributes"`
 	Pricing    string `json:"pricing"`
+	Options    string `json:"options"`
 }
 
 type ProductDetailLabels struct {
@@ -466,6 +476,101 @@ type ProductAttributeLabels struct {
 	Assign       string `json:"assign"`
 	Remove       string `json:"remove"`
 	Empty        string `json:"empty"`
+}
+
+// ---------------------------------------------------------------------------
+// Product Option labels
+// ---------------------------------------------------------------------------
+
+type ProductOptionLabels struct {
+	Tab       ProductOptionTabLabels       `json:"tab"`
+	Columns   ProductOptionColumnLabels    `json:"columns"`
+	Form      ProductOptionFormLabels      `json:"form"`
+	DataTypes ProductOptionDataTypeLabels  `json:"dataTypes"`
+	Value     ProductOptionValueLabels     `json:"value"`
+	Actions   ProductOptionActionLabels    `json:"actions"`
+	Empty     ProductOptionEmptyLabels     `json:"empty"`
+	Confirm   ProductOptionConfirmLabels   `json:"confirm"`
+}
+
+type ProductOptionTabLabels struct {
+	Title string `json:"title"`
+}
+
+type ProductOptionColumnLabels struct {
+	Name        string `json:"name"`
+	Code        string `json:"code"`
+	DataType    string `json:"dataType"`
+	ValuesCount string `json:"valuesCount"`
+	SortOrder   string `json:"sortOrder"`
+	Status      string `json:"status"`
+}
+
+type ProductOptionFormLabels struct {
+	Name            string `json:"name"`
+	NamePlaceholder string `json:"namePlaceholder"`
+	Code            string `json:"code"`
+	CodePlaceholder string `json:"codePlaceholder"`
+	DataType        string `json:"dataType"`
+	SortOrder       string `json:"sortOrder"`
+	MinValue        string `json:"minValue"`
+	MaxValue        string `json:"maxValue"`
+	Active          string `json:"active"`
+}
+
+type ProductOptionDataTypeLabels struct {
+	TextList   string `json:"textList"`
+	NumberList string `json:"numberList"`
+	ColorList  string `json:"colorList"`
+	EnumList   string `json:"enumList"`
+	FreeText   string `json:"freeText"`
+	FreeNumber string `json:"freeNumber"`
+}
+
+type ProductOptionValueLabels struct {
+	Columns ProductOptionValueColumnLabels `json:"columns"`
+	Form    ProductOptionValueFormLabels   `json:"form"`
+}
+
+type ProductOptionValueColumnLabels struct {
+	Label        string `json:"label"`
+	Value        string `json:"value"`
+	SortOrder    string `json:"sortOrder"`
+	ColorPreview string `json:"colorPreview"`
+	Status       string `json:"status"`
+}
+
+type ProductOptionValueFormLabels struct {
+	Label               string `json:"label"`
+	LabelPlaceholder    string `json:"labelPlaceholder"`
+	Value               string `json:"value"`
+	ValuePlaceholder    string `json:"valuePlaceholder"`
+	SortOrder           string `json:"sortOrder"`
+	ColorHex            string `json:"colorHex"`
+	ColorHexPlaceholder string `json:"colorHexPlaceholder"`
+	Active              string `json:"active"`
+}
+
+type ProductOptionActionLabels struct {
+	AddOption    string `json:"addOption"`
+	EditOption   string `json:"editOption"`
+	DeleteOption string `json:"deleteOption"`
+	ViewValues   string `json:"viewValues"`
+	AddValue     string `json:"addValue"`
+	EditValue    string `json:"editValue"`
+	DeleteValue  string `json:"deleteValue"`
+}
+
+type ProductOptionEmptyLabels struct {
+	Title        string `json:"title"`
+	Message      string `json:"message"`
+	ValueTitle   string `json:"valueTitle"`
+	ValueMessage string `json:"valueMessage"`
+}
+
+type ProductOptionConfirmLabels struct {
+	DeleteOption string `json:"deleteOption"`
+	DeleteValue  string `json:"deleteValue"`
 }
 
 // ---------------------------------------------------------------------------

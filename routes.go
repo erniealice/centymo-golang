@@ -42,6 +42,28 @@ const (
 	ProductAttributeAssignURL = "/action/products/detail/{id}/attributes/assign"
 	ProductAttributeRemoveURL = "/action/products/detail/{id}/attributes/remove"
 
+	// Product option routes (within product detail)
+	ProductOptionTableURL  = "/action/products/detail/{id}/options/table"
+	ProductOptionAddURL    = "/action/products/detail/{id}/options/add"
+	ProductOptionEditURL   = "/action/products/detail/{id}/options/edit/{oid}"
+	ProductOptionDeleteURL = "/action/products/detail/{id}/options/delete"
+
+	// Product option detail page (option values management)
+	ProductOptionDetailURL = "/app/products/detail/{id}/option/{oid}"
+
+	// Product variant detail page (variant info, pricing, stock, audit)
+	ProductVariantDetailURL    = "/app/products/detail/{id}/variant/{vid}"
+	ProductVariantTabActionURL = "/action/products/detail/{id}/variant/{vid}/tab/{tab}"
+
+	// Product variant stock detail (serial/IMEI data for a specific inventory item within variant context)
+	ProductVariantStockDetailURL = "/app/products/detail/{id}/variant/{vid}/stock/{iid}"
+
+	// Product option value routes (within product option)
+	ProductOptionValueTableURL  = "/action/products/detail/{id}/options/{oid}/values/table"
+	ProductOptionValueAddURL    = "/action/products/detail/{id}/options/{oid}/values/add"
+	ProductOptionValueEditURL   = "/action/products/detail/{id}/options/{oid}/values/edit/{vid}"
+	ProductOptionValueDeleteURL = "/action/products/detail/{id}/options/{oid}/values/delete"
+
 	// Inventory status routes
 	InventorySetStatusURL     = "/action/inventory/set-status"
 	InventoryBulkSetStatusURL = "/action/inventory/bulk-set-status"
@@ -49,8 +71,10 @@ const (
 	// Inventory tab action route
 	InventoryTabActionURL = "/action/inventory/detail/{id}/tab/{tab}"
 
-	// Inventory movements (global)
-	InventoryMovementsURL = "/app/inventory/movements"
+	// Inventory movements (global transaction history)
+	InventoryMovementsURL       = "/app/inventory/movements"
+	InventoryMovementsTableURL  = "/action/inventory/movements/table"
+	InventoryMovementsExportURL = "/action/inventory/movements/export"
 
 	// Inventory serial routes
 	InventorySerialTableURL  = "/action/inventory/detail/{id}/serials/table"
@@ -74,6 +98,10 @@ const (
 	InventoryDashboardChartURL     = "/action/inventory/dashboard/chart"
 	InventoryDashboardMovementsURL = "/action/inventory/dashboard/movements"
 	InventoryDashboardAlertsURL    = "/action/inventory/dashboard/alerts"
+
+	// Inventory product-context detail routes
+	InventoryProductDetailURL    = "/app/products/detail/{pid}/inventory/detail/{iid}"
+	InventoryProductTabActionURL = "/action/product/{pid}/inventory/{iid}/tab/{tab}"
 
 	// Inventory table refresh (per-location)
 	InventoryTableURL = "/action/inventory/table/{location}"

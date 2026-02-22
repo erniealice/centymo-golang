@@ -10,6 +10,10 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	"github.com/erniealice/centymo-golang"
+
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
+	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
 )
 
 // FormLabels holds i18n labels for the drawer form template.
@@ -44,7 +48,14 @@ type FormData struct {
 
 // Deps holds dependencies for sales action handlers.
 type Deps struct {
-	DB centymo.DataSource
+	DB centymo.DataSource // KEEP — used for revenue/location operations
+
+	// Typed inventory operations
+	ReadInventoryItem            func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
+	UpdateInventoryItem          func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
+	ListInventoryItems           func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
+	UpdateInventorySerial        func(ctx context.Context, req *inventoryserialpb.UpdateInventorySerialRequest) (*inventoryserialpb.UpdateInventorySerialResponse, error)
+	CreateInventorySerialHistory func(ctx context.Context, req *serialhistorypb.CreateInventorySerialHistoryRequest) (*serialhistorypb.CreateInventorySerialHistoryResponse, error)
 }
 
 func formLabels(t func(string) string) FormLabels {
@@ -300,7 +311,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			}
 
 			// D5: Deduct stock on completion
-			deductStockForLineItems(ctx, deps.DB, id, lineItems)
+			deductStockForLineItems(ctx, deps, id, lineItems)
 
 			return centymo.HTMXSuccess("sales-table")
 		}
@@ -327,7 +338,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			if err != nil {
 				log.Printf("Failed to list line items for serial release on sale %s: %v", id, err)
 			} else {
-				releaseSerialsForLineItems(ctx, deps.DB, id, lineItems)
+				releaseSerialsForLineItems(ctx, deps, id, lineItems)
 			}
 
 			return centymo.HTMXSuccess("sales-table")
@@ -421,7 +432,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 					log.Printf("Failed to list line items for stock deduction on sale %s: %v", id, err)
 					continue
 				}
-				deductStockForLineItems(ctx, deps.DB, id, lineItems)
+				deductStockForLineItems(ctx, deps, id, lineItems)
 			}
 
 			// D6: Release serials on cancellation
@@ -431,7 +442,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 					log.Printf("Failed to list line items for serial release on sale %s: %v", id, err)
 					continue
 				}
-				releaseSerialsForLineItems(ctx, deps.DB, id, lineItems)
+				releaseSerialsForLineItems(ctx, deps, id, lineItems)
 			}
 		}
 
@@ -476,28 +487,36 @@ func getPaymentsForRevenue(ctx context.Context, db centymo.DataSource, revenueID
 }
 
 // deductStockForLineItems decrements inventory quantities and marks serials as sold.
-func deductStockForLineItems(ctx context.Context, db centymo.DataSource, saleID string, lineItems []map[string]any) {
+func deductStockForLineItems(ctx context.Context, deps *Deps, saleID string, lineItems []map[string]any) {
 	for _, item := range lineItems {
 		inventoryItemID, _ := item["inventory_item_id"].(string)
 		serialID, _ := item["inventory_serial_id"].(string)
 
 		// Deduct quantity from inventory item
 		if inventoryItemID != "" {
-			invItem, err := db.Read(ctx, "inventory_item", inventoryItemID)
+			resp, err := deps.ReadInventoryItem(ctx, &inventoryitempb.ReadInventoryItemRequest{
+				Data: &inventoryitempb.InventoryItem{Id: inventoryItemID},
+			})
 			if err != nil {
 				log.Printf("Failed to read inventory item %s for stock deduction: %v", inventoryItemID, err)
 				continue
 			}
+			data := resp.GetData()
+			if len(data) == 0 {
+				log.Printf("Inventory item %s not found for stock deduction", inventoryItemID)
+				continue
+			}
+			invItem := data[0]
 
-			invQtyStr, _ := invItem["quantity"].(string)
 			lineQtyStr, _ := item["quantity"].(string)
-
-			invQty, _ := strconv.ParseFloat(invQtyStr, 64)
 			lineQty, _ := strconv.ParseFloat(lineQtyStr, 64)
 
-			newQty := invQty - lineQty
-			if _, err := db.Update(ctx, "inventory_item", inventoryItemID, map[string]any{
-				"quantity": strconv.FormatFloat(newQty, 'f', -1, 64),
+			newQty := invItem.GetQuantityOnHand() - lineQty
+			if _, err := deps.UpdateInventoryItem(ctx, &inventoryitempb.UpdateInventoryItemRequest{
+				Data: &inventoryitempb.InventoryItem{
+					Id:             inventoryItemID,
+					QuantityOnHand: newQty,
+				},
 			}); err != nil {
 				log.Printf("Failed to deduct stock for inventory item %s: %v", inventoryItemID, err)
 			}
@@ -505,22 +524,25 @@ func deductStockForLineItems(ctx context.Context, db centymo.DataSource, saleID 
 
 		// Mark serial as sold and create history
 		if serialID != "" {
-			if _, err := db.Update(ctx, "inventory_serial", serialID, map[string]any{
-				"status": "sold",
+			if _, err := deps.UpdateInventorySerial(ctx, &inventoryserialpb.UpdateInventorySerialRequest{
+				Data: &inventoryserialpb.InventorySerial{
+					Id:     serialID,
+					Status: "sold",
+				},
 			}); err != nil {
 				log.Printf("Failed to mark serial %s as sold: %v", serialID, err)
 			}
 
-			if _, err := db.Create(ctx, "inventory_serial_history", map[string]any{
-				"inventory_serial_id": serialID,
-				"inventory_item_id":   inventoryItemID,
-				"from_status":         "reserved",
-				"to_status":           "sold",
-				"reference_type":      "revenue",
-				"reference_id":        saleID,
-				"notes":               "Auto: sale completed",
-				"changed_by":          "",
-				"changed_by_role":     "",
+			if _, err := deps.CreateInventorySerialHistory(ctx, &serialhistorypb.CreateInventorySerialHistoryRequest{
+				Data: &serialhistorypb.InventorySerialHistory{
+					InventorySerialId: serialID,
+					InventoryItemId:   inventoryItemID,
+					FromStatus:        "reserved",
+					ToStatus:          "sold",
+					ReferenceType:     "revenue",
+					ReferenceId:       saleID,
+					Notes:             "Auto: sale completed",
+				},
 			}); err != nil {
 				log.Printf("Failed to create serial history for %s: %v", serialID, err)
 			}
@@ -529,7 +551,7 @@ func deductStockForLineItems(ctx context.Context, db centymo.DataSource, saleID 
 }
 
 // releaseSerialsForLineItems marks serials as available and creates history records.
-func releaseSerialsForLineItems(ctx context.Context, db centymo.DataSource, saleID string, lineItems []map[string]any) {
+func releaseSerialsForLineItems(ctx context.Context, deps *Deps, saleID string, lineItems []map[string]any) {
 	for _, item := range lineItems {
 		serialID, _ := item["inventory_serial_id"].(string)
 		if serialID == "" {
@@ -538,22 +560,25 @@ func releaseSerialsForLineItems(ctx context.Context, db centymo.DataSource, sale
 
 		inventoryItemID, _ := item["inventory_item_id"].(string)
 
-		if _, err := db.Update(ctx, "inventory_serial", serialID, map[string]any{
-			"status": "available",
+		if _, err := deps.UpdateInventorySerial(ctx, &inventoryserialpb.UpdateInventorySerialRequest{
+			Data: &inventoryserialpb.InventorySerial{
+				Id:     serialID,
+				Status: "available",
+			},
 		}); err != nil {
 			log.Printf("Failed to release serial %s: %v", serialID, err)
 		}
 
-		if _, err := db.Create(ctx, "inventory_serial_history", map[string]any{
-			"inventory_serial_id": serialID,
-			"inventory_item_id":   inventoryItemID,
-			"from_status":         "available",
-			"to_status":           "available",
-			"reference_type":      "revenue",
-			"reference_id":        saleID,
-			"notes":               "Auto: sale cancelled",
-			"changed_by":          "",
-			"changed_by_role":     "",
+		if _, err := deps.CreateInventorySerialHistory(ctx, &serialhistorypb.CreateInventorySerialHistoryRequest{
+			Data: &serialhistorypb.InventorySerialHistory{
+				InventorySerialId: serialID,
+				InventoryItemId:   inventoryItemID,
+				FromStatus:        "available",
+				ToStatus:          "available",
+				ReferenceType:     "revenue",
+				ReferenceId:       saleID,
+				Notes:             "Auto: sale cancelled",
+			},
 		}); err != nil {
 			log.Printf("Failed to create serial history for %s: %v", serialID, err)
 		}

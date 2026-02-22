@@ -2,10 +2,11 @@
  *
  * Re-uses .detail-layout, .detail-tabs, .detail-body, .detail-section-title,
  * .detail-info-grid, .detail-info-item, .detail-info-label, .detail-info-value
- * from entydad-user-detail.css (shared via app-shell).
+ * from entydad-user-detail.css.
  *
  * Only product-specific overrides live here.
  */
+@import url("../entydad/entydad-user-detail.css");
 
 .detail-actions {
     display: flex;

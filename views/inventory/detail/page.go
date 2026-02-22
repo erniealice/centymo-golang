@@ -10,14 +10,28 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
+	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
+	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
+	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
+	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
+	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB           centymo.DataSource
-	Labels       centymo.InventoryLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	ReadInventoryItem         func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
+	ListInventorySerials      func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
+	ListInventoryTransactions func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
+	ListInventoryDepreciations func(ctx context.Context, req *inventorydepreciationpb.ListInventoryDepreciationsRequest) (*inventorydepreciationpb.ListInventoryDepreciationsResponse, error)
+	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
+	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
+	Labels                    centymo.InventoryLabels
+	CommonLabels              pyeza.CommonLabels
+	TableLabels               types.TableLabels
 }
 
 // AttributeEntry holds a name-value pair for display.
@@ -73,14 +87,21 @@ func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
-		item, err := deps.DB.Read(ctx, "inventory_item", id)
+		resp, err := deps.ReadInventoryItem(ctx, &inventoryitempb.ReadInventoryItemRequest{
+			Data: &inventoryitempb.InventoryItem{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read inventory_item %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load inventory item: %w", err))
 		}
+		items := resp.GetData()
+		if len(items) == 0 {
+			return view.Error(fmt.Errorf("inventory item not found"))
+		}
+		item := items[0]
 
-		name, _ := item["name"].(string)
-		locationID, _ := item["location_id"].(string)
+		name := item.GetName()
+		locationID := item.GetLocationId()
 		locationName := centymo.LocationDisplayName(locationID)
 		headerTitle := name + " \u2014 " + locationName
 
@@ -90,14 +111,17 @@ func NewView(deps *Deps) view.View {
 		}
 
 		l := deps.Labels
-		itemType, _ := item["item_type"].(string)
+		itemType := item.GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
 		isSerialized := itemType == "serialized"
 		tabItems := buildTabItems(l, id, isSerialized)
 
-		available := computeAvailable(item["quantity_on_hand"], item["quantity_reserved"])
+		available := computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
+
+		// Build a map[string]any for backward compatibility with templates
+		itemMap := inventoryItemToMap(item)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -111,7 +135,7 @@ func NewView(deps *Deps) view.View {
 				CommonLabels:   deps.CommonLabels,
 			},
 			ContentTemplate: "inventory-detail-content",
-			Item:            item,
+			Item:            itemMap,
 			Labels:          l,
 			ActiveTab:       activeTab,
 			TabItems:        tabItems,
@@ -129,18 +153,18 @@ func NewView(deps *Deps) view.View {
 			// No extra data needed — item map has everything
 
 		case "attributes":
-			pageData.Attributes = loadAttributes(ctx, deps.DB, item)
+			pageData.Attributes = loadAttributes(ctx, deps, item)
 
 		case "serials":
-			serials := loadSerials(ctx, deps.DB, id)
+			serials := loadSerials(ctx, deps, id)
 			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id)
 			pageData.SerialSummary = computeSerialSummary(serials)
 
 		case "transactions":
-			pageData.TransactionTable = buildTransactionTable(ctx, deps.DB, id, l, deps.TableLabels)
+			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels)
 
 		case "depreciation":
-			pageData.Depreciation = loadDepreciation(ctx, deps.DB, id, l)
+			pageData.Depreciation = loadDepreciation(ctx, deps, id, l)
 
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
@@ -156,29 +180,37 @@ func NewTabAction(deps *Deps) view.View {
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 
-		item, err := deps.DB.Read(ctx, "inventory_item", id)
+		resp, err := deps.ReadInventoryItem(ctx, &inventoryitempb.ReadInventoryItemRequest{
+			Data: &inventoryitempb.InventoryItem{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read inventory_item %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load inventory item: %w", err))
 		}
+		items := resp.GetData()
+		if len(items) == 0 {
+			return view.Error(fmt.Errorf("inventory item not found"))
+		}
+		item := items[0]
 
 		l := deps.Labels
-		itemType, _ := item["item_type"].(string)
+		itemType := item.GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
 
-		available := computeAvailable(item["quantity_on_hand"], item["quantity_reserved"])
+		available := computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
+		itemMap := inventoryItemToMap(item)
 
 		pageData := &PageData{
-			Item:            item,
+			Item:            itemMap,
 			Labels:          l,
 			ActiveTab:       tab,
 			IsSerialized:    itemType == "serialized",
 			ItemType:        itemType,
 			ItemTypeLabel:   itemTypeDisplayLabel(itemType, l),
 			ItemTypeVariant: itemTypeDisplayVariant(itemType),
-			LocationName:    centymo.LocationDisplayName(mustString(item["location_id"])),
+			LocationName:    centymo.LocationDisplayName(item.GetLocationId()),
 			AvailableQty:    available,
 		}
 
@@ -186,15 +218,15 @@ func NewTabAction(deps *Deps) view.View {
 		case "info":
 			// item map has everything
 		case "attributes":
-			pageData.Attributes = loadAttributes(ctx, deps.DB, item)
+			pageData.Attributes = loadAttributes(ctx, deps, item)
 		case "serials":
-			serials := loadSerials(ctx, deps.DB, id)
+			serials := loadSerials(ctx, deps, id)
 			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id)
 			pageData.SerialSummary = computeSerialSummary(serials)
 		case "transactions":
-			pageData.TransactionTable = buildTransactionTable(ctx, deps.DB, id, l, deps.TableLabels)
+			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels)
 		case "depreciation":
-			pageData.Depreciation = loadDepreciation(ctx, deps.DB, id, l)
+			pageData.Depreciation = loadDepreciation(ctx, deps, id, l)
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
 		}
@@ -202,6 +234,27 @@ func NewTabAction(deps *Deps) view.View {
 		templateName := "inventory-tab-" + tab
 		return view.OK(templateName, pageData)
 	})
+}
+
+// inventoryItemToMap converts a proto InventoryItem to a map[string]any for template backward compat.
+func inventoryItemToMap(item *inventoryitempb.InventoryItem) map[string]any {
+	m := map[string]any{
+		"id":                 item.GetId(),
+		"name":               item.GetName(),
+		"active":             item.GetActive(),
+		"sku":                item.GetSku(),
+		"quantity_on_hand":   item.GetQuantityOnHand(),
+		"quantity_reserved":  item.GetQuantityReserved(),
+		"quantity_available": item.GetQuantityAvailable(),
+		"reorder_level":      item.GetReorderLevel(),
+		"unit_of_measure":    item.GetUnitOfMeasure(),
+		"notes":              item.GetNotes(),
+		"item_type":          item.GetItemType(),
+		"location_id":        item.GetLocationId(),
+		"product_id":         item.GetProductId(),
+		"product_variant_id": item.GetProductVariantId(),
+	}
+	return m
 }
 
 func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool) []pyeza.TabItem {
@@ -252,75 +305,112 @@ func itemTypeDisplayVariant(itemType string) string {
 // Attributes tab
 // ---------------------------------------------------------------------------
 
-func loadAttributes(ctx context.Context, db centymo.DataSource, item map[string]any) []AttributeEntry {
-	productID, _ := item["product_id"].(string)
-	itemID, _ := item["id"].(string)
-
-	if productID == "" {
+func loadAttributes(ctx context.Context, deps *Deps, item *inventoryitempb.InventoryItem) []AttributeEntry {
+	variantID := item.GetProductVariantId()
+	if variantID == "" {
 		return nil
 	}
 
-	// 1. Get product_attribute records for this product
-	allPA, err := db.ListSimple(ctx, "product_attribute")
+	// 1. Get product_variant_option records for this variant
+	pvoResp, err := deps.ListProductVariantOptions(ctx, &productvariantoptionpb.ListProductVariantOptionsRequest{})
 	if err != nil {
-		log.Printf("Failed to list product_attribute: %v", err)
+		log.Printf("Failed to list product_variant_option: %v", err)
 		return nil
 	}
-	productAttrs := filterByField(allPA, "product_id", productID)
+	allPVO := pvoResp.GetData()
+	var variantOptions []*productvariantoptionpb.ProductVariantOption
+	for _, pvo := range allPVO {
+		if pvo.GetProductVariantId() == variantID {
+			variantOptions = append(variantOptions, pvo)
+		}
+	}
+	if len(variantOptions) == 0 {
+		return nil
+	}
 
-	// 2. Collect attribute IDs and build lookup
-	attrIDs := map[string]bool{}
-	for _, pa := range productAttrs {
-		if aid, ok := pa["attribute_id"].(string); ok {
-			attrIDs[aid] = true
+	// 2. Collect option_value IDs
+	valueIDs := map[string]bool{}
+	for _, pvo := range variantOptions {
+		vid := pvo.GetProductOptionValueId()
+		if vid != "" {
+			valueIDs[vid] = true
 		}
 	}
 
-	// 3. Load all attributes and build name map
-	allAttrs, err := db.ListSimple(ctx, "attribute")
+	// 3. Load product_option_value records and build lookup
+	povResp, err := deps.ListProductOptionValues(ctx, &productoptionvaluepb.ListProductOptionValuesRequest{})
 	if err != nil {
-		log.Printf("Failed to list attribute: %v", err)
+		log.Printf("Failed to list product_option_value: %v", err)
 		return nil
 	}
-	attrNameMap := map[string]string{}
-	for _, a := range allAttrs {
-		id, _ := a["id"].(string)
-		if attrIDs[id] {
-			name, _ := a["name"].(string)
-			attrNameMap[id] = name
+	allPOV := povResp.GetData()
+	valueMap := map[string]*productoptionvaluepb.ProductOptionValue{}
+	optionIDs := map[string]bool{}
+	for _, pov := range allPOV {
+		if valueIDs[pov.GetId()] {
+			valueMap[pov.GetId()] = pov
+			oid := pov.GetProductOptionId()
+			if oid != "" {
+				optionIDs[oid] = true
+			}
 		}
 	}
 
-	// 4. Load inventory_attribute records for this inventory item
-	allIA, err := db.ListSimple(ctx, "inventory_attribute")
+	// 4. Load product_option records for names and sort order
+	poResp, err := deps.ListProductOptions(ctx, &productoptionpb.ListProductOptionsRequest{})
 	if err != nil {
-		log.Printf("Failed to list inventory_attribute: %v", err)
+		log.Printf("Failed to list product_option: %v", err)
 		return nil
 	}
-	itemAttrs := filterByField(allIA, "inventory_item_id", itemID)
-
-	// 5. Build result: join attribute name + inventory value
-	iaMap := map[string]string{} // attribute_id -> value
-	for _, ia := range itemAttrs {
-		aid, _ := ia["attribute_id"].(string)
-		val, _ := ia["value"].(string)
-		iaMap[aid] = val
-	}
-
-	entries := []AttributeEntry{}
-	for _, pa := range productAttrs {
-		aid, _ := pa["attribute_id"].(string)
-		name := attrNameMap[aid]
-		value := iaMap[aid]
-		if value == "" {
-			// Fallback to product default
-			value, _ = pa["default_value"].(string)
-		}
-		if name != "" {
-			entries = append(entries, AttributeEntry{Name: name, Value: value})
+	allPO := poResp.GetData()
+	optionMap := map[string]*productoptionpb.ProductOption{}
+	for _, po := range allPO {
+		if optionIDs[po.GetId()] {
+			optionMap[po.GetId()] = po
 		}
 	}
 
+	// 5. Build sorted entries: option name + value label
+	type sortedEntry struct {
+		sortOrder int32
+		entry     AttributeEntry
+	}
+	var sorted []sortedEntry
+	for _, pvo := range variantOptions {
+		vid := pvo.GetProductOptionValueId()
+		pov := valueMap[vid]
+		if pov == nil {
+			continue
+		}
+		oid := pov.GetProductOptionId()
+		po := optionMap[oid]
+		if po == nil {
+			continue
+		}
+		name := po.GetName()
+		label := pov.GetLabel()
+		order := po.GetSortOrder()
+		if name != "" && label != "" {
+			sorted = append(sorted, sortedEntry{
+				sortOrder: order,
+				entry:     AttributeEntry{Name: name, Value: label},
+			})
+		}
+	}
+
+	// Sort by option sort_order
+	for i := 0; i < len(sorted); i++ {
+		for j := i + 1; j < len(sorted); j++ {
+			if sorted[j].sortOrder < sorted[i].sortOrder {
+				sorted[i], sorted[j] = sorted[j], sorted[i]
+			}
+		}
+	}
+
+	entries := make([]AttributeEntry, len(sorted))
+	for i, s := range sorted {
+		entries[i] = s.entry
+	}
 	return entries
 }
 
@@ -328,34 +418,34 @@ func loadAttributes(ctx context.Context, db centymo.DataSource, item map[string]
 // Serials tab
 // ---------------------------------------------------------------------------
 
-func loadSerials(ctx context.Context, db centymo.DataSource, inventoryItemID string) []map[string]any {
-	all, err := db.ListSimple(ctx, "inventory_serial")
+func loadSerials(ctx context.Context, deps *Deps, inventoryItemID string) []*inventoryserialpb.InventorySerial {
+	resp, err := deps.ListInventorySerials(ctx, &inventoryserialpb.ListInventorySerialsRequest{
+		InventoryItemId: &inventoryItemID,
+	})
 	if err != nil {
 		log.Printf("Failed to list inventory_serial: %v", err)
 		return nil
 	}
-	return filterByField(all, "inventory_item_id", inventoryItemID)
+	return resp.GetData()
 }
 
-func buildSerialTable(serials []map[string]any, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string) *types.TableConfig {
+func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "serial_number", Label: l.Detail.SerialNumber, Sortable: true},
 		{Key: "imei", Label: l.Detail.IMEI, Sortable: false, Width: "180px"},
 		{Key: "status", Label: l.Detail.SerialStatus, Sortable: true, Width: "120px"},
 		{Key: "warranty_end", Label: l.Detail.WarrantyEnd, Sortable: true, Width: "140px"},
 		{Key: "purchase_order", Label: l.Detail.PurchaseOrder, Sortable: false, Width: "140px"},
-		{Key: "sold_reference", Label: l.Detail.SaleReference, Sortable: false, Width: "140px"},
 	}
 
 	rows := []types.TableRow{}
 	for _, s := range serials {
-		id, _ := s["id"].(string)
-		serial, _ := s["serial_number"].(string)
-		imei, _ := s["imei"].(string)
-		status, _ := s["status"].(string)
-		warrantyEnd, _ := s["warranty_end"].(string)
-		po, _ := s["purchase_order"].(string)
-		soldRef, _ := s["sold_reference"].(string)
+		id := s.GetId()
+		serial := s.GetSerialNumber()
+		imei := s.GetImei()
+		status := s.GetStatus()
+		warrantyEnd := s.GetWarrantyEnd()
+		po := s.GetPurchaseOrder()
 
 		rows = append(rows, types.TableRow{
 			ID: id,
@@ -365,7 +455,6 @@ func buildSerialTable(serials []map[string]any, l centymo.InventoryLabels, table
 				{Type: "badge", Value: status, Variant: serialStatusVariant(status)},
 				{Type: "text", Value: warrantyEnd},
 				{Type: "text", Value: po},
-				{Type: "text", Value: soldRef},
 			},
 			Actions: []types.TableAction{
 				{Type: "edit", Label: l.Serial.Edit, Action: "edit", URL: "/action/inventory/detail/" + inventoryItemID + "/serials/edit/" + id, DrawerTitle: l.Serial.Edit},
@@ -418,11 +507,10 @@ func serialStatusVariant(status string) string {
 	}
 }
 
-func computeSerialSummary(serials []map[string]any) *SerialSummary {
+func computeSerialSummary(serials []*inventoryserialpb.InventorySerial) *SerialSummary {
 	summary := &SerialSummary{Total: len(serials)}
 	for _, s := range serials {
-		status, _ := s["status"].(string)
-		switch status {
+		switch s.GetStatus() {
 		case "available":
 			summary.Available++
 		case "sold":
@@ -438,13 +526,17 @@ func computeSerialSummary(serials []map[string]any) *SerialSummary {
 // Transactions tab
 // ---------------------------------------------------------------------------
 
-func buildTransactionTable(ctx context.Context, db centymo.DataSource, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels) *types.TableConfig {
-	all, err := db.ListSimple(ctx, "inventory_transaction")
+func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels) *types.TableConfig {
+	resp, err := deps.ListInventoryTransactions(ctx, &inventorytransactionpb.ListInventoryTransactionsRequest{
+		InventoryItemId: &inventoryItemID,
+	})
 	if err != nil {
 		log.Printf("Failed to list inventory_transaction: %v", err)
-		all = []map[string]any{}
 	}
-	txns := filterByField(all, "inventory_item_id", inventoryItemID)
+	var txns []*inventorytransactionpb.InventoryTransaction
+	if resp != nil {
+		txns = resp.GetData()
+	}
 
 	columns := []types.TableColumn{
 		{Key: "transaction_date", Label: l.Detail.Date, Sortable: true, Width: "130px"},
@@ -457,13 +549,13 @@ func buildTransactionTable(ctx context.Context, db centymo.DataSource, inventory
 
 	rows := []types.TableRow{}
 	for _, t := range txns {
-		id, _ := t["id"].(string)
-		txDate, _ := t["transaction_date"].(string)
-		txType, _ := t["transaction_type"].(string)
-		qty := formatQuantity(t["quantity"], txType)
-		ref, _ := t["reference"].(string)
-		serial, _ := t["serial_number"].(string)
-		performer, _ := t["performed_by"].(string)
+		id := t.GetId()
+		txDate := t.GetTransactionDateString()
+		txType := t.GetTransactionType()
+		qty := formatQuantity(t.GetQuantity(), txType)
+		ref := t.GetReferenceType()
+		serial := t.GetSerialNumber()
+		performer := t.GetPerformedBy()
 
 		rows = append(rows, types.TableRow{
 			ID: id,
@@ -525,8 +617,8 @@ func txTypeVariant(txType string) string {
 }
 
 // formatQuantity formats the quantity with +/- prefix based on transaction type.
-func formatQuantity(qty any, txType string) string {
-	val := fmt.Sprintf("%v", qty)
+func formatQuantity(qty float64, txType string) string {
+	val := fmt.Sprintf("%g", qty)
 	switch txType {
 	case "received", "returned":
 		return "+" + val
@@ -541,37 +633,30 @@ func formatQuantity(qty any, txType string) string {
 // Depreciation tab
 // ---------------------------------------------------------------------------
 
-func loadDepreciation(ctx context.Context, db centymo.DataSource, inventoryItemID string, l centymo.InventoryLabels) *DepreciationInfo {
-	all, err := db.ListSimple(ctx, "inventory_depreciation")
+func loadDepreciation(ctx context.Context, deps *Deps, inventoryItemID string, l centymo.InventoryLabels) *DepreciationInfo {
+	resp, err := deps.ListInventoryDepreciations(ctx, &inventorydepreciationpb.ListInventoryDepreciationsRequest{
+		InventoryItemId: &inventoryItemID,
+	})
 	if err != nil {
 		log.Printf("Failed to list inventory_depreciation: %v", err)
 		return nil
 	}
 
-	records := filterByField(all, "inventory_item_id", inventoryItemID)
+	records := resp.GetData()
 	if len(records) == 0 {
 		return nil
 	}
 
 	r := records[0]
-	id, _ := r["id"].(string)
-	method, _ := r["method"].(string)
-	costBasis := fmt.Sprintf("%v", r["cost_basis"])
-	salvageVal := fmt.Sprintf("%v", r["salvage_value"])
-	usefulLife := fmt.Sprintf("%v", r["useful_life_months"])
-	startDate, _ := r["start_date"].(string)
-	accumulated := fmt.Sprintf("%v", r["accumulated_depreciation"])
-	bookValue := fmt.Sprintf("%v", r["book_value"])
-
 	return &DepreciationInfo{
-		ID:          id,
-		Method:      depreciationMethodLabel(method, l),
-		CostBasis:   costBasis,
-		SalvageVal:  salvageVal,
-		UsefulLife:  usefulLife + " months",
-		StartDate:   startDate,
-		Accumulated: accumulated,
-		BookValue:   bookValue,
+		ID:          r.GetId(),
+		Method:      depreciationMethodLabel(r.GetMethod(), l),
+		CostBasis:   fmt.Sprintf("%g", r.GetCostBasis()),
+		SalvageVal:  fmt.Sprintf("%g", r.GetSalvageValue()),
+		UsefulLife:  fmt.Sprintf("%d months", r.GetUsefulLifeMonths()),
+		StartDate:   r.GetStartDate(),
+		Accumulated: fmt.Sprintf("%g", r.GetAccumulatedDepreciation()),
+		BookValue:   fmt.Sprintf("%g", r.GetBookValue()),
 	}
 }
 
@@ -626,25 +711,7 @@ func buildAuditTable(l centymo.InventoryLabels, tableLabels types.TableLabels) *
 // Helpers
 // ---------------------------------------------------------------------------
 
-func filterByField(records []map[string]any, field, value string) []map[string]any {
-	result := []map[string]any{}
-	for _, r := range records {
-		v, _ := r[field].(string)
-		if v == value {
-			result = append(result, r)
-		}
-	}
-	return result
-}
-
-func mustString(v any) string {
-	s, _ := v.(string)
-	return s
-}
-
-func computeAvailable(onHandVal, reservedVal any) string {
-	onHand := toFloat64(onHandVal)
-	reserved := toFloat64(reservedVal)
+func computeAvailable(onHand, reserved float64) string {
 	avail := onHand - reserved
 	if avail < 0 {
 		avail = 0
@@ -653,19 +720,4 @@ func computeAvailable(onHandVal, reservedVal any) string {
 		return fmt.Sprintf("%d", int64(avail))
 	}
 	return fmt.Sprintf("%.2f", avail)
-}
-
-func toFloat64(v any) float64 {
-	switch n := v.(type) {
-	case float64:
-		return n
-	case float32:
-		return float64(n)
-	case int:
-		return float64(n)
-	case int64:
-		return float64(n)
-	default:
-		return 0
-	}
 }

@@ -29,20 +29,21 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
             )}}
         </div>
 
-        {{if .AttributeOptions}}
+        {{if .OptionSelections}}
+        {{range .OptionSelections}}
+        {{$selected := .Selected}}
         <div class="form-row single">
-            <label class="form-label">{{.Labels.Attributes}}</label>
-            {{range .AttributeOptions}}
-            <div class="form-row single" style="margin-top: var(--spacing-xs);">
-                {{template "form-group" (dict
-                    "Type" "text"
-                    "Name" (printf "attr_%s" .Code)
-                    "Label" .Name
-                    "Value" .Value
-                )}}
+            <div class="form-group">
+                <label class="form-label" for="{{.FieldName}}">{{.OptionName}}{{if .Required}} *{{end}}</label>
+                <select id="{{.FieldName}}" name="{{.FieldName}}" class="form-control"{{if .Required}} required{{end}}>
+                    <option value="" disabled {{if not $selected}}selected{{end}}>Select {{.OptionName}}</option>
+                    {{range .Values}}
+                    <option value="{{.ID}}" {{if eq $selected .ID}}selected{{end}}>{{.Label}}</option>
+                    {{end}}
+                </select>
             </div>
-            {{end}}
         </div>
+        {{end}}
         {{end}}
 
         <div class="form-row single">

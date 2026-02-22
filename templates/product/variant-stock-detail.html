@@ -1,0 +1,98 @@
+{{/* Full page -- wraps app-shell */}}
+{{define "variant-stock-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content partial */}}
+{{define "variant-stock-detail-content"}}
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/variant-detail.css?v={{.CacheVersion}}">
+    {{/* Breadcrumb */}}
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        {{range $i, $bc := .Breadcrumbs}}
+            {{if $bc.Href}}
+                <a href="{{$bc.Href}}" class="breadcrumb-link">{{$bc.Label}}</a>
+                <span class="breadcrumb-sep">/</span>
+            {{else}}
+                <span class="breadcrumb-current">{{$bc.Label}}</span>
+            {{end}}
+        {{end}}
+    </nav>
+
+    {{/* Tabs (same as variant page, stock is active) */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "variant-detail-tabs")}}
+    </div>
+
+    {{/* Item Info Summary */}}
+    <div class="detail-body">
+        <h4 class="detail-section-title">Inventory Item</h4>
+        <div class="detail-info-grid">
+            <div class="detail-info-item">
+                <span class="detail-info-label">Name</span>
+                <span class="detail-info-value">{{.ItemName}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">SKU</span>
+                <span class="detail-info-value mono">{{.ItemSKU}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Type</span>
+                <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Location</span>
+                <span class="detail-info-value">{{.LocationName}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Qty On Hand</span>
+                <span class="detail-info-value mono">{{.QuantityOnHand}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Reserved</span>
+                <span class="detail-info-value mono">{{.QuantityReserved}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Available</span>
+                <span class="detail-info-value mono">{{.AvailableQty}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Status</span>
+                <span><span class="badge badge--{{.ItemStatusVariant}}">{{.ItemStatus}}</span></span>
+            </div>
+        </div>
+
+        {{/* Serial Numbers Table */}}
+        <div style="margin-top: 2rem;">
+            <h4 class="detail-section-title">Serial Numbers</h4>
+            {{if .SerialTable}}
+                {{template "table-card" .SerialTable}}
+                {{if .SerialSummary}}
+                <div class="inv-summary-row" style="margin-top: var(--spacing-md);">
+                    <div class="inv-summary-item">
+                        <span class="inv-summary-label">Total</span>
+                        <span class="inv-summary-value">{{.SerialSummary.Total}}</span>
+                    </div>
+                    <div class="inv-summary-item inv-summary-item--success">
+                        <span class="inv-summary-label">Available</span>
+                        <span class="inv-summary-value">{{.SerialSummary.Available}}</span>
+                    </div>
+                    <div class="inv-summary-item inv-summary-item--default">
+                        <span class="inv-summary-label">Sold</span>
+                        <span class="inv-summary-value">{{.SerialSummary.Sold}}</span>
+                    </div>
+                    <div class="inv-summary-item inv-summary-item--info">
+                        <span class="inv-summary-label">Reserved</span>
+                        <span class="inv-summary-value">{{.SerialSummary.Reserved}}</span>
+                    </div>
+                </div>
+                {{end}}
+            {{else}}
+                <div class="coming-soon-panel">
+                    <div class="coming-soon-title">No Serial Numbers</div>
+                    <p class="coming-soon-text">No serial numbers have been recorded for this inventory item.</p>
+                </div>
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}

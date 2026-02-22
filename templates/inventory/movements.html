@@ -6,6 +6,62 @@
 {{/* Content-only partial -- for HTMX navigation */}}
 {{define "inventory-movements-content"}}
 <div class="page-content page-content--table">
-    {{template "table-card" .Table}}
+    <div class="filter-bar" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem; flex-wrap: wrap;">
+        <div class="filter-group">
+            <label class="form-label">{{.Labels.DateRange}}</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="date" id="filter-date-from" name="date_from" value="{{.DateFrom}}" class="form-input" />
+                <input type="date" id="filter-date-to" name="date_to" value="{{.DateTo}}" class="form-input" />
+            </div>
+        </div>
+        <div class="filter-group">
+            <label class="form-label">{{.Labels.LocationFilter}}</label>
+            <select id="filter-location" name="location" class="form-select">
+                <option value="">{{.Labels.AllLocations}}</option>
+                {{range .Locations}}
+                <option value="{{.ID}}" {{if eq .ID $.LocationFilter}}selected{{end}}>{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="form-label">{{.Labels.TypeFilter}}</label>
+            <select id="filter-type" name="type" class="form-select">
+                <option value="">{{.Labels.AllTypes}}</option>
+                {{range .TransactionTypes}}
+                <option value="{{.Value}}" {{if eq .Value $.TypeFilter}}selected{{end}}>{{.Label}}</option>
+                {{end}}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="form-label">{{.Labels.ProductSearch}}</label>
+            <input type="text" id="filter-search" name="search" value="{{.Search}}" class="form-input" placeholder="Search by name or SKU..." />
+        </div>
+        <div class="filter-actions" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+            <button type="button" class="btn btn--primary" id="apply-filters-btn"
+                hx-get="/action/inventory/movements/table"
+                hx-include="#filter-date-from, #filter-date-to, #filter-location, #filter-type, #filter-search"
+                hx-target="#movements-table-wrapper"
+                hx-swap="innerHTML"
+                hx-push-url="false"
+                hx-disinherit="*">Apply</button>
+            <button type="button" class="btn btn--outline" id="clear-filters-btn"
+                onclick="document.getElementById('filter-date-from').value=''; document.getElementById('filter-date-to').value=''; document.getElementById('filter-location').value=''; document.getElementById('filter-type').value=''; document.getElementById('filter-search').value=''; htmx.trigger(document.getElementById('apply-filters-btn'), 'click');">
+                {{.Labels.ClearAll}}
+            </button>
+            <a class="btn btn--outline" id="export-csv-btn"
+               onclick="(function(){ var params = new URLSearchParams(); var df=document.getElementById('filter-date-from').value; var dt=document.getElementById('filter-date-to').value; var loc=document.getElementById('filter-location').value; var tp=document.getElementById('filter-type').value; var s=document.getElementById('filter-search').value; if(df) params.set('date_from',df); if(dt) params.set('date_to',dt); if(loc) params.set('location',loc); if(tp) params.set('type',tp); if(s) params.set('search',s); var qs=params.toString(); window.location.href='/action/inventory/movements/export' + (qs ? '?' + qs : ''); })();"
+               style="cursor: pointer;">
+                {{.Labels.ExportCsv}}
+            </a>
+        </div>
+    </div>
+    <div id="movements-table-wrapper">
+        {{template "table-card" .Table}}
+    </div>
 </div>
+{{end}}
+
+{{/* Table-only partial -- returned by HTMX filter action */}}
+{{define "inventory-movements-table"}}
+{{template "table-card" .Table}}
 {{end}}

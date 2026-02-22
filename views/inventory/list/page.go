@@ -9,16 +9,18 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+
 	"github.com/erniealice/centymo-golang"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB           centymo.DataSource
-	RefreshURL   string
-	Labels       centymo.InventoryLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	ListInventoryItems func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
+	RefreshURL         string
+	Labels             centymo.InventoryLabels
+	CommonLabels       pyeza.CommonLabels
+	TableLabels        types.TableLabels
 }
 
 // PageData holds the data for the inventory list page.
@@ -36,7 +38,9 @@ func NewView(deps *Deps) view.View {
 			location = "ayala-central-bloc"
 		}
 
-		records, err := deps.DB.ListSimple(ctx, "inventory_item")
+		resp, err := deps.ListInventoryItems(ctx, &inventoryitempb.ListInventoryItemsRequest{
+			LocationId: &location,
+		})
 		if err != nil {
 			log.Printf("Failed to list inventory: %v", err)
 			return view.Error(fmt.Errorf("failed to load inventory: %w", err))
@@ -44,7 +48,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := inventoryColumns(l)
-		rows := buildTableRows(records, location, l)
+		rows := buildTableRows(resp.GetData(), l)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -141,34 +145,38 @@ func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, location string, l centymo.InventoryLabels) []types.TableRow {
+func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryLabels) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, record := range records {
-		locID, _ := record["location_id"].(string)
-		if locID != location {
-			continue
-		}
-
-		id, _ := record["id"].(string)
-		name, _ := record["name"].(string)
-		sku, _ := record["sku"].(string)
-		onHand := anyToString(record["quantity_on_hand"])
-		reserved := anyToString(record["quantity_reserved"])
-		reorderLvl := anyToString(record["reorder_level"])
-		itemType, _ := record["item_type"].(string)
+	for _, item := range items {
+		id := item.GetId()
+		name := item.GetName()
+		sku := item.GetSku()
+		onHand := item.GetQuantityOnHand()
+		reserved := item.GetQuantityReserved()
+		reorderLvl := item.GetReorderLevel()
+		itemType := item.GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
 
-		available := computeAvailable(record["quantity_on_hand"], record["quantity_reserved"])
-		status := inventoryStatus(record)
+		avail := onHand - reserved
+		if avail < 0 {
+			avail = 0
+		}
+		available := formatFloat(avail)
+		onHandStr := formatFloat(onHand)
+		reservedStr := formatFloat(reserved)
+		reorderStr := formatFloat(reorderLvl)
+
+		status := "active"
+		if !item.GetActive() {
+			status = "inactive"
+		}
 
 		// Low stock alert: if available quantity is at or below reorder level
-		reorderDisplay := reorderLvl
-		availFloat := toFloat64(record["quantity_on_hand"]) - toFloat64(record["quantity_reserved"])
-		reorderFloat := toFloat64(record["reorder_level"])
-		if reorderFloat > 0 && availFloat <= reorderFloat {
-			reorderDisplay = reorderLvl + " (!)"
+		reorderDisplay := reorderStr
+		if reorderLvl > 0 && avail <= reorderLvl {
+			reorderDisplay = reorderStr + " (!)"
 		}
 
 		detailURL := "/app/inventory/detail/" + id
@@ -180,7 +188,7 @@ func buildTableRows(records []map[string]any, location string, l centymo.Invento
 				{Type: "text", Value: name},
 				{Type: "text", Value: sku},
 				{Type: "badge", Value: itemTypeLabel(itemType, l), Variant: itemTypeVariant(itemType)},
-				{Type: "text", Value: onHand},
+				{Type: "text", Value: onHandStr},
 				{Type: "text", Value: available},
 				{Type: "text", Value: reorderDisplay},
 				{Type: "badge", Value: status, Variant: statusVariant(status)},
@@ -189,10 +197,10 @@ func buildTableRows(records []map[string]any, location string, l centymo.Invento
 				"name":        name,
 				"sku":         sku,
 				"item_type":   itemType,
-				"on_hand":     onHand,
-				"reserved":    reserved,
+				"on_hand":     onHandStr,
+				"reserved":    reservedStr,
 				"available":   available,
-				"reorder_lvl": reorderLvl,
+				"reorder_lvl": reorderStr,
 				"status":      status,
 			},
 			Actions: []types.TableAction{
@@ -231,14 +239,6 @@ func itemTypeVariant(itemType string) string {
 	}
 }
 
-func inventoryStatus(record map[string]any) string {
-	active, ok := record["active"].(bool)
-	if ok && !active {
-		return "inactive"
-	}
-	return "active"
-}
-
 func statusVariant(status string) string {
 	switch status {
 	case "active":
@@ -250,39 +250,9 @@ func statusVariant(status string) string {
 	}
 }
 
-func anyToString(v any) string {
-	if v == nil {
-		return "0"
+func formatFloat(f float64) string {
+	if f == float64(int64(f)) {
+		return fmt.Sprintf("%d", int64(f))
 	}
-	return fmt.Sprintf("%v", v)
-}
-
-func computeAvailable(onHandVal, reservedVal any) string {
-	onHand := toFloat64(onHandVal)
-	reserved := toFloat64(reservedVal)
-	avail := onHand - reserved
-	if avail < 0 {
-		avail = 0
-	}
-	if avail == float64(int64(avail)) {
-		return fmt.Sprintf("%d", int64(avail))
-	}
-	return fmt.Sprintf("%.2f", avail)
-}
-
-func toFloat64(v any) float64 {
-	switch n := v.(type) {
-	case float64:
-		return n
-	case float32:
-		return float64(n)
-	case int:
-		return float64(n)
-	case int64:
-		return float64(n)
-	case string:
-		return 0
-	default:
-		return 0
-	}
+	return fmt.Sprintf("%.2f", f)
 }

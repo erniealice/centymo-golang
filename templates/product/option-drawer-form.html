@@ -1,0 +1,102 @@
+{{/*
+Product option drawer form — loaded into #sheetContent via HTMX.
+Used by both Add (create) and Edit actions.
+Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .ProductID, .FormAction, .IsEdit, .CommonLabels, .Labels, .DataTypeOptions
+*/}}
+{{define "option-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="product_id" value="{{.ProductID}}">
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.Name
+                "Value" .Name
+                "Placeholder" .Labels.NamePlaceholder
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "code"
+                "Label" .Labels.Code
+                "Value" .Code
+                "Placeholder" .Labels.CodePlaceholder
+                "Required" true
+            )}}
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label" for="data_type">{{.Labels.DataType}}</label>
+                <select id="data_type" name="data_type" class="form-control" required>
+                    {{range .DataTypeOptions}}
+                    <option value="{{.Value}}" {{if eq $.DataType .Value}}selected{{end}}>{{.Label}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row two-col">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "min_value"
+                "Label" .Labels.MinValue
+                "Value" .MinValue
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "max_value"
+                "Label" .Labels.MaxValue
+                "Value" .MaxValue
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "sort_order"
+                "Label" .Labels.SortOrder
+                "Value" .SortOrder
+            )}}
+        </div>
+
+        {{if not .IsEdit}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "initial_values"
+                "Label" "Initial Values"
+                "Value" ""
+                "Placeholder" "e.g. Black, White, Blue, Titanium"
+            )}}
+        </div>
+        {{end}}
+
+        <div class="form-row single">
+            {{template "toggle" (dict
+                "Name" "required"
+                "Label" "Required"
+                "Checked" .Required
+                "Value" "true"
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "toggle" (dict
+                "Name" "active"
+                "Label" .Labels.Active
+                "Checked" .Active
+                "Value" "true"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

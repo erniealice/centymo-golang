@@ -11,4 +11,5 @@ type DataSource interface {
 	Read(ctx context.Context, collection string, id string) (map[string]any, error)
 	Update(ctx context.Context, collection string, id string, data map[string]any) (map[string]any, error)
 	Delete(ctx context.Context, collection string, id string) error
+	HardDelete(ctx context.Context, collection string, id string) error
 }

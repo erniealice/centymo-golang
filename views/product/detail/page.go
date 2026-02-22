@@ -13,18 +13,26 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
-	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
+	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
+	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
+	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	ReadProduct       func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
-	ListPriceProducts func(ctx context.Context, req *priceproductpb.ListPriceProductsRequest) (*priceproductpb.ListPriceProductsResponse, error)
-	Labels            centymo.ProductLabels
-	CommonLabels      pyeza.CommonLabels
-	TableLabels       types.TableLabels
-	// DataSource for variant/attribute queries (raw DB)
+	ReadProduct  func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
+	Labels       centymo.ProductLabels
+	CommonLabels pyeza.CommonLabels
+	TableLabels  types.TableLabels
+	// DataSource for backward compat
 	DB centymo.DataSource
+
+	// Typed proto funcs
+	ListProductVariants       func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
+	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 }
 
 // PageData holds the data for the product detail page.
@@ -43,9 +51,8 @@ type PageData struct {
 	ProductStatus   string
 	StatusVariant   string
 	Collections     []string
-	VariantsTable   *types.TableConfig
-	AttributesTable *types.TableConfig
-	PricingTable    *types.TableConfig
+	VariantsTable *types.TableConfig
+	OptionsTable  *types.TableConfig
 }
 
 // NewView creates the product detail view (full page).
@@ -54,7 +61,7 @@ func NewView(deps *Deps) view.View {
 		id := viewCtx.Request.PathValue("id")
 
 		activeTab := viewCtx.Request.URL.Query().Get("tab")
-		if activeTab == "" {
+		if activeTab == "" || activeTab == "pricing" {
 			activeTab = "info"
 		}
 
@@ -110,15 +117,15 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 	if currency == "" {
 		currency = "PHP"
 	}
-	priceFormatted := formatPrice(currency, product.GetPrice())
+	priceFormatted := FormatPrice(currency, product.GetPrice())
 
 	productStatus := "active"
 	if !product.GetActive() {
 		productStatus = "inactive"
 	}
-	statusVariant := "success"
+	StatusVariant := "success"
 	if productStatus == "inactive" {
-		statusVariant = "warning"
+		StatusVariant = "warning"
 	}
 
 	// Extract collection names
@@ -131,29 +138,21 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 
 	// Get counts for tab badges
 	variantCount := 0
-	attributeCount := 0
-
-	if deps.DB != nil {
-		variants, err := deps.DB.ListSimple(ctx, "product_variant")
+	if deps.ListProductVariants != nil {
+		varResp, err := deps.ListProductVariants(ctx, &productvariantpb.ListProductVariantsRequest{})
 		if err == nil {
-			for _, v := range variants {
-				if pid, _ := v["product_id"].(string); pid == id {
+			for _, v := range varResp.GetData() {
+				if v.GetProductId() == id {
 					variantCount++
-				}
-			}
-		}
-		attributes, err := deps.DB.ListSimple(ctx, "product_attribute")
-		if err == nil {
-			for _, a := range attributes {
-				if pid, _ := a["product_id"].(string); pid == id {
-					attributeCount++
 				}
 			}
 		}
 	}
 
+	optionCount := getOptionCountTyped(ctx, deps, id)
+
 	l := deps.Labels
-	tabItems := buildTabItems(id, l, variantCount, attributeCount)
+	tabItems := buildTabItems(id, l, variantCount, optionCount)
 
 	pageData := &PageData{
 		PageData: types.PageData{
@@ -177,34 +176,30 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 		ProductPrice:    priceFormatted,
 		ProductCurrency: currency,
 		ProductStatus:   productStatus,
-		StatusVariant:   statusVariant,
+		StatusVariant:   StatusVariant,
 		Collections:     collections,
 	}
 
 	// Load tab-specific data
 	switch activeTab {
 	case "variants":
-		tableConfig := buildVariantsTable(ctx, deps, id)
+		tableConfig := BuildVariantsTable(ctx, deps, id)
 		pageData.VariantsTable = tableConfig
-	case "attributes":
-		tableConfig := buildAttributesTable(ctx, deps, id)
-		pageData.AttributesTable = tableConfig
-	case "pricing":
-		tableConfig := buildPricingTable(ctx, deps, id)
-		pageData.PricingTable = tableConfig
+	case "options":
+		tableConfig := buildOptionsTable(ctx, deps, id)
+		pageData.OptionsTable = tableConfig
 	}
 
 	return pageData, nil
 }
 
-func buildTabItems(id string, l centymo.ProductLabels, variantCount, attributeCount int) []pyeza.TabItem {
+func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount int) []pyeza.TabItem {
 	base := "/app/products/detail/" + id
 	action := "/action/products/detail/" + id + "/tab/"
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
+		{Key: "options", Label: l.Tabs.Options, Href: base + "?tab=options", HxGet: action + "options", Icon: "icon-settings", Count: optionCount, Disabled: false},
 		{Key: "variants", Label: l.Tabs.Variants, Href: base + "?tab=variants", HxGet: action + "variants", Icon: "icon-layers", Count: variantCount, Disabled: false},
-		{Key: "attributes", Label: l.Tabs.Attributes, Href: base + "?tab=attributes", HxGet: action + "attributes", Icon: "icon-sliders", Count: attributeCount, Disabled: false},
-		{Key: "pricing", Label: l.Tabs.Pricing, Href: base + "?tab=pricing", HxGet: action + "pricing", Icon: "icon-tag", Count: 0, Disabled: false},
 	}
 }
 
@@ -212,48 +207,74 @@ func buildTabItems(id string, l centymo.ProductLabels, variantCount, attributeCo
 // Variants tab table
 // ---------------------------------------------------------------------------
 
-func buildVariantsTable(ctx context.Context, deps *Deps, productID string) *types.TableConfig {
+func BuildVariantsTable(ctx context.Context, deps *Deps, productID string) *types.TableConfig {
 	l := deps.Labels
 
 	columns := []types.TableColumn{
 		{Key: "sku", Label: l.Variant.SKU, Sortable: true},
 		{Key: "priceOverride", Label: l.Variant.PriceOverride, Sortable: true, Width: "150px"},
-		{Key: "attributes", Label: l.Variant.Attributes, Sortable: false},
+		{Key: "options", Label: "Options", Sortable: false},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 
 	rows := []types.TableRow{}
 
-	if deps.DB != nil {
-		variants, err := deps.DB.ListSimple(ctx, "product_variant")
+	// Build variant → option value labels map
+	variantOptionLabels := make(map[string][]string)
+	if deps.ListProductVariantOptions != nil && deps.ListProductOptionValues != nil {
+		voResp, _ := deps.ListProductVariantOptions(ctx, &productvariantoptionpb.ListProductVariantOptionsRequest{})
+		ovResp, _ := deps.ListProductOptionValues(ctx, &productoptionvaluepb.ListProductOptionValuesRequest{})
+		valLabelMap := make(map[string]string)
+		if ovResp != nil {
+			for _, ov := range ovResp.GetData() {
+				vid := ov.GetId()
+				label := ov.GetLabel()
+				if vid != "" {
+					valLabelMap[vid] = label
+				}
+			}
+		}
+		if voResp != nil {
+			for _, vo := range voResp.GetData() {
+				varID := vo.GetProductVariantId()
+				valID := vo.GetProductOptionValueId()
+				if label, ok := valLabelMap[valID]; ok && varID != "" {
+					variantOptionLabels[varID] = append(variantOptionLabels[varID], label)
+				}
+			}
+		}
+	}
+
+	if deps.ListProductVariants != nil {
+		varResp, err := deps.ListProductVariants(ctx, &productvariantpb.ListProductVariantsRequest{})
 		if err != nil {
 			log.Printf("Failed to list product variants: %v", err)
 		} else {
-			for _, v := range variants {
-				pid, _ := v["product_id"].(string)
+			for _, v := range varResp.GetData() {
+				pid := v.GetProductId()
 				if pid != productID {
 					continue
 				}
 
-				vid, _ := v["id"].(string)
-				sku, _ := v["sku"].(string)
+				vid := v.GetId()
+				sku := v.GetSku()
 				priceStr := ""
-				if po, ok := v["price_override"]; ok && po != nil {
+				if po := v.GetPriceOverride(); po != 0 {
 					priceStr = fmt.Sprintf("%v", po)
 				}
-				active, _ := v["active"].(bool)
+				active := v.GetActive()
 				status := "active"
 				if !active {
 					status = "inactive"
 				}
 
-				// Collect attribute values as a display string
-				attrDisplay := ""
-				if attrs, ok := v["attribute_values"].(string); ok {
-					attrDisplay = attrs
-				}
+				optionsDisplay := strings.Join(variantOptionLabels[vid], ", ")
 
 				actions := []types.TableAction{
+					{
+						Type: "view", Label: l.Actions.View,
+						Href: fmt.Sprintf("/app/products/detail/%s/variant/%s", productID, vid),
+					},
 					{
 						Type: "edit", Label: l.Variant.Edit, Action: "edit",
 						URL:         fmt.Sprintf("/action/products/detail/%s/variants/edit/%s", productID, vid),
@@ -273,8 +294,8 @@ func buildVariantsTable(ctx context.Context, deps *Deps, productID string) *type
 					Cells: []types.TableCell{
 						{Type: "text", Value: sku},
 						{Type: "text", Value: priceStr},
-						{Type: "text", Value: attrDisplay},
-						{Type: "badge", Value: status, Variant: statusVariant(status)},
+						{Type: "text", Value: optionsDisplay},
+						{Type: "badge", Value: status, Variant: StatusVariant(status)},
 					},
 					DataAttrs: map[string]string{
 						"sku":    sku,
@@ -320,182 +341,10 @@ func buildVariantsTable(ctx context.Context, deps *Deps, productID string) *type
 }
 
 // ---------------------------------------------------------------------------
-// Attributes tab table
-// ---------------------------------------------------------------------------
-
-func buildAttributesTable(ctx context.Context, deps *Deps, productID string) *types.TableConfig {
-	l := deps.Labels
-
-	columns := []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "code", Label: "Code", Sortable: true},
-		{Key: "dataType", Label: "Data Type", Sortable: true, Width: "120px"},
-		{Key: "defaultValue", Label: l.Attribute.DefaultValue, Sortable: false, Width: "150px"},
-	}
-
-	rows := []types.TableRow{}
-
-	if deps.DB != nil {
-		attributes, err := deps.DB.ListSimple(ctx, "product_attribute")
-		if err != nil {
-			log.Printf("Failed to list product attributes: %v", err)
-		} else {
-			for _, a := range attributes {
-				pid, _ := a["product_id"].(string)
-				if pid != productID {
-					continue
-				}
-
-				aid, _ := a["id"].(string)
-				name, _ := a["attribute_name"].(string)
-				code, _ := a["attribute_code"].(string)
-				dataType, _ := a["data_type"].(string)
-				defaultVal, _ := a["default_value"].(string)
-
-				actions := []types.TableAction{
-					{
-						Type: "delete", Label: l.Attribute.Remove, Action: "delete",
-						URL:            fmt.Sprintf("/action/products/detail/%s/attributes/remove", productID),
-						ItemName:       name,
-						ConfirmTitle:   l.Attribute.Remove,
-						ConfirmMessage: fmt.Sprintf("Are you sure you want to remove attribute %s?", name),
-					},
-				}
-
-				rows = append(rows, types.TableRow{
-					ID: aid,
-					Cells: []types.TableCell{
-						{Type: "text", Value: name},
-						{Type: "text", Value: code},
-						{Type: "badge", Value: dataType, Variant: "info"},
-						{Type: "text", Value: defaultVal},
-					},
-					DataAttrs: map[string]string{
-						"name": name,
-						"code": code,
-					},
-					Actions: actions,
-				})
-			}
-		}
-	}
-
-	types.ApplyColumnStyles(columns, rows)
-
-	tableConfig := &types.TableConfig{
-		ID:                   "product-attributes-table",
-		RefreshURL:           fmt.Sprintf("/action/products/detail/%s/attributes/table", productID),
-		Columns:              columns,
-		Rows:                 rows,
-		ShowSearch:           true,
-		ShowActions:          true,
-		ShowFilters:          false,
-		ShowSort:             true,
-		ShowColumns:          true,
-		ShowExport:           false,
-		ShowDensity:          true,
-		ShowEntries:          true,
-		DefaultSortColumn:    "name",
-		DefaultSortDirection: "asc",
-		Labels:               deps.TableLabels,
-		EmptyState: types.TableEmptyState{
-			Title:   l.Attribute.Empty,
-			Message: "No attributes have been assigned to this product yet.",
-		},
-		PrimaryAction: &types.PrimaryAction{
-			Label:     l.Attribute.Assign,
-			ActionURL: fmt.Sprintf("/action/products/detail/%s/attributes/assign", productID),
-			Icon:      "icon-plus",
-		},
-	}
-	types.ApplyTableSettings(tableConfig)
-
-	return tableConfig
-}
-
-// ---------------------------------------------------------------------------
-// Pricing tab table
-// ---------------------------------------------------------------------------
-
-func buildPricingTable(ctx context.Context, deps *Deps, productID string) *types.TableConfig {
-	l := deps.Labels
-
-	columns := []types.TableColumn{
-		{Key: "priceListName", Label: "Price List", Sortable: true},
-		{Key: "currency", Label: l.Detail.Currency, Sortable: true, Width: "100px"},
-		{Key: "customPrice", Label: "Custom Price", Sortable: true, Width: "150px"},
-		{Key: "validFrom", Label: "Valid From", Sortable: true, Width: "140px"},
-		{Key: "validTo", Label: "Valid To", Sortable: true, Width: "140px"},
-	}
-
-	rows := []types.TableRow{}
-
-	if deps.ListPriceProducts != nil {
-		resp, err := deps.ListPriceProducts(ctx, &priceproductpb.ListPriceProductsRequest{})
-		if err != nil {
-			log.Printf("Failed to list price products: %v", err)
-		} else {
-			for _, pp := range resp.GetData() {
-				if pp.GetProductId() != productID {
-					continue
-				}
-
-				ppID := pp.GetId()
-				priceListName := pp.GetPriceListId()
-				currency := pp.GetCurrency()
-				customPrice := fmt.Sprintf("%d", pp.GetAmount())
-				validFrom := pp.GetDateStartString()
-				validTo := pp.GetDateEndString()
-
-				rows = append(rows, types.TableRow{
-					ID: ppID,
-					Cells: []types.TableCell{
-						{Type: "text", Value: priceListName},
-						{Type: "text", Value: currency},
-						{Type: "text", Value: customPrice},
-						{Type: "text", Value: validFrom},
-						{Type: "text", Value: validTo},
-					},
-					DataAttrs: map[string]string{
-						"priceListName": priceListName,
-					},
-				})
-			}
-		}
-	}
-
-	types.ApplyColumnStyles(columns, rows)
-
-	tableConfig := &types.TableConfig{
-		ID:                   "product-pricing-table",
-		Columns:              columns,
-		Rows:                 rows,
-		ShowSearch:           true,
-		ShowActions:          false,
-		ShowFilters:          false,
-		ShowSort:             true,
-		ShowColumns:          true,
-		ShowExport:           false,
-		ShowDensity:          true,
-		ShowEntries:          true,
-		DefaultSortColumn:    "priceListName",
-		DefaultSortDirection: "asc",
-		Labels:               deps.TableLabels,
-		EmptyState: types.TableEmptyState{
-			Title:   "No Price Lists",
-			Message: "This product has not been added to any price lists yet.",
-		},
-	}
-	types.ApplyTableSettings(tableConfig)
-
-	return tableConfig
-}
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-func formatPrice(currency string, price float64) string {
+func FormatPrice(currency string, price float64) string {
 	if currency == "" {
 		currency = "PHP"
 	}
@@ -521,7 +370,7 @@ func formatPrice(currency string, price float64) string {
 	return currency + " " + string(result) + "." + decPart
 }
 
-func statusVariant(status string) string {
+func StatusVariant(status string) string {
 	switch status {
 	case "active":
 		return "success"

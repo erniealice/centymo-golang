@@ -10,6 +10,11 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
+	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
+	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 )
 
 // FormLabels holds i18n labels for the inventory drawer form template.
@@ -46,7 +51,25 @@ type FormData struct {
 
 // Deps holds dependencies for inventory action handlers.
 type Deps struct {
-	DB centymo.DataSource
+	CreateInventoryItem        func(ctx context.Context, req *inventoryitempb.CreateInventoryItemRequest) (*inventoryitempb.CreateInventoryItemResponse, error)
+	ReadInventoryItem          func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
+	UpdateInventoryItem        func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
+	DeleteInventoryItem        func(ctx context.Context, req *inventoryitempb.DeleteInventoryItemRequest) (*inventoryitempb.DeleteInventoryItemResponse, error)
+	CreateInventorySerial      func(ctx context.Context, req *inventoryserialpb.CreateInventorySerialRequest) (*inventoryserialpb.CreateInventorySerialResponse, error)
+	ReadInventorySerial        func(ctx context.Context, req *inventoryserialpb.ReadInventorySerialRequest) (*inventoryserialpb.ReadInventorySerialResponse, error)
+	UpdateInventorySerial      func(ctx context.Context, req *inventoryserialpb.UpdateInventorySerialRequest) (*inventoryserialpb.UpdateInventorySerialResponse, error)
+	DeleteInventorySerial      func(ctx context.Context, req *inventoryserialpb.DeleteInventorySerialRequest) (*inventoryserialpb.DeleteInventorySerialResponse, error)
+	CreateInventoryTransaction func(ctx context.Context, req *inventorytransactionpb.CreateInventoryTransactionRequest) (*inventorytransactionpb.CreateInventoryTransactionResponse, error)
+	CreateInventoryDepreciation func(ctx context.Context, req *inventorydepreciationpb.CreateInventoryDepreciationRequest) (*inventorydepreciationpb.CreateInventoryDepreciationResponse, error)
+	ReadInventoryDepreciation  func(ctx context.Context, req *inventorydepreciationpb.ReadInventoryDepreciationRequest) (*inventorydepreciationpb.ReadInventoryDepreciationResponse, error)
+	UpdateInventoryDepreciation func(ctx context.Context, req *inventorydepreciationpb.UpdateInventoryDepreciationRequest) (*inventorydepreciationpb.UpdateInventoryDepreciationResponse, error)
+}
+
+func strPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func formLabels(t func(string) string) FormLabels {
@@ -88,19 +111,19 @@ func NewAddAction(deps *Deps) view.View {
 		reserved, _ := strconv.ParseFloat(r.FormValue("quantity_reserved"), 64)
 		reorderLevel, _ := strconv.ParseFloat(r.FormValue("reorder_level"), 64)
 
-		data := map[string]any{
-			"name":               r.FormValue("product_name"),
-			"sku":                r.FormValue("sku"),
-			"quantity_on_hand":   onHand,
-			"quantity_reserved":  reserved,
-			"reorder_level":      reorderLevel,
-			"unit_of_measure":    r.FormValue("unit_of_measure"),
-			"location_id":        r.FormValue("location_id"),
-			"notes":              r.FormValue("notes"),
-			"active":             active,
+		data := &inventoryitempb.InventoryItem{
+			Name:             r.FormValue("product_name"),
+			Sku:              strPtr(r.FormValue("sku")),
+			QuantityOnHand:   onHand,
+			QuantityReserved: reserved,
+			ReorderLevel:     &reorderLevel,
+			UnitOfMeasure:    r.FormValue("unit_of_measure"),
+			LocationId:       strPtr(r.FormValue("location_id")),
+			Notes:            strPtr(r.FormValue("notes")),
+			Active:           active,
 		}
 
-		_, err := deps.DB.Create(ctx, "inventory_item", data)
+		_, err := deps.CreateInventoryItem(ctx, &inventoryitempb.CreateInventoryItemRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create inventory item: %v", err)
 			return centymo.HTMXError("Failed to create inventory item")
@@ -116,32 +139,32 @@ func NewEditAction(deps *Deps) view.View {
 		id := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			record, err := deps.DB.Read(ctx, "inventory_item", id)
+			resp, err := deps.ReadInventoryItem(ctx, &inventoryitempb.ReadInventoryItemRequest{
+				Data: &inventoryitempb.InventoryItem{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to read inventory item %s: %v", id, err)
 				return centymo.HTMXError("Inventory item not found")
 			}
-
-			name, _ := record["name"].(string)
-			sku, _ := record["sku"].(string)
-			locationID, _ := record["location_id"].(string)
-			notes, _ := record["notes"].(string)
-			unitOfMeasure, _ := record["unit_of_measure"].(string)
-			active, _ := record["active"].(bool)
+			items := resp.GetData()
+			if len(items) == 0 {
+				return centymo.HTMXError("Inventory item not found")
+			}
+			item := items[0]
 
 			return view.OK("inventory-drawer-form", &FormData{
 				FormAction:    "/action/inventory/edit/" + id,
 				IsEdit:        true,
 				ID:            id,
-				Name:          name,
-				SKU:           sku,
-				OnHand:        anyToString(record["quantity_on_hand"]),
-				Reserved:      anyToString(record["quantity_reserved"]),
-				ReorderLevel:  anyToString(record["reorder_level"]),
-				UnitOfMeasure: unitOfMeasure,
-				LocationID:    locationID,
-				Notes:         notes,
-				Active:        active,
+				Name:          item.GetName(),
+				SKU:           item.GetSku(),
+				OnHand:        formatFloat(item.GetQuantityOnHand()),
+				Reserved:      formatFloat(item.GetQuantityReserved()),
+				ReorderLevel:  formatFloat(item.GetReorderLevel()),
+				UnitOfMeasure: item.GetUnitOfMeasure(),
+				LocationID:    item.GetLocationId(),
+				Notes:         item.GetNotes(),
+				Active:        item.GetActive(),
 				Labels:        formLabels(viewCtx.T),
 				CommonLabels:  nil, // injected by ViewAdapter
 			})
@@ -158,19 +181,20 @@ func NewEditAction(deps *Deps) view.View {
 		reserved, _ := strconv.ParseFloat(r.FormValue("quantity_reserved"), 64)
 		reorderLevel, _ := strconv.ParseFloat(r.FormValue("reorder_level"), 64)
 
-		data := map[string]any{
-			"name":               r.FormValue("product_name"),
-			"sku":                r.FormValue("sku"),
-			"quantity_on_hand":   onHand,
-			"quantity_reserved":  reserved,
-			"reorder_level":      reorderLevel,
-			"unit_of_measure":    r.FormValue("unit_of_measure"),
-			"location_id":        r.FormValue("location_id"),
-			"notes":              r.FormValue("notes"),
-			"active":             active,
+		data := &inventoryitempb.InventoryItem{
+			Id:               id,
+			Name:             r.FormValue("product_name"),
+			Sku:              strPtr(r.FormValue("sku")),
+			QuantityOnHand:   onHand,
+			QuantityReserved: reserved,
+			ReorderLevel:     &reorderLevel,
+			UnitOfMeasure:    r.FormValue("unit_of_measure"),
+			LocationId:       strPtr(r.FormValue("location_id")),
+			Notes:            strPtr(r.FormValue("notes")),
+			Active:           active,
 		}
 
-		_, err := deps.DB.Update(ctx, "inventory_item", id, data)
+		_, err := deps.UpdateInventoryItem(ctx, &inventoryitempb.UpdateInventoryItemRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to update inventory item %s: %v", id, err)
 			return centymo.HTMXError("Failed to update inventory item")
@@ -192,7 +216,9 @@ func NewDeleteAction(deps *Deps) view.View {
 			return centymo.HTMXError("Inventory item ID is required")
 		}
 
-		err := deps.DB.Delete(ctx, "inventory_item", id)
+		_, err := deps.DeleteInventoryItem(ctx, &inventoryitempb.DeleteInventoryItemRequest{
+			Data: &inventoryitempb.InventoryItem{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to delete inventory item %s: %v", id, err)
 			return centymo.HTMXError("Failed to delete inventory item")
@@ -213,7 +239,9 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 		}
 
 		for _, id := range ids {
-			err := deps.DB.Delete(ctx, "inventory_item", id)
+			_, err := deps.DeleteInventoryItem(ctx, &inventoryitempb.DeleteInventoryItemRequest{
+				Data: &inventoryitempb.InventoryItem{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to delete inventory item %s: %v", id, err)
 			}
@@ -223,9 +251,9 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	})
 }
 
-func anyToString(v any) string {
-	if v == nil {
+func formatFloat(f float64) string {
+	if f == 0 {
 		return "0"
 	}
-	return fmt.Sprintf("%v", v)
+	return fmt.Sprintf("%g", f)
 }

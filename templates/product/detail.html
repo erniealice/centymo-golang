@@ -17,10 +17,8 @@
             {{template "product-tab-info" .}}
         {{else if eq .ActiveTab "variants"}}
             {{template "product-tab-variants" .}}
-        {{else if eq .ActiveTab "attributes"}}
-            {{template "product-tab-attributes" .}}
-        {{else if eq .ActiveTab "pricing"}}
-            {{template "product-tab-pricing" .}}
+        {{else if eq .ActiveTab "options"}}
+            {{template "product-tab-options" .}}
         {{end}}
     </div>
 </div>
@@ -76,7 +74,7 @@
            hx-get="/action/products/edit/{{.ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
-           data-sheet-title="{{.Labels.Actions.Edit}}">
+           onclick="if(window.Sheet) Sheet.open('{{.Labels.Actions.Edit}}')">
             {{.Labels.Actions.Edit}}
         </a>
     </div>
@@ -100,32 +98,16 @@
 {{end}}
 
 {{/* =============================================
-     TAB PARTIAL: Attributes
+     TAB PARTIAL: Options
      ============================================= */}}
-{{define "product-tab-attributes"}}
+{{define "product-tab-options"}}
 <div class="tab-scroll tab-scroll--table">
-    {{if .AttributesTable}}
-        {{template "table-card" .AttributesTable}}
+    {{if .OptionsTable}}
+        {{template "table-card" .OptionsTable}}
     {{else}}
         <div class="coming-soon-panel">
-            <div class="coming-soon-title">{{.Labels.Attribute.Empty}}</div>
-            <p class="coming-soon-text">No attributes have been assigned to this product yet.</p>
-        </div>
-    {{end}}
-</div>
-{{end}}
-
-{{/* =============================================
-     TAB PARTIAL: Pricing
-     ============================================= */}}
-{{define "product-tab-pricing"}}
-<div class="tab-scroll tab-scroll--table">
-    {{if .PricingTable}}
-        {{template "table-card" .PricingTable}}
-    {{else}}
-        <div class="coming-soon-panel">
-            <div class="coming-soon-title">No Price Lists</div>
-            <p class="coming-soon-text">This product has not been added to any price lists yet. Manage pricing from the Price Lists section.</p>
+            <div class="coming-soon-title">{{.Labels.Options.Empty.Title}}</div>
+            <p class="coming-soon-text">{{.Labels.Options.Empty.Message}}</p>
         </div>
     {{end}}
 </div>
