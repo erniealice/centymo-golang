@@ -113,7 +113,7 @@ func NewPageView(deps *Deps) view.View {
 			for i, e := range optionEntries {
 				vals[i] = e.Value
 			}
-			headerTitle = productName + " - " + strings.Join(vals, " / ")
+			headerTitle = productName + " - " + strings.Join(vals, " | ")
 		}
 
 		breadcrumbs := []detail.Breadcrumb{
