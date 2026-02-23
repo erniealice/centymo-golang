@@ -1,4 +1,4 @@
-package serial
+package item
 
 import (
 	"context"
@@ -27,35 +27,35 @@ type SerialSummary struct {
 	Reserved  int
 }
 
-// StockDetailPageData holds data for the variant-scoped stock detail page.
+// StockDetailPageData holds data for the inventory item detail page.
 type StockDetailPageData struct {
 	types.PageData
-	ContentTemplate  string
-	Breadcrumbs      []detail.Breadcrumb
-	ProductID        string
-	VariantID        string
-	InventoryItemID  string
-	ActiveTab        string
-	TabItems         []pyeza.TabItem
+	ContentTemplate   string
+	Breadcrumbs       []detail.Breadcrumb
+	ProductID         string
+	VariantID         string
+	InventoryItemID   string
+	ActiveTab         string
+	TabItems          []pyeza.TabItem
 	// Item info fields
-	ItemName         string
-	ItemSKU          string
-	ItemType         string
-	ItemTypeLabel    string
-	ItemTypeVariant  string
-	LocationName     string
-	QuantityOnHand   string
-	QuantityReserved string
-	AvailableQty     string
-	ItemStatus       string
+	ItemName          string
+	ItemSKU           string
+	ItemType          string
+	ItemTypeLabel     string
+	ItemTypeVariant   string
+	LocationName      string
+	QuantityOnHand    string
+	QuantityReserved  string
+	AvailableQty      string
+	ItemStatus        string
 	ItemStatusVariant string
 	// Serial data
-	SerialTable   *types.TableConfig
-	SerialSummary *SerialSummary
-	Labels        centymo.ProductLabels
+	SerialTable       *types.TableConfig
+	SerialSummary     *SerialSummary
+	Labels            centymo.ProductLabels
 }
 
-// NewPageView creates the variant-scoped stock detail view (full page).
+// NewPageView creates the inventory item detail view (full page).
 // Route: /app/products/detail/{id}/variant/{vid}/stock/{iid}
 func NewPageView(deps *variant.Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -86,7 +86,7 @@ func NewPageView(deps *variant.Deps) view.View {
 		variantSKU := variantData.GetSku()
 
 		// Load inventory item
-		item, err := readInventoryItem(ctx, deps, itemID)
+		item, err := ReadInventoryItem(ctx, deps, itemID)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -96,7 +96,7 @@ func NewPageView(deps *variant.Deps) view.View {
 		locationName := centymo.LocationDisplayName(locationID)
 		headerTitle := name + " \u2014 " + locationName
 
-		itemType := item.GetItemType()
+		itemType := product.GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
@@ -107,7 +107,12 @@ func NewPageView(deps *variant.Deps) view.View {
 			itemStatus = "inactive"
 		}
 
-		available := computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
+		available := ComputeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
+
+		activeTab := viewCtx.Request.URL.Query().Get("tab")
+		if activeTab == "" {
+			activeTab = "info"
+		}
 
 		l := deps.Labels
 
@@ -118,13 +123,7 @@ func NewPageView(deps *variant.Deps) view.View {
 			{Label: name + " @ " + locationName, Href: ""},
 		}
 
-		// Build variant-context tabs (same as variant page, stock tab active)
-		tabItems := buildVariantTabItems(productID, variantID, l)
-
-		// Load serials for this inventory item
-		serials := loadSerials(ctx, deps, itemID)
-		serialTable := buildSerialTable(serials, deps.TableLabels, itemID)
-		serialSummary := computeSerialSummary(serials)
+		tabItems := BuildStockTabItems(productID, variantID, itemID, l)
 
 		pageData := &StockDetailPageData{
 			PageData: types.PageData{
@@ -142,31 +141,127 @@ func NewPageView(deps *variant.Deps) view.View {
 			ProductID:         productID,
 			VariantID:         variantID,
 			InventoryItemID:   itemID,
-			ActiveTab:         "stock",
+			ActiveTab:         activeTab,
 			TabItems:          tabItems,
 			ItemName:          name,
 			ItemSKU:           item.GetSku(),
 			ItemType:          itemType,
-			ItemTypeLabel:     itemTypeDisplayLabel(itemType),
-			ItemTypeVariant:   itemTypeDisplayVariant(itemType),
+			ItemTypeLabel:     ItemTypeDisplayLabel(itemType),
+			ItemTypeVariant:   ItemTypeDisplayVariant(itemType),
 			LocationName:      locationName,
 			QuantityOnHand:    fmt.Sprintf("%v", item.GetQuantityOnHand()),
 			QuantityReserved:  fmt.Sprintf("%v", item.GetQuantityReserved()),
 			AvailableQty:      available,
 			ItemStatus:        itemStatus,
 			ItemStatusVariant: detail.StatusVariant(itemStatus),
-			SerialTable:       serialTable,
-			SerialSummary:     serialSummary,
 			Labels:            l,
+		}
+
+		// Load tab-specific data
+		switch activeTab {
+		case "serials":
+			serials := LoadSerials(ctx, deps, itemID)
+			pageData.SerialTable = BuildSerialTable(serials, deps.TableLabels, productID, variantID, itemID, l)
+			pageData.SerialSummary = ComputeSerialSummary(serials)
 		}
 
 		return view.OK("variant-stock-detail", pageData)
 	})
 }
 
-// readInventoryItem reads a single inventory item by ID.
-// Uses ReadInventoryItem if available, otherwise falls back to ListInventoryItems with filtering.
-func readInventoryItem(ctx context.Context, deps *variant.Deps, itemID string) (*inventoryitempb.InventoryItem, error) {
+// NewTabAction creates the HTMX tab action view for inventory item detail (partial).
+// Route: /action/products/detail/{id}/variant/{vid}/stock/{iid}/tab/{tab}
+func NewTabAction(deps *variant.Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		productID := viewCtx.Request.PathValue("id")
+		variantID := viewCtx.Request.PathValue("vid")
+		itemID := viewCtx.Request.PathValue("iid")
+		tab := viewCtx.Request.PathValue("tab")
+		if tab == "" {
+			tab = "info"
+		}
+
+		// Load product for item type
+		prodResp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{
+			Data: &productpb.Product{Id: productID},
+		})
+		if err != nil || len(prodResp.GetData()) == 0 {
+			log.Printf("Failed to read product %s: %v", productID, err)
+			return view.Error(fmt.Errorf("failed to load product: %w", err))
+		}
+		product := prodResp.GetData()[0]
+
+		itemType := product.GetItemType()
+		if itemType == "" {
+			itemType = "non_serialized"
+		}
+
+		// Load inventory item
+		item, err := ReadInventoryItem(ctx, deps, itemID)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		name := item.GetName()
+		locationID := item.GetLocationId()
+		locationName := centymo.LocationDisplayName(locationID)
+
+		active := item.GetActive()
+		itemStatus := "active"
+		if !active {
+			itemStatus = "inactive"
+		}
+
+		available := ComputeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
+
+		l := deps.Labels
+
+		pageData := &StockDetailPageData{
+			ProductID:         productID,
+			VariantID:         variantID,
+			InventoryItemID:   itemID,
+			ActiveTab:         tab,
+			ItemName:          name,
+			ItemSKU:           item.GetSku(),
+			ItemType:          itemType,
+			ItemTypeLabel:     ItemTypeDisplayLabel(itemType),
+			ItemTypeVariant:   ItemTypeDisplayVariant(itemType),
+			LocationName:      locationName,
+			QuantityOnHand:    fmt.Sprintf("%v", item.GetQuantityOnHand()),
+			QuantityReserved:  fmt.Sprintf("%v", item.GetQuantityReserved()),
+			AvailableQty:      available,
+			ItemStatus:        itemStatus,
+			ItemStatusVariant: detail.StatusVariant(itemStatus),
+			Labels:            l,
+		}
+
+		// Load tab-specific data
+		switch tab {
+		case "serials":
+			serials := LoadSerials(ctx, deps, itemID)
+			pageData.SerialTable = BuildSerialTable(serials, deps.TableLabels, productID, variantID, itemID, l)
+			pageData.SerialSummary = ComputeSerialSummary(serials)
+		}
+
+		templateName := "stock-tab-" + tab
+		return view.OK(templateName, pageData)
+	})
+}
+
+// BuildStockTabItems creates the tab items for the inventory item detail page.
+func BuildStockTabItems(productID, variantID, itemID string, l centymo.ProductLabels) []pyeza.TabItem {
+	base := fmt.Sprintf("/app/products/detail/%s/variant/%s/stock/%s", productID, variantID, itemID)
+	action := fmt.Sprintf("/action/products/detail/%s/variant/%s/stock/%s/tab/", productID, variantID, itemID)
+	return []pyeza.TabItem{
+		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
+		{Key: "serials", Label: "Serials", Href: base + "?tab=serials", HxGet: action + "serials", Icon: "icon-hash", Count: 0, Disabled: false},
+		{Key: "pricing-history", Label: "Pricing History", Href: base + "?tab=pricing-history", HxGet: action + "pricing-history", Icon: "icon-tag", Count: 0, Disabled: false},
+		{Key: "audit-trail", Label: "Audit Trail", Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
+	}
+}
+
+// ReadInventoryItem reads a single inventory item by ID.
+func ReadInventoryItem(ctx context.Context, deps *variant.Deps, itemID string) (*inventoryitempb.InventoryItem, error) {
 	if deps.ReadInventoryItem != nil {
 		resp, err := deps.ReadInventoryItem(ctx, &inventoryitempb.ReadInventoryItemRequest{
 			Data: &inventoryitempb.InventoryItem{Id: itemID},
@@ -191,16 +286,16 @@ func readInventoryItem(ctx context.Context, deps *variant.Deps, itemID string) (
 		log.Printf("Failed to list inventory_items: %v", err)
 		return nil, fmt.Errorf("failed to load inventory items: %w", err)
 	}
-	for _, item := range resp.GetData() {
-		if item.GetId() == itemID {
-			return item, nil
+	for _, i := range resp.GetData() {
+		if i.GetId() == itemID {
+			return i, nil
 		}
 	}
 	return nil, fmt.Errorf("inventory item not found")
 }
 
-// loadSerials loads serial numbers for an inventory item.
-func loadSerials(ctx context.Context, deps *variant.Deps, inventoryItemID string) []*inventoryserialpb.InventorySerial {
+// LoadSerials loads serial numbers for an inventory item.
+func LoadSerials(ctx context.Context, deps *variant.Deps, inventoryItemID string) []*inventoryserialpb.InventorySerial {
 	if deps.ListInventorySerials == nil {
 		return nil
 	}
@@ -214,14 +309,14 @@ func loadSerials(ctx context.Context, deps *variant.Deps, inventoryItemID string
 	return resp.GetData()
 }
 
-// buildSerialTable builds the serial numbers table.
-func buildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels types.TableLabels, inventoryItemID string) *types.TableConfig {
+// BuildSerialTable builds the serial numbers table with view actions linking to serial detail.
+func BuildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels types.TableLabels, productID, variantID, itemID string, l centymo.ProductLabels) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "serial_number", Label: "Serial Number", Sortable: true},
-		{Key: "imei", Label: "IMEI", Sortable: false, Width: "180px"},
-		{Key: "status", Label: "Status", Sortable: true, Width: "120px"},
-		{Key: "warranty_end", Label: "Warranty End", Sortable: true, Width: "140px"},
-		{Key: "purchase_order", Label: "Purchase Order", Sortable: false, Width: "140px"},
+		{Key: "imei", Label: "IMEI", Sortable: false},
+		{Key: "status", Label: "Status", Sortable: true},
+		{Key: "warranty_end", Label: "Warranty End", Sortable: true},
+		{Key: "purchase_order", Label: "Purchase Order", Sortable: false},
 	}
 
 	rows := []types.TableRow{}
@@ -233,28 +328,38 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels 
 		warrantyEnd := s.GetWarrantyEnd()
 		po := s.GetPurchaseOrder()
 
+		actions := []types.TableAction{
+			{
+				Type:  "view",
+				Label: l.Actions.View,
+				Href:  fmt.Sprintf("/app/products/detail/%s/variant/%s/stock/%s/serial/%s", productID, variantID, itemID, id),
+			},
+		}
+
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: serial},
 				{Type: "text", Value: imei},
-				{Type: "badge", Value: status, Variant: serialStatusVariant(status)},
+				{Type: "badge", Value: status, Variant: SerialStatusVariant(status)},
 				{Type: "text", Value: warrantyEnd},
 				{Type: "text", Value: po},
 			},
+			Actions: actions,
 		})
 	}
 
 	types.ApplyColumnStyles(columns, rows)
 
 	cfg := &types.TableConfig{
-		ID:                   "variant-serial-table",
+		ID:                   "serial-table",
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
 		ShowEntries:          true,
 		ShowSort:             true,
 		ShowDensity:          true,
+		ShowActions:          true,
 		DefaultSortColumn:    "serial_number",
 		DefaultSortDirection: "asc",
 		Labels:               tableLabels,
@@ -268,8 +373,8 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels 
 	return cfg
 }
 
-// serialStatusVariant returns the badge variant for a serial status.
-func serialStatusVariant(status string) string {
+// SerialStatusVariant returns the badge variant for a serial status.
+func SerialStatusVariant(status string) string {
 	switch status {
 	case "available":
 		return "success"
@@ -286,8 +391,8 @@ func serialStatusVariant(status string) string {
 	}
 }
 
-// computeSerialSummary computes serial count totals.
-func computeSerialSummary(serials []*inventoryserialpb.InventorySerial) *SerialSummary {
+// ComputeSerialSummary computes serial count totals.
+func ComputeSerialSummary(serials []*inventoryserialpb.InventorySerial) *SerialSummary {
 	summary := &SerialSummary{Total: len(serials)}
 	for _, s := range serials {
 		switch s.GetStatus() {
@@ -302,8 +407,8 @@ func computeSerialSummary(serials []*inventoryserialpb.InventorySerial) *SerialS
 	return summary
 }
 
-// computeAvailable computes available quantity from on-hand minus reserved.
-func computeAvailable(onHand, reserved float64) string {
+// ComputeAvailable computes available quantity from on-hand minus reserved.
+func ComputeAvailable(onHand, reserved float64) string {
 	avail := onHand - reserved
 	if avail < 0 {
 		avail = 0
@@ -314,8 +419,8 @@ func computeAvailable(onHand, reserved float64) string {
 	return fmt.Sprintf("%.2f", avail)
 }
 
-// itemTypeDisplayLabel returns a human-readable label for the item type.
-func itemTypeDisplayLabel(itemType string) string {
+// ItemTypeDisplayLabel returns a human-readable label for the item type.
+func ItemTypeDisplayLabel(itemType string) string {
 	switch itemType {
 	case "serialized":
 		return "Serialized"
@@ -328,8 +433,8 @@ func itemTypeDisplayLabel(itemType string) string {
 	}
 }
 
-// itemTypeDisplayVariant returns the badge variant for the item type.
-func itemTypeDisplayVariant(itemType string) string {
+// ItemTypeDisplayVariant returns the badge variant for the item type.
+func ItemTypeDisplayVariant(itemType string) string {
 	switch itemType {
 	case "serialized":
 		return "info"
@@ -339,18 +444,5 @@ func itemTypeDisplayVariant(itemType string) string {
 		return "success"
 	default:
 		return "default"
-	}
-}
-
-// buildVariantTabItems creates the tab items for the variant detail page.
-// Reuses the same tabs as the variant page so the user stays in context.
-func buildVariantTabItems(productID, variantID string, l centymo.ProductLabels) []pyeza.TabItem {
-	base := fmt.Sprintf("/app/products/detail/%s/variant/%s", productID, variantID)
-	action := fmt.Sprintf("/action/products/detail/%s/variant/%s/tab/", productID, variantID)
-	return []pyeza.TabItem{
-		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
-		{Key: "pricing", Label: l.Tabs.Pricing, Href: base + "?tab=pricing", HxGet: action + "pricing", Icon: "icon-tag", Count: 0, Disabled: false},
-		{Key: "stock", Label: "Stock", Href: base + "?tab=stock", HxGet: action + "stock", Icon: "icon-package", Count: 0, Disabled: false},
-		{Key: "audit-trail", Label: "Audit Trail", Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
 	}
 }

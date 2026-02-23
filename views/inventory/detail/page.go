@@ -111,7 +111,7 @@ func NewView(deps *Deps) view.View {
 		}
 
 		l := deps.Labels
-		itemType := item.GetItemType()
+		itemType := item.GetProduct().GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
@@ -194,7 +194,7 @@ func NewTabAction(deps *Deps) view.View {
 		item := items[0]
 
 		l := deps.Labels
-		itemType := item.GetItemType()
+		itemType := item.GetProduct().GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
@@ -249,7 +249,7 @@ func inventoryItemToMap(item *inventoryitempb.InventoryItem) map[string]any {
 		"reorder_level":      item.GetReorderLevel(),
 		"unit_of_measure":    item.GetUnitOfMeasure(),
 		"notes":              item.GetNotes(),
-		"item_type":          item.GetItemType(),
+		"item_type":          item.GetProduct().GetItemType(),
 		"location_id":        item.GetLocationId(),
 		"product_id":         item.GetProductId(),
 		"product_variant_id": item.GetProductVariantId(),

@@ -18,81 +18,111 @@
         {{end}}
     </nav>
 
-    {{/* Tabs (same as variant page, stock is active) */}}
+    {{/* Tabs */}}
     <div class="detail-tabs">
-        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "variant-detail-tabs")}}
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "stock-detail-tabs")}}
     </div>
 
-    {{/* Item Info Summary */}}
-    <div class="detail-body">
-        <h4 class="detail-section-title">Inventory Item</h4>
-        <div class="detail-info-grid">
-            <div class="detail-info-item">
-                <span class="detail-info-label">Name</span>
-                <span class="detail-info-value">{{.ItemName}}</span>
-            </div>
-            <div class="detail-info-item">
-                <span class="detail-info-label">SKU</span>
-                <span class="detail-info-value mono">{{.ItemSKU}}</span>
-            </div>
-            <div class="detail-info-item">
-                <span class="detail-info-label">Type</span>
-                <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
-            </div>
-            <div class="detail-info-item">
-                <span class="detail-info-label">Location</span>
-                <span class="detail-info-value">{{.LocationName}}</span>
-            </div>
-            <div class="detail-info-item">
-                <span class="detail-info-label">Qty On Hand</span>
-                <span class="detail-info-value mono">{{.QuantityOnHand}}</span>
-            </div>
-            <div class="detail-info-item">
-                <span class="detail-info-label">Reserved</span>
-                <span class="detail-info-value mono">{{.QuantityReserved}}</span>
-            </div>
-            <div class="detail-info-item">
-                <span class="detail-info-label">Available</span>
-                <span class="detail-info-value mono">{{.AvailableQty}}</span>
-            </div>
-            <div class="detail-info-item">
-                <span class="detail-info-label">Status</span>
-                <span><span class="badge badge--{{.ItemStatusVariant}}">{{.ItemStatus}}</span></span>
-            </div>
-        </div>
+    {{/* Tab Content Area */}}
+    <div id="tabContent" class="detail-body">
+        {{if eq .ActiveTab "info"}}
+            {{template "stock-tab-info" .}}
+        {{else if eq .ActiveTab "serials"}}
+            {{template "stock-tab-serials" .}}
+        {{else if eq .ActiveTab "pricing-history"}}
+            {{template "stock-tab-pricing-history" .}}
+        {{else if eq .ActiveTab "audit-trail"}}
+            {{template "stock-tab-audit-trail" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
 
-        {{/* Serial Numbers Table */}}
-        <div style="margin-top: 2rem;">
-            <h4 class="detail-section-title">Serial Numbers</h4>
-            {{if .SerialTable}}
-                {{template "table-card" .SerialTable}}
-                {{if .SerialSummary}}
-                <div class="inv-summary-row" style="margin-top: var(--spacing-md);">
-                    <div class="inv-summary-item">
-                        <span class="inv-summary-label">Total</span>
-                        <span class="inv-summary-value">{{.SerialSummary.Total}}</span>
-                    </div>
-                    <div class="inv-summary-item inv-summary-item--success">
-                        <span class="inv-summary-label">Available</span>
-                        <span class="inv-summary-value">{{.SerialSummary.Available}}</span>
-                    </div>
-                    <div class="inv-summary-item inv-summary-item--default">
-                        <span class="inv-summary-label">Sold</span>
-                        <span class="inv-summary-value">{{.SerialSummary.Sold}}</span>
-                    </div>
-                    <div class="inv-summary-item inv-summary-item--info">
-                        <span class="inv-summary-label">Reserved</span>
-                        <span class="inv-summary-value">{{.SerialSummary.Reserved}}</span>
-                    </div>
-                </div>
-                {{end}}
-            {{else}}
-                <div class="coming-soon-panel">
-                    <div class="coming-soon-title">No Serial Numbers</div>
-                    <p class="coming-soon-text">No serial numbers have been recorded for this inventory item.</p>
-                </div>
-            {{end}}
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "stock-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">Inventory Item</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">Name</span>
+            <span class="detail-info-value">{{.ItemName}}</span>
         </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">SKU</span>
+            <span class="detail-info-value mono">{{.ItemSKU}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Type</span>
+            <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Location</span>
+            <span class="detail-info-value">{{.LocationName}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Qty On Hand</span>
+            <span class="detail-info-value mono">{{.QuantityOnHand}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Reserved</span>
+            <span class="detail-info-value mono">{{.QuantityReserved}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Available</span>
+            <span class="detail-info-value mono">{{.AvailableQty}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Status</span>
+            <span><span class="badge badge--{{.ItemStatusVariant}}">{{.ItemStatus}}</span></span>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Serials
+     ============================================= */}}
+{{define "stock-tab-serials"}}
+{{if .SerialSummary}}
+<div class="stats-row" style="margin-bottom: 2rem;">
+    {{template "stat-card" (dict "Icon" "icon-hash" "Value" .SerialSummary.Total "Label" "Total" "Color" "navy")}}
+    {{template "stat-card" (dict "Icon" "icon-check-circle" "Value" .SerialSummary.Available "Label" "Available" "Color" "sage")}}
+    {{template "stat-card" (dict "Icon" "icon-shopping-bag" "Value" .SerialSummary.Sold "Label" "Sold" "Color" "terracotta")}}
+    {{template "stat-card" (dict "Icon" "icon-clock" "Value" .SerialSummary.Reserved "Label" "Reserved" "Color" "amber")}}
+</div>
+{{end}}
+{{if .SerialTable}}
+    {{template "table-card" .SerialTable}}
+{{else}}
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">No Serial Numbers</div>
+        <p class="coming-soon-text">No serial numbers have been recorded for this inventory item.</p>
+    </div>
+{{end}}
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Pricing History
+     ============================================= */}}
+{{define "stock-tab-pricing-history"}}
+<div class="tab-scroll">
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">Pricing History</div>
+        <p class="coming-soon-text">Pricing history showing price changes and associated price lists is coming soon.</p>
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Audit Trail
+     ============================================= */}}
+{{define "stock-tab-audit-trail"}}
+<div class="tab-scroll">
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">Audit Trail</div>
+        <p class="coming-soon-text">Audit trail for inventory item changes is coming soon.</p>
     </div>
 </div>
 {{end}}

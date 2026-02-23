@@ -154,7 +154,7 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 		onHand := item.GetQuantityOnHand()
 		reserved := item.GetQuantityReserved()
 		reorderLvl := item.GetReorderLevel()
-		itemType := item.GetItemType()
+		itemType := item.GetProduct().GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}

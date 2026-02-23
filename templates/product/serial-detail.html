@@ -1,0 +1,48 @@
+{{/* Full page -- wraps app-shell */}}
+{{define "serial-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content partial */}}
+{{define "serial-detail-content"}}
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/variant-detail.css?v={{.CacheVersion}}">
+    {{/* Breadcrumb */}}
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        {{range $i, $bc := .Breadcrumbs}}
+            {{if $bc.Href}}
+                <a href="{{$bc.Href}}" class="breadcrumb-link">{{$bc.Label}}</a>
+                <span class="breadcrumb-sep">/</span>
+            {{else}}
+                <span class="breadcrumb-current">{{$bc.Label}}</span>
+            {{end}}
+        {{end}}
+    </nav>
+
+    {{/* Serial Info */}}
+    <div class="detail-body">
+        <h4 class="detail-section-title">Serial Information</h4>
+        <div class="detail-info-grid">
+            <div class="detail-info-item">
+                <span class="detail-info-label">Serial Number</span>
+                <span class="detail-info-value mono">{{.SerialNumber}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">IMEI</span>
+                <span class="detail-info-value mono">{{.IMEI}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Status</span>
+                <span><span class="badge badge--{{.StatusVariant}}">{{.Status}}</span></span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Warranty End</span>
+                <span class="detail-info-value">{{if .WarrantyEnd}}{{.WarrantyEnd}}{{else}}—{{end}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Purchase Order</span>
+                <span class="detail-info-value">{{if .PurchaseOrder}}{{.PurchaseOrder}}{{else}}—{{end}}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

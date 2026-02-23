@@ -84,7 +84,7 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 		}
 
 		l := deps.Labels
-		itemType := item.GetItemType()
+		itemType := item.GetProduct().GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
@@ -197,7 +197,7 @@ func NewProductDetailTabAction(deps *ProductDetailDeps) view.View {
 		}
 
 		l := deps.Labels
-		itemType := item.GetItemType()
+		itemType := item.GetProduct().GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}

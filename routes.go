@@ -55,8 +55,12 @@ const (
 	ProductVariantDetailURL    = "/app/products/detail/{id}/variant/{vid}"
 	ProductVariantTabActionURL = "/action/products/detail/{id}/variant/{vid}/tab/{tab}"
 
-	// Product variant stock detail (serial/IMEI data for a specific inventory item within variant context)
-	ProductVariantStockDetailURL = "/app/products/detail/{id}/variant/{vid}/stock/{iid}"
+	// Product variant stock detail (inventory item within variant context)
+	ProductVariantStockDetailURL    = "/app/products/detail/{id}/variant/{vid}/stock/{iid}"
+	ProductVariantStockTabActionURL = "/action/products/detail/{id}/variant/{vid}/stock/{iid}/tab/{tab}"
+
+	// Inventory serial detail (individual serial within inventory item)
+	ProductVariantSerialDetailURL = "/app/products/detail/{id}/variant/{vid}/stock/{iid}/serial/{sid}"
 
 	// Product option value routes (within product option)
 	ProductOptionValueTableURL  = "/action/products/detail/{id}/options/{oid}/values/table"

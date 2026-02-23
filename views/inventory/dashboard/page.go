@@ -160,7 +160,7 @@ func NewDashboardAlertsAction(deps *Deps) view.View {
 					"quantity_on_hand":  onHand,
 					"quantity_reserved": reserved,
 					"reorder_level":     reorderLvl,
-					"item_type":         item.GetItemType(),
+					"item_type":         item.GetProduct().GetItemType(),
 					"location_id":       item.GetLocationId(),
 				})
 			}
@@ -202,7 +202,7 @@ func buildDashboardWidgets(ctx context.Context, deps *Deps, l centymo.InventoryL
 			lowStockCount++
 		}
 
-		itemType := item.GetItemType()
+		itemType := item.GetProduct().GetItemType()
 		if itemType == "" {
 			itemType = "non_serialized"
 		}
