@@ -128,7 +128,7 @@ func NewAddAction(deps *Deps) view.View {
 		_, err := deps.CreateInventoryItem(ctx, &inventoryitempb.CreateInventoryItemRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create inventory item: %v", err)
-			return centymo.HTMXError("Failed to create inventory item")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("inventory-table")
@@ -199,7 +199,7 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateInventoryItem(ctx, &inventoryitempb.UpdateInventoryItemRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to update inventory item %s: %v", id, err)
-			return centymo.HTMXError("Failed to update inventory item")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("inventory-table")
@@ -223,7 +223,7 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete inventory item %s: %v", id, err)
-			return centymo.HTMXError("Failed to delete inventory item")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("inventory-table")

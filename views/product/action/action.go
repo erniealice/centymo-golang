@@ -92,7 +92,7 @@ func NewAddAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create product: %v", err)
-			return centymo.HTMXError("Failed to create product")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("products-table")
@@ -155,7 +155,7 @@ func NewEditAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update product %s: %v", id, err)
-			return centymo.HTMXError("Failed to update product")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("products-table")
@@ -179,7 +179,7 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete product %s: %v", id, err)
-			return centymo.HTMXError("Failed to delete product")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("products-table")
@@ -234,7 +234,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 
 		if err := deps.SetProductActive(ctx, id, targetStatus == "active"); err != nil {
 			log.Printf("Failed to update product status %s: %v", id, err)
-			return centymo.HTMXError("Failed to update product status")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("products-table")

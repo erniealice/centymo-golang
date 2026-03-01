@@ -94,7 +94,7 @@ func NewAddAction(deps *Deps) view.View {
 		_, err := deps.CreatePriceList(ctx, req)
 		if err != nil {
 			log.Printf("Failed to create price list: %v", err)
-			return centymo.HTMXError("Failed to create price list")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("price-lists-table")
@@ -161,7 +161,7 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.UpdatePriceList(ctx, req)
 		if err != nil {
 			log.Printf("Failed to update price list %s: %v", id, err)
-			return centymo.HTMXError("Failed to update price list")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("price-lists-table")
@@ -186,7 +186,7 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete price list %s: %v", id, err)
-			return centymo.HTMXError("Failed to delete price list")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("price-lists-table")

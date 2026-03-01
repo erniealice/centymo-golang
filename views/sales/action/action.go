@@ -135,7 +135,7 @@ func NewAddAction(deps *Deps) view.View {
 		created, err := deps.DB.Create(ctx, "revenue", data)
 		if err != nil {
 			log.Printf("Failed to create sale: %v", err)
-			return centymo.HTMXError("Failed to create sale")
+			return centymo.HTMXError(err.Error())
 		}
 
 		// Redirect to new sale detail with Items tab
@@ -211,7 +211,7 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.DB.Update(ctx, "revenue", id, data)
 		if err != nil {
 			log.Printf("Failed to update sale %s: %v", id, err)
-			return centymo.HTMXError("Failed to update sale")
+			return centymo.HTMXError(err.Error())
 		}
 
 		// Redirect to detail page (preserves current tab)
@@ -241,7 +241,7 @@ func NewDeleteAction(deps *Deps) view.View {
 		err := deps.DB.Delete(ctx, "revenue", id)
 		if err != nil {
 			log.Printf("Failed to delete sale %s: %v", id, err)
-			return centymo.HTMXError("Failed to delete sale")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("sales-table")
@@ -300,7 +300,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			lineItems, err := getLineItemsForRevenue(ctx, deps.DB, id)
 			if err != nil {
 				log.Printf("Failed to list line items for sale %s: %v", id, err)
-				return centymo.HTMXError("Failed to check sale items")
+				return centymo.HTMXError(err.Error())
 			}
 			if len(lineItems) == 0 {
 				return centymo.HTMXError("Cannot complete a sale with no items. Add items first.")
@@ -309,7 +309,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			// Update status
 			if _, err := deps.DB.Update(ctx, "revenue", id, map[string]any{"status": targetStatus}); err != nil {
 				log.Printf("Failed to update sale status %s: %v", id, err)
-				return centymo.HTMXError("Failed to update sale status")
+				return centymo.HTMXError(err.Error())
 			}
 
 			// D5: Deduct stock on completion
@@ -323,7 +323,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			payments, err := getPaymentsForRevenue(ctx, deps.DB, id)
 			if err != nil {
 				log.Printf("Failed to list payments for sale %s: %v", id, err)
-				return centymo.HTMXError("Failed to check sale payments")
+				return centymo.HTMXError(err.Error())
 			}
 			if len(payments) > 0 {
 				return centymo.HTMXError("Cannot cancel a sale with recorded payments. Remove payments first.")
@@ -332,7 +332,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			// Update status
 			if _, err := deps.DB.Update(ctx, "revenue", id, map[string]any{"status": targetStatus}); err != nil {
 				log.Printf("Failed to update sale status %s: %v", id, err)
-				return centymo.HTMXError("Failed to update sale status")
+				return centymo.HTMXError(err.Error())
 			}
 
 			// D6: Release serials on cancellation
@@ -349,7 +349,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 		// Default: ongoing — just update status
 		if _, err := deps.DB.Update(ctx, "revenue", id, map[string]any{"status": targetStatus}); err != nil {
 			log.Printf("Failed to update sale status %s: %v", id, err)
-			return centymo.HTMXError("Failed to update sale status")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("sales-table")

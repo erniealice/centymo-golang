@@ -94,7 +94,7 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 		_, err := deps.CreateInventoryDepreciation(ctx, &inventorydepreciationpb.CreateInventoryDepreciationRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create depreciation: %v", err)
-			return centymo.HTMXError("Failed to configure depreciation")
+			return centymo.HTMXError(err.Error())
 		}
 
 		// Redirect back to depreciation tab to show the new config
@@ -165,7 +165,7 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateInventoryDepreciation(ctx, &inventorydepreciationpb.UpdateInventoryDepreciationRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to update depreciation %s: %v", depreciationID, err)
-			return centymo.HTMXError("Failed to update depreciation")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return view.ViewResult{

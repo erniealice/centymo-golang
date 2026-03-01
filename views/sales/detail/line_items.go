@@ -72,7 +72,7 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 		revenue, err := deps.DB.Read(ctx, "revenue", revenueID)
 		if err != nil {
 			log.Printf("Failed to read revenue %s: %v", revenueID, err)
-			return lineItemHTMXError("Failed to load sale")
+			return lineItemHTMXError(err.Error())
 		}
 
 		allLineItems, err := deps.DB.ListSimple(ctx, "revenue_line_item")
@@ -134,7 +134,7 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		_, err := deps.DB.Create(ctx, "revenue_line_item", data)
 		if err != nil {
 			log.Printf("Failed to create line item: %v", err)
-			return lineItemHTMXError("Failed to add line item")
+			return lineItemHTMXError(err.Error())
 		}
 
 		// Recalculate sale total
@@ -212,7 +212,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 		_, err := deps.DB.Update(ctx, "revenue_line_item", itemID, data)
 		if err != nil {
 			log.Printf("Failed to update line item %s: %v", itemID, err)
-			return lineItemHTMXError("Failed to update line item")
+			return lineItemHTMXError(err.Error())
 		}
 
 		recalculateSaleTotal(ctx, deps.DB, revenueID)
@@ -238,7 +238,7 @@ func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 		err := deps.DB.Delete(ctx, "revenue_line_item", itemID)
 		if err != nil {
 			log.Printf("Failed to delete line item %s: %v", itemID, err)
-			return lineItemHTMXError("Failed to remove line item")
+			return lineItemHTMXError(err.Error())
 		}
 
 		recalculateSaleTotal(ctx, deps.DB, revenueID)
@@ -289,7 +289,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 		_, err = deps.DB.Create(ctx, "revenue_line_item", data)
 		if err != nil {
 			log.Printf("Failed to create discount line item: %v", err)
-			return lineItemHTMXError("Failed to add discount")
+			return lineItemHTMXError(err.Error())
 		}
 
 		recalculateSaleTotal(ctx, deps.DB, revenueID)

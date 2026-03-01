@@ -105,7 +105,7 @@ func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create price product: %v", err)
-			return centymo.HTMXError("Failed to add product price")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("price-products-table")
@@ -129,7 +129,7 @@ func NewPriceProductDeleteAction(deps *PriceProductDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete price product %s: %v", id, err)
-			return centymo.HTMXError("Failed to remove product price")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("price-products-table")

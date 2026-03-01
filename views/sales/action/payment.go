@@ -116,7 +116,7 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 		_, err := deps.DB.Create(ctx, "revenue_payment", data)
 		if err != nil {
 			log.Printf("Failed to create payment for revenue %s: %v", revenueID, err)
-			return centymo.HTMXError("Failed to record payment")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("payment-table")
@@ -195,7 +195,7 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 		_, err := deps.DB.Update(ctx, "revenue_payment", paymentID, data)
 		if err != nil {
 			log.Printf("Failed to update payment %s: %v", paymentID, err)
-			return centymo.HTMXError("Failed to update payment")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("payment-table")
@@ -217,7 +217,7 @@ func NewPaymentRemoveAction(deps *PaymentDeps) view.View {
 		err := deps.DB.Delete(ctx, "revenue_payment", id)
 		if err != nil {
 			log.Printf("Failed to delete payment %s: %v", id, err)
-			return centymo.HTMXError("Failed to remove payment")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("payment-table")

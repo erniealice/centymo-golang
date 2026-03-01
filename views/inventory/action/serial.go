@@ -103,7 +103,7 @@ func NewSerialAssignAction(deps *Deps) view.View {
 		_, err := deps.CreateInventorySerial(ctx, &inventoryserialpb.CreateInventorySerialRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create serial: %v", err)
-			return centymo.HTMXError("Failed to create serial")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("serial-table")
@@ -165,7 +165,7 @@ func NewSerialEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateInventorySerial(ctx, &inventoryserialpb.UpdateInventorySerialRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to update serial %s: %v", serialID, err)
-			return centymo.HTMXError("Failed to update serial")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("serial-table")
@@ -189,7 +189,7 @@ func NewSerialRemoveAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete serial %s: %v", id, err)
-			return centymo.HTMXError("Failed to delete serial")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("serial-table")

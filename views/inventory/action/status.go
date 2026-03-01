@@ -29,7 +29,7 @@ func NewSetStatusAction(setActive func(ctx context.Context, id string, active bo
 
 		if err := setActive(ctx, id, targetStatus == "active"); err != nil {
 			log.Printf("Failed to update inventory status %s: %v", id, err)
-			return centymo.HTMXError("Failed to update inventory status")
+			return centymo.HTMXError(err.Error())
 		}
 
 		return centymo.HTMXSuccess("inventory-table")

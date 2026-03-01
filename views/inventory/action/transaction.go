@@ -91,7 +91,7 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 		_, err := deps.CreateInventoryTransaction(ctx, &inventorytransactionpb.CreateInventoryTransactionRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create transaction: %v", err)
-			return centymo.HTMXError("Failed to record stock movement")
+			return centymo.HTMXError(err.Error())
 		}
 
 		// Update inventory quantities based on transaction type
