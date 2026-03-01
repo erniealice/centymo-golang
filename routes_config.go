@@ -436,6 +436,106 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 	}
 }
 
+// PlanRoutes holds all route paths for plan views and actions.
+type PlanRoutes struct {
+	ListURL   string `json:"list_url"`
+	DetailURL string `json:"detail_url"`
+	AddURL    string `json:"add_url"`
+	EditURL   string `json:"edit_url"`
+	DeleteURL string `json:"delete_url"`
+}
+
+// DefaultPlanRoutes returns a PlanRoutes populated from the package-level
+// route constants defined in routes.go.
+func DefaultPlanRoutes() PlanRoutes {
+	return PlanRoutes{
+		ListURL:   PlanListURL,
+		DetailURL: PlanDetailURL,
+		AddURL:    PlanAddURL,
+		EditURL:   PlanEditURL,
+		DeleteURL: PlanDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// plan routes.
+func (r PlanRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"plan.list":   r.ListURL,
+		"plan.detail": r.DetailURL,
+		"plan.add":    r.AddURL,
+		"plan.edit":   r.EditURL,
+		"plan.delete": r.DeleteURL,
+	}
+}
+
+// SubscriptionRoutes holds all route paths for subscription views and actions.
+type SubscriptionRoutes struct {
+	ListURL   string `json:"list_url"`
+	DetailURL string `json:"detail_url"`
+	AddURL    string `json:"add_url"`
+	EditURL   string `json:"edit_url"`
+	DeleteURL string `json:"delete_url"`
+}
+
+// DefaultSubscriptionRoutes returns a SubscriptionRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultSubscriptionRoutes() SubscriptionRoutes {
+	return SubscriptionRoutes{
+		ListURL:   SubscriptionListURL,
+		DetailURL: SubscriptionDetailURL,
+		AddURL:    SubscriptionAddURL,
+		EditURL:   SubscriptionEditURL,
+		DeleteURL: SubscriptionDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// subscription routes.
+func (r SubscriptionRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"subscription.list":   r.ListURL,
+		"subscription.detail": r.DetailURL,
+		"subscription.add":    r.AddURL,
+		"subscription.edit":   r.EditURL,
+		"subscription.delete": r.DeleteURL,
+	}
+}
+
+// PaymentCollectionRoutes holds all route paths for payment collection views
+// and actions.
+type PaymentCollectionRoutes struct {
+	ListURL   string `json:"list_url"`
+	DetailURL string `json:"detail_url"`
+	AddURL    string `json:"add_url"`
+	EditURL   string `json:"edit_url"`
+	DeleteURL string `json:"delete_url"`
+}
+
+// DefaultPaymentCollectionRoutes returns a PaymentCollectionRoutes populated
+// from the package-level route constants defined in routes.go.
+func DefaultPaymentCollectionRoutes() PaymentCollectionRoutes {
+	return PaymentCollectionRoutes{
+		ListURL:   PaymentCollectionListURL,
+		DetailURL: PaymentCollectionDetailURL,
+		AddURL:    PaymentCollectionAddURL,
+		EditURL:   PaymentCollectionEditURL,
+		DeleteURL: PaymentCollectionDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// payment collection routes.
+func (r PaymentCollectionRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"payment_collection.list":   r.ListURL,
+		"payment_collection.detail": r.DetailURL,
+		"payment_collection.add":    r.AddURL,
+		"payment_collection.edit":   r.EditURL,
+		"payment_collection.delete": r.DeleteURL,
+	}
+}
+
 // PriceListRoutes holds all route paths for price list views and actions,
 // including price product sub-routes.
 type PriceListRoutes struct {

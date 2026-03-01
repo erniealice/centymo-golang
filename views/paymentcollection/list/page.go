@@ -7,13 +7,15 @@ import (
 
 	"github.com/erniealice/centymo-golang"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB centymo.DataSource
+	DB     centymo.DataSource
+	Routes centymo.PaymentCollectionRoutes
 }
 
 // PageData holds the data for the payment collection list page.
@@ -38,7 +40,7 @@ func NewView(deps *Deps) view.View {
 		}
 
 		columns := paymentCollectionColumns()
-		rows := buildTableRows(records, status)
+		rows := buildTableRows(records, status, deps.Routes)
 		types.ApplyColumnStyles(columns, rows)
 
 		pageData := &PageData{
@@ -65,7 +67,7 @@ func NewView(deps *Deps) view.View {
 				},
 				PrimaryAction: &types.PrimaryAction{
 					Label:     "Add Payment Collection",
-					ActionURL: "/action/payment-collections/add",
+					ActionURL: deps.Routes.AddURL,
 					Icon:      "icon-plus",
 				},
 			},
@@ -84,7 +86,7 @@ func paymentCollectionColumns() []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, routes centymo.PaymentCollectionRoutes) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -115,9 +117,9 @@ func buildTableRows(records []map[string]any, status string) []types.TableRow {
 				"status":   recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: "View Payment", Action: "view", Href: "/app/payment-collections/" + id},
-				{Type: "edit", Label: "Edit Payment", Action: "edit", URL: "/action/payment-collections/edit/" + id, DrawerTitle: "Edit Payment Collection"},
-				{Type: "delete", Label: "Delete Payment", Action: "delete", URL: "/action/payment-collections/delete", ItemName: customer},
+				{Type: "view", Label: "View Payment", Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+				{Type: "edit", Label: "Edit Payment", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Payment Collection"},
+				{Type: "delete", Label: "Delete Payment", Action: "delete", URL: routes.DeleteURL, ItemName: customer},
 			},
 		})
 	}

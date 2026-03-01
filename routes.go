@@ -3,11 +3,26 @@ package centymo
 // Default route constants for centymo views.
 // Consumer apps can use these or define their own.
 const (
-	PlanListURL              = "/app/plans/list/{status}"
-	SubscriptionListURL      = "/app/subscriptions/list/{status}"
-	ProductListURL           = "/app/products/list/{status}"
-	ProductDetailURL         = "/app/products/detail/{id}"
-	PaymentCollectionListURL = "/app/payment-collections/list/{status}"
+	PlanListURL       = "/app/plans/list/{status}"
+	PlanDetailURL     = "/app/plans/{id}"
+	PlanAddURL        = "/action/plans/add"
+	PlanEditURL       = "/action/plans/edit/{id}"
+	PlanDeleteURL     = "/action/plans/delete"
+
+	SubscriptionListURL       = "/app/subscriptions/list/{status}"
+	SubscriptionDetailURL     = "/app/subscriptions/{id}"
+	SubscriptionAddURL        = "/action/subscriptions/add"
+	SubscriptionEditURL       = "/action/subscriptions/edit/{id}"
+	SubscriptionDeleteURL     = "/action/subscriptions/delete"
+
+	PaymentCollectionListURL       = "/app/payment-collections/list/{status}"
+	PaymentCollectionDetailURL     = "/app/payment-collections/{id}"
+	PaymentCollectionAddURL        = "/action/payment-collections/add"
+	PaymentCollectionEditURL       = "/action/payment-collections/edit/{id}"
+	PaymentCollectionDeleteURL     = "/action/payment-collections/delete"
+
+	ProductListURL   = "/app/products/list/{status}"
+	ProductDetailURL = "/app/products/detail/{id}"
 
 	// Inventory routes — list is per-location
 	InventoryDashboardURL  = "/app/inventory/dashboard"

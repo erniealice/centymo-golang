@@ -7,13 +7,15 @@ import (
 
 	"github.com/erniealice/centymo-golang"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB centymo.DataSource
+	DB     centymo.DataSource
+	Routes centymo.PlanRoutes
 }
 
 // PageData holds the data for the plan list page.
@@ -38,7 +40,7 @@ func NewView(deps *Deps) view.View {
 		}
 
 		columns := planColumns()
-		rows := buildTableRows(records, status)
+		rows := buildTableRows(records, status, deps.Routes)
 		types.ApplyColumnStyles(columns, rows)
 
 		pageData := &PageData{
@@ -65,7 +67,7 @@ func NewView(deps *Deps) view.View {
 				},
 				PrimaryAction: &types.PrimaryAction{
 					Label:     "Add Plan",
-					ActionURL: "/action/plans/add",
+					ActionURL: deps.Routes.AddURL,
 					Icon:      "icon-plus",
 				},
 			},
@@ -84,7 +86,7 @@ func planColumns() []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, routes centymo.PlanRoutes) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -118,9 +120,9 @@ func buildTableRows(records []map[string]any, status string) []types.TableRow {
 				"status":   recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: "View Plan", Action: "view", Href: "/app/plans/" + id},
-				{Type: "edit", Label: "Edit Plan", Action: "edit", URL: "/action/plans/edit/" + id, DrawerTitle: "Edit Plan"},
-				{Type: "delete", Label: "Delete Plan", Action: "delete", URL: "/action/plans/delete", ItemName: name},
+				{Type: "view", Label: "View Plan", Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+				{Type: "edit", Label: "Edit Plan", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Plan"},
+				{Type: "delete", Label: "Delete Plan", Action: "delete", URL: routes.DeleteURL, ItemName: name},
 			},
 		})
 	}

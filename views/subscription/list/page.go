@@ -7,13 +7,15 @@ import (
 
 	"github.com/erniealice/centymo-golang"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB centymo.DataSource
+	DB     centymo.DataSource
+	Routes centymo.SubscriptionRoutes
 }
 
 // PageData holds the data for the subscription list page.
@@ -38,7 +40,7 @@ func NewView(deps *Deps) view.View {
 		}
 
 		columns := subscriptionColumns()
-		rows := buildTableRows(records, status)
+		rows := buildTableRows(records, status, deps.Routes)
 		types.ApplyColumnStyles(columns, rows)
 
 		pageData := &PageData{
@@ -65,7 +67,7 @@ func NewView(deps *Deps) view.View {
 				},
 				PrimaryAction: &types.PrimaryAction{
 					Label:     "Add Subscription",
-					ActionURL: "/action/subscriptions/add",
+					ActionURL: deps.Routes.AddURL,
 					Icon:      "icon-plus",
 				},
 			},
@@ -84,7 +86,7 @@ func subscriptionColumns() []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, routes centymo.SubscriptionRoutes) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -115,9 +117,9 @@ func buildTableRows(records []map[string]any, status string) []types.TableRow {
 				"status":     recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: "View Subscription", Action: "view", Href: "/app/subscriptions/" + id},
-				{Type: "edit", Label: "Edit Subscription", Action: "edit", URL: "/action/subscriptions/edit/" + id, DrawerTitle: "Edit Subscription"},
-				{Type: "delete", Label: "Cancel Subscription", Action: "delete", URL: "/action/subscriptions/delete", ItemName: customer},
+				{Type: "view", Label: "View Subscription", Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+				{Type: "edit", Label: "Edit Subscription", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Subscription"},
+				{Type: "delete", Label: "Cancel Subscription", Action: "delete", URL: routes.DeleteURL, ItemName: customer},
 			},
 		})
 	}
