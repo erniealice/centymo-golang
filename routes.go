@@ -141,6 +141,12 @@ const (
 	SalesPaymentEditURL   = "/action/sales/detail/{id}/payment/edit/{pid}"
 	SalesPaymentRemoveURL = "/action/sales/detail/{id}/payment/remove"
 
+	// Expenditure (purchase + expense) routes
+	ExpenditurePurchaseListURL      = "/app/purchases/list/{status}"
+	ExpenditurePurchaseDashboardURL = "/app/purchases/dashboard"
+	ExpenditureExpenseListURL       = "/app/expenses/list/{status}"
+	ExpenditureExpenseDashboardURL  = "/app/expenses/dashboard"
+
 	// Price List routes
 	PriceListListURL       = "/app/price-lists/list/{status}"
 	PriceListDetailURL     = "/app/price-lists/{id}"

@@ -406,6 +406,36 @@ func (r SalesRoutes) RouteMap() map[string]string {
 	}
 }
 
+// ExpenditureRoutes holds all route paths for expenditure views (purchase + expense).
+type ExpenditureRoutes struct {
+	PurchaseListURL      string `json:"purchase_list_url"`
+	PurchaseDashboardURL string `json:"purchase_dashboard_url"`
+	ExpenseListURL       string `json:"expense_list_url"`
+	ExpenseDashboardURL  string `json:"expense_dashboard_url"`
+}
+
+// DefaultExpenditureRoutes returns an ExpenditureRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultExpenditureRoutes() ExpenditureRoutes {
+	return ExpenditureRoutes{
+		PurchaseListURL:      ExpenditurePurchaseListURL,
+		PurchaseDashboardURL: ExpenditurePurchaseDashboardURL,
+		ExpenseListURL:       ExpenditureExpenseListURL,
+		ExpenseDashboardURL:  ExpenditureExpenseDashboardURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// expenditure routes.
+func (r ExpenditureRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"expenditure.purchase.list":      r.PurchaseListURL,
+		"expenditure.purchase.dashboard": r.PurchaseDashboardURL,
+		"expenditure.expense.list":       r.ExpenseListURL,
+		"expenditure.expense.dashboard":  r.ExpenseDashboardURL,
+	}
+}
+
 // PriceListRoutes holds all route paths for price list views and actions,
 // including price product sub-routes.
 type PriceListRoutes struct {
