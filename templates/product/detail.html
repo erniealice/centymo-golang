@@ -71,7 +71,7 @@
 
     <div class="detail-actions" style="margin-top: var(--spacing-lg);">
         <a class="btn btn--ghost btn--sm"
-           hx-get="/action/products/edit/{{.ID}}"
+           hx-get="{{routeWith "product.edit" "id" .ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
            onclick="if(window.Sheet) Sheet.open('{{.Labels.Actions.Edit}}')">

@@ -8,6 +8,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -22,6 +23,7 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
+	Routes                    centymo.InventoryRoutes
 	ReadInventoryItem         func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ListInventorySerials      func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
 	ListInventoryTransactions func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
@@ -116,7 +118,7 @@ func NewView(deps *Deps) view.View {
 			itemType = "non_serialized"
 		}
 		isSerialized := itemType == "serialized"
-		tabItems := buildTabItems(l, id, isSerialized)
+		tabItems := buildTabItems(l, id, isSerialized, deps.Routes)
 
 		available := computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
 
@@ -157,11 +159,11 @@ func NewView(deps *Deps) view.View {
 
 		case "serials":
 			serials := loadSerials(ctx, deps, id)
-			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id)
+			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id, deps.Routes)
 			pageData.SerialSummary = computeSerialSummary(serials)
 
 		case "transactions":
-			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels)
+			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels, deps.Routes)
 
 		case "depreciation":
 			pageData.Depreciation = loadDepreciation(ctx, deps, id, l)
@@ -221,10 +223,10 @@ func NewTabAction(deps *Deps) view.View {
 			pageData.Attributes = loadAttributes(ctx, deps, item)
 		case "serials":
 			serials := loadSerials(ctx, deps, id)
-			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id)
+			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id, deps.Routes)
 			pageData.SerialSummary = computeSerialSummary(serials)
 		case "transactions":
-			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels)
+			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels, deps.Routes)
 		case "depreciation":
 			pageData.Depreciation = loadDepreciation(ctx, deps, id, l)
 		case "audit":
@@ -257,9 +259,9 @@ func inventoryItemToMap(item *inventoryitempb.InventoryItem) map[string]any {
 	return m
 }
 
-func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool) []pyeza.TabItem {
-	base := "/app/inventory/detail/" + id
-	action := "/action/inventory/detail/" + id + "/tab/"
+func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool, routes centymo.InventoryRoutes) []pyeza.TabItem {
+	base := route.ResolveURL(routes.DetailURL, "id", id)
+	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	tabs := []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "attributes", Label: l.Tabs.Attributes, Href: base + "?tab=attributes", HxGet: action + "attributes", Icon: "icon-layers"},
@@ -429,7 +431,7 @@ func loadSerials(ctx context.Context, deps *Deps, inventoryItemID string) []*inv
 	return resp.GetData()
 }
 
-func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string) *types.TableConfig {
+func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string, routes centymo.InventoryRoutes) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "serial_number", Label: l.Detail.SerialNumber, Sortable: true},
 		{Key: "imei", Label: l.Detail.IMEI, Sortable: false, Width: "180px"},
@@ -457,8 +459,8 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.In
 				{Type: "text", Value: po},
 			},
 			Actions: []types.TableAction{
-				{Type: "edit", Label: l.Serial.Edit, Action: "edit", URL: "/action/inventory/detail/" + inventoryItemID + "/serials/edit/" + id, DrawerTitle: l.Serial.Edit},
-				{Type: "delete", Label: l.Serial.Remove, Action: "delete", URL: "/action/inventory/detail/" + inventoryItemID + "/serials/remove", ItemName: serial},
+				{Type: "edit", Label: l.Serial.Edit, Action: "edit", URL: route.ResolveURL(routes.SerialEditURL, "id", inventoryItemID, "sid", id), DrawerTitle: l.Serial.Edit},
+				{Type: "delete", Label: l.Serial.Remove, Action: "delete", URL: route.ResolveURL(routes.SerialRemoveURL, "id", inventoryItemID), ItemName: serial},
 			},
 		})
 	}
@@ -467,7 +469,7 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.In
 
 	cfg := &types.TableConfig{
 		ID:                   "serial-table",
-		RefreshURL:           "/action/inventory/detail/" + inventoryItemID + "/serials/table",
+		RefreshURL:           route.ResolveURL(routes.SerialTableURL, "id", inventoryItemID),
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
@@ -481,7 +483,7 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.In
 		},
 		PrimaryAction: &types.PrimaryAction{
 			Label:     l.Serial.Assign,
-			ActionURL: "/action/inventory/detail/" + inventoryItemID + "/serials/assign",
+			ActionURL: route.ResolveURL(routes.SerialAssignURL, "id", inventoryItemID),
 			Icon:      "icon-plus",
 		},
 	}
@@ -526,7 +528,7 @@ func computeSerialSummary(serials []*inventoryserialpb.InventorySerial) *SerialS
 // Transactions tab
 // ---------------------------------------------------------------------------
 
-func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels) *types.TableConfig {
+func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels, routes centymo.InventoryRoutes) *types.TableConfig {
 	resp, err := deps.ListInventoryTransactions(ctx, &inventorytransactionpb.ListInventoryTransactionsRequest{
 		InventoryItemId: &inventoryItemID,
 	})
@@ -574,7 +576,7 @@ func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID stri
 
 	cfg := &types.TableConfig{
 		ID:                   "transaction-table",
-		RefreshURL:           "/action/inventory/detail/" + inventoryItemID + "/transactions/table",
+		RefreshURL:           route.ResolveURL(routes.TransactionTableURL, "id", inventoryItemID),
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
@@ -588,7 +590,7 @@ func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID stri
 		},
 		PrimaryAction: &types.PrimaryAction{
 			Label:     l.Transaction.Record,
-			ActionURL: "/action/inventory/detail/" + inventoryItemID + "/transactions/assign",
+			ActionURL: route.ResolveURL(routes.TransactionAssignURL, "id", inventoryItemID),
 			Icon:      "icon-plus",
 		},
 	}

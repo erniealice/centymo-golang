@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -16,6 +17,7 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
+	Routes             centymo.InventoryRoutes
 	ListInventoryItems func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
 	RefreshURL         string
 	Labels             centymo.InventoryLabels
@@ -48,7 +50,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := inventoryColumns(l)
-		rows := buildTableRows(resp.GetData(), l)
+		rows := buildTableRows(resp.GetData(), l, deps.Routes)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -58,7 +60,7 @@ func NewView(deps *Deps) view.View {
 				Label:           l.Status.Activate,
 				Icon:            "icon-check-circle",
 				Variant:         "success",
-				Endpoint:        "/action/inventory/bulk-set-status",
+				Endpoint:        deps.Routes.BulkSetStatusURL,
 				ConfirmTitle:    l.Status.Activate,
 				ConfirmMessage:  "Are you sure you want to activate {{count}} item(s)?",
 				ExtraParamsJSON: `{"target_status":"active"}`,
@@ -68,7 +70,7 @@ func NewView(deps *Deps) view.View {
 				Label:           l.Status.Deactivate,
 				Icon:            "icon-x-circle",
 				Variant:         "warning",
-				Endpoint:        "/action/inventory/bulk-set-status",
+				Endpoint:        deps.Routes.BulkSetStatusURL,
 				ConfirmTitle:    l.Status.Deactivate,
 				ConfirmMessage:  "Are you sure you want to deactivate {{count}} item(s)?",
 				ExtraParamsJSON: `{"target_status":"inactive"}`,
@@ -78,7 +80,7 @@ func NewView(deps *Deps) view.View {
 				Label:          deps.CommonLabels.Bulk.Delete,
 				Icon:           "icon-trash-2",
 				Variant:        "danger",
-				Endpoint:       "/action/inventory/bulk-delete",
+				Endpoint:       deps.Routes.BulkDeleteURL,
 				ConfirmTitle:   deps.CommonLabels.Bulk.Delete,
 				ConfirmMessage: "Are you sure you want to delete {{count}} item(s)? This action cannot be undone.",
 			},
@@ -106,7 +108,7 @@ func NewView(deps *Deps) view.View {
 			},
 			PrimaryAction: &types.PrimaryAction{
 				Label:     l.Buttons.AddItem,
-				ActionURL: "/action/inventory/add",
+				ActionURL: deps.Routes.AddURL,
 				Icon:      "icon-plus",
 			},
 			BulkActions: &bulkCfg,
@@ -145,7 +147,7 @@ func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryLabels) []types.TableRow {
+func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryLabels, routes centymo.InventoryRoutes) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, item := range items {
 		id := item.GetId()
@@ -179,7 +181,7 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 			reorderDisplay = reorderStr + " (!)"
 		}
 
-		detailURL := "/app/inventory/detail/" + id
+		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 
 		rows = append(rows, types.TableRow{
 			ID:   id,
@@ -205,8 +207,8 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/inventory/edit/" + id, DrawerTitle: l.Actions.Edit},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/inventory/delete", ItemName: name},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name},
 			},
 		})
 	}

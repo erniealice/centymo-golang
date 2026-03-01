@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -53,6 +54,7 @@ type SelectOption struct {
 
 // LineItemDeps holds dependencies for line item action handlers.
 type LineItemDeps struct {
+	Routes       centymo.SalesRoutes
 	DB           centymo.DataSource // KEEP — used for revenue_line_item operations
 	Labels       centymo.SalesLabels
 	CommonLabels pyeza.CommonLabels
@@ -80,7 +82,7 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 		}
 		lineItems := filterLineItems(allLineItems, revenueID)
 		currency, _ := revenue["currency"].(string)
-		table := buildLineItemTableWithActions(lineItems, deps.Labels, deps.TableLabels, currency, revenueID)
+		table := buildLineItemTableWithActions(lineItems, deps.Labels, deps.TableLabels, currency, revenueID, deps.Routes)
 		return view.OK("table-card", table)
 	})
 }
@@ -93,7 +95,7 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
 			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
-				FormAction:      fmt.Sprintf("/action/sales/detail/%s/items/add", revenueID),
+				FormAction:      route.ResolveURL(deps.Routes.LineItemAddURL, "id", revenueID),
 				RevenueID:       revenueID,
 				Quantity:        "1",
 				LineItemType:    "item",
@@ -166,7 +168,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
 
 			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
-				FormAction:      fmt.Sprintf("/action/sales/detail/%s/items/edit/%s", revenueID, itemID),
+				FormAction:      route.ResolveURL(deps.Routes.LineItemEditURL, "id", revenueID, "itemId", itemID),
 				IsEdit:          true,
 				ID:              itemID,
 				RevenueID:       revenueID,
@@ -252,7 +254,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("sales-line-item-discount-form", &DiscountFormData{
-				FormAction:  fmt.Sprintf("/action/sales/detail/%s/items/add-discount", revenueID),
+				FormAction:  route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", revenueID),
 				RevenueID:   revenueID,
 				Labels:      deps.Labels.Detail,
 				CommonLabels: nil,
@@ -301,7 +303,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 // ---------------------------------------------------------------------------
 
 // buildLineItemTableWithActions builds the line items table with row actions.
-func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string) *types.TableConfig {
+func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.SalesRoutes) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "type", Label: l.Detail.ItemType, Sortable: false, Width: "90px"},
 		{Key: "description", Label: l.Detail.Description, Sortable: false},
@@ -334,7 +336,7 @@ func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels
 				Type:        "edit",
 				Label:       l.Detail.EditItem,
 				Action:      "edit",
-				URL:         fmt.Sprintf("/action/sales/detail/%s/items/edit/%s", revenueID, id),
+				URL:         route.ResolveURL(routes.LineItemEditURL, "id", revenueID, "itemId", id),
 				DrawerTitle: l.Detail.EditItem,
 			})
 		}
@@ -342,7 +344,7 @@ func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels
 			Type:     "delete",
 			Label:    l.Detail.RemoveItem,
 			Action:   "delete",
-			URL:      fmt.Sprintf("/action/sales/detail/%s/items/remove?itemId=%s", revenueID, id),
+			URL:      route.ResolveURL(routes.LineItemRemoveURL, "id", revenueID) + "?itemId=" + id,
 			ItemName: description,
 		})
 

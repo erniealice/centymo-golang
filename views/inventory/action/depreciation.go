@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -63,7 +64,7 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("depreciation-drawer-form", &DepreciationFormData{
-				FormAction:    "/action/inventory/detail/" + inventoryItemID + "/depreciation/assign",
+				FormAction:    route.ResolveURL(deps.Routes.DepreciationAssignURL, "id", inventoryItemID),
 				Method:        "straight_line",
 				Labels:        depreciationFormLabels(viewCtx.T),
 				MethodOptions: depreciationMethodOptions(viewCtx.T),
@@ -101,7 +102,7 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 			StatusCode: http.StatusOK,
 			Headers: map[string]string{
 				"HX-Trigger":  `{"formSuccess":true}`,
-				"HX-Redirect": "/app/inventory/detail/" + inventoryItemID + "?tab=depreciation",
+				"HX-Redirect": route.ResolveURL(deps.Routes.DetailURL, "id", inventoryItemID) + "?tab=depreciation",
 			},
 		}
 	})
@@ -128,7 +129,7 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 			record := records[0]
 
 			return view.OK("depreciation-drawer-form", &DepreciationFormData{
-				FormAction:    "/action/inventory/detail/" + inventoryItemID + "/depreciation/edit/" + depreciationID,
+				FormAction:    route.ResolveURL(deps.Routes.DepreciationEditURL, "id", inventoryItemID, "did", depreciationID),
 				IsEdit:        true,
 				ID:            depreciationID,
 				Method:        record.GetMethod(),
@@ -171,7 +172,7 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 			StatusCode: http.StatusOK,
 			Headers: map[string]string{
 				"HX-Trigger":  `{"formSuccess":true}`,
-				"HX-Redirect": "/app/inventory/detail/" + inventoryItemID + "?tab=depreciation",
+				"HX-Redirect": route.ResolveURL(deps.Routes.DetailURL, "id", inventoryItemID) + "?tab=depreciation",
 			},
 		}
 	})

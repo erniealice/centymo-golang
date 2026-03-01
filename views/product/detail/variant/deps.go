@@ -16,6 +16,7 @@ import (
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
+	productvariantimagepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_image"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
 )
 
@@ -57,6 +58,7 @@ type VariantFormData struct {
 
 // Deps holds dependencies for variant action handlers.
 type Deps struct {
+	Routes       centymo.ProductRoutes
 	DB           centymo.DataSource
 	Labels       centymo.ProductLabels
 	CommonLabels pyeza.CommonLabels
@@ -84,6 +86,14 @@ type Deps struct {
 	ListInventoryItems   func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
 	ReadInventoryItem    func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ListInventorySerials func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
+
+	// Product Variant Image CRUD
+	ListProductVariantImages  func(ctx context.Context, req *productvariantimagepb.ListProductVariantImagesRequest) (*productvariantimagepb.ListProductVariantImagesResponse, error)
+	CreateProductVariantImage func(ctx context.Context, req *productvariantimagepb.CreateProductVariantImageRequest) (*productvariantimagepb.CreateProductVariantImageResponse, error)
+	DeleteProductVariantImage func(ctx context.Context, req *productvariantimagepb.DeleteProductVariantImageRequest) (*productvariantimagepb.DeleteProductVariantImageResponse, error)
+
+	// Storage uploader (for file content → object storage)
+	UploadImage func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
 }
 
 // loadOptionSelections loads all active product options with their values for the variant form dropdowns.

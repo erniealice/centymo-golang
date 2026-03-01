@@ -7,6 +7,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -16,6 +17,8 @@ import (
 
 // ProductDetailDeps holds dependencies for the product-context inventory detail.
 type ProductDetailDeps struct {
+	InventoryRoutes centymo.InventoryRoutes
+	ProductRoutes   centymo.ProductRoutes
 	ReadInventoryItem func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ReadProduct       func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
 	// Delegate to main Deps for tab data loading
@@ -91,8 +94,8 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 		isSerialized := itemType == "serialized"
 
 		// 3 tabs only: Info, Depreciation, Audit
-		base := fmt.Sprintf("/app/product/detail/%s/inventory/detail/%s", productID, itemID)
-		action := fmt.Sprintf("/action/product/%s/inventory/%s/tab/", productID, itemID)
+		base := route.ResolveURL(deps.InventoryRoutes.ProductDetailURL, "pid", productID, "iid", itemID)
+		action := route.ResolveURL(deps.InventoryRoutes.ProductTabActionURL, "pid", productID, "iid", itemID, "tab", "")
 		tabItems := []pyeza.TabItem{
 			{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
 			{Key: "depreciation", Label: l.Tabs.Depreciation, Href: base + "?tab=depreciation", HxGet: action + "depreciation", Icon: "icon-trending-down", Count: 0, Disabled: false},
@@ -103,8 +106,8 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 		itemMap := inventoryItemToMap(item)
 
 		breadcrumbs := []Breadcrumb{
-			{Label: "Products", Href: "/app/products/list/active"},
-			{Label: productName, Href: fmt.Sprintf("/app/products/detail/%s", productID)},
+			{Label: "Products", Href: route.ResolveURL(deps.ProductRoutes.ListURL, "status", "active")},
+			{Label: productName, Href: route.ResolveURL(deps.ProductRoutes.DetailURL, "id", productID)},
 			{Label: name, Href: ""},
 		}
 
@@ -146,7 +149,7 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 			// For serialized items, embed serial table in info tab
 			if isSerialized {
 				serials := loadSerials(ctx, dd, itemID)
-				pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, itemID)
+				pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, itemID, deps.InventoryRoutes)
 				pageData.SerialSummary = computeSerialSummary(serials)
 			}
 		case "depreciation":
@@ -220,8 +223,8 @@ func NewProductDetailTabAction(deps *ProductDetailDeps) view.View {
 			ProductID:   productID,
 			ProductName: productName,
 			Breadcrumbs: []Breadcrumb{
-				{Label: "Products", Href: "/app/products/list/active"},
-				{Label: productName, Href: fmt.Sprintf("/app/products/detail/%s", productID)},
+				{Label: "Products", Href: route.ResolveURL(deps.ProductRoutes.ListURL, "status", "active")},
+				{Label: productName, Href: route.ResolveURL(deps.ProductRoutes.DetailURL, "id", productID)},
 				{Label: name, Href: ""},
 			},
 		}
@@ -232,7 +235,7 @@ func NewProductDetailTabAction(deps *ProductDetailDeps) view.View {
 			pageData.Attributes = loadAttributes(ctx, dd, item)
 			if isSerialized {
 				serials := loadSerials(ctx, dd, itemID)
-				pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, itemID)
+				pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, itemID, deps.InventoryRoutes)
 				pageData.SerialSummary = computeSerialSummary(serials)
 			}
 		case "depreciation":

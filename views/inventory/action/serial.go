@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -75,7 +76,7 @@ func NewSerialAssignAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("serial-drawer-form", &SerialFormData{
-				FormAction:    "/action/inventory/detail/" + inventoryItemID + "/serials/assign",
+				FormAction:    route.ResolveURL(deps.Routes.SerialAssignURL, "id", inventoryItemID),
 				Status:        "available",
 				Labels:        serialFormLabels(viewCtx.T),
 				StatusOptions: serialStatusOptions(viewCtx.T),
@@ -130,7 +131,7 @@ func NewSerialEditAction(deps *Deps) view.View {
 			record := records[0]
 
 			return view.OK("serial-drawer-form", &SerialFormData{
-				FormAction:    "/action/inventory/detail/" + inventoryItemID + "/serials/edit/" + serialID,
+				FormAction:    route.ResolveURL(deps.Routes.SerialEditURL, "id", inventoryItemID, "sid", serialID),
 				IsEdit:        true,
 				ID:            serialID,
 				SerialNumber:  record.GetSerialNumber(),

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -17,6 +18,7 @@ import (
 
 // OptionsDeps holds dependencies for option action handlers.
 type OptionsDeps struct {
+	Routes       centymo.ProductRoutes
 	DB           centymo.DataSource
 	Labels       centymo.ProductLabels
 	CommonLabels any
@@ -46,6 +48,7 @@ func NewOptionsTableView(deps *OptionsDeps) view.View {
 		productID := viewCtx.Request.PathValue("id")
 
 		detailDeps := &Deps{
+			Routes:                  deps.Routes,
 			DB:                      deps.DB,
 			Labels:                  deps.Labels,
 			TableLabels:             deps.TableLabels,
@@ -120,19 +123,19 @@ func buildOptionsTable(ctx context.Context, deps *Deps, productID string) *types
 				actions := []types.TableAction{
 					{
 						Type: "edit", Label: ol.Actions.EditOption, Action: "edit",
-						URL:         fmt.Sprintf("/action/products/detail/%s/options/edit/%s", productID, oid),
+						URL:         route.ResolveURL(deps.Routes.OptionEditURL, "id", productID, "oid", oid),
 						DrawerTitle: ol.Actions.EditOption,
 					},
 					{
 						Type: "delete", Label: ol.Actions.DeleteOption, Action: "delete",
-						URL:            fmt.Sprintf("/action/products/detail/%s/options/delete", productID),
+						URL:            route.ResolveURL(deps.Routes.OptionDeleteURL, "id", productID),
 						ItemName:       name,
 						ConfirmTitle:   ol.Actions.DeleteOption,
 						ConfirmMessage: fmt.Sprintf("%s %s?", ol.Confirm.DeleteOption, name),
 					},
 					{
 						Type: "view", Label: ol.Actions.ViewValues,
-						Href: fmt.Sprintf("/app/products/detail/%s/option/%s", productID, oid),
+						Href: route.ResolveURL(deps.Routes.OptionDetailURL, "id", productID, "oid", oid),
 					},
 				}
 
@@ -161,7 +164,7 @@ func buildOptionsTable(ctx context.Context, deps *Deps, productID string) *types
 
 	tableConfig := &types.TableConfig{
 		ID:                   "product-options-table",
-		RefreshURL:           fmt.Sprintf("/action/products/detail/%s/options/table", productID),
+		RefreshURL:           route.ResolveURL(deps.Routes.OptionTableURL, "id", productID),
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
@@ -181,7 +184,7 @@ func buildOptionsTable(ctx context.Context, deps *Deps, productID string) *types
 		},
 		PrimaryAction: &types.PrimaryAction{
 			Label:     ol.Actions.AddOption,
-			ActionURL: fmt.Sprintf("/action/products/detail/%s/options/add", productID),
+			ActionURL: route.ResolveURL(deps.Routes.OptionAddURL, "id", productID),
 			Icon:      "icon-plus",
 		},
 	}
@@ -260,12 +263,12 @@ func buildOptionValuesTable(ctx context.Context, deps *Deps, productID, optionID
 				actions := []types.TableAction{
 					{
 						Type: "edit", Label: ol.Actions.EditValue, Action: "edit",
-						URL:         fmt.Sprintf("/action/products/detail/%s/options/%s/values/edit/%s", productID, optionID, vid),
+						URL:         route.ResolveURL(deps.Routes.OptionValueEditURL, "id", productID, "oid", optionID, "vid", vid),
 						DrawerTitle: ol.Actions.EditValue,
 					},
 					{
 						Type: "delete", Label: ol.Actions.DeleteValue, Action: "delete",
-						URL:            fmt.Sprintf("/action/products/detail/%s/options/%s/values/delete", productID, optionID),
+						URL:            route.ResolveURL(deps.Routes.OptionValueDeleteURL, "id", productID, "oid", optionID),
 						ItemName:       label,
 						ConfirmTitle:   ol.Actions.DeleteValue,
 						ConfirmMessage: fmt.Sprintf("%s %s?", ol.Confirm.DeleteValue, label),
@@ -295,7 +298,7 @@ func buildOptionValuesTable(ctx context.Context, deps *Deps, productID, optionID
 
 	tableConfig := &types.TableConfig{
 		ID:                   "product-option-values-table",
-		RefreshURL:           fmt.Sprintf("/action/products/detail/%s/options/%s/values/table", productID, optionID),
+		RefreshURL:           route.ResolveURL(deps.Routes.OptionValueTableURL, "id", productID, "oid", optionID),
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
@@ -315,7 +318,7 @@ func buildOptionValuesTable(ctx context.Context, deps *Deps, productID, optionID
 		},
 		PrimaryAction: &types.PrimaryAction{
 			Label:     ol.Actions.AddValue,
-			ActionURL: fmt.Sprintf("/action/products/detail/%s/options/%s/values/add", productID, optionID),
+			ActionURL: route.ResolveURL(deps.Routes.OptionValueAddURL, "id", productID, "oid", optionID),
 			Icon:      "icon-plus",
 		},
 	}

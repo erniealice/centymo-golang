@@ -7,6 +7,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -94,13 +95,14 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 
 		// Build breadcrumbs
 		breadcrumbs := []Breadcrumb{
-			{Label: "Products", Href: "/app/products/list/active"},
-			{Label: productName, Href: fmt.Sprintf("/app/products/detail/%s?tab=options", productID)},
+			{Label: "Products", Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
+			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", productID) + "?tab=options"},
 			{Label: optionName, Href: ""},
 		}
 
 		// Build option values table
 		detailDeps := &Deps{
+			Routes:                  deps.Routes,
 			DB:                      deps.DB,
 			Labels:                  deps.Labels,
 			TableLabels:             deps.TableLabels,
@@ -117,7 +119,8 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          optionName,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "products",
+				ActiveNav:      deps.Routes.ActiveNav,
+				ActiveSubNav:   deps.Routes.ActiveSubNav,
 				HeaderTitle:    optionName,
 				HeaderSubtitle: optionCode,
 				HeaderIcon:     "icon-settings",

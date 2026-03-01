@@ -51,9 +51,13 @@ const (
 	// Product option detail page (option values management)
 	ProductOptionDetailURL = "/app/products/detail/{id}/option/{oid}"
 
-	// Product variant detail page (variant info, pricing, stock, audit)
+	// Product variant detail page (variant info, pricing, stock, audit, images)
 	ProductVariantDetailURL    = "/app/products/detail/{id}/variant/{vid}"
 	ProductVariantTabActionURL = "/action/products/detail/{id}/variant/{vid}/tab/{tab}"
+
+	// Product variant image routes (upload/delete within variant detail)
+	ProductVariantImageUploadURL = "/action/products/detail/{id}/variant/{vid}/images/upload"
+	ProductVariantImageDeleteURL = "/action/products/detail/{id}/variant/{vid}/images/delete"
 
 	// Product variant stock detail (inventory item within variant context)
 	ProductVariantStockDetailURL    = "/app/products/detail/{id}/variant/{vid}/stock/{iid}"

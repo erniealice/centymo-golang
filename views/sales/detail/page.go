@@ -11,12 +11,14 @@ import (
 	"github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
+	Routes       centymo.SalesRoutes
 	DB           centymo.DataSource
 	Labels       centymo.SalesLabels
 	CommonLabels pyeza.CommonLabels
@@ -75,7 +77,7 @@ func NewView(deps *Deps) view.View {
 		}
 
 		l := deps.Labels
-		tabItems := buildTabItems(l, id)
+		tabItems := buildTabItems(l, id, deps.Routes)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -107,9 +109,9 @@ func NewView(deps *Deps) view.View {
 			}
 			lineItems := filterLineItems(allLineItems, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id)
-			pageData.LineItemAddURL = fmt.Sprintf("/action/sales/detail/%s/items/add", id)
-			pageData.LineItemDiscountURL = fmt.Sprintf("/action/sales/detail/%s/items/add-discount", id)
+			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes)
+			pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
+			pageData.LineItemDiscountURL = route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", id)
 			totalAmount, _ := revenue["total_amount"].(string)
 			pageData.TotalAmount = currency + " " + totalAmount
 
@@ -121,8 +123,8 @@ func NewView(deps *Deps) view.View {
 			}
 			payments := filterPayments(allPayments, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id)
-			pageData.PaymentAddURL = fmt.Sprintf("/action/sales/detail/%s/payment/add", id)
+			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes)
+			pageData.PaymentAddURL = route.ResolveURL(deps.Routes.PaymentAddURL, "id", id)
 
 			// Calculate totals
 			totalAmount, _ := revenue["total_amount"].(string)
@@ -150,9 +152,9 @@ func NewView(deps *Deps) view.View {
 	})
 }
 
-func buildTabItems(l centymo.SalesLabels, id string) []pyeza.TabItem {
-	base := "/app/sales/detail/" + id
-	action := "/action/sales/detail/" + id + "/tab/"
+func buildTabItems(l centymo.SalesLabels, id string, routes centymo.SalesRoutes) []pyeza.TabItem {
+	base := route.ResolveURL(routes.DetailURL, "id", id)
+	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Detail.TabBasicInfo, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "items", Label: l.Detail.TabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
@@ -185,7 +187,7 @@ func NewTabAction(deps *Deps) view.View {
 			Revenue:   revenue,
 			Labels:    l,
 			ActiveTab: tab,
-			TabItems:  buildTabItems(l, id),
+			TabItems:  buildTabItems(l, id, deps.Routes),
 		}
 
 		switch tab {
@@ -199,9 +201,9 @@ func NewTabAction(deps *Deps) view.View {
 			}
 			lineItems := filterLineItems(allLineItems, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id)
-			pageData.LineItemAddURL = fmt.Sprintf("/action/sales/detail/%s/items/add", id)
-			pageData.LineItemDiscountURL = fmt.Sprintf("/action/sales/detail/%s/items/add-discount", id)
+			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes)
+			pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
+			pageData.LineItemDiscountURL = route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", id)
 			totalAmount, _ := revenue["total_amount"].(string)
 			pageData.TotalAmount = currency + " " + totalAmount
 
@@ -213,8 +215,8 @@ func NewTabAction(deps *Deps) view.View {
 			}
 			payments := filterPayments(allPayments, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id)
-			pageData.PaymentAddURL = fmt.Sprintf("/action/sales/detail/%s/payment/add", id)
+			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes)
+			pageData.PaymentAddURL = route.ResolveURL(deps.Routes.PaymentAddURL, "id", id)
 
 			totalAmount, _ := revenue["total_amount"].(string)
 			totalPaid := sumPayments(payments)
@@ -344,7 +346,7 @@ func filterPayments(all []map[string]any, revenueID string) []map[string]any {
 }
 
 // buildPaymentTable creates the payment table config for the payment tab.
-func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string) *types.TableConfig {
+func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.SalesRoutes) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "method", Label: l.Detail.PaymentMethod, Sortable: false},
 		{Key: "amount", Label: l.Detail.AmountPaid, Sortable: false, Width: "140px"},
@@ -372,8 +374,8 @@ func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLa
 				{Type: "text", Value: paymentDate},
 			},
 			Actions: []types.TableAction{
-				{Type: "edit", Label: "Edit", Action: "edit", URL: fmt.Sprintf("/action/sales/detail/%s/payment/edit/%s", revenueID, id), DrawerTitle: "Edit Payment"},
-				{Type: "delete", Label: "Remove", Action: "delete", URL: fmt.Sprintf("/action/sales/detail/%s/payment/remove", revenueID), ItemName: method},
+				{Type: "edit", Label: "Edit", Action: "edit", URL: route.ResolveURL(routes.PaymentEditURL, "id", revenueID, "pid", id), DrawerTitle: "Edit Payment"},
+				{Type: "delete", Label: "Remove", Action: "delete", URL: route.ResolveURL(routes.PaymentRemoveURL, "id", revenueID), ItemName: method},
 			},
 		})
 	}

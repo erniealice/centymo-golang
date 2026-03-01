@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -117,20 +118,21 @@ func NewPageView(deps *variant.Deps) view.View {
 		l := deps.Labels
 
 		breadcrumbs := []detail.Breadcrumb{
-			{Label: "Products", Href: "/app/products/list/active"},
-			{Label: productName, Href: fmt.Sprintf("/app/products/detail/%s?tab=variants", productID)},
-			{Label: variantSKU, Href: fmt.Sprintf("/app/products/detail/%s/variant/%s?tab=stock", productID, variantID)},
+			{Label: "Products", Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
+			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", productID) + "?tab=variants"},
+			{Label: variantSKU, Href: route.ResolveURL(deps.Routes.VariantDetailURL, "id", productID, "vid", variantID) + "?tab=stock"},
 			{Label: name + " @ " + locationName, Href: ""},
 		}
 
-		tabItems := BuildStockTabItems(productID, variantID, itemID, l)
+		tabItems := BuildStockTabItems(productID, variantID, itemID, l, deps.Routes)
 
 		pageData := &StockDetailPageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          headerTitle,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "products",
+				ActiveNav:      deps.Routes.ActiveNav,
+				ActiveSubNav:   deps.Routes.ActiveSubNav,
 				HeaderTitle:    headerTitle,
 				HeaderSubtitle: item.GetSku(),
 				HeaderIcon:     "icon-package",
@@ -161,7 +163,7 @@ func NewPageView(deps *variant.Deps) view.View {
 		switch activeTab {
 		case "serials":
 			serials := LoadSerials(ctx, deps, itemID)
-			pageData.SerialTable = BuildSerialTable(serials, deps.TableLabels, productID, variantID, itemID, l)
+			pageData.SerialTable = BuildSerialTable(serials, deps.TableLabels, productID, variantID, itemID, l, deps.Routes)
 			pageData.SerialSummary = ComputeSerialSummary(serials)
 		}
 
@@ -239,7 +241,7 @@ func NewTabAction(deps *variant.Deps) view.View {
 		switch tab {
 		case "serials":
 			serials := LoadSerials(ctx, deps, itemID)
-			pageData.SerialTable = BuildSerialTable(serials, deps.TableLabels, productID, variantID, itemID, l)
+			pageData.SerialTable = BuildSerialTable(serials, deps.TableLabels, productID, variantID, itemID, l, deps.Routes)
 			pageData.SerialSummary = ComputeSerialSummary(serials)
 		}
 
@@ -249,9 +251,9 @@ func NewTabAction(deps *variant.Deps) view.View {
 }
 
 // BuildStockTabItems creates the tab items for the inventory item detail page.
-func BuildStockTabItems(productID, variantID, itemID string, l centymo.ProductLabels) []pyeza.TabItem {
-	base := fmt.Sprintf("/app/products/detail/%s/variant/%s/stock/%s", productID, variantID, itemID)
-	action := fmt.Sprintf("/action/products/detail/%s/variant/%s/stock/%s/tab/", productID, variantID, itemID)
+func BuildStockTabItems(productID, variantID, itemID string, l centymo.ProductLabels, routes centymo.ProductRoutes) []pyeza.TabItem {
+	base := route.ResolveURL(routes.VariantStockDetailURL, "id", productID, "vid", variantID, "iid", itemID)
+	action := route.ResolveURL(routes.VariantStockTabActionURL, "id", productID, "vid", variantID, "iid", itemID, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
 		{Key: "serials", Label: "Serials", Href: base + "?tab=serials", HxGet: action + "serials", Icon: "icon-hash", Count: 0, Disabled: false},
@@ -310,7 +312,7 @@ func LoadSerials(ctx context.Context, deps *variant.Deps, inventoryItemID string
 }
 
 // BuildSerialTable builds the serial numbers table with view actions linking to serial detail.
-func BuildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels types.TableLabels, productID, variantID, itemID string, l centymo.ProductLabels) *types.TableConfig {
+func BuildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels types.TableLabels, productID, variantID, itemID string, l centymo.ProductLabels, routes centymo.ProductRoutes) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "serial_number", Label: "Serial Number", Sortable: true},
 		{Key: "imei", Label: "IMEI", Sortable: false},
@@ -332,7 +334,7 @@ func BuildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels 
 			{
 				Type:  "view",
 				Label: l.Actions.View,
-				Href:  fmt.Sprintf("/app/products/detail/%s/variant/%s/stock/%s/serial/%s", productID, variantID, itemID, id),
+				Href:  route.ResolveURL(routes.VariantSerialDetailURL, "id", productID, "vid", variantID, "iid", itemID, "sid", id),
 			},
 		}
 

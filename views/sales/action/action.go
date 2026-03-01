@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	"github.com/erniealice/centymo-golang"
@@ -48,7 +49,8 @@ type FormData struct {
 
 // Deps holds dependencies for sales action handlers.
 type Deps struct {
-	DB centymo.DataSource // KEEP — used for revenue/location operations
+	Routes centymo.SalesRoutes
+	DB     centymo.DataSource // KEEP — used for revenue/location operations
 
 	// Typed inventory operations
 	ReadInventoryItem            func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
@@ -104,7 +106,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("sales-drawer-form", &FormData{
-				FormAction:   "/action/sales/add",
+				FormAction:   deps.Routes.AddURL,
 				Currency:     "PHP",
 				Status:       "ongoing",
 				Locations:    loadLocationOptions(ctx, deps.DB),
@@ -143,7 +145,7 @@ func NewAddAction(deps *Deps) view.View {
 				StatusCode: http.StatusOK,
 				Headers: map[string]string{
 					"HX-Trigger":  `{"formSuccess":true}`,
-					"HX-Redirect": "/app/sales/detail/" + newID + "?tab=items",
+					"HX-Redirect": route.ResolveURL(deps.Routes.DetailURL, "id", newID) + "?tab=items",
 				},
 			}
 		}
@@ -173,7 +175,7 @@ func NewEditAction(deps *Deps) view.View {
 			locationID, _ := record["location_id"].(string)
 
 			return view.OK("sales-drawer-form", &FormData{
-				FormAction:      "/action/sales/edit/" + id,
+				FormAction:      route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:          true,
 				ID:              id,
 				Name:            name,
@@ -217,7 +219,7 @@ func NewEditAction(deps *Deps) view.View {
 			StatusCode: http.StatusOK,
 			Headers: map[string]string{
 				"HX-Trigger":  `{"formSuccess":true}`,
-				"HX-Redirect": "/app/sales/detail/" + id,
+				"HX-Redirect": route.ResolveURL(deps.Routes.DetailURL, "id", id),
 			},
 		}
 	})

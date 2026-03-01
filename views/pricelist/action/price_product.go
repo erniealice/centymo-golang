@@ -2,11 +2,11 @@ package action
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -31,6 +31,7 @@ type PriceProductFormData struct {
 
 // PriceProductDeps holds dependencies for price product action handlers.
 type PriceProductDeps struct {
+	Routes             centymo.PriceListRoutes
 	CreatePriceProduct func(ctx context.Context, req *priceproductpb.CreatePriceProductRequest) (*priceproductpb.CreatePriceProductResponse, error)
 	DeletePriceProduct func(ctx context.Context, req *priceproductpb.DeletePriceProductRequest) (*priceproductpb.DeletePriceProductResponse, error)
 	ListProducts       func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
@@ -61,7 +62,7 @@ func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 			}
 
 			return view.OK("price-product-drawer-form", &PriceProductFormData{
-				FormAction:   fmt.Sprintf("/action/price-lists/%s/products/add", priceListID),
+				FormAction:   route.ResolveURL(deps.Routes.PriceProductAddURL, "id", priceListID),
 				PriceListID:  priceListID,
 				Products:     products,
 				CommonLabels: nil,

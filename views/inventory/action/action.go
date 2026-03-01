@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -51,6 +52,7 @@ type FormData struct {
 
 // Deps holds dependencies for inventory action handlers.
 type Deps struct {
+	Routes                     centymo.InventoryRoutes
 	CreateInventoryItem        func(ctx context.Context, req *inventoryitempb.CreateInventoryItemRequest) (*inventoryitempb.CreateInventoryItemResponse, error)
 	ReadInventoryItem          func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	UpdateInventoryItem        func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
@@ -92,7 +94,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("inventory-drawer-form", &FormData{
-				FormAction:    "/action/inventory/add",
+				FormAction:    deps.Routes.AddURL,
 				Active:        true,
 				UnitOfMeasure: "pcs",
 				Labels:        formLabels(viewCtx.T),
@@ -153,7 +155,7 @@ func NewEditAction(deps *Deps) view.View {
 			item := items[0]
 
 			return view.OK("inventory-drawer-form", &FormData{
-				FormAction:    "/action/inventory/edit/" + id,
+				FormAction:    route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:        true,
 				ID:            id,
 				Name:          item.GetName(),

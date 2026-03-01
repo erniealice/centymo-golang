@@ -52,7 +52,7 @@
         <div class="inv-info-item">
             <span class="inv-info-label">Product</span>
             <span class="inv-info-value">
-                <a href="/app/products/detail/{{index .Item "product_id"}}">View Product</a>
+                <a href="{{routeWith "product.detail" "id" (index .Item "product_id")}}">View Product</a>
             </span>
         </div>
         {{end}}
@@ -218,7 +218,7 @@
         <p class="coming-soon-text">{{.Labels.Depreciation.Title}}</p>
         {{if index .Item "id"}}
         <button class="btn btn--primary btn--sm"
-                hx-get="/action/inventory/detail/{{index .Item "id"}}/depreciation/assign"
+                hx-get="{{routeWith "inventory.depreciation.assign" "id" (index .Item "id")}}"
                 hx-target="#sheetContent"
                 hx-swap="innerHTML"
                 onclick="Sheet.open(this)">

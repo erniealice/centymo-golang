@@ -2,10 +2,10 @@ package action
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	"github.com/erniealice/centymo-golang"
@@ -36,7 +36,8 @@ type PaymentFormData struct {
 
 // PaymentDeps holds dependencies for payment action handlers.
 type PaymentDeps struct {
-	DB centymo.DataSource
+	Routes centymo.SalesRoutes
+	DB     centymo.DataSource
 }
 
 // loadCollectionMethods loads collection methods from the DB and returns them
@@ -71,7 +72,7 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			methods := loadCollectionMethods(ctx, deps.DB)
 			return view.OK("sales-payment-drawer-form", &PaymentFormData{
-				FormAction:     fmt.Sprintf("/action/sales/detail/%s/payment/add", revenueID),
+				FormAction:     route.ResolveURL(deps.Routes.PaymentAddURL, "id", revenueID),
 				RevenueID:      revenueID,
 				Currency:       "PHP",
 				PaymentMethods: methods,
@@ -145,7 +146,7 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 
 			methods := loadCollectionMethods(ctx, deps.DB)
 			return view.OK("sales-payment-drawer-form", &PaymentFormData{
-				FormAction:         fmt.Sprintf("/action/sales/detail/%s/payment/edit/%s", revenueID, paymentID),
+				FormAction:         route.ResolveURL(deps.Routes.PaymentEditURL, "id", revenueID, "pid", paymentID),
 				IsEdit:             true,
 				ID:                 paymentID,
 				RevenueID:          revenueID,

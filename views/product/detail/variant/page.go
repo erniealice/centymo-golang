@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -47,7 +48,9 @@ type VariantPageData struct {
 	OptionEntries []OptionEntry
 	// Stock tab
 	StockTable *types.TableConfig
-	Labels     centymo.ProductLabels
+	// Images tab
+	Images []ImageData
+	Labels centymo.ProductLabels
 }
 
 // NewPageView creates the variant detail view (full page).
@@ -117,19 +120,20 @@ func NewPageView(deps *Deps) view.View {
 		}
 
 		breadcrumbs := []detail.Breadcrumb{
-			{Label: "Products", Href: "/app/products/list/active"},
-			{Label: productName, Href: fmt.Sprintf("/app/products/detail/%s?tab=variants", id)},
+			{Label: "Products", Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
+			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", id) + "?tab=variants"},
 			{Label: sku, Href: ""},
 		}
 
-		tabItems := buildVariantTabItems(id, vid, l)
+		tabItems := buildVariantTabItems(id, vid, l, deps.Routes)
 
 		pageData := &VariantPageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          headerTitle,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "products",
+				ActiveNav:      deps.Routes.ActiveNav,
+				ActiveSubNav:   deps.Routes.ActiveSubNav,
 				HeaderTitle:    headerTitle,
 				HeaderSubtitle: sku,
 				HeaderIcon:     "icon-layers",
@@ -154,6 +158,8 @@ func NewPageView(deps *Deps) view.View {
 		switch activeTab {
 		case "stock":
 			pageData.StockTable = buildStockTable(ctx, deps, id, vid)
+		case "images":
+			pageData.Images = loadVariantImages(ctx, deps, vid)
 		}
 
 		return view.OK("variant-detail", pageData)
@@ -229,6 +235,8 @@ func NewTabAction(deps *Deps) view.View {
 			pageData.OptionEntries = loadVariantOptionEntries(ctx, deps, id, vid)
 		case "stock":
 			pageData.StockTable = buildStockTable(ctx, deps, id, vid)
+		case "images":
+			pageData.Images = loadVariantImages(ctx, deps, vid)
 		}
 
 		templateName := "variant-tab-" + tab
@@ -237,11 +245,12 @@ func NewTabAction(deps *Deps) view.View {
 }
 
 // buildVariantTabItems creates the tab items for the variant detail page.
-func buildVariantTabItems(productID, variantID string, l centymo.ProductLabels) []pyeza.TabItem {
-	base := fmt.Sprintf("/app/products/detail/%s/variant/%s", productID, variantID)
-	action := fmt.Sprintf("/action/products/detail/%s/variant/%s/tab/", productID, variantID)
+func buildVariantTabItems(productID, variantID string, l centymo.ProductLabels, routes centymo.ProductRoutes) []pyeza.TabItem {
+	base := route.ResolveURL(routes.VariantDetailURL, "id", productID, "vid", variantID)
+	action := route.ResolveURL(routes.VariantTabActionURL, "id", productID, "vid", variantID, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
+		{Key: "images", Label: "Images", Href: base + "?tab=images", HxGet: action + "images", Icon: "icon-image", Count: 0, Disabled: false},
 		{Key: "pricing", Label: l.Tabs.Pricing, Href: base + "?tab=pricing", HxGet: action + "pricing", Icon: "icon-tag", Count: 0, Disabled: false},
 		{Key: "stock", Label: "Stock", Href: base + "?tab=stock", HxGet: action + "stock", Icon: "icon-package", Count: 0, Disabled: false},
 		{Key: "audit-trail", Label: "Audit Trail", Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
@@ -386,7 +395,7 @@ func buildStockTable(ctx context.Context, deps *Deps, productID, variantID strin
 		actions := []types.TableAction{
 			{
 				Type: "view", Label: l.Actions.View,
-				Href: fmt.Sprintf("/app/products/detail/%s/variant/%s/stock/%s", productID, variantID, iid),
+				Href: route.ResolveURL(deps.Routes.VariantStockDetailURL, "id", productID, "vid", variantID, "iid", iid),
 			},
 		}
 

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
@@ -67,6 +68,7 @@ func NewOptionValueTableView(deps *OptionsDeps) view.View {
 		optionID := viewCtx.Request.PathValue("oid")
 
 		detailDeps := &Deps{
+			Routes:                  deps.Routes,
 			DB:                      deps.DB,
 			Labels:                  deps.Labels,
 			TableLabels:             deps.TableLabels,
@@ -90,7 +92,7 @@ func NewOptionValueAddView(deps *OptionsDeps) view.View {
 			info := readOptionInfo(ctx, deps, optionID)
 
 			return view.OK("option-value-drawer-form", &OptionValueFormData{
-				FormAction:     fmt.Sprintf("/action/products/detail/%s/options/%s/values/add", productID, optionID),
+				FormAction:     route.ResolveURL(deps.Routes.OptionValueAddURL, "id", productID, "oid", optionID),
 				ProductID:      productID,
 				OptionID:       optionID,
 				OptionName:     info.Name,
@@ -181,7 +183,7 @@ func NewOptionValueEditView(deps *OptionsDeps) view.View {
 			info := readOptionInfo(ctx, deps, optionID)
 
 			return view.OK("option-value-drawer-form", &OptionValueFormData{
-				FormAction:     fmt.Sprintf("/action/products/detail/%s/options/%s/values/edit/%s", productID, optionID, valueID),
+				FormAction:     route.ResolveURL(deps.Routes.OptionValueEditURL, "id", productID, "oid", optionID, "vid", valueID),
 				IsEdit:         true,
 				ID:             valueID,
 				ProductID:      productID,

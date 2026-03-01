@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
@@ -60,7 +61,7 @@ func NewOptionAddView(deps *OptionsDeps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("option-drawer-form", &OptionFormData{
-				FormAction:      fmt.Sprintf("/action/products/detail/%s/options/add", productID),
+				FormAction:      route.ResolveURL(deps.Routes.OptionAddURL, "id", productID),
 				ProductID:       productID,
 				Required:        false,
 				Active:          true,
@@ -180,7 +181,7 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 			required := record.GetRequired()
 
 			return view.OK("option-drawer-form", &OptionFormData{
-				FormAction:      fmt.Sprintf("/action/products/detail/%s/options/edit/%s", productID, optionID),
+				FormAction:      route.ResolveURL(deps.Routes.OptionEditURL, "id", productID, "oid", optionID),
 				IsEdit:          true,
 				ID:              optionID,
 				ProductID:       productID,

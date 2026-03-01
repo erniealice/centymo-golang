@@ -2,11 +2,11 @@ package detail
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -40,6 +40,7 @@ type AttributeFormData struct {
 
 // AttributeDeps holds dependencies for attribute action handlers.
 type AttributeDeps struct {
+	Routes       centymo.ProductRoutes
 	DB           centymo.DataSource
 	Labels       centymo.ProductLabels
 	CommonLabels pyeza.CommonLabels
@@ -102,7 +103,7 @@ func NewAttributeAssignView(deps *AttributeDeps) view.View {
 
 			l := deps.Labels
 			return view.OK("attribute-drawer-form", &AttributeFormData{
-				FormAction: fmt.Sprintf("/action/products/detail/%s/attributes/assign", productID),
+				FormAction: route.ResolveURL(deps.Routes.AttributeAssignURL, "id", productID),
 				ProductID:  productID,
 				Labels: AttributeFormLabels{
 					Title:        l.Attribute.Title,

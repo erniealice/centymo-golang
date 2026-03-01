@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -17,6 +18,7 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
+	Routes            centymo.PriceListRoutes
 	ReadPriceList     func(ctx context.Context, req *pricelistpb.ReadPriceListRequest) (*pricelistpb.ReadPriceListResponse, error)
 	ListPriceProducts func(ctx context.Context, req *priceproductpb.ListPriceProductsRequest) (*priceproductpb.ListPriceProductsResponse, error)
 	Labels            centymo.PriceListLabels
@@ -63,7 +65,7 @@ func NewView(deps *Deps) view.View {
 		name := priceList.GetName()
 		description := priceList.GetDescription()
 
-		tabItems := buildTabItems(id, deps.Labels)
+		tabItems := buildTabItems(id, deps.Labels, deps.Routes)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -86,7 +88,7 @@ func NewView(deps *Deps) view.View {
 
 		// Populate prices table on the "prices" tab
 		if tab == "prices" {
-			pricesTable, err := buildPricesTable(ctx, deps, id)
+			pricesTable, err := buildPricesTable(ctx, deps, id, deps.Routes)
 			if err != nil {
 				log.Printf("Failed to load price products for price list %s: %v", id, err)
 			}
@@ -128,13 +130,13 @@ func NewTabAction(deps *Deps) view.View {
 			},
 			PriceList: priceList,
 			ActiveTab: tab,
-			TabItems:  buildTabItems(id, deps.Labels),
+			TabItems:  buildTabItems(id, deps.Labels, deps.Routes),
 			ID:        id,
 			Labels:    deps.Labels,
 		}
 
 		if tab == "prices" {
-			pricesTable, err := buildPricesTable(ctx, deps, id)
+			pricesTable, err := buildPricesTable(ctx, deps, id, deps.Routes)
 			if err != nil {
 				log.Printf("Failed to load price products for price list %s: %v", id, err)
 			}
@@ -146,16 +148,16 @@ func NewTabAction(deps *Deps) view.View {
 	})
 }
 
-func buildTabItems(id string, labels centymo.PriceListLabels) []pyeza.TabItem {
-	base := "/app/price-lists/" + id
-	action := "/action/price-lists/" + id + "/tab/"
+func buildTabItems(id string, labels centymo.PriceListLabels, routes centymo.PriceListRoutes) []pyeza.TabItem {
+	base := route.ResolveURL(routes.DetailURL, "id", id)
+	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "basic", Label: labels.Detail.BasicInfo, Href: base + "?tab=basic", HxGet: action + "basic"},
 		{Key: "prices", Label: labels.Detail.Prices, Href: base + "?tab=prices", HxGet: action + "prices"},
 	}
 }
 
-func buildPricesTable(ctx context.Context, deps *Deps, priceListID string) (*types.TableConfig, error) {
+func buildPricesTable(ctx context.Context, deps *Deps, priceListID string, routes centymo.PriceListRoutes) (*types.TableConfig, error) {
 	resp, err := deps.ListPriceProducts(ctx, &priceproductpb.ListPriceProductsRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list price products: %w", err)
@@ -169,7 +171,7 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string) (*typ
 	}
 
 	rows := []types.TableRow{}
-	deleteURL := fmt.Sprintf("/action/price-lists/%s/products/delete", priceListID)
+	deleteURL := route.ResolveURL(routes.PriceProductDeleteURL, "id", priceListID)
 	for _, pp := range resp.GetData() {
 		// Filter price products belonging to this price list
 		if pp.GetPriceListId() != priceListID {
@@ -194,7 +196,7 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string) (*typ
 	}
 	types.ApplyColumnStyles(columns, rows)
 
-	addURL := fmt.Sprintf("/action/price-lists/%s/products/add", priceListID)
+	addURL := route.ResolveURL(routes.PriceProductAddURL, "id", priceListID)
 	tableConfig := &types.TableConfig{
 		ID:                   "price-products-table",
 		Columns:              columns,

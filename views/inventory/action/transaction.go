@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -59,7 +60,7 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("transaction-drawer-form", &TransactionFormData{
-				FormAction:   "/action/inventory/detail/" + inventoryItemID + "/transactions/assign",
+				FormAction:   route.ResolveURL(deps.Routes.TransactionAssignURL, "id", inventoryItemID),
 				Labels:       transactionFormLabels(viewCtx.T),
 				TypeOptions:  transactionTypeOptions(viewCtx.T),
 				Today:        time.Now().Format("2006-01-02"),

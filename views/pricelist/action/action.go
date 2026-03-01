@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -38,6 +39,7 @@ type FormData struct {
 
 // Deps holds dependencies for price list action handlers.
 type Deps struct {
+	Routes          centymo.PriceListRoutes
 	CreatePriceList func(ctx context.Context, req *pricelistpb.CreatePriceListRequest) (*pricelistpb.CreatePriceListResponse, error)
 	ReadPriceList   func(ctx context.Context, req *pricelistpb.ReadPriceListRequest) (*pricelistpb.ReadPriceListResponse, error)
 	UpdatePriceList func(ctx context.Context, req *pricelistpb.UpdatePriceListRequest) (*pricelistpb.UpdatePriceListResponse, error)
@@ -60,7 +62,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("pricelist-drawer-form", &FormData{
-				FormAction:   "/action/price-lists/add",
+				FormAction:   deps.Routes.AddURL,
 				Active:       true,
 				Labels:       formLabels(viewCtx.T),
 				CommonLabels: nil, // injected by ViewAdapter
@@ -120,7 +122,7 @@ func NewEditAction(deps *Deps) view.View {
 			pl := data[0]
 
 			return view.OK("pricelist-drawer-form", &FormData{
-				FormAction:   "/action/price-lists/edit/" + id,
+				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:       true,
 				ID:           id,
 				Name:         pl.GetName(),

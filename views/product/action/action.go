@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/erniealice/pyeza-golang/view"
-
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/pyeza-golang/route"
+	"github.com/erniealice/pyeza-golang/view"
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 )
@@ -39,6 +39,7 @@ type FormData struct {
 
 // Deps holds dependencies for product action handlers.
 type Deps struct {
+	Routes           centymo.ProductRoutes
 	CreateProduct    func(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.CreateProductResponse, error)
 	ReadProduct      func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
 	UpdateProduct    func(ctx context.Context, req *productpb.UpdateProductRequest) (*productpb.UpdateProductResponse, error)
@@ -62,7 +63,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("product-drawer-form", &FormData{
-				FormAction:   "/action/products/add",
+				FormAction:   deps.Routes.AddURL,
 				Active:       true,
 				Currency:     "PHP",
 				Labels:       formLabels(viewCtx.T),
@@ -119,7 +120,7 @@ func NewEditAction(deps *Deps) view.View {
 			p := data[0]
 
 			return view.OK("product-drawer-form", &FormData{
-				FormAction:   "/action/products/edit/" + id,
+				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:       true,
 				ID:           id,
 				Name:         p.GetName(),

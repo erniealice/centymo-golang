@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -16,6 +17,7 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
+	Routes         centymo.PriceListRoutes
 	ListPriceLists func(ctx context.Context, req *pricelistpb.ListPriceListsRequest) (*pricelistpb.ListPriceListsResponse, error)
 	RefreshURL     string
 	Labels         centymo.PriceListLabels
@@ -46,7 +48,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := priceListColumns(l)
-		rows := buildTableRows(resp.GetData(), status, l)
+		rows := buildTableRows(resp.GetData(), status, l, deps.Routes)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -56,7 +58,7 @@ func NewView(deps *Deps) view.View {
 				Label:          l.Bulk.Delete,
 				Icon:           "icon-trash-2",
 				Variant:        "danger",
-				Endpoint:       centymo.PriceListBulkDeleteURL,
+				Endpoint:       deps.Routes.BulkDeleteURL,
 				ConfirmTitle:   l.Bulk.Delete,
 				ConfirmMessage: "Are you sure you want to delete {{count}} price list(s)? This action cannot be undone.",
 			},
@@ -84,7 +86,7 @@ func NewView(deps *Deps) view.View {
 			},
 			PrimaryAction: &types.PrimaryAction{
 				Label:     l.Buttons.AddPriceList,
-				ActionURL: centymo.PriceListAddURL,
+				ActionURL: deps.Routes.AddURL,
 				Icon:      "icon-plus",
 			},
 			BulkActions: &bulkCfg,
@@ -120,7 +122,7 @@ func priceListColumns(l centymo.PriceListLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centymo.PriceListLabels) []types.TableRow {
+func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centymo.PriceListLabels, routes centymo.PriceListRoutes) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, pl := range priceLists {
 		active := pl.GetActive()
@@ -153,9 +155,9 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 				"status": recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/price-lists/" + id},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/price-lists/edit/" + id, DrawerTitle: l.Actions.Edit},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/price-lists/delete", ItemName: name},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name},
 			},
 		})
 	}

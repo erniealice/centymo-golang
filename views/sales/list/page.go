@@ -8,12 +8,14 @@ import (
 	"github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
+	Routes       centymo.SalesRoutes
 	DB           centymo.DataSource
 	RefreshURL   string
 	Labels       centymo.SalesLabels
@@ -44,11 +46,11 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := salesColumns(l)
-		rows := buildTableRows(records, status, l)
+		rows := buildTableRows(records, status, l, deps.Routes)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = buildBulkActions(deps.CommonLabels, status)
+		bulkCfg.Actions = buildBulkActions(deps.CommonLabels, status, deps.Routes)
 
 		tableConfig := &types.TableConfig{
 			ID:                   "sales-table",
@@ -72,7 +74,7 @@ func NewView(deps *Deps) view.View {
 			},
 			PrimaryAction: &types.PrimaryAction{
 				Label:     l.Buttons.AddSale,
-				ActionURL: "/action/sales/add",
+				ActionURL: deps.Routes.AddURL,
 				Icon:      "icon-plus",
 			},
 			BulkActions: &bulkCfg,
@@ -109,7 +111,7 @@ func salesColumns(l centymo.SalesLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, l centymo.SalesLabels) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, l centymo.SalesLabels, routes centymo.SalesRoutes) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -126,32 +128,33 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 
 		amountDisplay := currency + " " + amount
 
+		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
-			{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/sales/detail/" + id},
-			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/sales/edit/" + id, DrawerTitle: l.Actions.Edit},
+			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit},
 		}
 		if recordStatus == "ongoing" {
 			actions = append(actions, types.TableAction{
 				Type: "deactivate", Label: "Complete", Action: "deactivate",
-				URL: "/action/sales/status/set?status=complete", ItemName: refNumber,
+				URL: routes.SetStatusURL + "?status=complete", ItemName: refNumber,
 				ConfirmTitle:   "Complete",
 				ConfirmMessage: fmt.Sprintf("Are you sure you want to mark %s as complete?", refNumber),
 			})
 		} else {
 			actions = append(actions, types.TableAction{
 				Type: "activate", Label: "Reactivate", Action: "activate",
-				URL: "/action/sales/status/set?status=ongoing", ItemName: refNumber,
+				URL: routes.SetStatusURL + "?status=ongoing", ItemName: refNumber,
 				ConfirmTitle:   "Reactivate",
 				ConfirmMessage: fmt.Sprintf("Are you sure you want to reactivate %s?", refNumber),
 			})
 		}
 		actions = append(actions, types.TableAction{
-			Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/sales/delete", ItemName: refNumber,
+			Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: refNumber,
 		})
 
 		rows = append(rows, types.TableRow{
 			ID:   id,
-			Href: "/app/sales/detail/" + id,
+			Href: detailURL,
 			Cells: []types.TableCell{
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: name},
@@ -237,7 +240,7 @@ func statusVariant(status string) string {
 	}
 }
 
-func buildBulkActions(common pyeza.CommonLabels, status string) []types.BulkAction {
+func buildBulkActions(common pyeza.CommonLabels, status string, routes centymo.SalesRoutes) []types.BulkAction {
 	actions := []types.BulkAction{}
 
 	switch status {
@@ -247,7 +250,7 @@ func buildBulkActions(common pyeza.CommonLabels, status string) []types.BulkActi
 			Label:           "Mark Complete",
 			Icon:            "icon-check-circle",
 			Variant:         "warning",
-			Endpoint:        "/action/sales/status/set/bulk",
+			Endpoint:        routes.BulkSetStatusURL,
 			ConfirmTitle:    "Mark Complete",
 			ConfirmMessage:  "Are you sure you want to mark {{count}} sale(s) as complete?",
 			ExtraParamsJSON: `{"target_status":"complete"}`,
@@ -258,7 +261,7 @@ func buildBulkActions(common pyeza.CommonLabels, status string) []types.BulkActi
 			Label:           "Reactivate",
 			Icon:            "icon-play",
 			Variant:         "primary",
-			Endpoint:        "/action/sales/status/set/bulk",
+			Endpoint:        routes.BulkSetStatusURL,
 			ConfirmTitle:    "Reactivate",
 			ConfirmMessage:  "Are you sure you want to reactivate {{count}} sale(s)?",
 			ExtraParamsJSON: `{"target_status":"ongoing"}`,
@@ -270,7 +273,7 @@ func buildBulkActions(common pyeza.CommonLabels, status string) []types.BulkActi
 		Label:          common.Bulk.Delete,
 		Icon:           "icon-trash-2",
 		Variant:        "danger",
-		Endpoint:       "/action/sales/delete/bulk",
+		Endpoint:       routes.BulkDeleteURL,
 		ConfirmTitle:   common.Bulk.Delete,
 		ConfirmMessage: "Are you sure you want to delete {{count}} sale(s)? This action cannot be undone.",
 	})

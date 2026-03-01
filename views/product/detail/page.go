@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -21,6 +22,7 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
+	Routes       centymo.ProductRoutes
 	ReadProduct  func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
 	Labels       centymo.ProductLabels
 	CommonLabels pyeza.CommonLabels
@@ -152,14 +154,15 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 	optionCount := getOptionCountTyped(ctx, deps, id)
 
 	l := deps.Labels
-	tabItems := buildTabItems(id, l, variantCount, optionCount)
+	tabItems := buildTabItems(id, l, variantCount, optionCount, deps.Routes)
 
 	pageData := &PageData{
 		PageData: types.PageData{
 			CacheVersion:   viewCtx.CacheVersion,
 			Title:          name,
 			CurrentPath:    viewCtx.CurrentPath,
-			ActiveNav:      "products",
+			ActiveNav:      deps.Routes.ActiveNav,
+			ActiveSubNav:   deps.Routes.ActiveSubNav,
 			HeaderTitle:    name,
 			HeaderSubtitle: description,
 			HeaderIcon:     "icon-package",
@@ -193,9 +196,9 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 	return pageData, nil
 }
 
-func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount int) []pyeza.TabItem {
-	base := "/app/products/detail/" + id
-	action := "/action/products/detail/" + id + "/tab/"
+func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount int, routes centymo.ProductRoutes) []pyeza.TabItem {
+	base := route.ResolveURL(routes.DetailURL, "id", id)
+	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
 		{Key: "options", Label: l.Tabs.Options, Href: base + "?tab=options", HxGet: action + "options", Icon: "icon-settings", Count: optionCount, Disabled: false},
@@ -273,16 +276,16 @@ func BuildVariantsTable(ctx context.Context, deps *Deps, productID string) *type
 				actions := []types.TableAction{
 					{
 						Type: "view", Label: l.Actions.View,
-						Href: fmt.Sprintf("/app/products/detail/%s/variant/%s", productID, vid),
+						Href: route.ResolveURL(deps.Routes.VariantDetailURL, "id", productID, "vid", vid),
 					},
 					{
 						Type: "edit", Label: l.Variant.Edit, Action: "edit",
-						URL:         fmt.Sprintf("/action/products/detail/%s/variants/edit/%s", productID, vid),
+						URL:         route.ResolveURL(deps.Routes.VariantEditURL, "id", productID, "vid", vid),
 						DrawerTitle: l.Variant.Edit,
 					},
 					{
 						Type: "delete", Label: l.Variant.Remove, Action: "delete",
-						URL:            fmt.Sprintf("/action/products/detail/%s/variants/remove", productID),
+						URL:            route.ResolveURL(deps.Routes.VariantRemoveURL, "id", productID),
 						ItemName:       sku,
 						ConfirmTitle:   l.Variant.Remove,
 						ConfirmMessage: fmt.Sprintf("Are you sure you want to remove variant %s?", sku),
@@ -311,7 +314,7 @@ func BuildVariantsTable(ctx context.Context, deps *Deps, productID string) *type
 
 	tableConfig := &types.TableConfig{
 		ID:                   "product-variants-table",
-		RefreshURL:           fmt.Sprintf("/action/products/detail/%s/variants/table", productID),
+		RefreshURL:           route.ResolveURL(deps.Routes.VariantTableURL, "id", productID),
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
@@ -331,7 +334,7 @@ func BuildVariantsTable(ctx context.Context, deps *Deps, productID string) *type
 		},
 		PrimaryAction: &types.PrimaryAction{
 			Label:     l.Variant.Assign,
-			ActionURL: fmt.Sprintf("/action/products/detail/%s/variants/assign", productID),
+			ActionURL: route.ResolveURL(deps.Routes.VariantAssignURL, "id", productID),
 			Icon:      "icon-plus",
 		},
 	}

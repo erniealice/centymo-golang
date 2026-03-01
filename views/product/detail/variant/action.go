@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	detail "github.com/erniealice/centymo-golang/views/product/detail"
@@ -20,6 +21,7 @@ func NewTableView(deps *Deps) view.View {
 		productID := viewCtx.Request.PathValue("id")
 
 		detailDeps := &detail.Deps{
+			Routes:                    deps.Routes,
 			DB:                        deps.DB,
 			Labels:                    deps.Labels,
 			TableLabels:               deps.TableLabels,
@@ -41,7 +43,7 @@ func NewAssignView(deps *Deps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			l := deps.Labels
 			return view.OK("variant-drawer-form", &VariantFormData{
-				FormAction: fmt.Sprintf("/action/products/detail/%s/variants/assign", productID),
+				FormAction: route.ResolveURL(deps.Routes.VariantAssignURL, "id", productID),
 				ProductID:  productID,
 				Active:     true,
 				Labels: VariantFormLabels{
@@ -128,7 +130,7 @@ func NewEditView(deps *Deps) view.View {
 				}
 			}
 			return view.OK("variant-drawer-form", &VariantFormData{
-				FormAction:    fmt.Sprintf("/action/products/detail/%s/variants/edit/%s", productID, variantID),
+				FormAction:    route.ResolveURL(deps.Routes.VariantEditURL, "id", productID, "vid", variantID),
 				IsEdit:        true,
 				ID:            variantID,
 				ProductID:     productID,
@@ -183,7 +185,7 @@ func NewEditView(deps *Deps) view.View {
 			StatusCode: http.StatusOK,
 			Headers: map[string]string{
 				"HX-Trigger":  `{"formSuccess":true}`,
-				"HX-Redirect": fmt.Sprintf("/app/products/detail/%s/variant/%s", productID, variantID),
+				"HX-Redirect": route.ResolveURL(deps.Routes.VariantDetailURL, "id", productID, "vid", variantID),
 			},
 		}
 	})

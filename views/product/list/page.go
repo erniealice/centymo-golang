@@ -6,16 +6,18 @@ import (
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
+	Routes       centymo.ProductRoutes
 	ListProducts func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	RefreshURL   string
 	Labels       centymo.ProductLabels
@@ -46,7 +48,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := productColumns(l)
-		rows := buildTableRows(resp.GetData(), status, l)
+		rows := buildTableRows(resp.GetData(), status, l, deps.Routes)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -56,7 +58,7 @@ func NewView(deps *Deps) view.View {
 				Label:           l.Status.Activate,
 				Icon:            "icon-check-circle",
 				Variant:         "success",
-				Endpoint:        centymo.ProductBulkSetStatusURL,
+				Endpoint:        deps.Routes.BulkSetStatusURL,
 				ExtraParamsJSON: `{"target_status":"active"}`,
 				ConfirmTitle:    l.Status.Activate,
 				ConfirmMessage:  "Are you sure you want to activate {{count}} product(s)?",
@@ -66,7 +68,7 @@ func NewView(deps *Deps) view.View {
 				Label:           l.Status.Deactivate,
 				Icon:            "icon-x-circle",
 				Variant:         "warning",
-				Endpoint:        centymo.ProductBulkSetStatusURL,
+				Endpoint:        deps.Routes.BulkSetStatusURL,
 				ExtraParamsJSON: `{"target_status":"inactive"}`,
 				ConfirmTitle:    l.Status.Deactivate,
 				ConfirmMessage:  "Are you sure you want to deactivate {{count}} product(s)?",
@@ -76,7 +78,7 @@ func NewView(deps *Deps) view.View {
 				Label:          l.Bulk.Delete,
 				Icon:           "icon-trash-2",
 				Variant:        "danger",
-				Endpoint:       centymo.ProductBulkDeleteURL,
+				Endpoint:       deps.Routes.BulkDeleteURL,
 				ConfirmTitle:   l.Bulk.Delete,
 				ConfirmMessage: "Are you sure you want to delete {{count}} product(s)? This action cannot be undone.",
 			},
@@ -104,7 +106,7 @@ func NewView(deps *Deps) view.View {
 			},
 			PrimaryAction: &types.PrimaryAction{
 				Label:     l.Buttons.AddProduct,
-				ActionURL: centymo.ProductAddURL,
+				ActionURL: deps.Routes.AddURL,
 				Icon:      "icon-plus",
 			},
 			BulkActions: &bulkCfg,
@@ -116,8 +118,8 @@ func NewView(deps *Deps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          statusPageTitle(l, status),
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "products",
-				ActiveSubNav:   status,
+				ActiveNav:      deps.Routes.ActiveNav,
+				ActiveSubNav:   deps.Routes.ActiveSubNav,
 				HeaderTitle:    statusPageTitle(l, status),
 				HeaderSubtitle: statusPageCaption(l, status),
 				HeaderIcon:     "icon-package",
@@ -140,7 +142,7 @@ func productColumns(l centymo.ProductLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(products []*productpb.Product, status string, l centymo.ProductLabels) []types.TableRow {
+func buildTableRows(products []*productpb.Product, status string, l centymo.ProductLabels, routes centymo.ProductRoutes) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, p := range products {
 		active := p.GetActive()
@@ -171,9 +173,9 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 				"status": recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: "/app/products/detail/" + id},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: "/action/products/edit/" + id, DrawerTitle: l.Actions.Edit},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: "/action/products/delete", ItemName: name},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name},
 			},
 		})
 	}
