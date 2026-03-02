@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -19,6 +20,7 @@ import (
 type Deps struct {
 	Routes         centymo.PriceListRoutes
 	ListPriceLists func(ctx context.Context, req *pricelistpb.ListPriceListsRequest) (*pricelistpb.ListPriceListsResponse, error)
+	GetInUseIDs    func(ctx context.Context, ids []string) (map[string]bool, error)
 	RefreshURL     string
 	Labels         centymo.PriceListLabels
 	CommonLabels   pyeza.CommonLabels
@@ -46,21 +48,31 @@ func NewView(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to load price lists: %w", err))
 		}
 
+		var inUseIDs map[string]bool
+		if deps.GetInUseIDs != nil {
+			var itemIDs []string
+			for _, item := range resp.GetData() {
+				itemIDs = append(itemIDs, item.GetId())
+			}
+			inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+		}
+
 		l := deps.Labels
 		columns := priceListColumns(l)
-		rows := buildTableRows(resp.GetData(), status, l, deps.Routes)
+		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
 		bulkCfg.Actions = []types.BulkAction{
 			{
-				Key:            "delete",
-				Label:          l.Bulk.Delete,
-				Icon:           "icon-trash-2",
-				Variant:        "danger",
-				Endpoint:       deps.Routes.BulkDeleteURL,
-				ConfirmTitle:   l.Bulk.Delete,
-				ConfirmMessage: "Are you sure you want to delete {{count}} price list(s)? This action cannot be undone.",
+				Key:              "delete",
+				Label:            l.Bulk.Delete,
+				Icon:             "icon-trash-2",
+				Variant:          "danger",
+				Endpoint:         deps.Routes.BulkDeleteURL,
+				ConfirmTitle:     l.Bulk.Delete,
+				ConfirmMessage:   "Are you sure you want to delete {{count}} price list(s)? This action cannot be undone.",
+				RequiresDataAttr: "deletable",
 			},
 		}
 
@@ -122,7 +134,7 @@ func priceListColumns(l centymo.PriceListLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centymo.PriceListLabels, routes centymo.PriceListRoutes) []types.TableRow {
+func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centymo.PriceListLabels, routes centymo.PriceListRoutes, inUseIDs map[string]bool) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, pl := range priceLists {
 		active := pl.GetActive()
@@ -141,6 +153,19 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 		if dateEnd == "" {
 			dateEnd = "—"
 		}
+		isInUse := inUseIDs[id]
+
+		deleteAction := types.TableAction{
+			Type:     "delete",
+			Label:    l.Actions.Delete,
+			Action:   "delete",
+			URL:      routes.DeleteURL,
+			ItemName: name,
+		}
+		if isInUse {
+			deleteAction.Disabled = true
+			deleteAction.DisabledTooltip = "Cannot delete: price list has products or is used in sales"
+		}
 
 		rows = append(rows, types.TableRow{
 			ID: id,
@@ -151,13 +176,14 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
-				"name":   name,
-				"status": recordStatus,
+				"name":      name,
+				"status":    recordStatus,
+				"deletable": strconv.FormatBool(!isInUse),
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
 				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name},
+				deleteAction,
 			},
 		})
 	}

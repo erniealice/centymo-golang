@@ -148,10 +148,6 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 				ConfirmMessage: fmt.Sprintf("Are you sure you want to reactivate %s?", refNumber),
 			})
 		}
-		actions = append(actions, types.TableAction{
-			Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: refNumber,
-		})
-
 		rows = append(rows, types.TableRow{
 			ID:   id,
 			Href: detailURL,
@@ -267,16 +263,6 @@ func buildBulkActions(common pyeza.CommonLabels, status string, routes centymo.S
 			ExtraParamsJSON: `{"target_status":"ongoing"}`,
 		})
 	}
-
-	actions = append(actions, types.BulkAction{
-		Key:            "delete",
-		Label:          common.Bulk.Delete,
-		Icon:           "icon-trash-2",
-		Variant:        "danger",
-		Endpoint:       routes.BulkDeleteURL,
-		ConfirmTitle:   common.Bulk.Delete,
-		ConfirmMessage: "Are you sure you want to delete {{count}} sale(s)? This action cannot be undone.",
-	})
 
 	return actions
 }
