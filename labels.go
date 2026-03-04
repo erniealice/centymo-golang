@@ -834,6 +834,402 @@ type ExpenditureDetailLabels struct {
 }
 
 // ---------------------------------------------------------------------------
+// Collection labels (money IN — payment collections, receivables)
+// ---------------------------------------------------------------------------
+
+// CollectionLabels holds all translatable strings for the collection module.
+type CollectionLabels struct {
+	Page    CollectionPageLabels    `json:"page"`
+	Buttons CollectionButtonLabels  `json:"buttons"`
+	Columns CollectionColumnLabels  `json:"columns"`
+	Empty   CollectionEmptyLabels   `json:"empty"`
+	Form    CollectionFormLabels    `json:"form"`
+	Actions CollectionActionLabels  `json:"actions"`
+	Bulk    CollectionBulkLabels    `json:"bulkActions"`
+	Detail  CollectionDetailLabels  `json:"detail"`
+	Status  CollectionStatusLabels  `json:"status"`
+}
+
+type CollectionPageLabels struct {
+	Heading          string `json:"heading"`
+	HeadingPending   string `json:"headingPending"`
+	HeadingCompleted string `json:"headingCompleted"`
+	HeadingFailed    string `json:"headingFailed"`
+	Caption          string `json:"caption"`
+	CaptionPending   string `json:"captionPending"`
+	CaptionCompleted string `json:"captionCompleted"`
+	CaptionFailed    string `json:"captionFailed"`
+	Dashboard        string `json:"dashboard"`
+}
+
+type CollectionButtonLabels struct {
+	AddCollection string `json:"addCollection"`
+}
+
+type CollectionColumnLabels struct {
+	Reference string `json:"reference"`
+	Customer  string `json:"customer"`
+	Amount    string `json:"amount"`
+	Date      string `json:"date"`
+	Status    string `json:"status"`
+	Method    string `json:"method"`
+}
+
+type CollectionEmptyLabels struct {
+	PendingTitle     string `json:"pendingTitle"`
+	PendingMessage   string `json:"pendingMessage"`
+	CompletedTitle   string `json:"completedTitle"`
+	CompletedMessage string `json:"completedMessage"`
+	FailedTitle      string `json:"failedTitle"`
+	FailedMessage    string `json:"failedMessage"`
+}
+
+type CollectionFormLabels struct {
+	Customer             string `json:"customer"`
+	Date                 string `json:"date"`
+	Amount               string `json:"amount"`
+	Currency             string `json:"currency"`
+	Reference            string `json:"reference"`
+	ReferencePlaceholder string `json:"referencePlaceholder"`
+	PaymentMethod        string `json:"paymentMethod"`
+	Status               string `json:"status"`
+	Notes                string `json:"notes"`
+	NotesPlaceholder     string `json:"notesPlaceholder"`
+}
+
+type CollectionActionLabels struct {
+	View   string `json:"view"`
+	Edit   string `json:"edit"`
+	Delete string `json:"delete"`
+}
+
+type CollectionBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type CollectionDetailLabels struct {
+	PageTitle    string `json:"pageTitle"`
+	PaymentInfo  string `json:"paymentInfo"`
+	Customer     string `json:"customer"`
+	Date         string `json:"date"`
+	Amount       string `json:"amount"`
+	Currency     string `json:"currency"`
+	Status       string `json:"status"`
+	Method       string `json:"method"`
+	Reference    string `json:"reference"`
+	Notes        string `json:"notes"`
+	TabBasicInfo string `json:"tabBasicInfo"`
+	TabAuditTrail string `json:"tabAuditTrail"`
+	AuditAction       string `json:"auditAction"`
+	AuditUser         string `json:"auditUser"`
+	AuditEmptyTitle   string `json:"auditEmptyTitle"`
+	AuditEmptyMessage string `json:"auditEmptyMessage"`
+}
+
+type CollectionStatusLabels struct {
+	Pending   string `json:"pending"`
+	Completed string `json:"completed"`
+	Failed    string `json:"failed"`
+}
+
+// DefaultCollectionLabels returns CollectionLabels with sensible English defaults.
+func DefaultCollectionLabels() CollectionLabels {
+	return CollectionLabels{
+		Page: CollectionPageLabels{
+			Heading:          "Collections",
+			HeadingPending:   "Pending Collections",
+			HeadingCompleted: "Completed Collections",
+			HeadingFailed:    "Failed Collections",
+			Caption:          "Manage payment collections",
+			CaptionPending:   "Payments awaiting collection",
+			CaptionCompleted: "Successfully collected payments",
+			CaptionFailed:    "Failed payment attempts",
+			Dashboard:        "Collections Dashboard",
+		},
+		Buttons: CollectionButtonLabels{
+			AddCollection: "Add Collection",
+		},
+		Columns: CollectionColumnLabels{
+			Reference: "Reference",
+			Customer:  "Customer",
+			Amount:    "Amount",
+			Date:      "Date",
+			Status:    "Status",
+			Method:    "Method",
+		},
+		Empty: CollectionEmptyLabels{
+			PendingTitle:     "No pending collections",
+			PendingMessage:   "No pending collections to display.",
+			CompletedTitle:   "No completed collections",
+			CompletedMessage: "No completed collections to display.",
+			FailedTitle:      "No failed collections",
+			FailedMessage:    "No failed collections to display.",
+		},
+		Form: CollectionFormLabels{
+			Customer:             "Customer",
+			Date:                 "Date",
+			Amount:               "Amount",
+			Currency:             "Currency",
+			Reference:            "Reference",
+			ReferencePlaceholder: "e.g. INV-001",
+			PaymentMethod:        "Payment Method",
+			Status:               "Status",
+			Notes:                "Notes",
+			NotesPlaceholder:     "Additional notes...",
+		},
+		Actions: CollectionActionLabels{
+			View:   "View",
+			Edit:   "Edit",
+			Delete: "Delete",
+		},
+		Bulk: CollectionBulkLabels{
+			Delete: "Delete Selected",
+		},
+		Detail: CollectionDetailLabels{
+			PageTitle:         "Collection Details",
+			PaymentInfo:       "Payment Information",
+			Customer:          "Customer",
+			Date:              "Date",
+			Amount:            "Amount",
+			Currency:          "Currency",
+			Status:            "Status",
+			Method:            "Payment Method",
+			Reference:         "Reference",
+			Notes:             "Notes",
+			TabBasicInfo:      "Basic Info",
+			TabAuditTrail:     "Audit Trail",
+			AuditAction:       "Action",
+			AuditUser:         "User",
+			AuditEmptyTitle:   "No audit records",
+			AuditEmptyMessage: "No audit trail entries yet.",
+		},
+		Status: CollectionStatusLabels{
+			Pending:   "Pending",
+			Completed: "Completed",
+			Failed:    "Failed",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Disbursement labels (money OUT — payments, refunds, payouts)
+// ---------------------------------------------------------------------------
+
+// DisbursementLabels holds all translatable strings for the disbursement module.
+type DisbursementLabels struct {
+	Page    DisbursementPageLabels    `json:"page"`
+	Buttons DisbursementButtonLabels  `json:"buttons"`
+	Columns DisbursementColumnLabels  `json:"columns"`
+	Empty   DisbursementEmptyLabels   `json:"empty"`
+	Form    DisbursementFormLabels    `json:"form"`
+	Actions DisbursementActionLabels  `json:"actions"`
+	Bulk    DisbursementBulkLabels    `json:"bulkActions"`
+	Detail  DisbursementDetailLabels  `json:"detail"`
+	Status  DisbursementStatusLabels  `json:"status"`
+}
+
+type DisbursementPageLabels struct {
+	Heading          string `json:"heading"`
+	HeadingDraft     string `json:"headingDraft"`
+	HeadingPending   string `json:"headingPending"`
+	HeadingApproved  string `json:"headingApproved"`
+	HeadingPaid      string `json:"headingPaid"`
+	HeadingCancelled string `json:"headingCancelled"`
+	Caption          string `json:"caption"`
+	CaptionDraft     string `json:"captionDraft"`
+	CaptionPending   string `json:"captionPending"`
+	CaptionApproved  string `json:"captionApproved"`
+	CaptionPaid      string `json:"captionPaid"`
+	CaptionCancelled string `json:"captionCancelled"`
+	Dashboard        string `json:"dashboard"`
+}
+
+type DisbursementButtonLabels struct {
+	AddDisbursement string `json:"addDisbursement"`
+}
+
+type DisbursementColumnLabels struct {
+	Reference string `json:"reference"`
+	Payee     string `json:"payee"`
+	Amount    string `json:"amount"`
+	Date      string `json:"date"`
+	Status    string `json:"status"`
+	Method    string `json:"method"`
+	Category  string `json:"category"`
+}
+
+type DisbursementEmptyLabels struct {
+	DraftTitle       string `json:"draftTitle"`
+	DraftMessage     string `json:"draftMessage"`
+	PendingTitle     string `json:"pendingTitle"`
+	PendingMessage   string `json:"pendingMessage"`
+	ApprovedTitle    string `json:"approvedTitle"`
+	ApprovedMessage  string `json:"approvedMessage"`
+	PaidTitle        string `json:"paidTitle"`
+	PaidMessage      string `json:"paidMessage"`
+	CancelledTitle   string `json:"cancelledTitle"`
+	CancelledMessage string `json:"cancelledMessage"`
+}
+
+type DisbursementFormLabels struct {
+	Payee                string `json:"payee"`
+	PayeePlaceholder     string `json:"payeePlaceholder"`
+	Date                 string `json:"date"`
+	Amount               string `json:"amount"`
+	Currency             string `json:"currency"`
+	Reference            string `json:"reference"`
+	ReferencePlaceholder string `json:"referencePlaceholder"`
+	PaymentMethod        string `json:"paymentMethod"`
+	Category             string `json:"category"`
+	Status               string `json:"status"`
+	Notes                string `json:"notes"`
+	NotesPlaceholder     string `json:"notesPlaceholder"`
+	ApprovedBy           string `json:"approvedBy"`
+}
+
+type DisbursementActionLabels struct {
+	View     string `json:"view"`
+	Edit     string `json:"edit"`
+	Delete   string `json:"delete"`
+	Approve  string `json:"approve"`
+	MarkPaid string `json:"markPaid"`
+}
+
+type DisbursementBulkLabels struct {
+	Delete   string `json:"delete"`
+	Approve  string `json:"approve"`
+	MarkPaid string `json:"markPaid"`
+}
+
+type DisbursementDetailLabels struct {
+	PageTitle         string `json:"pageTitle"`
+	PaymentInfo       string `json:"paymentInfo"`
+	Payee             string `json:"payee"`
+	Date              string `json:"date"`
+	Amount            string `json:"amount"`
+	Currency          string `json:"currency"`
+	Status            string `json:"status"`
+	Method            string `json:"method"`
+	Category          string `json:"category"`
+	Reference         string `json:"reference"`
+	ApprovedBy        string `json:"approvedBy"`
+	Notes             string `json:"notes"`
+	TabBasicInfo      string `json:"tabBasicInfo"`
+	TabAuditTrail     string `json:"tabAuditTrail"`
+	AuditAction       string `json:"auditAction"`
+	AuditUser         string `json:"auditUser"`
+	AuditEmptyTitle   string `json:"auditEmptyTitle"`
+	AuditEmptyMessage string `json:"auditEmptyMessage"`
+}
+
+type DisbursementStatusLabels struct {
+	Draft     string `json:"draft"`
+	Pending   string `json:"pending"`
+	Approved  string `json:"approved"`
+	Paid      string `json:"paid"`
+	Cancelled string `json:"cancelled"`
+}
+
+// DefaultDisbursementLabels returns DisbursementLabels with sensible English defaults.
+func DefaultDisbursementLabels() DisbursementLabels {
+	return DisbursementLabels{
+		Page: DisbursementPageLabels{
+			Heading:          "Disbursements",
+			HeadingDraft:     "Draft Disbursements",
+			HeadingPending:   "Pending Disbursements",
+			HeadingApproved:  "Approved Disbursements",
+			HeadingPaid:      "Paid Disbursements",
+			HeadingCancelled: "Cancelled Disbursements",
+			Caption:          "Manage disbursements and payouts",
+			CaptionDraft:     "Draft disbursements awaiting submission",
+			CaptionPending:   "Disbursements awaiting approval",
+			CaptionApproved:  "Approved disbursements ready for payment",
+			CaptionPaid:      "Completed disbursement payments",
+			CaptionCancelled: "Cancelled disbursements",
+			Dashboard:        "Disbursements Dashboard",
+		},
+		Buttons: DisbursementButtonLabels{
+			AddDisbursement: "Add Disbursement",
+		},
+		Columns: DisbursementColumnLabels{
+			Reference: "Reference",
+			Payee:     "Payee",
+			Amount:    "Amount",
+			Date:      "Date",
+			Status:    "Status",
+			Method:    "Method",
+			Category:  "Category",
+		},
+		Empty: DisbursementEmptyLabels{
+			DraftTitle:       "No draft disbursements",
+			DraftMessage:     "No draft disbursements to display.",
+			PendingTitle:     "No pending disbursements",
+			PendingMessage:   "No pending disbursements to display.",
+			ApprovedTitle:    "No approved disbursements",
+			ApprovedMessage:  "No approved disbursements to display.",
+			PaidTitle:        "No paid disbursements",
+			PaidMessage:      "No paid disbursements to display.",
+			CancelledTitle:   "No cancelled disbursements",
+			CancelledMessage: "No cancelled disbursements to display.",
+		},
+		Form: DisbursementFormLabels{
+			Payee:                "Payee",
+			PayeePlaceholder:     "Enter payee name",
+			Date:                 "Date",
+			Amount:               "Amount",
+			Currency:             "Currency",
+			Reference:            "Reference",
+			ReferencePlaceholder: "e.g. DISB-001",
+			PaymentMethod:        "Payment Method",
+			Category:             "Category",
+			Status:               "Status",
+			Notes:                "Notes",
+			NotesPlaceholder:     "Additional notes...",
+			ApprovedBy:           "Approved By",
+		},
+		Actions: DisbursementActionLabels{
+			View:     "View",
+			Edit:     "Edit",
+			Delete:   "Delete",
+			Approve:  "Approve",
+			MarkPaid: "Mark as Paid",
+		},
+		Bulk: DisbursementBulkLabels{
+			Delete:   "Delete Selected",
+			Approve:  "Approve Selected",
+			MarkPaid: "Mark Selected as Paid",
+		},
+		Detail: DisbursementDetailLabels{
+			PageTitle:         "Disbursement Details",
+			PaymentInfo:       "Payment Information",
+			Payee:             "Payee",
+			Date:              "Date",
+			Amount:            "Amount",
+			Currency:          "Currency",
+			Status:            "Status",
+			Method:            "Payment Method",
+			Category:          "Category",
+			Reference:         "Reference",
+			ApprovedBy:        "Approved By",
+			Notes:             "Notes",
+			TabBasicInfo:      "Basic Info",
+			TabAuditTrail:     "Audit Trail",
+			AuditAction:       "Action",
+			AuditUser:         "User",
+			AuditEmptyTitle:   "No audit records",
+			AuditEmptyMessage: "No audit trail entries yet.",
+		},
+		Status: DisbursementStatusLabels{
+			Draft:     "Draft",
+			Pending:   "Pending",
+			Approved:  "Approved",
+			Paid:      "Paid",
+			Cancelled: "Cancelled",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Mapping helpers
 // ---------------------------------------------------------------------------
 

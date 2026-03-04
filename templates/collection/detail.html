@@ -1,0 +1,87 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "collection-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "collection-detail-content"}}
+<div class="page-content sale-detail-layout">
+    {{/* --- Tabs --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "collection-tabs")}}
+    </div>
+
+    {{/* --- Tab Body --- */}}
+    <div id="tabContent" class="sale-detail-body">
+        {{if eq .ActiveTab "info"}}
+        {{template "collection-tab-info" .}}
+        {{else if eq .ActiveTab "audit"}}
+        {{template "collection-tab-audit" .}}
+        {{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
+
+{{/* Basic Information Tab */}}
+{{define "collection-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="sale-section-title">{{.Labels.Detail.PaymentInfo}}</h4>
+    <div class="sale-info-grid">
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Reference}}</span>
+            <span class="sale-info-value mono">{{index .Collection "reference_number"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Customer}}</span>
+            <span class="sale-info-value">{{index .Collection "customer"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Amount}}</span>
+            <span class="sale-info-value mono">{{index .Collection "currency"}} {{index .Collection "amount"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Currency}}</span>
+            <span class="sale-info-value">{{index .Collection "currency"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Method}}</span>
+            <span class="sale-info-value">{{index .Collection "collection_method"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Date}}</span>
+            <span class="sale-info-value">{{index .Collection "date"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Status}}</span>
+            <span>
+                <span class="badge badge--{{if eq (index .Collection "status") "completed"}}success{{else if eq (index .Collection "status") "failed"}}danger{{else}}warning{{end}}">
+                    {{index .Collection "status"}}
+                </span>
+            </span>
+        </div>
+    </div>
+
+    {{if index .Collection "notes"}}
+    <div style="margin-top: 1.75rem;">
+        <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
+        <div class="sale-notes-block">{{index .Collection "notes"}}</div>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Audit Trail Tab */}}
+{{define "collection-tab-audit"}}
+<div class="tab-scroll">
+    {{if .AuditTable}}
+        {{template "table-card" .AuditTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">Audit trail coming soon</div>
+            <p class="coming-soon-text">Audit trail entries will appear here.</p>
+        </div>
+    {{end}}
+</div>
+{{end}}

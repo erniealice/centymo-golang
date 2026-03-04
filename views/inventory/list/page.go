@@ -35,6 +35,8 @@ type PageData struct {
 // NewView creates the inventory list view.
 func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+
 		location := viewCtx.Request.PathValue("location")
 		if location == "" {
 			location = "ayala-central-bloc"
@@ -50,7 +52,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := inventoryColumns(l)
-		rows := buildTableRows(resp.GetData(), l, deps.Routes)
+		rows := buildTableRows(resp.GetData(), l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -107,9 +109,11 @@ func NewView(deps *Deps) view.View {
 				Message: l.Empty.Message,
 			},
 			PrimaryAction: &types.PrimaryAction{
-				Label:     l.Buttons.AddItem,
-				ActionURL: deps.Routes.AddURL,
-				Icon:      "icon-plus",
+				Label:           l.Buttons.AddItem,
+				ActionURL:       deps.Routes.AddURL,
+				Icon:            "icon-plus",
+				Disabled:        !perms.Can("inventory_item", "create"),
+				DisabledTooltip: "No permission",
 			},
 			BulkActions: &bulkCfg,
 		}
@@ -147,7 +151,7 @@ func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryLabels, routes centymo.InventoryRoutes) []types.TableRow {
+func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryLabels, routes centymo.InventoryRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, item := range items {
 		id := item.GetId()
@@ -207,8 +211,8 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("inventory_item", "update"), DisabledTooltip: "No permission"},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name, Disabled: !perms.Can("inventory_item", "delete"), DisabledTooltip: "No permission"},
 			},
 		})
 	}

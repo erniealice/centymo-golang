@@ -102,6 +102,7 @@ func NewView(deps *Deps) view.View {
 		case "info":
 			// No extra data needed — revenue map has everything
 		case "items":
+			perms := view.GetUserPermissions(ctx)
 			allLineItems, err := deps.DB.ListSimple(ctx, "revenue_line_item")
 			if err != nil {
 				log.Printf("Failed to list line items for revenue %s: %v", id, err)
@@ -109,7 +110,7 @@ func NewView(deps *Deps) view.View {
 			}
 			lineItems := filterLineItems(allLineItems, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes)
+			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
 			pageData.LineItemDiscountURL = route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", id)
 			totalAmount, _ := revenue["total_amount"].(string)
@@ -123,7 +124,8 @@ func NewView(deps *Deps) view.View {
 			}
 			payments := filterPayments(allPayments, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes)
+			perms := view.GetUserPermissions(ctx)
+			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.PaymentAddURL = route.ResolveURL(deps.Routes.PaymentAddURL, "id", id)
 
 			// Calculate totals
@@ -194,6 +196,7 @@ func NewTabAction(deps *Deps) view.View {
 		case "info":
 			// revenue map has everything
 		case "items":
+			perms := view.GetUserPermissions(ctx)
 			allLineItems, err := deps.DB.ListSimple(ctx, "revenue_line_item")
 			if err != nil {
 				log.Printf("Failed to list line items for revenue %s: %v", id, err)
@@ -201,7 +204,7 @@ func NewTabAction(deps *Deps) view.View {
 			}
 			lineItems := filterLineItems(allLineItems, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes)
+			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
 			pageData.LineItemDiscountURL = route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", id)
 			totalAmount, _ := revenue["total_amount"].(string)
@@ -215,7 +218,8 @@ func NewTabAction(deps *Deps) view.View {
 			}
 			payments := filterPayments(allPayments, id)
 			currency, _ := revenue["currency"].(string)
-			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes)
+			perms := view.GetUserPermissions(ctx)
+			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.PaymentAddURL = route.ResolveURL(deps.Routes.PaymentAddURL, "id", id)
 
 			totalAmount, _ := revenue["total_amount"].(string)
@@ -346,7 +350,7 @@ func filterPayments(all []map[string]any, revenueID string) []map[string]any {
 }
 
 // buildPaymentTable creates the payment table config for the payment tab.
-func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.SalesRoutes) *types.TableConfig {
+func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.SalesRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "method", Label: l.Detail.PaymentMethod, Sortable: false},
 		{Key: "amount", Label: l.Detail.AmountPaid, Sortable: false, Width: "140px"},
@@ -374,8 +378,8 @@ func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLa
 				{Type: "text", Value: paymentDate},
 			},
 			Actions: []types.TableAction{
-				{Type: "edit", Label: "Edit", Action: "edit", URL: route.ResolveURL(routes.PaymentEditURL, "id", revenueID, "pid", id), DrawerTitle: "Edit Payment"},
-				{Type: "delete", Label: "Remove", Action: "delete", URL: route.ResolveURL(routes.PaymentRemoveURL, "id", revenueID), ItemName: method},
+				{Type: "edit", Label: "Edit", Action: "edit", URL: route.ResolveURL(routes.PaymentEditURL, "id", revenueID, "pid", id), DrawerTitle: "Edit Payment", Disabled: !perms.Can("invoice", "update"), DisabledTooltip: "No permission"},
+				{Type: "delete", Label: "Remove", Action: "delete", URL: route.ResolveURL(routes.PaymentRemoveURL, "id", revenueID), ItemName: method, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: "No permission"},
 			},
 		})
 	}

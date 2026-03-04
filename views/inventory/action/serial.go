@@ -72,6 +72,11 @@ func serialStatusOptions(t func(string) string) []SelectOption {
 // NewSerialAssignAction creates the serial assign action (GET = form, POST = create).
 func NewSerialAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "create") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		inventoryItemID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -113,6 +118,11 @@ func NewSerialAssignAction(deps *Deps) view.View {
 // NewSerialEditAction creates the serial edit action (GET = form, POST = update).
 func NewSerialEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "update") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		inventoryItemID := viewCtx.Request.PathValue("id")
 		serialID := viewCtx.Request.PathValue("sid")
 
@@ -175,6 +185,11 @@ func NewSerialEditAction(deps *Deps) view.View {
 // NewSerialRemoveAction creates the serial remove action (POST only).
 func NewSerialRemoveAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "delete") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		id := viewCtx.Request.URL.Query().Get("id")
 		if id == "" {
 			_ = viewCtx.Request.ParseForm()

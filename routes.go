@@ -15,11 +15,29 @@ const (
 	SubscriptionEditURL       = "/action/subscriptions/edit/{id}"
 	SubscriptionDeleteURL     = "/action/subscriptions/delete"
 
-	PaymentCollectionListURL       = "/app/payment-collections/list/{status}"
-	PaymentCollectionDetailURL     = "/app/payment-collections/{id}"
-	PaymentCollectionAddURL        = "/action/payment-collections/add"
-	PaymentCollectionEditURL       = "/action/payment-collections/edit/{id}"
-	PaymentCollectionDeleteURL     = "/action/payment-collections/delete"
+	// Collection (money IN) routes
+	CollectionListURL          = "/app/collections/list/{status}"
+	CollectionDetailURL        = "/app/collections/detail/{id}"
+	CollectionDashboardURL     = "/app/collections/dashboard"
+	CollectionAddURL           = "/action/collections/add"
+	CollectionEditURL          = "/action/collections/edit/{id}"
+	CollectionDeleteURL        = "/action/collections/delete"
+	CollectionBulkDeleteURL    = "/action/collections/bulk-delete"
+	CollectionSetStatusURL     = "/action/collections/set-status"
+	CollectionBulkSetStatusURL = "/action/collections/bulk-set-status"
+	CollectionTabActionURL     = "/action/collections/detail/{id}/tab/{tab}"
+
+	// Disbursement (money OUT) routes
+	DisbursementListURL          = "/app/disbursements/list/{status}"
+	DisbursementDetailURL        = "/app/disbursements/detail/{id}"
+	DisbursementDashboardURL     = "/app/disbursements/dashboard"
+	DisbursementAddURL           = "/action/disbursements/add"
+	DisbursementEditURL          = "/action/disbursements/edit/{id}"
+	DisbursementDeleteURL        = "/action/disbursements/delete"
+	DisbursementBulkDeleteURL    = "/action/disbursements/bulk-delete"
+	DisbursementSetStatusURL     = "/action/disbursements/set-status"
+	DisbursementBulkSetStatusURL = "/action/disbursements/bulk-set-status"
+	DisbursementTabActionURL     = "/action/disbursements/detail/{id}/tab/{tab}"
 
 	ProductListURL   = "/app/products/list/{status}"
 	ProductDetailURL = "/app/products/detail/{id}"
@@ -156,11 +174,18 @@ const (
 	SalesPaymentEditURL   = "/action/sales/detail/{id}/payment/edit/{pid}"
 	SalesPaymentRemoveURL = "/action/sales/detail/{id}/payment/remove"
 
+	// Sales report routes
+	SalesSummaryURL = "/app/sales/reports/sales-summary"
+
 	// Expenditure (purchase + expense) routes
 	ExpenditurePurchaseListURL      = "/app/purchases/list/{status}"
 	ExpenditurePurchaseDashboardURL = "/app/purchases/dashboard"
 	ExpenditureExpenseListURL       = "/app/expenses/list/{status}"
 	ExpenditureExpenseDashboardURL  = "/app/expenses/dashboard"
+
+	// Expenditure report routes
+	PurchasesSummaryURL = "/app/purchases/reports/purchases-summary"
+	ExpensesSummaryURL  = "/app/expenses/reports/expenses-summary"
 
 	// Price List routes
 	PriceListListURL       = "/app/price-lists/list/{status}"

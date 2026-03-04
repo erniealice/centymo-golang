@@ -158,12 +158,14 @@ func NewView(deps *Deps) view.View {
 			pageData.Attributes = loadAttributes(ctx, deps, item)
 
 		case "serials":
+			perms := view.GetUserPermissions(ctx)
 			serials := loadSerials(ctx, deps, id)
-			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id, deps.Routes)
+			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id, deps.Routes, perms)
 			pageData.SerialSummary = computeSerialSummary(serials)
 
 		case "transactions":
-			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels, deps.Routes)
+			perms := view.GetUserPermissions(ctx)
+			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels, deps.Routes, perms)
 
 		case "depreciation":
 			pageData.Depreciation = loadDepreciation(ctx, deps, id, l)
@@ -222,11 +224,13 @@ func NewTabAction(deps *Deps) view.View {
 		case "attributes":
 			pageData.Attributes = loadAttributes(ctx, deps, item)
 		case "serials":
+			perms := view.GetUserPermissions(ctx)
 			serials := loadSerials(ctx, deps, id)
-			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id, deps.Routes)
+			pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, id, deps.Routes, perms)
 			pageData.SerialSummary = computeSerialSummary(serials)
 		case "transactions":
-			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels, deps.Routes)
+			perms := view.GetUserPermissions(ctx)
+			pageData.TransactionTable = buildTransactionTable(ctx, deps, id, l, deps.TableLabels, deps.Routes, perms)
 		case "depreciation":
 			pageData.Depreciation = loadDepreciation(ctx, deps, id, l)
 		case "audit":
@@ -431,7 +435,7 @@ func loadSerials(ctx context.Context, deps *Deps, inventoryItemID string) []*inv
 	return resp.GetData()
 }
 
-func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string, routes centymo.InventoryRoutes) *types.TableConfig {
+func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string, routes centymo.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "serial_number", Label: l.Detail.SerialNumber, Sortable: true},
 		{Key: "imei", Label: l.Detail.IMEI, Sortable: false, Width: "180px"},
@@ -459,8 +463,8 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.In
 				{Type: "text", Value: po},
 			},
 			Actions: []types.TableAction{
-				{Type: "edit", Label: l.Serial.Edit, Action: "edit", URL: route.ResolveURL(routes.SerialEditURL, "id", inventoryItemID, "sid", id), DrawerTitle: l.Serial.Edit},
-				{Type: "delete", Label: l.Serial.Remove, Action: "delete", URL: route.ResolveURL(routes.SerialRemoveURL, "id", inventoryItemID), ItemName: serial},
+				{Type: "edit", Label: l.Serial.Edit, Action: "edit", URL: route.ResolveURL(routes.SerialEditURL, "id", inventoryItemID, "sid", id), DrawerTitle: l.Serial.Edit, Disabled: !perms.Can("inventory_item", "update"), DisabledTooltip: "No permission"},
+				{Type: "delete", Label: l.Serial.Remove, Action: "delete", URL: route.ResolveURL(routes.SerialRemoveURL, "id", inventoryItemID), ItemName: serial, Disabled: !perms.Can("inventory_item", "delete"), DisabledTooltip: "No permission"},
 			},
 		})
 	}
@@ -482,9 +486,11 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.In
 			Message: l.Detail.SerialEmptyMessage,
 		},
 		PrimaryAction: &types.PrimaryAction{
-			Label:     l.Serial.Assign,
-			ActionURL: route.ResolveURL(routes.SerialAssignURL, "id", inventoryItemID),
-			Icon:      "icon-plus",
+			Label:           l.Serial.Assign,
+			ActionURL:       route.ResolveURL(routes.SerialAssignURL, "id", inventoryItemID),
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("inventory_item", "create"),
+			DisabledTooltip: "No permission",
 		},
 	}
 	types.ApplyTableSettings(cfg)
@@ -528,7 +534,7 @@ func computeSerialSummary(serials []*inventoryserialpb.InventorySerial) *SerialS
 // Transactions tab
 // ---------------------------------------------------------------------------
 
-func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels, routes centymo.InventoryRoutes) *types.TableConfig {
+func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels, routes centymo.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
 	resp, err := deps.ListInventoryTransactions(ctx, &inventorytransactionpb.ListInventoryTransactionsRequest{
 		InventoryItemId: &inventoryItemID,
 	})
@@ -589,9 +595,11 @@ func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID stri
 			Message: l.Detail.TransactionEmptyMessage,
 		},
 		PrimaryAction: &types.PrimaryAction{
-			Label:     l.Transaction.Record,
-			ActionURL: route.ResolveURL(routes.TransactionAssignURL, "id", inventoryItemID),
-			Icon:      "icon-plus",
+			Label:           l.Transaction.Record,
+			ActionURL:       route.ResolveURL(routes.TransactionAssignURL, "id", inventoryItemID),
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("inventory_item", "create"),
+			DisabledTooltip: "No permission",
 		},
 	}
 	types.ApplyTableSettings(cfg)

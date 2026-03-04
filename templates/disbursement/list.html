@@ -1,10 +1,10 @@
 {{/* Full page — for direct access / non-HTMX */}}
-{{define "paymentcollection-list"}}
+{{define "disbursement-list"}}
 {{template "app-shell" .}}
 {{end}}
 
 {{/* Content-only partial — for HTMX navigation */}}
-{{define "paymentcollection-list-content"}}
+{{define "disbursement-list-content"}}
 <div class="page-content page-content--table">
     {{template "table-card" .Table}}
 </div>

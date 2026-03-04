@@ -28,6 +28,8 @@ type PageData struct {
 // NewView creates the subscription list view.
 func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
@@ -40,7 +42,7 @@ func NewView(deps *Deps) view.View {
 		}
 
 		columns := subscriptionColumns()
-		rows := buildTableRows(records, status, deps.Routes)
+		rows := buildTableRows(records, status, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		pageData := &PageData{
@@ -66,9 +68,11 @@ func NewView(deps *Deps) view.View {
 					Message: "No " + status + " subscriptions to display.",
 				},
 				PrimaryAction: &types.PrimaryAction{
-					Label:     "Add Subscription",
-					ActionURL: deps.Routes.AddURL,
-					Icon:      "icon-plus",
+					Label:           "Add Subscription",
+					ActionURL:       deps.Routes.AddURL,
+					Icon:            "icon-plus",
+					Disabled:        !perms.Can("subscription", "create"),
+					DisabledTooltip: "No permission",
 				},
 			},
 		}
@@ -86,7 +90,7 @@ func subscriptionColumns() []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, routes centymo.SubscriptionRoutes) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, routes centymo.SubscriptionRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -118,8 +122,8 @@ func buildTableRows(records []map[string]any, status string, routes centymo.Subs
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: "View Subscription", Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: "Edit Subscription", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Subscription"},
-				{Type: "delete", Label: "Cancel Subscription", Action: "delete", URL: routes.DeleteURL, ItemName: customer},
+				{Type: "edit", Label: "Edit Subscription", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Subscription", Disabled: !perms.Can("subscription", "update"), DisabledTooltip: "No permission"},
+				{Type: "delete", Label: "Cancel Subscription", Action: "delete", URL: routes.DeleteURL, ItemName: customer, Disabled: !perms.Can("subscription", "delete"), DisabledTooltip: "No permission"},
 			},
 		})
 	}

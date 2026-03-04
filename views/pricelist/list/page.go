@@ -37,6 +37,8 @@ type PageData struct {
 // NewView creates the price list list view.
 func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
@@ -59,7 +61,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := priceListColumns(l)
-		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs)
+		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -97,9 +99,11 @@ func NewView(deps *Deps) view.View {
 				Message: statusEmptyMessage(l, status),
 			},
 			PrimaryAction: &types.PrimaryAction{
-				Label:     l.Buttons.AddPriceList,
-				ActionURL: deps.Routes.AddURL,
-				Icon:      "icon-plus",
+				Label:           l.Buttons.AddPriceList,
+				ActionURL:       deps.Routes.AddURL,
+				Icon:            "icon-plus",
+				Disabled:        !perms.Can("price_list", "create"),
+				DisabledTooltip: "No permission",
 			},
 			BulkActions: &bulkCfg,
 		}
@@ -134,7 +138,7 @@ func priceListColumns(l centymo.PriceListLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centymo.PriceListLabels, routes centymo.PriceListRoutes, inUseIDs map[string]bool) []types.TableRow {
+func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centymo.PriceListLabels, routes centymo.PriceListRoutes, inUseIDs map[string]bool, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, pl := range priceLists {
 		active := pl.GetActive()
@@ -166,6 +170,10 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 			deleteAction.Disabled = true
 			deleteAction.DisabledTooltip = "Cannot delete: price list has products or is used in sales"
 		}
+		if !perms.Can("price_list", "delete") {
+			deleteAction.Disabled = true
+			deleteAction.DisabledTooltip = "No permission"
+		}
 
 		rows = append(rows, types.TableRow{
 			ID: id,
@@ -182,7 +190,7 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("price_list", "update"), DisabledTooltip: "No permission"},
 				deleteAction,
 			},
 		})

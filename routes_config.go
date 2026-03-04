@@ -346,6 +346,9 @@ type SalesRoutes struct {
 	PaymentAddURL    string `json:"payment_add_url"`
 	PaymentEditURL   string `json:"payment_edit_url"`
 	PaymentRemoveURL string `json:"payment_remove_url"`
+
+	// Report routes
+	SalesSummaryURL string `json:"sales_summary_url"`
 }
 
 // DefaultSalesRoutes returns a SalesRoutes populated from the package-level
@@ -374,6 +377,8 @@ func DefaultSalesRoutes() SalesRoutes {
 		PaymentAddURL:    SalesPaymentAddURL,
 		PaymentEditURL:   SalesPaymentEditURL,
 		PaymentRemoveURL: SalesPaymentRemoveURL,
+
+		SalesSummaryURL: SalesSummaryURL,
 	}
 }
 
@@ -403,6 +408,8 @@ func (r SalesRoutes) RouteMap() map[string]string {
 		"sales.payment.add":    r.PaymentAddURL,
 		"sales.payment.edit":   r.PaymentEditURL,
 		"sales.payment.remove": r.PaymentRemoveURL,
+
+		"sales.sales_summary": r.SalesSummaryURL,
 	}
 }
 
@@ -412,6 +419,10 @@ type ExpenditureRoutes struct {
 	PurchaseDashboardURL string `json:"purchase_dashboard_url"`
 	ExpenseListURL       string `json:"expense_list_url"`
 	ExpenseDashboardURL  string `json:"expense_dashboard_url"`
+
+	// Report routes
+	PurchasesSummaryURL string `json:"purchases_summary_url"`
+	ExpensesSummaryURL  string `json:"expenses_summary_url"`
 }
 
 // DefaultExpenditureRoutes returns an ExpenditureRoutes populated from the
@@ -422,6 +433,9 @@ func DefaultExpenditureRoutes() ExpenditureRoutes {
 		PurchaseDashboardURL: ExpenditurePurchaseDashboardURL,
 		ExpenseListURL:       ExpenditureExpenseListURL,
 		ExpenseDashboardURL:  ExpenditureExpenseDashboardURL,
+
+		PurchasesSummaryURL: PurchasesSummaryURL,
+		ExpensesSummaryURL:  ExpensesSummaryURL,
 	}
 }
 
@@ -433,6 +447,9 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 		"expenditure.purchase.dashboard": r.PurchaseDashboardURL,
 		"expenditure.expense.list":       r.ExpenseListURL,
 		"expenditure.expense.dashboard":  r.ExpenseDashboardURL,
+
+		"expenditure.purchases_summary": r.PurchasesSummaryURL,
+		"expenditure.expenses_summary":  r.ExpensesSummaryURL,
 	}
 }
 
@@ -502,37 +519,101 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 	}
 }
 
-// PaymentCollectionRoutes holds all route paths for payment collection views
+// CollectionRoutes holds all route paths for collection (money IN) views
 // and actions.
-type PaymentCollectionRoutes struct {
-	ListURL   string `json:"list_url"`
-	DetailURL string `json:"detail_url"`
-	AddURL    string `json:"add_url"`
-	EditURL   string `json:"edit_url"`
-	DeleteURL string `json:"delete_url"`
+type CollectionRoutes struct {
+	ListURL          string `json:"list_url"`
+	DetailURL        string `json:"detail_url"`
+	DashboardURL     string `json:"dashboard_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
 }
 
-// DefaultPaymentCollectionRoutes returns a PaymentCollectionRoutes populated
-// from the package-level route constants defined in routes.go.
-func DefaultPaymentCollectionRoutes() PaymentCollectionRoutes {
-	return PaymentCollectionRoutes{
-		ListURL:   PaymentCollectionListURL,
-		DetailURL: PaymentCollectionDetailURL,
-		AddURL:    PaymentCollectionAddURL,
-		EditURL:   PaymentCollectionEditURL,
-		DeleteURL: PaymentCollectionDeleteURL,
+// DefaultCollectionRoutes returns a CollectionRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultCollectionRoutes() CollectionRoutes {
+	return CollectionRoutes{
+		ListURL:          CollectionListURL,
+		DetailURL:        CollectionDetailURL,
+		DashboardURL:     CollectionDashboardURL,
+		AddURL:           CollectionAddURL,
+		EditURL:          CollectionEditURL,
+		DeleteURL:        CollectionDeleteURL,
+		BulkDeleteURL:    CollectionBulkDeleteURL,
+		SetStatusURL:     CollectionSetStatusURL,
+		BulkSetStatusURL: CollectionBulkSetStatusURL,
+		TabActionURL:     CollectionTabActionURL,
 	}
 }
 
 // RouteMap returns a map of dot-notation keys to route paths for all
-// payment collection routes.
-func (r PaymentCollectionRoutes) RouteMap() map[string]string {
+// collection routes.
+func (r CollectionRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"payment_collection.list":   r.ListURL,
-		"payment_collection.detail": r.DetailURL,
-		"payment_collection.add":    r.AddURL,
-		"payment_collection.edit":   r.EditURL,
-		"payment_collection.delete": r.DeleteURL,
+		"collection.list":            r.ListURL,
+		"collection.detail":          r.DetailURL,
+		"collection.dashboard":       r.DashboardURL,
+		"collection.add":             r.AddURL,
+		"collection.edit":            r.EditURL,
+		"collection.delete":          r.DeleteURL,
+		"collection.bulk_delete":     r.BulkDeleteURL,
+		"collection.set_status":      r.SetStatusURL,
+		"collection.bulk_set_status": r.BulkSetStatusURL,
+		"collection.tab_action":      r.TabActionURL,
+	}
+}
+
+// DisbursementRoutes holds all route paths for disbursement (money OUT) views
+// and actions.
+type DisbursementRoutes struct {
+	ListURL          string `json:"list_url"`
+	DetailURL        string `json:"detail_url"`
+	DashboardURL     string `json:"dashboard_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+}
+
+// DefaultDisbursementRoutes returns a DisbursementRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultDisbursementRoutes() DisbursementRoutes {
+	return DisbursementRoutes{
+		ListURL:          DisbursementListURL,
+		DetailURL:        DisbursementDetailURL,
+		DashboardURL:     DisbursementDashboardURL,
+		AddURL:           DisbursementAddURL,
+		EditURL:          DisbursementEditURL,
+		DeleteURL:        DisbursementDeleteURL,
+		BulkDeleteURL:    DisbursementBulkDeleteURL,
+		SetStatusURL:     DisbursementSetStatusURL,
+		BulkSetStatusURL: DisbursementBulkSetStatusURL,
+		TabActionURL:     DisbursementTabActionURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// disbursement routes.
+func (r DisbursementRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"disbursement.list":            r.ListURL,
+		"disbursement.detail":          r.DetailURL,
+		"disbursement.dashboard":       r.DashboardURL,
+		"disbursement.add":             r.AddURL,
+		"disbursement.edit":            r.EditURL,
+		"disbursement.delete":          r.DeleteURL,
+		"disbursement.bulk_delete":     r.BulkDeleteURL,
+		"disbursement.set_status":      r.SetStatusURL,
+		"disbursement.bulk_set_status": r.BulkSetStatusURL,
+		"disbursement.tab_action":      r.TabActionURL,
 	}
 }
 

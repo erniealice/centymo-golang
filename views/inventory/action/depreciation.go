@@ -60,6 +60,11 @@ func depreciationMethodOptions(t func(string) string) []SelectOption {
 // NewDepreciationAssignAction creates the depreciation configure action (GET = form, POST = create).
 func NewDepreciationAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "create") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		inventoryItemID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -111,6 +116,11 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 // NewDepreciationEditAction creates the depreciation edit action (GET = form, POST = update).
 func NewDepreciationEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "update") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		inventoryItemID := viewCtx.Request.PathValue("id")
 		depreciationID := viewCtx.Request.PathValue("did")
 

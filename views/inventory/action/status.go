@@ -12,6 +12,11 @@ import (
 // NewSetStatusAction creates the inventory activate/deactivate action (POST only).
 func NewSetStatusAction(setActive func(ctx context.Context, id string, active bool) error) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "update") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		id := viewCtx.Request.URL.Query().Get("id")
 		targetStatus := viewCtx.Request.URL.Query().Get("status")
 
@@ -39,6 +44,11 @@ func NewSetStatusAction(setActive func(ctx context.Context, id string, active bo
 // NewBulkSetStatusAction creates the inventory bulk activate/deactivate action (POST only).
 func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, active bool) error) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "update") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 
 		ids := viewCtx.Request.Form["id"]

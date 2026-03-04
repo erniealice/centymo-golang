@@ -88,7 +88,8 @@ func NewView(deps *Deps) view.View {
 
 		// Populate prices table on the "prices" tab
 		if tab == "prices" {
-			pricesTable, err := buildPricesTable(ctx, deps, id, deps.Routes)
+			perms := view.GetUserPermissions(ctx)
+			pricesTable, err := buildPricesTable(ctx, deps, id, deps.Routes, perms)
 			if err != nil {
 				log.Printf("Failed to load price products for price list %s: %v", id, err)
 			}
@@ -136,7 +137,8 @@ func NewTabAction(deps *Deps) view.View {
 		}
 
 		if tab == "prices" {
-			pricesTable, err := buildPricesTable(ctx, deps, id, deps.Routes)
+			perms := view.GetUserPermissions(ctx)
+			pricesTable, err := buildPricesTable(ctx, deps, id, deps.Routes, perms)
 			if err != nil {
 				log.Printf("Failed to load price products for price list %s: %v", id, err)
 			}
@@ -157,7 +159,7 @@ func buildTabItems(id string, labels centymo.PriceListLabels, routes centymo.Pri
 	}
 }
 
-func buildPricesTable(ctx context.Context, deps *Deps, priceListID string, routes centymo.PriceListRoutes) (*types.TableConfig, error) {
+func buildPricesTable(ctx context.Context, deps *Deps, priceListID string, routes centymo.PriceListRoutes, perms *types.UserPermissions) (*types.TableConfig, error) {
 	resp, err := deps.ListPriceProducts(ctx, &priceproductpb.ListPriceProductsRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list price products: %w", err)
@@ -190,7 +192,7 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string, route
 				{Type: "text", Value: currency},
 			},
 			Actions: []types.TableAction{
-				{Type: "delete", Label: "Remove", Action: "delete", URL: deleteURL, ItemName: productName},
+				{Type: "delete", Label: "Remove", Action: "delete", URL: deleteURL, ItemName: productName, Disabled: !perms.Can("price_list", "delete"), DisabledTooltip: "No permission"},
 			},
 		})
 	}
@@ -211,9 +213,11 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string, route
 			Message: "Add products to this price list to configure pricing.",
 		},
 		PrimaryAction: &types.PrimaryAction{
-			Label:     "Add Price",
-			ActionURL: addURL,
-			Icon:      "icon-plus",
+			Label:           "Add Price",
+			ActionURL:       addURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("price_list", "create"),
+			DisabledTooltip: "No permission",
 		},
 	}
 	types.ApplyTableSettings(tableConfig)

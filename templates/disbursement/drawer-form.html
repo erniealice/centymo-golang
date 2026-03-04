@@ -1,0 +1,137 @@
+{{/*
+Disbursement drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy, .Notes, .Status, .DisbursementType, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
+*/}}
+{{define "disbursement-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* --- Reference & Date --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "reference_number"
+                "Label" .Labels.Reference
+                "Value" .ReferenceNumber
+                "Required" true
+                "Placeholder" .Labels.ReferencePlaceholder
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "disbursement_date_string"
+                "Label" .Labels.Date
+                "Value" .Date
+                "Required" true
+            )}}
+        </div>
+
+        {{/* --- Payee --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "payee"
+                "Label" .Labels.Payee
+                "Value" .Payee
+                "Required" true
+                "Placeholder" .Labels.PayeePlaceholder
+            )}}
+        </div>
+
+        {{/* --- Amount & Currency --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "amount"
+                "Label" .Labels.Amount
+                "Value" .Amount
+                "Required" true
+                "Placeholder" "0.00"
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "currency"
+                "Label" .Labels.Currency
+                "Value" .Currency
+                "Placeholder" "PHP"
+            )}}
+        </div>
+
+        {{/* --- Method & Status --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "disbursement_method"
+                "Label" .Labels.PaymentMethod
+                "Value" .Method
+                "Options" (list
+                    (dict "Value" "cash" "Label" "Cash")
+                    (dict "Value" "bank_transfer" "Label" "Bank Transfer")
+                    (dict "Value" "check" "Label" "Check")
+                    (dict "Value" "gcash" "Label" "GCash")
+                    (dict "Value" "other" "Label" "Other")
+                )
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "status"
+                "Label" .Labels.Status
+                "Value" .Status
+                "Options" (list
+                    (dict "Value" "draft" "Label" "Draft")
+                    (dict "Value" "pending" "Label" "Pending")
+                    (dict "Value" "approved" "Label" "Approved")
+                    (dict "Value" "paid" "Label" "Paid")
+                    (dict "Value" "cancelled" "Label" "Cancelled")
+                )
+            )}}
+        </div>
+
+        {{/* --- Category --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "disbursement_type"
+                "Label" .Labels.Category
+                "Value" .DisbursementType
+                "Options" (list
+                    (dict "Value" "supplier" "Label" "Supplier Payment")
+                    (dict "Value" "payroll" "Label" "Payroll")
+                    (dict "Value" "rent" "Label" "Rent")
+                    (dict "Value" "utilities" "Label" "Utilities")
+                    (dict "Value" "other" "Label" "Other")
+                )
+            )}}
+        </div>
+
+        {{/* --- Approval --- */}}
+        {{template "form-section" (dict "Title" .Labels.ApprovedBy)}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "approved_by"
+                "Label" .Labels.ApprovedBy
+                "Value" .ApprovedBy
+                "Placeholder" "Approver name"
+            )}}
+        </div>
+
+        {{/* --- Notes --- */}}
+        {{template "form-section" (dict "Title" .Labels.Notes)}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" .Labels.Notes
+                "Value" .Notes
+                "Placeholder" .Labels.NotesPlaceholder
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

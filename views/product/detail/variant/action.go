@@ -30,7 +30,8 @@ func NewTableView(deps *Deps) view.View {
 			ListProductOptionValues:   deps.ListProductOptionValues,
 		}
 
-		tableConfig := detail.BuildVariantsTable(ctx, detailDeps, productID)
+		perms := view.GetUserPermissions(ctx)
+		tableConfig := detail.BuildVariantsTable(ctx, detailDeps, productID, perms)
 		return view.OK("table-card", tableConfig)
 	})
 }
@@ -38,6 +39,11 @@ func NewTableView(deps *Deps) view.View {
 // NewAssignView creates the variant assign action (GET = form, POST = create).
 func NewAssignView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product", "create") {
+			return detail.HtmxError("Permission denied")
+		}
+
 		productID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -101,6 +107,11 @@ func NewAssignView(deps *Deps) view.View {
 // NewEditView creates the variant edit action (GET = form, POST = update).
 func NewEditView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product", "update") {
+			return detail.HtmxError("Permission denied")
+		}
+
 		productID := viewCtx.Request.PathValue("id")
 		variantID := viewCtx.Request.PathValue("vid")
 
@@ -194,6 +205,11 @@ func NewEditView(deps *Deps) view.View {
 // NewRemoveView creates the variant remove action (POST only, with dialog confirmation).
 func NewRemoveView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product", "delete") {
+			return detail.HtmxError("Permission denied")
+		}
+
 		id := viewCtx.Request.URL.Query().Get("id")
 		if id == "" {
 			_ = viewCtx.Request.ParseForm()

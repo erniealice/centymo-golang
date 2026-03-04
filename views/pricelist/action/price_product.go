@@ -40,6 +40,11 @@ type PriceProductDeps struct {
 // NewPriceProductAddAction creates the price product add action (GET = form, POST = create).
 func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_list", "create") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		priceListID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -115,6 +120,11 @@ func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 // NewPriceProductDeleteAction creates the price product delete action (POST only).
 func NewPriceProductDeleteAction(deps *PriceProductDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_list", "delete") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		id := viewCtx.Request.URL.Query().Get("id")
 		if id == "" {
 			_ = viewCtx.Request.ParseForm()

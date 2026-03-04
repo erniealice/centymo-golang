@@ -148,8 +148,9 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 			pageData.Attributes = loadAttributes(ctx, dd, item)
 			// For serialized items, embed serial table in info tab
 			if isSerialized {
+				perms := view.GetUserPermissions(ctx)
 				serials := loadSerials(ctx, dd, itemID)
-				pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, itemID, deps.InventoryRoutes)
+				pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, itemID, deps.InventoryRoutes, perms)
 				pageData.SerialSummary = computeSerialSummary(serials)
 			}
 		case "depreciation":
@@ -234,8 +235,9 @@ func NewProductDetailTabAction(deps *ProductDetailDeps) view.View {
 		case "info":
 			pageData.Attributes = loadAttributes(ctx, dd, item)
 			if isSerialized {
+				perms := view.GetUserPermissions(ctx)
 				serials := loadSerials(ctx, dd, itemID)
-				pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, itemID, deps.InventoryRoutes)
+				pageData.SerialTable = buildSerialTable(serials, l, deps.TableLabels, itemID, deps.InventoryRoutes, perms)
 				pageData.SerialSummary = computeSerialSummary(serials)
 			}
 		case "depreciation":

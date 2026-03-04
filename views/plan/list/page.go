@@ -28,6 +28,8 @@ type PageData struct {
 // NewView creates the plan list view.
 func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
@@ -40,7 +42,7 @@ func NewView(deps *Deps) view.View {
 		}
 
 		columns := planColumns()
-		rows := buildTableRows(records, status, deps.Routes)
+		rows := buildTableRows(records, status, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		pageData := &PageData{
@@ -66,9 +68,11 @@ func NewView(deps *Deps) view.View {
 					Message: "No " + status + " plans to display.",
 				},
 				PrimaryAction: &types.PrimaryAction{
-					Label:     "Add Plan",
-					ActionURL: deps.Routes.AddURL,
-					Icon:      "icon-plus",
+					Label:           "Add Plan",
+					ActionURL:       deps.Routes.AddURL,
+					Icon:            "icon-plus",
+					Disabled:        !perms.Can("plan", "create"),
+					DisabledTooltip: "No permission",
 				},
 			},
 		}
@@ -86,7 +90,7 @@ func planColumns() []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, routes centymo.PlanRoutes) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, routes centymo.PlanRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -121,8 +125,8 @@ func buildTableRows(records []map[string]any, status string, routes centymo.Plan
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: "View Plan", Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: "Edit Plan", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Plan"},
-				{Type: "delete", Label: "Delete Plan", Action: "delete", URL: routes.DeleteURL, ItemName: name},
+				{Type: "edit", Label: "Edit Plan", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Plan", Disabled: !perms.Can("plan", "update"), DisabledTooltip: "No permission"},
+				{Type: "delete", Label: "Delete Plan", Action: "delete", URL: routes.DeleteURL, ItemName: name, Disabled: !perms.Can("plan", "delete"), DisabledTooltip: "No permission"},
 			},
 		})
 	}

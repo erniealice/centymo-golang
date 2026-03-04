@@ -1,0 +1,96 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "disbursement-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "disbursement-detail-content"}}
+<div class="page-content disbursement-detail-layout">
+    {{/* --- Tabs --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "disbursement-tabs")}}
+    </div>
+
+    {{/* --- Tab Body --- */}}
+    <div id="tabContent" class="disbursement-detail-body">
+        {{if eq .ActiveTab "info"}}
+        {{template "disbursement-tab-info" .}}
+        {{else if eq .ActiveTab "audit"}}
+        {{template "disbursement-tab-audit" .}}
+        {{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
+
+{{/* Basic Information Tab */}}
+{{define "disbursement-tab-info"}}
+<div class="tab-scroll">
+    <div class="detail-header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem;">
+        <div>
+            <h2 style="margin:0;">{{.Reference}}</h2>
+            <span class="badge badge--{{.StatusVariant}}">{{.StatusLabel}}</span>
+        </div>
+        <div class="detail-header__amount" style="font-size:1.5rem;font-weight:600;">
+            {{.Currency}} {{.Amount}}
+        </div>
+    </div>
+    <h4 class="sale-section-title" style="padding:0 1rem;">{{.Labels.Detail.PaymentInfo}}</h4>
+    <div class="sale-info-grid" style="padding:0 1rem;">
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Reference}}</span>
+            <span class="sale-info-value mono">{{index .Disbursement "reference_number"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Payee}}</span>
+            <span class="sale-info-value">{{index .Disbursement "payee"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Amount}}</span>
+            <span class="sale-info-value mono">{{index .Disbursement "currency"}} {{index .Disbursement "amount"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Method}}</span>
+            <span class="sale-info-value">{{index .Disbursement "disbursement_method"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Date}}</span>
+            <span class="sale-info-value">{{index .Disbursement "disbursement_date_string"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Category}}</span>
+            <span class="sale-info-value">{{index .Disbursement "disbursement_type"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.ApprovedBy}}</span>
+            <span class="sale-info-value">{{index .Disbursement "approved_by"}}</span>
+        </div>
+        <div class="sale-info-item">
+            <span class="sale-info-label">{{.Labels.Detail.Currency}}</span>
+            <span class="sale-info-value">{{index .Disbursement "currency"}}</span>
+        </div>
+    </div>
+
+    {{if index .Disbursement "notes"}}
+    <div style="margin-top: 1.75rem; padding:0 1rem;">
+        <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
+        <div class="sale-notes-block">{{index .Disbursement "notes"}}</div>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Audit Trail Tab */}}
+{{define "disbursement-tab-audit"}}
+<div class="tab-scroll">
+    {{if .AuditTable}}
+        {{template "table-card" .AuditTable}}
+    {{else}}
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">{{.Labels.Detail.AuditEmptyTitle}}</div>
+        <p class="coming-soon-text">{{.Labels.Detail.AuditEmptyMessage}}</p>
+    </div>
+    {{end}}
+</div>
+{{end}}

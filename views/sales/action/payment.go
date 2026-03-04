@@ -8,7 +8,7 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 )
 
 // PaymentMethodOption represents a selectable payment/collection method.
@@ -67,6 +67,11 @@ func loadCollectionMethods(ctx context.Context, db centymo.DataSource) []Payment
 // NewPaymentAddAction creates the payment add action (GET = form, POST = create).
 func NewPaymentAddAction(deps *PaymentDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "update") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		revenueID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -126,6 +131,11 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 // NewPaymentEditAction creates the payment edit action (GET = form, POST = update).
 func NewPaymentEditAction(deps *PaymentDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "update") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		revenueID := viewCtx.Request.PathValue("id")
 		paymentID := viewCtx.Request.PathValue("pid")
 
@@ -205,6 +215,11 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 // NewPaymentRemoveAction creates the payment remove action (POST only).
 func NewPaymentRemoveAction(deps *PaymentDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "update") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		id := viewCtx.Request.URL.Query().Get("id")
 		if id == "" {
 			_ = viewCtx.Request.ParseForm()

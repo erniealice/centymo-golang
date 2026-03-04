@@ -184,9 +184,10 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 	}
 
 	// Load tab-specific data
+	perms := view.GetUserPermissions(ctx)
 	switch activeTab {
 	case "variants":
-		tableConfig := BuildVariantsTable(ctx, deps, id)
+		tableConfig := BuildVariantsTable(ctx, deps, id, perms)
 		pageData.VariantsTable = tableConfig
 	case "options":
 		tableConfig := buildOptionsTable(ctx, deps, id)
@@ -210,7 +211,7 @@ func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount
 // Variants tab table
 // ---------------------------------------------------------------------------
 
-func BuildVariantsTable(ctx context.Context, deps *Deps, productID string) *types.TableConfig {
+func BuildVariantsTable(ctx context.Context, deps *Deps, productID string, perms *types.UserPermissions) *types.TableConfig {
 	l := deps.Labels
 
 	columns := []types.TableColumn{
@@ -280,15 +281,19 @@ func BuildVariantsTable(ctx context.Context, deps *Deps, productID string) *type
 					},
 					{
 						Type: "edit", Label: l.Variant.Edit, Action: "edit",
-						URL:         route.ResolveURL(deps.Routes.VariantEditURL, "id", productID, "vid", vid),
-						DrawerTitle: l.Variant.Edit,
+						URL:             route.ResolveURL(deps.Routes.VariantEditURL, "id", productID, "vid", vid),
+						DrawerTitle:     l.Variant.Edit,
+						Disabled:        !perms.Can("product", "update"),
+						DisabledTooltip: "No permission",
 					},
 					{
 						Type: "delete", Label: l.Variant.Remove, Action: "delete",
-						URL:            route.ResolveURL(deps.Routes.VariantRemoveURL, "id", productID),
-						ItemName:       sku,
-						ConfirmTitle:   l.Variant.Remove,
-						ConfirmMessage: fmt.Sprintf("Are you sure you want to remove variant %s?", sku),
+						URL:             route.ResolveURL(deps.Routes.VariantRemoveURL, "id", productID),
+						ItemName:        sku,
+						ConfirmTitle:    l.Variant.Remove,
+						ConfirmMessage:  fmt.Sprintf("Are you sure you want to remove variant %s?", sku),
+						Disabled:        !perms.Can("product", "delete"),
+						DisabledTooltip: "No permission",
 					},
 				}
 
@@ -333,9 +338,11 @@ func BuildVariantsTable(ctx context.Context, deps *Deps, productID string) *type
 			Message: "No variants have been added to this product yet.",
 		},
 		PrimaryAction: &types.PrimaryAction{
-			Label:     l.Variant.Assign,
-			ActionURL: route.ResolveURL(deps.Routes.VariantAssignURL, "id", productID),
-			Icon:      "icon-plus",
+			Label:           l.Variant.Assign,
+			ActionURL:       route.ResolveURL(deps.Routes.VariantAssignURL, "id", productID),
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("product", "create"),
+			DisabledTooltip: "No permission",
 		},
 	}
 	types.ApplyTableSettings(tableConfig)

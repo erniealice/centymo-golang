@@ -82,7 +82,8 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 		}
 		lineItems := filterLineItems(allLineItems, revenueID)
 		currency, _ := revenue["currency"].(string)
-		table := buildLineItemTableWithActions(lineItems, deps.Labels, deps.TableLabels, currency, revenueID, deps.Routes)
+		perms := view.GetUserPermissions(ctx)
+		table := buildLineItemTableWithActions(lineItems, deps.Labels, deps.TableLabels, currency, revenueID, deps.Routes, perms)
 		return view.OK("table-card", table)
 	})
 }
@@ -90,6 +91,11 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 // NewLineItemAddView creates the line item add action (GET = form, POST = create).
 func NewLineItemAddView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "update") {
+			return lineItemHTMXError("Permission denied")
+		}
+
 		revenueID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -147,6 +153,11 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 // NewLineItemEditView creates the line item edit action (GET = form, POST = update).
 func NewLineItemEditView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "update") {
+			return lineItemHTMXError("Permission denied")
+		}
+
 		revenueID := viewCtx.Request.PathValue("id")
 		itemID := viewCtx.Request.PathValue("itemId")
 
@@ -224,6 +235,11 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 // NewLineItemRemoveView creates the line item remove action (POST only).
 func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "update") {
+			return lineItemHTMXError("Permission denied")
+		}
+
 		revenueID := viewCtx.Request.PathValue("id")
 
 		itemID := viewCtx.Request.URL.Query().Get("itemId")
@@ -250,6 +266,11 @@ func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 // NewLineItemDiscountView creates the discount add action (GET = form, POST = create).
 func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "update") {
+			return lineItemHTMXError("Permission denied")
+		}
+
 		revenueID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -303,7 +324,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 // ---------------------------------------------------------------------------
 
 // buildLineItemTableWithActions builds the line items table with row actions.
-func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.SalesRoutes) *types.TableConfig {
+func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.SalesRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "type", Label: l.Detail.ItemType, Sortable: false, Width: "90px"},
 		{Key: "description", Label: l.Detail.Description, Sortable: false},
@@ -333,19 +354,23 @@ func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels
 		var actions []types.TableAction
 		if lineItemType != "discount" {
 			actions = append(actions, types.TableAction{
-				Type:        "edit",
-				Label:       l.Detail.EditItem,
-				Action:      "edit",
-				URL:         route.ResolveURL(routes.LineItemEditURL, "id", revenueID, "itemId", id),
-				DrawerTitle: l.Detail.EditItem,
+				Type:            "edit",
+				Label:           l.Detail.EditItem,
+				Action:          "edit",
+				URL:             route.ResolveURL(routes.LineItemEditURL, "id", revenueID, "itemId", id),
+				DrawerTitle:     l.Detail.EditItem,
+				Disabled:        !perms.Can("invoice", "update"),
+				DisabledTooltip: "No permission",
 			})
 		}
 		actions = append(actions, types.TableAction{
-			Type:     "delete",
-			Label:    l.Detail.RemoveItem,
-			Action:   "delete",
-			URL:      route.ResolveURL(routes.LineItemRemoveURL, "id", revenueID) + "?itemId=" + id,
-			ItemName: description,
+			Type:            "delete",
+			Label:           l.Detail.RemoveItem,
+			Action:          "delete",
+			URL:             route.ResolveURL(routes.LineItemRemoveURL, "id", revenueID) + "?itemId=" + id,
+			ItemName:        description,
+			Disabled:        !perms.Can("invoice", "update"),
+			DisabledTooltip: "No permission",
 		})
 
 		row := types.TableRow{

@@ -56,6 +56,11 @@ func transactionTypeOptions(t func(string) string) []SelectOption {
 // NewTransactionAssignAction creates the stock movement action (GET = form, POST = create).
 func NewTransactionAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "create") {
+			return centymo.HTMXError("Permission denied")
+		}
+
 		inventoryItemID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {

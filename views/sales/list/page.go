@@ -33,6 +33,8 @@ type PageData struct {
 // NewView creates the sales list view.
 func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "ongoing"
@@ -46,7 +48,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := salesColumns(l)
-		rows := buildTableRows(records, status, l, deps.Routes)
+		rows := buildTableRows(records, status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -73,9 +75,11 @@ func NewView(deps *Deps) view.View {
 				Message: statusEmptyMessage(l, status),
 			},
 			PrimaryAction: &types.PrimaryAction{
-				Label:     l.Buttons.AddSale,
-				ActionURL: deps.Routes.AddURL,
-				Icon:      "icon-plus",
+				Label:           l.Buttons.AddSale,
+				ActionURL:       deps.Routes.AddURL,
+				Icon:            "icon-plus",
+				Disabled:        !perms.Can("invoice", "create"),
+				DisabledTooltip: "No permission",
 			},
 			BulkActions: &bulkCfg,
 		}
@@ -111,7 +115,7 @@ func salesColumns(l centymo.SalesLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, l centymo.SalesLabels, routes centymo.SalesRoutes) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, l centymo.SalesLabels, routes centymo.SalesRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -131,21 +135,25 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
-			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: "No permission"},
 		}
 		if recordStatus == "ongoing" {
 			actions = append(actions, types.TableAction{
 				Type: "deactivate", Label: "Complete", Action: "deactivate",
 				URL: routes.SetStatusURL + "?status=complete", ItemName: refNumber,
-				ConfirmTitle:   "Complete",
-				ConfirmMessage: fmt.Sprintf("Are you sure you want to mark %s as complete?", refNumber),
+				ConfirmTitle:    "Complete",
+				ConfirmMessage:  fmt.Sprintf("Are you sure you want to mark %s as complete?", refNumber),
+				Disabled:        !perms.Can("invoice", "update"),
+				DisabledTooltip: "No permission",
 			})
 		} else {
 			actions = append(actions, types.TableAction{
 				Type: "activate", Label: "Reactivate", Action: "activate",
 				URL: routes.SetStatusURL + "?status=ongoing", ItemName: refNumber,
-				ConfirmTitle:   "Reactivate",
-				ConfirmMessage: fmt.Sprintf("Are you sure you want to reactivate %s?", refNumber),
+				ConfirmTitle:    "Reactivate",
+				ConfirmMessage:  fmt.Sprintf("Are you sure you want to reactivate %s?", refNumber),
+				Disabled:        !perms.Can("invoice", "update"),
+				DisabledTooltip: "No permission",
 			})
 		}
 		rows = append(rows, types.TableRow{
