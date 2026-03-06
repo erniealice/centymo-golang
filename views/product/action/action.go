@@ -40,6 +40,7 @@ type FormData struct {
 // Deps holds dependencies for product action handlers.
 type Deps struct {
 	Routes           centymo.ProductRoutes
+	Labels           centymo.ProductLabels
 	CreateProduct    func(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.CreateProductResponse, error)
 	ReadProduct      func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
 	UpdateProduct    func(ctx context.Context, req *productpb.UpdateProductRequest) (*productpb.UpdateProductResponse, error)
@@ -63,7 +64,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "create") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -78,7 +79,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST — create product
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -109,7 +110,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -120,12 +121,12 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read product %s: %v", id, err)
-				return centymo.HTMXError("Product not found")
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 
 			data := resp.GetData()
 			if len(data) == 0 {
-				return centymo.HTMXError("Product not found")
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			p := data[0]
 
@@ -145,7 +146,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST — update product
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -177,7 +178,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -186,7 +187,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError("Product ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeleteProduct(ctx, &productpb.DeleteProductRequest{
@@ -206,14 +207,14 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 
 		ids := viewCtx.Request.Form["id"]
 		if len(ids) == 0 {
-			return centymo.HTMXError("No product IDs provided")
+			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		for _, id := range ids {
@@ -239,7 +240,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -251,10 +252,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 			targetStatus = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError("Product ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError("Invalid status")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		if err := deps.SetProductActive(ctx, id, targetStatus == "active"); err != nil {
@@ -272,7 +273,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -281,10 +282,10 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		targetStatus := viewCtx.Request.FormValue("target_status")
 
 		if len(ids) == 0 {
-			return centymo.HTMXError("No product IDs provided")
+			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError("Invalid target status")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		active := targetStatus == "active"

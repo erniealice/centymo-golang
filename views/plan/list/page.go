@@ -16,6 +16,7 @@ import (
 type Deps struct {
 	DB     centymo.DataSource
 	Routes centymo.PlanRoutes
+	Labels centymo.PlanLabels
 }
 
 // PageData holds the data for the plan list page.
@@ -41,19 +42,20 @@ func NewView(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to load plans: %w", err))
 		}
 
-		columns := planColumns()
-		rows := buildTableRows(records, status, deps.Routes, perms)
+		l := deps.Labels
+		columns := planColumns(l)
+		rows := buildTableRows(records, status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          statusTitle(status),
+				Title:          statusTitle(l, status),
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      "services",
 				ActiveSubNav:   "plans-" + status,
-				HeaderTitle:    statusTitle(status),
-				HeaderSubtitle: statusSubtitle(status),
+				HeaderTitle:    statusTitle(l, status),
+				HeaderSubtitle: statusSubtitle(l, status),
 				HeaderIcon:     "icon-file-text",
 			},
 			ContentTemplate: "plan-list-content",
@@ -64,15 +66,15 @@ func NewView(deps *Deps) view.View {
 				ShowSearch:  true,
 				ShowActions: true,
 				EmptyState: types.TableEmptyState{
-					Title:   "No plans found",
-					Message: "No " + status + " plans to display.",
+					Title:   l.Empty.Title,
+					Message: l.Empty.Message,
 				},
 				PrimaryAction: &types.PrimaryAction{
-					Label:           "Add Plan",
+					Label:           l.Buttons.AddPlan,
 					ActionURL:       deps.Routes.AddURL,
 					Icon:            "icon-plus",
 					Disabled:        !perms.Can("plan", "create"),
-					DisabledTooltip: "No permission",
+					DisabledTooltip: l.Errors.NoPermission,
 				},
 			},
 		}
@@ -81,16 +83,16 @@ func NewView(deps *Deps) view.View {
 	})
 }
 
-func planColumns() []types.TableColumn {
+func planColumns(l centymo.PlanLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: "Name", Sortable: true},
-		{Key: "interval", Label: "Interval", Sortable: true, Width: "150px"},
-		{Key: "price", Label: "Price", Sortable: true, Width: "120px"},
-		{Key: "status", Label: "Status", Sortable: true, Width: "120px"},
+		{Key: "name", Label: l.Columns.Name, Sortable: true},
+		{Key: "interval", Label: l.Columns.Interval, Sortable: true, Width: "150px"},
+		{Key: "price", Label: l.Columns.Price, Sortable: true, Width: "120px"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, routes centymo.PlanRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, l centymo.PlanLabels, routes centymo.PlanRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -124,34 +126,34 @@ func buildTableRows(records []map[string]any, status string, routes centymo.Plan
 				"status":   recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: "View Plan", Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: "Edit Plan", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Plan", Disabled: !perms.Can("plan", "update"), DisabledTooltip: "No permission"},
-				{Type: "delete", Label: "Delete Plan", Action: "delete", URL: routes.DeleteURL, ItemName: name, Disabled: !perms.Can("plan", "delete"), DisabledTooltip: "No permission"},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("plan", "update"), DisabledTooltip: l.Errors.NoPermission},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name, Disabled: !perms.Can("plan", "delete"), DisabledTooltip: l.Errors.NoPermission},
 			},
 		})
 	}
 	return rows
 }
 
-func statusTitle(status string) string {
+func statusTitle(l centymo.PlanLabels, status string) string {
 	switch status {
 	case "active":
-		return "Active Plans"
+		return l.Page.HeadingActive
 	case "inactive":
-		return "Inactive Plans"
+		return l.Page.HeadingInactive
 	default:
-		return "Plans"
+		return l.Page.Heading
 	}
 }
 
-func statusSubtitle(status string) string {
+func statusSubtitle(l centymo.PlanLabels, status string) string {
 	switch status {
 	case "active":
-		return "Manage your active billing plans"
+		return l.Page.CaptionActive
 	case "inactive":
-		return "View inactive billing plans"
+		return l.Page.CaptionInactive
 	default:
-		return "Plan management"
+		return l.Page.Caption
 	}
 }
 

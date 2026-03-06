@@ -73,7 +73,7 @@ func NewOptionAddView(deps *OptionsDeps) view.View {
 
 		// POST — create option
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return HtmxError("Invalid form data")
+			return HtmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -110,7 +110,7 @@ func NewOptionAddView(deps *OptionsDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create product option: %v", err)
-			return HtmxError("Failed to create option")
+			return HtmxError(err.Error())
 		}
 
 		// Create initial option values from comma-separated input
@@ -158,7 +158,7 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 			})
 			if err != nil || len(readResp.GetData()) == 0 {
 				log.Printf("Failed to read product option %s: %v", optionID, err)
-				return HtmxError("Option not found")
+				return HtmxError(deps.Labels.Errors.NotFound)
 			}
 			record := readResp.GetData()[0]
 
@@ -201,7 +201,7 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 
 		// POST — update option
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return HtmxError("Invalid form data")
+			return HtmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -238,7 +238,7 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update product option %s: %v", optionID, err)
-			return HtmxError("Failed to update option")
+			return HtmxError(err.Error())
 		}
 
 		return HtmxSuccess("product-options-table")
@@ -254,7 +254,7 @@ func NewOptionDeleteView(deps *OptionsDeps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return HtmxError("Option ID is required")
+			return HtmxError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeleteProductOption(ctx, &productoptionpb.DeleteProductOptionRequest{
@@ -262,7 +262,7 @@ func NewOptionDeleteView(deps *OptionsDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete product option %s: %v", id, err)
-			return HtmxError("Failed to delete option")
+			return HtmxError(err.Error())
 		}
 
 		return HtmxSuccess("product-options-table")

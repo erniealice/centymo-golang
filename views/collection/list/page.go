@@ -52,7 +52,7 @@ func NewView(deps *Deps) view.View {
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = buildBulkActions(deps.CommonLabels, status, deps.Routes)
+		bulkCfg.Actions = buildBulkActions(l, status, deps.Routes)
 
 		tableConfig := &types.TableConfig{
 			ID:                   "collections-table",
@@ -79,7 +79,7 @@ func NewView(deps *Deps) view.View {
 				ActionURL:       deps.Routes.AddURL,
 				Icon:            "icon-plus",
 				Disabled:        !perms.Can("collection", "create"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			},
 			BulkActions: &bulkCfg,
 		}
@@ -137,48 +137,48 @@ func buildTableRows(records []map[string]any, status string, l centymo.Collectio
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
-			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("collection", "update"), DisabledTooltip: "No permission"},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("collection", "update"), DisabledTooltip: l.Errors.PermissionDenied},
 		}
 
 		switch recordStatus {
 		case "pending":
 			actions = append(actions, types.TableAction{
-				Type: "deactivate", Label: "Mark Complete", Action: "deactivate",
+				Type: "deactivate", Label: l.Actions.MarkComplete, Action: "deactivate",
 				URL: routes.SetStatusURL + "?status=completed", ItemName: refNumber,
-				ConfirmTitle:    "Mark Complete",
-				ConfirmMessage:  fmt.Sprintf("Are you sure you want to mark %s as complete?", refNumber),
+				ConfirmTitle:    l.Confirm.MarkComplete,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.MarkCompleteMessage, refNumber),
 				Disabled:        !perms.Can("collection", "update"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 			actions = append(actions, types.TableAction{
 				Type: "delete", Label: l.Actions.Delete, Action: "delete",
 				URL: routes.DeleteURL, ItemName: refNumber,
 				Disabled:        !perms.Can("collection", "delete"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 		case "completed":
 			actions = append(actions, types.TableAction{
-				Type: "activate", Label: "Reactivate", Action: "activate",
+				Type: "activate", Label: l.Actions.Reactivate, Action: "activate",
 				URL: routes.SetStatusURL + "?status=pending", ItemName: refNumber,
-				ConfirmTitle:    "Reactivate",
-				ConfirmMessage:  fmt.Sprintf("Are you sure you want to reactivate %s?", refNumber),
+				ConfirmTitle:    l.Confirm.Reactivate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.ReactivateMessage, refNumber),
 				Disabled:        !perms.Can("collection", "update"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 		case "failed":
 			actions = append(actions, types.TableAction{
-				Type: "activate", Label: "Reactivate", Action: "activate",
+				Type: "activate", Label: l.Actions.Reactivate, Action: "activate",
 				URL: routes.SetStatusURL + "?status=pending", ItemName: refNumber,
-				ConfirmTitle:    "Reactivate",
-				ConfirmMessage:  fmt.Sprintf("Are you sure you want to reactivate %s?", refNumber),
+				ConfirmTitle:    l.Confirm.Reactivate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.ReactivateMessage, refNumber),
 				Disabled:        !perms.Can("collection", "update"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 			actions = append(actions, types.TableAction{
 				Type: "delete", Label: l.Actions.Delete, Action: "delete",
 				URL: routes.DeleteURL, ItemName: refNumber,
 				Disabled:        !perms.Can("collection", "delete"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 		}
 
@@ -272,60 +272,60 @@ func statusVariant(status string) string {
 	}
 }
 
-func buildBulkActions(common pyeza.CommonLabels, status string, routes centymo.CollectionRoutes) []types.BulkAction {
+func buildBulkActions(l centymo.CollectionLabels, status string, routes centymo.CollectionRoutes) []types.BulkAction {
 	actions := []types.BulkAction{}
 
 	switch status {
 	case "pending":
 		actions = append(actions, types.BulkAction{
 			Key:             "complete",
-			Label:           "Mark Complete",
+			Label:           l.Confirm.BulkComplete,
 			Icon:            "icon-check-circle",
 			Variant:         "warning",
 			Endpoint:        routes.BulkSetStatusURL,
-			ConfirmTitle:    "Mark Complete",
-			ConfirmMessage:  "Are you sure you want to mark {{count}} collection(s) as complete?",
+			ConfirmTitle:    l.Confirm.BulkComplete,
+			ConfirmMessage:  l.Confirm.BulkCompleteMessage,
 			ExtraParamsJSON: `{"target_status":"completed"}`,
 		})
 		actions = append(actions, types.BulkAction{
 			Key:            "delete",
-			Label:          "Delete",
+			Label:          l.Confirm.BulkDelete,
 			Icon:           "icon-trash",
 			Variant:        "danger",
 			Endpoint:       routes.BulkDeleteURL,
-			ConfirmTitle:   "Delete Collections",
-			ConfirmMessage: "Are you sure you want to delete {{count}} collection(s)?",
+			ConfirmTitle:   l.Confirm.BulkDelete,
+			ConfirmMessage: l.Confirm.BulkDeleteMessage,
 		})
 	case "completed":
 		actions = append(actions, types.BulkAction{
 			Key:             "reactivate",
-			Label:           "Reactivate",
+			Label:           l.Confirm.BulkReactivate,
 			Icon:            "icon-play",
 			Variant:         "primary",
 			Endpoint:        routes.BulkSetStatusURL,
-			ConfirmTitle:    "Reactivate",
-			ConfirmMessage:  "Are you sure you want to reactivate {{count}} collection(s)?",
+			ConfirmTitle:    l.Confirm.BulkReactivate,
+			ConfirmMessage:  l.Confirm.BulkReactivateMessage,
 			ExtraParamsJSON: `{"target_status":"pending"}`,
 		})
 	case "failed":
 		actions = append(actions, types.BulkAction{
 			Key:             "reactivate",
-			Label:           "Reactivate",
+			Label:           l.Confirm.BulkReactivate,
 			Icon:            "icon-play",
 			Variant:         "primary",
 			Endpoint:        routes.BulkSetStatusURL,
-			ConfirmTitle:    "Reactivate",
-			ConfirmMessage:  "Are you sure you want to reactivate {{count}} collection(s)?",
+			ConfirmTitle:    l.Confirm.BulkReactivate,
+			ConfirmMessage:  l.Confirm.BulkReactivateMessage,
 			ExtraParamsJSON: `{"target_status":"pending"}`,
 		})
 		actions = append(actions, types.BulkAction{
 			Key:            "delete",
-			Label:          "Delete",
+			Label:          l.Confirm.BulkDelete,
 			Icon:           "icon-trash",
 			Variant:        "danger",
 			Endpoint:       routes.BulkDeleteURL,
-			ConfirmTitle:   "Delete Collections",
-			ConfirmMessage: "Are you sure you want to delete {{count}} collection(s)?",
+			ConfirmTitle:   l.Confirm.BulkDelete,
+			ConfirmMessage: l.Confirm.BulkDeleteMessage,
 		})
 	}
 

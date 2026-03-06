@@ -120,7 +120,7 @@ func NewPageView(deps *Deps) view.View {
 		}
 
 		breadcrumbs := []detail.Breadcrumb{
-			{Label: "Products", Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
+			{Label: l.Breadcrumb.Products, Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
 			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", id) + "?tab=variants"},
 			{Label: sku, Href: ""},
 		}
@@ -250,10 +250,10 @@ func buildVariantTabItems(productID, variantID string, l centymo.ProductLabels, 
 	action := route.ResolveURL(routes.VariantTabActionURL, "id", productID, "vid", variantID, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
-		{Key: "images", Label: "Images", Href: base + "?tab=images", HxGet: action + "images", Icon: "icon-image", Count: 0, Disabled: false},
+		{Key: "images", Label: l.Tabs.Images, Href: base + "?tab=images", HxGet: action + "images", Icon: "icon-image", Count: 0, Disabled: false},
 		{Key: "pricing", Label: l.Tabs.Pricing, Href: base + "?tab=pricing", HxGet: action + "pricing", Icon: "icon-tag", Count: 0, Disabled: false},
-		{Key: "stock", Label: "Stock", Href: base + "?tab=stock", HxGet: action + "stock", Icon: "icon-package", Count: 0, Disabled: false},
-		{Key: "audit-trail", Label: "Audit Trail", Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
+		{Key: "stock", Label: l.Tabs.Stock, Href: base + "?tab=stock", HxGet: action + "stock", Icon: "icon-package", Count: 0, Disabled: false},
+		{Key: "audit-trail", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
 	}
 }
 
@@ -334,10 +334,10 @@ func buildStockTable(ctx context.Context, deps *Deps, productID, variantID strin
 	l := deps.Labels
 
 	columns := []types.TableColumn{
-		{Key: "sku", Label: "SKU", Sortable: true},
-		{Key: "location", Label: "Location", Sortable: true},
-		{Key: "quantity", Label: "Qty On Hand", Sortable: true, Width: "120px"},
-		{Key: "serials", Label: "Serial Count", Sortable: true, Width: "120px"},
+		{Key: "sku", Label: l.Variant.SKU, Sortable: true},
+		{Key: "location", Label: l.Variant.Location, Sortable: true},
+		{Key: "quantity", Label: l.Variant.QtyOnHand, Sortable: true, Width: "120px"},
+		{Key: "serials", Label: l.Variant.SerialCount, Sortable: true, Width: "120px"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 
@@ -434,8 +434,8 @@ func buildStockTable(ctx context.Context, deps *Deps, productID, variantID strin
 		DefaultSortDirection: "asc",
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
-			Title:   "No Stock",
-			Message: "No inventory items linked to this variant.",
+			Title:   l.Variant.NoStock,
+			Message: l.Variant.NoStockMsg,
 		},
 	}
 	types.ApplyTableSettings(tableConfig)

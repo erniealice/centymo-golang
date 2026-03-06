@@ -463,8 +463,8 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.In
 				{Type: "text", Value: po},
 			},
 			Actions: []types.TableAction{
-				{Type: "edit", Label: l.Serial.Edit, Action: "edit", URL: route.ResolveURL(routes.SerialEditURL, "id", inventoryItemID, "sid", id), DrawerTitle: l.Serial.Edit, Disabled: !perms.Can("inventory_item", "update"), DisabledTooltip: "No permission"},
-				{Type: "delete", Label: l.Serial.Remove, Action: "delete", URL: route.ResolveURL(routes.SerialRemoveURL, "id", inventoryItemID), ItemName: serial, Disabled: !perms.Can("inventory_item", "delete"), DisabledTooltip: "No permission"},
+				{Type: "edit", Label: l.Serial.Edit, Action: "edit", URL: route.ResolveURL(routes.SerialEditURL, "id", inventoryItemID, "sid", id), DrawerTitle: l.Serial.Edit, Disabled: !perms.Can("inventory_item", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+				{Type: "delete", Label: l.Serial.Remove, Action: "delete", URL: route.ResolveURL(routes.SerialRemoveURL, "id", inventoryItemID), ItemName: serial, Disabled: !perms.Can("inventory_item", "delete"), DisabledTooltip: l.Errors.PermissionDenied},
 			},
 		})
 	}
@@ -490,7 +490,7 @@ func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.In
 			ActionURL:       route.ResolveURL(routes.SerialAssignURL, "id", inventoryItemID),
 			Icon:            "icon-plus",
 			Disabled:        !perms.Can("inventory_item", "create"),
-			DisabledTooltip: "No permission",
+			DisabledTooltip: l.Errors.PermissionDenied,
 		},
 	}
 	types.ApplyTableSettings(cfg)
@@ -599,7 +599,7 @@ func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID stri
 			ActionURL:       route.ResolveURL(routes.TransactionAssignURL, "id", inventoryItemID),
 			Icon:            "icon-plus",
 			Disabled:        !perms.Can("inventory_item", "create"),
-			DisabledTooltip: "No permission",
+			DisabledTooltip: l.Errors.PermissionDenied,
 		},
 	}
 	types.ApplyTableSettings(cfg)
@@ -663,7 +663,7 @@ func loadDepreciation(ctx context.Context, deps *Deps, inventoryItemID string, l
 		Method:      depreciationMethodLabel(r.GetMethod(), l),
 		CostBasis:   fmt.Sprintf("%g", r.GetCostBasis()),
 		SalvageVal:  fmt.Sprintf("%g", r.GetSalvageValue()),
-		UsefulLife:  fmt.Sprintf("%d months", r.GetUsefulLifeMonths()),
+		UsefulLife:  fmt.Sprintf("%d %s", r.GetUsefulLifeMonths(), l.Depreciation.MonthsUnit),
 		StartDate:   r.GetStartDate(),
 		Accumulated: fmt.Sprintf("%g", r.GetAccumulatedDepreciation()),
 		BookValue:   fmt.Sprintf("%g", r.GetBookValue()),

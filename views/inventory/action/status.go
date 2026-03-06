@@ -10,11 +10,11 @@ import (
 )
 
 // NewSetStatusAction creates the inventory activate/deactivate action (POST only).
-func NewSetStatusAction(setActive func(ctx context.Context, id string, active bool) error) view.View {
+func NewSetStatusAction(setActive func(ctx context.Context, id string, active bool) error, labels centymo.InventoryLabels) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -26,10 +26,10 @@ func NewSetStatusAction(setActive func(ctx context.Context, id string, active bo
 			targetStatus = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError("Inventory item ID is required")
+			return centymo.HTMXError(labels.Errors.IDRequired)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError("Invalid status")
+			return centymo.HTMXError(labels.Errors.InvalidStatus)
 		}
 
 		if err := setActive(ctx, id, targetStatus == "active"); err != nil {
@@ -42,11 +42,11 @@ func NewSetStatusAction(setActive func(ctx context.Context, id string, active bo
 }
 
 // NewBulkSetStatusAction creates the inventory bulk activate/deactivate action (POST only).
-func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, active bool) error) view.View {
+func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, active bool) error, labels centymo.InventoryLabels) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -55,10 +55,10 @@ func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, activ
 		targetStatus := viewCtx.Request.FormValue("target_status")
 
 		if len(ids) == 0 {
-			return centymo.HTMXError("No inventory item IDs provided")
+			return centymo.HTMXError(labels.Errors.NoIDsProvided)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError("Invalid target status")
+			return centymo.HTMXError(labels.Errors.InvalidStatus)
 		}
 
 		active := targetStatus == "active"

@@ -45,7 +45,8 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 		optionID := viewCtx.Request.PathValue("oid")
 
 		// Load product name for breadcrumb
-		productName := "Product"
+		l := deps.Labels
+		productName := l.Breadcrumb.Product
 		if productID != "" && deps.ReadProduct != nil {
 			prodResp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{
 				Data: &productpb.Product{Id: productID},
@@ -60,7 +61,7 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 		}
 
 		// Load option details
-		optionName := "Option"
+		optionName := l.Breadcrumb.Option
 		optionCode := ""
 		optionDataType := ""
 		optionActive := true
@@ -82,7 +83,6 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 		optionActive = option.GetActive()
 
 		// Map data_type to display name
-		l := deps.Labels
 		dataTypeDisplay := dataTypeDisplayName(optionDataType, l.Options.DataTypes)
 
 		// Map active/inactive to status and variant
@@ -95,7 +95,7 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 
 		// Build breadcrumbs
 		breadcrumbs := []Breadcrumb{
-			{Label: "Products", Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
+			{Label: l.Breadcrumb.Products, Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
 			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", productID) + "?tab=options"},
 			{Label: optionName, Href: ""},
 		}

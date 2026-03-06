@@ -116,13 +116,13 @@ func NewAttributeAssignView(deps *AttributeDeps) view.View {
 
 		// POST — create product_attribute record
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return HtmxError("Invalid form data")
+			return HtmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
 		attributeID := r.FormValue("attribute_id")
 		if attributeID == "" {
-			return HtmxError("Please select an attribute")
+			return HtmxError(deps.Labels.Errors.FieldRequired)
 		}
 
 		// Look up attribute name and code for denormalized storage
@@ -150,7 +150,7 @@ func NewAttributeAssignView(deps *AttributeDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create product attribute: %v", err)
-			return HtmxError("Failed to assign attribute")
+			return HtmxError(err.Error())
 		}
 
 		// attrName and attrCode are looked up for logging/debugging but stored via the Attribute relation
@@ -170,7 +170,7 @@ func NewAttributeRemoveView(deps *AttributeDeps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return HtmxError("Product attribute ID is required")
+			return HtmxError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeleteProductAttribute(ctx, &productattributepb.DeleteProductAttributeRequest{
@@ -178,7 +178,7 @@ func NewAttributeRemoveView(deps *AttributeDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete product attribute %s: %v", id, err)
-			return HtmxError("Failed to remove attribute")
+			return HtmxError(err.Error())
 		}
 
 		return HtmxSuccess("product-attributes-table")

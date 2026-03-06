@@ -38,6 +38,7 @@ type PaymentFormData struct {
 type PaymentDeps struct {
 	Routes centymo.SalesRoutes
 	DB     centymo.DataSource
+	Labels centymo.SalesLabels
 }
 
 // loadCollectionMethods loads collection methods from the DB and returns them
@@ -69,7 +70,7 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		revenueID := viewCtx.Request.PathValue("id")
@@ -87,7 +88,7 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 
 		// POST — create payment
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -133,7 +134,7 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		revenueID := viewCtx.Request.PathValue("id")
@@ -143,7 +144,7 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 			record, err := deps.DB.Read(ctx, "revenue_payment", paymentID)
 			if err != nil {
 				log.Printf("Failed to read payment %s: %v", paymentID, err)
-				return centymo.HTMXError("Payment not found")
+				return centymo.HTMXError(deps.Labels.Errors.PaymentNotFound)
 			}
 
 			collectionMethodID, _ := record["collection_method_id"].(string)
@@ -174,7 +175,7 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 
 		// POST — update payment
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -217,7 +218,7 @@ func NewPaymentRemoveAction(deps *PaymentDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -226,7 +227,7 @@ func NewPaymentRemoveAction(deps *PaymentDeps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError("Payment ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		err := deps.DB.Delete(ctx, "revenue_payment", id)

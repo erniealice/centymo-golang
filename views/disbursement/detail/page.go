@@ -56,14 +56,13 @@ func NewView(deps *Deps) view.View {
 		status, _ := disbursement["status"].(string)
 		currency, _ := disbursement["currency"].(string)
 		amount, _ := disbursement["amount"].(string)
-		headerTitle := "Disbursement #" + refNumber
+		l := deps.Labels
+		headerTitle := l.Detail.TitlePrefix + refNumber
 
 		activeTab := viewCtx.QueryParams["tab"]
 		if activeTab == "" {
 			activeTab = "info"
 		}
-
-		l := deps.Labels
 		tabItems := buildTabItems(l, id, deps.Routes)
 
 		pageData := &PageData{

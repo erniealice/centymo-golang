@@ -52,7 +52,7 @@ func NewView(deps *Deps) view.View {
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = buildBulkActions(deps.CommonLabels, status, deps.Routes)
+		bulkCfg.Actions = buildBulkActions(deps.CommonLabels, l, status, deps.Routes)
 
 		tableConfig := &types.TableConfig{
 			ID:                   "sales-table",
@@ -79,7 +79,7 @@ func NewView(deps *Deps) view.View {
 				ActionURL:       deps.Routes.AddURL,
 				Icon:            "icon-plus",
 				Disabled:        !perms.Can("invoice", "create"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			},
 			BulkActions: &bulkCfg,
 		}
@@ -135,25 +135,25 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
-			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: "No permission"},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
 		}
 		if recordStatus == "ongoing" {
 			actions = append(actions, types.TableAction{
-				Type: "deactivate", Label: "Complete", Action: "deactivate",
+				Type: "deactivate", Label: l.Actions.Complete, Action: "deactivate",
 				URL: routes.SetStatusURL + "?status=complete", ItemName: refNumber,
-				ConfirmTitle:    "Complete",
-				ConfirmMessage:  fmt.Sprintf("Are you sure you want to mark %s as complete?", refNumber),
+				ConfirmTitle:    l.Confirm.Complete,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.CompleteMessage, refNumber),
 				Disabled:        !perms.Can("invoice", "update"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 		} else {
 			actions = append(actions, types.TableAction{
-				Type: "activate", Label: "Reactivate", Action: "activate",
+				Type: "activate", Label: l.Actions.Reactivate, Action: "activate",
 				URL: routes.SetStatusURL + "?status=ongoing", ItemName: refNumber,
-				ConfirmTitle:    "Reactivate",
-				ConfirmMessage:  fmt.Sprintf("Are you sure you want to reactivate %s?", refNumber),
+				ConfirmTitle:    l.Confirm.Reactivate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.ReactivateMessage, refNumber),
 				Disabled:        !perms.Can("invoice", "update"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 		}
 		rows = append(rows, types.TableRow{
@@ -244,30 +244,30 @@ func statusVariant(status string) string {
 	}
 }
 
-func buildBulkActions(common pyeza.CommonLabels, status string, routes centymo.SalesRoutes) []types.BulkAction {
+func buildBulkActions(common pyeza.CommonLabels, l centymo.SalesLabels, status string, routes centymo.SalesRoutes) []types.BulkAction {
 	actions := []types.BulkAction{}
 
 	switch status {
 	case "ongoing":
 		actions = append(actions, types.BulkAction{
 			Key:             "complete",
-			Label:           "Mark Complete",
+			Label:           l.Confirm.BulkComplete,
 			Icon:            "icon-check-circle",
 			Variant:         "warning",
 			Endpoint:        routes.BulkSetStatusURL,
-			ConfirmTitle:    "Mark Complete",
-			ConfirmMessage:  "Are you sure you want to mark {{count}} sale(s) as complete?",
+			ConfirmTitle:    l.Confirm.BulkComplete,
+			ConfirmMessage:  l.Confirm.BulkCompleteMessage,
 			ExtraParamsJSON: `{"target_status":"complete"}`,
 		})
 	case "complete", "cancelled":
 		actions = append(actions, types.BulkAction{
 			Key:             "reactivate",
-			Label:           "Reactivate",
+			Label:           l.Confirm.BulkReactivate,
 			Icon:            "icon-play",
 			Variant:         "primary",
 			Endpoint:        routes.BulkSetStatusURL,
-			ConfirmTitle:    "Reactivate",
-			ConfirmMessage:  "Are you sure you want to reactivate {{count}} sale(s)?",
+			ConfirmTitle:    l.Confirm.BulkReactivate,
+			ConfirmMessage:  l.Confirm.BulkReactivateMessage,
 			ExtraParamsJSON: `{"target_status":"ongoing"}`,
 		})
 	}

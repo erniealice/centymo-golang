@@ -106,7 +106,7 @@ func NewOptionValueAddView(deps *OptionsDeps) view.View {
 
 		// POST — create option value
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return HtmxError("Invalid form data")
+			return HtmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -138,7 +138,7 @@ func NewOptionValueAddView(deps *OptionsDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create product option value: %v", err)
-			return HtmxError("Failed to create option value")
+			return HtmxError(err.Error())
 		}
 
 		return HtmxSuccess("product-option-values-table")
@@ -159,7 +159,7 @@ func NewOptionValueEditView(deps *OptionsDeps) view.View {
 			})
 			if err != nil || len(readResp.GetData()) == 0 {
 				log.Printf("Failed to read product option value %s: %v", valueID, err)
-				return HtmxError("Option value not found")
+				return HtmxError(deps.Labels.Errors.NotFound)
 			}
 			record := readResp.GetData()[0]
 
@@ -203,7 +203,7 @@ func NewOptionValueEditView(deps *OptionsDeps) view.View {
 
 		// POST — update option value
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return HtmxError("Invalid form data")
+			return HtmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -235,7 +235,7 @@ func NewOptionValueEditView(deps *OptionsDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update product option value %s: %v", valueID, err)
-			return HtmxError("Failed to update option value")
+			return HtmxError(err.Error())
 		}
 
 		return HtmxSuccess("product-option-values-table")
@@ -251,7 +251,7 @@ func NewOptionValueDeleteView(deps *OptionsDeps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return HtmxError("Option value ID is required")
+			return HtmxError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeleteProductOptionValue(ctx, &productoptionvaluepb.DeleteProductOptionValueRequest{
@@ -259,7 +259,7 @@ func NewOptionValueDeleteView(deps *OptionsDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete product option value %s: %v", id, err)
-			return HtmxError("Failed to delete option value")
+			return HtmxError(err.Error())
 		}
 
 		return HtmxSuccess("product-option-values-table")

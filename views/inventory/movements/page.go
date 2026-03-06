@@ -87,11 +87,11 @@ func NewView(deps *Deps) view.View {
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          "Transactions",
+				Title:          l.Movements.Title,
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      "inventory",
 				ActiveSubNav:   "movements",
-				HeaderTitle:    "Transactions",
+				HeaderTitle:    l.Movements.Title,
 				HeaderSubtitle: l.Movements.Subtitle,
 				HeaderIcon:     "icon-repeat",
 				CommonLabels:   deps.CommonLabels,
@@ -167,8 +167,8 @@ func buildFilteredTable(ctx context.Context, deps *Deps, dateFrom, dateTo, locat
 	columns := []types.TableColumn{
 		{Key: "transaction_date", Label: l.Detail.Date, Sortable: true, Width: "130px"},
 		{Key: "item_name", Label: l.Columns.ProductName, Sortable: true},
-		{Key: "product_name", Label: "Product", Sortable: true},
-		{Key: "variant_sku", Label: "Variant SKU", Sortable: true, Width: "130px"},
+		{Key: "product_name", Label: l.Movements.ProductColumn, Sortable: true},
+		{Key: "variant_sku", Label: l.Movements.VariantSKU, Sortable: true, Width: "130px"},
 		{Key: "sku", Label: l.Columns.SKU, Sortable: true, Width: "130px"},
 		{Key: "location", Label: l.Detail.Location, Sortable: true, Width: "160px"},
 		{Key: "transaction_type", Label: l.Detail.Type, Sortable: true, Width: "120px"},

@@ -64,7 +64,7 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 		item := items[0]
 
 		// Load product name for breadcrumb
-		productName := "Product"
+		productName := deps.Labels.Breadcrumb.Product
 		if productID != "" {
 			prodResp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{
 				Data: &productpb.Product{Id: productID},
@@ -106,7 +106,7 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 		itemMap := inventoryItemToMap(item)
 
 		breadcrumbs := []Breadcrumb{
-			{Label: "Products", Href: route.ResolveURL(deps.ProductRoutes.ListURL, "status", "active")},
+			{Label: l.Breadcrumb.Products, Href: route.ResolveURL(deps.ProductRoutes.ListURL, "status", "active")},
 			{Label: productName, Href: route.ResolveURL(deps.ProductRoutes.DetailURL, "id", productID)},
 			{Label: name, Href: ""},
 		}
@@ -187,7 +187,7 @@ func NewProductDetailTabAction(deps *ProductDetailDeps) view.View {
 		item := items[0]
 
 		// Load product name
-		productName := "Product"
+		productName := deps.Labels.Breadcrumb.Product
 		if productID != "" {
 			prodResp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{
 				Data: &productpb.Product{Id: productID},
@@ -224,7 +224,7 @@ func NewProductDetailTabAction(deps *ProductDetailDeps) view.View {
 			ProductID:   productID,
 			ProductName: productName,
 			Breadcrumbs: []Breadcrumb{
-				{Label: "Products", Href: route.ResolveURL(deps.ProductRoutes.ListURL, "status", "active")},
+				{Label: l.Breadcrumb.Products, Href: route.ResolveURL(deps.ProductRoutes.ListURL, "status", "active")},
 				{Label: productName, Href: route.ResolveURL(deps.ProductRoutes.DetailURL, "id", productID)},
 				{Label: name, Href: ""},
 			},

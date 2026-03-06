@@ -50,6 +50,7 @@ type FormData struct {
 // Deps holds dependencies for sales action handlers.
 type Deps struct {
 	Routes centymo.SalesRoutes
+	Labels centymo.SalesLabels
 	DB     centymo.DataSource // KEEP — used for revenue/location operations
 
 	// Typed inventory operations
@@ -106,7 +107,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "create") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -122,7 +123,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST — create sale
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -164,7 +165,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -173,7 +174,7 @@ func NewEditAction(deps *Deps) view.View {
 			record, err := deps.DB.Read(ctx, "revenue", id)
 			if err != nil {
 				log.Printf("Failed to read sale %s: %v", id, err)
-				return centymo.HTMXError("Sale not found")
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 
 			name, _ := record["name"].(string)
@@ -203,7 +204,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST — update sale
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -241,7 +242,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -250,7 +251,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError("Sale ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		err := deps.DB.Delete(ctx, "revenue", id)
@@ -269,14 +270,14 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 
 		ids := viewCtx.Request.Form["id"]
 		if len(ids) == 0 {
-			return centymo.HTMXError("No sale IDs provided")
+			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		for _, id := range ids {
@@ -302,7 +303,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -314,10 +315,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 			targetStatus = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError("Sale ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 		if targetStatus != "ongoing" && targetStatus != "complete" && targetStatus != "cancelled" {
-			return centymo.HTMXError("Invalid status")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		// D20: Block completion with zero items
@@ -328,7 +329,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				return centymo.HTMXError(err.Error())
 			}
 			if len(lineItems) == 0 {
-				return centymo.HTMXError("Cannot complete a sale with no items. Add items first.")
+				return centymo.HTMXError(deps.Labels.Errors.NoItemsCannotComplete)
 			}
 
 			// Update status
@@ -351,7 +352,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				return centymo.HTMXError(err.Error())
 			}
 			if len(payments) > 0 {
-				return centymo.HTMXError("Cannot cancel a sale with recorded payments. Remove payments first.")
+				return centymo.HTMXError(deps.Labels.Errors.HasPaymentsCannotCancel)
 			}
 
 			// Update status
@@ -393,7 +394,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -402,10 +403,10 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		targetStatus := viewCtx.Request.FormValue("target_status")
 
 		if len(ids) == 0 {
-			return centymo.HTMXError("No sale IDs provided")
+			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 		if targetStatus != "ongoing" && targetStatus != "complete" && targetStatus != "cancelled" {
-			return centymo.HTMXError("Invalid target status")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidTargetStatus)
 		}
 
 		// D21: Block bulk cancellation if any sale has payments
@@ -423,7 +424,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			}
 			if withPayments > 0 {
 				return centymo.HTMXError(fmt.Sprintf(
-					"%d of %d selected sales have recorded payments. Remove payments first.",
+					deps.Labels.Errors.BulkHasPayments,
 					withPayments, len(ids),
 				))
 			}
@@ -444,7 +445,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			}
 			if emptyCount > 0 {
 				return centymo.HTMXError(fmt.Sprintf(
-					"%d of %d selected sales have no items. Add items first.",
+					deps.Labels.Errors.BulkNoItems,
 					emptyCount, len(ids),
 				))
 			}

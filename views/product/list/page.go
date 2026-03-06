@@ -74,7 +74,7 @@ func NewView(deps *Deps) view.View {
 				Endpoint:        deps.Routes.BulkSetStatusURL,
 				ExtraParamsJSON: `{"target_status":"active"}`,
 				ConfirmTitle:    l.Status.Activate,
-				ConfirmMessage:  "Are you sure you want to activate {{count}} product(s)?",
+				ConfirmMessage:  l.Confirm.BulkActivateMessage,
 			},
 			{
 				Key:             "deactivate",
@@ -84,7 +84,7 @@ func NewView(deps *Deps) view.View {
 				Endpoint:        deps.Routes.BulkSetStatusURL,
 				ExtraParamsJSON: `{"target_status":"inactive"}`,
 				ConfirmTitle:    l.Status.Deactivate,
-				ConfirmMessage:  "Are you sure you want to deactivate {{count}} product(s)?",
+				ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
 			},
 			{
 				Key:              "delete",
@@ -93,7 +93,7 @@ func NewView(deps *Deps) view.View {
 				Variant:          "danger",
 				Endpoint:         deps.Routes.BulkDeleteURL,
 				ConfirmTitle:     l.Bulk.Delete,
-				ConfirmMessage:   "Are you sure you want to delete {{count}} product(s)? This action cannot be undone.",
+				ConfirmMessage:   l.Confirm.BulkDeleteMessage,
 				RequiresDataAttr: "deletable",
 			},
 		}
@@ -123,7 +123,7 @@ func NewView(deps *Deps) view.View {
 				ActionURL:       deps.Routes.AddURL,
 				Icon:            "icon-plus",
 				Disabled:        !perms.Can("product", "create"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			},
 			BulkActions: &bulkCfg,
 		}
@@ -185,11 +185,11 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 		}
 		if isInUse {
 			deleteAction.Disabled = true
-			deleteAction.DisabledTooltip = "Cannot delete: product is used in sales or price lists"
+			deleteAction.DisabledTooltip = l.Errors.CannotDelete
 		}
 		if !perms.Can("product", "delete") {
 			deleteAction.Disabled = true
-			deleteAction.DisabledTooltip = "No permission"
+			deleteAction.DisabledTooltip = l.Errors.PermissionDenied
 		}
 
 		rows = append(rows, types.TableRow{
@@ -208,7 +208,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("product", "update"), DisabledTooltip: "No permission"},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("product", "update"), DisabledTooltip: l.Errors.PermissionDenied},
 				deleteAction,
 			},
 		})

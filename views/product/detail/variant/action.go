@@ -41,7 +41,7 @@ func NewAssignView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "create") {
-			return detail.HtmxError("Permission denied")
+			return detail.HtmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		productID := viewCtx.Request.PathValue("id")
@@ -63,7 +63,7 @@ func NewAssignView(deps *Deps) view.View {
 
 		// POST — create variant
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return detail.HtmxError("Invalid form data")
+			return detail.HtmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -90,7 +90,7 @@ func NewAssignView(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create product variant: %v", err)
-			return detail.HtmxError("Failed to create variant")
+			return detail.HtmxError(err.Error())
 		}
 
 		if created := resp.GetData(); len(created) > 0 {
@@ -109,7 +109,7 @@ func NewEditView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "update") {
-			return detail.HtmxError("Permission denied")
+			return detail.HtmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		productID := viewCtx.Request.PathValue("id")
@@ -121,7 +121,7 @@ func NewEditView(deps *Deps) view.View {
 			})
 			if err != nil || len(readResp.GetData()) == 0 {
 				log.Printf("Failed to read product variant %s: %v", variantID, err)
-				return detail.HtmxError("Variant not found")
+				return detail.HtmxError(deps.Labels.Errors.NotFound)
 			}
 			record := readResp.GetData()[0]
 
@@ -159,7 +159,7 @@ func NewEditView(deps *Deps) view.View {
 
 		// POST — update variant
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return detail.HtmxError("Invalid form data")
+			return detail.HtmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -186,7 +186,7 @@ func NewEditView(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update product variant %s: %v", variantID, err)
-			return detail.HtmxError("Failed to update variant")
+			return detail.HtmxError(err.Error())
 		}
 
 		deleteVariantOptions(ctx, deps, variantID)
@@ -207,7 +207,7 @@ func NewRemoveView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "delete") {
-			return detail.HtmxError("Permission denied")
+			return detail.HtmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -216,7 +216,7 @@ func NewRemoveView(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return detail.HtmxError("Variant ID is required")
+			return detail.HtmxError(deps.Labels.Errors.IDRequired)
 		}
 
 		deleteVariantOptions(ctx, deps, id)
@@ -226,7 +226,7 @@ func NewRemoveView(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete product variant %s: %v", id, err)
-			return detail.HtmxError("Failed to remove variant")
+			return detail.HtmxError(err.Error())
 		}
 
 		return detail.HtmxSuccess("product-variants-table")

@@ -56,11 +56,11 @@ func NewView(deps *Deps) view.View {
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion: viewCtx.CacheVersion,
-				Title:        "Inventory Dashboard",
+				Title:        l.Dashboard.Title,
 				CurrentPath:  viewCtx.CurrentPath,
 				ActiveNav:    "inventory",
 				ActiveSubNav: "dashboard",
-				HeaderTitle:  "Inventory Dashboard",
+				HeaderTitle:  l.Dashboard.Title,
 				HeaderIcon:   "icon-briefcase",
 				CommonLabels: deps.CommonLabels,
 			},
@@ -248,6 +248,6 @@ func buildDashboardWidgets(ctx context.Context, deps *Deps, l centymo.InventoryL
 		{Icon: "icon-trending-down", Value: fmt.Sprintf("%.0f / %.0f", totalCostBasis, totalBookValue), Label: l.Dashboard.DepreciationSummary, Color: "terracotta"},
 		{Icon: "icon-hash", Value: fmt.Sprintf("%d / %d", serialAvailable, len(serials)), Label: l.Dashboard.SerialUnitStatus, Color: "sage"},
 		{Icon: "icon-activity", Value: "\u2014", Label: l.Dashboard.RecentMovements, Color: "navy"},
-		{Icon: "icon-pie-chart", Value: fmt.Sprintf("%d types", len(categoryCount)), Label: l.Dashboard.CategoryDistribution, Color: "amber"},
+		{Icon: "icon-pie-chart", Value: fmt.Sprintf("%d %s", len(categoryCount), l.Dashboard.TypesUnit), Label: l.Dashboard.CategoryDistribution, Color: "amber"},
 	}
 }

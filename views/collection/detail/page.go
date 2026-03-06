@@ -45,14 +45,14 @@ func NewView(deps *Deps) view.View {
 		}
 
 		refNumber, _ := collection["reference_number"].(string)
-		headerTitle := "Collection #" + refNumber
+
+		l := deps.Labels
+		headerTitle := l.Detail.TitlePrefix + refNumber
 
 		activeTab := viewCtx.QueryParams["tab"]
 		if activeTab == "" {
 			activeTab = "info"
 		}
-
-		l := deps.Labels
 		tabItems := buildTabItems(l, id, deps.Routes)
 
 		pageData := &PageData{

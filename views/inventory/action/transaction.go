@@ -58,7 +58,7 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		inventoryItemID := viewCtx.Request.PathValue("id")
@@ -75,7 +75,7 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 
 		// POST - create transaction + update quantities
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request

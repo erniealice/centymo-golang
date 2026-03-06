@@ -40,6 +40,7 @@ type FormData struct {
 // Deps holds dependencies for price list action handlers.
 type Deps struct {
 	Routes          centymo.PriceListRoutes
+	Labels          centymo.PriceListLabels
 	CreatePriceList func(ctx context.Context, req *pricelistpb.CreatePriceListRequest) (*pricelistpb.CreatePriceListResponse, error)
 	ReadPriceList   func(ctx context.Context, req *pricelistpb.ReadPriceListRequest) (*pricelistpb.ReadPriceListResponse, error)
 	UpdatePriceList func(ctx context.Context, req *pricelistpb.UpdatePriceListRequest) (*pricelistpb.UpdatePriceListResponse, error)
@@ -62,7 +63,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_list", "create") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -76,7 +77,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST -- create price list
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -111,7 +112,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_list", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -122,12 +123,12 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read price list %s: %v", id, err)
-				return centymo.HTMXError("Price list not found")
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 
 			data := resp.GetData()
 			if len(data) == 0 {
-				return centymo.HTMXError("Price list not found")
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			pl := data[0]
 
@@ -147,7 +148,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST -- update price list
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -184,7 +185,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_list", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -193,7 +194,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError("Price list ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeletePriceList(ctx, &pricelistpb.DeletePriceListRequest{
@@ -214,14 +215,14 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_list", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 
 		ids := viewCtx.Request.Form["id"]
 		if len(ids) == 0 {
-			return centymo.HTMXError("No price list IDs provided")
+			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		for _, id := range ids {

@@ -64,7 +64,7 @@ func NewView(deps *Deps) view.View {
 				Variant:         "success",
 				Endpoint:        deps.Routes.BulkSetStatusURL,
 				ConfirmTitle:    l.Status.Activate,
-				ConfirmMessage:  "Are you sure you want to activate {{count}} item(s)?",
+				ConfirmMessage:  l.Confirm.BulkActivateMessage,
 				ExtraParamsJSON: `{"target_status":"active"}`,
 			},
 			{
@@ -74,7 +74,7 @@ func NewView(deps *Deps) view.View {
 				Variant:         "warning",
 				Endpoint:        deps.Routes.BulkSetStatusURL,
 				ConfirmTitle:    l.Status.Deactivate,
-				ConfirmMessage:  "Are you sure you want to deactivate {{count}} item(s)?",
+				ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
 				ExtraParamsJSON: `{"target_status":"inactive"}`,
 			},
 			{
@@ -84,7 +84,7 @@ func NewView(deps *Deps) view.View {
 				Variant:        "danger",
 				Endpoint:       deps.Routes.BulkDeleteURL,
 				ConfirmTitle:   deps.CommonLabels.Bulk.Delete,
-				ConfirmMessage: "Are you sure you want to delete {{count}} item(s)? This action cannot be undone.",
+				ConfirmMessage: l.Confirm.BulkDeleteMessage,
 			},
 		}
 
@@ -113,7 +113,7 @@ func NewView(deps *Deps) view.View {
 				ActionURL:       deps.Routes.AddURL,
 				Icon:            "icon-plus",
 				Disabled:        !perms.Can("inventory_item", "create"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			},
 			BulkActions: &bulkCfg,
 		}
@@ -143,7 +143,7 @@ func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.ProductName, Sortable: true},
 		{Key: "sku", Label: l.Columns.SKU, Sortable: true, Width: "150px"},
-		{Key: "item_type", Label: "Type", Sortable: true, Width: "130px"},
+		{Key: "item_type", Label: l.Columns.Type, Sortable: true, Width: "130px"},
 		{Key: "on_hand", Label: l.Columns.OnHand, Sortable: true, Width: "120px"},
 		{Key: "available", Label: l.Columns.Available, Sortable: true, Width: "120px"},
 		{Key: "reorder_level", Label: l.Columns.ReorderLvl, Sortable: true, Width: "140px"},
@@ -211,8 +211,8 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("inventory_item", "update"), DisabledTooltip: "No permission"},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name, Disabled: !perms.Can("inventory_item", "delete"), DisabledTooltip: "No permission"},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("inventory_item", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name, Disabled: !perms.Can("inventory_item", "delete"), DisabledTooltip: l.Errors.PermissionDenied},
 			},
 		})
 	}

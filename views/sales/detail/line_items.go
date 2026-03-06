@@ -93,7 +93,7 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return lineItemHTMXError("Permission denied")
+			return lineItemHTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		revenueID := viewCtx.Request.PathValue("id")
@@ -113,7 +113,7 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 
 		// POST — create line item
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return lineItemHTMXError("Invalid form data")
+			return lineItemHTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -155,7 +155,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return lineItemHTMXError("Permission denied")
+			return lineItemHTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		revenueID := viewCtx.Request.PathValue("id")
@@ -165,7 +165,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 			record, err := deps.DB.Read(ctx, "revenue_line_item", itemID)
 			if err != nil {
 				log.Printf("Failed to read line item %s: %v", itemID, err)
-				return lineItemHTMXError("Line item not found")
+				return lineItemHTMXError(deps.Labels.Errors.NotFound)
 			}
 
 			description, _ := record["description"].(string)
@@ -199,7 +199,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 
 		// POST — update line item
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return lineItemHTMXError("Invalid form data")
+			return lineItemHTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -237,7 +237,7 @@ func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return lineItemHTMXError("Permission denied")
+			return lineItemHTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		revenueID := viewCtx.Request.PathValue("id")
@@ -248,7 +248,7 @@ func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 			itemID = viewCtx.Request.FormValue("itemId")
 		}
 		if itemID == "" {
-			return lineItemHTMXError("Line item ID is required")
+			return lineItemHTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		err := deps.DB.Delete(ctx, "revenue_line_item", itemID)
@@ -268,7 +268,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return lineItemHTMXError("Permission denied")
+			return lineItemHTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		revenueID := viewCtx.Request.PathValue("id")
@@ -284,7 +284,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 
 		// POST — create discount line item
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return lineItemHTMXError("Invalid form data")
+			return lineItemHTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -293,7 +293,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 		// Store discount amount as negative total
 		amountF, err := strconv.ParseFloat(amount, 64)
 		if err != nil || amountF <= 0 {
-			return lineItemHTMXError("Discount amount must be a positive number")
+			return lineItemHTMXError(deps.Labels.Errors.InvalidDiscount)
 		}
 
 		data := map[string]any{
@@ -360,7 +360,7 @@ func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels
 				URL:             route.ResolveURL(routes.LineItemEditURL, "id", revenueID, "itemId", id),
 				DrawerTitle:     l.Detail.EditItem,
 				Disabled:        !perms.Can("invoice", "update"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 		}
 		actions = append(actions, types.TableAction{
@@ -370,7 +370,7 @@ func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels
 			URL:             route.ResolveURL(routes.LineItemRemoveURL, "id", revenueID) + "?itemId=" + id,
 			ItemName:        description,
 			Disabled:        !perms.Can("invoice", "update"),
-			DisabledTooltip: "No permission",
+			DisabledTooltip: l.Errors.PermissionDenied,
 		})
 
 		row := types.TableRow{

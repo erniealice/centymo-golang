@@ -69,14 +69,14 @@ func NewView(deps *Deps) view.View {
 		}
 
 		refNumber, _ := revenue["reference_number"].(string)
-		headerTitle := "Sale #" + refNumber
+
+		l := deps.Labels
+		headerTitle := l.Detail.TitlePrefix + refNumber
 
 		activeTab := viewCtx.QueryParams["tab"]
 		if activeTab == "" {
 			activeTab = "info"
 		}
-
-		l := deps.Labels
 		tabItems := buildTabItems(l, id, deps.Routes)
 
 		pageData := &PageData{
@@ -299,8 +299,8 @@ func buildLineItemTable(items []map[string]any, l centymo.SalesLabels, tableLabe
 		Rows:    rows,
 		Labels:  tableLabels,
 		EmptyState: types.TableEmptyState{
-			Title:   "No line items",
-			Message: "This sale has no line items.",
+			Title:   l.Detail.ItemEmptyTitle,
+			Message: l.Detail.ItemEmptyMessage,
 		},
 	}
 }
@@ -354,7 +354,7 @@ func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLa
 	columns := []types.TableColumn{
 		{Key: "method", Label: l.Detail.PaymentMethod, Sortable: false},
 		{Key: "amount", Label: l.Detail.AmountPaid, Sortable: false, Width: "140px"},
-		{Key: "reference", Label: "Reference", Sortable: false, Width: "160px"},
+		{Key: "reference", Label: l.Detail.Reference, Sortable: false, Width: "160px"},
 		{Key: "received_by", Label: l.Detail.ReceivedBy, Sortable: false, Width: "150px"},
 		{Key: "date", Label: l.Detail.PaymentDate, Sortable: false, Width: "140px"},
 	}
@@ -378,8 +378,8 @@ func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLa
 				{Type: "text", Value: paymentDate},
 			},
 			Actions: []types.TableAction{
-				{Type: "edit", Label: "Edit", Action: "edit", URL: route.ResolveURL(routes.PaymentEditURL, "id", revenueID, "pid", id), DrawerTitle: "Edit Payment", Disabled: !perms.Can("invoice", "update"), DisabledTooltip: "No permission"},
-				{Type: "delete", Label: "Remove", Action: "delete", URL: route.ResolveURL(routes.PaymentRemoveURL, "id", revenueID), ItemName: method, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: "No permission"},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.PaymentEditURL, "id", revenueID, "pid", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: route.ResolveURL(routes.PaymentRemoveURL, "id", revenueID), ItemName: method, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
 			},
 		})
 	}
@@ -392,8 +392,8 @@ func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLa
 		Rows:    rows,
 		Labels:  tableLabels,
 		EmptyState: types.TableEmptyState{
-			Title:   "No payments recorded",
-			Message: "Record a payment to track collections for this sale.",
+			Title:   l.Detail.PaymentEmptyTitle,
+			Message: l.Detail.PaymentEmptyMessage,
 		},
 	}
 }

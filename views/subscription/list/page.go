@@ -16,6 +16,7 @@ import (
 type Deps struct {
 	DB     centymo.DataSource
 	Routes centymo.SubscriptionRoutes
+	Labels centymo.SubscriptionLabels
 }
 
 // PageData holds the data for the subscription list page.
@@ -41,19 +42,20 @@ func NewView(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to load subscriptions: %w", err))
 		}
 
-		columns := subscriptionColumns()
-		rows := buildTableRows(records, status, deps.Routes, perms)
+		l := deps.Labels
+		columns := subscriptionColumns(l)
+		rows := buildTableRows(records, status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          statusTitle(status),
+				Title:          statusTitle(l, status),
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      "services",
 				ActiveSubNav:   "subscriptions-" + status,
-				HeaderTitle:    statusTitle(status),
-				HeaderSubtitle: statusSubtitle(status),
+				HeaderTitle:    statusTitle(l, status),
+				HeaderSubtitle: statusSubtitle(l, status),
 				HeaderIcon:     "icon-refresh-cw",
 			},
 			ContentTemplate: "subscription-list-content",
@@ -64,15 +66,15 @@ func NewView(deps *Deps) view.View {
 				ShowSearch:  true,
 				ShowActions: true,
 				EmptyState: types.TableEmptyState{
-					Title:   "No subscriptions found",
-					Message: "No " + status + " subscriptions to display.",
+					Title:   l.Empty.Title,
+					Message: l.Empty.Message,
 				},
 				PrimaryAction: &types.PrimaryAction{
-					Label:           "Add Subscription",
+					Label:           l.Buttons.AddSubscription,
 					ActionURL:       deps.Routes.AddURL,
 					Icon:            "icon-plus",
 					Disabled:        !perms.Can("subscription", "create"),
-					DisabledTooltip: "No permission",
+					DisabledTooltip: l.Errors.NoPermission,
 				},
 			},
 		}
@@ -81,16 +83,16 @@ func NewView(deps *Deps) view.View {
 	})
 }
 
-func subscriptionColumns() []types.TableColumn {
+func subscriptionColumns(l centymo.SubscriptionLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "customer", Label: "Customer", Sortable: true},
-		{Key: "plan", Label: "Plan", Sortable: true},
-		{Key: "start_date", Label: "Start Date", Sortable: true, Width: "150px"},
-		{Key: "status", Label: "Status", Sortable: true, Width: "120px"},
+		{Key: "customer", Label: l.Columns.Customer, Sortable: true},
+		{Key: "plan", Label: l.Columns.Plan, Sortable: true},
+		{Key: "start_date", Label: l.Columns.StartDate, Sortable: true, Width: "150px"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, routes centymo.SubscriptionRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(records []map[string]any, status string, l centymo.SubscriptionLabels, routes centymo.SubscriptionRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, record := range records {
 		recordStatus, _ := record["status"].(string)
@@ -121,34 +123,34 @@ func buildTableRows(records []map[string]any, status string, routes centymo.Subs
 				"status":     recordStatus,
 			},
 			Actions: []types.TableAction{
-				{Type: "view", Label: "View Subscription", Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: "Edit Subscription", Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: "Edit Subscription", Disabled: !perms.Can("subscription", "update"), DisabledTooltip: "No permission"},
-				{Type: "delete", Label: "Cancel Subscription", Action: "delete", URL: routes.DeleteURL, ItemName: customer, Disabled: !perms.Can("subscription", "delete"), DisabledTooltip: "No permission"},
+				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("subscription", "update"), DisabledTooltip: l.Errors.NoPermission},
+				{Type: "delete", Label: l.Actions.Cancel, Action: "delete", URL: routes.DeleteURL, ItemName: customer, Disabled: !perms.Can("subscription", "delete"), DisabledTooltip: l.Errors.NoPermission},
 			},
 		})
 	}
 	return rows
 }
 
-func statusTitle(status string) string {
+func statusTitle(l centymo.SubscriptionLabels, status string) string {
 	switch status {
 	case "active":
-		return "Active Subscriptions"
+		return l.Page.HeadingActive
 	case "inactive":
-		return "Inactive Subscriptions"
+		return l.Page.HeadingInactive
 	default:
-		return "Subscriptions"
+		return l.Page.Heading
 	}
 }
 
-func statusSubtitle(status string) string {
+func statusSubtitle(l centymo.SubscriptionLabels, status string) string {
 	switch status {
 	case "active":
-		return "Manage your active subscriptions"
+		return l.Page.CaptionActive
 	case "inactive":
-		return "View cancelled or expired subscriptions"
+		return l.Page.CaptionInactive
 	default:
-		return "Subscription management"
+		return l.Page.Caption
 	}
 }
 

@@ -192,7 +192,7 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string, route
 				{Type: "text", Value: currency},
 			},
 			Actions: []types.TableAction{
-				{Type: "delete", Label: "Remove", Action: "delete", URL: deleteURL, ItemName: productName, Disabled: !perms.Can("price_list", "delete"), DisabledTooltip: "No permission"},
+				{Type: "delete", Label: l.Detail.RemoveLabel, Action: "delete", URL: deleteURL, ItemName: productName, Disabled: !perms.Can("price_list", "delete"), DisabledTooltip: l.Errors.PermissionDenied},
 			},
 		})
 	}
@@ -209,15 +209,15 @@ func buildPricesTable(ctx context.Context, deps *Deps, priceListID string, route
 		DefaultSortDirection: "asc",
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
-			Title:   "No prices configured",
-			Message: "Add products to this price list to configure pricing.",
+			Title:   l.Detail.EmptyTitle,
+			Message: l.Detail.EmptyMessage,
 		},
 		PrimaryAction: &types.PrimaryAction{
-			Label:           "Add Price",
+			Label:           l.Detail.AddPrice,
 			ActionURL:       addURL,
 			Icon:            "icon-plus",
 			Disabled:        !perms.Can("price_list", "create"),
-			DisabledTooltip: "No permission",
+			DisabledTooltip: l.Errors.PermissionDenied,
 		},
 	}
 	types.ApplyTableSettings(tableConfig)

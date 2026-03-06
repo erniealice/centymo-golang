@@ -73,7 +73,7 @@ func NewView(deps *Deps) view.View {
 				Variant:          "danger",
 				Endpoint:         deps.Routes.BulkDeleteURL,
 				ConfirmTitle:     l.Bulk.Delete,
-				ConfirmMessage:   "Are you sure you want to delete {{count}} price list(s)? This action cannot be undone.",
+				ConfirmMessage:   l.Confirm.BulkDeleteMessage,
 				RequiresDataAttr: "deletable",
 			},
 		}
@@ -103,7 +103,7 @@ func NewView(deps *Deps) view.View {
 				ActionURL:       deps.Routes.AddURL,
 				Icon:            "icon-plus",
 				Disabled:        !perms.Can("price_list", "create"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.PermissionDenied,
 			},
 			BulkActions: &bulkCfg,
 		}
@@ -168,11 +168,11 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 		}
 		if isInUse {
 			deleteAction.Disabled = true
-			deleteAction.DisabledTooltip = "Cannot delete: price list has products or is used in sales"
+			deleteAction.DisabledTooltip = l.Errors.CannotDelete
 		}
 		if !perms.Can("price_list", "delete") {
 			deleteAction.Disabled = true
-			deleteAction.DisabledTooltip = "No permission"
+			deleteAction.DisabledTooltip = l.Errors.PermissionDenied
 		}
 
 		rows = append(rows, types.TableRow{
@@ -190,7 +190,7 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("price_list", "update"), DisabledTooltip: "No permission"},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("price_list", "update"), DisabledTooltip: l.Errors.PermissionDenied},
 				deleteAction,
 			},
 		})

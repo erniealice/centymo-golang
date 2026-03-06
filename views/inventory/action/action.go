@@ -53,6 +53,7 @@ type FormData struct {
 // Deps holds dependencies for inventory action handlers.
 type Deps struct {
 	Routes                     centymo.InventoryRoutes
+	Labels                     centymo.InventoryLabels
 	CreateInventoryItem        func(ctx context.Context, req *inventoryitempb.CreateInventoryItemRequest) (*inventoryitempb.CreateInventoryItemResponse, error)
 	ReadInventoryItem          func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	UpdateInventoryItem        func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
@@ -94,7 +95,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -109,7 +110,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST - create inventory item
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -145,7 +146,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -156,11 +157,11 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read inventory item %s: %v", id, err)
-				return centymo.HTMXError("Inventory item not found")
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			items := resp.GetData()
 			if len(items) == 0 {
-				return centymo.HTMXError("Inventory item not found")
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			item := items[0]
 
@@ -184,7 +185,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST - update inventory item
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -221,7 +222,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -230,7 +231,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError("Inventory item ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeleteInventoryItem(ctx, &inventoryitempb.DeleteInventoryItemRequest{
@@ -250,14 +251,14 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 
 		ids := viewCtx.Request.Form["id"]
 		if len(ids) == 0 {
-			return centymo.HTMXError("No inventory item IDs provided")
+			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		for _, id := range ids {

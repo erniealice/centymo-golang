@@ -217,7 +217,7 @@ func BuildVariantsTable(ctx context.Context, deps *Deps, productID string, perms
 	columns := []types.TableColumn{
 		{Key: "sku", Label: l.Variant.SKU, Sortable: true},
 		{Key: "priceOverride", Label: l.Variant.PriceOverride, Sortable: true, Width: "150px"},
-		{Key: "options", Label: "Options", Sortable: false},
+		{Key: "options", Label: l.Detail.OptionsLabel, Sortable: false},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 
@@ -284,16 +284,16 @@ func BuildVariantsTable(ctx context.Context, deps *Deps, productID string, perms
 						URL:             route.ResolveURL(deps.Routes.VariantEditURL, "id", productID, "vid", vid),
 						DrawerTitle:     l.Variant.Edit,
 						Disabled:        !perms.Can("product", "update"),
-						DisabledTooltip: "No permission",
+						DisabledTooltip: l.Errors.PermissionDenied,
 					},
 					{
 						Type: "delete", Label: l.Variant.Remove, Action: "delete",
 						URL:             route.ResolveURL(deps.Routes.VariantRemoveURL, "id", productID),
 						ItemName:        sku,
 						ConfirmTitle:    l.Variant.Remove,
-						ConfirmMessage:  fmt.Sprintf("Are you sure you want to remove variant %s?", sku),
+						ConfirmMessage:  fmt.Sprintf(l.Confirm.DeactivateMessage, sku),
 						Disabled:        !perms.Can("product", "delete"),
-						DisabledTooltip: "No permission",
+						DisabledTooltip: l.Errors.PermissionDenied,
 					},
 				}
 
@@ -335,14 +335,14 @@ func BuildVariantsTable(ctx context.Context, deps *Deps, productID string, perms
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
 			Title:   l.Variant.Empty,
-			Message: "No variants have been added to this product yet.",
+			Message: l.Detail.EmptyVariantsMessage,
 		},
 		PrimaryAction: &types.PrimaryAction{
 			Label:           l.Variant.Assign,
 			ActionURL:       route.ResolveURL(deps.Routes.VariantAssignURL, "id", productID),
 			Icon:            "icon-plus",
 			Disabled:        !perms.Can("product", "create"),
-			DisabledTooltip: "No permission",
+			DisabledTooltip: l.Errors.PermissionDenied,
 		},
 	}
 	types.ApplyTableSettings(tableConfig)

@@ -32,6 +32,7 @@ type PriceProductFormData struct {
 // PriceProductDeps holds dependencies for price product action handlers.
 type PriceProductDeps struct {
 	Routes             centymo.PriceListRoutes
+	Labels             centymo.PriceListLabels
 	CreatePriceProduct func(ctx context.Context, req *priceproductpb.CreatePriceProductRequest) (*priceproductpb.CreatePriceProductResponse, error)
 	DeletePriceProduct func(ctx context.Context, req *priceproductpb.DeletePriceProductRequest) (*priceproductpb.DeletePriceProductResponse, error)
 	ListProducts       func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
@@ -42,7 +43,7 @@ func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_list", "create") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		priceListID := viewCtx.Request.PathValue("id")
@@ -76,7 +77,7 @@ func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 
 		// POST -- create price product
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -86,14 +87,14 @@ func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 		amountStr := r.FormValue("amount")
 
 		if productID == "" {
-			return centymo.HTMXError("Product is required")
+			return centymo.HTMXError(deps.Labels.Errors.ProductRequired)
 		}
 
 		var amount int64
 		if amountStr != "" {
 			a, err := strconv.ParseInt(amountStr, 10, 64)
 			if err != nil {
-				return centymo.HTMXError("Amount must be a valid number")
+				return centymo.HTMXError(deps.Labels.Errors.AmountRequired)
 			}
 			amount = a
 		}
@@ -122,7 +123,7 @@ func NewPriceProductDeleteAction(deps *PriceProductDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_list", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -131,7 +132,7 @@ func NewPriceProductDeleteAction(deps *PriceProductDeps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError("Price product ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeletePriceProduct(ctx, &priceproductpb.DeletePriceProductRequest{

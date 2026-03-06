@@ -8,10 +8,10 @@
 <div class="page-content" data-page-css="/assets/css/centymo/centymo-sales-dashboard.css?v={{.CacheVersion}}">
     <!-- Stats Row -->
     <div class="centymo-stats-row">
-        {{template "stat-card" dict "Icon" "icon-shopping-bag" "Value" "156" "Label" "Total Sales" "Trend" "+18%" "TrendUp" true "Color" "terracotta"}}
-        {{template "stat-card" dict "Icon" "icon-dollar-sign" "Value" "$284K" "Label" "Revenue" "Trend" "+12%" "TrendUp" true "Color" "sage"}}
-        {{template "stat-card" dict "Icon" "icon-check-circle" "Value" "89" "Label" "Completed" "Trend" "+7" "TrendUp" true "Color" "navy"}}
-        {{template "stat-card" dict "Icon" "icon-clock" "Value" "42" "Label" "Active" "Trend" "+3" "TrendUp" true "Color" "amber"}}
+        {{template "stat-card" dict "Icon" "icon-shopping-bag" "Value" "156" "Label" .Labels.TotalSales "Trend" "+18%" "TrendUp" true "Color" "terracotta"}}
+        {{template "stat-card" dict "Icon" "icon-dollar-sign" "Value" "$284K" "Label" .Labels.Revenue "Trend" "+12%" "TrendUp" true "Color" "sage"}}
+        {{template "stat-card" dict "Icon" "icon-check-circle" "Value" "89" "Label" .Labels.Completed "Trend" "+7" "TrendUp" true "Color" "navy"}}
+        {{template "stat-card" dict "Icon" "icon-clock" "Value" "42" "Label" .Labels.Active "Trend" "+3" "TrendUp" true "Color" "amber"}}
     </div>
 
     <!-- Main Grid -->
@@ -19,11 +19,11 @@
         <!-- Revenue Chart -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Revenue Trend</h2>
+                <h2 class="card-title">{{.Labels.RevenueTrend}}</h2>
                 <div class="card-actions">
-                    <button class="card-btn">Week</button>
-                    <button class="card-btn">Month</button>
-                    <button class="card-btn primary">Year</button>
+                    <button class="card-btn">{{.Labels.Week}}</button>
+                    <button class="card-btn">{{.Labels.Month}}</button>
+                    <button class="card-btn primary">{{.Labels.Year}}</button>
                 </div>
             </div>
             <div class="centymo-chart-area">
@@ -55,8 +55,8 @@
         <!-- Recent Sales -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Recent Sales</h2>
-                <button class="card-btn">View All</button>
+                <h2 class="card-title">{{.Labels.RecentSales}}</h2>
+                <button class="card-btn">{{.Labels.ViewAll}}</button>
             </div>
             <div class="centymo-activity-list">
                 <div class="centymo-activity-item">
@@ -64,7 +64,7 @@
                         {{template "icon-shopping-bag"}}
                     </div>
                     <div class="centymo-activity-content">
-                        <div class="centymo-activity-title">New Sale Created</div>
+                        <div class="centymo-activity-title">{{.Labels.NewSaleCreated}}</div>
                         <div class="centymo-activity-desc">REF-2024-001 — PHP 12,500</div>
                     </div>
                     <span class="centymo-activity-time">30m ago</span>
@@ -75,7 +75,7 @@
                         {{template "icon-check-circle"}}
                     </div>
                     <div class="centymo-activity-content">
-                        <div class="centymo-activity-title">Sale Completed</div>
+                        <div class="centymo-activity-title">{{.Labels.SaleCompleted}}</div>
                         <div class="centymo-activity-desc">REF-2024-098 — PHP 45,000</div>
                     </div>
                     <span class="centymo-activity-time">2h ago</span>
@@ -86,7 +86,7 @@
                         {{template "icon-edit"}}
                     </div>
                     <div class="centymo-activity-content">
-                        <div class="centymo-activity-title">Sale Updated</div>
+                        <div class="centymo-activity-title">{{.Labels.SaleUpdated}}</div>
                         <div class="centymo-activity-desc">REF-2024-095 amount adjusted</div>
                     </div>
                     <span class="centymo-activity-time">4h ago</span>
@@ -97,7 +97,7 @@
                         {{template "icon-x-circle"}}
                     </div>
                     <div class="centymo-activity-content">
-                        <div class="centymo-activity-title">Sale Cancelled</div>
+                        <div class="centymo-activity-title">{{.Labels.SaleCancelled}}</div>
                         <div class="centymo-activity-desc">REF-2024-087 — PHP 8,200</div>
                     </div>
                     <span class="centymo-activity-time">1d ago</span>

@@ -74,7 +74,7 @@ func NewSerialAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		inventoryItemID := viewCtx.Request.PathValue("id")
@@ -91,7 +91,7 @@ func NewSerialAssignAction(deps *Deps) view.View {
 
 		// POST - create serial
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -120,7 +120,7 @@ func NewSerialEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		inventoryItemID := viewCtx.Request.PathValue("id")
@@ -132,11 +132,11 @@ func NewSerialEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read serial %s: %v", serialID, err)
-				return centymo.HTMXError("Serial not found")
+				return centymo.HTMXError(deps.Labels.Errors.SerialNotFound)
 			}
 			records := resp.GetData()
 			if len(records) == 0 {
-				return centymo.HTMXError("Serial not found")
+				return centymo.HTMXError(deps.Labels.Errors.SerialNotFound)
 			}
 			record := records[0]
 
@@ -158,7 +158,7 @@ func NewSerialEditAction(deps *Deps) view.View {
 
 		// POST - update serial
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("Invalid form data")
+			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -187,7 +187,7 @@ func NewSerialRemoveAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "delete") {
-			return centymo.HTMXError("Permission denied")
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -196,7 +196,7 @@ func NewSerialRemoveAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError("Serial ID is required")
+			return centymo.HTMXError(deps.Labels.Errors.SerialIDRequired)
 		}
 
 		_, err := deps.DeleteInventorySerial(ctx, &inventoryserialpb.DeleteInventorySerialRequest{

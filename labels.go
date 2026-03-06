@@ -27,6 +27,9 @@ type InventoryLabels struct {
 	Depreciation InventoryDepreciationLabels `json:"depreciation"`
 	Dashboard    InventoryDashboardLabels    `json:"dashboard"`
 	Movements    InventoryMovementsLabels    `json:"movements"`
+	Confirm      InventoryConfirmLabels      `json:"confirm"`
+	Errors       InventoryErrorLabels        `json:"errors"`
+	Breadcrumb   InventoryBreadcrumbLabels   `json:"breadcrumb"`
 }
 
 type InventoryPageLabels struct {
@@ -46,6 +49,7 @@ type InventoryColumnLabels struct {
 	Available   string `json:"available"`
 	ReorderLvl  string `json:"reorderLevel"`
 	Status      string `json:"status"`
+	Type        string `json:"type"`
 }
 
 type InventoryEmptyLabels struct {
@@ -78,6 +82,10 @@ type InventoryBulkLabels struct {
 
 // InventoryDetailLabels holds all translatable strings for the inventory detail page.
 type InventoryDetailLabels struct {
+	TitlePrefix string `json:"titlePrefix"`
+	MonthsUnit  string `json:"monthsUnit"`
+	TypesUnit   string `json:"typesUnit"`
+
 	// Tab labels
 	TabBasicInfo    string `json:"tabBasicInfo"`
 	TabAttributes   string `json:"tabAttributes"`
@@ -128,6 +136,13 @@ type InventoryDetailLabels struct {
 	AuditAction string `json:"auditAction"`
 	AuditUser   string `json:"auditUser"`
 	Description string `json:"description"`
+
+	// Info field labels (not shared with transaction columns)
+	Product       string `json:"product"`
+	ViewProduct   string `json:"viewProduct"`
+	Active        string `json:"active"`
+	Inactive      string `json:"inactive"`
+	SerialNumbers string `json:"serialNumbers"`
 
 	// Empty states
 	AttributeEmptyTitle     string `json:"attributeEmptyTitle"`
@@ -212,6 +227,7 @@ type InventoryDepreciationLabels struct {
 	MethodStraightLine     string `json:"methodStraightLine"`
 	MethodDecliningBalance string `json:"methodDecliningBalance"`
 	MethodSumOfYears       string `json:"methodSumOfYears"`
+	MonthsUnit             string `json:"monthsUnit"`
 }
 
 type InventoryDashboardLabels struct {
@@ -224,6 +240,7 @@ type InventoryDashboardLabels struct {
 	SerialUnitStatus     string `json:"serialUnitStatus"`
 	RecentMovements      string `json:"recentMovements"`
 	CategoryDistribution string `json:"categoryDistribution"`
+	TypesUnit            string `json:"typesUnit"`
 }
 
 type InventoryMovementsLabels struct {
@@ -237,6 +254,41 @@ type InventoryMovementsLabels struct {
 	ExportCsv      string `json:"exportCsv"`
 	AllLocations   string `json:"allLocations"`
 	AllTypes       string `json:"allTypes"`
+	ProductColumn  string `json:"productColumn"`
+	VariantSKU     string `json:"variantSku"`
+}
+
+type InventoryConfirmLabels struct {
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+}
+
+type InventoryErrorLabels struct {
+	PermissionDenied  string `json:"permissionDenied"`
+	InvalidFormData   string `json:"invalidFormData"`
+	NotFound          string `json:"notFound"`
+	IDRequired        string `json:"idRequired"`
+	NoIDsProvided     string `json:"noIDsProvided"`
+	InvalidStatus     string `json:"invalidStatus"`
+	NoPermission      string `json:"noPermission"`
+	SerialNotFound    string `json:"serialNotFound"`
+	SerialIDRequired  string `json:"serialIDRequired"`
+	InvalidDepreciationMethod string `json:"invalidDepreciationMethod"`
+}
+
+type InventoryBreadcrumbLabels struct {
+	Products string `json:"products"`
+	Product  string `json:"product"`
 }
 
 // ---------------------------------------------------------------------------
@@ -253,6 +305,9 @@ type SalesLabels struct {
 	Actions SalesActionLabels  `json:"actions"`
 	Bulk    SalesBulkLabels    `json:"bulkActions"`
 	Detail  SalesDetailLabels  `json:"detail"`
+	Confirm SalesConfirmLabels `json:"confirm"`
+	Errors  SalesErrorLabels   `json:"errors"`
+	Dashboard SalesDashboardLabels `json:"dashboard"`
 }
 
 type SalesPageLabels struct {
@@ -302,9 +357,11 @@ type SalesFormLabels struct {
 }
 
 type SalesActionLabels struct {
-	View   string `json:"view"`
-	Edit   string `json:"edit"`
-	Delete string `json:"delete"`
+	View       string `json:"view"`
+	Edit       string `json:"edit"`
+	Delete     string `json:"delete"`
+	Complete   string `json:"complete"`
+	Reactivate string `json:"reactivate"`
 }
 
 type SalesBulkLabels struct {
@@ -313,6 +370,7 @@ type SalesBulkLabels struct {
 
 type SalesDetailLabels struct {
 	PageTitle   string `json:"pageTitle"`
+	TitlePrefix string `json:"titlePrefix"`
 	InvoiceInfo string `json:"invoiceInfo"`
 	LineItems   string `json:"lineItems"`
 	Description string `json:"description"`
@@ -357,6 +415,11 @@ type SalesDetailLabels struct {
 	// Totals
 	TotalGrossProfit string `json:"totalGrossProfit"`
 
+	// Payment empty/table
+	Reference            string `json:"reference"`
+	PaymentEmptyTitle    string `json:"paymentEmptyTitle"`
+	PaymentEmptyMessage  string `json:"paymentEmptyMessage"`
+
 	// Line item management
 	AddItem         string `json:"addItem"`
 	AddDiscount     string `json:"addDiscount"`
@@ -369,6 +432,51 @@ type SalesDetailLabels struct {
 	SerialNumber    string `json:"serialNumber"`
 	ItemEmptyTitle   string `json:"itemEmptyTitle"`
 	ItemEmptyMessage string `json:"itemEmptyMessage"`
+}
+
+type SalesConfirmLabels struct {
+	Complete         string `json:"complete"`
+	CompleteMessage  string `json:"completeMessage"`
+	Reactivate       string `json:"reactivate"`
+	ReactivateMessage string `json:"reactivateMessage"`
+	BulkComplete        string `json:"bulkComplete"`
+	BulkCompleteMessage string `json:"bulkCompleteMessage"`
+	BulkReactivate       string `json:"bulkReactivate"`
+	BulkReactivateMessage string `json:"bulkReactivateMessage"`
+}
+
+type SalesErrorLabels struct {
+	PermissionDenied     string `json:"permissionDenied"`
+	InvalidFormData      string `json:"invalidFormData"`
+	NotFound             string `json:"notFound"`
+	IDRequired           string `json:"idRequired"`
+	NoIDsProvided        string `json:"noIDsProvided"`
+	InvalidStatus        string `json:"invalidStatus"`
+	InvalidTargetStatus  string `json:"invalidTargetStatus"`
+	NoItemsCannotComplete string `json:"noItemsCannotComplete"`
+	HasPaymentsCannotCancel string `json:"hasPaymentsCannotCancel"`
+	BulkHasPayments      string `json:"bulkHasPayments"`
+	BulkNoItems          string `json:"bulkNoItems"`
+	PaymentNotFound      string `json:"paymentNotFound"`
+	InvalidDiscount      string `json:"invalidDiscount"`
+}
+
+type SalesDashboardLabels struct {
+	Title          string `json:"title"`
+	TotalSales     string `json:"totalSales"`
+	Revenue        string `json:"revenue"`
+	Completed      string `json:"completed"`
+	Active         string `json:"active"`
+	RevenueTrend   string `json:"revenueTrend"`
+	Week           string `json:"week"`
+	Month          string `json:"month"`
+	Year           string `json:"year"`
+	RecentSales    string `json:"recentSales"`
+	ViewAll        string `json:"viewAll"`
+	NewSaleCreated string `json:"newSaleCreated"`
+	SaleCompleted  string `json:"saleCompleted"`
+	SaleUpdated    string `json:"saleUpdated"`
+	SaleCancelled  string `json:"saleCancelled"`
 }
 
 // ---------------------------------------------------------------------------
@@ -390,6 +498,9 @@ type ProductLabels struct {
 	Variant ProductVariantLabels `json:"variant"`
 	Attribute ProductAttributeLabels `json:"attribute"`
 	Options   ProductOptionLabels    `json:"options"`
+	Confirm   ProductConfirmLabels   `json:"confirm"`
+	Errors    ProductErrorLabels     `json:"errors"`
+	Breadcrumb ProductBreadcrumbLabels `json:"breadcrumb"`
 }
 
 type ProductPageLabels struct {
@@ -444,6 +555,9 @@ type ProductTabLabels struct {
 	Attributes string `json:"attributes"`
 	Pricing    string `json:"pricing"`
 	Options    string `json:"options"`
+	Images     string `json:"images"`
+	Stock      string `json:"stock"`
+	AuditTrail string `json:"auditTrail"`
 }
 
 type ProductDetailLabels struct {
@@ -452,6 +566,8 @@ type ProductDetailLabels struct {
 	Collections  string `json:"collections"`
 	VariantCount string `json:"variantCount"`
 	Status       string `json:"status"`
+	OptionsLabel string `json:"optionsLabel"`
+	EmptyVariantsMessage string `json:"emptyVariantsMessage"`
 }
 
 type ProductStatusLabels struct {
@@ -468,6 +584,12 @@ type ProductVariantLabels struct {
 	Edit          string `json:"edit"`
 	Remove        string `json:"remove"`
 	Empty         string `json:"empty"`
+	// Stock table columns
+	Location    string `json:"location"`
+	QtyOnHand   string `json:"qtyOnHand"`
+	SerialCount string `json:"serialCount"`
+	NoStock     string `json:"noStock"`
+	NoStockMsg  string `json:"noStockMsg"`
 }
 
 type ProductAttributeLabels struct {
@@ -476,6 +598,39 @@ type ProductAttributeLabels struct {
 	Assign       string `json:"assign"`
 	Remove       string `json:"remove"`
 	Empty        string `json:"empty"`
+}
+
+type ProductConfirmLabels struct {
+	Activate            string `json:"activate"`
+	ActivateMessage     string `json:"activateMessage"`
+	Deactivate          string `json:"deactivate"`
+	DeactivateMessage   string `json:"deactivateMessage"`
+	BulkActivate        string `json:"bulkActivate"`
+	BulkActivateMessage string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+	BulkDelete          string `json:"bulkDelete"`
+	BulkDeleteMessage   string `json:"bulkDeleteMessage"`
+	RemoveVariant       string `json:"removeVariant"`
+	RemoveVariantMessage string `json:"removeVariantMessage"`
+}
+
+type ProductErrorLabels struct {
+	PermissionDenied   string `json:"permissionDenied"`
+	InvalidFormData    string `json:"invalidFormData"`
+	NotFound           string `json:"notFound"`
+	IDRequired         string `json:"idRequired"`
+	NoIDsProvided      string `json:"noIDsProvided"`
+	InvalidStatus      string `json:"invalidStatus"`
+	CannotDelete       string `json:"cannotDelete"`
+	NameRequired       string `json:"nameRequired"`
+	FieldRequired      string `json:"fieldRequired"`
+}
+
+type ProductBreadcrumbLabels struct {
+	Products string `json:"products"`
+	Product  string `json:"product"`
+	Option   string `json:"option"`
 }
 
 // ---------------------------------------------------------------------------
@@ -587,6 +742,8 @@ type PriceListLabels struct {
 	Actions PriceListActionLabels  `json:"actions"`
 	Bulk    PriceListBulkLabels    `json:"bulkActions"`
 	Detail  PriceListDetailLabels  `json:"detail"`
+	Confirm PriceListConfirmLabels `json:"confirm"`
+	Errors  PriceListErrorLabels   `json:"errors"`
 }
 
 type PriceListPageLabels struct {
@@ -636,11 +793,37 @@ type PriceListBulkLabels struct {
 }
 
 type PriceListDetailLabels struct {
-	BasicInfo   string `json:"basicInfo"`
-	Prices      string `json:"prices"`
-	ProductName string `json:"productName"`
-	Amount      string `json:"amount"`
-	Currency    string `json:"currency"`
+	BasicInfo    string `json:"basicInfo"`
+	Prices       string `json:"prices"`
+	ProductName  string `json:"productName"`
+	Amount       string `json:"amount"`
+	Currency     string `json:"currency"`
+	AddPrice     string `json:"addPrice"`
+	RemoveLabel  string `json:"removeLabel"`
+	EmptyTitle   string `json:"emptyTitle"`
+	EmptyMessage string `json:"emptyMessage"`
+}
+
+type PriceListConfirmLabels struct {
+	Activate          string `json:"activate"`
+	ActivateMessage   string `json:"activateMessage"`
+	Deactivate        string `json:"deactivate"`
+	DeactivateMessage string `json:"deactivateMessage"`
+	Delete            string `json:"delete"`
+	DeleteMessage     string `json:"deleteMessage"`
+	BulkDelete        string `json:"bulkDelete"`
+	BulkDeleteMessage string `json:"bulkDeleteMessage"`
+}
+
+type PriceListErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoIDsProvided    string `json:"noIDsProvided"`
+	CannotDelete     string `json:"cannotDelete"`
+	ProductRequired  string `json:"productRequired"`
+	AmountRequired   string `json:"amountRequired"`
 }
 
 // ---------------------------------------------------------------------------
@@ -848,6 +1031,8 @@ type CollectionLabels struct {
 	Bulk    CollectionBulkLabels    `json:"bulkActions"`
 	Detail  CollectionDetailLabels  `json:"detail"`
 	Status  CollectionStatusLabels  `json:"status"`
+	Confirm CollectionConfirmLabels `json:"confirm"`
+	Errors  CollectionErrorLabels   `json:"errors"`
 }
 
 type CollectionPageLabels struct {
@@ -898,9 +1083,11 @@ type CollectionFormLabels struct {
 }
 
 type CollectionActionLabels struct {
-	View   string `json:"view"`
-	Edit   string `json:"edit"`
-	Delete string `json:"delete"`
+	View         string `json:"view"`
+	Edit         string `json:"edit"`
+	Delete       string `json:"delete"`
+	MarkComplete string `json:"markComplete"`
+	Reactivate   string `json:"reactivate"`
 }
 
 type CollectionBulkLabels struct {
@@ -909,6 +1096,7 @@ type CollectionBulkLabels struct {
 
 type CollectionDetailLabels struct {
 	PageTitle    string `json:"pageTitle"`
+	TitlePrefix  string `json:"titlePrefix"`
 	PaymentInfo  string `json:"paymentInfo"`
 	Customer     string `json:"customer"`
 	Date         string `json:"date"`
@@ -930,6 +1118,30 @@ type CollectionStatusLabels struct {
 	Pending   string `json:"pending"`
 	Completed string `json:"completed"`
 	Failed    string `json:"failed"`
+}
+
+type CollectionConfirmLabels struct {
+	MarkComplete        string `json:"markComplete"`
+	MarkCompleteMessage string `json:"markCompleteMessage"`
+	Reactivate          string `json:"reactivate"`
+	ReactivateMessage   string `json:"reactivateMessage"`
+	Delete              string `json:"delete"`
+	DeleteMessage       string `json:"deleteMessage"`
+	BulkComplete        string `json:"bulkComplete"`
+	BulkCompleteMessage string `json:"bulkCompleteMessage"`
+	BulkReactivate       string `json:"bulkReactivate"`
+	BulkReactivateMessage string `json:"bulkReactivateMessage"`
+	BulkDelete           string `json:"bulkDelete"`
+	BulkDeleteMessage    string `json:"bulkDeleteMessage"`
+}
+
+type CollectionErrorLabels struct {
+	PermissionDenied  string `json:"permissionDenied"`
+	InvalidFormData   string `json:"invalidFormData"`
+	NotFound          string `json:"notFound"`
+	IDRequired        string `json:"idRequired"`
+	NoIDsProvided     string `json:"noIDsProvided"`
+	InvalidStatus     string `json:"invalidStatus"`
 }
 
 // DefaultCollectionLabels returns CollectionLabels with sensible English defaults.
@@ -978,15 +1190,18 @@ func DefaultCollectionLabels() CollectionLabels {
 			NotesPlaceholder:     "Additional notes...",
 		},
 		Actions: CollectionActionLabels{
-			View:   "View",
-			Edit:   "Edit",
-			Delete: "Delete",
+			View:         "View",
+			Edit:         "Edit",
+			Delete:       "Delete",
+			MarkComplete: "Mark Complete",
+			Reactivate:   "Reactivate",
 		},
 		Bulk: CollectionBulkLabels{
 			Delete: "Delete Selected",
 		},
 		Detail: CollectionDetailLabels{
 			PageTitle:         "Collection Details",
+			TitlePrefix:       "Collection #",
 			PaymentInfo:       "Payment Information",
 			Customer:          "Customer",
 			Date:              "Date",
@@ -1008,6 +1223,28 @@ func DefaultCollectionLabels() CollectionLabels {
 			Completed: "Completed",
 			Failed:    "Failed",
 		},
+		Confirm: CollectionConfirmLabels{
+			MarkComplete:          "Mark Complete",
+			MarkCompleteMessage:   "Are you sure you want to mark %s as complete?",
+			Reactivate:            "Reactivate",
+			ReactivateMessage:     "Are you sure you want to reactivate %s?",
+			Delete:                "Delete",
+			DeleteMessage:         "Are you sure you want to delete %s?",
+			BulkComplete:          "Mark Complete",
+			BulkCompleteMessage:   "Are you sure you want to mark {{count}} collection(s) as complete?",
+			BulkReactivate:        "Reactivate",
+			BulkReactivateMessage: "Are you sure you want to reactivate {{count}} collection(s)?",
+			BulkDelete:            "Delete Collections",
+			BulkDeleteMessage:     "Are you sure you want to delete {{count}} collection(s)?",
+		},
+		Errors: CollectionErrorLabels{
+			PermissionDenied: "Permission denied",
+			InvalidFormData:  "Invalid form data",
+			NotFound:         "Collection not found",
+			IDRequired:       "Collection ID is required",
+			NoIDsProvided:    "No collection IDs provided",
+			InvalidStatus:    "Invalid status",
+		},
 	}
 }
 
@@ -1026,6 +1263,8 @@ type DisbursementLabels struct {
 	Bulk    DisbursementBulkLabels    `json:"bulkActions"`
 	Detail  DisbursementDetailLabels  `json:"detail"`
 	Status  DisbursementStatusLabels  `json:"status"`
+	Confirm DisbursementConfirmLabels `json:"confirm"`
+	Errors  DisbursementErrorLabels   `json:"errors"`
 }
 
 type DisbursementPageLabels struct {
@@ -1088,11 +1327,14 @@ type DisbursementFormLabels struct {
 }
 
 type DisbursementActionLabels struct {
-	View     string `json:"view"`
-	Edit     string `json:"edit"`
-	Delete   string `json:"delete"`
-	Approve  string `json:"approve"`
-	MarkPaid string `json:"markPaid"`
+	View       string `json:"view"`
+	Edit       string `json:"edit"`
+	Delete     string `json:"delete"`
+	Approve    string `json:"approve"`
+	MarkPaid   string `json:"markPaid"`
+	Cancel     string `json:"cancel"`
+	Submit     string `json:"submit"`
+	Reactivate string `json:"reactivate"`
 }
 
 type DisbursementBulkLabels struct {
@@ -1103,6 +1345,7 @@ type DisbursementBulkLabels struct {
 
 type DisbursementDetailLabels struct {
 	PageTitle         string `json:"pageTitle"`
+	TitlePrefix       string `json:"titlePrefix"`
 	PaymentInfo       string `json:"paymentInfo"`
 	Payee             string `json:"payee"`
 	Date              string `json:"date"`
@@ -1128,6 +1371,43 @@ type DisbursementStatusLabels struct {
 	Approved  string `json:"approved"`
 	Paid      string `json:"paid"`
 	Cancelled string `json:"cancelled"`
+}
+
+type DisbursementConfirmLabels struct {
+	Submit              string `json:"submit"`
+	SubmitMessage       string `json:"submitMessage"`
+	Approve             string `json:"approve"`
+	ApproveMessage      string `json:"approveMessage"`
+	MarkPaid            string `json:"markPaid"`
+	MarkPaidMessage     string `json:"markPaidMessage"`
+	Cancel              string `json:"cancel"`
+	CancelMessage       string `json:"cancelMessage"`
+	Reactivate          string `json:"reactivate"`
+	ReactivateMessage   string `json:"reactivateMessage"`
+	Delete              string `json:"delete"`
+	DeleteMessage       string `json:"deleteMessage"`
+	BulkSubmit          string `json:"bulkSubmit"`
+	BulkSubmitMessage   string `json:"bulkSubmitMessage"`
+	BulkApprove         string `json:"bulkApprove"`
+	BulkApproveMessage  string `json:"bulkApproveMessage"`
+	BulkMarkPaid        string `json:"bulkMarkPaid"`
+	BulkMarkPaidMessage string `json:"bulkMarkPaidMessage"`
+	BulkCancel          string `json:"bulkCancel"`
+	BulkCancelMessage   string `json:"bulkCancelMessage"`
+	BulkReactivate        string `json:"bulkReactivate"`
+	BulkReactivateMessage string `json:"bulkReactivateMessage"`
+	BulkDelete           string `json:"bulkDelete"`
+	BulkDeleteMessage    string `json:"bulkDeleteMessage"`
+}
+
+type DisbursementErrorLabels struct {
+	PermissionDenied    string `json:"permissionDenied"`
+	InvalidFormData     string `json:"invalidFormData"`
+	NotFound            string `json:"notFound"`
+	IDRequired          string `json:"idRequired"`
+	NoIDsProvided       string `json:"noIDsProvided"`
+	InvalidStatus       string `json:"invalidStatus"`
+	InvalidTransition   string `json:"invalidTransition"`
 }
 
 // DefaultDisbursementLabels returns DisbursementLabels with sensible English defaults.
@@ -1188,11 +1468,14 @@ func DefaultDisbursementLabels() DisbursementLabels {
 			ApprovedBy:           "Approved By",
 		},
 		Actions: DisbursementActionLabels{
-			View:     "View",
-			Edit:     "Edit",
-			Delete:   "Delete",
-			Approve:  "Approve",
-			MarkPaid: "Mark as Paid",
+			View:       "View",
+			Edit:       "Edit",
+			Delete:     "Delete",
+			Approve:    "Approve",
+			MarkPaid:   "Mark as Paid",
+			Cancel:     "Cancel",
+			Submit:     "Submit",
+			Reactivate: "Reactivate",
 		},
 		Bulk: DisbursementBulkLabels{
 			Delete:   "Delete Selected",
@@ -1201,6 +1484,7 @@ func DefaultDisbursementLabels() DisbursementLabels {
 		},
 		Detail: DisbursementDetailLabels{
 			PageTitle:         "Disbursement Details",
+			TitlePrefix:       "Disbursement #",
 			PaymentInfo:       "Payment Information",
 			Payee:             "Payee",
 			Date:              "Date",
@@ -1225,6 +1509,209 @@ func DefaultDisbursementLabels() DisbursementLabels {
 			Approved:  "Approved",
 			Paid:      "Paid",
 			Cancelled: "Cancelled",
+		},
+		Confirm: DisbursementConfirmLabels{
+			Submit:                "Submit",
+			SubmitMessage:         "Are you sure you want to submit {{count}} disbursement(s)?",
+			Approve:               "Approve",
+			ApproveMessage:        "Are you sure you want to approve {{count}} disbursement(s)?",
+			MarkPaid:              "Mark as Paid",
+			MarkPaidMessage:       "Are you sure you want to mark {{count}} disbursement(s) as paid?",
+			Cancel:                "Cancel",
+			CancelMessage:         "Are you sure you want to cancel {{count}} disbursement(s)?",
+			Reactivate:            "Reactivate",
+			ReactivateMessage:     "Are you sure you want to reactivate {{count}} disbursement(s)?",
+			Delete:                "Delete",
+			DeleteMessage:         "Are you sure you want to delete {{count}} disbursement(s)?",
+			BulkSubmit:            "Submit Disbursements",
+			BulkSubmitMessage:     "Are you sure you want to submit {{count}} disbursement(s)?",
+			BulkApprove:           "Approve Disbursements",
+			BulkApproveMessage:    "Are you sure you want to approve {{count}} disbursement(s)?",
+			BulkMarkPaid:          "Mark as Paid",
+			BulkMarkPaidMessage:   "Are you sure you want to mark {{count}} disbursement(s) as paid?",
+			BulkCancel:            "Cancel Disbursements",
+			BulkCancelMessage:     "Are you sure you want to cancel {{count}} disbursement(s)?",
+			BulkReactivate:        "Reactivate Disbursements",
+			BulkReactivateMessage: "Are you sure you want to reactivate {{count}} disbursement(s)?",
+			BulkDelete:            "Delete Disbursements",
+			BulkDeleteMessage:     "Are you sure you want to delete {{count}} disbursement(s)?",
+		},
+		Errors: DisbursementErrorLabels{
+			PermissionDenied:  "Permission denied",
+			InvalidFormData:   "Invalid form data",
+			NotFound:          "Disbursement not found",
+			IDRequired:        "Disbursement ID is required",
+			NoIDsProvided:     "No disbursement IDs provided",
+			InvalidStatus:     "Invalid target status",
+			InvalidTransition: "Cannot transition from %s to %s",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Plan labels
+// ---------------------------------------------------------------------------
+
+// PlanLabels holds all translatable strings for the plan module.
+type PlanLabels struct {
+	Page    PlanPageLabels    `json:"page"`
+	Buttons PlanButtonLabels  `json:"buttons"`
+	Columns PlanColumnLabels  `json:"columns"`
+	Empty   PlanEmptyLabels   `json:"empty"`
+	Actions PlanActionLabels  `json:"actions"`
+	Errors  PlanErrorLabels   `json:"errors"`
+}
+
+type PlanPageLabels struct {
+	Heading        string `json:"heading"`
+	HeadingActive  string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption        string `json:"caption"`
+	CaptionActive  string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+}
+
+type PlanButtonLabels struct {
+	AddPlan string `json:"addPlan"`
+}
+
+type PlanColumnLabels struct {
+	Name     string `json:"name"`
+	Interval string `json:"interval"`
+	Price    string `json:"price"`
+	Status   string `json:"status"`
+}
+
+type PlanEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type PlanActionLabels struct {
+	View   string `json:"view"`
+	Edit   string `json:"edit"`
+	Delete string `json:"delete"`
+}
+
+type PlanErrorLabels struct {
+	NoPermission string `json:"noPermission"`
+}
+
+// ---------------------------------------------------------------------------
+// Subscription labels
+// ---------------------------------------------------------------------------
+
+// SubscriptionLabels holds all translatable strings for the subscription module.
+type SubscriptionLabels struct {
+	Page    SubscriptionPageLabels    `json:"page"`
+	Buttons SubscriptionButtonLabels  `json:"buttons"`
+	Columns SubscriptionColumnLabels  `json:"columns"`
+	Empty   SubscriptionEmptyLabels   `json:"empty"`
+	Actions SubscriptionActionLabels  `json:"actions"`
+	Errors  SubscriptionErrorLabels   `json:"errors"`
+}
+
+type SubscriptionPageLabels struct {
+	Heading        string `json:"heading"`
+	HeadingActive  string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption        string `json:"caption"`
+	CaptionActive  string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+}
+
+type SubscriptionButtonLabels struct {
+	AddSubscription string `json:"addSubscription"`
+}
+
+type SubscriptionColumnLabels struct {
+	Customer  string `json:"customer"`
+	Plan      string `json:"plan"`
+	StartDate string `json:"startDate"`
+	Status    string `json:"status"`
+}
+
+type SubscriptionEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type SubscriptionActionLabels struct {
+	View   string `json:"view"`
+	Edit   string `json:"edit"`
+	Cancel string `json:"cancel"`
+}
+
+type SubscriptionErrorLabels struct {
+	NoPermission string `json:"noPermission"`
+}
+
+// DefaultPlanLabels returns PlanLabels with sensible English defaults.
+func DefaultPlanLabels() PlanLabels {
+	return PlanLabels{
+		Page: PlanPageLabels{
+			Heading:         "Plans",
+			HeadingActive:   "Active Plans",
+			HeadingInactive: "Inactive Plans",
+			Caption:         "Manage your plans",
+			CaptionActive:   "Manage your active plans",
+			CaptionInactive: "View inactive or archived plans",
+		},
+		Buttons: PlanButtonLabels{
+			AddPlan: "Add Plan",
+		},
+		Columns: PlanColumnLabels{
+			Name:     "Name",
+			Interval: "Interval",
+			Price:    "Price",
+			Status:   "Status",
+		},
+		Empty: PlanEmptyLabels{
+			Title:   "No plans found",
+			Message: "No plans to display.",
+		},
+		Actions: PlanActionLabels{
+			View:   "View Plan",
+			Edit:   "Edit Plan",
+			Delete: "Delete Plan",
+		},
+		Errors: PlanErrorLabels{
+			NoPermission: "No permission",
+		},
+	}
+}
+
+// DefaultSubscriptionLabels returns SubscriptionLabels with sensible English defaults.
+func DefaultSubscriptionLabels() SubscriptionLabels {
+	return SubscriptionLabels{
+		Page: SubscriptionPageLabels{
+			Heading:         "Subscriptions",
+			HeadingActive:   "Active Subscriptions",
+			HeadingInactive: "Inactive Subscriptions",
+			Caption:         "Subscription management",
+			CaptionActive:   "Manage your active subscriptions",
+			CaptionInactive: "View cancelled or expired subscriptions",
+		},
+		Buttons: SubscriptionButtonLabels{
+			AddSubscription: "Add Subscription",
+		},
+		Columns: SubscriptionColumnLabels{
+			Customer:  "Customer",
+			Plan:      "Plan",
+			StartDate: "Start Date",
+			Status:    "Status",
+		},
+		Empty: SubscriptionEmptyLabels{
+			Title:   "No subscriptions found",
+			Message: "No subscriptions to display.",
+		},
+		Actions: SubscriptionActionLabels{
+			View:   "View Subscription",
+			Edit:   "Edit Subscription",
+			Cancel: "Cancel Subscription",
+		},
+		Errors: SubscriptionErrorLabels{
+			NoPermission: "No permission",
 		},
 	}
 }

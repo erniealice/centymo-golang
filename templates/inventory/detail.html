@@ -41,7 +41,7 @@
             <span class="inv-info-value mono">{{index .Item "sku"}}</span>
         </div>
         <div class="inv-info-item">
-            <span class="inv-info-label">Type</span>
+            <span class="inv-info-label">{{.Labels.Detail.Type}}</span>
             <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
         </div>
         <div class="inv-info-item">
@@ -50,9 +50,9 @@
         </div>
         {{if index .Item "product_id"}}
         <div class="inv-info-item">
-            <span class="inv-info-label">Product</span>
+            <span class="inv-info-label">{{.Labels.Detail.Product}}</span>
             <span class="inv-info-value">
-                <a href="{{routeWith "product.detail" "id" (index .Item "product_id")}}">View Product</a>
+                <a href="{{routeWith "product.detail" "id" (index .Item "product_id")}}">{{.Labels.Detail.ViewProduct}}</a>
             </span>
         </div>
         {{end}}
@@ -80,9 +80,9 @@
             <span class="inv-info-label">{{.Labels.Detail.Status}}</span>
             <span>
                 {{if index .Item "active"}}
-                <span class="badge badge--success">active</span>
+                <span class="badge badge--success">{{.Labels.Detail.Active}}</span>
                 {{else}}
-                <span class="badge badge--warning">inactive</span>
+                <span class="badge badge--warning">{{.Labels.Detail.Inactive}}</span>
                 {{end}}
             </span>
         </div>
@@ -296,7 +296,7 @@
             <span class="inv-info-value mono">{{index .Item "sku"}}</span>
         </div>
         <div class="inv-info-item">
-            <span class="inv-info-label">Type</span>
+            <span class="inv-info-label">{{.Labels.Detail.Type}}</span>
             <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
         </div>
         <div class="inv-info-item">
@@ -327,9 +327,9 @@
             <span class="inv-info-label">{{.Labels.Detail.Status}}</span>
             <span>
                 {{if index .Item "active"}}
-                <span class="badge badge--success">active</span>
+                <span class="badge badge--success">{{.Labels.Detail.Active}}</span>
                 {{else}}
-                <span class="badge badge--warning">inactive</span>
+                <span class="badge badge--warning">{{.Labels.Detail.Inactive}}</span>
                 {{end}}
             </span>
         </div>
@@ -361,7 +361,7 @@
     {{/* Embedded Serials (for serialized items) */}}
     {{if .IsSerialized}}
     <div style="margin-top: 1.75rem;">
-        <h4 class="inv-section-title">Serial Numbers</h4>
+        <h4 class="inv-section-title">{{.Labels.Detail.SerialNumbers}}</h4>
         {{if .SerialTable}}
             {{template "table-card" .SerialTable}}
             {{if .SerialSummary}}
