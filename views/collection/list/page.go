@@ -11,16 +11,18 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	Routes       centymo.CollectionRoutes
-	DB           centymo.DataSource
-	RefreshURL   string
-	Labels       centymo.CollectionLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes          centymo.CollectionRoutes
+	ListCollections func(ctx context.Context, req *collectionpb.ListCollectionsRequest) (*collectionpb.ListCollectionsResponse, error)
+	RefreshURL      string
+	Labels          centymo.CollectionLabels
+	CommonLabels    pyeza.CommonLabels
+	TableLabels     types.TableLabels
 }
 
 // PageData holds the data for the collection list page.
@@ -40,7 +42,7 @@ func NewView(deps *Deps) view.View {
 			status = "pending"
 		}
 
-		records, err := deps.DB.ListSimple(ctx, "collection")
+		resp, err := deps.ListCollections(ctx, &collectionpb.ListCollectionsRequest{})
 		if err != nil {
 			log.Printf("Failed to list collections: %v", err)
 			return view.Error(fmt.Errorf("failed to load collections: %w", err))
@@ -48,7 +50,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := collectionColumns(l)
-		rows := buildTableRows(records, status, l, deps.Routes, perms)
+		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -116,21 +118,21 @@ func collectionColumns(l centymo.CollectionLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, l centymo.CollectionLabels, routes centymo.CollectionRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(collections []*collectionpb.Collection, status string, l centymo.CollectionLabels, routes centymo.CollectionRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, record := range records {
-		recordStatus, _ := record["status"].(string)
+	for _, c := range collections {
+		recordStatus := c.GetStatus()
 		if recordStatus != status {
 			continue
 		}
 
-		id, _ := record["id"].(string)
-		refNumber, _ := record["reference_number"].(string)
-		customer, _ := record["customer"].(string)
-		amount, _ := record["amount"].(string)
-		currency, _ := record["currency"].(string)
-		method, _ := record["collection_method"].(string)
-		date, _ := record["date"].(string)
+		id := c.GetId()
+		refNumber := c.GetReferenceNumber()
+		customer := c.GetName()
+		amount := fmt.Sprintf("%.2f", c.GetAmount())
+		currency := c.GetCurrency()
+		method := c.GetCollectionMethodId()
+		date := c.GetDateCreatedString()
 
 		amountDisplay := currency + " " + amount
 

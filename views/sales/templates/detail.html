@@ -31,6 +31,13 @@
 {{/* Basic Information Tab */}}
 {{define "sales-tab-info"}}
 <div class="tab-scroll">
+    {{if .InvoiceDownloadURL}}
+    <div class="info-toolbar" style="display:flex;justify-content:flex-end;padding:0 0 0.75rem 0;">
+        <a href="{{.InvoiceDownloadURL}}" class="btn btn--ghost btn--sm" download>
+            {{template "icon-download" .}} {{.Labels.Actions.DownloadInvoice}}
+        </a>
+    </div>
+    {{end}}
     <h4 class="sale-section-title">{{.Labels.Detail.InvoiceInfo}}</h4>
     <div class="sale-info-grid">
         <div class="sale-info-item">

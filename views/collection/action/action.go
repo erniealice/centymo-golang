@@ -2,13 +2,17 @@ package action
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/erniealice/centymo-golang"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
+
+	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 )
 
 // FormLabels holds i18n labels for the collection drawer form template.
@@ -47,9 +51,12 @@ type FormData struct {
 
 // Deps holds dependencies for collection action handlers.
 type Deps struct {
-	Routes centymo.CollectionRoutes
-	DB     centymo.DataSource
-	Labels centymo.CollectionLabels
+	Routes           centymo.CollectionRoutes
+	Labels           centymo.CollectionLabels
+	CreateCollection func(ctx context.Context, req *collectionpb.CreateCollectionRequest) (*collectionpb.CreateCollectionResponse, error)
+	ReadCollection   func(ctx context.Context, req *collectionpb.ReadCollectionRequest) (*collectionpb.ReadCollectionResponse, error)
+	UpdateCollection func(ctx context.Context, req *collectionpb.UpdateCollectionRequest) (*collectionpb.UpdateCollectionResponse, error)
+	DeleteCollection func(ctx context.Context, req *collectionpb.DeleteCollectionRequest) (*collectionpb.DeleteCollectionResponse, error)
 }
 
 func formLabels(l centymo.CollectionFormLabels) FormLabels {
@@ -65,6 +72,15 @@ func formLabels(l centymo.CollectionFormLabels) FormLabels {
 		Notes:                l.Notes,
 		NotesPlaceholder:     l.NotesPlaceholder,
 	}
+}
+
+// parseAmount converts a form string amount to float64.
+func parseAmount(s string) float64 {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return f
 }
 
 // NewAddAction creates the collection add action (GET = form, POST = create).
@@ -92,27 +108,28 @@ func NewAddAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		data := map[string]any{
-			"reference_number":  r.FormValue("reference_number"),
-			"customer":          r.FormValue("customer"),
-			"amount":            r.FormValue("amount"),
-			"currency":          r.FormValue("currency"),
-			"collection_method": r.FormValue("collection_method"),
-			"date":              r.FormValue("date"),
-			"received_by":       r.FormValue("received_by"),
-			"received_role":     r.FormValue("received_role"),
-			"notes":             r.FormValue("notes"),
-			"collection_type":   r.FormValue("collection_type"),
-			"status":            r.FormValue("status"),
-		}
-
-		created, err := deps.DB.Create(ctx, "collection", data)
+		resp, err := deps.CreateCollection(ctx, &collectionpb.CreateCollectionRequest{
+			Data: &collectionpb.Collection{
+				ReferenceNumber:    r.FormValue("reference_number"),
+				Name:               r.FormValue("customer"),
+				Amount:             parseAmount(r.FormValue("amount")),
+				Currency:           r.FormValue("currency"),
+				CollectionMethodId: r.FormValue("collection_method"),
+				ReceivedBy:         r.FormValue("received_by"),
+				ReceivedRole:       r.FormValue("received_role"),
+				CollectionType:     r.FormValue("collection_type"),
+				Status:             r.FormValue("status"),
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to create collection: %v", err)
 			return centymo.HTMXError(err.Error())
 		}
 
-		newID, _ := created["id"].(string)
+		newID := ""
+		if respData := resp.GetData(); len(respData) > 0 {
+			newID = respData[0].GetId()
+		}
 		if newID != "" {
 			return view.ViewResult{
 				StatusCode: http.StatusOK,
@@ -138,39 +155,34 @@ func NewEditAction(deps *Deps) view.View {
 		id := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			record, err := deps.DB.Read(ctx, "collection", id)
+			readResp, err := deps.ReadCollection(ctx, &collectionpb.ReadCollectionRequest{
+				Data: &collectionpb.Collection{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to read collection %s: %v", id, err)
 				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
-
-			customer, _ := record["customer"].(string)
-			refNumber, _ := record["reference_number"].(string)
-			amount, _ := record["amount"].(string)
-			currency, _ := record["currency"].(string)
-			method, _ := record["collection_method"].(string)
-			date, _ := record["date"].(string)
-			receivedBy, _ := record["received_by"].(string)
-			receivedRole, _ := record["received_role"].(string)
-			notes, _ := record["notes"].(string)
-			collectionType, _ := record["collection_type"].(string)
-			status, _ := record["status"].(string)
+			readData := readResp.GetData()
+			if len(readData) == 0 {
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			}
+			record := readData[0]
 
 			return view.OK("collection-drawer-form", &FormData{
 				FormAction:       route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:           true,
 				ID:               id,
-				Customer:         customer,
-				ReferenceNumber:  refNumber,
-				Amount:           amount,
-				Currency:         currency,
-				CollectionMethod: method,
-				Date:             date,
-				ReceivedBy:       receivedBy,
-				ReceivedRole:     receivedRole,
-				Notes:            notes,
-				CollectionType:   collectionType,
-				Status:           status,
+				Customer:         record.GetName(),
+				ReferenceNumber:  record.GetReferenceNumber(),
+				Amount:           fmt.Sprintf("%.2f", record.GetAmount()),
+				Currency:         record.GetCurrency(),
+				CollectionMethod: record.GetCollectionMethodId(),
+				Date:             record.GetDateCreatedString(),
+				ReceivedBy:       record.GetReceivedBy(),
+				ReceivedRole:     record.GetReceivedRole(),
+				Notes:            "",
+				CollectionType:   record.GetCollectionType(),
+				Status:           record.GetStatus(),
 				Labels:           formLabels(centymo.DefaultCollectionLabels().Form),
 				CommonLabels:     nil, // injected by ViewAdapter
 			})
@@ -183,21 +195,20 @@ func NewEditAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		data := map[string]any{
-			"reference_number":  r.FormValue("reference_number"),
-			"customer":          r.FormValue("customer"),
-			"amount":            r.FormValue("amount"),
-			"currency":          r.FormValue("currency"),
-			"collection_method": r.FormValue("collection_method"),
-			"date":              r.FormValue("date"),
-			"received_by":       r.FormValue("received_by"),
-			"received_role":     r.FormValue("received_role"),
-			"notes":             r.FormValue("notes"),
-			"collection_type":   r.FormValue("collection_type"),
-			"status":            r.FormValue("status"),
-		}
-
-		_, err := deps.DB.Update(ctx, "collection", id, data)
+		_, err := deps.UpdateCollection(ctx, &collectionpb.UpdateCollectionRequest{
+			Data: &collectionpb.Collection{
+				Id:                 id,
+				ReferenceNumber:    r.FormValue("reference_number"),
+				Name:               r.FormValue("customer"),
+				Amount:             parseAmount(r.FormValue("amount")),
+				Currency:           r.FormValue("currency"),
+				CollectionMethodId: r.FormValue("collection_method"),
+				ReceivedBy:         r.FormValue("received_by"),
+				ReceivedRole:       r.FormValue("received_role"),
+				CollectionType:     r.FormValue("collection_type"),
+				Status:             r.FormValue("status"),
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to update collection %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
@@ -230,7 +241,9 @@ func NewDeleteAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
-		err := deps.DB.Delete(ctx, "collection", id)
+		_, err := deps.DeleteCollection(ctx, &collectionpb.DeleteCollectionRequest{
+			Data: &collectionpb.Collection{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to delete collection %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
@@ -256,7 +269,9 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 		}
 
 		for _, id := range ids {
-			err := deps.DB.Delete(ctx, "collection", id)
+			_, err := deps.DeleteCollection(ctx, &collectionpb.DeleteCollectionRequest{
+				Data: &collectionpb.Collection{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to delete collection %s: %v", id, err)
 			}
@@ -289,7 +304,9 @@ func NewSetStatusAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
-		if _, err := deps.DB.Update(ctx, "collection", id, map[string]any{"status": targetStatus}); err != nil {
+		if _, err := deps.UpdateCollection(ctx, &collectionpb.UpdateCollectionRequest{
+			Data: &collectionpb.Collection{Id: id, Status: targetStatus},
+		}); err != nil {
 			log.Printf("Failed to update collection status %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
 		}
@@ -319,7 +336,9 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		}
 
 		for _, id := range ids {
-			if _, err := deps.DB.Update(ctx, "collection", id, map[string]any{"status": targetStatus}); err != nil {
+			if _, err := deps.UpdateCollection(ctx, &collectionpb.UpdateCollectionRequest{
+				Data: &collectionpb.Collection{Id: id, Status: targetStatus},
+			}); err != nil {
 				log.Printf("Failed to update collection status %s: %v", id, err)
 			}
 		}

@@ -5,39 +5,54 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	centymo "github.com/erniealice/centymo-golang"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
+
+	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 )
 
 // FormData is the template data for the disbursement drawer form.
 type FormData struct {
-	FormAction      string
-	IsEdit          bool
-	ID              string
-	ReferenceNumber string
-	Payee           string
-	Amount          string
-	Currency        string
-	Method          string
-	Date            string
-	ApprovedBy      string
-	ApprovedRole    string
-	Notes           string
+	FormAction       string
+	IsEdit           bool
+	ID               string
+	ReferenceNumber  string
+	Payee            string
+	Amount           string
+	Currency         string
+	Method           string
+	Date             string
+	ApprovedBy       string
+	ApprovedRole     string
+	Notes            string
 	DisbursementType string
-	ExpenditureID   string
-	Status          string
-	Labels          centymo.DisbursementFormLabels
-	CommonLabels    any
+	ExpenditureID    string
+	Status           string
+	Labels           centymo.DisbursementFormLabels
+	CommonLabels     any
 }
 
 // Deps holds dependencies for disbursement action handlers.
 type Deps struct {
-	Routes centymo.DisbursementRoutes
-	DB     centymo.DataSource
-	Labels centymo.DisbursementLabels
+	Routes             centymo.DisbursementRoutes
+	Labels             centymo.DisbursementLabels
+	CreateDisbursement func(ctx context.Context, req *disbursementpb.CreateDisbursementRequest) (*disbursementpb.CreateDisbursementResponse, error)
+	ReadDisbursement   func(ctx context.Context, req *disbursementpb.ReadDisbursementRequest) (*disbursementpb.ReadDisbursementResponse, error)
+	UpdateDisbursement func(ctx context.Context, req *disbursementpb.UpdateDisbursementRequest) (*disbursementpb.UpdateDisbursementResponse, error)
+	DeleteDisbursement func(ctx context.Context, req *disbursementpb.DeleteDisbursementRequest) (*disbursementpb.DeleteDisbursementResponse, error)
+}
+
+// parseAmount converts a form string amount to float64.
+func parseAmount(s string) float64 {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return f
 }
 
 // NewAddAction creates the disbursement add action (GET = form, POST = create).
@@ -65,28 +80,28 @@ func NewAddAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		data := map[string]any{
-			"reference_number":          r.FormValue("reference_number"),
-			"payee":                     r.FormValue("payee"),
-			"amount":                    r.FormValue("amount"),
-			"currency":                  r.FormValue("currency"),
-			"disbursement_method":       r.FormValue("disbursement_method"),
-			"disbursement_date_string":  r.FormValue("disbursement_date_string"),
-			"approved_by":               r.FormValue("approved_by"),
-			"approved_role":             r.FormValue("approved_role"),
-			"notes":                     r.FormValue("notes"),
-			"disbursement_type":         r.FormValue("disbursement_type"),
-			"expenditure_id":            r.FormValue("expenditure_id"),
-			"status":                    r.FormValue("status"),
-		}
-
-		created, err := deps.DB.Create(ctx, "disbursement", data)
+		resp, err := deps.CreateDisbursement(ctx, &disbursementpb.CreateDisbursementRequest{
+			Data: &disbursementpb.Disbursement{
+				ReferenceNumber:      r.FormValue("reference_number"),
+				Name:                 r.FormValue("payee"),
+				Amount:               parseAmount(r.FormValue("amount")),
+				Currency:             r.FormValue("currency"),
+				DisbursementMethodId: r.FormValue("disbursement_method"),
+				ApprovedBy:           r.FormValue("approved_by"),
+				DisbursementType:     r.FormValue("disbursement_type"),
+				ExpenditureId:        r.FormValue("expenditure_id"),
+				Status:               r.FormValue("status"),
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to create disbursement: %v", err)
 			return centymo.HTMXError(err.Error())
 		}
 
-		newID, _ := created["id"].(string)
+		newID := ""
+		if respData := resp.GetData(); len(respData) > 0 {
+			newID = respData[0].GetId()
+		}
 		if newID != "" {
 			return view.ViewResult{
 				StatusCode: http.StatusOK,
@@ -112,41 +127,35 @@ func NewEditAction(deps *Deps) view.View {
 		id := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			record, err := deps.DB.Read(ctx, "disbursement", id)
+			readResp, err := deps.ReadDisbursement(ctx, &disbursementpb.ReadDisbursementRequest{
+				Data: &disbursementpb.Disbursement{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to read disbursement %s: %v", id, err)
 				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
-
-			refNumber, _ := record["reference_number"].(string)
-			payee, _ := record["payee"].(string)
-			amount, _ := record["amount"].(string)
-			currency, _ := record["currency"].(string)
-			method, _ := record["disbursement_method"].(string)
-			date, _ := record["disbursement_date_string"].(string)
-			approvedBy, _ := record["approved_by"].(string)
-			approvedRole, _ := record["approved_role"].(string)
-			notes, _ := record["notes"].(string)
-			disbursementType, _ := record["disbursement_type"].(string)
-			expenditureID, _ := record["expenditure_id"].(string)
-			status, _ := record["status"].(string)
+			readData := readResp.GetData()
+			if len(readData) == 0 {
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			}
+			record := readData[0]
 
 			return view.OK("disbursement-drawer-form", &FormData{
 				FormAction:       route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:           true,
 				ID:               id,
-				ReferenceNumber:  refNumber,
-				Payee:            payee,
-				Amount:           amount,
-				Currency:         currency,
-				Method:           method,
-				Date:             date,
-				ApprovedBy:       approvedBy,
-				ApprovedRole:     approvedRole,
-				Notes:            notes,
-				DisbursementType: disbursementType,
-				ExpenditureID:    expenditureID,
-				Status:           status,
+				ReferenceNumber:  record.GetReferenceNumber(),
+				Payee:            record.GetName(),
+				Amount:           fmt.Sprintf("%.2f", record.GetAmount()),
+				Currency:         record.GetCurrency(),
+				Method:           record.GetDisbursementMethodId(),
+				Date:             record.GetDateCreatedString(),
+				ApprovedBy:       record.GetApprovedBy(),
+				ApprovedRole:     "",
+				Notes:            "",
+				DisbursementType: record.GetDisbursementType(),
+				ExpenditureID:    record.GetExpenditureId(),
+				Status:           record.GetStatus(),
 				Labels:           deps.Labels.Form,
 				CommonLabels:     nil, // injected by ViewAdapter
 			})
@@ -159,22 +168,20 @@ func NewEditAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		data := map[string]any{
-			"reference_number":          r.FormValue("reference_number"),
-			"payee":                     r.FormValue("payee"),
-			"amount":                    r.FormValue("amount"),
-			"currency":                  r.FormValue("currency"),
-			"disbursement_method":       r.FormValue("disbursement_method"),
-			"disbursement_date_string":  r.FormValue("disbursement_date_string"),
-			"approved_by":               r.FormValue("approved_by"),
-			"approved_role":             r.FormValue("approved_role"),
-			"notes":                     r.FormValue("notes"),
-			"disbursement_type":         r.FormValue("disbursement_type"),
-			"expenditure_id":            r.FormValue("expenditure_id"),
-			"status":                    r.FormValue("status"),
-		}
-
-		_, err := deps.DB.Update(ctx, "disbursement", id, data)
+		_, err := deps.UpdateDisbursement(ctx, &disbursementpb.UpdateDisbursementRequest{
+			Data: &disbursementpb.Disbursement{
+				Id:                   id,
+				ReferenceNumber:      r.FormValue("reference_number"),
+				Name:                 r.FormValue("payee"),
+				Amount:               parseAmount(r.FormValue("amount")),
+				Currency:             r.FormValue("currency"),
+				DisbursementMethodId: r.FormValue("disbursement_method"),
+				ApprovedBy:           r.FormValue("approved_by"),
+				DisbursementType:     r.FormValue("disbursement_type"),
+				ExpenditureId:        r.FormValue("expenditure_id"),
+				Status:               r.FormValue("status"),
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to update disbursement %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
@@ -207,7 +214,9 @@ func NewDeleteAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
-		err := deps.DB.Delete(ctx, "disbursement", id)
+		_, err := deps.DeleteDisbursement(ctx, &disbursementpb.DeleteDisbursementRequest{
+			Data: &disbursementpb.Disbursement{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to delete disbursement %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
@@ -233,7 +242,9 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 		}
 
 		for _, id := range ids {
-			err := deps.DB.Delete(ctx, "disbursement", id)
+			_, err := deps.DeleteDisbursement(ctx, &disbursementpb.DeleteDisbursementRequest{
+				Data: &disbursementpb.Disbursement{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to delete disbursement %s: %v", id, err)
 			}
@@ -245,11 +256,11 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 
 // NewSetStatusAction creates the disbursement status update action (POST only).
 // Validates state transitions:
-//   - draft → pending
-//   - pending → approved, cancelled
-//   - approved → paid, cancelled
-//   - cancelled → draft (reactivate)
-//   - paid → (none)
+//   - draft -> pending
+//   - pending -> approved, cancelled
+//   - approved -> paid, cancelled
+//   - cancelled -> draft (reactivate)
+//   - paid -> (none)
 func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
@@ -274,18 +285,26 @@ func NewSetStatusAction(deps *Deps) view.View {
 		}
 
 		// Read current record to validate transition
-		record, err := deps.DB.Read(ctx, "disbursement", id)
+		readResp, err := deps.ReadDisbursement(ctx, &disbursementpb.ReadDisbursementRequest{
+			Data: &disbursementpb.Disbursement{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read disbursement %s: %v", id, err)
 			return centymo.HTMXError(deps.Labels.Errors.NotFound)
 		}
+		readData := readResp.GetData()
+		if len(readData) == 0 {
+			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+		}
 
-		currentStatus, _ := record["status"].(string)
+		currentStatus := readData[0].GetStatus()
 		if !isValidTransition(currentStatus, targetStatus) {
 			return centymo.HTMXError(fmt.Sprintf(deps.Labels.Errors.InvalidTransition, currentStatus, targetStatus))
 		}
 
-		if _, err := deps.DB.Update(ctx, "disbursement", id, map[string]any{"status": targetStatus}); err != nil {
+		if _, err := deps.UpdateDisbursement(ctx, &disbursementpb.UpdateDisbursementRequest{
+			Data: &disbursementpb.Disbursement{Id: id, Status: targetStatus},
+		}); err != nil {
 			log.Printf("Failed to update disbursement status %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
 		}
@@ -316,19 +335,28 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		}
 
 		for _, id := range ids {
-			record, err := deps.DB.Read(ctx, "disbursement", id)
+			readResp, err := deps.ReadDisbursement(ctx, &disbursementpb.ReadDisbursementRequest{
+				Data: &disbursementpb.Disbursement{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to read disbursement %s for bulk status: %v", id, err)
 				continue
 			}
-
-			currentStatus, _ := record["status"].(string)
-			if !isValidTransition(currentStatus, targetStatus) {
-				log.Printf("Skipping invalid transition %s→%s for disbursement %s", currentStatus, targetStatus, id)
+			readData := readResp.GetData()
+			if len(readData) == 0 {
+				log.Printf("Disbursement %s not found for bulk status", id)
 				continue
 			}
 
-			if _, err := deps.DB.Update(ctx, "disbursement", id, map[string]any{"status": targetStatus}); err != nil {
+			currentStatus := readData[0].GetStatus()
+			if !isValidTransition(currentStatus, targetStatus) {
+				log.Printf("Skipping invalid transition %s->%s for disbursement %s", currentStatus, targetStatus, id)
+				continue
+			}
+
+			if _, err := deps.UpdateDisbursement(ctx, &disbursementpb.UpdateDisbursementRequest{
+				Data: &disbursementpb.Disbursement{Id: id, Status: targetStatus},
+			}); err != nil {
 				log.Printf("Failed to update disbursement status %s: %v", id, err)
 			}
 		}

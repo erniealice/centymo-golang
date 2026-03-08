@@ -11,12 +11,14 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
 	Routes       centymo.SalesRoutes
-	DB           centymo.DataSource
+	ListRevenues func(ctx context.Context, req *revenuepb.ListRevenuesRequest) (*revenuepb.ListRevenuesResponse, error)
 	RefreshURL   string
 	Labels       centymo.SalesLabels
 	CommonLabels pyeza.CommonLabels
@@ -40,7 +42,7 @@ func NewView(deps *Deps) view.View {
 			status = "ongoing"
 		}
 
-		records, err := deps.DB.ListSimple(ctx, "revenue")
+		resp, err := deps.ListRevenues(ctx, &revenuepb.ListRevenuesRequest{})
 		if err != nil {
 			log.Printf("Failed to list sales: %v", err)
 			return view.Error(fmt.Errorf("failed to load sales: %w", err))
@@ -48,7 +50,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := salesColumns(l)
-		rows := buildTableRows(records, status, l, deps.Routes, perms)
+		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -115,22 +117,19 @@ func salesColumns(l centymo.SalesLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, l centymo.SalesLabels, routes centymo.SalesRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.SalesLabels, routes centymo.SalesRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, record := range records {
-		recordStatus, _ := record["status"].(string)
+	for _, r := range revenues {
+		recordStatus := r.GetStatus()
 		if recordStatus != status {
 			continue
 		}
 
-		id, _ := record["id"].(string)
-		refNumber, _ := record["reference_number"].(string)
-		name, _ := record["name"].(string)
-		date, _ := record["revenue_date_string"].(string)
-		amount, _ := record["total_amount"].(string)
-		currency, _ := record["currency"].(string)
-
-		amountDisplay := currency + " " + amount
+		id := r.GetId()
+		refNumber := r.GetReferenceNumber()
+		name := r.GetName()
+		date := r.GetRevenueDateString()
+		amount := formatAmount(r.GetCurrency(), r.GetTotalAmount())
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
@@ -163,20 +162,27 @@ func buildTableRows(records []map[string]any, status string, l centymo.SalesLabe
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: name},
 				{Type: "text", Value: date},
-				{Type: "text", Value: amountDisplay},
+				{Type: "text", Value: amount},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"reference": refNumber,
 				"customer":  name,
 				"date":      date,
-				"amount":    amountDisplay,
+				"amount":    amount,
 				"status":    recordStatus,
 			},
 			Actions: actions,
 		})
 	}
 	return rows
+}
+
+func formatAmount(currency string, amount float64) string {
+	if currency == "" {
+		currency = "PHP"
+	}
+	return currency + " " + fmt.Sprintf("%.2f", amount)
 }
 
 func statusPageTitle(l centymo.SalesLabels, status string) string {

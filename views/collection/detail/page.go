@@ -11,15 +11,17 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	Routes       centymo.CollectionRoutes
-	DB           centymo.DataSource
-	Labels       centymo.CollectionLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes         centymo.CollectionRoutes
+	ReadCollection func(ctx context.Context, req *collectionpb.ReadCollectionRequest) (*collectionpb.ReadCollectionResponse, error)
+	Labels         centymo.CollectionLabels
+	CommonLabels   pyeza.CommonLabels
+	TableLabels    types.TableLabels
 }
 
 // PageData holds the data for the collection detail page.
@@ -33,16 +35,44 @@ type PageData struct {
 	AuditTable      *types.TableConfig
 }
 
+// collectionToMap converts a Collection protobuf to a map[string]any for template use.
+func collectionToMap(c *collectionpb.Collection) map[string]any {
+	return map[string]any{
+		"id":                   c.GetId(),
+		"name":                 c.GetName(),
+		"reference_number":     c.GetReferenceNumber(),
+		"amount":               fmt.Sprintf("%.2f", c.GetAmount()),
+		"currency":             c.GetCurrency(),
+		"status":               c.GetStatus(),
+		"collection_method_id": c.GetCollectionMethodId(),
+		"collection_type":      c.GetCollectionType(),
+		"revenue_id":           c.GetRevenueId(),
+		"received_by":          c.GetReceivedBy(),
+		"received_role":        c.GetReceivedRole(),
+		"active":               c.GetActive(),
+		"date_created_string":  c.GetDateCreatedString(),
+		"date_modified_string": c.GetDateModifiedString(),
+	}
+}
+
 // NewView creates the collection detail view.
 func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
-		collection, err := deps.DB.Read(ctx, "collection", id)
+		resp, err := deps.ReadCollection(ctx, &collectionpb.ReadCollectionRequest{
+			Data: &collectionpb.Collection{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read collection %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load collection: %w", err))
 		}
+		data := resp.GetData()
+		if len(data) == 0 {
+			log.Printf("Collection %s not found", id)
+			return view.Error(fmt.Errorf("collection not found"))
+		}
+		collection := collectionToMap(data[0])
 
 		refNumber, _ := collection["reference_number"].(string)
 
@@ -102,11 +132,19 @@ func NewTabAction(deps *Deps) view.View {
 			tab = "info"
 		}
 
-		collection, err := deps.DB.Read(ctx, "collection", id)
+		resp, err := deps.ReadCollection(ctx, &collectionpb.ReadCollectionRequest{
+			Data: &collectionpb.Collection{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read collection %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load collection: %w", err))
 		}
+		data := resp.GetData()
+		if len(data) == 0 {
+			log.Printf("Collection %s not found", id)
+			return view.Error(fmt.Errorf("collection not found"))
+		}
+		collection := collectionToMap(data[0])
 
 		l := deps.Labels
 		pageData := &PageData{

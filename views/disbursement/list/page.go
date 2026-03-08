@@ -11,16 +11,18 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	Routes       centymo.DisbursementRoutes
-	DB           centymo.DataSource
-	RefreshURL   string
-	Labels       centymo.DisbursementLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes            centymo.DisbursementRoutes
+	ListDisbursements func(ctx context.Context, req *disbursementpb.ListDisbursementsRequest) (*disbursementpb.ListDisbursementsResponse, error)
+	RefreshURL        string
+	Labels            centymo.DisbursementLabels
+	CommonLabels      pyeza.CommonLabels
+	TableLabels       types.TableLabels
 }
 
 // PageData holds the data for the disbursement list page.
@@ -40,17 +42,17 @@ func NewView(deps *Deps) view.View {
 			status = "pending"
 		}
 
-		records, err := deps.DB.ListSimple(ctx, "disbursement")
+		resp, err := deps.ListDisbursements(ctx, &disbursementpb.ListDisbursementsRequest{})
 		if err != nil {
 			log.Printf("Failed to list disbursements: %v", err)
 			return view.Error(fmt.Errorf("failed to load disbursements: %w", err))
 		}
 
 		// Filter by status
-		var filtered []map[string]any
-		for _, r := range records {
-			if s, ok := r["status"].(string); ok && s == status {
-				filtered = append(filtered, r)
+		var filtered []*disbursementpb.Disbursement
+		for _, d := range resp.GetData() {
+			if d.GetStatus() == status {
+				filtered = append(filtered, d)
 			}
 		}
 
@@ -124,18 +126,18 @@ func disbursementColumns(l centymo.DisbursementLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, l centymo.DisbursementLabels, routes centymo.DisbursementRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(disbursements []*disbursementpb.Disbursement, l centymo.DisbursementLabels, routes centymo.DisbursementRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, record := range records {
-		id, _ := record["id"].(string)
-		refNumber, _ := record["reference_number"].(string)
-		payee, _ := record["payee"].(string)
-		date, _ := record["disbursement_date_string"].(string)
-		currency, _ := record["currency"].(string)
-		method, _ := record["disbursement_method"].(string)
-		recordStatus, _ := record["status"].(string)
+	for _, d := range disbursements {
+		id := d.GetId()
+		refNumber := d.GetReferenceNumber()
+		payee := d.GetName()
+		date := d.GetDateCreatedString()
+		currency := d.GetCurrency()
+		method := d.GetDisbursementMethodId()
+		recordStatus := d.GetStatus()
 
-		amountDisplay := currency + " " + formatAmount(record["amount"])
+		amountDisplay := currency + " " + formatAmount(d.GetAmount())
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
@@ -256,21 +258,8 @@ func statusVariant(status string) string {
 	}
 }
 
-func formatAmount(v any) string {
-	switch n := v.(type) {
-	case float64:
-		return fmt.Sprintf("%.2f", n)
-	case float32:
-		return fmt.Sprintf("%.2f", n)
-	case int64:
-		return fmt.Sprintf("%d", n)
-	case int:
-		return fmt.Sprintf("%d", n)
-	case string:
-		return n
-	default:
-		return fmt.Sprintf("%v", v)
-	}
+func formatAmount(v float64) string {
+	return fmt.Sprintf("%.2f", v)
 }
 
 func buildBulkActions(l centymo.DisbursementLabels, status string, routes centymo.DisbursementRoutes) []types.BulkAction {

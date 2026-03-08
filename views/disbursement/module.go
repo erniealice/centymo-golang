@@ -1,11 +1,15 @@
 package disbursement
 
 import (
+	"context"
+
 	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 
 	disbursementaction "github.com/erniealice/centymo-golang/views/disbursement/action"
 	disbursementdetail "github.com/erniealice/centymo-golang/views/disbursement/detail"
@@ -15,10 +19,16 @@ import (
 // ModuleDeps holds all dependencies for the disbursement module.
 type ModuleDeps struct {
 	Routes       centymo.DisbursementRoutes
-	DB           centymo.DataSource
 	Labels       centymo.DisbursementLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+
+	// Typed disbursement use case functions
+	CreateDisbursement func(ctx context.Context, req *disbursementpb.CreateDisbursementRequest) (*disbursementpb.CreateDisbursementResponse, error)
+	ReadDisbursement   func(ctx context.Context, req *disbursementpb.ReadDisbursementRequest) (*disbursementpb.ReadDisbursementResponse, error)
+	UpdateDisbursement func(ctx context.Context, req *disbursementpb.UpdateDisbursementRequest) (*disbursementpb.UpdateDisbursementResponse, error)
+	DeleteDisbursement func(ctx context.Context, req *disbursementpb.DeleteDisbursementRequest) (*disbursementpb.DeleteDisbursementResponse, error)
+	ListDisbursements  func(ctx context.Context, req *disbursementpb.ListDisbursementsRequest) (*disbursementpb.ListDisbursementsResponse, error)
 }
 
 // Module holds all constructed disbursement views.
@@ -39,26 +49,29 @@ type Module struct {
 // NewModule creates the disbursement module with all views.
 func NewModule(deps *ModuleDeps) *Module {
 	listDeps := &disbursementlist.Deps{
-		Routes:       deps.Routes,
-		DB:           deps.DB,
-		RefreshURL:   deps.Routes.ListURL,
-		Labels:       deps.Labels,
-		CommonLabels: deps.CommonLabels,
-		TableLabels:  deps.TableLabels,
+		Routes:            deps.Routes,
+		ListDisbursements: deps.ListDisbursements,
+		RefreshURL:        deps.Routes.ListURL,
+		Labels:            deps.Labels,
+		CommonLabels:      deps.CommonLabels,
+		TableLabels:       deps.TableLabels,
 	}
 
 	detailDeps := &disbursementdetail.Deps{
-		Routes:       deps.Routes,
-		DB:           deps.DB,
-		Labels:       deps.Labels,
-		CommonLabels: deps.CommonLabels,
-		TableLabels:  deps.TableLabels,
+		Routes:           deps.Routes,
+		ReadDisbursement: deps.ReadDisbursement,
+		Labels:           deps.Labels,
+		CommonLabels:     deps.CommonLabels,
+		TableLabels:      deps.TableLabels,
 	}
 
 	actionDeps := &disbursementaction.Deps{
-		Routes: deps.Routes,
-		DB:     deps.DB,
-		Labels: deps.Labels,
+		Routes:             deps.Routes,
+		Labels:             deps.Labels,
+		CreateDisbursement: deps.CreateDisbursement,
+		ReadDisbursement:   deps.ReadDisbursement,
+		UpdateDisbursement: deps.UpdateDisbursement,
+		DeleteDisbursement: deps.DeleteDisbursement,
 	}
 
 	return &Module{

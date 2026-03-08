@@ -308,6 +308,7 @@ type SalesLabels struct {
 	Confirm SalesConfirmLabels `json:"confirm"`
 	Errors  SalesErrorLabels   `json:"errors"`
 	Dashboard SalesDashboardLabels `json:"dashboard"`
+	Settings  SalesSettingsLabels `json:"settings"`
 }
 
 type SalesPageLabels struct {
@@ -357,11 +358,12 @@ type SalesFormLabels struct {
 }
 
 type SalesActionLabels struct {
-	View       string `json:"view"`
-	Edit       string `json:"edit"`
-	Delete     string `json:"delete"`
-	Complete   string `json:"complete"`
-	Reactivate string `json:"reactivate"`
+	View            string `json:"view"`
+	Edit            string `json:"edit"`
+	Delete          string `json:"delete"`
+	Complete        string `json:"complete"`
+	Reactivate      string `json:"reactivate"`
+	DownloadInvoice string `json:"downloadInvoice"`
 }
 
 type SalesBulkLabels struct {
@@ -477,6 +479,24 @@ type SalesDashboardLabels struct {
 	SaleCompleted  string `json:"saleCompleted"`
 	SaleUpdated    string `json:"saleUpdated"`
 	SaleCancelled  string `json:"saleCancelled"`
+}
+
+// SalesSettingsLabels holds translatable strings for the sales settings page
+// (invoice template management).
+type SalesSettingsLabels struct {
+	PageTitle      string `json:"pageTitle"`
+	Caption        string `json:"caption"`
+	UploadTemplate string `json:"uploadTemplate"`
+	TemplateName   string `json:"templateName"`
+	TemplateType   string `json:"templateType"`
+	Purpose        string `json:"purpose"`
+	SetDefault     string `json:"setDefault"`
+	Delete         string `json:"delete"`
+	DefaultBadge   string `json:"defaultBadge"`
+	EmptyTitle     string `json:"emptyTitle"`
+	EmptyMessage   string `json:"emptyMessage"`
+	UploadSuccess  string `json:"uploadSuccess"`
+	DeleteConfirm  string `json:"deleteConfirm"`
 }
 
 // ---------------------------------------------------------------------------

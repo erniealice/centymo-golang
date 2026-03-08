@@ -14,15 +14,24 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
+	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
 	Routes       centymo.SalesRoutes
-	DB           centymo.DataSource
+	DB           centymo.DataSource // KEEP — used for revenue_payment operations
 	Labels       centymo.SalesLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+
+	// Typed revenue operations
+	ReadRevenue func(ctx context.Context, req *revenuepb.ReadRevenueRequest) (*revenuepb.ReadRevenueResponse, error)
+
+	// Typed line item operations
+	ListRevenueLineItems func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
 }
 
 // PaymentInfo holds payment details for the payment tab.
@@ -54,7 +63,8 @@ type PageData struct {
 	TotalPaid        string
 	RemainingBalance string
 	PaymentStatus    string
-	AuditTable       *types.TableConfig
+	AuditTable         *types.TableConfig
+	InvoiceDownloadURL string
 }
 
 // NewView creates the sales detail view.
@@ -62,11 +72,19 @@ func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
-		revenue, err := deps.DB.Read(ctx, "revenue", id)
+		resp, err := deps.ReadRevenue(ctx, &revenuepb.ReadRevenueRequest{
+			Data: &revenuepb.Revenue{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read revenue %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load sale: %w", err))
 		}
+		data := resp.GetData()
+		if len(data) == 0 {
+			log.Printf("Revenue %s not found", id)
+			return view.Error(fmt.Errorf("sale not found"))
+		}
+		revenue := revenueToMap(data[0])
 
 		refNumber, _ := revenue["reference_number"].(string)
 
@@ -94,7 +112,8 @@ func NewView(deps *Deps) view.View {
 			Revenue:         revenue,
 			Labels:          l,
 			ActiveTab:       activeTab,
-			TabItems:        tabItems,
+			TabItems:           tabItems,
+			InvoiceDownloadURL: route.ResolveURL(deps.Routes.InvoiceDownloadURL, "id", id),
 		}
 
 		// Load tab-specific data
@@ -103,12 +122,7 @@ func NewView(deps *Deps) view.View {
 			// No extra data needed — revenue map has everything
 		case "items":
 			perms := view.GetUserPermissions(ctx)
-			allLineItems, err := deps.DB.ListSimple(ctx, "revenue_line_item")
-			if err != nil {
-				log.Printf("Failed to list line items for revenue %s: %v", id, err)
-				allLineItems = []map[string]any{}
-			}
-			lineItems := filterLineItems(allLineItems, id)
+			lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, id)
 			currency, _ := revenue["currency"].(string)
 			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
@@ -174,11 +188,19 @@ func NewTabAction(deps *Deps) view.View {
 			tab = "info"
 		}
 
-		revenue, err := deps.DB.Read(ctx, "revenue", id)
+		resp, err := deps.ReadRevenue(ctx, &revenuepb.ReadRevenueRequest{
+			Data: &revenuepb.Revenue{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read revenue %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load sale: %w", err))
 		}
+		data := resp.GetData()
+		if len(data) == 0 {
+			log.Printf("Revenue %s not found", id)
+			return view.Error(fmt.Errorf("sale not found"))
+		}
+		revenue := revenueToMap(data[0])
 
 		l := deps.Labels
 		pageData := &PageData{
@@ -189,7 +211,8 @@ func NewTabAction(deps *Deps) view.View {
 			Revenue:   revenue,
 			Labels:    l,
 			ActiveTab: tab,
-			TabItems:  buildTabItems(l, id, deps.Routes),
+			TabItems:           buildTabItems(l, id, deps.Routes),
+			InvoiceDownloadURL: route.ResolveURL(deps.Routes.InvoiceDownloadURL, "id", id),
 		}
 
 		switch tab {
@@ -197,12 +220,7 @@ func NewTabAction(deps *Deps) view.View {
 			// revenue map has everything
 		case "items":
 			perms := view.GetUserPermissions(ctx)
-			allLineItems, err := deps.DB.ListSimple(ctx, "revenue_line_item")
-			if err != nil {
-				log.Printf("Failed to list line items for revenue %s: %v", id, err)
-				allLineItems = []map[string]any{}
-			}
-			lineItems := filterLineItems(allLineItems, id)
+			lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, id)
 			currency, _ := revenue["currency"].(string)
 			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
@@ -425,6 +443,65 @@ func parseAmount(s string) float64 {
 func formatAmount(f float64) string {
 	f = math.Round(f*100) / 100
 	return strconv.FormatFloat(f, 'f', 2, 64)
+}
+
+// ---------------------------------------------------------------------------
+// Proto-to-map conversion helpers
+// ---------------------------------------------------------------------------
+
+// revenueToMap converts a Revenue protobuf to a map[string]any for template use.
+func revenueToMap(r *revenuepb.Revenue) map[string]any {
+	return map[string]any{
+		"id":                  r.GetId(),
+		"name":                r.GetName(),
+		"client_id":           r.GetClientId(),
+		"revenue_date_string": r.GetRevenueDateString(),
+		"total_amount":        fmt.Sprintf("%.2f", r.GetTotalAmount()),
+		"currency":            r.GetCurrency(),
+		"status":              r.GetStatus(),
+		"reference_number":    r.GetReferenceNumber(),
+		"notes":               r.GetNotes(),
+		"location_id":         r.GetLocationId(),
+		"active":              r.GetActive(),
+		"date_created_string": r.GetDateCreatedString(),
+		"date_modified_string": r.GetDateModifiedString(),
+	}
+}
+
+// lineItemToMap converts a RevenueLineItem protobuf to a map[string]any for template use.
+func lineItemToMap(item *revenuelineitempb.RevenueLineItem) map[string]any {
+	return map[string]any{
+		"id":                  item.GetId(),
+		"revenue_id":          item.GetRevenueId(),
+		"description":         item.GetDescription(),
+		"quantity":            fmt.Sprintf("%.0f", item.GetQuantity()),
+		"unit_price":          fmt.Sprintf("%.2f", item.GetUnitPrice()),
+		"cost_price":          fmt.Sprintf("%.2f", item.GetCostPrice()),
+		"discount":            "0",
+		"total":               fmt.Sprintf("%.2f", item.GetTotalPrice()),
+		"line_item_type":      item.GetLineItemType(),
+		"inventory_item_id":   item.GetInventoryItemId(),
+		"inventory_serial_id": item.GetInventorySerialId(),
+		"notes":               item.GetNotes(),
+	}
+}
+
+// listLineItemMaps lists line items for a revenue via the typed use case and returns maps.
+func listLineItemMaps(ctx context.Context, listFn func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error), revenueID string) []map[string]any {
+	resp, err := listFn(ctx, &revenuelineitempb.ListRevenueLineItemsRequest{
+		RevenueId: &revenueID,
+	})
+	if err != nil {
+		log.Printf("Failed to list line items for revenue %s: %v", revenueID, err)
+		return []map[string]any{}
+	}
+	items := []map[string]any{}
+	for _, item := range resp.GetData() {
+		if item.GetRevenueId() == revenueID {
+			items = append(items, lineItemToMap(item))
+		}
+	}
+	return items
 }
 
 // findPayment finds the payment record for a given revenue ID.

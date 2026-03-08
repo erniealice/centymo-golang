@@ -1,11 +1,15 @@
 package collection
 
 import (
+	"context"
+
 	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 
 	collectionaction "github.com/erniealice/centymo-golang/views/collection/action"
 	collectiondetail "github.com/erniealice/centymo-golang/views/collection/detail"
@@ -15,10 +19,16 @@ import (
 // ModuleDeps holds all dependencies for the collection module.
 type ModuleDeps struct {
 	Routes       centymo.CollectionRoutes
-	DB           centymo.DataSource
 	Labels       centymo.CollectionLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+
+	// Typed collection use case functions
+	CreateCollection func(ctx context.Context, req *collectionpb.CreateCollectionRequest) (*collectionpb.CreateCollectionResponse, error)
+	ReadCollection   func(ctx context.Context, req *collectionpb.ReadCollectionRequest) (*collectionpb.ReadCollectionResponse, error)
+	UpdateCollection func(ctx context.Context, req *collectionpb.UpdateCollectionRequest) (*collectionpb.UpdateCollectionResponse, error)
+	DeleteCollection func(ctx context.Context, req *collectionpb.DeleteCollectionRequest) (*collectionpb.DeleteCollectionResponse, error)
+	ListCollections  func(ctx context.Context, req *collectionpb.ListCollectionsRequest) (*collectionpb.ListCollectionsResponse, error)
 }
 
 // Module holds all constructed collection views.
@@ -39,25 +49,29 @@ type Module struct {
 // NewModule creates the collection module with all views wired.
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &collectionaction.Deps{
-		Routes: deps.Routes,
-		DB:     deps.DB,
+		Routes:           deps.Routes,
+		Labels:           deps.Labels,
+		CreateCollection: deps.CreateCollection,
+		ReadCollection:   deps.ReadCollection,
+		UpdateCollection: deps.UpdateCollection,
+		DeleteCollection: deps.DeleteCollection,
 	}
 
 	detailDeps := &collectiondetail.Deps{
-		Routes:       deps.Routes,
-		DB:           deps.DB,
-		Labels:       deps.Labels,
-		CommonLabels: deps.CommonLabels,
-		TableLabels:  deps.TableLabels,
+		Routes:         deps.Routes,
+		ReadCollection: deps.ReadCollection,
+		Labels:         deps.Labels,
+		CommonLabels:   deps.CommonLabels,
+		TableLabels:    deps.TableLabels,
 	}
 
 	listView := collectionlist.NewView(&collectionlist.Deps{
-		Routes:       deps.Routes,
-		DB:           deps.DB,
-		RefreshURL:   deps.Routes.ListURL,
-		Labels:       deps.Labels,
-		CommonLabels: deps.CommonLabels,
-		TableLabels:  deps.TableLabels,
+		Routes:          deps.Routes,
+		ListCollections: deps.ListCollections,
+		RefreshURL:      deps.Routes.ListURL,
+		Labels:          deps.Labels,
+		CommonLabels:    deps.CommonLabels,
+		TableLabels:     deps.TableLabels,
 	})
 
 	return &Module{

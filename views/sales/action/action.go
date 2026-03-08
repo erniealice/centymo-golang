@@ -15,6 +15,8 @@ import (
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
+	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 )
 
 // FormLabels holds i18n labels for the drawer form template.
@@ -51,7 +53,16 @@ type FormData struct {
 type Deps struct {
 	Routes centymo.SalesRoutes
 	Labels centymo.SalesLabels
-	DB     centymo.DataSource // KEEP — used for revenue/location operations
+	DB     centymo.DataSource // KEEP — used for location, revenue_payment, and collection_method operations
+
+	// Typed revenue operations
+	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
+	ReadRevenue   func(ctx context.Context, req *revenuepb.ReadRevenueRequest) (*revenuepb.ReadRevenueResponse, error)
+	UpdateRevenue func(ctx context.Context, req *revenuepb.UpdateRevenueRequest) (*revenuepb.UpdateRevenueResponse, error)
+	DeleteRevenue func(ctx context.Context, req *revenuepb.DeleteRevenueRequest) (*revenuepb.DeleteRevenueResponse, error)
+
+	// Typed line item operations
+	ListRevenueLineItems func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
 
 	// Typed inventory operations
 	ReadInventoryItem            func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
@@ -128,24 +139,27 @@ func NewAddAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		data := map[string]any{
-			"name":                r.FormValue("name"),
-			"reference_number":    r.FormValue("reference_number"),
-			"revenue_date_string": r.FormValue("revenue_date_string"),
-			"currency":            r.FormValue("currency"),
-			"status":              r.FormValue("status"),
-			"notes":               r.FormValue("notes"),
-			"location_id":         r.FormValue("location_id"),
-		}
-
-		created, err := deps.DB.Create(ctx, "revenue", data)
+		resp, err := deps.CreateRevenue(ctx, &revenuepb.CreateRevenueRequest{
+			Data: &revenuepb.Revenue{
+				Name:              r.FormValue("name"),
+				ReferenceNumber:   strPtr(r.FormValue("reference_number")),
+				RevenueDateString: strPtr(r.FormValue("revenue_date_string")),
+				Currency:          r.FormValue("currency"),
+				Status:            r.FormValue("status"),
+				Notes:             strPtr(r.FormValue("notes")),
+				LocationId:        r.FormValue("location_id"),
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to create sale: %v", err)
 			return centymo.HTMXError(err.Error())
 		}
 
 		// Redirect to new sale detail with Items tab
-		newID, _ := created["id"].(string)
+		newID := ""
+		if respData := resp.GetData(); len(respData) > 0 {
+			newID = respData[0].GetId()
+		}
 		if newID != "" {
 			return view.ViewResult{
 				StatusCode: http.StatusOK,
@@ -171,31 +185,30 @@ func NewEditAction(deps *Deps) view.View {
 		id := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			record, err := deps.DB.Read(ctx, "revenue", id)
+			readResp, err := deps.ReadRevenue(ctx, &revenuepb.ReadRevenueRequest{
+				Data: &revenuepb.Revenue{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to read sale %s: %v", id, err)
 				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
-
-			name, _ := record["name"].(string)
-			refNumber, _ := record["reference_number"].(string)
-			date, _ := record["revenue_date_string"].(string)
-			currency, _ := record["currency"].(string)
-			status, _ := record["status"].(string)
-			notes, _ := record["notes"].(string)
-			locationID, _ := record["location_id"].(string)
+			readData := readResp.GetData()
+			if len(readData) == 0 {
+				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			}
+			record := readData[0]
 
 			return view.OK("sales-drawer-form", &FormData{
 				FormAction:      route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:          true,
 				ID:              id,
-				Name:            name,
-				ReferenceNumber: refNumber,
-				Date:            date,
-				Currency:        currency,
-				Status:          status,
-				Notes:           notes,
-				LocationID:      locationID,
+				Name:            record.GetName(),
+				ReferenceNumber: record.GetReferenceNumber(),
+				Date:            record.GetRevenueDateString(),
+				Currency:        record.GetCurrency(),
+				Status:          record.GetStatus(),
+				Notes:           record.GetNotes(),
+				LocationID:      record.GetLocationId(),
 				Locations:       loadLocationOptions(ctx, deps.DB),
 				Labels:          formLabels(viewCtx.T),
 				CommonLabels:    nil, // injected by ViewAdapter
@@ -209,17 +222,18 @@ func NewEditAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		data := map[string]any{
-			"name":                r.FormValue("name"),
-			"reference_number":    r.FormValue("reference_number"),
-			"revenue_date_string": r.FormValue("revenue_date_string"),
-			"currency":            r.FormValue("currency"),
-			"status":              r.FormValue("status"),
-			"notes":               r.FormValue("notes"),
-			"location_id":         r.FormValue("location_id"),
-		}
-
-		_, err := deps.DB.Update(ctx, "revenue", id, data)
+		_, err := deps.UpdateRevenue(ctx, &revenuepb.UpdateRevenueRequest{
+			Data: &revenuepb.Revenue{
+				Id:                id,
+				Name:              r.FormValue("name"),
+				ReferenceNumber:   strPtr(r.FormValue("reference_number")),
+				RevenueDateString: strPtr(r.FormValue("revenue_date_string")),
+				Currency:          r.FormValue("currency"),
+				Status:            r.FormValue("status"),
+				Notes:             strPtr(r.FormValue("notes")),
+				LocationId:        r.FormValue("location_id"),
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to update sale %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
@@ -254,7 +268,9 @@ func NewDeleteAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
-		err := deps.DB.Delete(ctx, "revenue", id)
+		_, err := deps.DeleteRevenue(ctx, &revenuepb.DeleteRevenueRequest{
+			Data: &revenuepb.Revenue{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to delete sale %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
@@ -281,7 +297,9 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 		}
 
 		for _, id := range ids {
-			err := deps.DB.Delete(ctx, "revenue", id)
+			_, err := deps.DeleteRevenue(ctx, &revenuepb.DeleteRevenueRequest{
+				Data: &revenuepb.Revenue{Id: id},
+			})
 			if err != nil {
 				log.Printf("Failed to delete sale %s: %v", id, err)
 			}
@@ -323,7 +341,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 
 		// D20: Block completion with zero items
 		if targetStatus == "complete" {
-			lineItems, err := getLineItemsForRevenue(ctx, deps.DB, id)
+			lineItems, err := getLineItemsForRevenueTyped(ctx, deps.ListRevenueLineItems, id)
 			if err != nil {
 				log.Printf("Failed to list line items for sale %s: %v", id, err)
 				return centymo.HTMXError(err.Error())
@@ -333,7 +351,9 @@ func NewSetStatusAction(deps *Deps) view.View {
 			}
 
 			// Update status
-			if _, err := deps.DB.Update(ctx, "revenue", id, map[string]any{"status": targetStatus}); err != nil {
+			if _, err := deps.UpdateRevenue(ctx, &revenuepb.UpdateRevenueRequest{
+				Data: &revenuepb.Revenue{Id: id, Status: targetStatus},
+			}); err != nil {
 				log.Printf("Failed to update sale status %s: %v", id, err)
 				return centymo.HTMXError(err.Error())
 			}
@@ -356,13 +376,15 @@ func NewSetStatusAction(deps *Deps) view.View {
 			}
 
 			// Update status
-			if _, err := deps.DB.Update(ctx, "revenue", id, map[string]any{"status": targetStatus}); err != nil {
+			if _, err := deps.UpdateRevenue(ctx, &revenuepb.UpdateRevenueRequest{
+				Data: &revenuepb.Revenue{Id: id, Status: targetStatus},
+			}); err != nil {
 				log.Printf("Failed to update sale status %s: %v", id, err)
 				return centymo.HTMXError(err.Error())
 			}
 
 			// D6: Release serials on cancellation
-			lineItems, err := getLineItemsForRevenue(ctx, deps.DB, id)
+			lineItems, err := getLineItemsForRevenueTyped(ctx, deps.ListRevenueLineItems, id)
 			if err != nil {
 				log.Printf("Failed to list line items for serial release on sale %s: %v", id, err)
 			} else {
@@ -373,7 +395,9 @@ func NewSetStatusAction(deps *Deps) view.View {
 		}
 
 		// Default: ongoing — just update status
-		if _, err := deps.DB.Update(ctx, "revenue", id, map[string]any{"status": targetStatus}); err != nil {
+		if _, err := deps.UpdateRevenue(ctx, &revenuepb.UpdateRevenueRequest{
+			Data: &revenuepb.Revenue{Id: id, Status: targetStatus},
+		}); err != nil {
 			log.Printf("Failed to update sale status %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
 		}
@@ -434,7 +458,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		if targetStatus == "complete" {
 			emptyCount := 0
 			for _, id := range ids {
-				lineItems, err := getLineItemsForRevenue(ctx, deps.DB, id)
+				lineItems, err := getLineItemsForRevenueTyped(ctx, deps.ListRevenueLineItems, id)
 				if err != nil {
 					log.Printf("Failed to check line items for sale %s: %v", id, err)
 					continue
@@ -453,14 +477,16 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 
 		// Update all statuses and apply side-effects
 		for _, id := range ids {
-			if _, err := deps.DB.Update(ctx, "revenue", id, map[string]any{"status": targetStatus}); err != nil {
+			if _, err := deps.UpdateRevenue(ctx, &revenuepb.UpdateRevenueRequest{
+				Data: &revenuepb.Revenue{Id: id, Status: targetStatus},
+			}); err != nil {
 				log.Printf("Failed to update sale status %s: %v", id, err)
 				continue
 			}
 
 			// D5: Deduct stock on completion
 			if targetStatus == "complete" {
-				lineItems, err := getLineItemsForRevenue(ctx, deps.DB, id)
+				lineItems, err := getLineItemsForRevenueTyped(ctx, deps.ListRevenueLineItems, id)
 				if err != nil {
 					log.Printf("Failed to list line items for stock deduction on sale %s: %v", id, err)
 					continue
@@ -470,7 +496,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 
 			// D6: Release serials on cancellation
 			if targetStatus == "cancelled" {
-				lineItems, err := getLineItemsForRevenue(ctx, deps.DB, id)
+				lineItems, err := getLineItemsForRevenueTyped(ctx, deps.ListRevenueLineItems, id)
 				if err != nil {
 					log.Printf("Failed to list line items for serial release on sale %s: %v", id, err)
 					continue
@@ -487,20 +513,42 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 // Helpers for status change business rules
 // ---------------------------------------------------------------------------
 
-// getLineItemsForRevenue returns all revenue_line_item records for a given revenue ID.
-func getLineItemsForRevenue(ctx context.Context, db centymo.DataSource, revenueID string) ([]map[string]any, error) {
-	all, err := db.ListSimple(ctx, "revenue_line_item")
+// getLineItemsForRevenueTyped returns all revenue_line_item records for a given revenue ID using typed use case.
+func getLineItemsForRevenueTyped(
+	ctx context.Context,
+	listFn func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error),
+	revenueID string,
+) ([]map[string]any, error) {
+	resp, err := listFn(ctx, &revenuelineitempb.ListRevenueLineItemsRequest{
+		RevenueId: &revenueID,
+	})
 	if err != nil {
 		return nil, err
 	}
 	var items []map[string]any
-	for _, r := range all {
-		rid, _ := r["revenue_id"].(string)
-		if rid == revenueID {
-			items = append(items, r)
+	for _, item := range resp.GetData() {
+		if item.GetRevenueId() == revenueID {
+			items = append(items, map[string]any{
+				"id":                  item.GetId(),
+				"revenue_id":          item.GetRevenueId(),
+				"description":         item.GetDescription(),
+				"quantity":            fmt.Sprintf("%.0f", item.GetQuantity()),
+				"unit_price":          fmt.Sprintf("%.2f", item.GetUnitPrice()),
+				"cost_price":          fmt.Sprintf("%.2f", item.GetCostPrice()),
+				"total":               fmt.Sprintf("%.2f", item.GetTotalPrice()),
+				"line_item_type":      item.GetLineItemType(),
+				"inventory_item_id":   item.GetInventoryItemId(),
+				"inventory_serial_id": item.GetInventorySerialId(),
+				"notes":               item.GetNotes(),
+			})
 		}
 	}
 	return items, nil
+}
+
+// strPtr returns a pointer to a string.
+func strPtr(s string) *string {
+	return &s
 }
 
 // getPaymentsForRevenue returns all revenue_payment records for a given revenue ID.

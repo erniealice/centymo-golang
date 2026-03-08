@@ -15,6 +15,8 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
+	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 )
 
 // LineItemFormData is the template data for the line item drawer form.
@@ -55,13 +57,23 @@ type SelectOption struct {
 // LineItemDeps holds dependencies for line item action handlers.
 type LineItemDeps struct {
 	Routes       centymo.SalesRoutes
-	DB           centymo.DataSource // KEEP — used for revenue_line_item operations
 	Labels       centymo.SalesLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
 	// Typed inventory operations
 	ListInventoryItems func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
+
+	// Typed revenue operations
+	ReadRevenue  func(ctx context.Context, req *revenuepb.ReadRevenueRequest) (*revenuepb.ReadRevenueResponse, error)
+	UpdateRevenue func(ctx context.Context, req *revenuepb.UpdateRevenueRequest) (*revenuepb.UpdateRevenueResponse, error)
+
+	// Typed line item operations
+	CreateRevenueLineItem  func(ctx context.Context, req *revenuelineitempb.CreateRevenueLineItemRequest) (*revenuelineitempb.CreateRevenueLineItemResponse, error)
+	ReadRevenueLineItem    func(ctx context.Context, req *revenuelineitempb.ReadRevenueLineItemRequest) (*revenuelineitempb.ReadRevenueLineItemResponse, error)
+	UpdateRevenueLineItem  func(ctx context.Context, req *revenuelineitempb.UpdateRevenueLineItemRequest) (*revenuelineitempb.UpdateRevenueLineItemResponse, error)
+	DeleteRevenueLineItem  func(ctx context.Context, req *revenuelineitempb.DeleteRevenueLineItemRequest) (*revenuelineitempb.DeleteRevenueLineItemResponse, error)
+	ListRevenueLineItems   func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
 }
 
 // NewLineItemTableView returns a view that renders only the line items table (for HTMX refresh).
@@ -69,19 +81,20 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		revenueID := viewCtx.Request.PathValue("id")
 
-		revenue, err := deps.DB.Read(ctx, "revenue", revenueID)
+		resp, err := deps.ReadRevenue(ctx, &revenuepb.ReadRevenueRequest{
+			Data: &revenuepb.Revenue{Id: revenueID},
+		})
 		if err != nil {
 			log.Printf("Failed to read revenue %s: %v", revenueID, err)
 			return lineItemHTMXError(err.Error())
 		}
-
-		allLineItems, err := deps.DB.ListSimple(ctx, "revenue_line_item")
-		if err != nil {
-			log.Printf("Failed to list line items: %v", err)
-			allLineItems = []map[string]any{}
+		rData := resp.GetData()
+		if len(rData) == 0 {
+			return lineItemHTMXError("sale not found")
 		}
-		lineItems := filterLineItems(allLineItems, revenueID)
-		currency, _ := revenue["currency"].(string)
+		currency := rData[0].GetCurrency()
+
+		lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, revenueID)
 		perms := view.GetUserPermissions(ctx)
 		table := buildLineItemTableWithActions(lineItems, deps.Labels, deps.TableLabels, currency, revenueID, deps.Routes, perms)
 		return view.OK("table-card", table)
@@ -124,30 +137,43 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 
 		total := calculateLineItemTotal(quantity, unitPrice, discount)
 
-		data := map[string]any{
-			"revenue_id":        revenueID,
-			"description":       r.FormValue("description"),
-			"quantity":          quantity,
-			"unit_price":        unitPrice,
-			"cost_price":        costPrice,
-			"discount":          discount,
-			"total":             fmt.Sprintf("%.2f", total),
-			"line_item_type":    "item",
-			"inventory_item_id": r.FormValue("inventory_item_id"),
-			"notes":             r.FormValue("notes"),
-		}
+		quantityF, _ := strconv.ParseFloat(quantity, 64)
+		unitPriceF, _ := strconv.ParseFloat(unitPrice, 64)
+		costPriceF, _ := strconv.ParseFloat(costPrice, 64)
 
-		_, err := deps.DB.Create(ctx, "revenue_line_item", data)
+		_, err := deps.CreateRevenueLineItem(ctx, &revenuelineitempb.CreateRevenueLineItemRequest{
+			Data: &revenuelineitempb.RevenueLineItem{
+				RevenueId:       revenueID,
+				Description:     r.FormValue("description"),
+				Quantity:        quantityF,
+				UnitPrice:       unitPriceF,
+				CostPrice:       &costPriceF,
+				TotalPrice:      total,
+				LineItemType:    "item",
+				InventoryItemId: r.FormValue("inventory_item_id"),
+				Notes:           strPtr(r.FormValue("notes")),
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to create line item: %v", err)
 			return lineItemHTMXError(err.Error())
 		}
 
 		// Recalculate sale total
-		recalculateSaleTotal(ctx, deps.DB, revenueID)
+		recalculateSaleTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
 
 		return lineItemHTMXSuccess("line-items-table")
 	})
+}
+
+// strPtr returns a pointer to a string.
+func strPtr(s string) *string {
+	return &s
+}
+
+// floatPtr returns a pointer to a float64.
+func floatPtr(f float64) *float64 {
+	return &f
 }
 
 // NewLineItemEditView creates the line item edit action (GET = form, POST = update).
@@ -162,19 +188,18 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 		itemID := viewCtx.Request.PathValue("itemId")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			record, err := deps.DB.Read(ctx, "revenue_line_item", itemID)
+			readResp, err := deps.ReadRevenueLineItem(ctx, &revenuelineitempb.ReadRevenueLineItemRequest{
+				Data: &revenuelineitempb.RevenueLineItem{Id: itemID},
+			})
 			if err != nil {
 				log.Printf("Failed to read line item %s: %v", itemID, err)
 				return lineItemHTMXError(deps.Labels.Errors.NotFound)
 			}
-
-			description, _ := record["description"].(string)
-			quantity, _ := record["quantity"].(string)
-			unitPrice, _ := record["unit_price"].(string)
-			costPrice, _ := record["cost_price"].(string)
-			discount, _ := record["discount"].(string)
-			notes, _ := record["notes"].(string)
-			inventoryItemID, _ := record["inventory_item_id"].(string)
+			readData := readResp.GetData()
+			if len(readData) == 0 {
+				return lineItemHTMXError(deps.Labels.Errors.NotFound)
+			}
+			record := readData[0]
 
 			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
 
@@ -183,14 +208,14 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 				IsEdit:          true,
 				ID:              itemID,
 				RevenueID:       revenueID,
-				Description:     description,
-				Quantity:        quantity,
-				UnitPrice:       unitPrice,
-				CostPrice:       costPrice,
-				Discount:        discount,
-				Notes:           notes,
+				Description:     record.GetDescription(),
+				Quantity:        fmt.Sprintf("%.0f", record.GetQuantity()),
+				UnitPrice:       fmt.Sprintf("%.2f", record.GetUnitPrice()),
+				CostPrice:       fmt.Sprintf("%.2f", record.GetCostPrice()),
+				Discount:        "0",
+				Notes:           record.GetNotes(),
 				LineItemType:    "item",
-				InventoryItemID: inventoryItemID,
+				InventoryItemID: record.GetInventoryItemId(),
 				InventoryItems:  inventoryItems,
 				Labels:          deps.Labels.Detail,
 				CommonLabels:    nil,
@@ -209,24 +234,28 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 
 		total := calculateLineItemTotal(quantity, unitPrice, discount)
 
-		data := map[string]any{
-			"description":       r.FormValue("description"),
-			"quantity":          quantity,
-			"unit_price":        unitPrice,
-			"cost_price":        r.FormValue("cost_price"),
-			"discount":          discount,
-			"total":             fmt.Sprintf("%.2f", total),
-			"inventory_item_id": r.FormValue("inventory_item_id"),
-			"notes":             r.FormValue("notes"),
-		}
+		quantityF, _ := strconv.ParseFloat(quantity, 64)
+		unitPriceF, _ := strconv.ParseFloat(unitPrice, 64)
+		costPriceF, _ := strconv.ParseFloat(r.FormValue("cost_price"), 64)
 
-		_, err := deps.DB.Update(ctx, "revenue_line_item", itemID, data)
+		_, err := deps.UpdateRevenueLineItem(ctx, &revenuelineitempb.UpdateRevenueLineItemRequest{
+			Data: &revenuelineitempb.RevenueLineItem{
+				Id:              itemID,
+				Description:     r.FormValue("description"),
+				Quantity:        quantityF,
+				UnitPrice:       unitPriceF,
+				CostPrice:       &costPriceF,
+				TotalPrice:      total,
+				InventoryItemId: r.FormValue("inventory_item_id"),
+				Notes:           strPtr(r.FormValue("notes")),
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to update line item %s: %v", itemID, err)
 			return lineItemHTMXError(err.Error())
 		}
 
-		recalculateSaleTotal(ctx, deps.DB, revenueID)
+		recalculateSaleTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
 
 		return lineItemHTMXSuccess("line-items-table")
 	})
@@ -251,13 +280,15 @@ func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 			return lineItemHTMXError(deps.Labels.Errors.IDRequired)
 		}
 
-		err := deps.DB.Delete(ctx, "revenue_line_item", itemID)
+		_, err := deps.DeleteRevenueLineItem(ctx, &revenuelineitempb.DeleteRevenueLineItemRequest{
+			Data: &revenuelineitempb.RevenueLineItem{Id: itemID},
+		})
 		if err != nil {
 			log.Printf("Failed to delete line item %s: %v", itemID, err)
 			return lineItemHTMXError(err.Error())
 		}
 
-		recalculateSaleTotal(ctx, deps.DB, revenueID)
+		recalculateSaleTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
 
 		return lineItemHTMXSuccess("line-items-table")
 	})
@@ -296,24 +327,22 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 			return lineItemHTMXError(deps.Labels.Errors.InvalidDiscount)
 		}
 
-		data := map[string]any{
-			"revenue_id":     revenueID,
-			"description":    r.FormValue("description"),
-			"quantity":       "1",
-			"unit_price":     "0",
-			"cost_price":     "0",
-			"discount":       "0",
-			"total":          fmt.Sprintf("-%.2f", amountF),
-			"line_item_type": "discount",
-		}
-
-		_, err = deps.DB.Create(ctx, "revenue_line_item", data)
+		_, err = deps.CreateRevenueLineItem(ctx, &revenuelineitempb.CreateRevenueLineItemRequest{
+			Data: &revenuelineitempb.RevenueLineItem{
+				RevenueId:    revenueID,
+				Description:  r.FormValue("description"),
+				Quantity:     1,
+				UnitPrice:    0,
+				TotalPrice:   -amountF,
+				LineItemType: "discount",
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to create discount line item: %v", err)
 			return lineItemHTMXError(err.Error())
 		}
 
-		recalculateSaleTotal(ctx, deps.DB, revenueID)
+		recalculateSaleTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
 
 		return lineItemHTMXSuccess("line-items-table")
 	})
@@ -447,27 +476,33 @@ func calculateLineItemTotal(quantityStr, unitPriceStr, discountStr string) float
 	return total
 }
 
-// recalculateSaleTotal recalculates the sale's total_amount from its line items.
-func recalculateSaleTotal(ctx context.Context, db centymo.DataSource, revenueID string) {
-	allLineItems, err := db.ListSimple(ctx, "revenue_line_item")
+// recalculateSaleTotalTyped recalculates the sale's total_amount from its line items using typed use cases.
+func recalculateSaleTotalTyped(
+	ctx context.Context,
+	listFn func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error),
+	updateFn func(ctx context.Context, req *revenuepb.UpdateRevenueRequest) (*revenuepb.UpdateRevenueResponse, error),
+	revenueID string,
+) {
+	resp, err := listFn(ctx, &revenuelineitempb.ListRevenueLineItemsRequest{
+		RevenueId: &revenueID,
+	})
 	if err != nil {
 		log.Printf("Failed to list line items for total recalculation: %v", err)
 		return
 	}
 
 	var totalAmount float64
-	for _, item := range allLineItems {
-		rid, _ := item["revenue_id"].(string)
-		if rid != revenueID {
-			continue
+	for _, item := range resp.GetData() {
+		if item.GetRevenueId() == revenueID {
+			totalAmount += item.GetTotalPrice()
 		}
-		totalStr, _ := item["total"].(string)
-		totalF, _ := strconv.ParseFloat(totalStr, 64)
-		totalAmount += totalF
 	}
 
-	_, err = db.Update(ctx, "revenue", revenueID, map[string]any{
-		"total_amount": fmt.Sprintf("%.2f", totalAmount),
+	_, err = updateFn(ctx, &revenuepb.UpdateRevenueRequest{
+		Data: &revenuepb.Revenue{
+			Id:          revenueID,
+			TotalAmount: totalAmount,
+		},
 	})
 	if err != nil {
 		log.Printf("Failed to update revenue total: %v", err)

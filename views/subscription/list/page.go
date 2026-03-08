@@ -5,18 +5,23 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB     centymo.DataSource
-	Routes centymo.SubscriptionRoutes
-	Labels centymo.SubscriptionLabels
+	Routes            centymo.SubscriptionRoutes
+	ListSubscriptions func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
+	Labels            centymo.SubscriptionLabels
+	CommonLabels      pyeza.CommonLabels
+	TableLabels       types.TableLabels
 }
 
 // PageData holds the data for the subscription list page.
@@ -36,7 +41,7 @@ func NewView(deps *Deps) view.View {
 			status = "active"
 		}
 
-		records, err := deps.DB.ListSimple(ctx, "subscription")
+		resp, err := deps.ListSubscriptions(ctx, &subscriptionpb.ListSubscriptionsRequest{})
 		if err != nil {
 			log.Printf("Failed to list subscriptions: %v", err)
 			return view.Error(fmt.Errorf("failed to load subscriptions: %w", err))
@@ -44,8 +49,35 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := subscriptionColumns(l)
-		rows := buildTableRows(records, status, l, deps.Routes, perms)
+		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
+
+		tableConfig := &types.TableConfig{
+			ID:                   "subscriptions-table",
+			Columns:              columns,
+			Rows:                 rows,
+			ShowSearch:           true,
+			ShowActions:          true,
+			ShowSort:             true,
+			ShowColumns:          true,
+			ShowDensity:          true,
+			ShowEntries:          true,
+			DefaultSortColumn:    "customer",
+			DefaultSortDirection: "asc",
+			Labels:               deps.TableLabels,
+			EmptyState: types.TableEmptyState{
+				Title:   l.Empty.Title,
+				Message: l.Empty.Message,
+			},
+			PrimaryAction: &types.PrimaryAction{
+				Label:           l.Buttons.AddSubscription,
+				ActionURL:       deps.Routes.AddURL,
+				Icon:            "icon-plus",
+				Disabled:        !perms.Can("subscription", "create"),
+				DisabledTooltip: l.Errors.NoPermission,
+			},
+		}
+		types.ApplyTableSettings(tableConfig)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -57,26 +89,10 @@ func NewView(deps *Deps) view.View {
 				HeaderTitle:    statusTitle(l, status),
 				HeaderSubtitle: statusSubtitle(l, status),
 				HeaderIcon:     "icon-refresh-cw",
+				CommonLabels:   deps.CommonLabels,
 			},
 			ContentTemplate: "subscription-list-content",
-			Table: &types.TableConfig{
-				ID:          "subscriptions-table",
-				Columns:     columns,
-				Rows:        rows,
-				ShowSearch:  true,
-				ShowActions: true,
-				EmptyState: types.TableEmptyState{
-					Title:   l.Empty.Title,
-					Message: l.Empty.Message,
-				},
-				PrimaryAction: &types.PrimaryAction{
-					Label:           l.Buttons.AddSubscription,
-					ActionURL:       deps.Routes.AddURL,
-					Icon:            "icon-plus",
-					Disabled:        !perms.Can("subscription", "create"),
-					DisabledTooltip: l.Errors.NoPermission,
-				},
-			},
+			Table:           tableConfig,
 		}
 
 		return view.OK("subscription-list", pageData)
@@ -92,33 +108,51 @@ func subscriptionColumns(l centymo.SubscriptionLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, l centymo.SubscriptionLabels, routes centymo.SubscriptionRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string, l centymo.SubscriptionLabels, routes centymo.SubscriptionRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, record := range records {
-		recordStatus, _ := record["status"].(string)
-		if recordStatus != "" && recordStatus != status {
+	for _, s := range subscriptions {
+		active := s.GetActive()
+		recordStatus := "active"
+		if !active {
+			recordStatus = "inactive"
+		}
+		if recordStatus != status {
 			continue
 		}
 
-		id, _ := record["id"].(string)
-		customer, _ := record["customer"].(string)
-		plan, _ := record["plan"].(string)
-		startDate, _ := record["start_date"].(string)
-		if recordStatus == "" {
-			recordStatus = status
+		id := s.GetId()
+
+		// Build customer display name from nested client → user
+		customer := s.GetName()
+		if c := s.GetClient(); c != nil {
+			if u := c.GetUser(); u != nil {
+				firstName := u.GetFirstName()
+				lastName := u.GetLastName()
+				if firstName != "" || lastName != "" {
+					customer = firstName + " " + lastName
+				}
+			}
 		}
+
+		// Get plan name from nested price plan
+		planName := ""
+		if pp := s.GetPricePlan(); pp != nil {
+			planName = pp.GetName()
+		}
+
+		startDate := s.GetDateStartString()
 
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: customer},
-				{Type: "text", Value: plan},
+				{Type: "text", Value: planName},
 				{Type: "text", Value: startDate},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"customer":   customer,
-				"plan":       plan,
+				"plan":       planName,
 				"start_date": startDate,
 				"status":     recordStatus,
 			},

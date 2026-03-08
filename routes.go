@@ -177,6 +177,15 @@ const (
 	// Sales report routes
 	SalesSummaryURL = "/app/sales/reports/sales-summary"
 
+	// Sales invoice document routes
+	SalesInvoiceDownloadURL = "/action/sales/detail/{id}/invoice/download"
+
+	// Sales settings routes (template management)
+	SalesSettingsTemplatesURL       = "/app/sales/settings/templates"
+	SalesSettingsTemplateUploadURL  = "/action/sales/settings/templates/upload"
+	SalesSettingsTemplateDeleteURL  = "/action/sales/settings/templates/delete"
+	SalesSettingsTemplateDefaultURL = "/action/sales/settings/templates/set-default/{id}"
+
 	// Expenditure (purchase + expense) routes
 	ExpenditurePurchaseListURL      = "/app/purchases/list/{status}"
 	ExpenditurePurchaseDashboardURL = "/app/purchases/dashboard"

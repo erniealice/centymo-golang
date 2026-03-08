@@ -5,18 +5,23 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB     centymo.DataSource
-	Routes centymo.PlanRoutes
-	Labels centymo.PlanLabels
+	Routes       centymo.PlanRoutes
+	ListPlans    func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	Labels       centymo.PlanLabels
+	CommonLabels pyeza.CommonLabels
+	TableLabels  types.TableLabels
 }
 
 // PageData holds the data for the plan list page.
@@ -36,7 +41,7 @@ func NewView(deps *Deps) view.View {
 			status = "active"
 		}
 
-		records, err := deps.DB.ListSimple(ctx, "plan")
+		resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
 		if err != nil {
 			log.Printf("Failed to list plans: %v", err)
 			return view.Error(fmt.Errorf("failed to load plans: %w", err))
@@ -44,8 +49,35 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := planColumns(l)
-		rows := buildTableRows(records, status, l, deps.Routes, perms)
+		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
+
+		tableConfig := &types.TableConfig{
+			ID:                   "plans-table",
+			Columns:              columns,
+			Rows:                 rows,
+			ShowSearch:           true,
+			ShowActions:          true,
+			ShowSort:             true,
+			ShowColumns:          true,
+			ShowDensity:          true,
+			ShowEntries:          true,
+			DefaultSortColumn:    "name",
+			DefaultSortDirection: "asc",
+			Labels:               deps.TableLabels,
+			EmptyState: types.TableEmptyState{
+				Title:   l.Empty.Title,
+				Message: l.Empty.Message,
+			},
+			PrimaryAction: &types.PrimaryAction{
+				Label:           l.Buttons.AddPlan,
+				ActionURL:       deps.Routes.AddURL,
+				Icon:            "icon-plus",
+				Disabled:        !perms.Can("plan", "create"),
+				DisabledTooltip: l.Errors.NoPermission,
+			},
+		}
+		types.ApplyTableSettings(tableConfig)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -57,26 +89,10 @@ func NewView(deps *Deps) view.View {
 				HeaderTitle:    statusTitle(l, status),
 				HeaderSubtitle: statusSubtitle(l, status),
 				HeaderIcon:     "icon-file-text",
+				CommonLabels:   deps.CommonLabels,
 			},
 			ContentTemplate: "plan-list-content",
-			Table: &types.TableConfig{
-				ID:          "plans-table",
-				Columns:     columns,
-				Rows:        rows,
-				ShowSearch:  true,
-				ShowActions: true,
-				EmptyState: types.TableEmptyState{
-					Title:   l.Empty.Title,
-					Message: l.Empty.Message,
-				},
-				PrimaryAction: &types.PrimaryAction{
-					Label:           l.Buttons.AddPlan,
-					ActionURL:       deps.Routes.AddURL,
-					Icon:            "icon-plus",
-					Disabled:        !perms.Can("plan", "create"),
-					DisabledTooltip: l.Errors.NoPermission,
-				},
-			},
+			Table:           tableConfig,
 		}
 
 		return view.OK("plan-list", pageData)
@@ -92,37 +108,38 @@ func planColumns(l centymo.PlanLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(records []map[string]any, status string, l centymo.PlanLabels, routes centymo.PlanRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, routes centymo.PlanRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, record := range records {
-		recordStatus, _ := record["status"].(string)
-		if recordStatus != "" && recordStatus != status {
+	for _, p := range plans {
+		active := p.GetActive()
+		recordStatus := "active"
+		if !active {
+			recordStatus = "inactive"
+		}
+		if recordStatus != status {
 			continue
 		}
 
-		id, _ := record["id"].(string)
-		name, _ := record["name"].(string)
-		interval, _ := record["interval"].(string)
-		price, _ := record["price"].(string)
-		if recordStatus == "" {
-			recordStatus = status
+		id := p.GetId()
+		name := p.GetName()
+		fulfillmentType := p.GetFulfillmentType()
+		if fulfillmentType == "" {
+			fulfillmentType = "schedule"
 		}
-		if interval == "" {
-			interval = "monthly"
-		}
+		description := p.GetDescription()
 
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
-				{Type: "badge", Value: interval, Variant: intervalVariant(interval)},
-				{Type: "text", Value: price},
+				{Type: "badge", Value: fulfillmentType, Variant: intervalVariant(fulfillmentType)},
+				{Type: "text", Value: description},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"name":     name,
-				"interval": interval,
-				"price":    price,
+				"interval": fulfillmentType,
+				"price":    description,
 				"status":   recordStatus,
 			},
 			Actions: []types.TableAction{

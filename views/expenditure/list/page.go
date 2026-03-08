@@ -10,16 +10,18 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	DB              centymo.DataSource
-	RefreshURL      string
-	ExpenditureType string // "purchase" or "expense" — determines which type to filter
-	Labels          centymo.ExpenditureLabels
-	CommonLabels    pyeza.CommonLabels
-	TableLabels     types.TableLabels
+	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
+	RefreshURL       string
+	ExpenditureType  string // "purchase" or "expense" — determines which type to filter
+	Labels           centymo.ExpenditureLabels
+	CommonLabels     pyeza.CommonLabels
+	TableLabels      types.TableLabels
 }
 
 // PageData holds the data for the expenditure list page.
@@ -37,26 +39,26 @@ func NewView(deps *Deps) view.View {
 			status = "all"
 		}
 
-		records, err := deps.DB.ListSimple(ctx, "expenditure")
+		resp, err := deps.ListExpenditures(ctx, &expenditurepb.ListExpendituresRequest{})
 		if err != nil {
 			log.Printf("Failed to list expenditures: %v", err)
 			return view.Error(fmt.Errorf("failed to load expenditures: %w", err))
 		}
 
 		// Filter by expenditure_type
-		var filtered []map[string]any
-		for _, r := range records {
-			if t, ok := r["expenditure_type"].(string); ok && t == deps.ExpenditureType {
-				filtered = append(filtered, r)
+		var filtered []*expenditurepb.Expenditure
+		for _, e := range resp.GetData() {
+			if e.GetExpenditureType() == deps.ExpenditureType {
+				filtered = append(filtered, e)
 			}
 		}
 
 		// Further filter by status if not "all"
 		if status != "all" {
-			var statusFiltered []map[string]any
-			for _, r := range filtered {
-				if s, ok := r["status"].(string); ok && s == status {
-					statusFiltered = append(statusFiltered, r)
+			var statusFiltered []*expenditurepb.Expenditure
+			for _, e := range filtered {
+				if e.GetStatus() == status {
+					statusFiltered = append(statusFiltered, e)
 				}
 			}
 			filtered = statusFiltered
@@ -64,7 +66,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := expenditureColumns(l, deps.ExpenditureType)
-		rows := buildTableRows(filtered, l)
+		rows := buildTableRows(filtered, l, deps.ExpenditureType)
 		types.ApplyColumnStyles(columns, rows)
 
 		tableID := "purchases-table"
@@ -139,24 +141,26 @@ func expenditureColumns(l centymo.ExpenditureLabels, expenditureType string) []t
 	return cols
 }
 
-func buildTableRows(records []map[string]any, l centymo.ExpenditureLabels) []types.TableRow {
+func buildTableRows(expenditures []*expenditurepb.Expenditure, l centymo.ExpenditureLabels, expenditureType string) []types.TableRow {
 	rows := []types.TableRow{}
-	for _, record := range records {
-		id, _ := record["id"].(string)
-		refNumber, _ := record["reference_number"].(string)
-		vendor, _ := record["vendor_name"].(string)
-		date, _ := record["expenditure_date_string"].(string)
-		currency, _ := record["currency"].(string)
-		recordStatus, _ := record["status"].(string)
-		category, _ := record["category"].(string)
+	for _, e := range expenditures {
+		id := e.GetId()
+		refNumber := e.GetReferenceNumber()
+		date := e.GetExpenditureDateString()
+		currency := e.GetCurrency()
+		recordStatus := e.GetStatus()
+		amount := formatAmount(currency, e.GetTotalAmount())
 
-		amountDisplay := currency + " " + formatAmount(record["total_amount"])
-
-		// Second column is vendor or category depending on type
-		expType, _ := record["expenditure_type"].(string)
-		secondCol := vendor
-		if expType == "expense" {
-			secondCol = category
+		// Second column is vendor name or expenditure name depending on type
+		secondCol := e.GetName()
+		if expenditureType != "expense" {
+			// For purchases, try to get the vendor name from the nested Vendor object
+			if vendor := e.GetVendor(); vendor != nil {
+				secondCol = vendor.GetCompanyName()
+				if secondCol == "" {
+					secondCol = e.GetName()
+				}
+			}
 		}
 
 		rows = append(rows, types.TableRow{
@@ -165,19 +169,26 @@ func buildTableRows(records []map[string]any, l centymo.ExpenditureLabels) []typ
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: secondCol},
 				{Type: "text", Value: date},
-				{Type: "text", Value: amountDisplay},
+				{Type: "text", Value: amount},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"reference": refNumber,
-				"vendor":    vendor,
+				"vendor":    secondCol,
 				"date":      date,
-				"amount":    amountDisplay,
+				"amount":    amount,
 				"status":    recordStatus,
 			},
 		})
 	}
 	return rows
+}
+
+func formatAmount(currency string, amount float64) string {
+	if currency == "" {
+		currency = "PHP"
+	}
+	return currency + " " + fmt.Sprintf("%.2f", amount)
 }
 
 func statusPageTitle(l centymo.ExpenditureLabels, expType, status string) string {
@@ -298,23 +309,6 @@ func statusEmptyMessage(l centymo.ExpenditureLabels, expType, status string) str
 		return l.Empty.ExpenseOverdueMessage
 	default:
 		return l.Empty.ExpenseMessage
-	}
-}
-
-func formatAmount(v any) string {
-	switch n := v.(type) {
-	case float64:
-		return fmt.Sprintf("%.2f", n)
-	case float32:
-		return fmt.Sprintf("%.2f", n)
-	case int64:
-		return fmt.Sprintf("%d", n)
-	case int:
-		return fmt.Sprintf("%d", n)
-	case string:
-		return n
-	default:
-		return fmt.Sprintf("%v", v)
 	}
 }
 

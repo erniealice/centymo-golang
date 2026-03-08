@@ -11,15 +11,17 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 )
 
 // Deps holds view dependencies.
 type Deps struct {
-	Routes       centymo.DisbursementRoutes
-	DB           centymo.DataSource
-	Labels       centymo.DisbursementLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes           centymo.DisbursementRoutes
+	ReadDisbursement func(ctx context.Context, req *disbursementpb.ReadDisbursementRequest) (*disbursementpb.ReadDisbursementResponse, error)
+	Labels           centymo.DisbursementLabels
+	CommonLabels     pyeza.CommonLabels
+	TableLabels      types.TableLabels
 }
 
 // PageData holds the data for the disbursement detail page.
@@ -41,21 +43,50 @@ type PageData struct {
 	AuditTable *types.TableConfig
 }
 
+// disbursementToMap converts a Disbursement protobuf to a map[string]any for template use.
+func disbursementToMap(d *disbursementpb.Disbursement) map[string]any {
+	return map[string]any{
+		"id":                      d.GetId(),
+		"name":                    d.GetName(),
+		"reference_number":        d.GetReferenceNumber(),
+		"amount":                  fmt.Sprintf("%.2f", d.GetAmount()),
+		"currency":                d.GetCurrency(),
+		"status":                  d.GetStatus(),
+		"disbursement_method_id":  d.GetDisbursementMethodId(),
+		"disbursement_type":       d.GetDisbursementType(),
+		"expenditure_id":          d.GetExpenditureId(),
+		"approved_by":             d.GetApprovedBy(),
+		"active":                  d.GetActive(),
+		"date_created_string":     d.GetDateCreatedString(),
+		"date_modified_string":    d.GetDateModifiedString(),
+	}
+}
+
 // NewView creates the disbursement detail view.
 func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
-		disbursement, err := deps.DB.Read(ctx, "disbursement", id)
+		resp, err := deps.ReadDisbursement(ctx, &disbursementpb.ReadDisbursementRequest{
+			Data: &disbursementpb.Disbursement{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read disbursement %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load disbursement: %w", err))
 		}
+		data := resp.GetData()
+		if len(data) == 0 {
+			log.Printf("Disbursement %s not found", id)
+			return view.Error(fmt.Errorf("disbursement not found"))
+		}
+		record := data[0]
+		disbursement := disbursementToMap(record)
 
-		refNumber, _ := disbursement["reference_number"].(string)
-		status, _ := disbursement["status"].(string)
-		currency, _ := disbursement["currency"].(string)
-		amount, _ := disbursement["amount"].(string)
+		refNumber := record.GetReferenceNumber()
+		status := record.GetStatus()
+		currency := record.GetCurrency()
+		amount := fmt.Sprintf("%.2f", record.GetAmount())
+
 		l := deps.Labels
 		headerTitle := l.Detail.TitlePrefix + refNumber
 
@@ -118,16 +149,25 @@ func NewTabAction(deps *Deps) view.View {
 			tab = "info"
 		}
 
-		disbursement, err := deps.DB.Read(ctx, "disbursement", id)
+		resp, err := deps.ReadDisbursement(ctx, &disbursementpb.ReadDisbursementRequest{
+			Data: &disbursementpb.Disbursement{Id: id},
+		})
 		if err != nil {
 			log.Printf("Failed to read disbursement %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load disbursement: %w", err))
 		}
+		data := resp.GetData()
+		if len(data) == 0 {
+			log.Printf("Disbursement %s not found", id)
+			return view.Error(fmt.Errorf("disbursement not found"))
+		}
+		record := data[0]
+		disbursement := disbursementToMap(record)
 
-		status, _ := disbursement["status"].(string)
-		currency, _ := disbursement["currency"].(string)
-		amount, _ := disbursement["amount"].(string)
-		refNumber, _ := disbursement["reference_number"].(string)
+		status := record.GetStatus()
+		currency := record.GetCurrency()
+		amount := fmt.Sprintf("%.2f", record.GetAmount())
+		refNumber := record.GetReferenceNumber()
 
 		l := deps.Labels
 		pageData := &PageData{

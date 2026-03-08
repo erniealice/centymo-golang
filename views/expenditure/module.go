@@ -1,22 +1,26 @@
 package expenditure
 
 import (
+	"context"
+
 	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurelist "github.com/erniealice/centymo-golang/views/expenditure/list"
 )
 
 // ModuleDeps holds all dependencies for the expenditure module.
 type ModuleDeps struct {
-	Routes       centymo.ExpenditureRoutes
-	DB           centymo.DataSource
-	Labels       centymo.ExpenditureLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes           centymo.ExpenditureRoutes
+	DB               centymo.DataSource
+	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
+	Labels           centymo.ExpenditureLabels
+	CommonLabels     pyeza.CommonLabels
+	TableLabels      types.TableLabels
 }
 
 // Module holds all constructed expenditure views.
@@ -33,37 +37,37 @@ func NewModule(deps *ModuleDeps) *Module {
 	return &Module{
 		routes: deps.Routes,
 		PurchaseList: expenditurelist.NewView(&expenditurelist.Deps{
-			DB:              deps.DB,
-			RefreshURL:      deps.Routes.PurchaseListURL,
-			ExpenditureType: "purchase",
-			Labels:          deps.Labels,
-			CommonLabels:    deps.CommonLabels,
-			TableLabels:     deps.TableLabels,
+			ListExpenditures: deps.ListExpenditures,
+			RefreshURL:       deps.Routes.PurchaseListURL,
+			ExpenditureType:  "purchase",
+			Labels:           deps.Labels,
+			CommonLabels:     deps.CommonLabels,
+			TableLabels:      deps.TableLabels,
 		}),
 		ExpenseList: expenditurelist.NewView(&expenditurelist.Deps{
-			DB:              deps.DB,
-			RefreshURL:      deps.Routes.ExpenseListURL,
-			ExpenditureType: "expense",
-			Labels:          deps.Labels,
-			CommonLabels:    deps.CommonLabels,
-			TableLabels:     deps.TableLabels,
+			ListExpenditures: deps.ListExpenditures,
+			RefreshURL:       deps.Routes.ExpenseListURL,
+			ExpenditureType:  "expense",
+			Labels:           deps.Labels,
+			CommonLabels:     deps.CommonLabels,
+			TableLabels:      deps.TableLabels,
 		}),
 		// Dashboards use same list view for now (will be enhanced later)
 		PurchaseDashboard: expenditurelist.NewView(&expenditurelist.Deps{
-			DB:              deps.DB,
-			RefreshURL:      deps.Routes.PurchaseListURL,
-			ExpenditureType: "purchase",
-			Labels:          deps.Labels,
-			CommonLabels:    deps.CommonLabels,
-			TableLabels:     deps.TableLabels,
+			ListExpenditures: deps.ListExpenditures,
+			RefreshURL:       deps.Routes.PurchaseListURL,
+			ExpenditureType:  "purchase",
+			Labels:           deps.Labels,
+			CommonLabels:     deps.CommonLabels,
+			TableLabels:      deps.TableLabels,
 		}),
 		ExpenseDashboard: expenditurelist.NewView(&expenditurelist.Deps{
-			DB:              deps.DB,
-			RefreshURL:      deps.Routes.ExpenseListURL,
-			ExpenditureType: "expense",
-			Labels:          deps.Labels,
-			CommonLabels:    deps.CommonLabels,
-			TableLabels:     deps.TableLabels,
+			ListExpenditures: deps.ListExpenditures,
+			RefreshURL:       deps.Routes.ExpenseListURL,
+			ExpenditureType:  "expense",
+			Labels:           deps.Labels,
+			CommonLabels:     deps.CommonLabels,
+			TableLabels:      deps.TableLabels,
 		}),
 	}
 }

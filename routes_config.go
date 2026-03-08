@@ -349,6 +349,15 @@ type SalesRoutes struct {
 
 	// Report routes
 	SalesSummaryURL string `json:"sales_summary_url"`
+
+	// Document generation routes
+	InvoiceDownloadURL string `json:"invoice_download_url"`
+
+	// Settings routes (template management)
+	SettingsTemplatesURL       string `json:"settings_templates_url"`
+	SettingsTemplateUploadURL  string `json:"settings_template_upload_url"`
+	SettingsTemplateDeleteURL  string `json:"settings_template_delete_url"`
+	SettingsTemplateDefaultURL string `json:"settings_template_default_url"`
 }
 
 // DefaultSalesRoutes returns a SalesRoutes populated from the package-level
@@ -379,6 +388,11 @@ func DefaultSalesRoutes() SalesRoutes {
 		PaymentRemoveURL: SalesPaymentRemoveURL,
 
 		SalesSummaryURL: SalesSummaryURL,
+		InvoiceDownloadURL:         SalesInvoiceDownloadURL,
+		SettingsTemplatesURL:       SalesSettingsTemplatesURL,
+		SettingsTemplateUploadURL:  SalesSettingsTemplateUploadURL,
+		SettingsTemplateDeleteURL:  SalesSettingsTemplateDeleteURL,
+		SettingsTemplateDefaultURL: SalesSettingsTemplateDefaultURL,
 	}
 }
 
@@ -410,6 +424,11 @@ func (r SalesRoutes) RouteMap() map[string]string {
 		"sales.payment.remove": r.PaymentRemoveURL,
 
 		"sales.sales_summary": r.SalesSummaryURL,
+		"sales.invoice_download":           r.InvoiceDownloadURL,
+		"sales.settings.templates":         r.SettingsTemplatesURL,
+		"sales.settings.template_upload":   r.SettingsTemplateUploadURL,
+		"sales.settings.template_delete":   r.SettingsTemplateDeleteURL,
+		"sales.settings.template_default":  r.SettingsTemplateDefaultURL,
 	}
 }
 
