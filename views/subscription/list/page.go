@@ -17,11 +17,11 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
-	Routes            centymo.SubscriptionRoutes
-	ListSubscriptions func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
-	Labels            centymo.SubscriptionLabels
-	CommonLabels      pyeza.CommonLabels
-	TableLabels       types.TableLabels
+	Routes                      centymo.SubscriptionRoutes
+	GetSubscriptionListPageData func(ctx context.Context, req *subscriptionpb.GetSubscriptionListPageDataRequest) (*subscriptionpb.GetSubscriptionListPageDataResponse, error)
+	Labels                      centymo.SubscriptionLabels
+	CommonLabels                pyeza.CommonLabels
+	TableLabels                 types.TableLabels
 }
 
 // PageData holds the data for the subscription list page.
@@ -41,7 +41,7 @@ func NewView(deps *Deps) view.View {
 			status = "active"
 		}
 
-		resp, err := deps.ListSubscriptions(ctx, &subscriptionpb.ListSubscriptionsRequest{})
+		resp, err := deps.GetSubscriptionListPageData(ctx, &subscriptionpb.GetSubscriptionListPageDataRequest{})
 		if err != nil {
 			log.Printf("Failed to list subscriptions: %v", err)
 			return view.Error(fmt.Errorf("failed to load subscriptions: %w", err))
@@ -49,7 +49,7 @@ func NewView(deps *Deps) view.View {
 
 		l := deps.Labels
 		columns := subscriptionColumns(l)
-		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
+		rows := buildTableRows(resp.GetSubscriptionList(), status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		tableConfig := &types.TableConfig{

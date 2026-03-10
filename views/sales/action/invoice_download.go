@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/fycha-golang/services/pdfconv"
 
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
@@ -96,16 +97,30 @@ func NewInvoiceDownloadHandler(deps *InvoiceDownloadDeps) http.HandlerFunc {
 			return
 		}
 
-		// 6. Send as file download
+		// 6. Convert DOCX to PDF (falls back to DOCX if LibreOffice unavailable)
+		outputBytes, isPDF, err := pdfconv.ConvertDocxToPDF(docBytes)
+		if err != nil {
+			log.Printf("invoice download: PDF conversion failed: %v", err)
+			http.Error(w, "failed to convert invoice to PDF", http.StatusInternalServerError)
+			return
+		}
+
+		// 7. Send as file download
 		refNumber := revenue.GetReferenceNumber()
 		if refNumber == "" {
 			refNumber = id
 		}
-		filename := fmt.Sprintf("invoice-%s.docx", refNumber)
 
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
-		w.Write(docBytes)
+		if isPDF {
+			filename := fmt.Sprintf("invoice-%s.pdf", refNumber)
+			w.Header().Set("Content-Type", "application/pdf")
+			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+		} else {
+			filename := fmt.Sprintf("invoice-%s.docx", refNumber)
+			w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+		}
+		w.Write(outputBytes)
 	}
 }
 

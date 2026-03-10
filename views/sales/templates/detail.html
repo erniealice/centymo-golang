@@ -33,7 +33,7 @@
 <div class="tab-scroll">
     {{if .InvoiceDownloadURL}}
     <div class="info-toolbar" style="display:flex;justify-content:flex-end;padding:0 0 0.75rem 0;">
-        <a href="{{.InvoiceDownloadURL}}" class="btn btn--ghost btn--sm" download>
+        <a href="{{.InvoiceDownloadURL}}" class="btn btn--ghost btn--sm" download="invoice.pdf" hx-disable>
             {{template "icon-download" .}} {{.Labels.Actions.DownloadInvoice}}
         </a>
     </div>

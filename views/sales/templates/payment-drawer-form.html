@@ -74,6 +74,6 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
         </div>
     </div>
 
-    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+    {{template "sheet-form-footer" (dict "Messages" .Messages "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
 {{end}}
