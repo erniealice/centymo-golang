@@ -45,6 +45,6 @@ Data: .ProductID, .FormAction, .CommonLabels, .Labels, .AvailableAttributes
         </div>
     </div>
 
-    {{template "sheet-form-footer" (dict "Messages" .Messages "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
 </form>
 {{end}}
