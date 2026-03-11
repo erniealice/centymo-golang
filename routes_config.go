@@ -474,22 +474,31 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 
 // PlanRoutes holds all route paths for plan views and actions.
 type PlanRoutes struct {
-	ListURL   string `json:"list_url"`
-	DetailURL string `json:"detail_url"`
-	AddURL    string `json:"add_url"`
-	EditURL   string `json:"edit_url"`
-	DeleteURL string `json:"delete_url"`
+	// Sidebar navigation context — set via defaults or routes.json override
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL      string `json:"list_url"`
+	DetailURL    string `json:"detail_url"`
+	AddURL       string `json:"add_url"`
+	EditURL      string `json:"edit_url"`
+	DeleteURL    string `json:"delete_url"`
+	TabActionURL string `json:"tab_action_url"`
 }
 
 // DefaultPlanRoutes returns a PlanRoutes populated from the package-level
 // route constants defined in routes.go.
 func DefaultPlanRoutes() PlanRoutes {
 	return PlanRoutes{
-		ListURL:   PlanListURL,
-		DetailURL: PlanDetailURL,
-		AddURL:    PlanAddURL,
-		EditURL:   PlanEditURL,
-		DeleteURL: PlanDeleteURL,
+		ActiveNav:    "services",
+		ActiveSubNav: "plans",
+
+		ListURL:      PlanListURL,
+		DetailURL:    PlanDetailURL,
+		AddURL:       PlanAddURL,
+		EditURL:      PlanEditURL,
+		DeleteURL:    PlanDeleteURL,
+		TabActionURL: PlanTabActionURL,
 	}
 }
 
@@ -497,32 +506,35 @@ func DefaultPlanRoutes() PlanRoutes {
 // plan routes.
 func (r PlanRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"plan.list":   r.ListURL,
-		"plan.detail": r.DetailURL,
-		"plan.add":    r.AddURL,
-		"plan.edit":   r.EditURL,
-		"plan.delete": r.DeleteURL,
+		"plan.list":       r.ListURL,
+		"plan.detail":     r.DetailURL,
+		"plan.add":        r.AddURL,
+		"plan.edit":       r.EditURL,
+		"plan.delete":     r.DeleteURL,
+		"plan.tab_action": r.TabActionURL,
 	}
 }
 
 // SubscriptionRoutes holds all route paths for subscription views and actions.
 type SubscriptionRoutes struct {
-	ListURL   string `json:"list_url"`
-	DetailURL string `json:"detail_url"`
-	AddURL    string `json:"add_url"`
-	EditURL   string `json:"edit_url"`
-	DeleteURL string `json:"delete_url"`
+	ListURL      string `json:"list_url"`
+	DetailURL    string `json:"detail_url"`
+	AddURL       string `json:"add_url"`
+	EditURL      string `json:"edit_url"`
+	DeleteURL    string `json:"delete_url"`
+	TabActionURL string `json:"tab_action_url"`
 }
 
 // DefaultSubscriptionRoutes returns a SubscriptionRoutes populated from the
 // package-level route constants defined in routes.go.
 func DefaultSubscriptionRoutes() SubscriptionRoutes {
 	return SubscriptionRoutes{
-		ListURL:   SubscriptionListURL,
-		DetailURL: SubscriptionDetailURL,
-		AddURL:    SubscriptionAddURL,
-		EditURL:   SubscriptionEditURL,
-		DeleteURL: SubscriptionDeleteURL,
+		ListURL:      SubscriptionListURL,
+		DetailURL:    SubscriptionDetailURL,
+		AddURL:       SubscriptionAddURL,
+		EditURL:      SubscriptionEditURL,
+		DeleteURL:    SubscriptionDeleteURL,
+		TabActionURL: SubscriptionTabActionURL,
 	}
 }
 
@@ -530,11 +542,12 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 // subscription routes.
 func (r SubscriptionRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"subscription.list":   r.ListURL,
-		"subscription.detail": r.DetailURL,
-		"subscription.add":    r.AddURL,
-		"subscription.edit":   r.EditURL,
-		"subscription.delete": r.DeleteURL,
+		"subscription.list":       r.ListURL,
+		"subscription.detail":     r.DetailURL,
+		"subscription.add":        r.AddURL,
+		"subscription.edit":       r.EditURL,
+		"subscription.delete":     r.DeleteURL,
+		"subscription.tab_action": r.TabActionURL,
 	}
 }
 

@@ -35,7 +35,7 @@ func NewExportHandler(deps *Deps) http.HandlerFunc {
 		// Set CSV response headers
 		filename := fmt.Sprintf("transactions-%s.csv", time.Now().Format("2006-01-02"))
 		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 
 		writer := csv.NewWriter(w)
 		defer writer.Flush()

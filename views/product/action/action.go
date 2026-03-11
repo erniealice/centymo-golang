@@ -13,16 +13,6 @@ import (
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 )
 
-// FormLabels holds i18n labels for the product drawer form template.
-type FormLabels struct {
-	Name            string
-	Description     string
-	DescPlaceholder string
-	Price           string
-	Currency        string
-	Active          string
-}
-
 // FormData is the template data for the product drawer form.
 type FormData struct {
 	FormAction   string
@@ -33,7 +23,7 @@ type FormData struct {
 	Price        string
 	Currency     string
 	Active       bool
-	Labels       FormLabels
+	Labels       centymo.ProductFormLabels
 	CommonLabels any
 }
 
@@ -48,15 +38,8 @@ type Deps struct {
 	SetProductActive func(ctx context.Context, id string, active bool) error
 }
 
-func formLabels(t func(string) string) FormLabels {
-	return FormLabels{
-		Name:            t("product.form.name"),
-		Description:     t("product.form.description"),
-		DescPlaceholder: t("product.form.descriptionPlaceholder"),
-		Price:           t("product.form.price"),
-		Currency:        t("product.form.currency"),
-		Active:          t("product.form.active"),
-	}
+func formLabels(l centymo.ProductLabels) centymo.ProductFormLabels {
+	return l.Form
 }
 
 // NewAddAction creates the product add action (GET = form, POST = create).
@@ -72,7 +55,7 @@ func NewAddAction(deps *Deps) view.View {
 				FormAction:   deps.Routes.AddURL,
 				Active:       true,
 				Currency:     "PHP",
-				Labels:       formLabels(viewCtx.T),
+				Labels:       formLabels(deps.Labels),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}
@@ -139,7 +122,7 @@ func NewEditAction(deps *Deps) view.View {
 				Price:        strconv.FormatFloat(p.GetPrice(), 'f', 2, 64),
 				Currency:     p.GetCurrency(),
 				Active:       p.GetActive(),
-				Labels:       formLabels(viewCtx.T),
+				Labels:       formLabels(deps.Labels),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}

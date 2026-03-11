@@ -1,0 +1,121 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "plan-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "plan-detail-content"}}
+<div class="page-content detail-layout">
+    {{/* --- HTMX Tab Buttons --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "plan-detail-tabs")}}
+    </div>
+
+    {{/* --- Tab Content Area --- */}}
+    <div id="tabContent" class="detail-body">
+        {{if eq .ActiveTab "info"}}
+            {{template "plan-tab-info" .}}
+        {{else if eq .ActiveTab "products"}}
+            {{template "plan-tab-products" .}}
+        {{else if eq .ActiveTab "pricelists"}}
+            {{template "plan-tab-pricelists" .}}
+        {{else if eq .ActiveTab "audit"}}
+            {{template "plan-tab-audit" .}}
+        {{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "plan-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">{{.Labels.Tabs.Info}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Name}}</span>
+            <span class="detail-info-value">{{.PlanName}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Description}}</span>
+            <span class="detail-info-value">{{if .PlanDesc}}{{.PlanDesc}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.FulfillmentType}}</span>
+            <span class="detail-info-value">{{.FulfillmentType}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
+            <span>
+                <span class="badge badge--{{.StatusVariant}}">
+                    {{.PlanStatus}}
+                </span>
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.CreatedDate}}</span>
+            <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.ModifiedDate}}</span>
+            <span class="detail-info-value">{{if .ModifiedDate}}{{.ModifiedDate}}{{else}}—{{end}}</span>
+        </div>
+    </div>
+
+    <div class="detail-actions" style="margin-top: var(--spacing-lg);">
+        <a class="btn btn--ghost btn--sm"
+           hx-get="{{routeWith "plan.edit" "id" .ID}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           onclick="if(window.Sheet) Sheet.open('{{.Labels.Actions.Edit}}')">
+            {{.Labels.Actions.Edit}}
+        </a>
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Products
+     ============================================= */}}
+{{define "plan-tab-products"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .ProductsTable}}
+        {{template "table-card" .ProductsTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">No products assigned</div>
+            <p class="coming-soon-text">No products have been linked to this plan yet.</p>
+        </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Price Lists
+     ============================================= */}}
+{{define "plan-tab-pricelists"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .PriceListsTable}}
+        {{template "table-card" .PriceListsTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">No price plans</div>
+            <p class="coming-soon-text">No price plans have been configured for this plan yet.</p>
+        </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Audit Trail
+     ============================================= */}}
+{{define "plan-tab-audit"}}
+<div class="tab-scroll">
+    <div class="empty-state">
+        <p>Audit trail coming soon</p>
+    </div>
+</div>
+{{end}}

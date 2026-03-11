@@ -26,6 +26,30 @@
 </div>
 {{template "sheet-form" .}}
 <script src="/assets/js/components/sheet.js?v={{.CacheVersion}}"></script>
+<script>
+function downloadInvoice(btn, url) {
+    btn.classList.add('btn-loading');
+    fetch(url)
+        .then(function(res) {
+            var cd = res.headers.get('Content-Disposition') || '';
+            var match = cd.match(/filename="?([^"]+)"?/);
+            var filename = match ? match[1] : 'invoice.pdf';
+            return res.blob().then(function(blob) { return { blob: blob, filename: filename }; });
+        })
+        .then(function(result) {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(result.blob);
+            a.download = result.filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        })
+        .catch(function(err) { console.error('Invoice download failed:', err); })
+        .finally(function() { btn.classList.remove('btn-loading'); });
+}
+</script>
 {{end}}
 
 {{/* Basic Information Tab */}}
@@ -33,9 +57,10 @@
 <div class="tab-scroll">
     {{if .InvoiceDownloadURL}}
     <div class="info-toolbar" style="display:flex;justify-content:flex-end;padding:0 0 0.75rem 0;">
-        <a href="{{.InvoiceDownloadURL}}" class="btn btn--ghost btn--sm" download="invoice.pdf" hx-disable>
+        <button type="button" class="btn btn--ghost btn--sm"
+            onclick="downloadInvoice(this, '{{.InvoiceDownloadURL}}')">
             {{template "icon-download" .}} {{.Labels.Actions.DownloadInvoice}}
-        </a>
+        </button>
     </div>
     {{end}}
     <h4 class="sale-section-title">{{.Labels.Detail.InvoiceInfo}}</h4>

@@ -8,12 +8,14 @@ const (
 	PlanAddURL        = "/action/plans/add"
 	PlanEditURL       = "/action/plans/edit/{id}"
 	PlanDeleteURL     = "/action/plans/delete"
+	PlanTabActionURL  = "/action/plans/detail/{id}/tab/{tab}"
 
-	SubscriptionListURL       = "/app/subscriptions/list/{status}"
-	SubscriptionDetailURL     = "/app/subscriptions/{id}"
-	SubscriptionAddURL        = "/action/subscriptions/add"
-	SubscriptionEditURL       = "/action/subscriptions/edit/{id}"
-	SubscriptionDeleteURL     = "/action/subscriptions/delete"
+	SubscriptionListURL      = "/app/subscriptions/list/{status}"
+	SubscriptionDetailURL    = "/app/subscriptions/{id}"
+	SubscriptionAddURL       = "/action/subscriptions/add"
+	SubscriptionEditURL      = "/action/subscriptions/edit/{id}"
+	SubscriptionDeleteURL    = "/action/subscriptions/delete"
+	SubscriptionTabActionURL = "/action/subscriptions/detail/{id}/tab/{tab}"
 
 	// Collection (money IN) routes
 	CollectionListURL          = "/app/collections/list/{status}"

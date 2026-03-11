@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/fycha-golang/services/pdfconv"
@@ -111,14 +112,15 @@ func NewInvoiceDownloadHandler(deps *InvoiceDownloadDeps) http.HandlerFunc {
 			refNumber = id
 		}
 
+		ts := time.Now().Unix()
 		if isPDF {
-			filename := fmt.Sprintf("invoice-%s.pdf", refNumber)
+			filename := fmt.Sprintf("invoice-%s-%d.pdf", refNumber, ts)
 			w.Header().Set("Content-Type", "application/pdf")
-			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+			w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 		} else {
-			filename := fmt.Sprintf("invoice-%s.docx", refNumber)
+			filename := fmt.Sprintf("invoice-%s-%d.docx", refNumber, ts)
 			w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+			w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 		}
 		w.Write(outputBytes)
 	}

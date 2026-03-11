@@ -1578,7 +1578,11 @@ type PlanLabels struct {
 	Buttons PlanButtonLabels  `json:"buttons"`
 	Columns PlanColumnLabels  `json:"columns"`
 	Empty   PlanEmptyLabels   `json:"empty"`
+	Form    PlanFormLabels    `json:"form"`
 	Actions PlanActionLabels  `json:"actions"`
+	Detail  PlanDetailLabels  `json:"detail"`
+	Tabs    PlanTabLabels     `json:"tabs"`
+	Confirm PlanConfirmLabels `json:"confirm"`
 	Errors  PlanErrorLabels   `json:"errors"`
 }
 
@@ -1596,15 +1600,20 @@ type PlanButtonLabels struct {
 }
 
 type PlanColumnLabels struct {
-	Name     string `json:"name"`
-	Interval string `json:"interval"`
-	Price    string `json:"price"`
-	Status   string `json:"status"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Interval    string `json:"interval"`
+	Price       string `json:"price"`
+	Status      string `json:"status"`
 }
 
 type PlanEmptyLabels struct {
-	Title   string `json:"title"`
-	Message string `json:"message"`
+	Title           string `json:"title"`
+	Message         string `json:"message"`
+	ActiveTitle     string `json:"activeTitle"`
+	ActiveMessage   string `json:"activeMessage"`
+	InactiveTitle   string `json:"inactiveTitle"`
+	InactiveMessage string `json:"inactiveMessage"`
 }
 
 type PlanActionLabels struct {
@@ -1614,7 +1623,58 @@ type PlanActionLabels struct {
 }
 
 type PlanErrorLabels struct {
-	NoPermission string `json:"noPermission"`
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+}
+
+// ---------------------------------------------------------------------------
+// Plan form, detail, tabs, confirm sub-labels
+// ---------------------------------------------------------------------------
+
+type PlanFormSectionLabels struct {
+	Basic    string `json:"basic"`
+	Services string `json:"services"`
+}
+
+type PlanFormLabels struct {
+	Name                string                `json:"name"`
+	NamePlaceholder     string                `json:"namePlaceholder"`
+	Description         string                `json:"description"`
+	DescPlaceholder     string                `json:"descriptionPlaceholder"`
+	FulfillmentType     string                `json:"fulfillmentType"`
+	Active              string                `json:"active"`
+	Products            string                `json:"products"`
+	ProductsPlaceholder string                `json:"productsPlaceholder"`
+	ProductsSearch      string                `json:"productsSearch"`
+	Sections            PlanFormSectionLabels  `json:"sections"`
+}
+
+type PlanDetailLabels struct {
+	PageTitle       string `json:"pageTitle"`
+	Price           string `json:"price"`
+	Currency        string `json:"currency"`
+	Status          string `json:"status"`
+	Description     string `json:"description"`
+	FulfillmentType string `json:"fulfillmentType"`
+	CreatedDate     string `json:"createdDate"`
+	ModifiedDate    string `json:"modifiedDate"`
+}
+
+type PlanTabLabels struct {
+	Info       string `json:"info"`
+	Products   string `json:"products"`
+	PriceLists string `json:"priceLists"`
+	AuditTrail string `json:"auditTrail"`
+}
+
+type PlanConfirmLabels struct {
+	Delete            string `json:"delete"`
+	DeleteMessage     string `json:"deleteMessage"`
+	Deactivate        string `json:"deactivate"`
+	DeactivateMessage string `json:"deactivateMessage"`
 }
 
 // ---------------------------------------------------------------------------
@@ -1627,7 +1687,11 @@ type SubscriptionLabels struct {
 	Buttons SubscriptionButtonLabels  `json:"buttons"`
 	Columns SubscriptionColumnLabels  `json:"columns"`
 	Empty   SubscriptionEmptyLabels   `json:"empty"`
+	Form    SubscriptionFormLabels    `json:"form"`
 	Actions SubscriptionActionLabels  `json:"actions"`
+	Detail  SubscriptionDetailLabels  `json:"detail"`
+	Tabs    SubscriptionTabLabels     `json:"tabs"`
+	Confirm SubscriptionConfirmLabels `json:"confirm"`
 	Errors  SubscriptionErrorLabels   `json:"errors"`
 }
 
@@ -1663,7 +1727,49 @@ type SubscriptionActionLabels struct {
 }
 
 type SubscriptionErrorLabels struct {
-	NoPermission string `json:"noPermission"`
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+}
+
+// ---------------------------------------------------------------------------
+// Subscription form, detail, tabs, confirm sub-labels
+// ---------------------------------------------------------------------------
+
+type SubscriptionFormLabels struct {
+	Customer            string `json:"customer"`
+	CustomerPlaceholder string `json:"customerPlaceholder"`
+	Plan                string `json:"plan"`
+	PlanPlaceholder     string `json:"planPlaceholder"`
+	StartDate           string `json:"startDate"`
+	EndDate             string `json:"endDate"`
+	Active              string `json:"active"`
+	Notes               string `json:"notes"`
+	NotesPlaceholder    string `json:"notesPlaceholder"`
+}
+
+type SubscriptionDetailLabels struct {
+	PageTitle    string `json:"pageTitle"`
+	Customer     string `json:"customer"`
+	Plan         string `json:"plan"`
+	StartDate    string `json:"startDate"`
+	EndDate      string `json:"endDate"`
+	Status       string `json:"status"`
+	CreatedDate  string `json:"createdDate"`
+	ModifiedDate string `json:"modifiedDate"`
+}
+
+type SubscriptionTabLabels struct {
+	Info       string `json:"info"`
+	History    string `json:"history"`
+	AuditTrail string `json:"auditTrail"`
+}
+
+type SubscriptionConfirmLabels struct {
+	Cancel        string `json:"cancel"`
+	CancelMessage string `json:"cancelMessage"`
 }
 
 // DefaultPlanLabels returns PlanLabels with sensible English defaults.
@@ -1681,22 +1787,68 @@ func DefaultPlanLabels() PlanLabels {
 			AddPlan: "Add Plan",
 		},
 		Columns: PlanColumnLabels{
-			Name:     "Name",
-			Interval: "Interval",
-			Price:    "Price",
-			Status:   "Status",
+			Name:        "Name",
+			Description: "Description",
+			Interval:    "Interval",
+			Price:       "Price",
+			Status:      "Status",
 		},
 		Empty: PlanEmptyLabels{
-			Title:   "No plans found",
-			Message: "No plans to display.",
+			Title:           "No plans found",
+			Message:         "No plans to display.",
+			ActiveTitle:     "No active plans",
+			ActiveMessage:   "Create your first plan to get started.",
+			InactiveTitle:   "No inactive plans",
+			InactiveMessage: "Discontinued plans will appear here.",
+		},
+		Form: PlanFormLabels{
+			Name:                "Plan Name",
+			NamePlaceholder:     "Enter plan name",
+			Description:         "Description",
+			DescPlaceholder:     "Enter plan description...",
+			FulfillmentType:     "Fulfillment Type",
+			Active:              "Active",
+			Products:            "Products",
+			ProductsPlaceholder: "Select products...",
+			ProductsSearch:      "Search products...",
+			Sections: PlanFormSectionLabels{
+				Basic:    "Basic Information",
+				Services: "Assigned Products",
+			},
 		},
 		Actions: PlanActionLabels{
 			View:   "View Plan",
 			Edit:   "Edit Plan",
 			Delete: "Delete Plan",
 		},
+		Detail: PlanDetailLabels{
+			PageTitle:       "Plan Details",
+			Price:           "Price",
+			Currency:        "Currency",
+			Status:          "Status",
+			Description:     "Description",
+			FulfillmentType: "Fulfillment Type",
+			CreatedDate:     "Created",
+			ModifiedDate:    "Last Modified",
+		},
+		Tabs: PlanTabLabels{
+			Info:       "Information",
+			Products:   "Products",
+			PriceLists: "Price Lists",
+			AuditTrail: "Audit Trail",
+		},
+		Confirm: PlanConfirmLabels{
+			Delete:            "Delete Plan",
+			DeleteMessage:     "Are you sure you want to delete \"%s\"? This action cannot be undone.",
+			Deactivate:        "Deactivate Plan",
+			DeactivateMessage: "Are you sure you want to deactivate \"%s\"?",
+		},
 		Errors: PlanErrorLabels{
-			NoPermission: "No permission",
+			PermissionDenied: "You do not have permission to perform this action",
+			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
+			NotFound:         "Plan not found",
+			IDRequired:       "Plan ID is required",
+			NoPermission:     "No permission",
 		},
 	}
 }
@@ -1725,13 +1877,47 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			Title:   "No subscriptions found",
 			Message: "No subscriptions to display.",
 		},
+		Form: SubscriptionFormLabels{
+			Customer:            "Customer",
+			CustomerPlaceholder: "Select customer...",
+			Plan:                "Plan",
+			PlanPlaceholder:     "Select plan...",
+			StartDate:           "Start Date",
+			EndDate:             "End Date",
+			Active:              "Active",
+			Notes:               "Notes",
+			NotesPlaceholder:    "Enter notes...",
+		},
 		Actions: SubscriptionActionLabels{
 			View:   "View Subscription",
 			Edit:   "Edit Subscription",
 			Cancel: "Cancel Subscription",
 		},
+		Detail: SubscriptionDetailLabels{
+			PageTitle:    "Subscription Details",
+			Customer:     "Customer",
+			Plan:         "Plan",
+			StartDate:    "Start Date",
+			EndDate:      "End Date",
+			Status:       "Status",
+			CreatedDate:  "Created",
+			ModifiedDate: "Last Modified",
+		},
+		Tabs: SubscriptionTabLabels{
+			Info:       "Information",
+			History:    "History",
+			AuditTrail: "Audit Trail",
+		},
+		Confirm: SubscriptionConfirmLabels{
+			Cancel:        "Cancel Subscription",
+			CancelMessage: "Are you sure you want to cancel this subscription? This action cannot be undone.",
+		},
 		Errors: SubscriptionErrorLabels{
-			NoPermission: "No permission",
+			PermissionDenied: "You do not have permission to perform this action",
+			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
+			NotFound:         "Subscription not found",
+			IDRequired:       "Subscription ID is required",
+			NoPermission:     "No permission",
 		},
 	}
 }

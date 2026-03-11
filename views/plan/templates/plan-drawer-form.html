@@ -1,0 +1,51 @@
+{{/*
+Plan drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+Data: .Name, .Description, .FulfillmentType, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
+*/}}
+{{define "plan-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* --- Basic Information --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.Name
+                "Value" .Name
+                "Required" true
+                "Placeholder" .Labels.NamePlaceholder
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "description"
+                "Label" .Labels.Description
+                "Value" .Description
+                "Placeholder" .Labels.DescPlaceholder
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "fulfillment_type"
+                "Label" .Labels.FulfillmentType
+                "Value" .FulfillmentType
+                "Options" (list
+                    (dict "Value" "schedule" "Label" "Schedule")
+                    (dict "Value" "license" "Label" "License")
+                    (dict "Value" "content" "Label" "Content")
+                    (dict "Value" "physical" "Label" "Physical")
+                )
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

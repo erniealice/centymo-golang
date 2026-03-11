@@ -1,0 +1,83 @@
+{{/*
+Subscription drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
+      .Clients, .PricePlans, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
+*/}}
+{{define "subscription-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* --- Engagement Name --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.Customer
+                "Value" .Name
+                "Required" true
+                "Placeholder" "Engagement name"
+            )}}
+        </div>
+
+        {{/* --- Customer --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "client_id"
+                "Label" .Labels.Customer
+                "Value" .ClientID
+                "Required" true
+                "Options" .Clients
+                "Placeholder" .Labels.CustomerPlaceholder
+            )}}
+        </div>
+
+        {{/* --- Price Plan --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "price_plan_id"
+                "Label" .Labels.Plan
+                "Value" .PricePlanID
+                "Required" true
+                "Options" .PricePlans
+                "Placeholder" .Labels.PlanPlaceholder
+            )}}
+        </div>
+
+        {{/* --- Start Date and End Date --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "date_start_string"
+                "Label" .Labels.StartDate
+                "Value" .DateStart
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "date_end_string"
+                "Label" .Labels.EndDate
+                "Value" .DateEnd
+            )}}
+        </div>
+
+        {{/* --- Notes --- */}}
+        {{template "form-section" (dict "Title" .Labels.Notes)}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" .Labels.Notes
+                "Value" .Notes
+                "Placeholder" .Labels.NotesPlaceholder
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}
