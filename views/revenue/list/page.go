@@ -17,10 +17,10 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
-	Routes       centymo.SalesRoutes
+	Routes       centymo.RevenueRoutes
 	ListRevenues func(ctx context.Context, req *revenuepb.ListRevenuesRequest) (*revenuepb.ListRevenuesResponse, error)
 	RefreshURL   string
-	Labels       centymo.SalesLabels
+	Labels       centymo.RevenueLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 }
@@ -107,7 +107,7 @@ func NewView(deps *Deps) view.View {
 	})
 }
 
-func salesColumns(l centymo.SalesLabels) []types.TableColumn {
+func salesColumns(l centymo.RevenueLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
 		{Key: "customer", Label: l.Columns.Customer, Sortable: true},
@@ -117,7 +117,7 @@ func salesColumns(l centymo.SalesLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.SalesLabels, routes centymo.SalesRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.RevenueLabels, routes centymo.RevenueRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, r := range revenues {
 		recordStatus := r.GetStatus()
@@ -135,6 +135,10 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Sale
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
 			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+			// Download invoice action
+			{Type: "download", Label: l.Actions.DownloadInvoice, Action: "download", URL: route.ResolveURL(routes.InvoiceDownloadURL, "id", id), ItemName: refNumber, ConfirmTitle: l.Actions.DownloadInvoice, ConfirmMessage: fmt.Sprintf("Download invoice for %s?", refNumber), Disabled: !perms.Can("invoice", "read"), DisabledTooltip: l.Errors.PermissionDenied},
+			// Send email action
+			{Type: "mail", Label: l.Actions.SendEmail, Action: "send-email", URL: route.ResolveURL(routes.SendEmailURL, "id", id), ItemName: refNumber, ConfirmTitle: l.Confirm.SendEmail, ConfirmMessage: fmt.Sprintf(l.Confirm.SendEmailMessage, refNumber), Disabled: !perms.Can("invoice", "read"), DisabledTooltip: l.Errors.PermissionDenied},
 		}
 		if recordStatus == "ongoing" {
 			actions = append(actions, types.TableAction{
@@ -185,7 +189,7 @@ func formatAmount(currency string, amount float64) string {
 	return currency + " " + fmt.Sprintf("%.2f", amount)
 }
 
-func statusPageTitle(l centymo.SalesLabels, status string) string {
+func statusPageTitle(l centymo.RevenueLabels, status string) string {
 	switch status {
 	case "ongoing":
 		return l.Page.HeadingOngoing
@@ -198,7 +202,7 @@ func statusPageTitle(l centymo.SalesLabels, status string) string {
 	}
 }
 
-func statusPageCaption(l centymo.SalesLabels, status string) string {
+func statusPageCaption(l centymo.RevenueLabels, status string) string {
 	switch status {
 	case "ongoing":
 		return l.Page.CaptionOngoing
@@ -211,7 +215,7 @@ func statusPageCaption(l centymo.SalesLabels, status string) string {
 	}
 }
 
-func statusEmptyTitle(l centymo.SalesLabels, status string) string {
+func statusEmptyTitle(l centymo.RevenueLabels, status string) string {
 	switch status {
 	case "ongoing":
 		return l.Empty.OngoingTitle
@@ -224,7 +228,7 @@ func statusEmptyTitle(l centymo.SalesLabels, status string) string {
 	}
 }
 
-func statusEmptyMessage(l centymo.SalesLabels, status string) string {
+func statusEmptyMessage(l centymo.RevenueLabels, status string) string {
 	switch status {
 	case "ongoing":
 		return l.Empty.OngoingMessage
@@ -250,7 +254,7 @@ func statusVariant(status string) string {
 	}
 }
 
-func buildBulkActions(common pyeza.CommonLabels, l centymo.SalesLabels, status string, routes centymo.SalesRoutes) []types.BulkAction {
+func buildBulkActions(common pyeza.CommonLabels, l centymo.RevenueLabels, status string, routes centymo.RevenueRoutes) []types.BulkAction {
 	actions := []types.BulkAction{}
 
 	switch status {

@@ -84,7 +84,7 @@ func NewView(deps *Deps) view.View {
 	})
 }
 
-func settingsColumns(l centymo.SalesSettingsLabels) []types.TableColumn {
+func settingsColumns(l centymo.RevenueSettingsLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.TemplateName, Sortable: true},
 		{Key: "type", Label: l.TemplateType, Sortable: true, Width: "120px"},
@@ -93,7 +93,7 @@ func settingsColumns(l centymo.SalesSettingsLabels) []types.TableColumn {
 	}
 }
 
-func buildSettingsRows(templates []TemplateData, l centymo.SalesSettingsLabels, routes centymo.SalesRoutes) []types.TableRow {
+func buildSettingsRows(templates []TemplateData, l centymo.RevenueSettingsLabels, routes centymo.RevenueRoutes) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, t := range templates {
 		actions := []types.TableAction{}

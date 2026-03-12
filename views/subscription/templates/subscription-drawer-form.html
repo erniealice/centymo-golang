@@ -2,7 +2,8 @@
 Subscription drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
 Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
-      .Clients, .PricePlans, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
+      .SearchClientURL, .SearchPlanURL, .ClientLabel, .PlanLabel,
+      .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "subscription-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
@@ -23,27 +24,33 @@ Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
 
         {{/* --- Customer --- */}}
         <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "select"
+            {{template "auto-complete" (dict
+                "ID" "client-search"
                 "Name" "client_id"
                 "Label" .Labels.Customer
-                "Value" .ClientID
-                "Required" true
-                "Options" .Clients
                 "Placeholder" .Labels.CustomerPlaceholder
+                "SearchPlaceholder" .Labels.CustomerSearchPlaceholder
+                "SearchURL" .SearchClientURL
+                "Value" .ClientID
+                "SelectedLabel" .ClientLabel
+                "Required" true
+                "NoResults" .Labels.CustomerNoResults
             )}}
         </div>
 
         {{/* --- Price Plan --- */}}
         <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "select"
+            {{template "auto-complete" (dict
+                "ID" "plan-search"
                 "Name" "price_plan_id"
                 "Label" .Labels.Plan
-                "Value" .PricePlanID
-                "Required" true
-                "Options" .PricePlans
                 "Placeholder" .Labels.PlanPlaceholder
+                "SearchPlaceholder" .Labels.PlanSearchPlaceholder
+                "SearchURL" .SearchPlanURL
+                "Value" .PricePlanID
+                "SelectedLabel" .PlanLabel
+                "Required" true
+                "NoResults" .Labels.PlanNoResults
             )}}
         </div>
 

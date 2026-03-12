@@ -35,7 +35,7 @@ type LineItemFormData struct {
 	InventoryItemID  string
 	InventoryItems   []SelectOption
 	CommonLabels     any
-	Labels           centymo.SalesDetailLabels
+	Labels           centymo.RevenueDetailLabels
 }
 
 // DiscountFormData is the template data for the discount drawer form.
@@ -45,7 +45,7 @@ type DiscountFormData struct {
 	Description  string
 	Amount       string
 	CommonLabels any
-	Labels       centymo.SalesDetailLabels
+	Labels       centymo.RevenueDetailLabels
 }
 
 // SelectOption represents an option in a select dropdown.
@@ -56,8 +56,8 @@ type SelectOption struct {
 
 // LineItemDeps holds dependencies for line item action handlers.
 type LineItemDeps struct {
-	Routes       centymo.SalesRoutes
-	Labels       centymo.SalesLabels
+	Routes       centymo.RevenueRoutes
+	Labels       centymo.RevenueLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
@@ -353,7 +353,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 // ---------------------------------------------------------------------------
 
 // buildLineItemTableWithActions builds the line items table with row actions.
-func buildLineItemTableWithActions(items []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.SalesRoutes, perms *types.UserPermissions) *types.TableConfig {
+func buildLineItemTableWithActions(items []map[string]any, l centymo.RevenueLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.RevenueRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "type", Label: l.Detail.ItemType, Sortable: false, Width: "90px"},
 		{Key: "description", Label: l.Detail.Description, Sortable: false},

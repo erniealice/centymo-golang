@@ -36,10 +36,12 @@ type PageData struct {
 
 // subscriptionToMap converts a Subscription protobuf to a map[string]any for template use.
 func subscriptionToMap(s *subscriptionpb.Subscription) map[string]any {
-	// Build customer display name from nested client -> user
+	// Build customer display name: prefer company_name, fallback to user name
 	customer := s.GetName()
 	if c := s.GetClient(); c != nil {
-		if u := c.GetUser(); u != nil {
+		if companyName := c.GetCompanyName(); companyName != "" {
+			customer = companyName
+		} else if u := c.GetUser(); u != nil {
 			first := u.GetFirstName()
 			last := u.GetLastName()
 			if first != "" || last != "" {
@@ -48,10 +50,15 @@ func subscriptionToMap(s *subscriptionpb.Subscription) map[string]any {
 		}
 	}
 
-	// Get plan name from nested price plan
+	// Get plan name from nested price_plan → plan
 	planName := ""
 	if pp := s.GetPricePlan(); pp != nil {
-		planName = pp.GetName()
+		if p := pp.GetPlan(); p != nil {
+			planName = p.GetName()
+		}
+		if planName == "" {
+			planName = pp.GetName()
+		}
 	}
 
 	status := "active"

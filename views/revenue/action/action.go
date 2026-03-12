@@ -51,8 +51,8 @@ type FormData struct {
 
 // Deps holds dependencies for sales action handlers.
 type Deps struct {
-	Routes centymo.SalesRoutes
-	Labels centymo.SalesLabels
+	Routes centymo.RevenueRoutes
+	Labels centymo.RevenueLabels
 	DB     centymo.DataSource // KEEP — used for location, revenue_payment, and collection_method operations
 
 	// Typed revenue operations

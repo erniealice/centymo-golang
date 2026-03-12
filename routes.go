@@ -15,7 +15,9 @@ const (
 	SubscriptionAddURL       = "/action/subscriptions/add"
 	SubscriptionEditURL      = "/action/subscriptions/edit/{id}"
 	SubscriptionDeleteURL    = "/action/subscriptions/delete"
-	SubscriptionTabActionURL = "/action/subscriptions/detail/{id}/tab/{tab}"
+	SubscriptionTabActionURL     = "/action/subscriptions/detail/{id}/tab/{tab}"
+	SubscriptionSearchPlanURL    = "/action/subscriptions/search/plans"
+	SubscriptionSearchClientURL  = "/action/subscriptions/search/clients"
 
 	// Collection (money IN) routes
 	CollectionListURL          = "/app/collections/list/{status}"
@@ -149,44 +151,45 @@ const (
 	// Inventory table refresh (per-location)
 	InventoryTableURL = "/action/inventory/table/{location}"
 
-	// Sales (revenue) routes
-	SalesDashboardURL     = "/app/sales/dashboard"
-	SalesListURL          = "/app/sales/list/{status}"
-	SalesDetailURL        = "/app/sales/detail/{id}"
-	SalesAddURL           = "/action/sales/add"
-	SalesEditURL          = "/action/sales/edit/{id}"
-	SalesDeleteURL        = "/action/sales/delete"
-	SalesBulkDeleteURL    = "/action/sales/delete/bulk"
-	SalesSetStatusURL     = "/action/sales/status/set"
-	SalesBulkSetStatusURL = "/action/sales/status/set/bulk"
+	// Revenue routes
+	RevenueDashboardURL     = "/app/sales/dashboard"
+	RevenueListURL          = "/app/sales/list/{status}"
+	RevenueDetailURL        = "/app/sales/detail/{id}"
+	RevenueAddURL           = "/action/sales/add"
+	RevenueEditURL          = "/action/sales/edit/{id}"
+	RevenueDeleteURL        = "/action/sales/delete"
+	RevenueBulkDeleteURL    = "/action/sales/delete/bulk"
+	RevenueSetStatusURL     = "/action/sales/status/set"
+	RevenueBulkSetStatusURL = "/action/sales/status/set/bulk"
 
-	// Sales tab action route
-	SalesTabActionURL = "/action/sales/detail/{id}/tab/{tab}"
+	// Revenue tab action route
+	RevenueTabActionURL = "/action/sales/detail/{id}/tab/{tab}"
 
-	// Sales line item routes (within sale detail)
-	SalesLineItemTableURL    = "/action/sales/detail/{id}/items/table"
-	SalesLineItemAddURL      = "/action/sales/detail/{id}/items/add"
-	SalesLineItemEditURL     = "/action/sales/detail/{id}/items/edit/{itemId}"
-	SalesLineItemRemoveURL   = "/action/sales/detail/{id}/items/remove"
-	SalesLineItemDiscountURL = "/action/sales/detail/{id}/items/add-discount"
+	// Revenue line item routes (within sale detail)
+	RevenueLineItemTableURL    = "/action/sales/detail/{id}/items/table"
+	RevenueLineItemAddURL      = "/action/sales/detail/{id}/items/add"
+	RevenueLineItemEditURL     = "/action/sales/detail/{id}/items/edit/{itemId}"
+	RevenueLineItemRemoveURL   = "/action/sales/detail/{id}/items/remove"
+	RevenueLineItemDiscountURL = "/action/sales/detail/{id}/items/add-discount"
 
-	// Sales payment routes (within sale detail)
-	SalesPaymentTableURL  = "/action/sales/detail/{id}/payment/table"
-	SalesPaymentAddURL    = "/action/sales/detail/{id}/payment/add"
-	SalesPaymentEditURL   = "/action/sales/detail/{id}/payment/edit/{pid}"
-	SalesPaymentRemoveURL = "/action/sales/detail/{id}/payment/remove"
+	// Revenue payment routes (within sale detail)
+	RevenuePaymentTableURL  = "/action/sales/detail/{id}/payment/table"
+	RevenuePaymentAddURL    = "/action/sales/detail/{id}/payment/add"
+	RevenuePaymentEditURL   = "/action/sales/detail/{id}/payment/edit/{pid}"
+	RevenuePaymentRemoveURL = "/action/sales/detail/{id}/payment/remove"
 
-	// Sales report routes
-	SalesSummaryURL = "/app/sales/reports/sales-summary"
+	// Revenue report routes
+	RevenueSummaryURL = "/app/sales/reports/sales-summary"
 
-	// Sales invoice document routes
-	SalesInvoiceDownloadURL = "/action/sales/detail/{id}/invoice/download"
+	// Revenue invoice document routes
+	RevenueInvoiceDownloadURL = "/action/sales/detail/{id}/invoice/download"
+	RevenueEmailURL           = "/action/sales/detail/{id}/invoice/send-email"
 
-	// Sales settings routes (template management)
-	SalesSettingsTemplatesURL       = "/app/sales/settings/templates"
-	SalesSettingsTemplateUploadURL  = "/action/sales/settings/templates/upload"
-	SalesSettingsTemplateDeleteURL  = "/action/sales/settings/templates/delete"
-	SalesSettingsTemplateDefaultURL = "/action/sales/settings/templates/set-default/{id}"
+	// Revenue settings routes (template management)
+	RevenueSettingsTemplatesURL       = "/app/sales/settings/templates"
+	RevenueSettingsTemplateUploadURL  = "/action/sales/settings/templates/upload"
+	RevenueSettingsTemplateDeleteURL  = "/action/sales/settings/templates/delete"
+	RevenueSettingsTemplateDefaultURL = "/action/sales/settings/templates/set-default/{id}"
 
 	// Expenditure (purchase + expense) routes
 	ExpenditurePurchaseListURL      = "/app/purchases/list/{status}"

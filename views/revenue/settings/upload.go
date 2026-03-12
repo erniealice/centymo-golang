@@ -25,7 +25,7 @@ const docxContentType = "application/vnd.openxmlformats-officedocument.wordproce
 // UploadFormData is the template data for the upload drawer form.
 type UploadFormData struct {
 	FormAction   string
-	Labels       centymo.SalesSettingsLabels
+	Labels       centymo.RevenueSettingsLabels
 	CommonLabels any
 }
 

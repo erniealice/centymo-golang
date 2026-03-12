@@ -20,8 +20,8 @@ var invoiceTemplateFS embed.FS
 
 // InvoiceDownloadDeps holds dependencies for the invoice download handler.
 type InvoiceDownloadDeps struct {
-	Routes centymo.SalesRoutes
-	Labels centymo.SalesLabels
+	Routes centymo.RevenueRoutes
+	Labels centymo.RevenueLabels
 
 	// Revenue operations
 	ReadRevenue          func(ctx context.Context, req *revenuepb.ReadRevenueRequest) (*revenuepb.ReadRevenueResponse, error)

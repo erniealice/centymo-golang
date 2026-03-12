@@ -122,10 +122,12 @@ func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string,
 
 		id := s.GetId()
 
-		// Build customer display name from nested client → user
+		// Build customer display name: prefer company_name, fallback to user name
 		customer := s.GetName()
 		if c := s.GetClient(); c != nil {
-			if u := c.GetUser(); u != nil {
+			if companyName := c.GetCompanyName(); companyName != "" {
+				customer = companyName
+			} else if u := c.GetUser(); u != nil {
 				firstName := u.GetFirstName()
 				lastName := u.GetLastName()
 				if firstName != "" || lastName != "" {
@@ -134,10 +136,15 @@ func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string,
 			}
 		}
 
-		// Get plan name from nested price plan
+		// Get plan name from nested price_plan → plan
 		planName := ""
 		if pp := s.GetPricePlan(); pp != nil {
-			planName = pp.GetName()
+			if p := pp.GetPlan(); p != nil {
+				planName = p.GetName()
+			}
+			if planName == "" {
+				planName = pp.GetName()
+			}
 		}
 
 		startDate := s.GetDateStartString()

@@ -319,9 +319,9 @@ func (r InventoryRoutes) RouteMap() map[string]string {
 	}
 }
 
-// SalesRoutes holds all route paths for sales (revenue) views and actions,
+// RevenueRoutes holds all route paths for revenue views and actions,
 // including line item and payment sub-routes.
-type SalesRoutes struct {
+type RevenueRoutes struct {
 	DashboardURL     string `json:"dashboard_url"`
 	ListURL          string `json:"list_url"`
 	DetailURL        string `json:"detail_url"`
@@ -348,10 +348,13 @@ type SalesRoutes struct {
 	PaymentRemoveURL string `json:"payment_remove_url"`
 
 	// Report routes
-	SalesSummaryURL string `json:"sales_summary_url"`
+	RevenueSummaryURL string `json:"sales_summary_url"`
 
 	// Document generation routes
 	InvoiceDownloadURL string `json:"invoice_download_url"`
+
+	// Send email route
+	SendEmailURL string `json:"send_email_url"`
 
 	// Settings routes (template management)
 	SettingsTemplatesURL       string `json:"settings_templates_url"`
@@ -360,45 +363,46 @@ type SalesRoutes struct {
 	SettingsTemplateDefaultURL string `json:"settings_template_default_url"`
 }
 
-// DefaultSalesRoutes returns a SalesRoutes populated from the package-level
+// DefaultRevenueRoutes returns a RevenueRoutes populated from the package-level
 // route constants defined in routes.go.
-func DefaultSalesRoutes() SalesRoutes {
-	return SalesRoutes{
-		DashboardURL:     SalesDashboardURL,
-		ListURL:          SalesListURL,
-		DetailURL:        SalesDetailURL,
-		AddURL:           SalesAddURL,
-		EditURL:          SalesEditURL,
-		DeleteURL:        SalesDeleteURL,
-		BulkDeleteURL:    SalesBulkDeleteURL,
-		SetStatusURL:     SalesSetStatusURL,
-		BulkSetStatusURL: SalesBulkSetStatusURL,
+func DefaultRevenueRoutes() RevenueRoutes {
+	return RevenueRoutes{
+		DashboardURL:     RevenueDashboardURL,
+		ListURL:          RevenueListURL,
+		DetailURL:        RevenueDetailURL,
+		AddURL:           RevenueAddURL,
+		EditURL:          RevenueEditURL,
+		DeleteURL:        RevenueDeleteURL,
+		BulkDeleteURL:    RevenueBulkDeleteURL,
+		SetStatusURL:     RevenueSetStatusURL,
+		BulkSetStatusURL: RevenueBulkSetStatusURL,
 
-		TabActionURL: SalesTabActionURL,
+		TabActionURL: RevenueTabActionURL,
 
-		LineItemTableURL:    SalesLineItemTableURL,
-		LineItemAddURL:      SalesLineItemAddURL,
-		LineItemEditURL:     SalesLineItemEditURL,
-		LineItemRemoveURL:   SalesLineItemRemoveURL,
-		LineItemDiscountURL: SalesLineItemDiscountURL,
+		LineItemTableURL:    RevenueLineItemTableURL,
+		LineItemAddURL:      RevenueLineItemAddURL,
+		LineItemEditURL:     RevenueLineItemEditURL,
+		LineItemRemoveURL:   RevenueLineItemRemoveURL,
+		LineItemDiscountURL: RevenueLineItemDiscountURL,
 
-		PaymentTableURL:  SalesPaymentTableURL,
-		PaymentAddURL:    SalesPaymentAddURL,
-		PaymentEditURL:   SalesPaymentEditURL,
-		PaymentRemoveURL: SalesPaymentRemoveURL,
+		PaymentTableURL:  RevenuePaymentTableURL,
+		PaymentAddURL:    RevenuePaymentAddURL,
+		PaymentEditURL:   RevenuePaymentEditURL,
+		PaymentRemoveURL: RevenuePaymentRemoveURL,
 
-		SalesSummaryURL: SalesSummaryURL,
-		InvoiceDownloadURL:         SalesInvoiceDownloadURL,
-		SettingsTemplatesURL:       SalesSettingsTemplatesURL,
-		SettingsTemplateUploadURL:  SalesSettingsTemplateUploadURL,
-		SettingsTemplateDeleteURL:  SalesSettingsTemplateDeleteURL,
-		SettingsTemplateDefaultURL: SalesSettingsTemplateDefaultURL,
+		RevenueSummaryURL: RevenueSummaryURL,
+		InvoiceDownloadURL:         RevenueInvoiceDownloadURL,
+		SendEmailURL:               RevenueEmailURL,
+		SettingsTemplatesURL:       RevenueSettingsTemplatesURL,
+		SettingsTemplateUploadURL:  RevenueSettingsTemplateUploadURL,
+		SettingsTemplateDeleteURL:  RevenueSettingsTemplateDeleteURL,
+		SettingsTemplateDefaultURL: RevenueSettingsTemplateDefaultURL,
 	}
 }
 
 // RouteMap returns a map of dot-notation keys to route paths for all
-// sales routes.
-func (r SalesRoutes) RouteMap() map[string]string {
+// revenue routes.
+func (r RevenueRoutes) RouteMap() map[string]string {
 	return map[string]string{
 		"sales.dashboard":       r.DashboardURL,
 		"sales.list":            r.ListURL,
@@ -423,8 +427,9 @@ func (r SalesRoutes) RouteMap() map[string]string {
 		"sales.payment.edit":   r.PaymentEditURL,
 		"sales.payment.remove": r.PaymentRemoveURL,
 
-		"sales.sales_summary": r.SalesSummaryURL,
+		"sales.sales_summary": r.RevenueSummaryURL,
 		"sales.invoice_download":           r.InvoiceDownloadURL,
+		"sales.send_email":                 r.SendEmailURL,
 		"sales.settings.templates":         r.SettingsTemplatesURL,
 		"sales.settings.template_upload":   r.SettingsTemplateUploadURL,
 		"sales.settings.template_delete":   r.SettingsTemplateDeleteURL,
@@ -521,8 +526,10 @@ type SubscriptionRoutes struct {
 	DetailURL    string `json:"detail_url"`
 	AddURL       string `json:"add_url"`
 	EditURL      string `json:"edit_url"`
-	DeleteURL    string `json:"delete_url"`
-	TabActionURL string `json:"tab_action_url"`
+	DeleteURL       string `json:"delete_url"`
+	TabActionURL    string `json:"tab_action_url"`
+	SearchPlanURL   string `json:"search_plan_url"`
+	SearchClientURL string `json:"search_client_url"`
 }
 
 // DefaultSubscriptionRoutes returns a SubscriptionRoutes populated from the
@@ -533,8 +540,10 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		DetailURL:    SubscriptionDetailURL,
 		AddURL:       SubscriptionAddURL,
 		EditURL:      SubscriptionEditURL,
-		DeleteURL:    SubscriptionDeleteURL,
-		TabActionURL: SubscriptionTabActionURL,
+		DeleteURL:       SubscriptionDeleteURL,
+		TabActionURL:    SubscriptionTabActionURL,
+		SearchPlanURL:   SubscriptionSearchPlanURL,
+		SearchClientURL: SubscriptionSearchClientURL,
 	}
 }
 
@@ -546,8 +555,10 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		"subscription.detail":     r.DetailURL,
 		"subscription.add":        r.AddURL,
 		"subscription.edit":       r.EditURL,
-		"subscription.delete":     r.DeleteURL,
-		"subscription.tab_action": r.TabActionURL,
+		"subscription.delete":        r.DeleteURL,
+		"subscription.tab_action":    r.TabActionURL,
+		"subscription.search_plan":   r.SearchPlanURL,
+		"subscription.search_client": r.SearchClientURL,
 	}
 }
 

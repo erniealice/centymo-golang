@@ -36,9 +36,9 @@ type PaymentFormData struct {
 
 // PaymentDeps holds dependencies for payment action handlers.
 type PaymentDeps struct {
-	Routes centymo.SalesRoutes
+	Routes centymo.RevenueRoutes
 	DB     centymo.DataSource
-	Labels centymo.SalesLabels
+	Labels centymo.RevenueLabels
 }
 
 // loadCollectionMethods loads collection methods from the DB and returns them

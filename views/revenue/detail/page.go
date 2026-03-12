@@ -21,9 +21,9 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
-	Routes       centymo.SalesRoutes
+	Routes       centymo.RevenueRoutes
 	DB           centymo.DataSource // KEEP — used for revenue_payment operations
-	Labels       centymo.SalesLabels
+	Labels       centymo.RevenueLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
@@ -50,7 +50,7 @@ type PageData struct {
 	types.PageData
 	ContentTemplate string
 	Revenue         map[string]any
-	Labels          centymo.SalesLabels
+	Labels          centymo.RevenueLabels
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
 	LineItemTable       *types.TableConfig
@@ -168,7 +168,7 @@ func NewView(deps *Deps) view.View {
 	})
 }
 
-func buildTabItems(l centymo.SalesLabels, id string, routes centymo.SalesRoutes) []pyeza.TabItem {
+func buildTabItems(l centymo.RevenueLabels, id string, routes centymo.RevenueRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
@@ -276,7 +276,7 @@ func filterLineItems(all []map[string]any, revenueID string) []map[string]any {
 	return items
 }
 
-func buildLineItemTable(items []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string) *types.TableConfig {
+func buildLineItemTable(items []map[string]any, l centymo.RevenueLabels, tableLabels types.TableLabels, currency string) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "description", Label: l.Detail.Description, Sortable: false},
 		{Key: "quantity", Label: l.Detail.Quantity, Sortable: false, Width: "80px"},
@@ -324,7 +324,7 @@ func buildLineItemTable(items []map[string]any, l centymo.SalesLabels, tableLabe
 }
 
 // buildAuditTable creates the audit trail table.
-func buildAuditTable(l centymo.SalesLabels, tableLabels types.TableLabels) *types.TableConfig {
+func buildAuditTable(l centymo.RevenueLabels, tableLabels types.TableLabels) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "date", Label: l.Detail.Date, Sortable: true, Width: "160px"},
 		{Key: "action", Label: l.Detail.AuditAction, Sortable: true},
@@ -368,7 +368,7 @@ func filterPayments(all []map[string]any, revenueID string) []map[string]any {
 }
 
 // buildPaymentTable creates the payment table config for the payment tab.
-func buildPaymentTable(payments []map[string]any, l centymo.SalesLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.SalesRoutes, perms *types.UserPermissions) *types.TableConfig {
+func buildPaymentTable(payments []map[string]any, l centymo.RevenueLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.RevenueRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "method", Label: l.Detail.PaymentMethod, Sortable: false},
 		{Key: "amount", Label: l.Detail.AmountPaid, Sortable: false, Width: "140px"},

@@ -292,26 +292,26 @@ type InventoryBreadcrumbLabels struct {
 }
 
 // ---------------------------------------------------------------------------
-// Sales labels
+// Revenue labels
 // ---------------------------------------------------------------------------
 
-// SalesLabels holds all translatable strings for the sales (revenue) module.
-type SalesLabels struct {
-	Page    SalesPageLabels    `json:"page"`
-	Buttons SalesButtonLabels  `json:"buttons"`
-	Columns SalesColumnLabels  `json:"columns"`
-	Empty   SalesEmptyLabels   `json:"empty"`
-	Form    SalesFormLabels    `json:"form"`
-	Actions SalesActionLabels  `json:"actions"`
-	Bulk    SalesBulkLabels    `json:"bulkActions"`
-	Detail  SalesDetailLabels  `json:"detail"`
-	Confirm SalesConfirmLabels `json:"confirm"`
-	Errors  SalesErrorLabels   `json:"errors"`
-	Dashboard SalesDashboardLabels `json:"dashboard"`
-	Settings  SalesSettingsLabels `json:"settings"`
+// RevenueLabels holds all translatable strings for the revenue module.
+type RevenueLabels struct {
+	Page    RevenuePageLabels    `json:"page"`
+	Buttons RevenueButtonLabels  `json:"buttons"`
+	Columns RevenueColumnLabels  `json:"columns"`
+	Empty   RevenueEmptyLabels   `json:"empty"`
+	Form    RevenueFormLabels    `json:"form"`
+	Actions RevenueActionLabels  `json:"actions"`
+	Bulk    RevenueBulkLabels    `json:"bulkActions"`
+	Detail  RevenueDetailLabels  `json:"detail"`
+	Confirm RevenueConfirmLabels `json:"confirm"`
+	Errors  RevenueErrorLabels   `json:"errors"`
+	Dashboard RevenueDashboardLabels `json:"dashboard"`
+	Settings  RevenueSettingsLabels `json:"settings"`
 }
 
-type SalesPageLabels struct {
+type RevenuePageLabels struct {
 	Heading          string `json:"heading"`
 	HeadingOngoing   string `json:"headingOngoing"`
 	HeadingComplete  string `json:"headingComplete"`
@@ -322,11 +322,11 @@ type SalesPageLabels struct {
 	CaptionCancelled string `json:"captionCancelled"`
 }
 
-type SalesButtonLabels struct {
+type RevenueButtonLabels struct {
 	AddSale string `json:"addSale"`
 }
 
-type SalesColumnLabels struct {
+type RevenueColumnLabels struct {
 	Reference  string `json:"reference"`
 	Customer   string `json:"customer"`
 	Date       string `json:"date"`
@@ -334,7 +334,7 @@ type SalesColumnLabels struct {
 	Status     string `json:"status"`
 }
 
-type SalesEmptyLabels struct {
+type RevenueEmptyLabels struct {
 	OngoingTitle     string `json:"ongoingTitle"`
 	OngoingMessage   string `json:"ongoingMessage"`
 	CompleteTitle    string `json:"completeTitle"`
@@ -343,7 +343,7 @@ type SalesEmptyLabels struct {
 	CancelledMessage string `json:"cancelledMessage"`
 }
 
-type SalesFormLabels struct {
+type RevenueFormLabels struct {
 	Customer             string `json:"customer"`
 	Date                 string `json:"date"`
 	Amount               string `json:"amount"`
@@ -357,20 +357,21 @@ type SalesFormLabels struct {
 	Location             string `json:"location"`
 }
 
-type SalesActionLabels struct {
+type RevenueActionLabels struct {
 	View            string `json:"view"`
 	Edit            string `json:"edit"`
 	Delete          string `json:"delete"`
 	Complete        string `json:"complete"`
 	Reactivate      string `json:"reactivate"`
 	DownloadInvoice string `json:"downloadInvoice"`
+	SendEmail       string `json:"sendEmail"`
 }
 
-type SalesBulkLabels struct {
+type RevenueBulkLabels struct {
 	Delete string `json:"delete"`
 }
 
-type SalesDetailLabels struct {
+type RevenueDetailLabels struct {
 	PageTitle   string `json:"pageTitle"`
 	TitlePrefix string `json:"titlePrefix"`
 	InvoiceInfo string `json:"invoiceInfo"`
@@ -436,7 +437,7 @@ type SalesDetailLabels struct {
 	ItemEmptyMessage string `json:"itemEmptyMessage"`
 }
 
-type SalesConfirmLabels struct {
+type RevenueConfirmLabels struct {
 	Complete         string `json:"complete"`
 	CompleteMessage  string `json:"completeMessage"`
 	Reactivate       string `json:"reactivate"`
@@ -445,9 +446,11 @@ type SalesConfirmLabels struct {
 	BulkCompleteMessage string `json:"bulkCompleteMessage"`
 	BulkReactivate       string `json:"bulkReactivate"`
 	BulkReactivateMessage string `json:"bulkReactivateMessage"`
+	SendEmail        string `json:"sendEmail"`
+	SendEmailMessage string `json:"sendEmailMessage"`
 }
 
-type SalesErrorLabels struct {
+type RevenueErrorLabels struct {
 	PermissionDenied     string `json:"permissionDenied"`
 	InvalidFormData      string `json:"invalidFormData"`
 	NotFound             string `json:"notFound"`
@@ -463,7 +466,7 @@ type SalesErrorLabels struct {
 	InvalidDiscount      string `json:"invalidDiscount"`
 }
 
-type SalesDashboardLabels struct {
+type RevenueDashboardLabels struct {
 	Title          string `json:"title"`
 	TotalSales     string `json:"totalSales"`
 	Revenue        string `json:"revenue"`
@@ -481,9 +484,9 @@ type SalesDashboardLabels struct {
 	SaleCancelled  string `json:"saleCancelled"`
 }
 
-// SalesSettingsLabels holds translatable strings for the sales settings page
+// RevenueSettingsLabels holds translatable strings for the revenue settings page
 // (invoice template management).
-type SalesSettingsLabels struct {
+type RevenueSettingsLabels struct {
 	PageTitle      string `json:"pageTitle"`
 	Caption        string `json:"caption"`
 	UploadTemplate string `json:"uploadTemplate"`
@@ -1746,8 +1749,12 @@ type SubscriptionFormLabels struct {
 	StartDate           string `json:"startDate"`
 	EndDate             string `json:"endDate"`
 	Active              string `json:"active"`
-	Notes               string `json:"notes"`
-	NotesPlaceholder    string `json:"notesPlaceholder"`
+	Notes                     string `json:"notes"`
+	NotesPlaceholder          string `json:"notesPlaceholder"`
+	CustomerSearchPlaceholder string `json:"customerSearchPlaceholder"`
+	PlanSearchPlaceholder     string `json:"planSearchPlaceholder"`
+	CustomerNoResults         string `json:"customerNoResults"`
+	PlanNoResults             string `json:"planNoResults"`
 }
 
 type SubscriptionDetailLabels struct {
@@ -1886,7 +1893,11 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			EndDate:             "End Date",
 			Active:              "Active",
 			Notes:               "Notes",
-			NotesPlaceholder:    "Enter notes...",
+			NotesPlaceholder:          "Enter notes...",
+			CustomerSearchPlaceholder: "Search customers...",
+			PlanSearchPlaceholder:     "Search plans...",
+			CustomerNoResults:         "No customers found",
+			PlanNoResults:             "No plans found",
 		},
 		Actions: SubscriptionActionLabels{
 			View:   "View Subscription",

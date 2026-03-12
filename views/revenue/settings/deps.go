@@ -13,8 +13,8 @@ import (
 
 // Deps holds view dependencies for the sales settings (template management) views.
 type Deps struct {
-	Routes       centymo.SalesRoutes
-	Labels       centymo.SalesLabels
+	Routes       centymo.RevenueRoutes
+	Labels       centymo.RevenueLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 

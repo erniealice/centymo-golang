@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -17,14 +18,18 @@ import (
 
 // FormLabels holds i18n labels for the subscription drawer form template.
 type FormLabels struct {
-	Customer            string
-	CustomerPlaceholder string
-	Plan                string
-	PlanPlaceholder     string
-	StartDate           string
-	EndDate             string
-	Notes               string
-	NotesPlaceholder    string
+	Customer                  string
+	CustomerPlaceholder       string
+	Plan                      string
+	PlanPlaceholder           string
+	StartDate                 string
+	EndDate                   string
+	Notes                     string
+	NotesPlaceholder          string
+	CustomerSearchPlaceholder string
+	PlanSearchPlaceholder     string
+	CustomerNoResults         string
+	PlanNoResults             string
 }
 
 // FormData is the template data for the subscription drawer form.
@@ -38,10 +43,14 @@ type FormData struct {
 	DateStart    string
 	DateEnd      string
 	Notes        string
-	Clients      []map[string]string
-	PricePlans   []map[string]string
-	Labels       FormLabels
-	CommonLabels any
+	Clients         []map[string]string
+	PricePlans      []map[string]string
+	SearchClientURL string
+	SearchPlanURL   string
+	ClientLabel     string
+	PlanLabel       string
+	Labels          FormLabels
+	CommonLabels    any
 }
 
 // Deps holds dependencies for subscription action handlers.
@@ -65,8 +74,12 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 		PlanPlaceholder:     l.Form.PlanPlaceholder,
 		StartDate:           l.Form.StartDate,
 		EndDate:             l.Form.EndDate,
-		Notes:               l.Form.Notes,
-		NotesPlaceholder:    l.Form.NotesPlaceholder,
+		Notes:                     l.Form.Notes,
+		NotesPlaceholder:          l.Form.NotesPlaceholder,
+		CustomerSearchPlaceholder: l.Form.CustomerSearchPlaceholder,
+		PlanSearchPlaceholder:     l.Form.PlanSearchPlaceholder,
+		CustomerNoResults:         l.Form.CustomerNoResults,
+		PlanNoResults:             l.Form.PlanNoResults,
 	}
 }
 
@@ -121,6 +134,50 @@ func loadPlanOptions(ctx context.Context, listPlans func(ctx context.Context, re
 	return options
 }
 
+// resolveClientLabel finds the display name for a client by ID.
+func resolveClientLabel(ctx context.Context, clientID string, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)) string {
+	if clientID == "" || listClients == nil {
+		return ""
+	}
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		return clientID
+	}
+	for _, c := range resp.GetData() {
+		if c.GetId() == clientID {
+			if cn := c.GetCompanyName(); cn != "" {
+				return cn
+			}
+			if u := c.GetUser(); u != nil {
+				first := u.GetFirstName()
+				last := u.GetLastName()
+				if first != "" || last != "" {
+					return strings.TrimSpace(first + " " + last)
+				}
+			}
+			return clientID
+		}
+	}
+	return clientID
+}
+
+// resolvePlanLabel finds the display name for a plan by ID.
+func resolvePlanLabel(ctx context.Context, planID string, listPlans func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)) string {
+	if planID == "" || listPlans == nil {
+		return ""
+	}
+	resp, err := listPlans(ctx, &planpb.ListPlansRequest{})
+	if err != nil {
+		return planID
+	}
+	for _, p := range resp.GetData() {
+		if p.GetId() == planID {
+			return p.GetName()
+		}
+	}
+	return planID
+}
+
 // NewAddAction creates the subscription add action (GET = form, POST = create).
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -130,15 +187,12 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			clients := loadClientOptions(ctx, deps.ListClients)
-			plans := loadPlanOptions(ctx, deps.ListPlans)
-
 			return view.OK("subscription-drawer-form", &FormData{
-				FormAction:   deps.Routes.AddURL,
-				Clients:      clients,
-				PricePlans:   plans,
-				Labels:       formLabels(deps.Labels),
-				CommonLabels: nil, // injected by ViewAdapter
+				FormAction:      deps.Routes.AddURL,
+				SearchClientURL: deps.Routes.SearchClientURL,
+				SearchPlanURL:   deps.Routes.SearchPlanURL,
+				Labels:          formLabels(deps.Labels),
+				CommonLabels:    nil, // injected by ViewAdapter
 			})
 		}
 
@@ -210,22 +264,24 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := readData[0]
 
-			clients := loadClientOptions(ctx, deps.ListClients)
-			plans := loadPlanOptions(ctx, deps.ListPlans)
+			clientLabel := resolveClientLabel(ctx, record.GetClientId(), deps.ListClients)
+			planLabel := resolvePlanLabel(ctx, record.GetPricePlanId(), deps.ListPlans)
 
 			return view.OK("subscription-drawer-form", &FormData{
-				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:       true,
-				ID:           id,
-				Name:         record.GetName(),
-				ClientID:     record.GetClientId(),
-				PricePlanID:  record.GetPricePlanId(),
-				DateStart:    record.GetDateStartString(),
-				DateEnd:      record.GetDateEndString(),
-				Clients:      clients,
-				PricePlans:   plans,
-				Labels:       formLabels(deps.Labels),
-				CommonLabels: nil, // injected by ViewAdapter
+				FormAction:      route.ResolveURL(deps.Routes.EditURL, "id", id),
+				IsEdit:          true,
+				ID:              id,
+				Name:            record.GetName(),
+				ClientID:        record.GetClientId(),
+				PricePlanID:     record.GetPricePlanId(),
+				DateStart:       record.GetDateStartString(),
+				DateEnd:         record.GetDateEndString(),
+				SearchClientURL: deps.Routes.SearchClientURL,
+				SearchPlanURL:   deps.Routes.SearchPlanURL,
+				ClientLabel:     clientLabel,
+				PlanLabel:       planLabel,
+				Labels:          formLabels(deps.Labels),
+				CommonLabels:    nil, // injected by ViewAdapter
 			})
 		}
 

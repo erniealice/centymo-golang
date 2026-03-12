@@ -12,7 +12,7 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
-	Labels       centymo.SalesLabels
+	Labels       centymo.RevenueLabels
 	CommonLabels pyeza.CommonLabels
 }
 
@@ -20,7 +20,7 @@ type Deps struct {
 type PageData struct {
 	types.PageData
 	ContentTemplate string
-	Labels          centymo.SalesDashboardLabels
+	Labels          centymo.RevenueDashboardLabels
 }
 
 // NewView creates the sales dashboard view.
