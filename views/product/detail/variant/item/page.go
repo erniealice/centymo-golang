@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -51,9 +52,12 @@ type StockDetailPageData struct {
 	ItemStatus        string
 	ItemStatusVariant string
 	// Serial data
-	SerialTable       *types.TableConfig
-	SerialSummary     *SerialSummary
-	Labels            centymo.ProductLabels
+	SerialTable         *types.TableConfig
+	SerialSummary       *SerialSummary
+	// Attachments tab
+	AttachmentTable     *types.TableConfig
+	AttachmentUploadURL string
+	Labels              centymo.ProductLabels
 }
 
 // NewPageView creates the inventory item detail view (full page).
@@ -165,6 +169,17 @@ func NewPageView(deps *variant.Deps) view.View {
 			serials := LoadSerials(ctx, deps, itemID)
 			pageData.SerialTable = BuildSerialTable(serials, deps.TableLabels, productID, variantID, itemID, l, deps.Routes)
 			pageData.SerialSummary = ComputeSerialSummary(serials)
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := stockAttachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, itemID)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, itemID)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantStockAttachmentUploadURL, "id", productID, "vid", variantID, "iid", itemID)
 		}
 
 		return view.OK("variant-stock-detail", pageData)
@@ -243,9 +258,23 @@ func NewTabAction(deps *variant.Deps) view.View {
 			serials := LoadSerials(ctx, deps, itemID)
 			pageData.SerialTable = BuildSerialTable(serials, deps.TableLabels, productID, variantID, itemID, l, deps.Routes)
 			pageData.SerialSummary = ComputeSerialSummary(serials)
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := stockAttachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, itemID)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, itemID)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantStockAttachmentUploadURL, "id", productID, "vid", variantID, "iid", itemID)
 		}
 
 		templateName := "stock-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }
@@ -258,6 +287,7 @@ func BuildStockTabItems(productID, variantID, itemID string, l centymo.ProductLa
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
 		{Key: "serials", Label: "Serials", Href: base + "?tab=serials", HxGet: action + "serials", Icon: "icon-hash", Count: 0, Disabled: false},
 		{Key: "pricing-history", Label: "Pricing History", Href: base + "?tab=pricing-history", HxGet: action + "pricing-history", Icon: "icon-tag", Count: 0, Disabled: false},
+		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		{Key: "audit-trail", Label: "Audit Trail", Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
 	}
 }

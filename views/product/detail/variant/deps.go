@@ -94,6 +94,13 @@ type Deps struct {
 
 	// Storage uploader (for file content → object storage)
 	UploadImage func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
+
+	// Attachment deps
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // loadOptionSelections loads all active product options with their values for the variant form dropdowns.

@@ -29,21 +29,30 @@ type ModuleDeps struct {
 	UpdateDisbursement func(ctx context.Context, req *disbursementpb.UpdateDisbursementRequest) (*disbursementpb.UpdateDisbursementResponse, error)
 	DeleteDisbursement func(ctx context.Context, req *disbursementpb.DeleteDisbursementRequest) (*disbursementpb.DeleteDisbursementResponse, error)
 	ListDisbursements  func(ctx context.Context, req *disbursementpb.ListDisbursementsRequest) (*disbursementpb.ListDisbursementsResponse, error)
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // Module holds all constructed disbursement views.
 type Module struct {
-	routes        centymo.DisbursementRoutes
-	Dashboard     view.View
-	List          view.View
-	Detail        view.View
-	TabAction     view.View
-	Add           view.View
-	Edit          view.View
-	Delete        view.View
-	BulkDelete    view.View
-	SetStatus     view.View
-	BulkSetStatus view.View
+	routes           centymo.DisbursementRoutes
+	Dashboard        view.View
+	List             view.View
+	Detail           view.View
+	TabAction        view.View
+	Add              view.View
+	Edit             view.View
+	Delete           view.View
+	BulkDelete       view.View
+	SetStatus        view.View
+	BulkSetStatus    view.View
+	AttachmentUpload view.View
+	AttachmentDelete view.View
 }
 
 // NewModule creates the disbursement module with all views.
@@ -63,6 +72,11 @@ func NewModule(deps *ModuleDeps) *Module {
 		Labels:           deps.Labels,
 		CommonLabels:     deps.CommonLabels,
 		TableLabels:      deps.TableLabels,
+		UploadFile:       deps.UploadFile,
+		ListAttachments:  deps.ListAttachments,
+		CreateAttachment: deps.CreateAttachment,
+		DeleteAttachment: deps.DeleteAttachment,
+		NewID:            deps.NewID,
 	}
 
 	actionDeps := &disbursementaction.Deps{
@@ -84,8 +98,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		Edit:          disbursementaction.NewEditAction(actionDeps),
 		Delete:        disbursementaction.NewDeleteAction(actionDeps),
 		BulkDelete:    disbursementaction.NewBulkDeleteAction(actionDeps),
-		SetStatus:     disbursementaction.NewSetStatusAction(actionDeps),
-		BulkSetStatus: disbursementaction.NewBulkSetStatusAction(actionDeps),
+		SetStatus:        disbursementaction.NewSetStatusAction(actionDeps),
+		BulkSetStatus:    disbursementaction.NewBulkSetStatusAction(actionDeps),
+		AttachmentUpload: disbursementdetail.NewAttachmentUploadAction(detailDeps),
+		AttachmentDelete: disbursementdetail.NewAttachmentDeleteAction(detailDeps),
 	}
 }
 
@@ -107,4 +123,10 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	r.POST(m.routes.BulkDeleteURL, m.BulkDelete)
 	r.POST(m.routes.SetStatusURL, m.SetStatus)
 	r.POST(m.routes.BulkSetStatusURL, m.BulkSetStatus)
+	// Attachments
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
+	}
 }

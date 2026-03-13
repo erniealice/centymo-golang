@@ -11,6 +11,7 @@ import (
 	"github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -32,6 +33,13 @@ type Deps struct {
 
 	// Typed line item operations
 	ListRevenueLineItems func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
+
+	// Attachment operations (injected by composition root)
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // PaymentInfo holds payment details for the payment tab.
@@ -63,8 +71,10 @@ type PageData struct {
 	TotalPaid        string
 	RemainingBalance string
 	PaymentStatus    string
-	AuditTable         *types.TableConfig
-	InvoiceDownloadURL string
+	AuditTable          *types.TableConfig
+	AttachmentTable     *types.TableConfig
+	AttachmentUploadURL string
+	InvoiceDownloadURL  string
 }
 
 // NewView creates the sales detail view.
@@ -162,6 +172,18 @@ func NewView(deps *Deps) view.View {
 
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
+
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments for %s %s: %v", cfg.EntityType, id, err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		}
 
 		return view.OK("sales-detail", pageData)
@@ -176,6 +198,7 @@ func buildTabItems(l centymo.RevenueLabels, id string, routes centymo.RevenueRou
 		{Key: "items", Label: l.Detail.TabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
 		{Key: "payment", Label: l.Detail.TabPayment, Href: base + "?tab=payment", HxGet: action + "payment", Icon: "icon-credit-card"},
 		{Key: "audit", Label: l.Detail.TabAuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
+		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 	}
 }
 
@@ -258,9 +281,24 @@ func NewTabAction(deps *Deps) view.View {
 
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
+
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments for %s %s: %v", cfg.EntityType, id, err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		}
 
 		templateName := "sales-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }

@@ -8,6 +8,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -34,6 +35,13 @@ type Deps struct {
 	Labels                    centymo.InventoryLabels
 	CommonLabels              pyeza.CommonLabels
 	TableLabels               types.TableLabels
+
+	// Attachment operations (injected by composition root)
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // AttributeEntry holds a name-value pair for display.
@@ -79,9 +87,11 @@ type PageData struct {
 	Attributes       []AttributeEntry
 	SerialTable      *types.TableConfig
 	SerialSummary    *SerialSummary
-	TransactionTable *types.TableConfig
-	Depreciation     *DepreciationInfo
-	AuditTable       *types.TableConfig
+	TransactionTable    *types.TableConfig
+	Depreciation        *DepreciationInfo
+	AuditTable          *types.TableConfig
+	AttachmentTable     *types.TableConfig
+	AttachmentUploadURL string
 }
 
 // NewView creates the inventory detail view.
@@ -172,6 +182,18 @@ func NewView(deps *Deps) view.View {
 
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
+
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments for %s %s: %v", cfg.EntityType, id, err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		}
 
 		return view.OK("inventory-detail", pageData)
@@ -235,9 +257,24 @@ func NewTabAction(deps *Deps) view.View {
 			pageData.Depreciation = loadDepreciation(ctx, deps, id, l)
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
+
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments for %s %s: %v", cfg.EntityType, id, err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		}
 
 		templateName := "inventory-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }
@@ -277,6 +314,7 @@ func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool, rout
 		pyeza.TabItem{Key: "transactions", Label: l.Tabs.Transactions, Href: base + "?tab=transactions", HxGet: action + "transactions", Icon: "icon-repeat"},
 		pyeza.TabItem{Key: "depreciation", Label: l.Tabs.Depreciation, Href: base + "?tab=depreciation", HxGet: action + "depreciation", Icon: "icon-trending-down"},
 		pyeza.TabItem{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
+		pyeza.TabItem{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 	)
 	return tabs
 }

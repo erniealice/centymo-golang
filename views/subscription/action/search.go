@@ -27,13 +27,39 @@ const searchResultLimit = 20
 func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		query := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+		query := strings.TrimSpace(r.URL.Query().Get("q"))
 
+		// Use proto search if available (SQL ILIKE, no full load)
+		if deps.SearchClientsByName != nil {
+			resp, err := deps.SearchClientsByName(ctx, &clientpb.SearchClientsByNameRequest{
+				Query: query,
+			})
+			if err != nil {
+				log.Printf("search clients: failed to search clients by name: %v", err)
+				writeJSON(w, []searchOption{})
+				return
+			}
+			var results []searchOption
+			for _, r := range resp.GetResults() {
+				results = append(results, searchOption{
+					Value: r.GetId(),
+					Label: r.GetLabel(),
+				})
+			}
+			if results == nil {
+				results = []searchOption{}
+			}
+			writeJSON(w, results)
+			return
+		}
+
+		// Fallback: load all clients and filter in Go
 		if deps.ListClients == nil {
 			writeJSON(w, []searchOption{})
 			return
 		}
 
+		queryLower := strings.ToLower(query)
 		resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{})
 		if err != nil {
 			log.Printf("search clients: failed to list clients: %v", err)
@@ -47,7 +73,6 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 				continue
 			}
 
-			// Build label: prefer company_name, fallback to user name, fallback to ID
 			label := c.GetId()
 			companyName := c.GetCompanyName()
 			if companyName != "" {
@@ -60,20 +85,18 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 				}
 			}
 
-			// Filter by query (if provided)
-			if query != "" {
+			if queryLower != "" {
 				labelLower := strings.ToLower(label)
-				match := strings.Contains(labelLower, query)
-				// Also check individual name parts for broader matching
+				match := strings.Contains(labelLower, queryLower)
 				if !match {
 					if cn := c.GetCompanyName(); cn != "" {
-						match = strings.Contains(strings.ToLower(cn), query)
+						match = strings.Contains(strings.ToLower(cn), queryLower)
 					}
 				}
 				if !match {
 					if u := c.GetUser(); u != nil {
-						match = strings.Contains(strings.ToLower(u.GetFirstName()), query) ||
-							strings.Contains(strings.ToLower(u.GetLastName()), query)
+						match = strings.Contains(strings.ToLower(u.GetFirstName()), queryLower) ||
+							strings.Contains(strings.ToLower(u.GetLastName()), queryLower)
 					}
 				}
 				if !match {
@@ -103,13 +126,39 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		query := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+		query := strings.TrimSpace(r.URL.Query().Get("q"))
 
+		// Use proto search if available (SQL ILIKE, no full load)
+		if deps.SearchPlansByName != nil {
+			resp, err := deps.SearchPlansByName(ctx, &planpb.SearchPlansByNameRequest{
+				Query: query,
+			})
+			if err != nil {
+				log.Printf("search plans: failed to search plans by name: %v", err)
+				writeJSON(w, []searchOption{})
+				return
+			}
+			var results []searchOption
+			for _, r := range resp.GetResults() {
+				results = append(results, searchOption{
+					Value: r.GetId(),
+					Label: r.GetLabel(),
+				})
+			}
+			if results == nil {
+				results = []searchOption{}
+			}
+			writeJSON(w, results)
+			return
+		}
+
+		// Fallback: load all plans and filter in Go
 		if deps.ListPlans == nil {
 			writeJSON(w, []searchOption{})
 			return
 		}
 
+		queryLower := strings.ToLower(query)
 		resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
 		if err != nil {
 			log.Printf("search plans: failed to list plans: %v", err)
@@ -124,9 +173,7 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 			}
 
 			name := p.GetName()
-
-			// Filter by query (if provided)
-			if query != "" && !strings.Contains(strings.ToLower(name), query) {
+			if queryLower != "" && !strings.Contains(strings.ToLower(name), queryLower) {
 				continue
 			}
 

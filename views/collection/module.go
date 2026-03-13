@@ -29,21 +29,30 @@ type ModuleDeps struct {
 	UpdateCollection func(ctx context.Context, req *collectionpb.UpdateCollectionRequest) (*collectionpb.UpdateCollectionResponse, error)
 	DeleteCollection func(ctx context.Context, req *collectionpb.DeleteCollectionRequest) (*collectionpb.DeleteCollectionResponse, error)
 	ListCollections  func(ctx context.Context, req *collectionpb.ListCollectionsRequest) (*collectionpb.ListCollectionsResponse, error)
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // Module holds all constructed collection views.
 type Module struct {
-	routes        centymo.CollectionRoutes
-	Dashboard     view.View
-	List          view.View
-	Detail        view.View
-	TabAction     view.View
-	Add           view.View
-	Edit          view.View
-	Delete        view.View
-	BulkDelete    view.View
-	SetStatus     view.View
-	BulkSetStatus view.View
+	routes           centymo.CollectionRoutes
+	Dashboard        view.View
+	List             view.View
+	Detail           view.View
+	TabAction        view.View
+	Add              view.View
+	Edit             view.View
+	Delete           view.View
+	BulkDelete       view.View
+	SetStatus        view.View
+	BulkSetStatus    view.View
+	AttachmentUpload view.View
+	AttachmentDelete view.View
 }
 
 // NewModule creates the collection module with all views wired.
@@ -58,11 +67,16 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	detailDeps := &collectiondetail.Deps{
-		Routes:         deps.Routes,
-		ReadCollection: deps.ReadCollection,
-		Labels:         deps.Labels,
-		CommonLabels:   deps.CommonLabels,
-		TableLabels:    deps.TableLabels,
+		Routes:           deps.Routes,
+		ReadCollection:   deps.ReadCollection,
+		Labels:           deps.Labels,
+		CommonLabels:     deps.CommonLabels,
+		TableLabels:      deps.TableLabels,
+		UploadFile:       deps.UploadFile,
+		ListAttachments:  deps.ListAttachments,
+		CreateAttachment: deps.CreateAttachment,
+		DeleteAttachment: deps.DeleteAttachment,
+		NewID:            deps.NewID,
 	}
 
 	listView := collectionlist.NewView(&collectionlist.Deps{
@@ -84,8 +98,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		Edit:          collectionaction.NewEditAction(actionDeps),
 		Delete:        collectionaction.NewDeleteAction(actionDeps),
 		BulkDelete:    collectionaction.NewBulkDeleteAction(actionDeps),
-		SetStatus:     collectionaction.NewSetStatusAction(actionDeps),
-		BulkSetStatus: collectionaction.NewBulkSetStatusAction(actionDeps),
+		SetStatus:        collectionaction.NewSetStatusAction(actionDeps),
+		BulkSetStatus:    collectionaction.NewBulkSetStatusAction(actionDeps),
+		AttachmentUpload: collectiondetail.NewAttachmentUploadAction(detailDeps),
+		AttachmentDelete: collectiondetail.NewAttachmentDeleteAction(detailDeps),
 	}
 }
 
@@ -103,4 +119,10 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	r.POST(m.routes.BulkDeleteURL, m.BulkDelete)
 	r.POST(m.routes.SetStatusURL, m.SetStatus)
 	r.POST(m.routes.BulkSetStatusURL, m.BulkSetStatus)
+	// Attachments
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
+	}
 }

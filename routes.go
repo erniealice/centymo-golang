@@ -8,14 +8,18 @@ const (
 	PlanAddURL        = "/action/plans/add"
 	PlanEditURL       = "/action/plans/edit/{id}"
 	PlanDeleteURL     = "/action/plans/delete"
-	PlanTabActionURL  = "/action/plans/detail/{id}/tab/{tab}"
+	PlanTabActionURL            = "/action/plans/detail/{id}/tab/{tab}"
+	PlanAttachmentUploadURL     = "/action/plans/detail/{id}/attachments/upload"
+	PlanAttachmentDeleteURL     = "/action/plans/detail/{id}/attachments/delete"
 
 	SubscriptionListURL      = "/app/subscriptions/list/{status}"
 	SubscriptionDetailURL    = "/app/subscriptions/{id}"
 	SubscriptionAddURL       = "/action/subscriptions/add"
 	SubscriptionEditURL      = "/action/subscriptions/edit/{id}"
 	SubscriptionDeleteURL    = "/action/subscriptions/delete"
-	SubscriptionTabActionURL     = "/action/subscriptions/detail/{id}/tab/{tab}"
+	SubscriptionTabActionURL         = "/action/subscriptions/detail/{id}/tab/{tab}"
+	SubscriptionAttachmentUploadURL = "/action/subscriptions/detail/{id}/attachments/upload"
+	SubscriptionAttachmentDeleteURL = "/action/subscriptions/detail/{id}/attachments/delete"
 	SubscriptionSearchPlanURL    = "/action/subscriptions/search/plans"
 	SubscriptionSearchClientURL  = "/action/subscriptions/search/clients"
 
@@ -29,7 +33,9 @@ const (
 	CollectionBulkDeleteURL    = "/action/collections/bulk-delete"
 	CollectionSetStatusURL     = "/action/collections/set-status"
 	CollectionBulkSetStatusURL = "/action/collections/bulk-set-status"
-	CollectionTabActionURL     = "/action/collections/detail/{id}/tab/{tab}"
+	CollectionTabActionURL         = "/action/collections/detail/{id}/tab/{tab}"
+	CollectionAttachmentUploadURL = "/action/collections/detail/{id}/attachments/upload"
+	CollectionAttachmentDeleteURL = "/action/collections/detail/{id}/attachments/delete"
 
 	// Disbursement (money OUT) routes
 	DisbursementListURL          = "/app/disbursements/list/{status}"
@@ -41,7 +47,9 @@ const (
 	DisbursementBulkDeleteURL    = "/action/disbursements/bulk-delete"
 	DisbursementSetStatusURL     = "/action/disbursements/set-status"
 	DisbursementBulkSetStatusURL = "/action/disbursements/bulk-set-status"
-	DisbursementTabActionURL     = "/action/disbursements/detail/{id}/tab/{tab}"
+	DisbursementTabActionURL         = "/action/disbursements/detail/{id}/tab/{tab}"
+	DisbursementAttachmentUploadURL = "/action/disbursements/detail/{id}/attachments/upload"
+	DisbursementAttachmentDeleteURL = "/action/disbursements/detail/{id}/attachments/delete"
 
 	ProductListURL   = "/app/products/list/{status}"
 	ProductDetailURL = "/app/products/detail/{id}"
@@ -66,7 +74,9 @@ const (
 	ProductBulkSetStatusURL = "/action/products/bulk-set-status"
 
 	// Product detail tab action route
-	ProductTabActionURL = "/action/products/detail/{id}/tab/{tab}"
+	ProductTabActionURL         = "/action/products/detail/{id}/tab/{tab}"
+	ProductAttachmentUploadURL  = "/action/products/detail/{id}/attachments/upload"
+	ProductAttachmentDeleteURL  = "/action/products/detail/{id}/attachments/delete"
 
 	// Product variant routes (within product detail)
 	ProductVariantTableURL  = "/action/products/detail/{id}/variants/table"
@@ -96,9 +106,17 @@ const (
 	ProductVariantImageUploadURL = "/action/products/detail/{id}/variant/{vid}/images/upload"
 	ProductVariantImageDeleteURL = "/action/products/detail/{id}/variant/{vid}/images/delete"
 
+	// Product variant attachment routes
+	ProductVariantAttachmentUploadURL = "/action/products/detail/{id}/variant/{vid}/attachments/upload"
+	ProductVariantAttachmentDeleteURL = "/action/products/detail/{id}/variant/{vid}/attachments/delete"
+
 	// Product variant stock detail (inventory item within variant context)
 	ProductVariantStockDetailURL    = "/app/products/detail/{id}/variant/{vid}/stock/{iid}"
 	ProductVariantStockTabActionURL = "/action/products/detail/{id}/variant/{vid}/stock/{iid}/tab/{tab}"
+
+	// Product variant stock attachment routes
+	ProductVariantStockAttachmentUploadURL = "/action/products/detail/{id}/variant/{vid}/stock/{iid}/attachments/upload"
+	ProductVariantStockAttachmentDeleteURL = "/action/products/detail/{id}/variant/{vid}/stock/{iid}/attachments/delete"
 
 	// Inventory serial detail (individual serial within inventory item)
 	ProductVariantSerialDetailURL = "/app/products/detail/{id}/variant/{vid}/stock/{iid}/serial/{sid}"
@@ -114,7 +132,9 @@ const (
 	InventoryBulkSetStatusURL = "/action/inventory/bulk-set-status"
 
 	// Inventory tab action route
-	InventoryTabActionURL = "/action/inventory/detail/{id}/tab/{tab}"
+	InventoryTabActionURL         = "/action/inventory/detail/{id}/tab/{tab}"
+	InventoryAttachmentUploadURL  = "/action/inventory/detail/{id}/attachments/upload"
+	InventoryAttachmentDeleteURL  = "/action/inventory/detail/{id}/attachments/delete"
 
 	// Inventory movements (global transaction history)
 	InventoryMovementsURL       = "/app/inventory/movements"
@@ -163,7 +183,9 @@ const (
 	RevenueBulkSetStatusURL = "/action/sales/status/set/bulk"
 
 	// Revenue tab action route
-	RevenueTabActionURL = "/action/sales/detail/{id}/tab/{tab}"
+	RevenueTabActionURL         = "/action/sales/detail/{id}/tab/{tab}"
+	RevenueAttachmentUploadURL  = "/action/sales/detail/{id}/attachments/upload"
+	RevenueAttachmentDeleteURL  = "/action/sales/detail/{id}/attachments/delete"
 
 	// Revenue line item routes (within sale detail)
 	RevenueLineItemTableURL    = "/action/sales/detail/{id}/items/table"
@@ -209,7 +231,9 @@ const (
 	PriceListDeleteURL     = "/action/price-lists/delete"
 	PriceListBulkDeleteURL = "/action/price-lists/bulk-delete"
 
-	PriceListTabActionURL = "/action/price-lists/{id}/tab/{tab}"
+	PriceListTabActionURL         = "/action/price-lists/{id}/tab/{tab}"
+	PriceListAttachmentUploadURL  = "/action/price-lists/{id}/attachments/upload"
+	PriceListAttachmentDeleteURL  = "/action/price-lists/{id}/attachments/delete"
 
 	// Price Product routes (within price list detail)
 	PriceProductAddURL    = "/action/price-lists/{id}/products/add"

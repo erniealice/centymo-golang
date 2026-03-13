@@ -8,6 +8,7 @@ import (
 	"github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -22,16 +23,25 @@ type Deps struct {
 	Labels           centymo.SubscriptionLabels
 	CommonLabels     pyeza.CommonLabels
 	TableLabels      types.TableLabels
+
+	// Attachment deps
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // PageData holds the data for the subscription detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	Subscription    map[string]any
-	Labels          centymo.SubscriptionLabels
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
+	ContentTemplate     string
+	Subscription        map[string]any
+	Labels              centymo.SubscriptionLabels
+	ActiveTab           string
+	TabItems            []pyeza.TabItem
+	AttachmentTable     *types.TableConfig
+	AttachmentUploadURL string
 }
 
 // subscriptionToMap converts a Subscription protobuf to a map[string]any for template use.
@@ -137,6 +147,20 @@ func NewView(deps *Deps) view.View {
 			TabItems:        tabItems,
 		}
 
+		switch activeTab {
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+		}
+
 		return view.OK("subscription-detail", pageData)
 	})
 }
@@ -146,6 +170,7 @@ func buildTabItems(l centymo.SubscriptionLabels, id string, routes centymo.Subsc
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 	}
 }
@@ -185,7 +210,24 @@ func NewTabAction(deps *Deps) view.View {
 			TabItems:     buildTabItems(l, id, deps.Routes),
 		}
 
+		switch tab {
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+		}
+
 		templateName := "subscription-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }

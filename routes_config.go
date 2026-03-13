@@ -38,6 +38,10 @@ type ProductRoutes struct {
 
 	TabActionURL string `json:"tab_action_url"`
 
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
+
 	// Variant routes
 	VariantTableURL  string `json:"variant_table_url"`
 	VariantAssignURL string `json:"variant_assign_url"`
@@ -52,9 +56,17 @@ type ProductRoutes struct {
 	VariantImageUploadURL string `json:"variant_image_upload_url"`
 	VariantImageDeleteURL string `json:"variant_image_delete_url"`
 
+	// Variant attachment routes
+	VariantAttachmentUploadURL string `json:"variant_attachment_upload_url"`
+	VariantAttachmentDeleteURL string `json:"variant_attachment_delete_url"`
+
 	// Variant stock routes
 	VariantStockDetailURL    string `json:"variant_stock_detail_url"`
 	VariantStockTabActionURL string `json:"variant_stock_tab_action_url"`
+
+	// Variant stock attachment routes
+	VariantStockAttachmentUploadURL string `json:"variant_stock_attachment_upload_url"`
+	VariantStockAttachmentDeleteURL string `json:"variant_stock_attachment_delete_url"`
 
 	// Variant serial routes
 	VariantSerialDetailURL string `json:"variant_serial_detail_url"`
@@ -97,6 +109,9 @@ func DefaultProductRoutes() ProductRoutes {
 
 		TabActionURL: ProductTabActionURL,
 
+		AttachmentUploadURL: ProductAttachmentUploadURL,
+		AttachmentDeleteURL: ProductAttachmentDeleteURL,
+
 		VariantTableURL:  ProductVariantTableURL,
 		VariantAssignURL: ProductVariantAssignURL,
 		VariantEditURL:   ProductVariantEditURL,
@@ -108,8 +123,14 @@ func DefaultProductRoutes() ProductRoutes {
 		VariantImageUploadURL: ProductVariantImageUploadURL,
 		VariantImageDeleteURL: ProductVariantImageDeleteURL,
 
+		VariantAttachmentUploadURL: ProductVariantAttachmentUploadURL,
+		VariantAttachmentDeleteURL: ProductVariantAttachmentDeleteURL,
+
 		VariantStockDetailURL:    ProductVariantStockDetailURL,
 		VariantStockTabActionURL: ProductVariantStockTabActionURL,
+
+		VariantStockAttachmentUploadURL: ProductVariantStockAttachmentUploadURL,
+		VariantStockAttachmentDeleteURL: ProductVariantStockAttachmentDeleteURL,
 
 		VariantSerialDetailURL: ProductVariantSerialDetailURL,
 
@@ -146,6 +167,9 @@ func (r ProductRoutes) RouteMap() map[string]string {
 
 		"product.tab_action": r.TabActionURL,
 
+		"product.attachment.upload": r.AttachmentUploadURL,
+		"product.attachment.delete": r.AttachmentDeleteURL,
+
 		"product.variant.table":  r.VariantTableURL,
 		"product.variant.assign": r.VariantAssignURL,
 		"product.variant.edit":   r.VariantEditURL,
@@ -157,8 +181,14 @@ func (r ProductRoutes) RouteMap() map[string]string {
 		"product.variant.image.upload": r.VariantImageUploadURL,
 		"product.variant.image.delete": r.VariantImageDeleteURL,
 
+		"product.variant.attachment.upload": r.VariantAttachmentUploadURL,
+		"product.variant.attachment.delete": r.VariantAttachmentDeleteURL,
+
 		"product.variant.stock.detail":     r.VariantStockDetailURL,
 		"product.variant.stock.tab_action": r.VariantStockTabActionURL,
+
+		"product.variant.stock.attachment.upload": r.VariantStockAttachmentUploadURL,
+		"product.variant.stock.attachment.delete": r.VariantStockAttachmentDeleteURL,
 
 		"product.variant.serial.detail": r.VariantSerialDetailURL,
 
@@ -195,6 +225,10 @@ type InventoryRoutes struct {
 	BulkSetStatusURL string `json:"bulk_set_status_url"`
 
 	TabActionURL string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 
 	// Movement routes
 	MovementsURL       string `json:"movements_url"`
@@ -247,6 +281,9 @@ func DefaultInventoryRoutes() InventoryRoutes {
 
 		TabActionURL: InventoryTabActionURL,
 
+		AttachmentUploadURL: InventoryAttachmentUploadURL,
+		AttachmentDeleteURL: InventoryAttachmentDeleteURL,
+
 		MovementsURL:       InventoryMovementsURL,
 		MovementsTableURL:  InventoryMovementsTableURL,
 		MovementsExportURL: InventoryMovementsExportURL,
@@ -292,6 +329,9 @@ func (r InventoryRoutes) RouteMap() map[string]string {
 
 		"inventory.tab_action": r.TabActionURL,
 
+		"inventory.attachment.upload": r.AttachmentUploadURL,
+		"inventory.attachment.delete": r.AttachmentDeleteURL,
+
 		"inventory.movements":        r.MovementsURL,
 		"inventory.movements.table":  r.MovementsTableURL,
 		"inventory.movements.export": r.MovementsExportURL,
@@ -333,6 +373,10 @@ type RevenueRoutes struct {
 	BulkSetStatusURL string `json:"bulk_set_status_url"`
 
 	TabActionURL string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 
 	// Line item routes
 	LineItemTableURL    string `json:"line_item_table_url"`
@@ -379,6 +423,9 @@ func DefaultRevenueRoutes() RevenueRoutes {
 
 		TabActionURL: RevenueTabActionURL,
 
+		AttachmentUploadURL: RevenueAttachmentUploadURL,
+		AttachmentDeleteURL: RevenueAttachmentDeleteURL,
+
 		LineItemTableURL:    RevenueLineItemTableURL,
 		LineItemAddURL:      RevenueLineItemAddURL,
 		LineItemEditURL:     RevenueLineItemEditURL,
@@ -415,6 +462,9 @@ func (r RevenueRoutes) RouteMap() map[string]string {
 		"sales.bulk_set_status": r.BulkSetStatusURL,
 
 		"sales.tab_action": r.TabActionURL,
+
+		"sales.attachment.upload": r.AttachmentUploadURL,
+		"sales.attachment.delete": r.AttachmentDeleteURL,
 
 		"sales.line_item.table":    r.LineItemTableURL,
 		"sales.line_item.add":      r.LineItemAddURL,
@@ -489,6 +539,10 @@ type PlanRoutes struct {
 	EditURL      string `json:"edit_url"`
 	DeleteURL    string `json:"delete_url"`
 	TabActionURL string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 }
 
 // DefaultPlanRoutes returns a PlanRoutes populated from the package-level
@@ -504,6 +558,9 @@ func DefaultPlanRoutes() PlanRoutes {
 		EditURL:      PlanEditURL,
 		DeleteURL:    PlanDeleteURL,
 		TabActionURL: PlanTabActionURL,
+
+		AttachmentUploadURL: PlanAttachmentUploadURL,
+		AttachmentDeleteURL: PlanAttachmentDeleteURL,
 	}
 }
 
@@ -517,6 +574,9 @@ func (r PlanRoutes) RouteMap() map[string]string {
 		"plan.edit":       r.EditURL,
 		"plan.delete":     r.DeleteURL,
 		"plan.tab_action": r.TabActionURL,
+
+		"plan.attachment.upload": r.AttachmentUploadURL,
+		"plan.attachment.delete": r.AttachmentDeleteURL,
 	}
 }
 
@@ -530,6 +590,10 @@ type SubscriptionRoutes struct {
 	TabActionURL    string `json:"tab_action_url"`
 	SearchPlanURL   string `json:"search_plan_url"`
 	SearchClientURL string `json:"search_client_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 }
 
 // DefaultSubscriptionRoutes returns a SubscriptionRoutes populated from the
@@ -544,6 +608,9 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		TabActionURL:    SubscriptionTabActionURL,
 		SearchPlanURL:   SubscriptionSearchPlanURL,
 		SearchClientURL: SubscriptionSearchClientURL,
+
+		AttachmentUploadURL: SubscriptionAttachmentUploadURL,
+		AttachmentDeleteURL: SubscriptionAttachmentDeleteURL,
 	}
 }
 
@@ -559,6 +626,9 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		"subscription.tab_action":    r.TabActionURL,
 		"subscription.search_plan":   r.SearchPlanURL,
 		"subscription.search_client": r.SearchClientURL,
+
+		"subscription.attachment.upload": r.AttachmentUploadURL,
+		"subscription.attachment.delete": r.AttachmentDeleteURL,
 	}
 }
 
@@ -575,6 +645,10 @@ type CollectionRoutes struct {
 	SetStatusURL     string `json:"set_status_url"`
 	BulkSetStatusURL string `json:"bulk_set_status_url"`
 	TabActionURL     string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 }
 
 // DefaultCollectionRoutes returns a CollectionRoutes populated from the
@@ -591,6 +665,9 @@ func DefaultCollectionRoutes() CollectionRoutes {
 		SetStatusURL:     CollectionSetStatusURL,
 		BulkSetStatusURL: CollectionBulkSetStatusURL,
 		TabActionURL:     CollectionTabActionURL,
+
+		AttachmentUploadURL: CollectionAttachmentUploadURL,
+		AttachmentDeleteURL: CollectionAttachmentDeleteURL,
 	}
 }
 
@@ -608,6 +685,9 @@ func (r CollectionRoutes) RouteMap() map[string]string {
 		"collection.set_status":      r.SetStatusURL,
 		"collection.bulk_set_status": r.BulkSetStatusURL,
 		"collection.tab_action":      r.TabActionURL,
+
+		"collection.attachment.upload": r.AttachmentUploadURL,
+		"collection.attachment.delete": r.AttachmentDeleteURL,
 	}
 }
 
@@ -624,6 +704,10 @@ type DisbursementRoutes struct {
 	SetStatusURL     string `json:"set_status_url"`
 	BulkSetStatusURL string `json:"bulk_set_status_url"`
 	TabActionURL     string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 }
 
 // DefaultDisbursementRoutes returns a DisbursementRoutes populated from the
@@ -640,6 +724,9 @@ func DefaultDisbursementRoutes() DisbursementRoutes {
 		SetStatusURL:     DisbursementSetStatusURL,
 		BulkSetStatusURL: DisbursementBulkSetStatusURL,
 		TabActionURL:     DisbursementTabActionURL,
+
+		AttachmentUploadURL: DisbursementAttachmentUploadURL,
+		AttachmentDeleteURL: DisbursementAttachmentDeleteURL,
 	}
 }
 
@@ -657,6 +744,9 @@ func (r DisbursementRoutes) RouteMap() map[string]string {
 		"disbursement.set_status":      r.SetStatusURL,
 		"disbursement.bulk_set_status": r.BulkSetStatusURL,
 		"disbursement.tab_action":      r.TabActionURL,
+
+		"disbursement.attachment.upload": r.AttachmentUploadURL,
+		"disbursement.attachment.delete": r.AttachmentDeleteURL,
 	}
 }
 
@@ -671,6 +761,10 @@ type PriceListRoutes struct {
 	BulkDeleteURL string `json:"bulk_delete_url"`
 
 	TabActionURL string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 
 	// Price product routes
 	PriceProductAddURL    string `json:"price_product_add_url"`
@@ -690,6 +784,9 @@ func DefaultPriceListRoutes() PriceListRoutes {
 
 		TabActionURL: PriceListTabActionURL,
 
+		AttachmentUploadURL: PriceListAttachmentUploadURL,
+		AttachmentDeleteURL: PriceListAttachmentDeleteURL,
+
 		PriceProductAddURL:    PriceProductAddURL,
 		PriceProductDeleteURL: PriceProductDeleteURL,
 	}
@@ -707,6 +804,9 @@ func (r PriceListRoutes) RouteMap() map[string]string {
 		"price_list.bulk_delete": r.BulkDeleteURL,
 
 		"price_list.tab_action": r.TabActionURL,
+
+		"price_list.attachment.upload": r.AttachmentUploadURL,
+		"price_list.attachment.delete": r.AttachmentDeleteURL,
 
 		"price_list.price_product.add":    r.PriceProductAddURL,
 		"price_list.price_product.delete": r.PriceProductDeleteURL,

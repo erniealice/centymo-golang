@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -50,7 +51,10 @@ type VariantPageData struct {
 	StockTable *types.TableConfig
 	// Images tab
 	Images []ImageData
-	Labels centymo.ProductLabels
+	// Attachments tab
+	AttachmentTable     *types.TableConfig
+	AttachmentUploadURL string
+	Labels              centymo.ProductLabels
 }
 
 // NewPageView creates the variant detail view (full page).
@@ -160,6 +164,17 @@ func NewPageView(deps *Deps) view.View {
 			pageData.StockTable = buildStockTable(ctx, deps, id, vid)
 		case "images":
 			pageData.Images = loadVariantImages(ctx, deps, vid)
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := variantAttachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, vid)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, vid)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantAttachmentUploadURL, "id", id, "vid", vid)
 		}
 
 		return view.OK("variant-detail", pageData)
@@ -237,9 +252,23 @@ func NewTabAction(deps *Deps) view.View {
 			pageData.StockTable = buildStockTable(ctx, deps, id, vid)
 		case "images":
 			pageData.Images = loadVariantImages(ctx, deps, vid)
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := variantAttachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, vid)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, vid)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantAttachmentUploadURL, "id", id, "vid", vid)
 		}
 
 		templateName := "variant-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }
@@ -253,6 +282,7 @@ func buildVariantTabItems(productID, variantID string, l centymo.ProductLabels, 
 		{Key: "images", Label: l.Tabs.Images, Href: base + "?tab=images", HxGet: action + "images", Icon: "icon-image", Count: 0, Disabled: false},
 		{Key: "pricing", Label: l.Tabs.Pricing, Href: base + "?tab=pricing", HxGet: action + "pricing", Icon: "icon-tag", Count: 0, Disabled: false},
 		{Key: "stock", Label: l.Tabs.Stock, Href: base + "?tab=stock", HxGet: action + "stock", Icon: "icon-package", Count: 0, Disabled: false},
+		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		{Key: "audit-trail", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -24,6 +25,13 @@ type Deps struct {
 	Labels            centymo.PriceListLabels
 	CommonLabels      pyeza.CommonLabels
 	TableLabels       types.TableLabels
+
+	// Attachment operations (injected by composition root)
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // PageData holds the data for the price list detail page.
@@ -34,8 +42,10 @@ type PageData struct {
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
 	ID              string
-	PricesTable     *types.TableConfig
-	Labels          centymo.PriceListLabels
+	PricesTable         *types.TableConfig
+	AttachmentTable     *types.TableConfig
+	AttachmentUploadURL string
+	Labels              centymo.PriceListLabels
 }
 
 // NewView creates the price list detail view.
@@ -86,14 +96,27 @@ func NewView(deps *Deps) view.View {
 			Labels:          deps.Labels,
 		}
 
-		// Populate prices table on the "prices" tab
-		if tab == "prices" {
+		// Populate tab-specific data
+		switch tab {
+		case "prices":
 			perms := view.GetUserPermissions(ctx)
 			pricesTable, err := buildPricesTable(ctx, deps, id, deps.Routes, perms)
 			if err != nil {
 				log.Printf("Failed to load price products for price list %s: %v", id, err)
 			}
 			pageData.PricesTable = pricesTable
+
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments for %s %s: %v", cfg.EntityType, id, err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		}
 
 		return view.OK("pricelist-detail", pageData)
@@ -136,16 +159,32 @@ func NewTabAction(deps *Deps) view.View {
 			Labels:    deps.Labels,
 		}
 
-		if tab == "prices" {
+		switch tab {
+		case "prices":
 			perms := view.GetUserPermissions(ctx)
 			pricesTable, err := buildPricesTable(ctx, deps, id, deps.Routes, perms)
 			if err != nil {
 				log.Printf("Failed to load price products for price list %s: %v", id, err)
 			}
 			pageData.PricesTable = pricesTable
+
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments for %s %s: %v", cfg.EntityType, id, err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		}
 
 		templateName := "pricelist-detail-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }
@@ -156,6 +195,7 @@ func buildTabItems(id string, labels centymo.PriceListLabels, routes centymo.Pri
 	return []pyeza.TabItem{
 		{Key: "basic", Label: labels.Detail.BasicInfo, Href: base + "?tab=basic", HxGet: action + "basic"},
 		{Key: "prices", Label: labels.Detail.Prices, Href: base + "?tab=prices", HxGet: action + "prices"},
+		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 	}
 }
 

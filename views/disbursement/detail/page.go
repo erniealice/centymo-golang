@@ -8,6 +8,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -22,6 +23,13 @@ type Deps struct {
 	Labels           centymo.DisbursementLabels
 	CommonLabels     pyeza.CommonLabels
 	TableLabels      types.TableLabels
+
+	// Attachment deps
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // PageData holds the data for the disbursement detail page.
@@ -40,7 +48,9 @@ type PageData struct {
 	Amount        string
 	Currency      string
 
-	AuditTable *types.TableConfig
+	AuditTable          *types.TableConfig
+	AttachmentTable     *types.TableConfig
+	AttachmentUploadURL string
 }
 
 // disbursementToMap converts a Disbursement protobuf to a map[string]any for template use.
@@ -123,6 +133,17 @@ func NewView(deps *Deps) view.View {
 		switch activeTab {
 		case "info":
 			// Disbursement map has everything
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
 		}
@@ -136,6 +157,7 @@ func buildTabItems(l centymo.DisbursementLabels, id string, routes centymo.Disbu
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Detail.TabBasicInfo, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Detail.TabAuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 	}
 }
@@ -189,11 +211,25 @@ func NewTabAction(deps *Deps) view.View {
 		switch tab {
 		case "info":
 			// disbursement map has everything
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+					atts = []map[string]any{}
+				}
+				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+			}
+			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
 		}
 
 		templateName := "disbursement-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }

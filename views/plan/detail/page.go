@@ -7,6 +7,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -25,6 +26,13 @@ type Deps struct {
 	TableLabels      types.TableLabels
 	ListProductPlans func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	ListPricePlans   func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+
+	// Attachment deps
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
+	CreateAttachment func(ctx context.Context, data map[string]any) error
+	DeleteAttachment func(ctx context.Context, id string) error
+	NewID            func() string
 }
 
 // PageData holds the data for the plan detail page.
@@ -43,8 +51,10 @@ type PageData struct {
 	StatusVariant   string
 	CreatedDate     string
 	ModifiedDate    string
-	ProductsTable   *types.TableConfig
-	PriceListsTable *types.TableConfig
+	ProductsTable       *types.TableConfig
+	PriceListsTable     *types.TableConfig
+	AttachmentTable     *types.TableConfig
+	AttachmentUploadURL string
 }
 
 // NewView creates the plan detail view (full page).
@@ -83,6 +93,9 @@ func NewTabAction(deps *Deps) view.View {
 
 		// Return only the tab partial template
 		templateName := "plan-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }
@@ -189,6 +202,17 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 	case "pricelists":
 		tableConfig := buildPriceListsTable(ctx, deps, id)
 		pageData.PriceListsTable = tableConfig
+	case "attachments":
+		if deps.ListAttachments != nil {
+			cfg := attachmentConfig(deps)
+			atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+			if err != nil {
+				log.Printf("Failed to list attachments: %v", err)
+				atts = []map[string]any{}
+			}
+			pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+		}
+		pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 	}
 
 	return pageData, nil
@@ -201,6 +225,7 @@ func buildTabItems(id string, l centymo.PlanLabels, productCount, priceListCount
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
 		{Key: "products", Label: l.Tabs.Products, Href: base + "?tab=products", HxGet: action + "products", Icon: "icon-package", Count: productCount, Disabled: false},
 		{Key: "pricelists", Label: l.Tabs.PriceLists, Href: base + "?tab=pricelists", HxGet: action + "pricelists", Icon: "icon-tag", Count: priceListCount, Disabled: false},
+		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock", Count: 0, Disabled: false},
 	}
 }
