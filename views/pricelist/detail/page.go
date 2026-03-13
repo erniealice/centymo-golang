@@ -6,11 +6,12 @@ import (
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
-	"github.com/erniealice/pyeza-golang/attachment"
+	"github.com/erniealice/fycha-golang/views/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 
@@ -28,9 +29,9 @@ type Deps struct {
 
 	// Attachment operations (injected by composition root)
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
-	CreateAttachment func(ctx context.Context, data map[string]any) error
-	DeleteAttachment func(ctx context.Context, id string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	NewID            func() string
 }
 
@@ -109,12 +110,15 @@ func NewView(deps *Deps) view.View {
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := attachmentConfig(deps)
-				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
 				if err != nil {
 					log.Printf("Failed to list attachments for %s %s: %v", cfg.EntityType, id, err)
-					atts = []map[string]any{}
 				}
-				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+				var items []*attachmentpb.Attachment
+				if resp != nil {
+					items = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		}
@@ -171,12 +175,15 @@ func NewTabAction(deps *Deps) view.View {
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := attachmentConfig(deps)
-				atts, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
 				if err != nil {
 					log.Printf("Failed to list attachments for %s %s: %v", cfg.EntityType, id, err)
-					atts = []map[string]any{}
 				}
-				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, id)
+				var items []*attachmentpb.Attachment
+				if resp != nil {
+					items = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		}

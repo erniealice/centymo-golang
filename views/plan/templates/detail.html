@@ -21,6 +21,8 @@
             {{template "plan-tab-pricelists" .}}
         {{else if eq .ActiveTab "audit"}}
             {{template "plan-tab-audit" .}}
+        {{else if eq .ActiveTab "attachments"}}
+            {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

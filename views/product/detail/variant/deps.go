@@ -10,6 +10,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -97,9 +98,9 @@ type Deps struct {
 
 	// Attachment deps
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, entityType, entityID string) ([]map[string]any, error)
-	CreateAttachment func(ctx context.Context, data map[string]any) error
-	DeleteAttachment func(ctx context.Context, id string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	NewID            func() string
 }
 

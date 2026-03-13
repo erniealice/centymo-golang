@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	pyeza "github.com/erniealice/pyeza-golang"
-	"github.com/erniealice/pyeza-golang/attachment"
+	"github.com/erniealice/fycha-golang/views/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -16,6 +16,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	detail "github.com/erniealice/centymo-golang/views/product/detail"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -167,12 +168,15 @@ func NewPageView(deps *Deps) view.View {
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := variantAttachmentConfig(deps)
-				atts, err := deps.ListAttachments(ctx, cfg.EntityType, vid)
+				resp, err := deps.ListAttachments(ctx, cfg.EntityType, vid)
 				if err != nil {
 					log.Printf("Failed to list attachments: %v", err)
-					atts = []map[string]any{}
 				}
-				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, vid)
+				var items []*attachmentpb.Attachment
+				if resp != nil {
+					items = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, vid)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantAttachmentUploadURL, "id", id, "vid", vid)
 		}
@@ -255,12 +259,15 @@ func NewTabAction(deps *Deps) view.View {
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := variantAttachmentConfig(deps)
-				atts, err := deps.ListAttachments(ctx, cfg.EntityType, vid)
+				resp, err := deps.ListAttachments(ctx, cfg.EntityType, vid)
 				if err != nil {
 					log.Printf("Failed to list attachments: %v", err)
-					atts = []map[string]any{}
 				}
-				pageData.AttachmentTable = attachment.BuildTable(atts, cfg, vid)
+				var items []*attachmentpb.Attachment
+				if resp != nil {
+					items = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, vid)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantAttachmentUploadURL, "id", id, "vid", vid)
 		}

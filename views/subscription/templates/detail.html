@@ -17,6 +17,8 @@
         {{template "subscription-tab-info" .}}
         {{else if eq .ActiveTab "audit"}}
         {{template "subscription-tab-audit" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

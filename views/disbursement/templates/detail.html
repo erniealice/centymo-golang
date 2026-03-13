@@ -17,6 +17,8 @@
         {{template "disbursement-tab-info" .}}
         {{else if eq .ActiveTab "audit"}}
         {{template "disbursement-tab-audit" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

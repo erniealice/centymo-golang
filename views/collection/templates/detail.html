@@ -17,6 +17,8 @@
         {{template "collection-tab-info" .}}
         {{else if eq .ActiveTab "audit"}}
         {{template "collection-tab-audit" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

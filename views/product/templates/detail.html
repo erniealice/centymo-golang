@@ -19,6 +19,8 @@
             {{template "product-tab-variants" .}}
         {{else if eq .ActiveTab "options"}}
             {{template "product-tab-options" .}}
+        {{else if eq .ActiveTab "attachments"}}
+            {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

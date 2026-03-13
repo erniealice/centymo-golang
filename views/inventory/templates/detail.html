@@ -19,6 +19,7 @@
         {{if eq .ActiveTab "transactions"}}{{template "inventory-tab-transactions" .}}{{end}}
         {{if eq .ActiveTab "depreciation"}}{{template "inventory-tab-depreciation" .}}{{end}}
         {{if eq .ActiveTab "audit"}}{{template "inventory-tab-audit" .}}{{end}}
+        {{if eq .ActiveTab "attachments"}}{{template "attachment-tab" .}}{{end}}
     </div>
 </div>
 {{template "sheet-form" .}}
@@ -276,6 +277,7 @@
         {{if eq .ActiveTab "info"}}{{template "inventory-product-tab-info" .}}{{end}}
         {{if eq .ActiveTab "depreciation"}}{{template "inventory-product-tab-depreciation" .}}{{end}}
         {{if eq .ActiveTab "audit"}}{{template "inventory-product-tab-audit" .}}{{end}}
+        {{if eq .ActiveTab "attachments"}}{{template "attachment-tab" .}}{{end}}
     </div>
 </div>
 {{template "sheet-form" .}}

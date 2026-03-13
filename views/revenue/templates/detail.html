@@ -21,6 +21,8 @@
         {{template "sales-tab-payment" .}}
         {{else if eq .ActiveTab "audit"}}
         {{template "sales-tab-audit" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>
