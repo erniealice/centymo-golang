@@ -135,7 +135,7 @@ func NewView(deps *Deps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          headerTitle,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "services",
+				ActiveNav:      "engagements",
 				HeaderTitle:    headerTitle,
 				HeaderSubtitle: l.Detail.PageTitle,
 				HeaderIcon:     "icon-refresh-cw",

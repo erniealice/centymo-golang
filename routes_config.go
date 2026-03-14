@@ -497,6 +497,12 @@ type ExpenditureRoutes struct {
 	// Report routes
 	PurchasesSummaryURL string `json:"purchases_summary_url"`
 	ExpensesSummaryURL  string `json:"expenses_summary_url"`
+
+	// Settings (template management)
+	SettingsTemplatesURL       string `json:"settings_templates_url"`
+	SettingsTemplateUploadURL  string `json:"settings_template_upload_url"`
+	SettingsTemplateDeleteURL  string `json:"settings_template_delete_url"`
+	SettingsTemplateDefaultURL string `json:"settings_template_default_url"`
 }
 
 // DefaultExpenditureRoutes returns an ExpenditureRoutes populated from the
@@ -510,6 +516,11 @@ func DefaultExpenditureRoutes() ExpenditureRoutes {
 
 		PurchasesSummaryURL: PurchasesSummaryURL,
 		ExpensesSummaryURL:  ExpensesSummaryURL,
+
+		SettingsTemplatesURL:       ExpenditureSettingsTemplatesURL,
+		SettingsTemplateUploadURL:  ExpenditureSettingsTemplateUploadURL,
+		SettingsTemplateDeleteURL:  ExpenditureSettingsTemplateDeleteURL,
+		SettingsTemplateDefaultURL: ExpenditureSettingsTemplateDefaultURL,
 	}
 }
 
@@ -524,6 +535,11 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 
 		"expenditure.purchases_summary": r.PurchasesSummaryURL,
 		"expenditure.expenses_summary":  r.ExpensesSummaryURL,
+
+		"purchases.settings.templates":        r.SettingsTemplatesURL,
+		"purchases.settings.template_upload":  r.SettingsTemplateUploadURL,
+		"purchases.settings.template_delete":  r.SettingsTemplateDeleteURL,
+		"purchases.settings.template_default": r.SettingsTemplateDefaultURL,
 	}
 }
 
@@ -810,5 +826,178 @@ func (r PriceListRoutes) RouteMap() map[string]string {
 
 		"price_list.price_product.add":    r.PriceProductAddURL,
 		"price_list.price_product.delete": r.PriceProductDeleteURL,
+	}
+}
+
+// JobRoutes holds all route paths for job (operational activity) views and actions.
+type JobRoutes struct {
+	// Sidebar navigation context
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+
+	TabActionURL string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
+}
+
+// DefaultJobRoutes returns a JobRoutes populated from the package-level
+// route constants defined in routes.go.
+func DefaultJobRoutes() JobRoutes {
+	return JobRoutes{
+		ActiveNav:    "operations",
+		ActiveSubNav: "jobs",
+
+		ListURL:          JobListURL,
+		DetailURL:        JobDetailURL,
+		AddURL:           JobAddURL,
+		EditURL:          JobEditURL,
+		DeleteURL:        JobDeleteURL,
+		BulkDeleteURL:    JobBulkDeleteURL,
+		SetStatusURL:     JobSetStatusURL,
+		BulkSetStatusURL: JobBulkSetStatusURL,
+
+		TabActionURL: JobTabActionURL,
+
+		AttachmentUploadURL: JobAttachmentUploadURL,
+		AttachmentDeleteURL: JobAttachmentDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// job routes.
+func (r JobRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"job.list":            r.ListURL,
+		"job.detail":          r.DetailURL,
+		"job.add":             r.AddURL,
+		"job.edit":            r.EditURL,
+		"job.delete":          r.DeleteURL,
+		"job.bulk_delete":     r.BulkDeleteURL,
+		"job.set_status":      r.SetStatusURL,
+		"job.bulk_set_status": r.BulkSetStatusURL,
+
+		"job.tab_action": r.TabActionURL,
+
+		"job.attachment.upload": r.AttachmentUploadURL,
+		"job.attachment.delete": r.AttachmentDeleteURL,
+	}
+}
+
+// JobTemplateRoutes holds all route paths for job template views and actions.
+type JobTemplateRoutes struct {
+	// Sidebar navigation context
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+
+	TabActionURL string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
+}
+
+// DefaultJobTemplateRoutes returns a JobTemplateRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultJobTemplateRoutes() JobTemplateRoutes {
+	return JobTemplateRoutes{
+		ActiveNav:    "operations",
+		ActiveSubNav: "job-templates",
+
+		ListURL:          JobTemplateListURL,
+		DetailURL:        JobTemplateDetailURL,
+		AddURL:           JobTemplateAddURL,
+		EditURL:          JobTemplateEditURL,
+		DeleteURL:        JobTemplateDeleteURL,
+		BulkDeleteURL:    JobTemplateBulkDeleteURL,
+		SetStatusURL:     JobTemplateSetStatusURL,
+		BulkSetStatusURL: JobTemplateBulkSetStatusURL,
+
+		TabActionURL: JobTemplateTabActionURL,
+
+		AttachmentUploadURL: JobTemplateAttachmentUploadURL,
+		AttachmentDeleteURL: JobTemplateAttachmentDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// job template routes.
+func (r JobTemplateRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"job_template.list":            r.ListURL,
+		"job_template.detail":          r.DetailURL,
+		"job_template.add":             r.AddURL,
+		"job_template.edit":            r.EditURL,
+		"job_template.delete":          r.DeleteURL,
+		"job_template.bulk_delete":     r.BulkDeleteURL,
+		"job_template.set_status":      r.SetStatusURL,
+		"job_template.bulk_set_status": r.BulkSetStatusURL,
+
+		"job_template.tab_action": r.TabActionURL,
+
+		"job_template.attachment.upload": r.AttachmentUploadURL,
+		"job_template.attachment.delete": r.AttachmentDeleteURL,
+	}
+}
+
+// JobActivityRoutes holds all route paths for the job activity (timesheet)
+// views and actions.
+type JobActivityRoutes struct {
+	ListURL    string `json:"list_url"`
+	DetailURL  string `json:"detail_url"`
+	CreateURL  string `json:"create_url"`
+	UpdateURL  string `json:"update_url"`
+	DeleteURL  string `json:"delete_url"`
+	SubmitURL  string `json:"submit_url"`
+	ApproveURL string `json:"approve_url"`
+	RejectURL  string `json:"reject_url"`
+}
+
+// DefaultJobActivityRoutes returns a JobActivityRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultJobActivityRoutes() JobActivityRoutes {
+	return JobActivityRoutes{
+		ListURL:    JobActivityListURL,
+		DetailURL:  JobActivityDetailURL,
+		CreateURL:  JobActivityCreateURL,
+		UpdateURL:  JobActivityUpdateURL,
+		DeleteURL:  JobActivityDeleteURL,
+		SubmitURL:  JobActivitySubmitURL,
+		ApproveURL: JobActivityApproveURL,
+		RejectURL:  JobActivityRejectURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// job activity routes.
+func (r JobActivityRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"job_activity.list":    r.ListURL,
+		"job_activity.detail":  r.DetailURL,
+		"job_activity.create":  r.CreateURL,
+		"job_activity.update":  r.UpdateURL,
+		"job_activity.delete":  r.DeleteURL,
+		"job_activity.submit":  r.SubmitURL,
+		"job_activity.approve": r.ApproveURL,
+		"job_activity.reject":  r.RejectURL,
 	}
 }

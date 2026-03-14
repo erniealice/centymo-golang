@@ -10,10 +10,10 @@ import (
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/document_template"
 )
 
-// Deps holds view dependencies for the sales settings (template management) views.
+// Deps holds view dependencies for the purchases settings (template management) views.
 type Deps struct {
-	Routes       centymo.RevenueRoutes
-	Labels       centymo.RevenueLabels
+	Routes       centymo.ExpenditureRoutes
+	Labels       templateview.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
@@ -24,47 +24,29 @@ type Deps struct {
 	DeleteDocumentTemplate func(ctx context.Context, req *documenttemplatepb.DeleteDocumentTemplateRequest) (*documenttemplatepb.DeleteDocumentTemplateResponse, error)
 
 	// Storage operations (injected by composition root)
-	UploadTemplate func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
+	UploadFile func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
 }
 
 func templateConfig(deps *Deps) *templateview.Config {
 	return &templateview.Config{
-		DocumentPurpose:    "invoice",
+		DocumentPurpose:    "purchase_order",
 		AllowedExtensions:  []string{".docx"},
 		AllowedContentType: templateview.DocxContentType,
-		StoragePrefix:      "templates/invoice",
+		StoragePrefix:      "templates/purchase_order",
 		BucketName:         "templates",
 		ListURL:            deps.Routes.SettingsTemplatesURL,
 		UploadURL:          deps.Routes.SettingsTemplateUploadURL,
 		DeleteURL:          deps.Routes.SettingsTemplateDeleteURL,
 		SetDefaultURL:      deps.Routes.SettingsTemplateDefaultURL,
-		Labels:             convertLabels(deps.Labels.Settings),
+		Labels:             deps.Labels,
 		CommonLabels:       deps.CommonLabels,
 		TableLabels:        deps.TableLabels,
-		ActiveNav:          "sales",
+		ActiveNav:          "purchases",
 		PageIcon:           "icon-file-text",
 		ListDocumentTemplates:  deps.ListDocumentTemplates,
 		CreateDocumentTemplate: deps.CreateDocumentTemplate,
 		UpdateDocumentTemplate: deps.UpdateDocumentTemplate,
 		DeleteDocumentTemplate: deps.DeleteDocumentTemplate,
-		UploadFile:             deps.UploadTemplate,
-	}
-}
-
-func convertLabels(l centymo.RevenueSettingsLabels) templateview.Labels {
-	return templateview.Labels{
-		PageTitle:      l.PageTitle,
-		Caption:        l.Caption,
-		UploadTemplate: l.UploadTemplate,
-		TemplateName:   l.TemplateName,
-		TemplateType:   l.TemplateType,
-		Purpose:        l.Purpose,
-		SetDefault:     l.SetDefault,
-		Delete:         l.Delete,
-		DefaultBadge:   l.DefaultBadge,
-		EmptyTitle:     l.EmptyTitle,
-		EmptyMessage:   l.EmptyMessage,
-		UploadSuccess:  l.UploadSuccess,
-		DeleteConfirm:  l.DeleteConfirm,
+		UploadFile:             deps.UploadFile,
 	}
 }
