@@ -131,7 +131,7 @@ func expenditureColumns(l centymo.ExpenditureLabels, expenditureType string) []t
 		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
 		{Key: "vendor", Label: l.Columns.Vendor, Sortable: true},
 		{Key: "date", Label: l.Columns.Date, Sortable: true, Width: "140px"},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px"},
+		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px", Align: "right"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 	if expenditureType == "expense" {
@@ -149,7 +149,7 @@ func buildTableRows(expenditures []*expenditurepb.Expenditure, l centymo.Expendi
 		date := e.GetExpenditureDateString()
 		currency := e.GetCurrency()
 		recordStatus := e.GetStatus()
-		amount := formatAmount(currency, e.GetTotalAmount())
+		amount := centymo.FormatCentavoAmount(e.GetTotalAmount(), currency)
 
 		// Second column is vendor name or expenditure name depending on type
 		secondCol := e.GetName()
@@ -168,7 +168,7 @@ func buildTableRows(expenditures []*expenditurepb.Expenditure, l centymo.Expendi
 			Cells: []types.TableCell{
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: secondCol},
-				{Type: "text", Value: date},
+				types.DateTimeCell(date, types.DateReadable),
 				{Type: "text", Value: amount},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
@@ -182,13 +182,6 @@ func buildTableRows(expenditures []*expenditurepb.Expenditure, l centymo.Expendi
 		})
 	}
 	return rows
-}
-
-func formatAmount(currency string, amount float64) string {
-	if currency == "" {
-		currency = "PHP"
-	}
-	return currency + " " + fmt.Sprintf("%.2f", amount)
 }
 
 func statusPageTitle(l centymo.ExpenditureLabels, expType, status string) string {

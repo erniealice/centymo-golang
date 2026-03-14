@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -111,7 +111,7 @@ func collectionColumns(l centymo.CollectionLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
 		{Key: "customer", Label: l.Columns.Customer, Sortable: true},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px"},
+		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px", Align: "right"},
 		{Key: "method", Label: l.Columns.Method, Sortable: true, Width: "140px"},
 		{Key: "date", Label: l.Columns.Date, Sortable: true, Width: "140px"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
@@ -129,12 +129,11 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l cen
 		id := c.GetId()
 		refNumber := c.GetReferenceNumber()
 		customer := c.GetName()
-		amount := fmt.Sprintf("%.2f", c.GetAmount())
 		currency := c.GetCurrency()
 		method := c.GetCollectionMethodId()
 		date := c.GetDateCreatedString()
 
-		amountDisplay := currency + " " + amount
+		amountDisplay := centymo.FormatCentavoAmount(c.GetAmount(), currency)
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
@@ -192,7 +191,7 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l cen
 				{Type: "text", Value: customer},
 				{Type: "text", Value: amountDisplay},
 				{Type: "text", Value: method},
-				{Type: "text", Value: date},
+				types.DateTimeCell(date, types.DateReadable),
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{

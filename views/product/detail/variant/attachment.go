@@ -1,7 +1,7 @@
 package variant
 
 import (
-	"github.com/erniealice/fycha-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/pyeza-golang/view"
 )
 

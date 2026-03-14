@@ -3,51 +3,51 @@ package centymo
 // Default route constants for centymo views.
 // Consumer apps can use these or define their own.
 const (
-	PlanListURL       = "/app/plans/list/{status}"
-	PlanDetailURL     = "/app/plans/{id}"
-	PlanAddURL        = "/action/plans/add"
-	PlanEditURL       = "/action/plans/edit/{id}"
-	PlanDeleteURL     = "/action/plans/delete"
-	PlanTabActionURL            = "/action/plans/detail/{id}/tab/{tab}"
-	PlanAttachmentUploadURL     = "/action/plans/detail/{id}/attachments/upload"
-	PlanAttachmentDeleteURL     = "/action/plans/detail/{id}/attachments/delete"
+	PlanListURL             = "/app/plans/list/{status}"
+	PlanDetailURL           = "/app/plans/{id}"
+	PlanAddURL              = "/action/plans/add"
+	PlanEditURL             = "/action/plans/edit/{id}"
+	PlanDeleteURL           = "/action/plans/delete"
+	PlanTabActionURL        = "/action/plans/detail/{id}/tab/{tab}"
+	PlanAttachmentUploadURL = "/action/plans/detail/{id}/attachments/upload"
+	PlanAttachmentDeleteURL = "/action/plans/detail/{id}/attachments/delete"
 
-	SubscriptionListURL      = "/app/subscriptions/list/{status}"
-	SubscriptionDetailURL    = "/app/subscriptions/{id}"
-	SubscriptionAddURL       = "/action/subscriptions/add"
-	SubscriptionEditURL      = "/action/subscriptions/edit/{id}"
-	SubscriptionDeleteURL    = "/action/subscriptions/delete"
-	SubscriptionTabActionURL         = "/action/subscriptions/detail/{id}/tab/{tab}"
+	SubscriptionListURL             = "/app/subscriptions/list/{status}"
+	SubscriptionDetailURL           = "/app/subscriptions/{id}"
+	SubscriptionAddURL              = "/action/subscriptions/add"
+	SubscriptionEditURL             = "/action/subscriptions/edit/{id}"
+	SubscriptionDeleteURL           = "/action/subscriptions/delete"
+	SubscriptionTabActionURL        = "/action/subscriptions/detail/{id}/tab/{tab}"
 	SubscriptionAttachmentUploadURL = "/action/subscriptions/detail/{id}/attachments/upload"
 	SubscriptionAttachmentDeleteURL = "/action/subscriptions/detail/{id}/attachments/delete"
-	SubscriptionSearchPlanURL    = "/action/subscriptions/search/plans"
-	SubscriptionSearchClientURL  = "/action/subscriptions/search/clients"
+	SubscriptionSearchPlanURL       = "/action/subscriptions/search/plans"
+	SubscriptionSearchClientURL     = "/action/subscriptions/search/clients"
 
 	// Collection (money IN) routes
-	CollectionListURL          = "/app/collections/list/{status}"
-	CollectionDetailURL        = "/app/collections/detail/{id}"
-	CollectionDashboardURL     = "/app/collections/dashboard"
-	CollectionAddURL           = "/action/collections/add"
-	CollectionEditURL          = "/action/collections/edit/{id}"
-	CollectionDeleteURL        = "/action/collections/delete"
-	CollectionBulkDeleteURL    = "/action/collections/bulk-delete"
-	CollectionSetStatusURL     = "/action/collections/set-status"
-	CollectionBulkSetStatusURL = "/action/collections/bulk-set-status"
-	CollectionTabActionURL         = "/action/collections/detail/{id}/tab/{tab}"
+	CollectionListURL             = "/app/collections/list/{status}"
+	CollectionDetailURL           = "/app/collections/detail/{id}"
+	CollectionDashboardURL        = "/app/collections/dashboard"
+	CollectionAddURL              = "/action/collections/add"
+	CollectionEditURL             = "/action/collections/edit/{id}"
+	CollectionDeleteURL           = "/action/collections/delete"
+	CollectionBulkDeleteURL       = "/action/collections/bulk-delete"
+	CollectionSetStatusURL        = "/action/collections/set-status"
+	CollectionBulkSetStatusURL    = "/action/collections/bulk-set-status"
+	CollectionTabActionURL        = "/action/collections/detail/{id}/tab/{tab}"
 	CollectionAttachmentUploadURL = "/action/collections/detail/{id}/attachments/upload"
 	CollectionAttachmentDeleteURL = "/action/collections/detail/{id}/attachments/delete"
 
 	// Disbursement (money OUT) routes
-	DisbursementListURL          = "/app/disbursements/list/{status}"
-	DisbursementDetailURL        = "/app/disbursements/detail/{id}"
-	DisbursementDashboardURL     = "/app/disbursements/dashboard"
-	DisbursementAddURL           = "/action/disbursements/add"
-	DisbursementEditURL          = "/action/disbursements/edit/{id}"
-	DisbursementDeleteURL        = "/action/disbursements/delete"
-	DisbursementBulkDeleteURL    = "/action/disbursements/bulk-delete"
-	DisbursementSetStatusURL     = "/action/disbursements/set-status"
-	DisbursementBulkSetStatusURL = "/action/disbursements/bulk-set-status"
-	DisbursementTabActionURL         = "/action/disbursements/detail/{id}/tab/{tab}"
+	DisbursementListURL             = "/app/disbursements/list/{status}"
+	DisbursementDetailURL           = "/app/disbursements/detail/{id}"
+	DisbursementDashboardURL        = "/app/disbursements/dashboard"
+	DisbursementAddURL              = "/action/disbursements/add"
+	DisbursementEditURL             = "/action/disbursements/edit/{id}"
+	DisbursementDeleteURL           = "/action/disbursements/delete"
+	DisbursementBulkDeleteURL       = "/action/disbursements/bulk-delete"
+	DisbursementSetStatusURL        = "/action/disbursements/set-status"
+	DisbursementBulkSetStatusURL    = "/action/disbursements/bulk-set-status"
+	DisbursementTabActionURL        = "/action/disbursements/detail/{id}/tab/{tab}"
 	DisbursementAttachmentUploadURL = "/action/disbursements/detail/{id}/attachments/upload"
 	DisbursementAttachmentDeleteURL = "/action/disbursements/detail/{id}/attachments/delete"
 
@@ -74,9 +74,9 @@ const (
 	ProductBulkSetStatusURL = "/action/products/bulk-set-status"
 
 	// Product detail tab action route
-	ProductTabActionURL         = "/action/products/detail/{id}/tab/{tab}"
-	ProductAttachmentUploadURL  = "/action/products/detail/{id}/attachments/upload"
-	ProductAttachmentDeleteURL  = "/action/products/detail/{id}/attachments/delete"
+	ProductTabActionURL        = "/action/products/detail/{id}/tab/{tab}"
+	ProductAttachmentUploadURL = "/action/products/detail/{id}/attachments/upload"
+	ProductAttachmentDeleteURL = "/action/products/detail/{id}/attachments/delete"
 
 	// Product variant routes (within product detail)
 	ProductVariantTableURL  = "/action/products/detail/{id}/variants/table"
@@ -132,9 +132,9 @@ const (
 	InventoryBulkSetStatusURL = "/action/inventory/bulk-set-status"
 
 	// Inventory tab action route
-	InventoryTabActionURL         = "/action/inventory/detail/{id}/tab/{tab}"
-	InventoryAttachmentUploadURL  = "/action/inventory/detail/{id}/attachments/upload"
-	InventoryAttachmentDeleteURL  = "/action/inventory/detail/{id}/attachments/delete"
+	InventoryTabActionURL        = "/action/inventory/detail/{id}/tab/{tab}"
+	InventoryAttachmentUploadURL = "/action/inventory/detail/{id}/attachments/upload"
+	InventoryAttachmentDeleteURL = "/action/inventory/detail/{id}/attachments/delete"
 
 	// Inventory movements (global transaction history)
 	InventoryMovementsURL       = "/app/inventory/movements"
@@ -183,9 +183,9 @@ const (
 	RevenueBulkSetStatusURL = "/action/sales/status/set/bulk"
 
 	// Revenue tab action route
-	RevenueTabActionURL         = "/action/sales/detail/{id}/tab/{tab}"
-	RevenueAttachmentUploadURL  = "/action/sales/detail/{id}/attachments/upload"
-	RevenueAttachmentDeleteURL  = "/action/sales/detail/{id}/attachments/delete"
+	RevenueTabActionURL        = "/action/sales/detail/{id}/tab/{tab}"
+	RevenueAttachmentUploadURL = "/action/sales/detail/{id}/attachments/upload"
+	RevenueAttachmentDeleteURL = "/action/sales/detail/{id}/attachments/delete"
 
 	// Revenue line item routes (within sale detail)
 	RevenueLineItemTableURL    = "/action/sales/detail/{id}/items/table"
@@ -231,9 +231,9 @@ const (
 	PriceListDeleteURL     = "/action/price-lists/delete"
 	PriceListBulkDeleteURL = "/action/price-lists/bulk-delete"
 
-	PriceListTabActionURL         = "/action/price-lists/{id}/tab/{tab}"
-	PriceListAttachmentUploadURL  = "/action/price-lists/{id}/attachments/upload"
-	PriceListAttachmentDeleteURL  = "/action/price-lists/{id}/attachments/delete"
+	PriceListTabActionURL        = "/action/price-lists/{id}/tab/{tab}"
+	PriceListAttachmentUploadURL = "/action/price-lists/{id}/attachments/upload"
+	PriceListAttachmentDeleteURL = "/action/price-lists/{id}/attachments/delete"
 
 	// Price Product routes (within price list detail)
 	PriceProductAddURL    = "/action/price-lists/{id}/products/add"

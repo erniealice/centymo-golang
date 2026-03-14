@@ -5,6 +5,7 @@ go 1.25.1
 require (
 	github.com/erniealice/esqyma v0.0.0
 	github.com/erniealice/fycha-golang v0.0.0-00010101000000-000000000000
+	github.com/erniealice/hybra-golang v0.0.0-00010101000000-000000000000
 	github.com/erniealice/pyeza-golang v0.0.8-alpha
 	github.com/google/uuid v1.6.0
 	google.golang.org/protobuf v1.36.11
@@ -22,6 +23,8 @@ require (
 replace leapfor.xyz/copya => ../../../master-monorepo-v2/packages/copya
 
 replace github.com/erniealice/fycha-golang => ../fycha-golang-ryta
+
+replace github.com/erniealice/hybra-golang => ../hybra-golang-ryta
 
 replace github.com/erniealice/esqyma => ../esqyma-ryta
 

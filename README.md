@@ -4,6 +4,8 @@ Commerce domain package for Ryta OS applications. Provides reusable views, templ
 
 **Module path:** `github.com/erniealice/centymo-golang`
 
+> **Centavo/Cent-Mode Amounts:** All finance-related amounts (revenue, collection, disbursement, expenditure) are stored in the database in centavo/cent mode. For example, a value of `5000000` in the DB represents `PHP 50,000.00` when displayed. Views use `centymo.FormatCentavoAmount()` to divide by 100 and format with comma separators before rendering.
+
 **Dependencies:**
 - `github.com/erniealice/pyeza-golang` -- UI framework (view system, template engine, types)
 - `github.com/erniealice/esqyma` -- Proto schemas (product, inventory, revenue, treasury, subscription, expenditure)

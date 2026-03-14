@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math"
 	"strconv"
 	"strings"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
-	"github.com/erniealice/fycha-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -484,10 +483,9 @@ func parseAmount(s string) float64 {
 	return f
 }
 
-// formatAmount formats a float64 as a 2-decimal string.
+// formatAmount formats a float64 as a comma-separated 2-decimal string.
 func formatAmount(f float64) string {
-	f = math.Round(f*100) / 100
-	return strconv.FormatFloat(f, 'f', 2, 64)
+	return centymo.FormatWithCommas(f)
 }
 
 // ---------------------------------------------------------------------------
@@ -501,7 +499,7 @@ func revenueToMap(r *revenuepb.Revenue) map[string]any {
 		"name":                r.GetName(),
 		"client_id":           r.GetClientId(),
 		"revenue_date_string": r.GetRevenueDateString(),
-		"total_amount":        fmt.Sprintf("%.2f", r.GetTotalAmount()),
+		"total_amount":        centymo.FormatWithCommas(r.GetTotalAmount() / 100.0),
 		"currency":            r.GetCurrency(),
 		"status":              r.GetStatus(),
 		"reference_number":    r.GetReferenceNumber(),
@@ -520,10 +518,10 @@ func lineItemToMap(item *revenuelineitempb.RevenueLineItem) map[string]any {
 		"revenue_id":          item.GetRevenueId(),
 		"description":         item.GetDescription(),
 		"quantity":            fmt.Sprintf("%.0f", item.GetQuantity()),
-		"unit_price":          fmt.Sprintf("%.2f", item.GetUnitPrice()),
-		"cost_price":          fmt.Sprintf("%.2f", item.GetCostPrice()),
+		"unit_price":          centymo.FormatWithCommas(item.GetUnitPrice() / 100.0),
+		"cost_price":          centymo.FormatWithCommas(item.GetCostPrice() / 100.0),
 		"discount":            "0",
-		"total":               fmt.Sprintf("%.2f", item.GetTotalPrice()),
+		"total":               centymo.FormatWithCommas(item.GetTotalPrice() / 100.0),
 		"line_item_type":      item.GetLineItemType(),
 		"inventory_item_id":   item.GetInventoryItemId(),
 		"inventory_serial_id": item.GetInventorySerialId(),

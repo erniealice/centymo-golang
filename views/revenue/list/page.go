@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -112,7 +112,7 @@ func salesColumns(l centymo.RevenueLabels) []types.TableColumn {
 		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
 		{Key: "customer", Label: l.Columns.Customer, Sortable: true},
 		{Key: "date", Label: l.Columns.Date, Sortable: true, Width: "140px"},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px"},
+		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px", Align: "right"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 }
@@ -129,7 +129,7 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 		refNumber := r.GetReferenceNumber()
 		name := r.GetName()
 		date := r.GetRevenueDateString()
-		amount := formatAmount(r.GetCurrency(), r.GetTotalAmount())
+		amount := centymo.FormatCentavoAmount(r.GetTotalAmount(), r.GetCurrency())
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
@@ -165,7 +165,7 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 			Cells: []types.TableCell{
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: name},
-				{Type: "text", Value: date},
+				types.DateTimeCell(date, types.DateReadable),
 				{Type: "text", Value: amount},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
@@ -180,13 +180,6 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 		})
 	}
 	return rows
-}
-
-func formatAmount(currency string, amount float64) string {
-	if currency == "" {
-		currency = "PHP"
-	}
-	return currency + " " + fmt.Sprintf("%.2f", amount)
 }
 
 func statusPageTitle(l centymo.RevenueLabels, status string) string {

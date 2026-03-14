@@ -58,16 +58,16 @@ type InventoryEmptyLabels struct {
 }
 
 type InventoryFormLabels struct {
-	Product       string `json:"product"`
-	SKU           string `json:"sku"`
-	SKUPlaceholder string `json:"skuPlaceholder"`
-	OnHand        string `json:"onHand"`
-	Reserved      string `json:"reserved"`
-	ReorderLevel  string `json:"reorderLevel"`
-	UnitOfMeasure string `json:"unitOfMeasure"`
-	Notes         string `json:"notes"`
+	Product          string `json:"product"`
+	SKU              string `json:"sku"`
+	SKUPlaceholder   string `json:"skuPlaceholder"`
+	OnHand           string `json:"onHand"`
+	Reserved         string `json:"reserved"`
+	ReorderLevel     string `json:"reorderLevel"`
+	UnitOfMeasure    string `json:"unitOfMeasure"`
+	Notes            string `json:"notes"`
 	NotesPlaceholder string `json:"notesPlaceholder"`
-	Active        string `json:"active"`
+	Active           string `json:"active"`
 }
 
 type InventoryActionLabels struct {
@@ -274,15 +274,15 @@ type InventoryConfirmLabels struct {
 }
 
 type InventoryErrorLabels struct {
-	PermissionDenied  string `json:"permissionDenied"`
-	InvalidFormData   string `json:"invalidFormData"`
-	NotFound          string `json:"notFound"`
-	IDRequired        string `json:"idRequired"`
-	NoIDsProvided     string `json:"noIDsProvided"`
-	InvalidStatus     string `json:"invalidStatus"`
-	NoPermission      string `json:"noPermission"`
-	SerialNotFound    string `json:"serialNotFound"`
-	SerialIDRequired  string `json:"serialIDRequired"`
+	PermissionDenied          string `json:"permissionDenied"`
+	InvalidFormData           string `json:"invalidFormData"`
+	NotFound                  string `json:"notFound"`
+	IDRequired                string `json:"idRequired"`
+	NoIDsProvided             string `json:"noIDsProvided"`
+	InvalidStatus             string `json:"invalidStatus"`
+	NoPermission              string `json:"noPermission"`
+	SerialNotFound            string `json:"serialNotFound"`
+	SerialIDRequired          string `json:"serialIDRequired"`
 	InvalidDepreciationMethod string `json:"invalidDepreciationMethod"`
 }
 
@@ -297,18 +297,18 @@ type InventoryBreadcrumbLabels struct {
 
 // RevenueLabels holds all translatable strings for the revenue module.
 type RevenueLabels struct {
-	Page    RevenuePageLabels    `json:"page"`
-	Buttons RevenueButtonLabels  `json:"buttons"`
-	Columns RevenueColumnLabels  `json:"columns"`
-	Empty   RevenueEmptyLabels   `json:"empty"`
-	Form    RevenueFormLabels    `json:"form"`
-	Actions RevenueActionLabels  `json:"actions"`
-	Bulk    RevenueBulkLabels    `json:"bulkActions"`
-	Detail  RevenueDetailLabels  `json:"detail"`
-	Confirm RevenueConfirmLabels `json:"confirm"`
-	Errors  RevenueErrorLabels   `json:"errors"`
+	Page      RevenuePageLabels      `json:"page"`
+	Buttons   RevenueButtonLabels    `json:"buttons"`
+	Columns   RevenueColumnLabels    `json:"columns"`
+	Empty     RevenueEmptyLabels     `json:"empty"`
+	Form      RevenueFormLabels      `json:"form"`
+	Actions   RevenueActionLabels    `json:"actions"`
+	Bulk      RevenueBulkLabels      `json:"bulkActions"`
+	Detail    RevenueDetailLabels    `json:"detail"`
+	Confirm   RevenueConfirmLabels   `json:"confirm"`
+	Errors    RevenueErrorLabels     `json:"errors"`
 	Dashboard RevenueDashboardLabels `json:"dashboard"`
-	Settings  RevenueSettingsLabels `json:"settings"`
+	Settings  RevenueSettingsLabels  `json:"settings"`
 }
 
 type RevenuePageLabels struct {
@@ -327,11 +327,11 @@ type RevenueButtonLabels struct {
 }
 
 type RevenueColumnLabels struct {
-	Reference  string `json:"reference"`
-	Customer   string `json:"customer"`
-	Date       string `json:"date"`
-	Amount     string `json:"amount"`
-	Status     string `json:"status"`
+	Reference string `json:"reference"`
+	Customer  string `json:"customer"`
+	Date      string `json:"date"`
+	Amount    string `json:"amount"`
+	Status    string `json:"status"`
 }
 
 type RevenueEmptyLabels struct {
@@ -401,12 +401,12 @@ type RevenueDetailLabels struct {
 	Notes    string `json:"notes"`
 
 	// Payment fields
-	PaymentMethod  string `json:"paymentMethod"`
-	AmountPaid     string `json:"amountPaid"`
-	CardDetails    string `json:"cardDetails"`
-	PaymentDate    string `json:"paymentDate"`
-	ReceivedBy     string `json:"receivedBy"`
-	PaymentInfo    string `json:"paymentInfo"`
+	PaymentMethod string `json:"paymentMethod"`
+	AmountPaid    string `json:"amountPaid"`
+	CardDetails   string `json:"cardDetails"`
+	PaymentDate   string `json:"paymentDate"`
+	ReceivedBy    string `json:"receivedBy"`
+	PaymentInfo   string `json:"paymentInfo"`
 
 	// Audit trail
 	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
@@ -419,51 +419,51 @@ type RevenueDetailLabels struct {
 	TotalGrossProfit string `json:"totalGrossProfit"`
 
 	// Payment empty/table
-	Reference            string `json:"reference"`
-	PaymentEmptyTitle    string `json:"paymentEmptyTitle"`
-	PaymentEmptyMessage  string `json:"paymentEmptyMessage"`
+	Reference           string `json:"reference"`
+	PaymentEmptyTitle   string `json:"paymentEmptyTitle"`
+	PaymentEmptyMessage string `json:"paymentEmptyMessage"`
 
 	// Line item management
-	AddItem         string `json:"addItem"`
-	AddDiscount     string `json:"addDiscount"`
-	EditItem        string `json:"editItem"`
-	RemoveItem      string `json:"removeItem"`
-	ItemType        string `json:"itemType"`
-	ItemTypeItem    string `json:"itemTypeItem"`
+	AddItem          string `json:"addItem"`
+	AddDiscount      string `json:"addDiscount"`
+	EditItem         string `json:"editItem"`
+	RemoveItem       string `json:"removeItem"`
+	ItemType         string `json:"itemType"`
+	ItemTypeItem     string `json:"itemTypeItem"`
 	ItemTypeDiscount string `json:"itemTypeDiscount"`
-	InventoryItem   string `json:"inventoryItem"`
-	SerialNumber    string `json:"serialNumber"`
+	InventoryItem    string `json:"inventoryItem"`
+	SerialNumber     string `json:"serialNumber"`
 	ItemEmptyTitle   string `json:"itemEmptyTitle"`
 	ItemEmptyMessage string `json:"itemEmptyMessage"`
 }
 
 type RevenueConfirmLabels struct {
-	Complete         string `json:"complete"`
-	CompleteMessage  string `json:"completeMessage"`
-	Reactivate       string `json:"reactivate"`
-	ReactivateMessage string `json:"reactivateMessage"`
-	BulkComplete        string `json:"bulkComplete"`
-	BulkCompleteMessage string `json:"bulkCompleteMessage"`
-	BulkReactivate       string `json:"bulkReactivate"`
+	Complete              string `json:"complete"`
+	CompleteMessage       string `json:"completeMessage"`
+	Reactivate            string `json:"reactivate"`
+	ReactivateMessage     string `json:"reactivateMessage"`
+	BulkComplete          string `json:"bulkComplete"`
+	BulkCompleteMessage   string `json:"bulkCompleteMessage"`
+	BulkReactivate        string `json:"bulkReactivate"`
 	BulkReactivateMessage string `json:"bulkReactivateMessage"`
-	SendEmail        string `json:"sendEmail"`
-	SendEmailMessage string `json:"sendEmailMessage"`
+	SendEmail             string `json:"sendEmail"`
+	SendEmailMessage      string `json:"sendEmailMessage"`
 }
 
 type RevenueErrorLabels struct {
-	PermissionDenied     string `json:"permissionDenied"`
-	InvalidFormData      string `json:"invalidFormData"`
-	NotFound             string `json:"notFound"`
-	IDRequired           string `json:"idRequired"`
-	NoIDsProvided        string `json:"noIDsProvided"`
-	InvalidStatus        string `json:"invalidStatus"`
-	InvalidTargetStatus  string `json:"invalidTargetStatus"`
-	NoItemsCannotComplete string `json:"noItemsCannotComplete"`
+	PermissionDenied        string `json:"permissionDenied"`
+	InvalidFormData         string `json:"invalidFormData"`
+	NotFound                string `json:"notFound"`
+	IDRequired              string `json:"idRequired"`
+	NoIDsProvided           string `json:"noIDsProvided"`
+	InvalidStatus           string `json:"invalidStatus"`
+	InvalidTargetStatus     string `json:"invalidTargetStatus"`
+	NoItemsCannotComplete   string `json:"noItemsCannotComplete"`
 	HasPaymentsCannotCancel string `json:"hasPaymentsCannotCancel"`
-	BulkHasPayments      string `json:"bulkHasPayments"`
-	BulkNoItems          string `json:"bulkNoItems"`
-	PaymentNotFound      string `json:"paymentNotFound"`
-	InvalidDiscount      string `json:"invalidDiscount"`
+	BulkHasPayments         string `json:"bulkHasPayments"`
+	BulkNoItems             string `json:"bulkNoItems"`
+	PaymentNotFound         string `json:"paymentNotFound"`
+	InvalidDiscount         string `json:"invalidDiscount"`
 }
 
 type RevenueDashboardLabels struct {
@@ -508,21 +508,21 @@ type RevenueSettingsLabels struct {
 
 // ProductLabels holds all translatable strings for the product module.
 type ProductLabels struct {
-	Page    ProductPageLabels    `json:"page"`
-	Buttons ProductButtonLabels  `json:"buttons"`
-	Columns ProductColumnLabels  `json:"columns"`
-	Empty   ProductEmptyLabels   `json:"empty"`
-	Form    ProductFormLabels    `json:"form"`
-	Actions ProductActionLabels  `json:"actions"`
-	Bulk    ProductBulkLabels    `json:"bulkActions"`
-	Tabs    ProductTabLabels     `json:"tabs"`
-	Detail  ProductDetailLabels  `json:"detail"`
-	Status  ProductStatusLabels  `json:"status"`
-	Variant ProductVariantLabels `json:"variant"`
-	Attribute ProductAttributeLabels `json:"attribute"`
-	Options   ProductOptionLabels    `json:"options"`
-	Confirm   ProductConfirmLabels   `json:"confirm"`
-	Errors    ProductErrorLabels     `json:"errors"`
+	Page       ProductPageLabels       `json:"page"`
+	Buttons    ProductButtonLabels     `json:"buttons"`
+	Columns    ProductColumnLabels     `json:"columns"`
+	Empty      ProductEmptyLabels      `json:"empty"`
+	Form       ProductFormLabels       `json:"form"`
+	Actions    ProductActionLabels     `json:"actions"`
+	Bulk       ProductBulkLabels       `json:"bulkActions"`
+	Tabs       ProductTabLabels        `json:"tabs"`
+	Detail     ProductDetailLabels     `json:"detail"`
+	Status     ProductStatusLabels     `json:"status"`
+	Variant    ProductVariantLabels    `json:"variant"`
+	Attribute  ProductAttributeLabels  `json:"attribute"`
+	Options    ProductOptionLabels     `json:"options"`
+	Confirm    ProductConfirmLabels    `json:"confirm"`
+	Errors     ProductErrorLabels      `json:"errors"`
 	Breadcrumb ProductBreadcrumbLabels `json:"breadcrumb"`
 }
 
@@ -584,12 +584,12 @@ type ProductTabLabels struct {
 }
 
 type ProductDetailLabels struct {
-	Price        string `json:"price"`
-	Currency     string `json:"currency"`
-	Collections  string `json:"collections"`
-	VariantCount string `json:"variantCount"`
-	Status       string `json:"status"`
-	OptionsLabel string `json:"optionsLabel"`
+	Price                string `json:"price"`
+	Currency             string `json:"currency"`
+	Collections          string `json:"collections"`
+	VariantCount         string `json:"variantCount"`
+	Status               string `json:"status"`
+	OptionsLabel         string `json:"optionsLabel"`
 	EmptyVariantsMessage string `json:"emptyVariantsMessage"`
 }
 
@@ -624,30 +624,30 @@ type ProductAttributeLabels struct {
 }
 
 type ProductConfirmLabels struct {
-	Activate            string `json:"activate"`
-	ActivateMessage     string `json:"activateMessage"`
-	Deactivate          string `json:"deactivate"`
-	DeactivateMessage   string `json:"deactivateMessage"`
-	BulkActivate        string `json:"bulkActivate"`
-	BulkActivateMessage string `json:"bulkActivateMessage"`
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
 	BulkDeactivate        string `json:"bulkDeactivate"`
 	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
-	BulkDelete          string `json:"bulkDelete"`
-	BulkDeleteMessage   string `json:"bulkDeleteMessage"`
-	RemoveVariant       string `json:"removeVariant"`
-	RemoveVariantMessage string `json:"removeVariantMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	RemoveVariant         string `json:"removeVariant"`
+	RemoveVariantMessage  string `json:"removeVariantMessage"`
 }
 
 type ProductErrorLabels struct {
-	PermissionDenied   string `json:"permissionDenied"`
-	InvalidFormData    string `json:"invalidFormData"`
-	NotFound           string `json:"notFound"`
-	IDRequired         string `json:"idRequired"`
-	NoIDsProvided      string `json:"noIDsProvided"`
-	InvalidStatus      string `json:"invalidStatus"`
-	CannotDelete       string `json:"cannotDelete"`
-	NameRequired       string `json:"nameRequired"`
-	FieldRequired      string `json:"fieldRequired"`
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoIDsProvided    string `json:"noIDsProvided"`
+	InvalidStatus    string `json:"invalidStatus"`
+	CannotDelete     string `json:"cannotDelete"`
+	NameRequired     string `json:"nameRequired"`
+	FieldRequired    string `json:"fieldRequired"`
 }
 
 type ProductBreadcrumbLabels struct {
@@ -661,14 +661,14 @@ type ProductBreadcrumbLabels struct {
 // ---------------------------------------------------------------------------
 
 type ProductOptionLabels struct {
-	Tab       ProductOptionTabLabels       `json:"tab"`
-	Columns   ProductOptionColumnLabels    `json:"columns"`
-	Form      ProductOptionFormLabels      `json:"form"`
-	DataTypes ProductOptionDataTypeLabels  `json:"dataTypes"`
-	Value     ProductOptionValueLabels     `json:"value"`
-	Actions   ProductOptionActionLabels    `json:"actions"`
-	Empty     ProductOptionEmptyLabels     `json:"empty"`
-	Confirm   ProductOptionConfirmLabels   `json:"confirm"`
+	Tab       ProductOptionTabLabels      `json:"tab"`
+	Columns   ProductOptionColumnLabels   `json:"columns"`
+	Form      ProductOptionFormLabels     `json:"form"`
+	DataTypes ProductOptionDataTypeLabels `json:"dataTypes"`
+	Value     ProductOptionValueLabels    `json:"value"`
+	Actions   ProductOptionActionLabels   `json:"actions"`
+	Empty     ProductOptionEmptyLabels    `json:"empty"`
+	Confirm   ProductOptionConfirmLabels  `json:"confirm"`
 }
 
 type ProductOptionTabLabels struct {
@@ -870,13 +870,13 @@ type ExpenditureLabels struct {
 }
 
 type ExpenditureLabelNames struct {
-	Name          string `json:"name"`
-	NamePlural    string `json:"namePlural"`
-	Purchase      string `json:"purchase"`
+	Name           string `json:"name"`
+	NamePlural     string `json:"namePlural"`
+	Purchase       string `json:"purchase"`
 	PurchasePlural string `json:"purchasePlural"`
-	PurchaseOrder string `json:"purchaseOrder"`
-	Expense       string `json:"expense"`
-	ExpensePlural string `json:"expensePlural"`
+	PurchaseOrder  string `json:"purchaseOrder"`
+	Expense        string `json:"expense"`
+	ExpensePlural  string `json:"expensePlural"`
 }
 
 type ExpenditurePageLabels struct {
@@ -947,25 +947,25 @@ type ExpenditureEmptyLabels struct {
 }
 
 type ExpenditureFormLabels struct {
-	VendorName               string `json:"vendorName"`
-	VendorNamePlaceholder    string `json:"vendorNamePlaceholder"`
-	ExpenditureDate          string `json:"expenditureDate"`
-	TotalAmount              string `json:"totalAmount"`
-	Currency                 string `json:"currency"`
-	Status                   string `json:"status"`
-	ReferenceNumber          string `json:"referenceNumber"`
+	VendorName                 string `json:"vendorName"`
+	VendorNamePlaceholder      string `json:"vendorNamePlaceholder"`
+	ExpenditureDate            string `json:"expenditureDate"`
+	TotalAmount                string `json:"totalAmount"`
+	Currency                   string `json:"currency"`
+	Status                     string `json:"status"`
+	ReferenceNumber            string `json:"referenceNumber"`
 	ReferenceNumberPlaceholder string `json:"referenceNumberPlaceholder"`
-	PaymentTerms             string `json:"paymentTerms"`
-	DueDate                  string `json:"dueDate"`
-	ApprovedBy               string `json:"approvedBy"`
-	ExpenditureType          string `json:"expenditureType"`
-	ExpenditureCategory      string `json:"expenditureCategory"`
-	Notes                    string `json:"notes"`
-	NotesPlaceholder         string `json:"notesPlaceholder"`
-	SectionInfo              string `json:"sectionInfo"`
-	SectionVendor            string `json:"sectionVendor"`
-	SectionPayment           string `json:"sectionPayment"`
-	SectionNotes             string `json:"sectionNotes"`
+	PaymentTerms               string `json:"paymentTerms"`
+	DueDate                    string `json:"dueDate"`
+	ApprovedBy                 string `json:"approvedBy"`
+	ExpenditureType            string `json:"expenditureType"`
+	ExpenditureCategory        string `json:"expenditureCategory"`
+	Notes                      string `json:"notes"`
+	NotesPlaceholder           string `json:"notesPlaceholder"`
+	SectionInfo                string `json:"sectionInfo"`
+	SectionVendor              string `json:"sectionVendor"`
+	SectionPayment             string `json:"sectionPayment"`
+	SectionNotes               string `json:"sectionNotes"`
 }
 
 type ExpenditureStatusLabels struct {
@@ -1006,37 +1006,37 @@ type ExpenditureBulkLabels struct {
 }
 
 type ExpenditureDetailLabels struct {
-	PurchasePageTitle string `json:"purchasePageTitle"`
-	ExpensePageTitle  string `json:"expensePageTitle"`
-	VendorInfo        string `json:"vendorInfo"`
-	VendorName        string `json:"vendorName"`
-	Date              string `json:"date"`
-	Amount            string `json:"amount"`
-	Currency          string `json:"currency"`
-	Status            string `json:"status"`
-	Type              string `json:"type"`
-	Category          string `json:"category"`
-	ReferenceNumber   string `json:"referenceNumber"`
-	PaymentTerms      string `json:"paymentTerms"`
-	DueDate           string `json:"dueDate"`
-	ApprovedBy        string `json:"approvedBy"`
-	Notes             string `json:"notes"`
-	LineItems         string `json:"lineItems"`
-	Description       string `json:"description"`
-	Quantity          string `json:"quantity"`
-	UnitPrice         string `json:"unitPrice"`
-	Total             string `json:"total"`
-	SubTotal          string `json:"subTotal"`
-	GrandTotal        string `json:"grandTotal"`
-	TabBasicInfo      string `json:"tabBasicInfo"`
-	TabLineItems      string `json:"tabLineItems"`
-	TabPayment        string `json:"tabPayment"`
-	TabAuditTrail     string `json:"tabAuditTrail"`
+	PurchasePageTitle    string `json:"purchasePageTitle"`
+	ExpensePageTitle     string `json:"expensePageTitle"`
+	VendorInfo           string `json:"vendorInfo"`
+	VendorName           string `json:"vendorName"`
+	Date                 string `json:"date"`
+	Amount               string `json:"amount"`
+	Currency             string `json:"currency"`
+	Status               string `json:"status"`
+	Type                 string `json:"type"`
+	Category             string `json:"category"`
+	ReferenceNumber      string `json:"referenceNumber"`
+	PaymentTerms         string `json:"paymentTerms"`
+	DueDate              string `json:"dueDate"`
+	ApprovedBy           string `json:"approvedBy"`
+	Notes                string `json:"notes"`
+	LineItems            string `json:"lineItems"`
+	Description          string `json:"description"`
+	Quantity             string `json:"quantity"`
+	UnitPrice            string `json:"unitPrice"`
+	Total                string `json:"total"`
+	SubTotal             string `json:"subTotal"`
+	GrandTotal           string `json:"grandTotal"`
+	TabBasicInfo         string `json:"tabBasicInfo"`
+	TabLineItems         string `json:"tabLineItems"`
+	TabPayment           string `json:"tabPayment"`
+	TabAuditTrail        string `json:"tabAuditTrail"`
 	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditAction       string `json:"auditAction"`
-	AuditUser         string `json:"auditUser"`
-	AuditEmptyTitle   string `json:"auditEmptyTitle"`
-	AuditEmptyMessage string `json:"auditEmptyMessage"`
+	AuditAction          string `json:"auditAction"`
+	AuditUser            string `json:"auditUser"`
+	AuditEmptyTitle      string `json:"auditEmptyTitle"`
+	AuditEmptyMessage    string `json:"auditEmptyMessage"`
 }
 
 // ---------------------------------------------------------------------------
@@ -1118,19 +1118,19 @@ type CollectionBulkLabels struct {
 }
 
 type CollectionDetailLabels struct {
-	PageTitle    string `json:"pageTitle"`
-	TitlePrefix  string `json:"titlePrefix"`
-	PaymentInfo  string `json:"paymentInfo"`
-	Customer     string `json:"customer"`
-	Date         string `json:"date"`
-	Amount       string `json:"amount"`
-	Currency     string `json:"currency"`
-	Status       string `json:"status"`
-	Method       string `json:"method"`
-	Reference    string `json:"reference"`
-	Notes        string `json:"notes"`
-	TabBasicInfo string `json:"tabBasicInfo"`
-	TabAuditTrail string `json:"tabAuditTrail"`
+	PageTitle         string `json:"pageTitle"`
+	TitlePrefix       string `json:"titlePrefix"`
+	PaymentInfo       string `json:"paymentInfo"`
+	Customer          string `json:"customer"`
+	Date              string `json:"date"`
+	Amount            string `json:"amount"`
+	Currency          string `json:"currency"`
+	Status            string `json:"status"`
+	Method            string `json:"method"`
+	Reference         string `json:"reference"`
+	Notes             string `json:"notes"`
+	TabBasicInfo      string `json:"tabBasicInfo"`
+	TabAuditTrail     string `json:"tabAuditTrail"`
 	AuditAction       string `json:"auditAction"`
 	AuditUser         string `json:"auditUser"`
 	AuditEmptyTitle   string `json:"auditEmptyTitle"`
@@ -1144,27 +1144,27 @@ type CollectionStatusLabels struct {
 }
 
 type CollectionConfirmLabels struct {
-	MarkComplete        string `json:"markComplete"`
-	MarkCompleteMessage string `json:"markCompleteMessage"`
-	Reactivate          string `json:"reactivate"`
-	ReactivateMessage   string `json:"reactivateMessage"`
-	Delete              string `json:"delete"`
-	DeleteMessage       string `json:"deleteMessage"`
-	BulkComplete        string `json:"bulkComplete"`
-	BulkCompleteMessage string `json:"bulkCompleteMessage"`
-	BulkReactivate       string `json:"bulkReactivate"`
+	MarkComplete          string `json:"markComplete"`
+	MarkCompleteMessage   string `json:"markCompleteMessage"`
+	Reactivate            string `json:"reactivate"`
+	ReactivateMessage     string `json:"reactivateMessage"`
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	BulkComplete          string `json:"bulkComplete"`
+	BulkCompleteMessage   string `json:"bulkCompleteMessage"`
+	BulkReactivate        string `json:"bulkReactivate"`
 	BulkReactivateMessage string `json:"bulkReactivateMessage"`
-	BulkDelete           string `json:"bulkDelete"`
-	BulkDeleteMessage    string `json:"bulkDeleteMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
 }
 
 type CollectionErrorLabels struct {
-	PermissionDenied  string `json:"permissionDenied"`
-	InvalidFormData   string `json:"invalidFormData"`
-	NotFound          string `json:"notFound"`
-	IDRequired        string `json:"idRequired"`
-	NoIDsProvided     string `json:"noIDsProvided"`
-	InvalidStatus     string `json:"invalidStatus"`
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoIDsProvided    string `json:"noIDsProvided"`
+	InvalidStatus    string `json:"invalidStatus"`
 }
 
 // DefaultCollectionLabels returns CollectionLabels with sensible English defaults.
@@ -1397,40 +1397,40 @@ type DisbursementStatusLabels struct {
 }
 
 type DisbursementConfirmLabels struct {
-	Submit              string `json:"submit"`
-	SubmitMessage       string `json:"submitMessage"`
-	Approve             string `json:"approve"`
-	ApproveMessage      string `json:"approveMessage"`
-	MarkPaid            string `json:"markPaid"`
-	MarkPaidMessage     string `json:"markPaidMessage"`
-	Cancel              string `json:"cancel"`
-	CancelMessage       string `json:"cancelMessage"`
-	Reactivate          string `json:"reactivate"`
-	ReactivateMessage   string `json:"reactivateMessage"`
-	Delete              string `json:"delete"`
-	DeleteMessage       string `json:"deleteMessage"`
-	BulkSubmit          string `json:"bulkSubmit"`
-	BulkSubmitMessage   string `json:"bulkSubmitMessage"`
-	BulkApprove         string `json:"bulkApprove"`
-	BulkApproveMessage  string `json:"bulkApproveMessage"`
-	BulkMarkPaid        string `json:"bulkMarkPaid"`
-	BulkMarkPaidMessage string `json:"bulkMarkPaidMessage"`
-	BulkCancel          string `json:"bulkCancel"`
-	BulkCancelMessage   string `json:"bulkCancelMessage"`
+	Submit                string `json:"submit"`
+	SubmitMessage         string `json:"submitMessage"`
+	Approve               string `json:"approve"`
+	ApproveMessage        string `json:"approveMessage"`
+	MarkPaid              string `json:"markPaid"`
+	MarkPaidMessage       string `json:"markPaidMessage"`
+	Cancel                string `json:"cancel"`
+	CancelMessage         string `json:"cancelMessage"`
+	Reactivate            string `json:"reactivate"`
+	ReactivateMessage     string `json:"reactivateMessage"`
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	BulkSubmit            string `json:"bulkSubmit"`
+	BulkSubmitMessage     string `json:"bulkSubmitMessage"`
+	BulkApprove           string `json:"bulkApprove"`
+	BulkApproveMessage    string `json:"bulkApproveMessage"`
+	BulkMarkPaid          string `json:"bulkMarkPaid"`
+	BulkMarkPaidMessage   string `json:"bulkMarkPaidMessage"`
+	BulkCancel            string `json:"bulkCancel"`
+	BulkCancelMessage     string `json:"bulkCancelMessage"`
 	BulkReactivate        string `json:"bulkReactivate"`
 	BulkReactivateMessage string `json:"bulkReactivateMessage"`
-	BulkDelete           string `json:"bulkDelete"`
-	BulkDeleteMessage    string `json:"bulkDeleteMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
 }
 
 type DisbursementErrorLabels struct {
-	PermissionDenied    string `json:"permissionDenied"`
-	InvalidFormData     string `json:"invalidFormData"`
-	NotFound            string `json:"notFound"`
-	IDRequired          string `json:"idRequired"`
-	NoIDsProvided       string `json:"noIDsProvided"`
-	InvalidStatus       string `json:"invalidStatus"`
-	InvalidTransition   string `json:"invalidTransition"`
+	PermissionDenied  string `json:"permissionDenied"`
+	InvalidFormData   string `json:"invalidFormData"`
+	NotFound          string `json:"notFound"`
+	IDRequired        string `json:"idRequired"`
+	NoIDsProvided     string `json:"noIDsProvided"`
+	InvalidStatus     string `json:"invalidStatus"`
+	InvalidTransition string `json:"invalidTransition"`
 }
 
 // DefaultDisbursementLabels returns DisbursementLabels with sensible English defaults.
@@ -1590,11 +1590,11 @@ type PlanLabels struct {
 }
 
 type PlanPageLabels struct {
-	Heading        string `json:"heading"`
-	HeadingActive  string `json:"headingActive"`
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
 	HeadingInactive string `json:"headingInactive"`
-	Caption        string `json:"caption"`
-	CaptionActive  string `json:"captionActive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
 	CaptionInactive string `json:"captionInactive"`
 }
 
@@ -1652,7 +1652,7 @@ type PlanFormLabels struct {
 	Products            string                `json:"products"`
 	ProductsPlaceholder string                `json:"productsPlaceholder"`
 	ProductsSearch      string                `json:"productsSearch"`
-	Sections            PlanFormSectionLabels  `json:"sections"`
+	Sections            PlanFormSectionLabels `json:"sections"`
 }
 
 type PlanDetailLabels struct {
@@ -1699,11 +1699,11 @@ type SubscriptionLabels struct {
 }
 
 type SubscriptionPageLabels struct {
-	Heading        string `json:"heading"`
-	HeadingActive  string `json:"headingActive"`
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
 	HeadingInactive string `json:"headingInactive"`
-	Caption        string `json:"caption"`
-	CaptionActive  string `json:"captionActive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
 	CaptionInactive string `json:"captionInactive"`
 }
 
@@ -1742,13 +1742,13 @@ type SubscriptionErrorLabels struct {
 // ---------------------------------------------------------------------------
 
 type SubscriptionFormLabels struct {
-	Customer            string `json:"customer"`
-	CustomerPlaceholder string `json:"customerPlaceholder"`
-	Plan                string `json:"plan"`
-	PlanPlaceholder     string `json:"planPlaceholder"`
-	StartDate           string `json:"startDate"`
-	EndDate             string `json:"endDate"`
-	Active              string `json:"active"`
+	Customer                  string `json:"customer"`
+	CustomerPlaceholder       string `json:"customerPlaceholder"`
+	Plan                      string `json:"plan"`
+	PlanPlaceholder           string `json:"planPlaceholder"`
+	StartDate                 string `json:"startDate"`
+	EndDate                   string `json:"endDate"`
+	Active                    string `json:"active"`
 	Notes                     string `json:"notes"`
 	NotesPlaceholder          string `json:"notesPlaceholder"`
 	CustomerSearchPlaceholder string `json:"customerSearchPlaceholder"`
@@ -1885,14 +1885,14 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			Message: "No subscriptions to display.",
 		},
 		Form: SubscriptionFormLabels{
-			Customer:            "Customer",
-			CustomerPlaceholder: "Select customer...",
-			Plan:                "Plan",
-			PlanPlaceholder:     "Select plan...",
-			StartDate:           "Start Date",
-			EndDate:             "End Date",
-			Active:              "Active",
-			Notes:               "Notes",
+			Customer:                  "Customer",
+			CustomerPlaceholder:       "Select customer...",
+			Plan:                      "Plan",
+			PlanPlaceholder:           "Select plan...",
+			StartDate:                 "Start Date",
+			EndDate:                   "End Date",
+			Active:                    "Active",
+			Notes:                     "Notes",
 			NotesPlaceholder:          "Enter notes...",
 			CustomerSearchPlaceholder: "Search customers...",
 			PlanSearchPlaceholder:     "Search plans...",
@@ -1950,12 +1950,12 @@ func MapTableLabels(common pyeza.CommonLabels) types.TableLabels {
 		ApplyFilters:       common.Table.ApplyFilters,
 		Sort:               common.Table.Sort,
 		Columns:            common.Table.Columns,
-		Export:              common.Table.Export,
+		Export:             common.Table.Export,
 		DensityDefault:     common.Table.Density.Default,
 		DensityComfortable: common.Table.Density.Comfortable,
 		DensityCompact:     common.Table.Density.Compact,
 		Show:               common.Table.Show,
-		Entries:             common.Table.Entries,
+		Entries:            common.Table.Entries,
 		Showing:            common.Table.Showing,
 		To:                 common.Table.To,
 		Of:                 common.Table.Of,

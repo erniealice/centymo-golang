@@ -119,7 +119,7 @@ func disbursementColumns(l centymo.DisbursementLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
 		{Key: "payee", Label: l.Columns.Payee, Sortable: true},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px"},
+		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px", Align: "right"},
 		{Key: "method", Label: l.Columns.Method, Sortable: true, Width: "140px"},
 		{Key: "date", Label: l.Columns.Date, Sortable: true, Width: "140px"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
@@ -137,7 +137,7 @@ func buildTableRows(disbursements []*disbursementpb.Disbursement, l centymo.Disb
 		method := d.GetDisbursementMethodId()
 		recordStatus := d.GetStatus()
 
-		amountDisplay := currency + " " + formatAmount(d.GetAmount())
+		amountDisplay := centymo.FormatCentavoAmount(d.GetAmount(), currency)
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
@@ -154,7 +154,7 @@ func buildTableRows(disbursements []*disbursementpb.Disbursement, l centymo.Disb
 				{Type: "text", Value: payee},
 				{Type: "text", Value: amountDisplay},
 				{Type: "text", Value: method},
-				{Type: "text", Value: date},
+				types.DateTimeCell(date, types.DateReadable),
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
@@ -256,10 +256,6 @@ func statusVariant(status string) string {
 	default:
 		return "default"
 	}
-}
-
-func formatAmount(v float64) string {
-	return fmt.Sprintf("%.2f", v)
 }
 
 func buildBulkActions(l centymo.DisbursementLabels, status string, routes centymo.DisbursementRoutes) []types.BulkAction {

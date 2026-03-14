@@ -8,7 +8,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
-	"github.com/erniealice/fycha-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -60,7 +60,7 @@ func disbursementToMap(d *disbursementpb.Disbursement) map[string]any {
 		"id":                      d.GetId(),
 		"name":                    d.GetName(),
 		"reference_number":        d.GetReferenceNumber(),
-		"amount":                  fmt.Sprintf("%.2f", d.GetAmount()),
+		"amount":                  centymo.FormatWithCommas(d.GetAmount() / 100.0),
 		"currency":                d.GetCurrency(),
 		"status":                  d.GetStatus(),
 		"disbursement_method_id":  d.GetDisbursementMethodId(),
@@ -96,7 +96,7 @@ func NewView(deps *Deps) view.View {
 		refNumber := record.GetReferenceNumber()
 		status := record.GetStatus()
 		currency := record.GetCurrency()
-		amount := fmt.Sprintf("%.2f", record.GetAmount())
+		amount := centymo.FormatWithCommas(record.GetAmount() / 100.0)
 
 		l := deps.Labels
 		headerTitle := l.Detail.TitlePrefix + refNumber
@@ -192,7 +192,7 @@ func NewTabAction(deps *Deps) view.View {
 
 		status := record.GetStatus()
 		currency := record.GetCurrency()
-		amount := fmt.Sprintf("%.2f", record.GetAmount())
+		amount := centymo.FormatWithCommas(record.GetAmount() / 100.0)
 		refNumber := record.GetReferenceNumber()
 
 		l := deps.Labels

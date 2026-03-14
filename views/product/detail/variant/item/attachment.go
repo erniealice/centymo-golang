@@ -1,7 +1,7 @@
 package item
 
 import (
-	"github.com/erniealice/fycha-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/pyeza-golang/view"
 
 	"github.com/erniealice/centymo-golang/views/product/detail/variant"

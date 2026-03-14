@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 
 	pyeza "github.com/erniealice/pyeza-golang"
-	"github.com/erniealice/fycha-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -52,7 +52,7 @@ func collectionToMap(c *collectionpb.Collection) map[string]any {
 		"id":                   c.GetId(),
 		"name":                 c.GetName(),
 		"reference_number":     c.GetReferenceNumber(),
-		"amount":               fmt.Sprintf("%.2f", c.GetAmount()),
+		"amount":               centymo.FormatWithCommas(c.GetAmount() / 100.0),
 		"currency":             c.GetCurrency(),
 		"status":               c.GetStatus(),
 		"collection_method_id": c.GetCollectionMethodId(),

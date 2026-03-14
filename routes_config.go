@@ -437,7 +437,7 @@ func DefaultRevenueRoutes() RevenueRoutes {
 		PaymentEditURL:   RevenuePaymentEditURL,
 		PaymentRemoveURL: RevenuePaymentRemoveURL,
 
-		RevenueSummaryURL: RevenueSummaryURL,
+		RevenueSummaryURL:          RevenueSummaryURL,
 		InvoiceDownloadURL:         RevenueInvoiceDownloadURL,
 		SendEmailURL:               RevenueEmailURL,
 		SettingsTemplatesURL:       RevenueSettingsTemplatesURL,
@@ -477,13 +477,13 @@ func (r RevenueRoutes) RouteMap() map[string]string {
 		"sales.payment.edit":   r.PaymentEditURL,
 		"sales.payment.remove": r.PaymentRemoveURL,
 
-		"sales.sales_summary": r.RevenueSummaryURL,
-		"sales.invoice_download":           r.InvoiceDownloadURL,
-		"sales.send_email":                 r.SendEmailURL,
-		"sales.settings.templates":         r.SettingsTemplatesURL,
-		"sales.settings.template_upload":   r.SettingsTemplateUploadURL,
-		"sales.settings.template_delete":   r.SettingsTemplateDeleteURL,
-		"sales.settings.template_default":  r.SettingsTemplateDefaultURL,
+		"sales.sales_summary":             r.RevenueSummaryURL,
+		"sales.invoice_download":          r.InvoiceDownloadURL,
+		"sales.send_email":                r.SendEmailURL,
+		"sales.settings.templates":        r.SettingsTemplatesURL,
+		"sales.settings.template_upload":  r.SettingsTemplateUploadURL,
+		"sales.settings.template_delete":  r.SettingsTemplateDeleteURL,
+		"sales.settings.template_default": r.SettingsTemplateDefaultURL,
 	}
 }
 
@@ -582,10 +582,10 @@ func (r PlanRoutes) RouteMap() map[string]string {
 
 // SubscriptionRoutes holds all route paths for subscription views and actions.
 type SubscriptionRoutes struct {
-	ListURL      string `json:"list_url"`
-	DetailURL    string `json:"detail_url"`
-	AddURL       string `json:"add_url"`
-	EditURL      string `json:"edit_url"`
+	ListURL         string `json:"list_url"`
+	DetailURL       string `json:"detail_url"`
+	AddURL          string `json:"add_url"`
+	EditURL         string `json:"edit_url"`
 	DeleteURL       string `json:"delete_url"`
 	TabActionURL    string `json:"tab_action_url"`
 	SearchPlanURL   string `json:"search_plan_url"`
@@ -600,10 +600,10 @@ type SubscriptionRoutes struct {
 // package-level route constants defined in routes.go.
 func DefaultSubscriptionRoutes() SubscriptionRoutes {
 	return SubscriptionRoutes{
-		ListURL:      SubscriptionListURL,
-		DetailURL:    SubscriptionDetailURL,
-		AddURL:       SubscriptionAddURL,
-		EditURL:      SubscriptionEditURL,
+		ListURL:         SubscriptionListURL,
+		DetailURL:       SubscriptionDetailURL,
+		AddURL:          SubscriptionAddURL,
+		EditURL:         SubscriptionEditURL,
 		DeleteURL:       SubscriptionDeleteURL,
 		TabActionURL:    SubscriptionTabActionURL,
 		SearchPlanURL:   SubscriptionSearchPlanURL,
@@ -618,10 +618,10 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 // subscription routes.
 func (r SubscriptionRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"subscription.list":       r.ListURL,
-		"subscription.detail":     r.DetailURL,
-		"subscription.add":        r.AddURL,
-		"subscription.edit":       r.EditURL,
+		"subscription.list":          r.ListURL,
+		"subscription.detail":        r.DetailURL,
+		"subscription.add":           r.AddURL,
+		"subscription.edit":          r.EditURL,
 		"subscription.delete":        r.DeleteURL,
 		"subscription.tab_action":    r.TabActionURL,
 		"subscription.search_plan":   r.SearchPlanURL,
