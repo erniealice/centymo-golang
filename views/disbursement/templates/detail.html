@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "disbursement-detail-content"}}
-<div class="page-content disbursement-detail-layout">
+<div class="page-content disbursement-detail-layout" data-page-css="/assets/css/centymo/centymo-disbursement-detail.css?v={{.CacheVersion}}">
     {{/* --- Tabs --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "disbursement-tabs")}}
@@ -29,17 +29,17 @@
 {{/* Basic Information Tab */}}
 {{define "disbursement-tab-info"}}
 <div class="tab-scroll">
-    <div class="detail-header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem;">
+    <div class="disbursement-header">
         <div>
-            <h2 style="margin:0;">{{.Reference}}</h2>
+            <h2>{{.Reference}}</h2>
             <span class="badge badge--{{.StatusVariant}}">{{.StatusLabel}}</span>
         </div>
-        <div class="detail-header__amount" style="font-size:1.5rem;font-weight:600;">
+        <div class="disbursement-amount">
             {{.Currency}} {{.Amount}}
         </div>
     </div>
-    <h4 class="sale-section-title" style="padding:0 1rem;">{{.Labels.Detail.PaymentInfo}}</h4>
-    <div class="sale-info-grid" style="padding:0 1rem;">
+    <h4 class="sale-section-title disbursement-section">{{.Labels.Detail.PaymentInfo}}</h4>
+    <div class="sale-info-grid disbursement-section">
         <div class="sale-info-item">
             <span class="sale-info-label">{{.Labels.Detail.Reference}}</span>
             <span class="sale-info-value mono">{{index .Disbursement "reference_number"}}</span>
@@ -75,7 +75,7 @@
     </div>
 
     {{if index .Disbursement "notes"}}
-    <div style="margin-top: 1.75rem; padding:0 1rem;">
+    <div class="disbursement-section-spacer">
         <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="sale-notes-block">{{index .Disbursement "notes"}}</div>
     </div>

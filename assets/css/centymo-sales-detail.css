@@ -69,6 +69,47 @@
     padding-bottom: 0.75rem;
     border-bottom: var(--border-width) solid var(--border-light);
 }
+/* Section spacer — replaces inline margin-top: 1.75rem on section wrappers */
+.sale-section-spacer {
+    margin-top: 1.75rem;
+}
+
+/* Info tab toolbar (e.g. invoice download button row) */
+.info-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 0 0.75rem 0;
+}
+
+/* Line items tab toolbar */
+.line-items-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+}
+
+/* Line items actions group */
+.line-items-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Payment tab toolbar */
+.payment-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+}
+
+/* Payment summary group */
+.payment-summary {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
 .sale-notes-block {
     background: var(--bg-sidebar);
     border-radius: var(--radius-md);

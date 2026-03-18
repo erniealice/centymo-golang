@@ -5,7 +5,7 @@
 
 {{/* Content partial */}}
 {{define "option-detail-content"}}
-<div class="page-content detail-layout" data-page-css="/assets/css/centymo/product-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-product-detail.css?v={{.CacheVersion}}">
     {{/* Breadcrumb */}}
     <nav class="breadcrumb" aria-label="Breadcrumb">
         {{range $i, $bc := .Breadcrumbs}}
@@ -19,7 +19,7 @@
     </nav>
 
     {{/* Option info header */}}
-    <div class="detail-info-grid" style="margin-bottom: var(--spacing-lg);">
+    <div class="detail-info-grid">
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Options.Columns.Name}}</span>
             <span class="detail-info-value">{{.OptionName}}</span>

@@ -5,7 +5,7 @@
 
 {{/* Content-only partial -- for HTMX navigation */}}
 {{define "inventory-detail-content"}}
-<div class="page-content inv-detail-layout" data-page-css="/assets/css/centymo/inventory-detail.css?v={{.CacheVersion}}">
+<div class="page-content inv-detail-layout" data-page-css="/assets/css/centymo/centymo-inventory-detail.css?v={{.CacheVersion}}">
     {{/* --- Tabs --- */}}
     <div class="inv-detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "inv-tabs")}}
@@ -90,7 +90,7 @@
     </div>
 
     {{if index .Item "notes"}}
-    <div style="margin-top: 1.75rem;">
+    <div class="inv-section-spacer">
         <h4 class="inv-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="inv-notes-block">{{index .Item "notes"}}</div>
     </div>
@@ -254,7 +254,7 @@
 
 {{/* Content partial */}}
 {{define "inventory-product-detail-content"}}
-<div class="page-content inv-detail-layout" data-page-css="/assets/css/centymo/inventory-detail.css?v={{.CacheVersion}}">
+<div class="page-content inv-detail-layout" data-page-css="/assets/css/centymo/centymo-inventory-detail.css?v={{.CacheVersion}}">
     {{/* Breadcrumb */}}
     <nav class="breadcrumb" aria-label="Breadcrumb">
         {{range $i, $bc := .Breadcrumbs}}
@@ -339,7 +339,7 @@
 
     {{/* Option Values (read-only key-value pairs) */}}
     {{if .Attributes}}
-    <div style="margin-top: 1.75rem;">
+    <div class="inv-section-spacer">
         <h4 class="inv-section-title">{{.Labels.Tabs.Attributes}}</h4>
         <div class="inv-info-grid">
             {{range .Attributes}}
@@ -354,7 +354,7 @@
 
     {{/* Notes */}}
     {{if index .Item "notes"}}
-    <div style="margin-top: 1.75rem;">
+    <div class="inv-section-spacer">
         <h4 class="inv-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="inv-notes-block">{{index .Item "notes"}}</div>
     </div>
@@ -362,12 +362,12 @@
 
     {{/* Embedded Serials (for serialized items) */}}
     {{if .IsSerialized}}
-    <div style="margin-top: 1.75rem;">
+    <div class="inv-section-spacer">
         <h4 class="inv-section-title">{{.Labels.Detail.SerialNumbers}}</h4>
         {{if .SerialTable}}
             {{template "table-card" .SerialTable}}
             {{if .SerialSummary}}
-            <div class="inv-summary-row" style="margin-top: var(--spacing-md);">
+            <div class="inv-summary-row">
                 <div class="inv-summary-item">
                     <span class="inv-summary-label">{{.Labels.Detail.TotalUnits}}</span>
                     <span class="inv-summary-value">{{.SerialSummary.Total}}</span>

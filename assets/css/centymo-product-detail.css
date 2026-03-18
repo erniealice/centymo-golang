@@ -11,6 +11,11 @@
 .detail-actions {
     display: flex;
     gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.detail-info-grid {
+    margin-bottom: var(--spacing-lg);
 }
 
 /* Tab scroll for table-containing tabs */
@@ -40,4 +45,10 @@
     font-size: 0.875rem;
     color: var(--text-muted);
     max-width: 32rem;
+}
+
+/* attribute-drawer-form: empty state message when all attributes are assigned */
+.attribute-all-assigned {
+    color: var(--text-muted);
+    padding: var(--spacing-md);
 }

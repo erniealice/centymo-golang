@@ -5,7 +5,7 @@
 
 {{/* Content partial */}}
 {{define "variant-stock-detail-content"}}
-<div class="page-content detail-layout" data-page-css="/assets/css/centymo/variant-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-variant-detail.css?v={{.CacheVersion}}">
     {{/* Breadcrumb */}}
     <nav class="breadcrumb" aria-label="Breadcrumb">
         {{range $i, $bc := .Breadcrumbs}}
@@ -86,7 +86,7 @@
      ============================================= */}}
 {{define "stock-tab-serials"}}
 {{if .SerialSummary}}
-<div class="stats-row" style="margin-bottom: 2rem;">
+<div class="stats-row stats-row--spaced">
     {{template "stat-card" (dict "Icon" "icon-hash" "Value" .SerialSummary.Total "Label" "Total" "Color" "navy")}}
     {{template "stat-card" (dict "Icon" "icon-check-circle" "Value" .SerialSummary.Available "Label" "Available" "Color" "sage")}}
     {{template "stat-card" (dict "Icon" "icon-shopping-bag" "Value" .SerialSummary.Sold "Label" "Sold" "Color" "terracotta")}}

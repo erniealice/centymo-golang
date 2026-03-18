@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "sales-detail-content"}}
-<div class="page-content sale-detail-layout" data-page-css="/assets/css/centymo/sales-detail.css?v={{.CacheVersion}}">
+<div class="page-content sale-detail-layout" data-page-css="/assets/css/centymo/centymo-sales-detail.css?v={{.CacheVersion}}">
     {{/* ─── Tabs ─── */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "sale-tabs")}}
@@ -58,7 +58,7 @@ function downloadInvoice(btn, url) {
 {{define "sales-tab-info"}}
 <div class="tab-scroll">
     {{if .InvoiceDownloadURL}}
-    <div class="info-toolbar" style="display:flex;justify-content:flex-end;padding:0 0 0.75rem 0;">
+    <div class="info-toolbar">
         <button type="button" class="btn btn--ghost btn--sm"
             onclick="downloadInvoice(this, '{{.InvoiceDownloadURL}}')">
             {{template "icon-download" .}} {{.Labels.Actions.DownloadInvoice}}
@@ -98,7 +98,7 @@ function downloadInvoice(btn, url) {
     </div>
 
     {{if index .Revenue "notes"}}
-    <div style="margin-top: 1.75rem;">
+    <div class="sale-section-spacer">
         <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="sale-notes-block">{{index .Revenue "notes"}}</div>
     </div>
@@ -108,12 +108,12 @@ function downloadInvoice(btn, url) {
 
 {{/* Line Items Tab */}}
 {{define "sales-tab-items"}}
-<div class="line-items-toolbar" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
+<div class="line-items-toolbar">
     <div class="sale-summary-item">
         <span class="sale-summary-label">{{.Labels.Detail.GrandTotal}}</span>
         <span class="sale-summary-value">{{.TotalAmount}}</span>
     </div>
-    <div style="display:flex;gap:0.5rem;">
+    <div class="line-items-actions">
         <button type="button" class="btn btn--ghost btn--sm"
             hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
             onclick="Sheet.open('{{.Labels.Detail.AddDiscount}}')">
@@ -143,8 +143,8 @@ function downloadInvoice(btn, url) {
 {{/* Payment Tab */}}
 {{define "sales-tab-payment"}}
 {{if .PaymentTable}}
-    <div class="payment-toolbar" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
-        <div class="payment-summary" style="display:flex;gap:1.5rem;align-items:center;">
+    <div class="payment-toolbar">
+        <div class="payment-summary">
             <span class="sale-summary-item">
                 <span class="sale-summary-label">Total Paid</span>
                 <span class="sale-summary-value payment-total-paid">{{.TotalPaid}}</span>

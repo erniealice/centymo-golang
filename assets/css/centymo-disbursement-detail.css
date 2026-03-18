@@ -1,0 +1,52 @@
+/* centymo-disbursement-detail.css — Disbursement detail page styles */
+
+/* Page-level layout (mirrors sale-detail-layout) */
+.page-content.disbursement-detail-layout {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--header-height));
+    overflow: hidden;
+}
+
+.disbursement-detail-body {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1.75rem;
+    background: var(--bg-card);
+    border: var(--border-width) solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    animation: tabContentFadeIn 0.25s ease;
+}
+
+/* Detail info header (reference + status + amount) */
+.disbursement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+}
+
+.disbursement-header h2 {
+    margin: 0;
+}
+
+/* Amount displayed in the header */
+.disbursement-amount {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Section with side padding (title + info grid) */
+.disbursement-section {
+    padding: 0 1rem;
+}
+
+/* Section with top spacing and side padding (e.g. Notes block) */
+.disbursement-section-spacer {
+    margin-top: 1.75rem;
+    padding: 0 1rem;
+}

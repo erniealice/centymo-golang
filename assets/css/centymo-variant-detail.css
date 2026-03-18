@@ -8,7 +8,7 @@
  * from product-detail.css.
  */
 @import url("../entydad/entydad-user-detail.css");
-@import url("product-detail.css");
+@import url("centymo-product-detail.css");
 
 /* Widen gap between info tab sections (Variant Information → Options → Actions) */
 .tab-scroll .detail-info-grid + .detail-section-title {
@@ -17,4 +17,8 @@
 
 .tab-scroll .detail-info-grid + .detail-actions {
     margin-top: 2.5rem;
+}
+
+.stats-row--spaced {
+    margin-bottom: 2rem;
 }

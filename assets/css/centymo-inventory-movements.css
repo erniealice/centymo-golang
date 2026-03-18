@@ -1,0 +1,28 @@
+/* centymo-inventory-movements.css — Inventory movements filter bar styles */
+
+/* Main filter bar container */
+.movements-filter-bar {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Date range pair of inputs */
+.movements-date-range {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Filter action buttons group (Apply, Clear, Export) */
+.movements-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+/* Export CSV anchor styled as button — needs pointer cursor */
+#export-csv-btn {
+    cursor: pointer;
+}

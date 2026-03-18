@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "product-detail-content"}}
-<div class="page-content detail-layout" data-page-css="/assets/css/centymo/product-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-product-detail.css?v={{.CacheVersion}}">
     {{/* --- HTMX Tab Buttons --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "product-detail-tabs")}}
@@ -71,7 +71,7 @@
         {{end}}
     </div>
 
-    <div class="detail-actions" style="margin-top: var(--spacing-lg);">
+    <div class="detail-actions">
         <a class="btn btn--ghost btn--sm"
            hx-get="{{routeWith "product.edit" "id" .ID}}"
            hx-target="#sheetContent"

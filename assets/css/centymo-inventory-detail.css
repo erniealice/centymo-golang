@@ -71,12 +71,17 @@
     border-left: 3px solid var(--accent-primary);
 }
 
+/* Section spacer — replaces inline margin-top: 1.75rem on section wrappers */
+.inv-section-spacer {
+    margin-top: 1.75rem;
+}
+
 /* Serial summary footer row */
 .inv-summary-row {
     display: flex;
     gap: 0.75rem;
     padding-top: 1rem;
-    margin-top: 0.5rem;
+    margin-top: var(--spacing-md);
     border-top: 2px solid var(--border);
     flex-wrap: wrap;
 }

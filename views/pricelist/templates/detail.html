@@ -3,7 +3,7 @@
 {{end}}
 
 {{define "pricelist-detail-content"}}
-<div class="page-content detail-layout" data-page-css="/assets/css/centymo/pricelist-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-pricelist-detail.css?v={{.CacheVersion}}">
     {{/* --- HTMX Tab Buttons --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "pricelist-detail-tabs")}}
