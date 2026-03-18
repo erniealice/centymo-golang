@@ -7,7 +7,7 @@ import (
 	templateview "github.com/erniealice/hybra-golang/views/template"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
-	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/document_template"
+	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 )
 
 // Deps holds view dependencies for the sales settings (template management) views.

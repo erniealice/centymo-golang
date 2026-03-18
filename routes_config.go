@@ -598,6 +598,10 @@ func (r PlanRoutes) RouteMap() map[string]string {
 
 // SubscriptionRoutes holds all route paths for subscription views and actions.
 type SubscriptionRoutes struct {
+	// Sidebar navigation context — set via defaults or routes.json override
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
 	ListURL         string `json:"list_url"`
 	DetailURL       string `json:"detail_url"`
 	AddURL          string `json:"add_url"`
@@ -616,6 +620,9 @@ type SubscriptionRoutes struct {
 // package-level route constants defined in routes.go.
 func DefaultSubscriptionRoutes() SubscriptionRoutes {
 	return SubscriptionRoutes{
+		ActiveNav:    "engagements",
+		ActiveSubNav: "subscriptions",
+
 		ListURL:         SubscriptionListURL,
 		DetailURL:       SubscriptionDetailURL,
 		AddURL:          SubscriptionAddURL,
