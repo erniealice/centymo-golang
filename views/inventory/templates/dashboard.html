@@ -20,9 +20,9 @@
             <div class="card-header">
                 <h2 class="card-title">Stock Levels</h2>
                 <div class="card-actions">
-                    <button class="card-btn">Week</button>
-                    <button class="card-btn">Month</button>
-                    <button class="card-btn primary">Year</button>
+                    <button class="card-btn" id="filter-week">Week</button>
+                    <button class="card-btn" id="filter-month">Month</button>
+                    <button class="card-btn primary" id="filter-year">Year</button>
                 </div>
             </div>
             <div class="centymo-chart-area">
@@ -62,7 +62,7 @@
                  hx-trigger="load"
                  hx-swap="innerHTML">
                 <!-- Loaded async via HTMX -->
-                <div class="centymo-activity-item">
+                <div class="centymo-activity-item" data-testid="activity-1">
                     <div class="centymo-activity-icon client">
                         {{template "icon-plus"}}
                     </div>
@@ -73,7 +73,7 @@
                     <span class="centymo-activity-time">1h ago</span>
                 </div>
 
-                <div class="centymo-activity-item">
+                <div class="centymo-activity-item" data-testid="activity-2">
                     <div class="centymo-activity-icon quote">
                         {{template "icon-alert-triangle"}}
                     </div>
@@ -84,7 +84,7 @@
                     <span class="centymo-activity-time">3h ago</span>
                 </div>
 
-                <div class="centymo-activity-item">
+                <div class="centymo-activity-item" data-testid="activity-3">
                     <div class="centymo-activity-icon award">
                         {{template "icon-edit"}}
                     </div>
@@ -95,7 +95,7 @@
                     <span class="centymo-activity-time">5h ago</span>
                 </div>
 
-                <div class="centymo-activity-item">
+                <div class="centymo-activity-item" data-testid="activity-4">
                     <div class="centymo-activity-icon integration">
                         {{template "icon-map-pin"}}
                     </div>

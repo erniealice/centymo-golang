@@ -21,9 +21,9 @@
             <div class="card-header">
                 <h2 class="card-title">{{.Labels.RevenueTrend}}</h2>
                 <div class="card-actions">
-                    <button class="card-btn">{{.Labels.Week}}</button>
-                    <button class="card-btn">{{.Labels.Month}}</button>
-                    <button class="card-btn primary">{{.Labels.Year}}</button>
+                    <button class="card-btn" id="filter-week">{{.Labels.Week}}</button>
+                    <button class="card-btn" id="filter-month">{{.Labels.Month}}</button>
+                    <button class="card-btn primary" id="filter-year">{{.Labels.Year}}</button>
                 </div>
             </div>
             <div class="centymo-chart-area">
@@ -59,7 +59,7 @@
                 <button class="card-btn">{{.Labels.ViewAll}}</button>
             </div>
             <div class="centymo-activity-list">
-                <div class="centymo-activity-item">
+                <div class="centymo-activity-item" data-testid="activity-1">
                     <div class="centymo-activity-icon client">
                         {{template "icon-shopping-bag"}}
                     </div>
@@ -70,7 +70,7 @@
                     <span class="centymo-activity-time">30m ago</span>
                 </div>
 
-                <div class="centymo-activity-item">
+                <div class="centymo-activity-item" data-testid="activity-2">
                     <div class="centymo-activity-icon quote">
                         {{template "icon-check-circle"}}
                     </div>
@@ -81,7 +81,7 @@
                     <span class="centymo-activity-time">2h ago</span>
                 </div>
 
-                <div class="centymo-activity-item">
+                <div class="centymo-activity-item" data-testid="activity-3">
                     <div class="centymo-activity-icon award">
                         {{template "icon-edit"}}
                     </div>
@@ -92,7 +92,7 @@
                     <span class="centymo-activity-time">4h ago</span>
                 </div>
 
-                <div class="centymo-activity-item">
+                <div class="centymo-activity-item" data-testid="activity-4">
                     <div class="centymo-activity-icon integration">
                         {{template "icon-x-circle"}}
                     </div>

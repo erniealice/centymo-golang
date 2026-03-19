@@ -167,7 +167,7 @@
         <div class="image-gallery__item">
             <img src="{{.ImageURL}}" alt="{{.AltText}}" class="image-gallery__img" loading="lazy">
             <div class="image-gallery__overlay">
-                <input type="checkbox" name="image_ids[]" value="{{.ID}}" class="image-gallery__checkbox">
+                <input type="checkbox" name="image_ids[]" value="{{.ID}}" id="image-{{.ID}}" class="image-gallery__checkbox">
                 {{if .IsPrimary}}<span class="badge badge--info image-gallery__primary">{{$.Labels.Detail.PrimaryBadge}}</span>{{end}}
             </div>
         </div>

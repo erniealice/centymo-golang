@@ -19,6 +19,15 @@ import (
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 )
 
+// FormInner holds nested form labels accessed via .Labels.Form.* in templates.
+type FormInner struct {
+	CurrencyPlaceholder    string
+	StatusOngoing          string
+	StatusComplete         string
+	StatusCancelled        string
+	CustomerNamePlaceholder string
+}
+
 // FormLabels holds i18n labels for the drawer form template.
 type FormLabels struct {
 	Customer             string
@@ -30,6 +39,7 @@ type FormLabels struct {
 	Notes                string
 	NotesPlaceholder     string
 	Location             string
+	Form                 FormInner
 }
 
 // FormData is the template data for the sales drawer form.
@@ -83,6 +93,13 @@ func formLabels(t func(string) string) FormLabels {
 		Notes:                t("sales.form.notes"),
 		NotesPlaceholder:     t("sales.form.notesPlaceholder"),
 		Location:             t("sales.form.location"),
+		Form: FormInner{
+			CurrencyPlaceholder:     t("revenue.form.currencyPlaceholder"),
+			StatusOngoing:           t("revenue.form.statusOngoing"),
+			StatusComplete:          t("revenue.form.statusComplete"),
+			StatusCancelled:         t("revenue.form.statusCancelled"),
+			CustomerNamePlaceholder: t("revenue.form.customerNamePlaceholder"),
+		},
 	}
 }
 
