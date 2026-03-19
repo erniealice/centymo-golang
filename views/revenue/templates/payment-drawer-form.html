@@ -13,7 +13,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
             {{template "form-group" (dict
                 "Type" "select"
                 "Name" "collection_method_id"
-                "Label" "Payment Method"
+                "Label" .Labels.Form.PaymentMethod
                 "Value" .CollectionMethodID
                 "Required" true
                 "Options" .PaymentMethods
@@ -24,7 +24,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "amount_paid"
-                "Label" "Amount"
+                "Label" .Labels.Form.Amount
                 "Value" .AmountPaid
                 "Required" true
                 "Placeholder" "0.00"
@@ -32,7 +32,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "currency"
-                "Label" "Currency"
+                "Label" .Labels.Form.Currency
                 "Value" .Currency
                 "Placeholder" "PHP"
             )}}
@@ -42,9 +42,9 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "reference_number"
-                "Label" "Reference Number"
+                "Label" .Labels.Form.ReferenceNumber
                 "Value" .ReferenceNumber
-                "Placeholder" "OR/Transaction ID"
+                "Placeholder" .Labels.Form.TransactionIdPlaceholder
             )}}
         </div>
 
@@ -52,14 +52,14 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "received_by"
-                "Label" "Received By"
+                "Label" .Labels.Form.ReceivedBy
                 "Value" .ReceivedBy
                 "Readonly" .IsEdit
             )}}
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "received_role"
-                "Label" "Role"
+                "Label" .Labels.Form.Role
                 "Value" .ReceivedRole
             )}}
         </div>
@@ -68,7 +68,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
             {{template "form-group" (dict
                 "Type" "textarea"
                 "Name" "notes"
-                "Label" "Notes"
+                "Label" .Labels.Form.Notes
                 "Value" .Notes
             )}}
         </div>

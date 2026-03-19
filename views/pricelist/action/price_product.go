@@ -27,6 +27,7 @@ type PriceProductFormData struct {
 	PriceListID  string
 	Products     []ProductOption
 	CommonLabels any
+	Labels       centymo.PriceListLabels
 }
 
 // PriceProductDeps holds dependencies for price product action handlers.
@@ -72,6 +73,7 @@ func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 				PriceListID:  priceListID,
 				Products:     products,
 				CommonLabels: nil,
+				Labels:       deps.Labels,
 			})
 		}
 

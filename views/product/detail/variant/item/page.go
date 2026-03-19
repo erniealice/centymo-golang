@@ -123,7 +123,7 @@ func NewPageView(deps *variant.Deps) view.View {
 		l := deps.Labels
 
 		breadcrumbs := []detail.Breadcrumb{
-			{Label: "Products", Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
+			{Label: l.Breadcrumb.Products, Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
 			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", productID) + "?tab=variants"},
 			{Label: variantSKU, Href: route.ResolveURL(deps.Routes.VariantDetailURL, "id", productID, "vid", variantID) + "?tab=stock"},
 			{Label: name + " @ " + locationName, Href: ""},
@@ -292,10 +292,10 @@ func BuildStockTabItems(productID, variantID, itemID string, l centymo.ProductLa
 	action := route.ResolveURL(routes.VariantStockTabActionURL, "id", productID, "vid", variantID, "iid", itemID, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
-		{Key: "serials", Label: "Serials", Href: base + "?tab=serials", HxGet: action + "serials", Icon: "icon-hash", Count: 0, Disabled: false},
-		{Key: "pricing-history", Label: "Pricing History", Href: base + "?tab=pricing-history", HxGet: action + "pricing-history", Icon: "icon-tag", Count: 0, Disabled: false},
-		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
-		{Key: "audit-trail", Label: "Audit Trail", Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
+		{Key: "serials", Label: l.Tabs.Serials, Href: base + "?tab=serials", HxGet: action + "serials", Icon: "icon-hash", Count: 0, Disabled: false},
+		{Key: "pricing-history", Label: l.Tabs.PricingHistory, Href: base + "?tab=pricing-history", HxGet: action + "pricing-history", Icon: "icon-tag", Count: 0, Disabled: false},
+		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
+		{Key: "audit-trail", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit-trail", HxGet: action + "audit-trail", Icon: "icon-clock", Count: 0, Disabled: false},
 	}
 }
 
@@ -351,11 +351,11 @@ func LoadSerials(ctx context.Context, deps *variant.Deps, inventoryItemID string
 // BuildSerialTable builds the serial numbers table with view actions linking to serial detail.
 func BuildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels types.TableLabels, productID, variantID, itemID string, l centymo.ProductLabels, routes centymo.ProductRoutes) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "serial_number", Label: "Serial Number", Sortable: true},
-		{Key: "imei", Label: "IMEI", Sortable: false},
-		{Key: "status", Label: "Status", Sortable: true},
-		{Key: "warranty_end", Label: "Warranty End", Sortable: true},
-		{Key: "purchase_order", Label: "Purchase Order", Sortable: false},
+		{Key: "serial_number", Label: l.Detail.SerialNumber, Sortable: true},
+		{Key: "imei", Label: l.Detail.IMEI, Sortable: false},
+		{Key: "status", Label: l.Detail.Status, Sortable: true},
+		{Key: "warranty_end", Label: l.Detail.WarrantyEnd, Sortable: true},
+		{Key: "purchase_order", Label: l.Detail.PurchaseOrder, Sortable: false},
 	}
 
 	rows := []types.TableRow{}
@@ -403,8 +403,8 @@ func BuildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels 
 		DefaultSortDirection: "asc",
 		Labels:               tableLabels,
 		EmptyState: types.TableEmptyState{
-			Title:   "No Serial Numbers",
-			Message: "No serial numbers have been recorded for this inventory item.",
+			Title:   l.Detail.NoSerialNumbers,
+			Message: l.Detail.NoSerialNumbersMsg,
 		},
 	}
 	types.ApplyTableSettings(cfg)

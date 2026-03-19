@@ -1,7 +1,7 @@
 {{/*
 Price product drawer form -- loaded into #sheetContent via HTMX.
 Used by the Add Price Product action on the price list detail prices tab.
-Data: .FormAction, .PriceListID, .Products, .CommonLabels
+Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
 */}}
 {{define "price-product-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
@@ -9,9 +9,9 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels
     <div class="sheet-body">
         <div class="form-row single">
             <div class="form-group">
-                <label class="form-label" for="product_id">Product <span class="form-required">*</span></label>
+                <label class="form-label" for="product_id">{{.Labels.Form.Product}} <span class="form-required">*</span></label>
                 <select class="form-select" name="product_id" id="product_id" required onchange="PriceProductForm.onProductChange(this)">
-                    <option value="">Select a product...</option>
+                    <option value="">{{.Labels.Form.SelectProduct}}</option>
                     {{range .Products}}
                     <option value="{{.ID}}">{{.Name}}</option>
                     {{end}}
@@ -25,7 +25,7 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels
             {{template "form-group" (dict
                 "Type" "number"
                 "Name" "amount"
-                "Label" "Amount"
+                "Label" .Labels.Form.Amount
                 "Value" ""
                 "Required" true
                 "Placeholder" "0"
@@ -33,7 +33,7 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "currency"
-                "Label" "Currency"
+                "Label" .Labels.Form.Currency
                 "Value" "PHP"
                 "Required" true
             )}}

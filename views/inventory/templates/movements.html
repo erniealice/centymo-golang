@@ -48,10 +48,10 @@
                 onclick="document.getElementById('filter-date-from').value=''; document.getElementById('filter-date-to').value=''; document.getElementById('filter-location').value=''; document.getElementById('filter-type').value=''; document.getElementById('filter-search').value=''; htmx.trigger(document.getElementById('apply-filters-btn'), 'click');">
                 {{.Labels.ClearAll}}
             </button>
-            <a class="btn btn--outline" id="export-csv-btn"
+            <button type="button" class="btn btn--outline" id="export-csv-btn"
                onclick="(function(){ var params = new URLSearchParams(); var df=document.getElementById('filter-date-from').value; var dt=document.getElementById('filter-date-to').value; var loc=document.getElementById('filter-location').value; var tp=document.getElementById('filter-type').value; var s=document.getElementById('filter-search').value; if(df) params.set('date_from',df); if(dt) params.set('date_to',dt); if(loc) params.set('location',loc); if(tp) params.set('type',tp); if(s) params.set('search',s); var qs=params.toString(); window.location.href='{{route "inventory.movements.export"}}' + (qs ? '?' + qs : ''); })();">
                 {{.Labels.ExportCsv}}
-            </a>
+            </button>
         </div>
     </div>
     <div id="movements-table-wrapper">

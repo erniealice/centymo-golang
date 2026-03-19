@@ -229,7 +229,7 @@ func buildTabItems(id string, l centymo.PlanLabels, productCount, priceListCount
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
 		{Key: "products", Label: l.Tabs.Products, Href: base + "?tab=products", HxGet: action + "products", Icon: "icon-package", Count: productCount, Disabled: false},
 		{Key: "pricelists", Label: l.Tabs.PriceLists, Href: base + "?tab=pricelists", HxGet: action + "pricelists", Icon: "icon-tag", Count: priceListCount, Disabled: false},
-		{Key: "attachments", Label: "Attachments", Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
+		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock", Count: 0, Disabled: false},
 	}
 }
@@ -242,7 +242,7 @@ func buildProductsTable(ctx context.Context, deps *Deps, planID string) *types.T
 	l := deps.Labels
 
 	columns := []types.TableColumn{
-		{Key: "name", Label: "Product", Sortable: true},
+		{Key: "name", Label: l.Columns.Product, Sortable: true},
 		{Key: "price", Label: l.Detail.Price, Sortable: true, Width: "150px"},
 		{Key: "currency", Label: l.Detail.Currency, Sortable: true, Width: "120px"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
@@ -301,8 +301,8 @@ func buildProductsTable(ctx context.Context, deps *Deps, planID string) *types.T
 		DefaultSortDirection: "asc",
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
-			Title:   "No products assigned",
-			Message: "No products have been linked to this plan yet.",
+			Title:   l.Detail.NoProductsAssigned,
+			Message: l.Detail.NoProductsAssignedMsg,
 		},
 	}
 	types.ApplyTableSettings(tableConfig)
@@ -318,9 +318,9 @@ func buildPriceListsTable(ctx context.Context, deps *Deps, planID string) *types
 	l := deps.Labels
 
 	columns := []types.TableColumn{
-		{Key: "name", Label: "Price Plan", Sortable: true},
+		{Key: "name", Label: l.Columns.PricePlan, Sortable: true},
 		{Key: "amount", Label: l.Detail.Price, Sortable: true, Width: "150px"},
-		{Key: "duration", Label: "Duration", Sortable: true, Width: "150px"},
+		{Key: "duration", Label: l.Columns.Duration, Sortable: true, Width: "150px"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
 	}
 
@@ -378,8 +378,8 @@ func buildPriceListsTable(ctx context.Context, deps *Deps, planID string) *types
 		DefaultSortDirection: "asc",
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
-			Title:   "No price plans",
-			Message: "No price plans have been configured for this plan yet.",
+			Title:   l.Detail.NoPricePlans,
+			Message: l.Detail.NoPricePlansMsg,
 		},
 	}
 	types.ApplyTableSettings(tableConfig)

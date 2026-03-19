@@ -5,14 +5,15 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "sales-detail-content"}}
-<div class="page-content sale-detail-layout" data-page-css="/assets/css/centymo/centymo-sales-detail.css?v={{.CacheVersion}}">
+<div class="page-content sale-detail-layout" data-page-title="{{.PageTitle}}" data-page-css="/assets/css/centymo/centymo-sales-detail.css?v={{.CacheVersion}}">
+    <h2 class="visually-hidden">{{.Labels.Detail.PageTitle}}</h2>
     {{/* ─── Tabs ─── */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "sale-tabs")}}
     </div>
 
     {{/* ─── Tab Body ─── */}}
-    <div id="tabContent" class="sale-detail-body">
+    <div id="tabContent" class="sale-detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
         {{template "sales-tab-info" .}}
         {{else if eq .ActiveTab "items"}}
@@ -115,11 +116,13 @@ function downloadInvoice(btn, url) {
     </div>
     <div class="line-items-actions">
         <button type="button" class="btn btn--ghost btn--sm"
+            aria-haspopup="dialog"
             hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
             onclick="Sheet.open('{{.Labels.Detail.AddDiscount}}')">
             {{.Labels.Detail.AddDiscount}}
         </button>
         <button type="button" class="btn btn-primary toolbar-primary-action"
+            aria-haspopup="dialog"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
             onclick="Sheet.open('{{.Labels.Detail.AddItem}}')">
             {{.Labels.Detail.AddItem}}
@@ -146,11 +149,11 @@ function downloadInvoice(btn, url) {
     <div class="payment-toolbar">
         <div class="payment-summary">
             <span class="sale-summary-item">
-                <span class="sale-summary-label">Total Paid</span>
+                <span class="sale-summary-label">{{.Labels.Detail.TotalPaid}}</span>
                 <span class="sale-summary-value payment-total-paid">{{.TotalPaid}}</span>
             </span>
             <span class="sale-summary-item">
-                <span class="sale-summary-label">Remaining</span>
+                <span class="sale-summary-label">{{.Labels.Detail.Remaining}}</span>
                 <span class="sale-summary-value payment-remaining">{{.RemainingBalance}}</span>
             </span>
             <span class="badge badge--{{if eq .PaymentStatus "paid"}}success{{else if eq .PaymentStatus "partial"}}warning{{else}}info{{end}} payment-status-badge">
@@ -158,9 +161,10 @@ function downloadInvoice(btn, url) {
             </span>
         </div>
         <button type="button" class="btn btn-primary toolbar-primary-action"
+            aria-haspopup="dialog"
             hx-get="{{.PaymentAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="Sheet.open('Record Payment')">
-            Record Payment
+            onclick="Sheet.open('{{.Labels.Detail.RecordPayment}}')">
+            {{.Labels.Detail.RecordPayment}}
         </button>
     </div>
     <div class="tab-scroll">
@@ -169,8 +173,8 @@ function downloadInvoice(btn, url) {
 {{else}}
     <div class="tab-scroll">
         <div class="coming-soon-panel">
-            <div class="coming-soon-title">No payment information</div>
-            <p class="coming-soon-text">Payment details are not yet available for this sale.</p>
+            <div class="coming-soon-title">{{.Labels.Detail.NoPaymentInfo}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.PaymentDetailsNotAvailable}}</p>
         </div>
     </div>
 {{end}}

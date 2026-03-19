@@ -25,7 +25,7 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
                 "Name" "price_override"
                 "Label" .Labels.PriceOverride
                 "Value" .PriceOverride
-                "Placeholder" "Leave empty to use base price"
+                "Placeholder" .Labels.Form.PricePlaceholder
             )}}
         </div>
 
@@ -36,7 +36,7 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
             <div class="form-group">
                 <label class="form-label" for="{{.FieldName}}">{{.OptionName}}{{if .Required}} *{{end}}</label>
                 <select id="{{.FieldName}}" name="{{.FieldName}}" class="form-control"{{if .Required}} required{{end}}>
-                    <option value="" disabled {{if not $selected}}selected{{end}}>Select {{.OptionName}}</option>
+                    <option value="" disabled {{if not $selected}}selected{{end}}>{{$.Labels.Form.SelectOption}} {{.OptionName}}</option>
                     {{range .Values}}
                     <option value="{{.ID}}" {{if eq $selected .ID}}selected{{end}}>{{.Label}}</option>
                     {{end}}
@@ -49,7 +49,7 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
         <div class="form-row single">
             {{template "toggle" (dict
                 "Name" "active"
-                "Label" "Active"
+                "Label" .Labels.Form.Active
                 "Checked" .Active
                 "Value" "true"
             )}}

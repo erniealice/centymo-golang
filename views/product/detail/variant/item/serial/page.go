@@ -88,7 +88,7 @@ func NewPageView(deps *variant.Deps) view.View {
 		l := deps.Labels
 
 		breadcrumbs := []detail.Breadcrumb{
-			{Label: "Products", Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
+			{Label: l.Breadcrumb.Products, Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
 			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", productID) + "?tab=variants"},
 			{Label: variantSKU, Href: route.ResolveURL(deps.Routes.VariantDetailURL, "id", productID, "vid", variantID) + "?tab=stock"},
 			{Label: itemName + " @ " + locationName, Href: route.ResolveURL(deps.Routes.VariantStockDetailURL, "id", productID, "vid", variantID, "iid", itemID) + "?tab=serials"},

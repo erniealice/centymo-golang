@@ -3,14 +3,14 @@
 {{end}}
 
 {{define "pricelist-detail-content"}}
-<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-pricelist-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-pricelist-detail.css?v={{.CacheVersion}}" data-page-title="{{.Labels.Detail.PageTitle}}">
     {{/* --- HTMX Tab Buttons --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "pricelist-detail-tabs")}}
     </div>
 
     {{/* --- Tab Content Area --- */}}
-    <div id="tabContent" class="detail-body">
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "basic"}}
         {{template "pricelist-detail-basic" .}}
         {{else if eq .ActiveTab "prices"}}
@@ -47,7 +47,7 @@
             <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
             <span>
                 <span class="badge badge--{{if .PriceList.GetActive}}success{{else}}warning{{end}}">
-                    {{if .PriceList.GetActive}}Active{{else}}Inactive{{end}}
+                    {{if .PriceList.GetActive}}{{.Labels.Detail.ActiveBadge}}{{else}}{{.Labels.Detail.InactiveBadge}}{{end}}
                 </span>
             </span>
         </div>
@@ -63,8 +63,8 @@
 </div>
 {{else}}
 <div class="coming-soon-panel">
-    <div class="coming-soon-title">No prices configured</div>
-    <p class="coming-soon-text">Add products to this price list to configure pricing.</p>
+    <div class="coming-soon-title">{{.Labels.Detail.NoPricesConfigured}}</div>
+    <p class="coming-soon-text">{{.Labels.Detail.NoPricesDesc}}</p>
 </div>
 {{end}}
 {{end}}

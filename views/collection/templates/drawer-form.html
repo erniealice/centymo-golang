@@ -30,7 +30,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Customer
                 "Value" .Customer
                 "Required" true
-                "Placeholder" "Customer name"
+                "Placeholder" .Labels.Form.CustomerNamePlaceholder
             )}}
         </div>
 
@@ -42,14 +42,14 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Amount
                 "Value" .Amount
                 "Required" true
-                "Placeholder" "0.00"
+                "Placeholder" .Labels.Form.AmountPlaceholder
             )}}
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
-                "Placeholder" "PHP"
+                "Placeholder" .Labels.Form.CurrencyPlaceholder
             )}}
         </div>
 
@@ -61,13 +61,13 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.PaymentMethod
                 "Value" .CollectionMethod
                 "Options" (list
-                    (dict "Value" "cash" "Label" "Cash")
-                    (dict "Value" "bank_transfer" "Label" "Bank Transfer")
-                    (dict "Value" "check" "Label" "Check")
-                    (dict "Value" "gcash" "Label" "GCash")
-                    (dict "Value" "maya" "Label" "Maya")
-                    (dict "Value" "card" "Label" "Card")
-                    (dict "Value" "other" "Label" "Other")
+                    (dict "Value" "cash" "Label" .Labels.Form.MethodCash)
+                    (dict "Value" "bank_transfer" "Label" .Labels.Form.MethodBankTransfer)
+                    (dict "Value" "check" "Label" .Labels.Form.MethodCheck)
+                    (dict "Value" "gcash" "Label" .Labels.Form.MethodGCash)
+                    (dict "Value" "maya" "Label" .Labels.Form.MethodMaya)
+                    (dict "Value" "card" "Label" .Labels.Form.MethodCard)
+                    (dict "Value" "other" "Label" .Labels.Form.MethodOther)
                 )
             )}}
             {{template "form-group" (dict
@@ -87,9 +87,9 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Status
                 "Value" .Status
                 "Options" (list
-                    (dict "Value" "pending" "Label" "Pending")
-                    (dict "Value" "completed" "Label" "Completed")
-                    (dict "Value" "failed" "Label" "Failed")
+                    (dict "Value" "pending" "Label" .Labels.Form.StatusPending)
+                    (dict "Value" "completed" "Label" .Labels.Form.StatusCompleted)
+                    (dict "Value" "failed" "Label" .Labels.Form.StatusFailed)
                 )
             )}}
         </div>

@@ -32,6 +32,7 @@ type PaymentFormData struct {
 	ReceivedRole       string
 	PaymentMethods     []PaymentMethodOption
 	CommonLabels       any
+	Labels             centymo.RevenueLabels
 }
 
 // PaymentDeps holds dependencies for payment action handlers.
@@ -83,6 +84,7 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 				Currency:       "PHP",
 				PaymentMethods: methods,
 				CommonLabels:   nil, // injected by ViewAdapter
+				Labels:         deps.Labels,
 			})
 		}
 
@@ -170,6 +172,7 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 				ReceivedRole:       receivedRole,
 				PaymentMethods:     methods,
 				CommonLabels:       nil, // injected by ViewAdapter
+				Labels:             deps.Labels,
 			})
 		}
 

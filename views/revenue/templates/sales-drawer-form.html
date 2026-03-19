@@ -33,7 +33,7 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
-                "Placeholder" "PHP"
+                "Placeholder" .Labels.Form.CurrencyPlaceholder
             )}}
         </div>
 
@@ -44,9 +44,9 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                 "Label" .Labels.Status
                 "Value" .Status
                 "Options" (list
-                    (dict "Value" "ongoing" "Label" "Ongoing")
-                    (dict "Value" "complete" "Label" "Complete")
-                    (dict "Value" "cancelled" "Label" "Cancelled")
+                    (dict "Value" "ongoing" "Label" .Labels.Form.StatusOngoing)
+                    (dict "Value" "complete" "Label" .Labels.Form.StatusComplete)
+                    (dict "Value" "cancelled" "Label" .Labels.Form.StatusCancelled)
                 )
             )}}
         </div>
@@ -75,7 +75,7 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                 "Label" .Labels.Customer
                 "Value" .Name
                 "Required" true
-                "Placeholder" "Customer name"
+                "Placeholder" .Labels.Form.CustomerNamePlaceholder
             )}}
         </div>
 

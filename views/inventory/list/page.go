@@ -122,11 +122,11 @@ func NewView(deps *Deps) view.View {
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          "Inventory \u2014 " + centymo.LocationDisplayName(location),
+				Title:          deps.Labels.Page.Heading + " \u2014 " + centymo.LocationDisplayName(location),
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      "inventory",
 				ActiveSubNav:   location,
-				HeaderTitle:    "Inventory \u2014 " + centymo.LocationDisplayName(location),
+				HeaderTitle:    deps.Labels.Page.Heading + " \u2014 " + centymo.LocationDisplayName(location),
 				HeaderSubtitle: l.Page.Caption,
 				HeaderIcon:     "icon-package",
 				CommonLabels:   deps.CommonLabels,

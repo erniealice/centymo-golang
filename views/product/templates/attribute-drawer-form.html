@@ -12,7 +12,7 @@ Data: .ProductID, .FormAction, .CommonLabels, .Labels, .AvailableAttributes
         <div class="form-row single">
             <label class="form-label" for="attribute_id">{{.Labels.Title}}</label>
             <select name="attribute_id" id="attribute_id" class="form-select" required>
-                <option value="">— Select attribute —</option>
+                <option value="">{{.Labels.Form.SelectAttribute}}</option>
                 {{range .AvailableAttributes}}
                 <option value="{{.ID}}">{{.Name}} ({{.Code}})</option>
                 {{end}}
@@ -21,7 +21,7 @@ Data: .ProductID, .FormAction, .CommonLabels, .Labels, .AvailableAttributes
         {{else}}
         <div class="form-row single">
             <p class="attribute-all-assigned">
-                All available attributes have already been assigned to this product.
+                {{.Labels.Form.AllAttributesAssigned}}
             </p>
         </div>
         {{end}}
@@ -38,7 +38,7 @@ Data: .ProductID, .FormAction, .CommonLabels, .Labels, .AvailableAttributes
         <div class="form-row single">
             {{template "toggle" (dict
                 "Name" "active"
-                "Label" "Active"
+                "Label" .Labels.Form.Active
                 "Checked" true
                 "Value" "true"
             )}}

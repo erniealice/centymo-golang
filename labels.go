@@ -162,6 +162,7 @@ type InventoryTabLabels struct {
 	Transactions string `json:"transactions"`
 	Depreciation string `json:"depreciation"`
 	Audit        string `json:"audit"`
+	Attachments  string `json:"attachments"`
 }
 
 type InventoryItemTypeLabels struct {
@@ -355,6 +356,21 @@ type RevenueFormLabels struct {
 	NotesPlaceholder     string `json:"notesPlaceholder"`
 	Active               string `json:"active"`
 	Location             string `json:"location"`
+
+	// Placeholders and translated option labels
+	CurrencyPlaceholder           string `json:"currencyPlaceholder"`
+	CustomerNamePlaceholder       string `json:"customerNamePlaceholder"`
+	StatusOngoing                 string `json:"statusOngoing"`
+	StatusComplete                string `json:"statusComplete"`
+	StatusCancelled               string `json:"statusCancelled"`
+	PaymentMethod                 string `json:"paymentMethod"`
+	ReferenceNumber               string `json:"referenceNumber"`
+	TransactionIdPlaceholder      string `json:"transactionIdPlaceholder"`
+	ReceivedBy                    string `json:"receivedBy"`
+	Role                          string `json:"role"`
+	SelectInventoryItem           string `json:"selectInventoryItem"`
+	ItemDescriptionPlaceholder    string `json:"itemDescriptionPlaceholder"`
+	DiscountDescriptionPlaceholder string `json:"discountDescriptionPlaceholder"`
 }
 
 type RevenueActionLabels struct {
@@ -387,10 +403,11 @@ type RevenueDetailLabels struct {
 	GrandTotal  string `json:"grandTotal"`
 
 	// Tab labels
-	TabBasicInfo  string `json:"tabBasicInfo"`
-	TabLineItems  string `json:"tabLineItems"`
-	TabPayment    string `json:"tabPayment"`
-	TabAuditTrail string `json:"tabAuditTrail"`
+	TabBasicInfo   string `json:"tabBasicInfo"`
+	TabLineItems   string `json:"tabLineItems"`
+	TabPayment     string `json:"tabPayment"`
+	TabAttachments string `json:"tabAttachments"`
+	TabAuditTrail  string `json:"tabAuditTrail"`
 
 	// Basic info fields
 	Customer string `json:"customer"`
@@ -435,6 +452,13 @@ type RevenueDetailLabels struct {
 	SerialNumber     string `json:"serialNumber"`
 	ItemEmptyTitle   string `json:"itemEmptyTitle"`
 	ItemEmptyMessage string `json:"itemEmptyMessage"`
+
+	// Payment tab
+	TotalPaid                  string `json:"totalPaid"`
+	Remaining                  string `json:"remaining"`
+	RecordPayment              string `json:"recordPayment"`
+	NoPaymentInfo              string `json:"noPaymentInfo"`
+	PaymentDetailsNotAvailable string `json:"paymentDetailsNotAvailable"`
 }
 
 type RevenueConfirmLabels struct {
@@ -560,6 +584,16 @@ type ProductFormLabels struct {
 	Price           string `json:"price"`
 	Currency        string `json:"currency"`
 	Active          string `json:"active"`
+
+	// Variant / option / attribute form labels
+	PricePlaceholder       string `json:"pricePlaceholder"`
+	SelectOption           string `json:"selectOption"`
+	InitialValues          string `json:"initialValues"`
+	InitialValuesPlaceholder string `json:"initialValuesPlaceholder"`
+	Required               string `json:"required"`
+	Option                 string `json:"option"`
+	SelectAttribute        string `json:"selectAttribute"`
+	AllAttributesAssigned  string `json:"allAttributesAssigned"`
 }
 
 type ProductActionLabels struct {
@@ -573,14 +607,18 @@ type ProductBulkLabels struct {
 }
 
 type ProductTabLabels struct {
-	Info       string `json:"info"`
-	Variants   string `json:"variants"`
-	Attributes string `json:"attributes"`
-	Pricing    string `json:"pricing"`
-	Options    string `json:"options"`
-	Images     string `json:"images"`
-	Stock      string `json:"stock"`
-	AuditTrail string `json:"auditTrail"`
+	Info           string `json:"info"`
+	Variants       string `json:"variants"`
+	Attributes     string `json:"attributes"`
+	Pricing        string `json:"pricing"`
+	Options        string `json:"options"`
+	Images         string `json:"images"`
+	Stock          string `json:"stock"`
+	Attachments    string `json:"attachments"`
+	AuditTrail     string `json:"auditTrail"`
+	// Inventory item sub-tabs
+	Serials        string `json:"serials"`
+	PricingHistory string `json:"pricingHistory"`
 }
 
 type ProductDetailLabels struct {
@@ -591,6 +629,49 @@ type ProductDetailLabels struct {
 	Status               string `json:"status"`
 	OptionsLabel         string `json:"optionsLabel"`
 	EmptyVariantsMessage string `json:"emptyVariantsMessage"`
+	// Serial table columns
+	SerialNumber       string `json:"serialNumber"`
+	IMEI               string `json:"imei"`
+	WarrantyEnd        string `json:"warrantyEnd"`
+	PurchaseOrder      string `json:"purchaseOrder"`
+	NoSerialNumbers    string `json:"noSerialNumbers"`
+	NoSerialNumbersMsg string `json:"noSerialNumbersMsg"`
+
+	// Variant detail labels
+	VariantInformation string `json:"variantInformation"`
+	Options            string `json:"options"`
+	VariantPricing     string `json:"variantPricing"`
+	VariantPricingDesc string `json:"variantPricingDesc"`
+	InventoryStock     string `json:"inventoryStock"`
+	InventoryStockDesc string `json:"inventoryStockDesc"`
+	DropImagesHere     string `json:"dropImagesHere"`
+	ImageFileHint      string `json:"imageFileHint"`
+	DeleteSelected     string `json:"deleteSelected"`
+	PrimaryBadge       string `json:"primaryBadge"`
+	NoImages           string `json:"noImages"`
+	NoImagesDesc       string `json:"noImagesDesc"`
+	AuditTrail         string `json:"auditTrail"`
+	AuditTrailDesc     string `json:"auditTrailDesc"`
+	NoSerialNumbersDesc string `json:"noSerialNumbersDesc"`
+
+	// Stock detail labels
+	InventoryItem      string `json:"inventoryItem"`
+	Name               string `json:"name"`
+	SKU                string `json:"sku"`
+	Type               string `json:"type"`
+	Location           string `json:"location"`
+	QtyOnHand          string `json:"qtyOnHand"`
+	Reserved           string `json:"reserved"`
+	Available          string `json:"available"`
+	StatTotal          string `json:"statTotal"`
+	StatAvailable      string `json:"statAvailable"`
+	StatSold           string `json:"statSold"`
+	StatReserved       string `json:"statReserved"`
+	PricingHistory     string `json:"pricingHistory"`
+	PricingHistoryDesc string `json:"pricingHistoryDesc"`
+
+	// Serial detail labels
+	SerialInformation string `json:"serialInformation"`
 }
 
 type ProductStatusLabels struct {
@@ -803,6 +884,10 @@ type PriceListFormLabels struct {
 	DateStart       string `json:"dateStart"`
 	DateEnd         string `json:"dateEnd"`
 	Active          string `json:"active"`
+	Product         string `json:"product"`
+	SelectProduct   string `json:"selectProduct"`
+	Amount          string `json:"amount"`
+	Currency        string `json:"currency"`
 }
 
 type PriceListActionLabels struct {
@@ -816,15 +901,21 @@ type PriceListBulkLabels struct {
 }
 
 type PriceListDetailLabels struct {
-	BasicInfo    string `json:"basicInfo"`
-	Prices       string `json:"prices"`
-	ProductName  string `json:"productName"`
-	Amount       string `json:"amount"`
-	Currency     string `json:"currency"`
-	AddPrice     string `json:"addPrice"`
-	RemoveLabel  string `json:"removeLabel"`
-	EmptyTitle   string `json:"emptyTitle"`
-	EmptyMessage string `json:"emptyMessage"`
+	PageTitle      string `json:"pageTitle"`
+	BasicInfo      string `json:"basicInfo"`
+	Prices         string `json:"prices"`
+	TabAttachments string `json:"tabAttachments"`
+	ProductName    string `json:"productName"`
+	Amount         string `json:"amount"`
+	Currency       string `json:"currency"`
+	AddPrice       string `json:"addPrice"`
+	RemoveLabel    string `json:"removeLabel"`
+	EmptyTitle          string `json:"emptyTitle"`
+	EmptyMessage        string `json:"emptyMessage"`
+	ActiveBadge         string `json:"activeBadge"`
+	InactiveBadge       string `json:"inactiveBadge"`
+	NoPricesConfigured  string `json:"noPricesConfigured"`
+	NoPricesDesc        string `json:"noPricesDesc"`
 }
 
 type PriceListConfirmLabels struct {
@@ -1093,16 +1184,29 @@ type CollectionEmptyLabels struct {
 }
 
 type CollectionFormLabels struct {
-	Customer             string `json:"customer"`
-	Date                 string `json:"date"`
-	Amount               string `json:"amount"`
-	Currency             string `json:"currency"`
-	Reference            string `json:"reference"`
-	ReferencePlaceholder string `json:"referencePlaceholder"`
-	PaymentMethod        string `json:"paymentMethod"`
-	Status               string `json:"status"`
-	Notes                string `json:"notes"`
-	NotesPlaceholder     string `json:"notesPlaceholder"`
+	Customer                string `json:"customer"`
+	Date                    string `json:"date"`
+	Amount                  string `json:"amount"`
+	Currency                string `json:"currency"`
+	Reference               string `json:"reference"`
+	ReferencePlaceholder    string `json:"referencePlaceholder"`
+	PaymentMethod           string `json:"paymentMethod"`
+	Status                  string `json:"status"`
+	Notes                   string `json:"notes"`
+	NotesPlaceholder        string `json:"notesPlaceholder"`
+	CustomerNamePlaceholder string `json:"customerNamePlaceholder"`
+	AmountPlaceholder       string `json:"amountPlaceholder"`
+	CurrencyPlaceholder     string `json:"currencyPlaceholder"`
+	MethodCash              string `json:"methodCash"`
+	MethodBankTransfer      string `json:"methodBankTransfer"`
+	MethodCheck             string `json:"methodCheck"`
+	MethodGCash             string `json:"methodGCash"`
+	MethodMaya              string `json:"methodMaya"`
+	MethodCard              string `json:"methodCard"`
+	MethodOther             string `json:"methodOther"`
+	StatusPending           string `json:"statusPending"`
+	StatusCompleted         string `json:"statusCompleted"`
+	StatusFailed            string `json:"statusFailed"`
 }
 
 type CollectionActionLabels struct {
@@ -1130,11 +1234,14 @@ type CollectionDetailLabels struct {
 	Reference         string `json:"reference"`
 	Notes             string `json:"notes"`
 	TabBasicInfo      string `json:"tabBasicInfo"`
+	TabAttachments    string `json:"tabAttachments"`
 	TabAuditTrail     string `json:"tabAuditTrail"`
 	AuditAction       string `json:"auditAction"`
-	AuditUser         string `json:"auditUser"`
-	AuditEmptyTitle   string `json:"auditEmptyTitle"`
-	AuditEmptyMessage string `json:"auditEmptyMessage"`
+	AuditUser            string `json:"auditUser"`
+	AuditEmptyTitle      string `json:"auditEmptyTitle"`
+	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+	AuditTrailDesc       string `json:"auditTrailDesc"`
 }
 
 type CollectionStatusLabels struct {
@@ -1201,16 +1308,29 @@ func DefaultCollectionLabels() CollectionLabels {
 			FailedMessage:    "No failed collections to display.",
 		},
 		Form: CollectionFormLabels{
-			Customer:             "Customer",
-			Date:                 "Date",
-			Amount:               "Amount",
-			Currency:             "Currency",
-			Reference:            "Reference",
-			ReferencePlaceholder: "e.g. INV-001",
-			PaymentMethod:        "Payment Method",
-			Status:               "Status",
-			Notes:                "Notes",
-			NotesPlaceholder:     "Additional notes...",
+			Customer:                "Customer",
+			Date:                    "Date",
+			Amount:                  "Amount",
+			Currency:                "Currency",
+			Reference:               "Reference",
+			ReferencePlaceholder:    "e.g. INV-001",
+			PaymentMethod:           "Payment Method",
+			Status:                  "Status",
+			Notes:                   "Notes",
+			NotesPlaceholder:        "Additional notes...",
+			CustomerNamePlaceholder: "Customer name",
+			AmountPlaceholder:       "0.00",
+			CurrencyPlaceholder:     "PHP",
+			MethodCash:              "Cash",
+			MethodBankTransfer:      "Bank Transfer",
+			MethodCheck:             "Check",
+			MethodGCash:             "GCash",
+			MethodMaya:              "Maya",
+			MethodCard:              "Card",
+			MethodOther:             "Other",
+			StatusPending:           "Pending",
+			StatusCompleted:         "Completed",
+			StatusFailed:            "Failed",
 		},
 		Actions: CollectionActionLabels{
 			View:         "View",
@@ -1223,23 +1343,26 @@ func DefaultCollectionLabels() CollectionLabels {
 			Delete: "Delete Selected",
 		},
 		Detail: CollectionDetailLabels{
-			PageTitle:         "Collection Details",
-			TitlePrefix:       "Collection #",
-			PaymentInfo:       "Payment Information",
-			Customer:          "Customer",
-			Date:              "Date",
-			Amount:            "Amount",
-			Currency:          "Currency",
-			Status:            "Status",
-			Method:            "Payment Method",
-			Reference:         "Reference",
-			Notes:             "Notes",
-			TabBasicInfo:      "Basic Info",
-			TabAuditTrail:     "Audit Trail",
-			AuditAction:       "Action",
-			AuditUser:         "User",
-			AuditEmptyTitle:   "No audit records",
-			AuditEmptyMessage: "No audit trail entries yet.",
+			PageTitle:            "Collection Details",
+			TitlePrefix:          "Collection #",
+			PaymentInfo:          "Payment Information",
+			Customer:             "Customer",
+			Date:                 "Date",
+			Amount:               "Amount",
+			Currency:             "Currency",
+			Status:               "Status",
+			Method:               "Payment Method",
+			Reference:            "Reference",
+			Notes:                "Notes",
+			TabBasicInfo:         "Basic Info",
+			TabAttachments:       "Attachments",
+			TabAuditTrail:        "Audit Trail",
+			AuditAction:          "Action",
+			AuditUser:            "User",
+			AuditEmptyTitle:      "No audit records",
+			AuditEmptyMessage:    "No audit trail entries yet.",
+			AuditTrailComingSoon: "Audit trail coming soon.",
+			AuditTrailDesc:       "Audit trail for collection changes is coming soon.",
 		},
 		Status: CollectionStatusLabels{
 			Pending:   "Pending",
@@ -1334,19 +1457,37 @@ type DisbursementEmptyLabels struct {
 }
 
 type DisbursementFormLabels struct {
-	Payee                string `json:"payee"`
-	PayeePlaceholder     string `json:"payeePlaceholder"`
-	Date                 string `json:"date"`
-	Amount               string `json:"amount"`
-	Currency             string `json:"currency"`
-	Reference            string `json:"reference"`
-	ReferencePlaceholder string `json:"referencePlaceholder"`
-	PaymentMethod        string `json:"paymentMethod"`
-	Category             string `json:"category"`
-	Status               string `json:"status"`
-	Notes                string `json:"notes"`
-	NotesPlaceholder     string `json:"notesPlaceholder"`
-	ApprovedBy           string `json:"approvedBy"`
+	Payee                   string `json:"payee"`
+	PayeePlaceholder        string `json:"payeePlaceholder"`
+	Date                    string `json:"date"`
+	Amount                  string `json:"amount"`
+	Currency                string `json:"currency"`
+	Reference               string `json:"reference"`
+	ReferencePlaceholder    string `json:"referencePlaceholder"`
+	PaymentMethod           string `json:"paymentMethod"`
+	Category                string `json:"category"`
+	Status                  string `json:"status"`
+	Notes                   string `json:"notes"`
+	NotesPlaceholder        string `json:"notesPlaceholder"`
+	ApprovedBy              string `json:"approvedBy"`
+	AmountPlaceholder       string `json:"amountPlaceholder"`
+	CurrencyPlaceholder     string `json:"currencyPlaceholder"`
+	MethodCash              string `json:"methodCash"`
+	MethodBankTransfer      string `json:"methodBankTransfer"`
+	MethodCheck             string `json:"methodCheck"`
+	MethodGCash             string `json:"methodGCash"`
+	MethodOther             string `json:"methodOther"`
+	StatusDraft             string `json:"statusDraft"`
+	StatusPending           string `json:"statusPending"`
+	StatusApproved          string `json:"statusApproved"`
+	StatusPaid              string `json:"statusPaid"`
+	StatusCancelled         string `json:"statusCancelled"`
+	TypeSupplierPayment     string `json:"typeSupplierPayment"`
+	TypePayroll             string `json:"typePayroll"`
+	TypeRent                string `json:"typeRent"`
+	TypeUtilities           string `json:"typeUtilities"`
+	TypeOther               string `json:"typeOther"`
+	ApproverNamePlaceholder string `json:"approverNamePlaceholder"`
 }
 
 type DisbursementActionLabels struct {
@@ -1381,6 +1522,7 @@ type DisbursementDetailLabels struct {
 	ApprovedBy        string `json:"approvedBy"`
 	Notes             string `json:"notes"`
 	TabBasicInfo      string `json:"tabBasicInfo"`
+	TabAttachments    string `json:"tabAttachments"`
 	TabAuditTrail     string `json:"tabAuditTrail"`
 	AuditAction       string `json:"auditAction"`
 	AuditUser         string `json:"auditUser"`
@@ -1476,19 +1618,37 @@ func DefaultDisbursementLabels() DisbursementLabels {
 			CancelledMessage: "No cancelled disbursements to display.",
 		},
 		Form: DisbursementFormLabels{
-			Payee:                "Payee",
-			PayeePlaceholder:     "Enter payee name",
-			Date:                 "Date",
-			Amount:               "Amount",
-			Currency:             "Currency",
-			Reference:            "Reference",
-			ReferencePlaceholder: "e.g. DISB-001",
-			PaymentMethod:        "Payment Method",
-			Category:             "Category",
-			Status:               "Status",
-			Notes:                "Notes",
-			NotesPlaceholder:     "Additional notes...",
-			ApprovedBy:           "Approved By",
+			Payee:                  "Payee",
+			PayeePlaceholder:       "Enter payee name",
+			Date:                   "Date",
+			Amount:                 "Amount",
+			Currency:               "Currency",
+			Reference:              "Reference",
+			ReferencePlaceholder:   "e.g. DISB-001",
+			PaymentMethod:          "Payment Method",
+			Category:               "Category",
+			Status:                 "Status",
+			Notes:                  "Notes",
+			NotesPlaceholder:       "Additional notes...",
+			ApprovedBy:             "Approved By",
+			AmountPlaceholder:      "0.00",
+			CurrencyPlaceholder:    "PHP",
+			MethodCash:             "Cash",
+			MethodBankTransfer:     "Bank Transfer",
+			MethodCheck:            "Check",
+			MethodGCash:            "GCash",
+			MethodOther:            "Other",
+			StatusDraft:            "Draft",
+			StatusPending:          "Pending",
+			StatusApproved:         "Approved",
+			StatusPaid:             "Paid",
+			StatusCancelled:        "Cancelled",
+			TypeSupplierPayment:    "Supplier Payment",
+			TypePayroll:            "Payroll",
+			TypeRent:               "Rent",
+			TypeUtilities:          "Utilities",
+			TypeOther:              "Other",
+			ApproverNamePlaceholder: "Approver name",
 		},
 		Actions: DisbursementActionLabels{
 			View:       "View",
@@ -1520,6 +1680,7 @@ func DefaultDisbursementLabels() DisbursementLabels {
 			ApprovedBy:        "Approved By",
 			Notes:             "Notes",
 			TabBasicInfo:      "Basic Info",
+			TabAttachments:    "Attachments",
 			TabAuditTrail:     "Audit Trail",
 			AuditAction:       "Action",
 			AuditUser:         "User",
@@ -1608,6 +1769,9 @@ type PlanColumnLabels struct {
 	Interval    string `json:"interval"`
 	Price       string `json:"price"`
 	Status      string `json:"status"`
+	Product     string `json:"product"`
+	PricePlan   string `json:"pricePlan"`
+	Duration    string `json:"duration"`
 }
 
 type PlanEmptyLabels struct {
@@ -1653,24 +1817,38 @@ type PlanFormLabels struct {
 	ProductsPlaceholder string                `json:"productsPlaceholder"`
 	ProductsSearch      string                `json:"productsSearch"`
 	Sections            PlanFormSectionLabels `json:"sections"`
+
+	// Fulfillment type option labels
+	TypeSchedule string `json:"typeSchedule"`
+	TypeLicense  string `json:"typeLicense"`
+	TypeContent  string `json:"typeContent"`
+	TypePhysical string `json:"typePhysical"`
 }
 
 type PlanDetailLabels struct {
-	PageTitle       string `json:"pageTitle"`
-	Price           string `json:"price"`
-	Currency        string `json:"currency"`
-	Status          string `json:"status"`
-	Description     string `json:"description"`
-	FulfillmentType string `json:"fulfillmentType"`
-	CreatedDate     string `json:"createdDate"`
-	ModifiedDate    string `json:"modifiedDate"`
+	PageTitle              string `json:"pageTitle"`
+	Price                  string `json:"price"`
+	Currency               string `json:"currency"`
+	Status                 string `json:"status"`
+	Description            string `json:"description"`
+	FulfillmentType        string `json:"fulfillmentType"`
+	CreatedDate            string `json:"createdDate"`
+	ModifiedDate           string `json:"modifiedDate"`
+	NoProductsAssigned     string `json:"noProductsAssigned"`
+	NoProductsAssignedMsg  string `json:"noProductsAssignedMsg"`
+	NoProductsDesc         string `json:"noProductsDesc"`
+	NoPricePlans           string `json:"noPricePlans"`
+	NoPricePlansMsg        string `json:"noPricePlansMsg"`
+	NoPricePlansDesc       string `json:"noPricePlansDesc"`
+	AuditTrailComingSoon   string `json:"auditTrailComingSoon"`
 }
 
 type PlanTabLabels struct {
-	Info       string `json:"info"`
-	Products   string `json:"products"`
-	PriceLists string `json:"priceLists"`
-	AuditTrail string `json:"auditTrail"`
+	Info        string `json:"info"`
+	Products    string `json:"products"`
+	PriceLists  string `json:"priceLists"`
+	Attachments string `json:"attachments"`
+	AuditTrail  string `json:"auditTrail"`
 }
 
 type PlanConfirmLabels struct {
@@ -1755,23 +1933,27 @@ type SubscriptionFormLabels struct {
 	PlanSearchPlaceholder     string `json:"planSearchPlaceholder"`
 	CustomerNoResults         string `json:"customerNoResults"`
 	PlanNoResults             string `json:"planNoResults"`
+	EngagementNamePlaceholder string `json:"engagementNamePlaceholder"`
 }
 
 type SubscriptionDetailLabels struct {
-	PageTitle    string `json:"pageTitle"`
-	Customer     string `json:"customer"`
-	Plan         string `json:"plan"`
-	StartDate    string `json:"startDate"`
-	EndDate      string `json:"endDate"`
-	Status       string `json:"status"`
-	CreatedDate  string `json:"createdDate"`
-	ModifiedDate string `json:"modifiedDate"`
+	PageTitle            string `json:"pageTitle"`
+	Customer             string `json:"customer"`
+	Plan                 string `json:"plan"`
+	StartDate            string `json:"startDate"`
+	EndDate              string `json:"endDate"`
+	Status               string `json:"status"`
+	CreatedDate          string `json:"createdDate"`
+	ModifiedDate         string `json:"modifiedDate"`
+	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+	AuditTrailDesc       string `json:"auditTrailDesc"`
 }
 
 type SubscriptionTabLabels struct {
-	Info       string `json:"info"`
-	History    string `json:"history"`
-	AuditTrail string `json:"auditTrail"`
+	Info        string `json:"info"`
+	History     string `json:"history"`
+	Attachments string `json:"attachments"`
+	AuditTrail  string `json:"auditTrail"`
 }
 
 type SubscriptionConfirmLabels struct {
@@ -1799,6 +1981,9 @@ func DefaultPlanLabels() PlanLabels {
 			Interval:    "Interval",
 			Price:       "Price",
 			Status:      "Status",
+			Product:     "Product",
+			PricePlan:   "Price Plan",
+			Duration:    "Duration",
 		},
 		Empty: PlanEmptyLabels{
 			Title:           "No plans found",
@@ -1818,6 +2003,10 @@ func DefaultPlanLabels() PlanLabels {
 			Products:            "Products",
 			ProductsPlaceholder: "Select products...",
 			ProductsSearch:      "Search products...",
+			TypeSchedule:        "Schedule",
+			TypeLicense:         "License",
+			TypeContent:         "Content",
+			TypePhysical:        "Physical",
 			Sections: PlanFormSectionLabels{
 				Basic:    "Basic Information",
 				Services: "Assigned Products",
@@ -1829,20 +2018,28 @@ func DefaultPlanLabels() PlanLabels {
 			Delete: "Delete Plan",
 		},
 		Detail: PlanDetailLabels{
-			PageTitle:       "Plan Details",
-			Price:           "Price",
-			Currency:        "Currency",
-			Status:          "Status",
-			Description:     "Description",
-			FulfillmentType: "Fulfillment Type",
-			CreatedDate:     "Created",
-			ModifiedDate:    "Last Modified",
+			PageTitle:             "Plan Details",
+			Price:                 "Price",
+			Currency:              "Currency",
+			Status:                "Status",
+			Description:           "Description",
+			FulfillmentType:       "Fulfillment Type",
+			CreatedDate:           "Created",
+			ModifiedDate:          "Last Modified",
+			NoProductsAssigned:    "No products assigned",
+			NoProductsAssignedMsg: "No products have been linked to this plan yet.",
+			NoProductsDesc:        "No products have been linked to this plan yet.",
+			NoPricePlans:          "No price plans",
+			NoPricePlansMsg:       "No price plans have been configured for this plan yet.",
+			NoPricePlansDesc:      "No price plans have been configured for this plan yet.",
+			AuditTrailComingSoon:  "Audit trail coming soon.",
 		},
 		Tabs: PlanTabLabels{
-			Info:       "Information",
-			Products:   "Products",
-			PriceLists: "Price Lists",
-			AuditTrail: "Audit Trail",
+			Info:        "Information",
+			Products:    "Products",
+			PriceLists:  "Price Lists",
+			Attachments: "Attachments",
+			AuditTrail:  "Audit Trail",
 		},
 		Confirm: PlanConfirmLabels{
 			Delete:            "Delete Plan",
@@ -1898,6 +2095,7 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			PlanSearchPlaceholder:     "Search plans...",
 			CustomerNoResults:         "No customers found",
 			PlanNoResults:             "No plans found",
+			EngagementNamePlaceholder: "Engagement name",
 		},
 		Actions: SubscriptionActionLabels{
 			View:   "View Subscription",
@@ -1905,19 +2103,22 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			Cancel: "Cancel Subscription",
 		},
 		Detail: SubscriptionDetailLabels{
-			PageTitle:    "Subscription Details",
-			Customer:     "Customer",
-			Plan:         "Plan",
-			StartDate:    "Start Date",
-			EndDate:      "End Date",
-			Status:       "Status",
-			CreatedDate:  "Created",
-			ModifiedDate: "Last Modified",
+			PageTitle:            "Subscription Details",
+			Customer:             "Customer",
+			Plan:                 "Plan",
+			StartDate:            "Start Date",
+			EndDate:              "End Date",
+			Status:               "Status",
+			CreatedDate:          "Created",
+			ModifiedDate:         "Last Modified",
+			AuditTrailComingSoon: "Audit trail coming soon.",
+			AuditTrailDesc:       "Audit trail for subscription changes is coming soon.",
 		},
 		Tabs: SubscriptionTabLabels{
-			Info:       "Information",
-			History:    "History",
-			AuditTrail: "Audit Trail",
+			Info:        "Information",
+			History:     "History",
+			Attachments: "Attachments",
+			AuditTrail:  "Audit Trail",
 		},
 		Confirm: SubscriptionConfirmLabels{
 			Cancel:        "Cancel Subscription",

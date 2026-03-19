@@ -37,10 +37,10 @@ Data: .Name, .Description, .FulfillmentType, .ID, .FormAction, .IsEdit, .CommonL
                 "Label" .Labels.FulfillmentType
                 "Value" .FulfillmentType
                 "Options" (list
-                    (dict "Value" "schedule" "Label" "Schedule")
-                    (dict "Value" "license" "Label" "License")
-                    (dict "Value" "content" "Label" "Content")
-                    (dict "Value" "physical" "Label" "Physical")
+                    (dict "Value" "schedule" "Label" .Labels.Form.TypeSchedule)
+                    (dict "Value" "license" "Label" .Labels.Form.TypeLicense)
+                    (dict "Value" "content" "Label" .Labels.Form.TypeContent)
+                    (dict "Value" "physical" "Label" .Labels.Form.TypePhysical)
                 )
             )}}
         </div>

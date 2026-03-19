@@ -71,9 +71,9 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "initial_values"
-                "Label" "Initial Values"
+                "Label" .Labels.Form.InitialValues
                 "Value" ""
-                "Placeholder" "e.g. Black, White, Blue, Titanium"
+                "Placeholder" .Labels.Form.InitialValuesPlaceholder
             )}}
         </div>
         {{end}}
@@ -81,7 +81,7 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
         <div class="form-row single">
             {{template "toggle" (dict
                 "Name" "required"
-                "Label" "Required"
+                "Label" .Labels.Form.Required
                 "Checked" .Required
                 "Value" "true"
             )}}

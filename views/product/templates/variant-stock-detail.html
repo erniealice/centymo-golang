@@ -5,7 +5,7 @@
 
 {{/* Content partial */}}
 {{define "variant-stock-detail-content"}}
-<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-variant-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-title="{{.PageTitle}}" data-page-css="/assets/css/centymo/centymo-variant-detail.css?v={{.CacheVersion}}">
     {{/* Breadcrumb */}}
     <nav class="breadcrumb" aria-label="Breadcrumb">
         {{range $i, $bc := .Breadcrumbs}}
@@ -24,7 +24,7 @@
     </div>
 
     {{/* Tab Content Area */}}
-    <div id="tabContent" class="detail-body">
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
             {{template "stock-tab-info" .}}
         {{else if eq .ActiveTab "serials"}}
@@ -43,38 +43,38 @@
      ============================================= */}}
 {{define "stock-tab-info"}}
 <div class="tab-scroll">
-    <h4 class="detail-section-title">Inventory Item</h4>
+    <h4 class="detail-section-title">{{.Labels.Detail.InventoryItem}}</h4>
     <div class="detail-info-grid">
         <div class="detail-info-item">
-            <span class="detail-info-label">Name</span>
+            <span class="detail-info-label">{{.Labels.Detail.Name}}</span>
             <span class="detail-info-value">{{.ItemName}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">SKU</span>
+            <span class="detail-info-label">{{.Labels.Detail.SKU}}</span>
             <span class="detail-info-value mono">{{.ItemSKU}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Type</span>
+            <span class="detail-info-label">{{.Labels.Detail.Type}}</span>
             <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Location</span>
+            <span class="detail-info-label">{{.Labels.Detail.Location}}</span>
             <span class="detail-info-value">{{.LocationName}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Qty On Hand</span>
+            <span class="detail-info-label">{{.Labels.Detail.QtyOnHand}}</span>
             <span class="detail-info-value mono">{{.QuantityOnHand}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Reserved</span>
+            <span class="detail-info-label">{{.Labels.Detail.Reserved}}</span>
             <span class="detail-info-value mono">{{.QuantityReserved}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Available</span>
+            <span class="detail-info-label">{{.Labels.Detail.Available}}</span>
             <span class="detail-info-value mono">{{.AvailableQty}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Status</span>
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
             <span><span class="badge badge--{{.ItemStatusVariant}}">{{.ItemStatus}}</span></span>
         </div>
     </div>
@@ -87,18 +87,18 @@
 {{define "stock-tab-serials"}}
 {{if .SerialSummary}}
 <div class="stats-row stats-row--spaced">
-    {{template "stat-card" (dict "Icon" "icon-hash" "Value" .SerialSummary.Total "Label" "Total" "Color" "navy")}}
-    {{template "stat-card" (dict "Icon" "icon-check-circle" "Value" .SerialSummary.Available "Label" "Available" "Color" "sage")}}
-    {{template "stat-card" (dict "Icon" "icon-shopping-bag" "Value" .SerialSummary.Sold "Label" "Sold" "Color" "terracotta")}}
-    {{template "stat-card" (dict "Icon" "icon-clock" "Value" .SerialSummary.Reserved "Label" "Reserved" "Color" "amber")}}
+    {{template "stat-card" (dict "Icon" "icon-hash" "Value" .SerialSummary.Total "Label" .Labels.Detail.StatTotal "Color" "navy")}}
+    {{template "stat-card" (dict "Icon" "icon-check-circle" "Value" .SerialSummary.Available "Label" .Labels.Detail.StatAvailable "Color" "sage")}}
+    {{template "stat-card" (dict "Icon" "icon-shopping-bag" "Value" .SerialSummary.Sold "Label" .Labels.Detail.StatSold "Color" "terracotta")}}
+    {{template "stat-card" (dict "Icon" "icon-clock" "Value" .SerialSummary.Reserved "Label" .Labels.Detail.StatReserved "Color" "amber")}}
 </div>
 {{end}}
 {{if .SerialTable}}
     {{template "table-card" .SerialTable}}
 {{else}}
     <div class="coming-soon-panel">
-        <div class="coming-soon-title">No Serial Numbers</div>
-        <p class="coming-soon-text">No serial numbers have been recorded for this inventory item.</p>
+        <div class="coming-soon-title">{{.Labels.Detail.NoSerialNumbers}}</div>
+        <p class="coming-soon-text">{{.Labels.Detail.NoSerialNumbersDesc}}</p>
     </div>
 {{end}}
 {{end}}
@@ -109,8 +109,8 @@
 {{define "stock-tab-pricing-history"}}
 <div class="tab-scroll">
     <div class="coming-soon-panel">
-        <div class="coming-soon-title">Pricing History</div>
-        <p class="coming-soon-text">Pricing history showing price changes and associated price lists is coming soon.</p>
+        <div class="coming-soon-title">{{.Labels.Detail.PricingHistory}}</div>
+        <p class="coming-soon-text">{{.Labels.Detail.PricingHistoryDesc}}</p>
     </div>
 </div>
 {{end}}
@@ -121,8 +121,8 @@
 {{define "stock-tab-audit-trail"}}
 <div class="tab-scroll">
     <div class="coming-soon-panel">
-        <div class="coming-soon-title">Audit Trail</div>
-        <p class="coming-soon-text">Audit trail for inventory item changes is coming soon.</p>
+        <div class="coming-soon-title">{{.Labels.Detail.AuditTrail}}</div>
+        <p class="coming-soon-text">{{.Labels.Detail.AuditTrailDesc}}</p>
     </div>
 </div>
 {{end}}

@@ -5,14 +5,14 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "collection-detail-content"}}
-<div class="page-content sale-detail-layout">
+<div class="page-content sale-detail-layout" data-page-title="{{.Labels.Detail.PageTitle}}">
     {{/* --- Tabs --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "collection-tabs")}}
     </div>
 
     {{/* --- Tab Body --- */}}
-    <div id="tabContent" class="sale-detail-body">
+    <div id="tabContent" class="sale-detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
         {{template "collection-tab-info" .}}
         {{else if eq .ActiveTab "audit"}}
@@ -81,8 +81,8 @@
         {{template "table-card" .AuditTable}}
     {{else}}
         <div class="coming-soon-panel">
-            <div class="coming-soon-title">Audit trail coming soon</div>
-            <p class="coming-soon-text">Audit trail entries will appear here.</p>
+            <div class="coming-soon-title">{{.Labels.Detail.AuditTrailComingSoon}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.AuditTrailDesc}}</p>
         </div>
     {{end}}
 </div>

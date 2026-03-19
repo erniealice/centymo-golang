@@ -5,14 +5,14 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "plan-detail-content"}}
-<div class="page-content detail-layout">
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.PageTitle}}">
     {{/* --- HTMX Tab Buttons --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "plan-detail-tabs")}}
     </div>
 
     {{/* --- Tab Content Area --- */}}
-    <div id="tabContent" class="detail-body">
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
             {{template "plan-tab-info" .}}
         {{else if eq .ActiveTab "products"}}
@@ -88,8 +88,8 @@
         {{template "table-card" .ProductsTable}}
     {{else}}
         <div class="coming-soon-panel">
-            <div class="coming-soon-title">No products assigned</div>
-            <p class="coming-soon-text">No products have been linked to this plan yet.</p>
+            <div class="coming-soon-title">{{.Labels.Detail.NoProductsAssigned}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.NoProductsDesc}}</p>
         </div>
     {{end}}
 </div>
@@ -104,8 +104,8 @@
         {{template "table-card" .PriceListsTable}}
     {{else}}
         <div class="coming-soon-panel">
-            <div class="coming-soon-title">No price plans</div>
-            <p class="coming-soon-text">No price plans have been configured for this plan yet.</p>
+            <div class="coming-soon-title">{{.Labels.Detail.NoPricePlans}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.NoPricePlansDesc}}</p>
         </div>
     {{end}}
 </div>
@@ -117,7 +117,7 @@
 {{define "plan-tab-audit"}}
 <div class="tab-scroll">
     <div class="empty-state">
-        <p>Audit trail coming soon</p>
+        <p>{{.Labels.Detail.AuditTrailComingSoon}}</p>
     </div>
 </div>
 {{end}}

@@ -5,14 +5,14 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "disbursement-detail-content"}}
-<div class="page-content disbursement-detail-layout" data-page-css="/assets/css/centymo/centymo-disbursement-detail.css?v={{.CacheVersion}}">
+<div class="page-content disbursement-detail-layout" data-page-css="/assets/css/centymo/centymo-disbursement-detail.css?v={{.CacheVersion}}" data-page-title="{{.Labels.Detail.PageTitle}}">
     {{/* --- Tabs --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "disbursement-tabs")}}
     </div>
 
     {{/* --- Tab Body --- */}}
-    <div id="tabContent" class="disbursement-detail-body">
+    <div id="tabContent" class="disbursement-detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
         {{template "disbursement-tab-info" .}}
         {{else if eq .ActiveTab "audit"}}
