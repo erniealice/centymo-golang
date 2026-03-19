@@ -3,22 +3,22 @@
 /* Main filter bar container */
 .movements-filter-bar {
     display: flex;
-    gap: 1rem;
+    gap: var(--spacing-lg);
     align-items: flex-end;
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-lg);
     flex-wrap: wrap;
 }
 
 /* Date range pair of inputs */
 .movements-date-range {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
 }
 
 /* Filter action buttons group (Apply, Clear, Export) */
 .movements-filter-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
     align-items: flex-end;
 }
 
