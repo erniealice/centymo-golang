@@ -35,7 +35,7 @@
     gap: 0.375rem;
 }
 .inv-info-label {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -43,18 +43,18 @@
     font-family: var(--font-body);
 }
 .inv-info-value {
-    font-size: 1rem;
+    font-size: var(--text-base);
     font-weight: 500;
     color: var(--text-primary);
     font-family: var(--font-body);
 }
 .inv-info-value.mono {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 0.9375rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-base);
 }
 .inv-section-title {
     font-family: var(--font-display);
-    font-size: 1.0625rem;
+    font-size: var(--text-lg);
     font-weight: 600;
     color: var(--text-primary);
     margin: 0 0 1.25rem 0;
@@ -65,10 +65,10 @@
     background: var(--bg-sidebar);
     border-radius: var(--radius-md);
     padding: 1rem 1.25rem;
-    font-size: 0.9375rem;
+    font-size: var(--text-base);
     color: var(--text-secondary);
     line-height: 1.6;
-    border-left: 3px solid var(--accent-primary);
+    border-left: var(--border-width-accent) solid var(--accent-primary);
 }
 
 /* Section spacer — replaces inline margin-top: 1.75rem on section wrappers */
@@ -82,7 +82,7 @@
     gap: 0.75rem;
     padding-top: 1rem;
     margin-top: var(--spacing-md);
-    border-top: 2px solid var(--border);
+    border-top: var(--border-width-thick) solid var(--border);
     flex-wrap: wrap;
 }
 .inv-summary-item {
@@ -95,24 +95,24 @@
     border: var(--border-width) solid var(--border-light);
 }
 .inv-summary-item--success {
-    border-left: 3px solid var(--accent-success);
+    border-left: var(--border-width-accent) solid var(--accent-success);
 }
 .inv-summary-item--default {
-    border-left: 3px solid var(--text-muted);
+    border-left: var(--border-width-accent) solid var(--text-muted);
 }
 .inv-summary-item--info {
-    border-left: 3px solid var(--accent-info);
+    border-left: var(--border-width-accent) solid var(--accent-info);
 }
 .inv-summary-label {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--text-secondary);
 }
 .inv-summary-value {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 1.125rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-xl);
     font-weight: 700;
     color: var(--text-primary);
 }

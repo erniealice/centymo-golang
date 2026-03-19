@@ -36,7 +36,7 @@
 
 /* Amount displayed in the header */
 .disbursement-amount {
-    font-size: 1.5rem;
+    font-size: var(--text-4xl);
     font-weight: 600;
 }
 
