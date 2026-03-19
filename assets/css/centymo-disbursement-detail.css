@@ -1,26 +1,6 @@
 /* centymo-disbursement-detail.css — Disbursement detail page styles */
 
-/* Page-level layout (mirrors sale-detail-layout) */
-.page-content.disbursement-detail-layout {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - var(--header-height));
-    overflow: hidden;
-}
-
-.disbursement-detail-body {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: var(--spacing-3xl);
-    background: var(--bg-card);
-    border: var(--border-width) solid var(--border);
-    border-top: none;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    animation: tabContentFadeIn 0.25s ease;
-}
+/* .page-content.detail-layout, .detail-body — provided by pyeza detail-layout.css */
 
 /* Detail info header (reference + status + amount) */
 .disbursement-header {

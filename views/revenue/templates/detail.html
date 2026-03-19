@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "sales-detail-content"}}
-<div class="page-content sale-detail-layout" data-page-title="{{.PageTitle}}" data-page-css="/assets/css/centymo/centymo-sales-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-title="{{.PageTitle}}" data-page-css="/assets/css/centymo/centymo-sales-detail.css?v={{.CacheVersion}}">
     <h2 class="visually-hidden">{{.Labels.Detail.PageTitle}}</h2>
     {{/* ─── Tabs ─── */}}
     <div class="detail-tabs">
@@ -13,7 +13,7 @@
     </div>
 
     {{/* ─── Tab Body ─── */}}
-    <div id="tabContent" class="sale-detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
         {{template "sales-tab-info" .}}
         {{else if eq .ActiveTab "items"}}
@@ -66,30 +66,30 @@ function downloadInvoice(btn, url) {
         </button>
     </div>
     {{end}}
-    <h4 class="sale-section-title">{{.Labels.Detail.InvoiceInfo}}</h4>
-    <div class="sale-info-grid">
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Columns.Reference}}</span>
-            <span class="sale-info-value mono">{{index .Revenue "reference_number"}}</span>
+    <h4 class="detail-section-title">{{.Labels.Detail.InvoiceInfo}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Reference}}</span>
+            <span class="detail-info-value mono">{{index .Revenue "reference_number"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Customer}}</span>
-            <span class="sale-info-value">{{index .Revenue "name"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Customer}}</span>
+            <span class="detail-info-value">{{index .Revenue "name"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Date}}</span>
-            <span class="sale-info-value">{{index .Revenue "revenue_date_string"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Date}}</span>
+            <span class="detail-info-value">{{index .Revenue "revenue_date_string"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Amount}}</span>
-            <span class="sale-info-value mono">{{index .Revenue "currency"}} {{index .Revenue "total_amount"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Amount}}</span>
+            <span class="detail-info-value mono">{{index .Revenue "currency"}} {{index .Revenue "total_amount"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Currency}}</span>
-            <span class="sale-info-value">{{index .Revenue "currency"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Currency}}</span>
+            <span class="detail-info-value">{{index .Revenue "currency"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Status}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
             <span>
                 <span class="badge badge--{{if eq (index .Revenue "status") "complete"}}success{{else if eq (index .Revenue "status") "cancelled"}}warning{{else}}info{{end}}">
                     {{index .Revenue "status"}}
@@ -100,7 +100,7 @@ function downloadInvoice(btn, url) {
 
     {{if index .Revenue "notes"}}
     <div class="sale-section-spacer">
-        <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="sale-notes-block">{{index .Revenue "notes"}}</div>
     </div>
     {{end}}

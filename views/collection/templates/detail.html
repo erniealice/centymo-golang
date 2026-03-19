@@ -5,14 +5,14 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "collection-detail-content"}}
-<div class="page-content sale-detail-layout" data-page-title="{{.Labels.Detail.PageTitle}}">
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.PageTitle}}">
     {{/* --- Tabs --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "collection-tabs")}}
     </div>
 
     {{/* --- Tab Body --- */}}
-    <div id="tabContent" class="sale-detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
         {{template "collection-tab-info" .}}
         {{else if eq .ActiveTab "audit"}}
@@ -29,34 +29,34 @@
 {{/* Basic Information Tab */}}
 {{define "collection-tab-info"}}
 <div class="tab-scroll">
-    <h4 class="sale-section-title">{{.Labels.Detail.PaymentInfo}}</h4>
-    <div class="sale-info-grid">
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Reference}}</span>
-            <span class="sale-info-value mono">{{index .Collection "reference_number"}}</span>
+    <h4 class="detail-section-title">{{.Labels.Detail.PaymentInfo}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Reference}}</span>
+            <span class="detail-info-value mono">{{index .Collection "reference_number"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Customer}}</span>
-            <span class="sale-info-value">{{index .Collection "customer"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Customer}}</span>
+            <span class="detail-info-value">{{index .Collection "customer"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Amount}}</span>
-            <span class="sale-info-value mono">{{index .Collection "currency"}} {{index .Collection "amount"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Amount}}</span>
+            <span class="detail-info-value mono">{{index .Collection "currency"}} {{index .Collection "amount"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Currency}}</span>
-            <span class="sale-info-value">{{index .Collection "currency"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Currency}}</span>
+            <span class="detail-info-value">{{index .Collection "currency"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Method}}</span>
-            <span class="sale-info-value">{{index .Collection "collection_method"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Method}}</span>
+            <span class="detail-info-value">{{index .Collection "collection_method"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Date}}</span>
-            <span class="sale-info-value">{{index .Collection "date"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Date}}</span>
+            <span class="detail-info-value">{{index .Collection "date"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Status}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
             <span>
                 <span class="badge badge--{{if eq (index .Collection "status") "completed"}}success{{else if eq (index .Collection "status") "failed"}}danger{{else}}warning{{end}}">
                     {{index .Collection "status"}}
@@ -67,7 +67,7 @@
 
     {{if index .Collection "notes"}}
     <div class="sale-section-spacer">
-        <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="sale-notes-block">{{index .Collection "notes"}}</div>
     </div>
     {{end}}

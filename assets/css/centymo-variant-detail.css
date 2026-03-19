@@ -7,7 +7,6 @@
  * Inherits .coming-soon-panel, .tab-scroll--table, .detail-actions
  * from product-detail.css.
  */
-@import url("../entydad/entydad-user-detail.css");
 @import url("centymo-product-detail.css");
 
 /* Widen gap between info tab sections (Variant Information → Options → Actions) */

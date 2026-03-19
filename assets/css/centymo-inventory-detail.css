@@ -1,47 +1,8 @@
 /* centymo — inventory detail page layout and styling */
 
-.page-content.inv-detail-layout {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - var(--header-height));
-    overflow: hidden;
-}
-.inv-detail-tabs {
-    margin-bottom: 0;
-    border-bottom: var(--border-width) solid var(--border-light);
-    flex-shrink: 0;
-}
-.inv-detail-body {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: var(--spacing-3xl);
-    background: var(--bg-card);
-    border: var(--border-width) solid var(--border);
-    border-top: none;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    animation: tabContentFadeIn 0.25s ease;
-}
-.inv-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-    gap: var(--spacing-2xl);
-}
-.inv-info-item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-}
-.inv-info-label {
-    font-size: var(--text-xs);
-    font-weight: var(--font-weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-normal);
-    color: var(--text-muted);
-    font-family: var(--font-body);
-}
+/* .page-content.detail-layout, .detail-tabs, .detail-body — provided by pyeza detail-layout.css */
+/* .detail-info-grid, .detail-info-item, .detail-info-label — provided by pyeza detail-layout.css */
+
 .inv-info-value {
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
@@ -52,15 +13,8 @@
     font-family: var(--font-mono);
     font-size: var(--text-base);
 }
-.inv-section-title {
-    font-family: var(--font-display);
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-primary);
-    margin: 0 0 var(--spacing-xl) 0;
-    padding-bottom: var(--spacing-md);
-    border-bottom: var(--border-width) solid var(--border-light);
-}
+/* .detail-section-title — provided by pyeza detail-layout.css */
+
 .inv-notes-block {
     background: var(--bg-sidebar);
     border-radius: var(--radius-md);
@@ -120,13 +74,9 @@
 /* Reuse tab-scroll/tab-fixed and coming-soon from sales-detail.css */
 /* These classes are already defined in sales-detail.css which is loaded globally */
 
+/* .detail-body and .detail-info-grid responsive rules — provided by pyeza detail-layout.css */
 /* Responsive breakpoints */
 @media (max-width: 768px) {
-    .inv-detail-body { padding: var(--spacing-xl); }
-    .inv-info-grid { grid-template-columns: 1fr 1fr; }
     .inv-summary-row { flex-direction: column; }
     .inv-summary-item { justify-content: space-between; width: 100%; }
-}
-@media (max-width: 480px) {
-    .inv-info-grid { grid-template-columns: 1fr; }
 }

@@ -5,14 +5,14 @@
 
 {{/* Content-only partial -- for HTMX navigation */}}
 {{define "inventory-detail-content"}}
-<div class="page-content inv-detail-layout" data-page-css="/assets/css/centymo/centymo-inventory-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-inventory-detail.css?v={{.CacheVersion}}">
     {{/* --- Tabs --- */}}
-    <div class="inv-detail-tabs">
+    <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "inv-tabs")}}
     </div>
 
     {{/* --- Tab Body (HTMX target) --- */}}
-    <div class="inv-detail-body" id="tabContent">
+    <div class="detail-body" id="tabContent">
         {{if eq .ActiveTab "info"}}{{template "inventory-tab-info" .}}{{end}}
         {{if eq .ActiveTab "attributes"}}{{template "inventory-tab-attributes" .}}{{end}}
         {{if eq .ActiveTab "serials"}}{{template "inventory-tab-serials" .}}{{end}}
@@ -31,54 +31,54 @@
      ====================================================================== */}}
 {{define "inventory-tab-info"}}
 <div class="tab-scroll">
-    <h4 class="inv-section-title">{{.Labels.Detail.ItemInfo}}</h4>
-    <div class="inv-info-grid">
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.ProductName}}</span>
-            <span class="inv-info-value">{{index .Item "name"}}</span>
+    <h4 class="detail-section-title">{{.Labels.Detail.ItemInfo}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.ProductName}}</span>
+            <span class="detail-info-value">{{index .Item "name"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.SKU}}</span>
-            <span class="inv-info-value mono">{{index .Item "sku"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.SKU}}</span>
+            <span class="detail-info-value mono">{{index .Item "sku"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Type}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Type}}</span>
             <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Location}}</span>
-            <span class="inv-info-value">{{.LocationName}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Location}}</span>
+            <span class="detail-info-value">{{.LocationName}}</span>
         </div>
         {{if index .Item "product_id"}}
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Product}}</span>
-            <span class="inv-info-value">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Product}}</span>
+            <span class="detail-info-value">
                 <a href="{{routeWith "product.detail" "id" (index .Item "product_id")}}">{{.Labels.Detail.ViewProduct}}</a>
             </span>
         </div>
         {{end}}
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.OnHand}}</span>
-            <span class="inv-info-value mono">{{index .Item "quantity_on_hand"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.OnHand}}</span>
+            <span class="detail-info-value mono">{{index .Item "quantity_on_hand"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Reserved}}</span>
-            <span class="inv-info-value mono">{{index .Item "quantity_reserved"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Reserved}}</span>
+            <span class="detail-info-value mono">{{index .Item "quantity_reserved"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Available}}</span>
-            <span class="inv-info-value mono">{{.AvailableQty}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Available}}</span>
+            <span class="detail-info-value mono">{{.AvailableQty}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.ReorderLevel}}</span>
-            <span class="inv-info-value mono">{{index .Item "reorder_level"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.ReorderLevel}}</span>
+            <span class="detail-info-value mono">{{index .Item "reorder_level"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.UnitOfMeasure}}</span>
-            <span class="inv-info-value">{{index .Item "unit_of_measure"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.UnitOfMeasure}}</span>
+            <span class="detail-info-value">{{index .Item "unit_of_measure"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Status}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
             <span>
                 {{if index .Item "active"}}
                 <span class="badge badge--success">{{.Labels.Detail.Active}}</span>
@@ -91,7 +91,7 @@
 
     {{if index .Item "notes"}}
     <div class="inv-section-spacer">
-        <h4 class="inv-section-title">{{.Labels.Detail.Notes}}</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="inv-notes-block">{{index .Item "notes"}}</div>
     </div>
     {{end}}
@@ -104,12 +104,12 @@
 {{define "inventory-tab-attributes"}}
 <div class="tab-scroll">
     {{if .Attributes}}
-    <h4 class="inv-section-title">{{.Labels.Tabs.Attributes}}</h4>
-    <div class="inv-info-grid">
+    <h4 class="detail-section-title">{{.Labels.Tabs.Attributes}}</h4>
+    <div class="detail-info-grid">
         {{range .Attributes}}
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Name}}</span>
-            <span class="inv-info-value">{{.Value}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Name}}</span>
+            <span class="detail-info-value">{{.Value}}</span>
         </div>
         {{end}}
     </div>
@@ -182,35 +182,35 @@
 {{define "inventory-tab-depreciation"}}
 <div class="tab-scroll">
     {{if .Depreciation}}
-    <h4 class="inv-section-title">{{.Labels.Depreciation.Title}}</h4>
-    <div class="inv-info-grid">
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Depreciation.Method}}</span>
-            <span class="inv-info-value">{{.Depreciation.Method}}</span>
+    <h4 class="detail-section-title">{{.Labels.Depreciation.Title}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Depreciation.Method}}</span>
+            <span class="detail-info-value">{{.Depreciation.Method}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Depreciation.CostBasis}}</span>
-            <span class="inv-info-value mono">{{.Depreciation.CostBasis}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Depreciation.CostBasis}}</span>
+            <span class="detail-info-value mono">{{.Depreciation.CostBasis}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Depreciation.SalvageValue}}</span>
-            <span class="inv-info-value mono">{{.Depreciation.SalvageVal}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Depreciation.SalvageValue}}</span>
+            <span class="detail-info-value mono">{{.Depreciation.SalvageVal}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Depreciation.UsefulLife}}</span>
-            <span class="inv-info-value mono">{{.Depreciation.UsefulLife}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Depreciation.UsefulLife}}</span>
+            <span class="detail-info-value mono">{{.Depreciation.UsefulLife}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Depreciation.StartDate}}</span>
-            <span class="inv-info-value">{{.Depreciation.StartDate}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Depreciation.StartDate}}</span>
+            <span class="detail-info-value">{{.Depreciation.StartDate}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Depreciation.Accumulated}}</span>
-            <span class="inv-info-value mono">{{.Depreciation.Accumulated}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Depreciation.Accumulated}}</span>
+            <span class="detail-info-value mono">{{.Depreciation.Accumulated}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Depreciation.BookValue}}</span>
-            <span class="inv-info-value mono">{{.Depreciation.BookValue}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Depreciation.BookValue}}</span>
+            <span class="detail-info-value mono">{{.Depreciation.BookValue}}</span>
         </div>
     </div>
     {{else}}
@@ -254,7 +254,7 @@
 
 {{/* Content partial */}}
 {{define "inventory-product-detail-content"}}
-<div class="page-content inv-detail-layout" data-page-css="/assets/css/centymo/centymo-inventory-detail.css?v={{.CacheVersion}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-inventory-detail.css?v={{.CacheVersion}}">
     {{/* Breadcrumb */}}
     <nav class="breadcrumb" aria-label="Breadcrumb">
         {{range $i, $bc := .Breadcrumbs}}
@@ -268,12 +268,12 @@
     </nav>
 
     {{/* Tabs */}}
-    <div class="inv-detail-tabs">
+    <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "inv-product-tabs")}}
     </div>
 
     {{/* Tab Body */}}
-    <div class="inv-detail-body" id="tabContent">
+    <div class="detail-body" id="tabContent">
         {{if eq .ActiveTab "info"}}{{template "inventory-product-tab-info" .}}{{end}}
         {{if eq .ActiveTab "depreciation"}}{{template "inventory-product-tab-depreciation" .}}{{end}}
         {{if eq .ActiveTab "audit"}}{{template "inventory-product-tab-audit" .}}{{end}}
@@ -287,46 +287,46 @@
 {{/* Product-context Info tab: item info + option values + embedded serials */}}
 {{define "inventory-product-tab-info"}}
 <div class="tab-scroll">
-    <h4 class="inv-section-title">{{.Labels.Detail.ItemInfo}}</h4>
-    <div class="inv-info-grid">
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.ProductName}}</span>
-            <span class="inv-info-value">{{index .Item "name"}}</span>
+    <h4 class="detail-section-title">{{.Labels.Detail.ItemInfo}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.ProductName}}</span>
+            <span class="detail-info-value">{{index .Item "name"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.SKU}}</span>
-            <span class="inv-info-value mono">{{index .Item "sku"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.SKU}}</span>
+            <span class="detail-info-value mono">{{index .Item "sku"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Type}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Type}}</span>
             <span><span class="badge badge--{{.ItemTypeVariant}}">{{.ItemTypeLabel}}</span></span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Location}}</span>
-            <span class="inv-info-value">{{.LocationName}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Location}}</span>
+            <span class="detail-info-value">{{.LocationName}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.OnHand}}</span>
-            <span class="inv-info-value mono">{{index .Item "quantity_on_hand"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.OnHand}}</span>
+            <span class="detail-info-value mono">{{index .Item "quantity_on_hand"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Reserved}}</span>
-            <span class="inv-info-value mono">{{index .Item "quantity_reserved"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Reserved}}</span>
+            <span class="detail-info-value mono">{{index .Item "quantity_reserved"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Available}}</span>
-            <span class="inv-info-value mono">{{.AvailableQty}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Available}}</span>
+            <span class="detail-info-value mono">{{.AvailableQty}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.ReorderLevel}}</span>
-            <span class="inv-info-value mono">{{index .Item "reorder_level"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.ReorderLevel}}</span>
+            <span class="detail-info-value mono">{{index .Item "reorder_level"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.UnitOfMeasure}}</span>
-            <span class="inv-info-value">{{index .Item "unit_of_measure"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.UnitOfMeasure}}</span>
+            <span class="detail-info-value">{{index .Item "unit_of_measure"}}</span>
         </div>
-        <div class="inv-info-item">
-            <span class="inv-info-label">{{.Labels.Detail.Status}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
             <span>
                 {{if index .Item "active"}}
                 <span class="badge badge--success">{{.Labels.Detail.Active}}</span>
@@ -340,12 +340,12 @@
     {{/* Option Values (read-only key-value pairs) */}}
     {{if .Attributes}}
     <div class="inv-section-spacer">
-        <h4 class="inv-section-title">{{.Labels.Tabs.Attributes}}</h4>
-        <div class="inv-info-grid">
+        <h4 class="detail-section-title">{{.Labels.Tabs.Attributes}}</h4>
+        <div class="detail-info-grid">
             {{range .Attributes}}
-            <div class="inv-info-item">
-                <span class="inv-info-label">{{.Name}}</span>
-                <span class="inv-info-value">{{.Value}}</span>
+            <div class="detail-info-item">
+                <span class="detail-info-label">{{.Name}}</span>
+                <span class="detail-info-value">{{.Value}}</span>
             </div>
             {{end}}
         </div>
@@ -355,7 +355,7 @@
     {{/* Notes */}}
     {{if index .Item "notes"}}
     <div class="inv-section-spacer">
-        <h4 class="inv-section-title">{{.Labels.Detail.Notes}}</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="inv-notes-block">{{index .Item "notes"}}</div>
     </div>
     {{end}}
@@ -363,7 +363,7 @@
     {{/* Embedded Serials (for serialized items) */}}
     {{if .IsSerialized}}
     <div class="inv-section-spacer">
-        <h4 class="inv-section-title">{{.Labels.Detail.SerialNumbers}}</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.SerialNumbers}}</h4>
         {{if .SerialTable}}
             {{template "table-card" .SerialTable}}
             {{if .SerialSummary}}

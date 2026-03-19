@@ -47,14 +47,14 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Label" .Labels.Amount
                 "Value" .Amount
                 "Required" true
-                "Placeholder" .Labels.Form.AmountPlaceholder
+                "Placeholder" .Labels.AmountPlaceholder
             )}}
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
-                "Placeholder" .Labels.Form.CurrencyPlaceholder
+                "Placeholder" .Labels.CurrencyPlaceholder
             )}}
         </div>
 
@@ -66,11 +66,11 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Label" .Labels.PaymentMethod
                 "Value" .Method
                 "Options" (list
-                    (dict "Value" "cash" "Label" .Labels.Form.MethodCash)
-                    (dict "Value" "bank_transfer" "Label" .Labels.Form.MethodBankTransfer)
-                    (dict "Value" "check" "Label" .Labels.Form.MethodCheck)
-                    (dict "Value" "gcash" "Label" .Labels.Form.MethodGCash)
-                    (dict "Value" "other" "Label" .Labels.Form.MethodOther)
+                    (dict "Value" "cash" "Label" .Labels.MethodCash)
+                    (dict "Value" "bank_transfer" "Label" .Labels.MethodBankTransfer)
+                    (dict "Value" "check" "Label" .Labels.MethodCheck)
+                    (dict "Value" "gcash" "Label" .Labels.MethodGCash)
+                    (dict "Value" "other" "Label" .Labels.MethodOther)
                 )
             )}}
             {{template "form-group" (dict
@@ -79,11 +79,11 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Label" .Labels.Status
                 "Value" .Status
                 "Options" (list
-                    (dict "Value" "draft" "Label" .Labels.Form.StatusDraft)
-                    (dict "Value" "pending" "Label" .Labels.Form.StatusPending)
-                    (dict "Value" "approved" "Label" .Labels.Form.StatusApproved)
-                    (dict "Value" "paid" "Label" .Labels.Form.StatusPaid)
-                    (dict "Value" "cancelled" "Label" .Labels.Form.StatusCancelled)
+                    (dict "Value" "draft" "Label" .Labels.StatusDraft)
+                    (dict "Value" "pending" "Label" .Labels.StatusPending)
+                    (dict "Value" "approved" "Label" .Labels.StatusApproved)
+                    (dict "Value" "paid" "Label" .Labels.StatusPaid)
+                    (dict "Value" "cancelled" "Label" .Labels.StatusCancelled)
                 )
             )}}
         </div>
@@ -96,11 +96,11 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Label" .Labels.Category
                 "Value" .DisbursementType
                 "Options" (list
-                    (dict "Value" "supplier" "Label" .Labels.Form.TypeSupplierPayment)
-                    (dict "Value" "payroll" "Label" .Labels.Form.TypePayroll)
-                    (dict "Value" "rent" "Label" .Labels.Form.TypeRent)
-                    (dict "Value" "utilities" "Label" .Labels.Form.TypeUtilities)
-                    (dict "Value" "other" "Label" .Labels.Form.TypeOther)
+                    (dict "Value" "supplier" "Label" .Labels.TypeSupplierPayment)
+                    (dict "Value" "payroll" "Label" .Labels.TypePayroll)
+                    (dict "Value" "rent" "Label" .Labels.TypeRent)
+                    (dict "Value" "utilities" "Label" .Labels.TypeUtilities)
+                    (dict "Value" "other" "Label" .Labels.TypeOther)
                 )
             )}}
         </div>
@@ -114,7 +114,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Name" "approved_by"
                 "Label" .Labels.ApprovedBy
                 "Value" .ApprovedBy
-                "Placeholder" .Labels.Form.ApproverNamePlaceholder
+                "Placeholder" .Labels.ApproverNamePlaceholder
             )}}
         </div>
 

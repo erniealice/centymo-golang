@@ -5,14 +5,14 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "disbursement-detail-content"}}
-<div class="page-content disbursement-detail-layout" data-page-css="/assets/css/centymo/centymo-disbursement-detail.css?v={{.CacheVersion}}" data-page-title="{{.Labels.Detail.PageTitle}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-disbursement-detail.css?v={{.CacheVersion}}" data-page-title="{{.Labels.Detail.PageTitle}}">
     {{/* --- Tabs --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "disbursement-tabs")}}
     </div>
 
     {{/* --- Tab Body --- */}}
-    <div id="tabContent" class="disbursement-detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
         {{template "disbursement-tab-info" .}}
         {{else if eq .ActiveTab "audit"}}
@@ -38,45 +38,45 @@
             {{.Currency}} {{.Amount}}
         </div>
     </div>
-    <h4 class="sale-section-title disbursement-section">{{.Labels.Detail.PaymentInfo}}</h4>
-    <div class="sale-info-grid disbursement-section">
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Reference}}</span>
-            <span class="sale-info-value mono">{{index .Disbursement "reference_number"}}</span>
+    <h4 class="detail-section-title disbursement-section">{{.Labels.Detail.PaymentInfo}}</h4>
+    <div class="detail-info-grid disbursement-section">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Reference}}</span>
+            <span class="detail-info-value mono">{{index .Disbursement "reference_number"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Payee}}</span>
-            <span class="sale-info-value">{{index .Disbursement "payee"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Payee}}</span>
+            <span class="detail-info-value">{{index .Disbursement "payee"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Amount}}</span>
-            <span class="sale-info-value mono">{{index .Disbursement "currency"}} {{index .Disbursement "amount"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Amount}}</span>
+            <span class="detail-info-value mono">{{index .Disbursement "currency"}} {{index .Disbursement "amount"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Method}}</span>
-            <span class="sale-info-value">{{index .Disbursement "disbursement_method"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Method}}</span>
+            <span class="detail-info-value">{{index .Disbursement "disbursement_method"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Date}}</span>
-            <span class="sale-info-value">{{index .Disbursement "disbursement_date_string"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Date}}</span>
+            <span class="detail-info-value">{{index .Disbursement "disbursement_date_string"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Category}}</span>
-            <span class="sale-info-value">{{index .Disbursement "disbursement_type"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Category}}</span>
+            <span class="detail-info-value">{{index .Disbursement "disbursement_type"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.ApprovedBy}}</span>
-            <span class="sale-info-value">{{index .Disbursement "approved_by"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.ApprovedBy}}</span>
+            <span class="detail-info-value">{{index .Disbursement "approved_by"}}</span>
         </div>
-        <div class="sale-info-item">
-            <span class="sale-info-label">{{.Labels.Detail.Currency}}</span>
-            <span class="sale-info-value">{{index .Disbursement "currency"}}</span>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Currency}}</span>
+            <span class="detail-info-value">{{index .Disbursement "currency"}}</span>
         </div>
     </div>
 
     {{if index .Disbursement "notes"}}
     <div class="disbursement-section-spacer">
-        <h4 class="sale-section-title">{{.Labels.Detail.Notes}}</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="sale-notes-block">{{index .Disbursement "notes"}}</div>
     </div>
     {{end}}

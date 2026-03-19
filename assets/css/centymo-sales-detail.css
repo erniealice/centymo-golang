@@ -1,50 +1,12 @@
 /* centymo — sales detail page layout and styling */
 
-.page-content.sale-detail-layout {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - var(--header-height));
-    overflow: hidden;
-}
-.sale-detail-tabs {
-    margin-bottom: 0;
-    border-bottom: var(--border-width) solid var(--border-light);
-    flex-shrink: 0;
-}
-.sale-detail-body {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: var(--spacing-3xl);
-    background: var(--bg-card);
-    border: var(--border-width) solid var(--border);
-    border-top: none;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    animation: tabContentFadeIn 0.25s ease;
-}
+/* .page-content.detail-layout, .detail-tabs, .detail-body — provided by pyeza detail-layout.css */
+
 .tab-fixed {
     flex-shrink: 0;
 }
-.sale-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-    gap: var(--spacing-2xl);
-}
-.sale-info-item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-}
-.sale-info-label {
-    font-size: var(--text-xs);
-    font-weight: var(--font-weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-normal);
-    color: var(--text-muted);
-    font-family: var(--font-body);
-}
+/* .detail-info-grid, .detail-info-item, .detail-info-label — provided by pyeza detail-layout.css */
+
 .sale-info-value {
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
@@ -55,15 +17,8 @@
     font-family: var(--font-mono);
     font-size: var(--text-base);
 }
-.sale-section-title {
-    font-family: var(--font-display);
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-primary);
-    margin: 0 0 var(--spacing-xl) 0;
-    padding-bottom: var(--spacing-md);
-    border-bottom: var(--border-width) solid var(--border-light);
-}
+/* .detail-section-title — provided by pyeza detail-layout.css */
+
 /* Section spacer — replaces inline margin-top: 1.75rem on section wrappers */
 .sale-section-spacer {
     margin-top: var(--spacing-3xl);
@@ -222,13 +177,9 @@
     font-size: var(--text-xs);
     color: var(--text-muted);
 }
+/* .detail-body and .detail-info-grid responsive rules — provided by pyeza detail-layout.css */
 @media (max-width: 768px) {
-    .sale-detail-body { padding: var(--spacing-xl); }
-    .sale-info-grid { grid-template-columns: 1fr 1fr; }
     .payment-detail-grid { grid-template-columns: 1fr; }
     .sale-summary-row { justify-content: stretch; }
     .sale-summary-item { justify-content: space-between; width: 100%; }
-}
-@media (max-width: 480px) {
-    .sale-info-grid { grid-template-columns: 1fr; }
 }

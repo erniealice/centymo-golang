@@ -6,7 +6,6 @@
  *
  * Only product-specific overrides live here.
  */
-@import url("../entydad/entydad-user-detail.css");
 
 .detail-actions {
     display: flex;
