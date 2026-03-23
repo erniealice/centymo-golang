@@ -7,6 +7,6 @@ import (
 
 // NewUploadAction creates the upload handler for invoice templates.
 // Route: GET/POST /action/sales/settings/templates/upload
-func NewUploadAction(deps *Deps) view.View {
+func NewUploadAction(deps *SettingsViewDeps) view.View {
 	return templateview.NewUploadAction(templateConfig(deps))
 }

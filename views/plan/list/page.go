@@ -15,8 +15,8 @@ import (
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// ListViewDeps holds view dependencies.
+type ListViewDeps struct {
 	Routes       centymo.PlanRoutes
 	ListPlans    func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	Labels       centymo.PlanLabels
@@ -32,7 +32,7 @@ type PageData struct {
 }
 
 // NewView creates the plan list view.
-func NewView(deps *Deps) view.View {
+func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 

@@ -8,11 +8,13 @@ import (
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -22,8 +24,8 @@ import (
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// DetailViewDeps holds view dependencies.
+type DetailViewDeps struct {
 	Routes       centymo.ProductRoutes
 	ReadProduct  func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
 	Labels       centymo.ProductLabels
@@ -38,12 +40,8 @@ type Deps struct {
 	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
 	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 
-	// Attachment operations (injected by composition root)
-	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
-	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	NewID            func() string
+	attachment.AttachmentOps
+	auditlog.AuditOps
 }
 
 // PageData holds the data for the product detail page.
@@ -66,10 +64,15 @@ type PageData struct {
 	OptionsTable        *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
+	// Audit history tab
+	AuditEntries    []auditlog.AuditEntryView
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
 }
 
 // NewView creates the product detail view (full page).
-func NewView(deps *Deps) view.View {
+func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
@@ -83,13 +86,23 @@ func NewView(deps *Deps) view.View {
 			return view.Error(err)
 		}
 
+		// KB help content
+		if viewCtx.Translations != nil {
+			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "products-detail"); kb != nil {
+					pageData.HasHelp = true
+					pageData.HelpContent = kb.Body
+				}
+			}
+		}
+
 		return view.OK("product-detail", pageData)
 	})
 }
 
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 // Handles GET /action/products/detail/{id}/tab/{tab}
-func NewTabAction(deps *Deps) view.View {
+func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
@@ -107,12 +120,15 @@ func NewTabAction(deps *Deps) view.View {
 		if tab == "attachments" {
 			templateName = "attachment-tab"
 		}
+		if tab == "audit-history" {
+			templateName = "audit-history-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }
 
 // buildPageData loads product data and builds the PageData for the given active tab.
-func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCtx *view.ViewContext) (*PageData, error) {
+func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab string, viewCtx *view.ViewContext) (*PageData, error) {
 	resp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{
 		Data: &productpb.Product{Id: id},
 	})
@@ -220,6 +236,25 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 			pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 		}
 		pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+	case "audit-history":
+		if deps.ListAuditHistory != nil {
+			cursor := viewCtx.Request.URL.Query().Get("cursor")
+			auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+				EntityType:  "product",
+				EntityID:    id,
+				Limit:       20,
+				CursorToken: cursor,
+			})
+			if err != nil {
+				log.Printf("Failed to load audit history: %v", err)
+			}
+			if auditResp != nil {
+				pageData.AuditEntries = auditResp.Entries
+				pageData.AuditHasNext = auditResp.HasNext
+				pageData.AuditNextCursor = auditResp.NextCursor
+			}
+		}
+		pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 	}
 
 	return pageData, nil
@@ -233,6 +268,7 @@ func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount
 		{Key: "options", Label: l.Tabs.Options, Href: base + "?tab=options", HxGet: action + "options", Icon: "icon-settings", Count: optionCount, Disabled: false},
 		{Key: "variants", Label: l.Tabs.Variants, Href: base + "?tab=variants", HxGet: action + "variants", Icon: "icon-layers", Count: variantCount, Disabled: false},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
+		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
 }
 
@@ -240,7 +276,7 @@ func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount
 // Variants tab table
 // ---------------------------------------------------------------------------
 
-func BuildVariantsTable(ctx context.Context, deps *Deps, productID string, perms *types.UserPermissions) *types.TableConfig {
+func BuildVariantsTable(ctx context.Context, deps *DetailViewDeps, productID string, perms *types.UserPermissions) *types.TableConfig {
 	l := deps.Labels
 
 	columns := []types.TableColumn{

@@ -52,6 +52,7 @@ const (
 	DisbursementAttachmentDeleteURL = "/action/disbursements/detail/{id}/attachments/delete"
 
 	ProductListURL   = "/app/products/list/{status}"
+	ProductTableURL  = "/action/products/table/{status}"
 	ProductDetailURL = "/app/products/detail/{id}"
 
 	// Inventory routes — list is per-location
@@ -174,6 +175,7 @@ const (
 	// Revenue routes
 	RevenueDashboardURL     = "/app/sales/dashboard"
 	RevenueListURL          = "/app/sales/list/{status}"
+	RevenueTableURL         = "/action/sales/table/{status}"
 	RevenueDetailURL        = "/app/sales/detail/{id}"
 	RevenueAddURL           = "/action/sales/add"
 	RevenueEditURL          = "/action/sales/edit/{id}"
@@ -231,6 +233,7 @@ const (
 
 	// Price List routes
 	PriceListListURL       = "/app/price-lists/list/{status}"
+	PriceListTableURL      = "/action/price-lists/table/{status}"
 	PriceListDetailURL     = "/app/price-lists/{id}"
 	PriceListAddURL        = "/action/price-lists/add"
 	PriceListEditURL       = "/action/price-lists/edit/{id}"

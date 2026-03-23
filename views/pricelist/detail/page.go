@@ -7,6 +7,7 @@ import (
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -16,10 +17,11 @@ import (
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 
 	"github.com/erniealice/centymo-golang"
+	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// DetailViewDeps holds view dependencies.
+type DetailViewDeps struct {
 	Routes            centymo.PriceListRoutes
 	ReadPriceList     func(ctx context.Context, req *pricelistpb.ReadPriceListRequest) (*pricelistpb.ReadPriceListResponse, error)
 	ListPriceProducts func(ctx context.Context, req *priceproductpb.ListPriceProductsRequest) (*priceproductpb.ListPriceProductsResponse, error)
@@ -27,12 +29,8 @@ type Deps struct {
 	CommonLabels      pyeza.CommonLabels
 	TableLabels       types.TableLabels
 
-	// Attachment operations (injected by composition root)
-	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
-	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	NewID            func() string
+	attachment.AttachmentOps
+	auditlog.AuditOps
 }
 
 // PageData holds the data for the price list detail page.
@@ -47,10 +45,15 @@ type PageData struct {
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
 	Labels              centymo.PriceListLabels
+	// Audit history tab
+	AuditEntries    []auditlog.AuditEntryView
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
 }
 
 // NewView creates the price list detail view.
-func NewView(deps *Deps) view.View {
+func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
@@ -121,6 +124,36 @@ func NewView(deps *Deps) view.View {
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.Request.URL.Query().Get("cursor")
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "price_list",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
+		}
+
+		// KB help content
+		if viewCtx.Translations != nil {
+			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "pricelists-detail"); kb != nil {
+					pageData.HasHelp = true
+					pageData.HelpContent = kb.Body
+				}
+			}
 		}
 
 		return view.OK("pricelist-detail", pageData)
@@ -129,7 +162,7 @@ func NewView(deps *Deps) view.View {
 
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 // Handles GET /action/price-lists/{id}/tab/{tab}
-func NewTabAction(deps *Deps) view.View {
+func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
@@ -186,11 +219,34 @@ func NewTabAction(deps *Deps) view.View {
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.Request.URL.Query().Get("cursor")
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "price_list",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 		}
 
 		templateName := "pricelist-detail-" + tab
 		if tab == "attachments" {
 			templateName = "attachment-tab"
+		}
+		if tab == "audit-history" {
+			templateName = "audit-history-tab"
 		}
 		return view.OK(templateName, pageData)
 	})
@@ -203,10 +259,11 @@ func buildTabItems(id string, labels centymo.PriceListLabels, routes centymo.Pri
 		{Key: "basic", Label: labels.Detail.BasicInfo, Href: base + "?tab=basic", HxGet: action + "basic"},
 		{Key: "prices", Label: labels.Detail.Prices, Href: base + "?tab=prices", HxGet: action + "prices"},
 		{Key: "attachments", Label: labels.Detail.TabAttachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
+		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
 }
 
-func buildPricesTable(ctx context.Context, deps *Deps, priceListID string, routes centymo.PriceListRoutes, perms *types.UserPermissions) (*types.TableConfig, error) {
+func buildPricesTable(ctx context.Context, deps *DetailViewDeps, priceListID string, routes centymo.PriceListRoutes, perms *types.UserPermissions) (*types.TableConfig, error) {
 	resp, err := deps.ListPriceProducts(ctx, &priceproductpb.ListPriceProductsRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list price products: %w", err)

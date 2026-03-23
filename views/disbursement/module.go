@@ -58,7 +58,7 @@ type Module struct {
 
 // NewModule creates the disbursement module with all views.
 func NewModule(deps *ModuleDeps) *Module {
-	listDeps := &disbursementlist.Deps{
+	listDeps := &disbursementlist.ListViewDeps{
 		Routes:            deps.Routes,
 		ListDisbursements: deps.ListDisbursements,
 		RefreshURL:        deps.Routes.ListURL,
@@ -67,18 +67,18 @@ func NewModule(deps *ModuleDeps) *Module {
 		TableLabels:       deps.TableLabels,
 	}
 
-	detailDeps := &disbursementdetail.Deps{
+	detailDeps := &disbursementdetail.DetailViewDeps{
 		Routes:           deps.Routes,
 		ReadDisbursement: deps.ReadDisbursement,
 		Labels:           deps.Labels,
 		CommonLabels:     deps.CommonLabels,
 		TableLabels:      deps.TableLabels,
-		UploadFile:       deps.UploadFile,
-		ListAttachments:  deps.ListAttachments,
-		CreateAttachment: deps.CreateAttachment,
-		DeleteAttachment: deps.DeleteAttachment,
-		NewID:            deps.NewID,
 	}
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewID
 
 	actionDeps := &disbursementaction.Deps{
 		Routes:             deps.Routes,

@@ -14,8 +14,8 @@ import (
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// ListViewDeps holds view dependencies.
+type ListViewDeps struct {
 	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
 	RefreshURL       string
 	ExpenditureType  string // "purchase" or "expense" — determines which type to filter
@@ -32,7 +32,7 @@ type PageData struct {
 }
 
 // NewView creates the expenditure list view, filtered by type (purchase or expense).
-func NewView(deps *Deps) view.View {
+func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {

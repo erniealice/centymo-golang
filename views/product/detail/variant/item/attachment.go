@@ -7,7 +7,7 @@ import (
 	"github.com/erniealice/centymo-golang/views/product/detail/variant"
 )
 
-func stockAttachmentConfig(deps *variant.Deps) *attachment.Config {
+func stockAttachmentConfig(deps *variant.DetailViewDeps) *attachment.Config {
 	return &attachment.Config{
 		EntityType:       "stock-item",
 		BucketName:       "attachments",
@@ -16,7 +16,7 @@ func stockAttachmentConfig(deps *variant.Deps) *attachment.Config {
 		Labels:           attachment.DefaultLabels(),
 		CommonLabels:     deps.CommonLabels,
 		TableLabels:      deps.TableLabels,
-		NewID:            deps.NewID,
+		NewID:            deps.NewAttachmentID,
 		UploadFile:       deps.UploadFile,
 		ListAttachments:  deps.ListAttachments,
 		CreateAttachment: deps.CreateAttachment,
@@ -25,11 +25,11 @@ func stockAttachmentConfig(deps *variant.Deps) *attachment.Config {
 }
 
 // NewAttachmentUploadAction creates the upload handler for stock item attachments.
-func NewAttachmentUploadAction(deps *variant.Deps) view.View {
+func NewAttachmentUploadAction(deps *variant.DetailViewDeps) view.View {
 	return attachment.NewUploadAction(stockAttachmentConfig(deps))
 }
 
 // NewAttachmentDeleteAction creates the delete handler for stock item attachments.
-func NewAttachmentDeleteAction(deps *variant.Deps) view.View {
+func NewAttachmentDeleteAction(deps *variant.DetailViewDeps) view.View {
 	return attachment.NewDeleteAction(stockAttachmentConfig(deps))
 }

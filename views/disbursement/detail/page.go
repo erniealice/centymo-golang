@@ -9,6 +9,7 @@ import (
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -17,20 +18,16 @@ import (
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// DetailViewDeps holds view dependencies.
+type DetailViewDeps struct {
 	Routes           centymo.DisbursementRoutes
 	ReadDisbursement func(ctx context.Context, req *disbursementpb.ReadDisbursementRequest) (*disbursementpb.ReadDisbursementResponse, error)
 	Labels           centymo.DisbursementLabels
 	CommonLabels     pyeza.CommonLabels
 	TableLabels      types.TableLabels
 
-	// Attachment deps
-	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
-	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	NewID            func() string
+	attachment.AttachmentOps
+	auditlog.AuditOps
 }
 
 // PageData holds the data for the disbursement detail page.
@@ -52,6 +49,11 @@ type PageData struct {
 	AuditTable          *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
+	// Audit history tab
+	AuditEntries    []auditlog.AuditEntryView
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
 }
 
 // disbursementToMap converts a Disbursement protobuf to a map[string]any for template use.
@@ -74,7 +76,7 @@ func disbursementToMap(d *disbursementpb.Disbursement) map[string]any {
 }
 
 // NewView creates the disbursement detail view.
-func NewView(deps *Deps) view.View {
+func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
@@ -150,6 +152,25 @@ func NewView(deps *Deps) view.View {
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.QueryParams["cursor"]
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "disbursement",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 		}
 
 		return view.OK("disbursement-detail", pageData)
@@ -163,11 +184,12 @@ func buildTabItems(l centymo.DisbursementLabels, id string, routes centymo.Disbu
 		{Key: "info", Label: l.Detail.TabBasicInfo, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "attachments", Label: l.Detail.TabAttachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Detail.TabAuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
+		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
 }
 
 // NewTabAction creates the tab action view (partial — returns only the tab content).
-func NewTabAction(deps *Deps) view.View {
+func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
@@ -231,11 +253,33 @@ func NewTabAction(deps *Deps) view.View {
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.QueryParams["cursor"]
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "disbursement",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 		}
 
 		templateName := "disbursement-tab-" + tab
 		if tab == "attachments" {
 			templateName = "attachment-tab"
+		}
+		if tab == "audit-history" {
+			templateName = "audit-history-tab"
 		}
 		return view.OK(templateName, pageData)
 	})

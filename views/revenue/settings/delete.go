@@ -7,6 +7,6 @@ import (
 
 // NewDeleteAction creates the delete handler for invoice templates.
 // Route: POST /action/sales/settings/templates/delete
-func NewDeleteAction(deps *Deps) view.View {
+func NewDeleteAction(deps *SettingsViewDeps) view.View {
 	return templateview.NewDeleteAction(templateConfig(deps))
 }

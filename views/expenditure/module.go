@@ -53,7 +53,7 @@ type Module struct {
 func NewModule(deps *ModuleDeps) *Module {
 	m := &Module{
 		routes: deps.Routes,
-		PurchaseList: expenditurelist.NewView(&expenditurelist.Deps{
+		PurchaseList: expenditurelist.NewView(&expenditurelist.ListViewDeps{
 			ListExpenditures: deps.ListExpenditures,
 			RefreshURL:       deps.Routes.PurchaseListURL,
 			ExpenditureType:  "purchase",
@@ -61,7 +61,7 @@ func NewModule(deps *ModuleDeps) *Module {
 			CommonLabels:     deps.CommonLabels,
 			TableLabels:      deps.TableLabels,
 		}),
-		ExpenseList: expenditurelist.NewView(&expenditurelist.Deps{
+		ExpenseList: expenditurelist.NewView(&expenditurelist.ListViewDeps{
 			ListExpenditures: deps.ListExpenditures,
 			RefreshURL:       deps.Routes.ExpenseListURL,
 			ExpenditureType:  "expense",
@@ -70,7 +70,7 @@ func NewModule(deps *ModuleDeps) *Module {
 			TableLabels:      deps.TableLabels,
 		}),
 		// Dashboards use same list view for now (will be enhanced later)
-		PurchaseDashboard: expenditurelist.NewView(&expenditurelist.Deps{
+		PurchaseDashboard: expenditurelist.NewView(&expenditurelist.ListViewDeps{
 			ListExpenditures: deps.ListExpenditures,
 			RefreshURL:       deps.Routes.PurchaseListURL,
 			ExpenditureType:  "purchase",
@@ -78,7 +78,7 @@ func NewModule(deps *ModuleDeps) *Module {
 			CommonLabels:     deps.CommonLabels,
 			TableLabels:      deps.TableLabels,
 		}),
-		ExpenseDashboard: expenditurelist.NewView(&expenditurelist.Deps{
+		ExpenseDashboard: expenditurelist.NewView(&expenditurelist.ListViewDeps{
 			ListExpenditures: deps.ListExpenditures,
 			RefreshURL:       deps.Routes.ExpenseListURL,
 			ExpenditureType:  "expense",
@@ -90,7 +90,7 @@ func NewModule(deps *ModuleDeps) *Module {
 
 	// Settings views (nil-guarded — only built when document template deps are provided)
 	if deps.ListDocumentTemplates != nil {
-		settingsDeps := &expendituresettings.Deps{
+		settingsDeps := &expendituresettings.SettingsViewDeps{
 			Routes:                 deps.Routes,
 			Labels:                 deps.TemplateLabels,
 			CommonLabels:           deps.CommonLabels,

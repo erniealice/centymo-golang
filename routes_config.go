@@ -27,6 +27,7 @@ type ProductRoutes struct {
 	ActiveSubNav string `json:"active_sub_nav"`
 
 	ListURL       string `json:"list_url"`
+	TableURL      string `json:"table_url"`
 	DetailURL     string `json:"detail_url"`
 	AddURL        string `json:"add_url"`
 	EditURL       string `json:"edit_url"`
@@ -98,6 +99,7 @@ func DefaultProductRoutes() ProductRoutes {
 		ActiveSubNav: "masterlist",
 
 		ListURL:       ProductListURL,
+		TableURL:      ProductTableURL,
 		DetailURL:     ProductDetailURL,
 		AddURL:        ProductAddURL,
 		EditURL:       ProductEditURL,
@@ -156,6 +158,7 @@ func DefaultProductRoutes() ProductRoutes {
 func (r ProductRoutes) RouteMap() map[string]string {
 	return map[string]string{
 		"product.list":        r.ListURL,
+		"product.table":       r.TableURL,
 		"product.detail":      r.DetailURL,
 		"product.add":         r.AddURL,
 		"product.edit":        r.EditURL,
@@ -364,6 +367,7 @@ func (r InventoryRoutes) RouteMap() map[string]string {
 type RevenueRoutes struct {
 	DashboardURL     string `json:"dashboard_url"`
 	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
 	DetailURL        string `json:"detail_url"`
 	AddURL           string `json:"add_url"`
 	EditURL          string `json:"edit_url"`
@@ -413,6 +417,7 @@ func DefaultRevenueRoutes() RevenueRoutes {
 	return RevenueRoutes{
 		DashboardURL:     RevenueDashboardURL,
 		ListURL:          RevenueListURL,
+		TableURL:         RevenueTableURL,
 		DetailURL:        RevenueDetailURL,
 		AddURL:           RevenueAddURL,
 		EditURL:          RevenueEditURL,
@@ -453,6 +458,7 @@ func (r RevenueRoutes) RouteMap() map[string]string {
 	return map[string]string{
 		"sales.dashboard":       r.DashboardURL,
 		"sales.list":            r.ListURL,
+		"sales.table":           r.TableURL,
 		"sales.detail":          r.DetailURL,
 		"sales.add":             r.AddURL,
 		"sales.edit":            r.EditURL,
@@ -777,6 +783,7 @@ func (r DisbursementRoutes) RouteMap() map[string]string {
 // including price product sub-routes.
 type PriceListRoutes struct {
 	ListURL       string `json:"list_url"`
+	TableURL      string `json:"table_url"`
 	DetailURL     string `json:"detail_url"`
 	AddURL        string `json:"add_url"`
 	EditURL       string `json:"edit_url"`
@@ -799,6 +806,7 @@ type PriceListRoutes struct {
 func DefaultPriceListRoutes() PriceListRoutes {
 	return PriceListRoutes{
 		ListURL:       PriceListListURL,
+		TableURL:      PriceListTableURL,
 		DetailURL:     PriceListDetailURL,
 		AddURL:        PriceListAddURL,
 		EditURL:       PriceListEditURL,
@@ -820,6 +828,7 @@ func DefaultPriceListRoutes() PriceListRoutes {
 func (r PriceListRoutes) RouteMap() map[string]string {
 	return map[string]string{
 		"price_list.list":        r.ListURL,
+		"price_list.table":       r.TableURL,
 		"price_list.detail":      r.DetailURL,
 		"price_list.add":         r.AddURL,
 		"price_list.edit":        r.EditURL,

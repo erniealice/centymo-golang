@@ -9,8 +9,9 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 
-	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -57,8 +58,8 @@ type VariantFormData struct {
 	OptionSelections []OptionSelection
 }
 
-// Deps holds dependencies for variant action handlers.
-type Deps struct {
+// DetailViewDeps holds dependencies for variant action handlers.
+type DetailViewDeps struct {
 	Routes       centymo.ProductRoutes
 	DB           centymo.DataSource
 	Labels       centymo.ProductLabels
@@ -79,7 +80,7 @@ type Deps struct {
 	ListProductOptions      func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
 	ListProductOptionValues func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
 
-	// Typed proto funcs shared with detail.Deps (for table building)
+	// Typed proto funcs shared with detail.DetailViewDeps (for table building)
 	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
 
 	// Typed proto funcs for variant page (product read, inventory)
@@ -96,16 +97,12 @@ type Deps struct {
 	// Storage uploader (for file content → object storage)
 	UploadImage func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
 
-	// Attachment deps
-	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
-	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	NewID            func() string
+	attachment.AttachmentOps
+	auditlog.AuditOps
 }
 
 // loadOptionSelections loads all active product options with their values for the variant form dropdowns.
-func loadOptionSelections(ctx context.Context, deps *Deps, productID string) []OptionSelection {
+func loadOptionSelections(ctx context.Context, deps *DetailViewDeps, productID string) []OptionSelection {
 	if deps.ListProductOptions == nil || deps.ListProductOptionValues == nil {
 		return nil
 	}
@@ -156,7 +153,7 @@ func loadOptionSelections(ctx context.Context, deps *Deps, productID string) []O
 }
 
 // loadVariantOptionSelections loads existing option value selections for a variant (edit mode).
-func loadVariantOptionSelections(ctx context.Context, deps *Deps, variantID string) map[string]string {
+func loadVariantOptionSelections(ctx context.Context, deps *DetailViewDeps, variantID string) map[string]string {
 	if deps.ListProductVariantOptions == nil || deps.ListProductOptionValues == nil {
 		return nil
 	}
@@ -198,7 +195,7 @@ func loadVariantOptionSelections(ctx context.Context, deps *Deps, variantID stri
 }
 
 // saveVariantOptions creates product_variant_option rows from form selections.
-func saveVariantOptions(ctx context.Context, deps *Deps, variantID string, form map[string][]string) {
+func saveVariantOptions(ctx context.Context, deps *DetailViewDeps, variantID string, form map[string][]string) {
 	if deps.CreateProductVariantOption == nil {
 		return
 	}
@@ -220,7 +217,7 @@ func saveVariantOptions(ctx context.Context, deps *Deps, variantID string, form 
 }
 
 // deleteVariantOptions removes all product_variant_option rows for a variant.
-func deleteVariantOptions(ctx context.Context, deps *Deps, variantID string) {
+func deleteVariantOptions(ctx context.Context, deps *DetailViewDeps, variantID string) {
 	if deps.ListProductVariantOptions == nil || deps.DB == nil {
 		return
 	}

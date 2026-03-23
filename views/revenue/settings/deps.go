@@ -10,8 +10,8 @@ import (
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 )
 
-// Deps holds view dependencies for the sales settings (template management) views.
-type Deps struct {
+// SettingsViewDeps holds view dependencies for the sales settings (template management) views.
+type SettingsViewDeps struct {
 	Routes       centymo.RevenueRoutes
 	Labels       centymo.RevenueLabels
 	CommonLabels pyeza.CommonLabels
@@ -27,7 +27,7 @@ type Deps struct {
 	UploadTemplate func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
 }
 
-func templateConfig(deps *Deps) *templateview.Config {
+func templateConfig(deps *SettingsViewDeps) *templateview.Config {
 	return &templateview.Config{
 		DocumentPurpose:    "invoice",
 		AllowedExtensions:  []string{".docx"},

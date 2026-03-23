@@ -40,7 +40,7 @@ type SerialDetailPageData struct {
 
 // NewPageView creates the inventory serial detail view (full page).
 // Route: /app/products/detail/{id}/variant/{vid}/stock/{iid}/serial/{sid}
-func NewPageView(deps *variant.Deps) view.View {
+func NewPageView(deps *variant.DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		productID := viewCtx.Request.PathValue("id")
 		variantID := viewCtx.Request.PathValue("vid")
@@ -129,7 +129,7 @@ func NewPageView(deps *variant.Deps) view.View {
 }
 
 // readSerial reads a single serial by ID from the inventory item's serials list.
-func readSerial(ctx context.Context, deps *variant.Deps, itemID, serialID string) (*inventoryserialpb.InventorySerial, error) {
+func readSerial(ctx context.Context, deps *variant.DetailViewDeps, itemID, serialID string) (*inventoryserialpb.InventorySerial, error) {
 	serials := variantitem.LoadSerials(ctx, deps, itemID)
 	for _, s := range serials {
 		if s.GetId() == serialID {

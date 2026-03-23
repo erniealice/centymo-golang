@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
+	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -20,8 +22,8 @@ import (
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// DetailViewDeps holds view dependencies.
+type DetailViewDeps struct {
 	Routes       centymo.RevenueRoutes
 	DB           centymo.DataSource // KEEP — used for revenue_payment operations
 	Labels       centymo.RevenueLabels
@@ -34,12 +36,8 @@ type Deps struct {
 	// Typed line item operations
 	ListRevenueLineItems func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
 
-	// Attachment operations (injected by composition root)
-	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
-	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	NewID            func() string
+	attachment.AttachmentOps
+	auditlog.AuditOps
 }
 
 // PaymentInfo holds payment details for the payment tab.
@@ -75,10 +73,15 @@ type PageData struct {
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
 	InvoiceDownloadURL  string
+	// Audit history tab
+	AuditEntries    []auditlog.AuditEntryView
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
 }
 
 // NewView creates the sales detail view.
-func NewView(deps *Deps) view.View {
+func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
@@ -187,6 +190,36 @@ func NewView(deps *Deps) view.View {
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.QueryParams["cursor"]
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "revenue",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
+		}
+
+		// KB help content
+		if viewCtx.Translations != nil {
+			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "sales-detail"); kb != nil {
+					pageData.HasHelp = true
+					pageData.HelpContent = kb.Body
+				}
+			}
 		}
 
 		return view.OK("sales-detail", pageData)
@@ -202,11 +235,12 @@ func buildTabItems(l centymo.RevenueLabels, id string, routes centymo.RevenueRou
 		{Key: "payment", Label: l.Detail.TabPayment, Href: base + "?tab=payment", HxGet: action + "payment", Icon: "icon-credit-card"},
 		{Key: "audit", Label: l.Detail.TabAuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 		{Key: "attachments", Label: l.Detail.TabAttachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
+		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
 }
 
 // NewTabAction creates the tab action view (partial — returns only the tab content).
-func NewTabAction(deps *Deps) view.View {
+func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
@@ -299,11 +333,34 @@ func NewTabAction(deps *Deps) view.View {
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.QueryParams["cursor"]
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "revenue",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 		}
 
 		templateName := "sales-tab-" + tab
 		if tab == "attachments" {
 			templateName = "attachment-tab"
+		}
+		if tab == "audit-history" {
+			templateName = "audit-history-tab"
 		}
 		return view.OK(templateName, pageData)
 	})

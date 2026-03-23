@@ -60,7 +60,7 @@ type VariantPageData struct {
 
 // NewPageView creates the variant detail view (full page).
 // Route: /app/products/detail/{id}/variant/{vid}
-func NewPageView(deps *Deps) view.View {
+func NewPageView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		vid := viewCtx.Request.PathValue("vid")
@@ -187,7 +187,7 @@ func NewPageView(deps *Deps) view.View {
 
 // NewTabAction creates the HTMX tab action view for variant detail (partial).
 // Route: /action/products/detail/{id}/variant/{vid}/tab/{tab}
-func NewTabAction(deps *Deps) view.View {
+func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		vid := viewCtx.Request.PathValue("vid")
@@ -296,7 +296,7 @@ func buildVariantTabItems(productID, variantID string, l centymo.ProductLabels, 
 
 // loadVariantOptionEntries loads ALL product options with their assigned values for a variant.
 // Options without an assigned value show "\u2014" as the value.
-func loadVariantOptionEntries(ctx context.Context, deps *Deps, productID, variantID string) []OptionEntry {
+func loadVariantOptionEntries(ctx context.Context, deps *DetailViewDeps, productID, variantID string) []OptionEntry {
 	if deps.ListProductOptions == nil || deps.ListProductOptionValues == nil {
 		return nil
 	}
@@ -367,7 +367,7 @@ func loadVariantOptionEntries(ctx context.Context, deps *Deps, productID, varian
 }
 
 // buildStockTable builds the stock table showing inventory items for this variant.
-func buildStockTable(ctx context.Context, deps *Deps, productID, variantID string) *types.TableConfig {
+func buildStockTable(ctx context.Context, deps *DetailViewDeps, productID, variantID string) *types.TableConfig {
 	l := deps.Labels
 
 	columns := []types.TableColumn{

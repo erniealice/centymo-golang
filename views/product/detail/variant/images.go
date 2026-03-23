@@ -30,7 +30,7 @@ const StorageImageBaseURL = "/storage/images/"
 const maxUploadSize = 5 << 20
 
 // loadVariantImages loads all active images for a variant from the database.
-func loadVariantImages(ctx context.Context, deps *Deps, variantID string) []ImageData {
+func loadVariantImages(ctx context.Context, deps *DetailViewDeps, variantID string) []ImageData {
 	if deps.ListProductVariantImages == nil {
 		return nil
 	}
@@ -59,7 +59,7 @@ func loadVariantImages(ctx context.Context, deps *Deps, variantID string) []Imag
 
 // NewImageUploadAction creates the POST handler for uploading variant images.
 // Route: POST /action/products/detail/{id}/variant/{vid}/images/upload
-func NewImageUploadAction(deps *Deps) view.View {
+func NewImageUploadAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		vid := viewCtx.Request.PathValue("vid")
@@ -162,7 +162,7 @@ func NewImageUploadAction(deps *Deps) view.View {
 
 // NewImageDeleteAction creates the POST handler for deleting variant images.
 // Route: POST /action/products/detail/{id}/variant/{vid}/images/delete
-func NewImageDeleteAction(deps *Deps) view.View {
+func NewImageDeleteAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		vid := viewCtx.Request.PathValue("vid")

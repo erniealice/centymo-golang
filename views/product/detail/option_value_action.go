@@ -67,7 +67,7 @@ func NewOptionValueTableView(deps *OptionsDeps) view.View {
 		productID := viewCtx.Request.PathValue("id")
 		optionID := viewCtx.Request.PathValue("oid")
 
-		detailDeps := &Deps{
+		detailDeps := &DetailViewDeps{
 			Routes:                  deps.Routes,
 			DB:                      deps.DB,
 			Labels:                  deps.Labels,

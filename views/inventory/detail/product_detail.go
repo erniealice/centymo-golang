@@ -21,8 +21,8 @@ type ProductDetailDeps struct {
 	ProductRoutes   centymo.ProductRoutes
 	ReadInventoryItem func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ReadProduct       func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
-	// Delegate to main Deps for tab data loading
-	DetailDeps   *Deps
+	// Delegate to main DetailViewDeps for tab data loading
+	DetailDeps   *DetailViewDeps
 	Labels       centymo.InventoryLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels

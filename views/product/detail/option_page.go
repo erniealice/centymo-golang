@@ -101,7 +101,7 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 		}
 
 		// Build option values table
-		detailDeps := &Deps{
+		detailDeps := &DetailViewDeps{
 			Routes:                  deps.Routes,
 			DB:                      deps.DB,
 			Labels:                  deps.Labels,

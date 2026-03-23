@@ -10,8 +10,8 @@ import (
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 )
 
-// Deps holds view dependencies for the purchases settings (template management) views.
-type Deps struct {
+// SettingsViewDeps holds view dependencies for the purchases settings (template management) views.
+type SettingsViewDeps struct {
 	Routes       centymo.ExpenditureRoutes
 	Labels       templateview.Labels
 	CommonLabels pyeza.CommonLabels
@@ -27,7 +27,7 @@ type Deps struct {
 	UploadFile func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
 }
 
-func templateConfig(deps *Deps) *templateview.Config {
+func templateConfig(deps *SettingsViewDeps) *templateview.Config {
 	return &templateview.Config{
 		DocumentPurpose:    "purchase_order",
 		AllowedExtensions:  []string{".docx"},

@@ -15,8 +15,8 @@ import (
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// ListViewDeps holds view dependencies.
+type ListViewDeps struct {
 	Routes                      centymo.SubscriptionRoutes
 	GetSubscriptionListPageData func(ctx context.Context, req *subscriptionpb.GetSubscriptionListPageDataRequest) (*subscriptionpb.GetSubscriptionListPageDataResponse, error)
 	Labels                      centymo.SubscriptionLabels
@@ -32,7 +32,7 @@ type PageData struct {
 }
 
 // NewView creates the subscription list view.
-func NewView(deps *Deps) view.View {
+func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 

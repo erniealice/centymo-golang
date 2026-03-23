@@ -1,0 +1,302 @@
+package revenue
+
+import (
+	"context"
+	"net/http"
+
+	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/types"
+	"github.com/erniealice/pyeza-golang/view"
+
+	"github.com/erniealice/centymo-golang"
+	revenueaction "github.com/erniealice/centymo-golang/views/revenue/action"
+	revenuedashboard "github.com/erniealice/centymo-golang/views/revenue/dashboard"
+	revenuedetail "github.com/erniealice/centymo-golang/views/revenue/detail"
+	revenuelist "github.com/erniealice/centymo-golang/views/revenue/list"
+	revenuesettings "github.com/erniealice/centymo-golang/views/revenue/settings"
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
+	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
+	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
+	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+)
+
+// ModuleDeps holds all dependencies for the revenue module.
+type ModuleDeps struct {
+	Routes       centymo.RevenueRoutes
+	DB              centymo.DataSource // KEEP — used for revenue_payment, collection_method, location
+	GetListPageData func(ctx context.Context, req *revenuepb.GetRevenueListPageDataRequest) (*revenuepb.GetRevenueListPageDataResponse, error)
+	Labels       centymo.RevenueLabels
+	CommonLabels pyeza.CommonLabels
+	TableLabels  types.TableLabels
+
+	// Typed revenue operations (for detail + action views)
+	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
+	ReadRevenue   func(ctx context.Context, req *revenuepb.ReadRevenueRequest) (*revenuepb.ReadRevenueResponse, error)
+	UpdateRevenue func(ctx context.Context, req *revenuepb.UpdateRevenueRequest) (*revenuepb.UpdateRevenueResponse, error)
+	DeleteRevenue func(ctx context.Context, req *revenuepb.DeleteRevenueRequest) (*revenuepb.DeleteRevenueResponse, error)
+
+	// Typed line item operations
+	CreateRevenueLineItem func(ctx context.Context, req *revenuelineitempb.CreateRevenueLineItemRequest) (*revenuelineitempb.CreateRevenueLineItemResponse, error)
+	ReadRevenueLineItem   func(ctx context.Context, req *revenuelineitempb.ReadRevenueLineItemRequest) (*revenuelineitempb.ReadRevenueLineItemResponse, error)
+	UpdateRevenueLineItem func(ctx context.Context, req *revenuelineitempb.UpdateRevenueLineItemRequest) (*revenuelineitempb.UpdateRevenueLineItemResponse, error)
+	DeleteRevenueLineItem func(ctx context.Context, req *revenuelineitempb.DeleteRevenueLineItemRequest) (*revenuelineitempb.DeleteRevenueLineItemResponse, error)
+	ListRevenueLineItems  func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
+
+	// Typed inventory operations (for action views — stock deduction on status change)
+	ReadInventoryItem            func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
+	UpdateInventoryItem          func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
+	ListInventoryItems           func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
+	UpdateInventorySerial        func(ctx context.Context, req *inventoryserialpb.UpdateInventorySerialRequest) (*inventoryserialpb.UpdateInventorySerialResponse, error)
+	CreateInventorySerialHistory func(ctx context.Context, req *serialhistorypb.CreateInventorySerialHistoryRequest) (*serialhistorypb.CreateInventorySerialHistoryResponse, error)
+
+	// Document generation (wraps fycha.DocumentService.ProcessBytes)
+	GenerateDoc func(templateData []byte, data map[string]any) ([]byte, error)
+
+	// Optional: load custom default template from storage
+	LoadDefaultTemplate func(ctx context.Context, purpose string) ([]byte, error)
+
+	// Document template CRUD operations
+	ListDocumentTemplates  func(ctx context.Context, req *documenttemplatepb.ListDocumentTemplatesRequest) (*documenttemplatepb.ListDocumentTemplatesResponse, error)
+	CreateDocumentTemplate func(ctx context.Context, req *documenttemplatepb.CreateDocumentTemplateRequest) (*documenttemplatepb.CreateDocumentTemplateResponse, error)
+	UpdateDocumentTemplate func(ctx context.Context, req *documenttemplatepb.UpdateDocumentTemplateRequest) (*documenttemplatepb.UpdateDocumentTemplateResponse, error)
+	DeleteDocumentTemplate func(ctx context.Context, req *documenttemplatepb.DeleteDocumentTemplateRequest) (*documenttemplatepb.DeleteDocumentTemplateResponse, error)
+
+	// Storage operations for template file upload
+	UploadTemplate func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
+
+	// Email sending for invoice delivery
+	SendEmail func(ctx context.Context, to []string, subject, htmlBody, textBody string, attachmentName string, attachmentData []byte) error
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewID            func() string
+
+	// Audit history
+	ListAuditHistory func(ctx context.Context, req *auditlog.ListAuditRequest) (*auditlog.ListAuditResponse, error)
+}
+
+// Module holds all constructed revenue views.
+type Module struct {
+	routes             centymo.RevenueRoutes
+	Dashboard          view.View
+	List               view.View
+	Table              view.View
+	Detail             view.View
+	TabAction          view.View
+	Add                view.View
+	Edit               view.View
+	Delete             view.View
+	BulkDelete         view.View
+	SetStatus          view.View
+	BulkSetStatus      view.View
+	LineItemTable      view.View
+	LineItemAdd        view.View
+	LineItemEdit       view.View
+	LineItemRemove     view.View
+	LineItemDiscount   view.View
+	PaymentTable       view.View
+	PaymentAdd         view.View
+	PaymentEdit        view.View
+	PaymentRemove      view.View
+	InvoiceDownload    http.HandlerFunc
+	SendEmailHandler   http.HandlerFunc
+	SettingsTemplates  view.View
+	SettingsUpload     view.View
+	SettingsDelete     view.View
+	SettingsSetDefault view.View
+	AttachmentUpload   view.View
+	AttachmentDelete   view.View
+}
+
+func NewModule(deps *ModuleDeps) *Module {
+	actionDeps := &revenueaction.Deps{
+		Routes:                       deps.Routes,
+		Labels:                       deps.Labels,
+		DB:                           deps.DB,
+		CreateRevenue:                deps.CreateRevenue,
+		ReadRevenue:                  deps.ReadRevenue,
+		UpdateRevenue:                deps.UpdateRevenue,
+		DeleteRevenue:                deps.DeleteRevenue,
+		ListRevenueLineItems:         deps.ListRevenueLineItems,
+		ReadInventoryItem:            deps.ReadInventoryItem,
+		UpdateInventoryItem:          deps.UpdateInventoryItem,
+		ListInventoryItems:           deps.ListInventoryItems,
+		UpdateInventorySerial:        deps.UpdateInventorySerial,
+		CreateInventorySerialHistory: deps.CreateInventorySerialHistory,
+	}
+	paymentDeps := &revenueaction.PaymentDeps{Routes: deps.Routes, DB: deps.DB, Labels: deps.Labels}
+	detailDeps := &revenuedetail.DetailViewDeps{
+		Routes:               deps.Routes,
+		DB:                   deps.DB,
+		Labels:               deps.Labels,
+		CommonLabels:         deps.CommonLabels,
+		TableLabels:          deps.TableLabels,
+		ReadRevenue:          deps.ReadRevenue,
+		ListRevenueLineItems: deps.ListRevenueLineItems,
+		AttachmentOps: attachment.AttachmentOps{
+			UploadFile:       deps.UploadFile,
+			ListAttachments:  deps.ListAttachments,
+			CreateAttachment: deps.CreateAttachment,
+			DeleteAttachment: deps.DeleteAttachment,
+			NewAttachmentID:  deps.NewID,
+		},
+		AuditOps: auditlog.AuditOps{
+			ListAuditHistory: deps.ListAuditHistory,
+		},
+	}
+	lineItemDeps := &revenuedetail.LineItemDeps{
+		Routes:                deps.Routes,
+		Labels:                deps.Labels,
+		CommonLabels:          deps.CommonLabels,
+		TableLabels:           deps.TableLabels,
+		ListInventoryItems:    deps.ListInventoryItems,
+		ReadRevenue:           deps.ReadRevenue,
+		UpdateRevenue:         deps.UpdateRevenue,
+		CreateRevenueLineItem: deps.CreateRevenueLineItem,
+		ReadRevenueLineItem:   deps.ReadRevenueLineItem,
+		UpdateRevenueLineItem: deps.UpdateRevenueLineItem,
+		DeleteRevenueLineItem: deps.DeleteRevenueLineItem,
+		ListRevenueLineItems:  deps.ListRevenueLineItems,
+	}
+
+	// Invoice download handler (nil-guarded)
+	var invoiceDownload http.HandlerFunc
+	if deps.GenerateDoc != nil {
+		invoiceDownload = revenueaction.NewInvoiceDownloadHandler(&revenueaction.InvoiceDownloadDeps{
+			Routes:               deps.Routes,
+			Labels:               deps.Labels,
+			ReadRevenue:          deps.ReadRevenue,
+			ListRevenueLineItems: deps.ListRevenueLineItems,
+			GenerateDoc:          deps.GenerateDoc,
+			LoadDefaultTemplate:  deps.LoadDefaultTemplate,
+		})
+	}
+
+	// Send email handler (nil-guarded)
+	var sendEmailHandler http.HandlerFunc
+	if deps.GenerateDoc != nil && deps.SendEmail != nil {
+		sendEmailHandler = revenueaction.NewSendEmailHandler(&revenueaction.SendEmailDeps{
+			Routes:               deps.Routes,
+			Labels:               deps.Labels,
+			ReadRevenue:          deps.ReadRevenue,
+			ListRevenueLineItems: deps.ListRevenueLineItems,
+			GenerateDoc:          deps.GenerateDoc,
+			LoadDefaultTemplate:  deps.LoadDefaultTemplate,
+			SendEmail:            deps.SendEmail,
+		})
+	}
+
+	// Settings views (nil-guarded)
+	var settingsTemplates, settingsUpload, settingsDelete, settingsSetDefault view.View
+	if deps.ListDocumentTemplates != nil {
+		settingsDeps := &revenuesettings.SettingsViewDeps{
+			Routes:                 deps.Routes,
+			Labels:                 deps.Labels,
+			CommonLabels:           deps.CommonLabels,
+			TableLabels:            deps.TableLabels,
+			ListDocumentTemplates:  deps.ListDocumentTemplates,
+			CreateDocumentTemplate: deps.CreateDocumentTemplate,
+			UpdateDocumentTemplate: deps.UpdateDocumentTemplate,
+			DeleteDocumentTemplate: deps.DeleteDocumentTemplate,
+			UploadTemplate:         deps.UploadTemplate,
+		}
+		settingsTemplates = revenuesettings.NewView(settingsDeps)
+		settingsUpload = revenuesettings.NewUploadAction(settingsDeps)
+		settingsDelete = revenuesettings.NewDeleteAction(settingsDeps)
+		settingsSetDefault = revenuesettings.NewSetDefaultAction(settingsDeps)
+	}
+
+	return &Module{
+		routes:    deps.Routes,
+		Dashboard: revenuedashboard.NewView(&revenuedashboard.Deps{CommonLabels: deps.CommonLabels}),
+		List: revenuelist.NewView(&revenuelist.ListViewDeps{
+			Routes: deps.Routes, GetListPageData: deps.GetListPageData,
+			Labels: deps.Labels, CommonLabels: deps.CommonLabels, TableLabels: deps.TableLabels,
+		}),
+		Table: revenuelist.NewTableView(&revenuelist.ListViewDeps{
+			Routes: deps.Routes, GetListPageData: deps.GetListPageData,
+			Labels: deps.Labels, CommonLabels: deps.CommonLabels, TableLabels: deps.TableLabels,
+		}),
+		Detail:             revenuedetail.NewView(detailDeps),
+		TabAction:          revenuedetail.NewTabAction(detailDeps),
+		Add:                revenueaction.NewAddAction(actionDeps),
+		Edit:               revenueaction.NewEditAction(actionDeps),
+		Delete:             revenueaction.NewDeleteAction(actionDeps),
+		BulkDelete:         revenueaction.NewBulkDeleteAction(actionDeps),
+		SetStatus:          revenueaction.NewSetStatusAction(actionDeps),
+		BulkSetStatus:      revenueaction.NewBulkSetStatusAction(actionDeps),
+		LineItemTable:      revenuedetail.NewLineItemTableView(lineItemDeps),
+		LineItemAdd:        revenuedetail.NewLineItemAddView(lineItemDeps),
+		LineItemEdit:       revenuedetail.NewLineItemEditView(lineItemDeps),
+		LineItemRemove:     revenuedetail.NewLineItemRemoveView(lineItemDeps),
+		LineItemDiscount:   revenuedetail.NewLineItemDiscountView(lineItemDeps),
+		PaymentTable:       revenueaction.NewPaymentTableAction(paymentDeps),
+		PaymentAdd:         revenueaction.NewPaymentAddAction(paymentDeps),
+		PaymentEdit:        revenueaction.NewPaymentEditAction(paymentDeps),
+		PaymentRemove:      revenueaction.NewPaymentRemoveAction(paymentDeps),
+		InvoiceDownload:    invoiceDownload,
+		SendEmailHandler:   sendEmailHandler,
+		SettingsTemplates:  settingsTemplates,
+		SettingsUpload:     settingsUpload,
+		SettingsDelete:     settingsDelete,
+		SettingsSetDefault: settingsSetDefault,
+		AttachmentUpload:   revenuedetail.NewAttachmentUploadAction(detailDeps),
+		AttachmentDelete:   revenuedetail.NewAttachmentDeleteAction(detailDeps),
+	}
+}
+
+func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
+	r.GET(m.routes.DashboardURL, m.Dashboard)
+	r.GET(m.routes.ListURL, m.List)
+	r.GET(m.routes.TableURL, m.Table)
+	r.POST(m.routes.TableURL, m.Table)
+	r.GET(m.routes.DetailURL, m.Detail)
+	r.GET(m.routes.TabActionURL, m.TabAction)
+	r.GET(m.routes.AddURL, m.Add)
+	r.POST(m.routes.AddURL, m.Add)
+	r.GET(m.routes.EditURL, m.Edit)
+	r.POST(m.routes.EditURL, m.Edit)
+	r.POST(m.routes.DeleteURL, m.Delete)
+	r.POST(m.routes.BulkDeleteURL, m.BulkDelete)
+	r.POST(m.routes.SetStatusURL, m.SetStatus)
+	r.POST(m.routes.BulkSetStatusURL, m.BulkSetStatus)
+	// Line items
+	r.GET(m.routes.LineItemTableURL, m.LineItemTable)
+	r.GET(m.routes.LineItemAddURL, m.LineItemAdd)
+	r.POST(m.routes.LineItemAddURL, m.LineItemAdd)
+	r.GET(m.routes.LineItemEditURL, m.LineItemEdit)
+	r.POST(m.routes.LineItemEditURL, m.LineItemEdit)
+	r.POST(m.routes.LineItemRemoveURL, m.LineItemRemove)
+	r.GET(m.routes.LineItemDiscountURL, m.LineItemDiscount)
+	r.POST(m.routes.LineItemDiscountURL, m.LineItemDiscount)
+	// Payments
+	r.GET(m.routes.PaymentTableURL, m.PaymentTable)
+	r.GET(m.routes.PaymentAddURL, m.PaymentAdd)
+	r.POST(m.routes.PaymentAddURL, m.PaymentAdd)
+	r.GET(m.routes.PaymentEditURL, m.PaymentEdit)
+	r.POST(m.routes.PaymentEditURL, m.PaymentEdit)
+	r.POST(m.routes.PaymentRemoveURL, m.PaymentRemove)
+	// Settings (template management)
+	if m.SettingsTemplates != nil {
+		r.GET(m.routes.SettingsTemplatesURL, m.SettingsTemplates)
+		r.GET(m.routes.SettingsTemplateUploadURL, m.SettingsUpload)
+		r.POST(m.routes.SettingsTemplateUploadURL, m.SettingsUpload)
+		r.POST(m.routes.SettingsTemplateDeleteURL, m.SettingsDelete)
+		r.POST(m.routes.SettingsTemplateDefaultURL, m.SettingsSetDefault)
+	}
+	// Attachments
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
+	}
+	// Note: InvoiceDownload + SendEmailHandler are http.HandlerFunc — register via routes.HandleFunc() in views.go
+}

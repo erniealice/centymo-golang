@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 
+	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -13,13 +15,13 @@ import (
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 
 	"github.com/erniealice/centymo-golang"
+	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// ListViewDeps holds view dependencies.
+type ListViewDeps struct {
 	Routes             centymo.InventoryRoutes
 	ListInventoryItems func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
-	RefreshURL         string
 	Labels             centymo.InventoryLabels
 	CommonLabels       pyeza.CommonLabels
 	TableLabels        types.TableLabels
@@ -32,92 +34,29 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-// NewView creates the inventory list view.
-func NewView(deps *Deps) view.View {
-	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
+var inventoryAllowedSortCols = []string{
+	"date_created", "date_modified", "product_name", "quantity", "status",
+}
 
+var inventorySearchFields = []string{"product_name", "sku"}
+
+// NewView creates the inventory list view (full page).
+func NewView(deps *ListViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		location := viewCtx.Request.PathValue("location")
 		if location == "" {
 			location = "ayala-central-bloc"
 		}
 
-		resp, err := deps.ListInventoryItems(ctx, &inventoryitempb.ListInventoryItemsRequest{
-			LocationId: &location,
-		})
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, inventoryAllowedSortCols)
 		if err != nil {
-			log.Printf("Failed to list inventory: %v", err)
-			return view.Error(fmt.Errorf("failed to load inventory: %w", err))
+			return view.Error(err)
 		}
 
-		l := deps.Labels
-		columns := inventoryColumns(l)
-		rows := buildTableRows(resp.GetData(), l, deps.Routes, perms)
-		types.ApplyColumnStyles(columns, rows)
-
-		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = []types.BulkAction{
-			{
-				Key:             "activate",
-				Label:           l.Status.Activate,
-				Icon:            "icon-check-circle",
-				Variant:         "success",
-				Endpoint:        deps.Routes.BulkSetStatusURL,
-				ConfirmTitle:    l.Status.Activate,
-				ConfirmMessage:  l.Confirm.BulkActivateMessage,
-				ExtraParamsJSON: `{"target_status":"active"}`,
-			},
-			{
-				Key:             "deactivate",
-				Label:           l.Status.Deactivate,
-				Icon:            "icon-x-circle",
-				Variant:         "warning",
-				Endpoint:        deps.Routes.BulkSetStatusURL,
-				ConfirmTitle:    l.Status.Deactivate,
-				ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
-				ExtraParamsJSON: `{"target_status":"inactive"}`,
-			},
-			{
-				Key:            "delete",
-				Label:          deps.CommonLabels.Bulk.Delete,
-				Icon:           "icon-trash-2",
-				Variant:        "danger",
-				Endpoint:       deps.Routes.BulkDeleteURL,
-				ConfirmTitle:   deps.CommonLabels.Bulk.Delete,
-				ConfirmMessage: l.Confirm.BulkDeleteMessage,
-			},
+		tableConfig, err := buildTableConfig(ctx, deps, location, p)
+		if err != nil {
+			return view.Error(err)
 		}
-
-		tableConfig := &types.TableConfig{
-			ID:                   "inventory-table",
-			RefreshURL:           deps.RefreshURL,
-			Columns:              columns,
-			Rows:                 rows,
-			ShowSearch:           true,
-			ShowActions:          true,
-			ShowFilters:          true,
-			ShowSort:             true,
-			ShowColumns:          true,
-			ShowExport:           true,
-			ShowDensity:          true,
-			ShowEntries:          true,
-			DefaultSortColumn:    "name",
-			DefaultSortDirection: "asc",
-			Labels:               deps.TableLabels,
-			EmptyState: types.TableEmptyState{
-				Title:   l.Empty.Title,
-				Message: l.Empty.Message,
-			},
-			PrimaryAction: &types.PrimaryAction{
-				Label:           l.Buttons.AddItem,
-				ActionURL:       deps.Routes.AddURL,
-				Icon:            "icon-plus",
-				Disabled:        !perms.Can("inventory_item", "create"),
-				DisabledTooltip: l.Errors.PermissionDenied,
-			},
-			BulkActions: &bulkCfg,
-		}
-		types.ApplyTableSettings(tableConfig)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -127,7 +66,7 @@ func NewView(deps *Deps) view.View {
 				ActiveNav:      "inventory",
 				ActiveSubNav:   location,
 				HeaderTitle:    deps.Labels.Page.Heading + " \u2014 " + centymo.LocationDisplayName(location),
-				HeaderSubtitle: l.Page.Caption,
+				HeaderSubtitle: deps.Labels.Page.Caption,
 				HeaderIcon:     "icon-package",
 				CommonLabels:   deps.CommonLabels,
 			},
@@ -135,19 +74,163 @@ func NewView(deps *Deps) view.View {
 			Table:           tableConfig,
 		}
 
+		// KB help content
+		if viewCtx.Translations != nil {
+			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "inventory"); kb != nil {
+					pageData.HasHelp = true
+					pageData.HelpContent = kb.Body
+				}
+			}
+		}
+
 		return view.OK("inventory-list", pageData)
 	})
 }
 
+// NewTableView creates a view that returns only the table-card HTML.
+// Used as the refresh target after CRUD operations so that only the table
+// is swapped (not the entire page content).
+func NewTableView(deps *ListViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		location := viewCtx.Request.PathValue("location")
+		if location == "" {
+			location = "ayala-central-bloc"
+		}
+
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, inventoryAllowedSortCols)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		tableConfig, err := buildTableConfig(ctx, deps, location, p)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		return view.OK("table-card", tableConfig)
+	})
+}
+
+// buildTableConfig fetches inventory data and builds the table configuration.
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, location string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+	perms := view.GetUserPermissions(ctx)
+
+	listParams := espynahttp.ToListParams(p, inventorySearchFields)
+	resp, err := deps.ListInventoryItems(ctx, &inventoryitempb.ListInventoryItemsRequest{
+		LocationId: &location,
+		Search:     listParams.Search,
+		Filters:    listParams.Filters,
+		Sort:       listParams.Sort,
+		Pagination: listParams.Pagination,
+	})
+	if err != nil {
+		log.Printf("Failed to list inventory: %v", err)
+		return nil, fmt.Errorf("failed to load inventory: %w", err)
+	}
+
+	l := deps.Labels
+	columns := inventoryColumns(l)
+	rows := buildTableRows(resp.GetData(), l, deps.Routes, perms)
+	types.ApplyColumnStyles(columns, rows)
+
+	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg.Actions = []types.BulkAction{
+		{
+			Key:             "activate",
+			Label:           l.Status.Activate,
+			Icon:            "icon-check-circle",
+			Variant:         "success",
+			Endpoint:        deps.Routes.BulkSetStatusURL,
+			ConfirmTitle:    l.Status.Activate,
+			ConfirmMessage:  l.Confirm.BulkActivateMessage,
+			ExtraParamsJSON: `{"target_status":"active"}`,
+		},
+		{
+			Key:             "deactivate",
+			Label:           l.Status.Deactivate,
+			Icon:            "icon-x-circle",
+			Variant:         "warning",
+			Endpoint:        deps.Routes.BulkSetStatusURL,
+			ConfirmTitle:    l.Status.Deactivate,
+			ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
+			ExtraParamsJSON: `{"target_status":"inactive"}`,
+		},
+		{
+			Key:            "delete",
+			Label:          deps.CommonLabels.Bulk.Delete,
+			Icon:           "icon-trash-2",
+			Variant:        "danger",
+			Endpoint:       deps.Routes.BulkDeleteURL,
+			ConfirmTitle:   deps.CommonLabels.Bulk.Delete,
+			ConfirmMessage: l.Confirm.BulkDeleteMessage,
+		},
+	}
+
+	refreshURL := deps.Routes.TableURL
+
+	// Build ServerPagination
+	totalRows := len(rows) // TODO: migrate to GetInventoryItemListPageData (CTE variant) to get resp.GetPagination().GetTotalItems(); ListInventoryItemsResponse has no pagination field
+	sp := &types.ServerPagination{
+		Enabled:       true,
+		Mode:          "offset",
+		CurrentPage:   p.Page,
+		PageSize:      p.PageSize,
+		TotalRows:     totalRows,
+		TotalPages:    int(math.Ceil(float64(totalRows) / float64(p.PageSize))),
+		SearchQuery:   p.Search,
+		SortColumn:    p.SortColumn,
+		SortDirection: p.SortDir,
+		FiltersJSON:   p.FiltersRaw,
+		PaginationURL: refreshURL,
+	}
+	sp.BuildDisplay()
+
+	tableConfig := &types.TableConfig{
+		ID:                   "inventory-table",
+		RefreshURL:           refreshURL,
+		Columns:              columns,
+		Rows:                 rows,
+		ShowSearch:           true,
+		ShowActions:          true,
+		ShowFilters:          true,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowExport:           true,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "date_created",
+		DefaultSortDirection: "desc",
+		Labels:               deps.TableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   l.Empty.Title,
+			Message: l.Empty.Message,
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:           l.Buttons.AddItem,
+			ActionURL:       deps.Routes.AddURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("inventory_item", "create"),
+			DisabledTooltip: l.Errors.PermissionDenied,
+		},
+		BulkActions:      &bulkCfg,
+		ServerPagination: sp,
+	}
+	types.ApplyTableSettings(tableConfig)
+
+	return tableConfig, nil
+}
+
 func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.ProductName, Sortable: true},
-		{Key: "sku", Label: l.Columns.SKU, Sortable: true, Width: "150px"},
-		{Key: "item_type", Label: l.Columns.Type, Sortable: true, Width: "130px"},
-		{Key: "on_hand", Label: l.Columns.OnHand, Sortable: true, Width: "120px"},
-		{Key: "available", Label: l.Columns.Available, Sortable: true, Width: "120px"},
-		{Key: "reorder_level", Label: l.Columns.ReorderLvl, Sortable: true, Width: "140px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "product_name", Label: l.Columns.ProductName, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
+		{Key: "sku", Label: l.Columns.SKU, Sortable: false, Filterable: false, Width: "150px"},
+		{Key: "item_type", Label: l.Columns.Type, Sortable: false, Filterable: false, Width: "130px"},
+		{Key: "quantity", Label: l.Columns.OnHand, Sortable: true, Filterable: true, FilterType: types.FilterTypeNumeric, Width: "120px"},
+		{Key: "available", Label: l.Columns.Available, Sortable: false, Filterable: false, Width: "120px"},
+		{Key: "reorder_level", Label: l.Columns.ReorderLvl, Sortable: false, Filterable: false, Width: "140px"},
+		{Key: "date_created", Label: "Date Created", Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, Width: "120px"},
 	}
 }
 
@@ -185,6 +268,7 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 			reorderDisplay = reorderStr + " (!)"
 		}
 
+		dateCreated := item.GetDateCreatedString()
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 
 		rows = append(rows, types.TableRow{
@@ -197,6 +281,7 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 				{Type: "text", Value: onHandStr},
 				{Type: "text", Value: available},
 				{Type: "text", Value: reorderDisplay},
+				{Type: "text", Value: dateCreated},
 				{Type: "badge", Value: status, Variant: statusVariant(status)},
 			},
 			DataAttrs: map[string]string{

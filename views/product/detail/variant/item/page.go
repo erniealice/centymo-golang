@@ -63,7 +63,7 @@ type StockDetailPageData struct {
 
 // NewPageView creates the inventory item detail view (full page).
 // Route: /app/products/detail/{id}/variant/{vid}/stock/{iid}
-func NewPageView(deps *variant.Deps) view.View {
+func NewPageView(deps *variant.DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		productID := viewCtx.Request.PathValue("id")
 		variantID := viewCtx.Request.PathValue("vid")
@@ -192,7 +192,7 @@ func NewPageView(deps *variant.Deps) view.View {
 
 // NewTabAction creates the HTMX tab action view for inventory item detail (partial).
 // Route: /action/products/detail/{id}/variant/{vid}/stock/{iid}/tab/{tab}
-func NewTabAction(deps *variant.Deps) view.View {
+func NewTabAction(deps *variant.DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		productID := viewCtx.Request.PathValue("id")
 		variantID := viewCtx.Request.PathValue("vid")
@@ -300,7 +300,7 @@ func BuildStockTabItems(productID, variantID, itemID string, l centymo.ProductLa
 }
 
 // ReadInventoryItem reads a single inventory item by ID.
-func ReadInventoryItem(ctx context.Context, deps *variant.Deps, itemID string) (*inventoryitempb.InventoryItem, error) {
+func ReadInventoryItem(ctx context.Context, deps *variant.DetailViewDeps, itemID string) (*inventoryitempb.InventoryItem, error) {
 	if deps.ReadInventoryItem != nil {
 		resp, err := deps.ReadInventoryItem(ctx, &inventoryitempb.ReadInventoryItemRequest{
 			Data: &inventoryitempb.InventoryItem{Id: itemID},
@@ -334,7 +334,7 @@ func ReadInventoryItem(ctx context.Context, deps *variant.Deps, itemID string) (
 }
 
 // LoadSerials loads serial numbers for an inventory item.
-func LoadSerials(ctx context.Context, deps *variant.Deps, inventoryItemID string) []*inventoryserialpb.InventorySerial {
+func LoadSerials(ctx context.Context, deps *variant.DetailViewDeps, inventoryItemID string) []*inventoryserialpb.InventorySerial {
 	if deps.ListInventorySerials == nil {
 		return nil
 	}

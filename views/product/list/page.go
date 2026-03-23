@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 
+	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -14,14 +16,14 @@ import (
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
 	centymo "github.com/erniealice/centymo-golang"
+	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// ListViewDeps holds view dependencies.
+type ListViewDeps struct {
 	Routes       centymo.ProductRoutes
 	ListProducts func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	GetInUseIDs  func(ctx context.Context, ids []string) (map[string]bool, error)
-	RefreshURL   string
 	Labels       centymo.ProductLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
@@ -34,110 +36,39 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-// NewView creates the product list view.
-func NewView(deps *Deps) view.View {
-	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
+var productAllowedSortCols = []string{
+	"date_created", "date_modified", "name", "status",
+}
 
+var productSearchFields = []string{"name", "description"}
+
+// NewView creates the product list view (full page).
+func NewView(deps *ListViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
 		}
 
-		resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, productAllowedSortCols)
 		if err != nil {
-			log.Printf("Failed to list products: %v", err)
-			return view.Error(fmt.Errorf("failed to load products: %w", err))
+			return view.Error(err)
 		}
 
-		var inUseIDs map[string]bool
-		if deps.GetInUseIDs != nil {
-			var itemIDs []string
-			for _, item := range resp.GetData() {
-				itemIDs = append(itemIDs, item.GetId())
-			}
-			inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		if err != nil {
+			return view.Error(err)
 		}
-
-		l := deps.Labels
-		columns := productColumns(l)
-		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
-		types.ApplyColumnStyles(columns, rows)
-
-		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = []types.BulkAction{
-			{
-				Key:             "activate",
-				Label:           l.Status.Activate,
-				Icon:            "icon-check-circle",
-				Variant:         "success",
-				Endpoint:        deps.Routes.BulkSetStatusURL,
-				ExtraParamsJSON: `{"target_status":"active"}`,
-				ConfirmTitle:    l.Status.Activate,
-				ConfirmMessage:  l.Confirm.BulkActivateMessage,
-			},
-			{
-				Key:             "deactivate",
-				Label:           l.Status.Deactivate,
-				Icon:            "icon-x-circle",
-				Variant:         "warning",
-				Endpoint:        deps.Routes.BulkSetStatusURL,
-				ExtraParamsJSON: `{"target_status":"inactive"}`,
-				ConfirmTitle:    l.Status.Deactivate,
-				ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
-			},
-			{
-				Key:              "delete",
-				Label:            l.Bulk.Delete,
-				Icon:             "icon-trash-2",
-				Variant:          "danger",
-				Endpoint:         deps.Routes.BulkDeleteURL,
-				ConfirmTitle:     l.Bulk.Delete,
-				ConfirmMessage:   l.Confirm.BulkDeleteMessage,
-				RequiresDataAttr: "deletable",
-			},
-		}
-
-		tableConfig := &types.TableConfig{
-			ID:                   "products-table",
-			RefreshURL:           deps.RefreshURL,
-			Columns:              columns,
-			Rows:                 rows,
-			ShowSearch:           true,
-			ShowActions:          true,
-			ShowFilters:          true,
-			ShowSort:             true,
-			ShowColumns:          true,
-			ShowExport:           true,
-			ShowDensity:          true,
-			ShowEntries:          true,
-			DefaultSortColumn:    "name",
-			DefaultSortDirection: "asc",
-			Labels:               deps.TableLabels,
-			EmptyState: types.TableEmptyState{
-				Title:   statusEmptyTitle(l, status),
-				Message: statusEmptyMessage(l, status),
-			},
-			PrimaryAction: &types.PrimaryAction{
-				Label:           l.Buttons.AddProduct,
-				ActionURL:       deps.Routes.AddURL,
-				Icon:            "icon-plus",
-				Disabled:        !perms.Can("product", "create"),
-				DisabledTooltip: l.Errors.PermissionDenied,
-			},
-			BulkActions: &bulkCfg,
-		}
-		types.ApplyTableSettings(tableConfig)
 
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          statusPageTitle(l, status),
+				Title:          statusPageTitle(deps.Labels, status),
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      deps.Routes.ActiveNav,
 				ActiveSubNav:   deps.Routes.ActiveSubNav,
-				HeaderTitle:    statusPageTitle(l, status),
-				HeaderSubtitle: statusPageCaption(l, status),
+				HeaderTitle:    statusPageTitle(deps.Labels, status),
+				HeaderSubtitle: statusPageCaption(deps.Labels, status),
 				HeaderIcon:     "icon-package",
 				CommonLabels:   deps.CommonLabels,
 			},
@@ -145,16 +76,169 @@ func NewView(deps *Deps) view.View {
 			Table:           tableConfig,
 		}
 
+		// KB help content
+		if viewCtx.Translations != nil {
+			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "products"); kb != nil {
+					pageData.HasHelp = true
+					pageData.HelpContent = kb.Body
+				}
+			}
+		}
+
 		return view.OK("product-list", pageData)
 	})
 }
 
+// NewTableView creates a view that returns only the table-card HTML.
+// Used as the refresh target after CRUD operations so that only the table
+// is swapped (not the entire page content).
+func NewTableView(deps *ListViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		status := viewCtx.Request.PathValue("status")
+		if status == "" {
+			status = "active"
+		}
+
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, productAllowedSortCols)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		return view.OK("table-card", tableConfig)
+	})
+}
+
+// buildTableConfig fetches product data and builds the table configuration.
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+	perms := view.GetUserPermissions(ctx)
+
+	listParams := espynahttp.ToListParams(p, productSearchFields)
+	resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{
+		Search:     listParams.Search,
+		Filters:    listParams.Filters,
+		Sort:       listParams.Sort,
+		Pagination: listParams.Pagination,
+	})
+	if err != nil {
+		log.Printf("Failed to list products: %v", err)
+		return nil, fmt.Errorf("failed to load products: %w", err)
+	}
+
+	var inUseIDs map[string]bool
+	if deps.GetInUseIDs != nil {
+		var itemIDs []string
+		for _, item := range resp.GetData() {
+			itemIDs = append(itemIDs, item.GetId())
+		}
+		inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+	}
+
+	l := deps.Labels
+	columns := productColumns(l)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
+	types.ApplyColumnStyles(columns, rows)
+
+	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg.Actions = []types.BulkAction{
+		{
+			Key:             "activate",
+			Label:           l.Status.Activate,
+			Icon:            "icon-check-circle",
+			Variant:         "success",
+			Endpoint:        deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON: `{"target_status":"active"}`,
+			ConfirmTitle:    l.Status.Activate,
+			ConfirmMessage:  l.Confirm.BulkActivateMessage,
+		},
+		{
+			Key:             "deactivate",
+			Label:           l.Status.Deactivate,
+			Icon:            "icon-x-circle",
+			Variant:         "warning",
+			Endpoint:        deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON: `{"target_status":"inactive"}`,
+			ConfirmTitle:    l.Status.Deactivate,
+			ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
+		},
+		{
+			Key:              "delete",
+			Label:            l.Bulk.Delete,
+			Icon:             "icon-trash-2",
+			Variant:          "danger",
+			Endpoint:         deps.Routes.BulkDeleteURL,
+			ConfirmTitle:     l.Bulk.Delete,
+			ConfirmMessage:   l.Confirm.BulkDeleteMessage,
+			RequiresDataAttr: "deletable",
+		},
+	}
+
+	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
+
+	// Build ServerPagination
+	totalRows := len(rows) // TODO: migrate to GetProductListPageData (CTE variant) to get resp.GetPagination().GetTotalItems(); ListProductsResponse has no pagination field
+	sp := &types.ServerPagination{
+		Enabled:       true,
+		Mode:          "offset",
+		CurrentPage:   p.Page,
+		PageSize:      p.PageSize,
+		TotalRows:     totalRows,
+		TotalPages:    int(math.Ceil(float64(totalRows) / float64(p.PageSize))),
+		SearchQuery:   p.Search,
+		SortColumn:    p.SortColumn,
+		SortDirection: p.SortDir,
+		FiltersJSON:   p.FiltersRaw,
+		PaginationURL: refreshURL,
+	}
+	sp.BuildDisplay()
+
+	tableConfig := &types.TableConfig{
+		ID:                   "products-table",
+		RefreshURL:           refreshURL,
+		Columns:              columns,
+		Rows:                 rows,
+		ShowSearch:           true,
+		ShowActions:          true,
+		ShowFilters:          true,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowExport:           true,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "name",
+		DefaultSortDirection: "asc",
+		Labels:               deps.TableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   statusEmptyTitle(l, status),
+			Message: statusEmptyMessage(l, status),
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:           l.Buttons.AddProduct,
+			ActionURL:       deps.Routes.AddURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("product", "create"),
+			DisabledTooltip: l.Errors.PermissionDenied,
+		},
+		BulkActions:      &bulkCfg,
+		ServerPagination: sp,
+	}
+	types.ApplyTableSettings(tableConfig)
+
+	return tableConfig, nil
+}
+
 func productColumns(l centymo.ProductLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true},
+		{Key: "name", Label: l.Columns.Name, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
 		{Key: "description", Label: l.Columns.Description, Sortable: false},
 		{Key: "price", Label: l.Columns.Price, Sortable: true, Width: "150px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "date_created", Label: "Date Created", Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px", Filterable: false},
 	}
 }
 
@@ -198,6 +282,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 				{Type: "text", Value: name},
 				{Type: "text", Value: description},
 				{Type: "text", Value: price},
+				{Type: "text", Value: p.GetDateCreatedString()},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{

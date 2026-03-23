@@ -47,7 +47,7 @@ func NewOptionsTableView(deps *OptionsDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		productID := viewCtx.Request.PathValue("id")
 
-		detailDeps := &Deps{
+		detailDeps := &DetailViewDeps{
 			Routes:                  deps.Routes,
 			DB:                      deps.DB,
 			Labels:                  deps.Labels,
@@ -62,7 +62,7 @@ func NewOptionsTableView(deps *OptionsDeps) view.View {
 }
 
 // buildOptionsTable builds the options table config for the options tab.
-func buildOptionsTable(ctx context.Context, deps *Deps, productID string) *types.TableConfig {
+func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID string) *types.TableConfig {
 	l := deps.Labels
 	ol := l.Options
 
@@ -194,7 +194,7 @@ func buildOptionsTable(ctx context.Context, deps *Deps, productID string) *types
 }
 
 // buildOptionValuesTable builds the option values table for a specific option.
-func buildOptionValuesTable(ctx context.Context, deps *Deps, productID, optionID string) *types.TableConfig {
+func buildOptionValuesTable(ctx context.Context, deps *DetailViewDeps, productID, optionID string) *types.TableConfig {
 	l := deps.Labels
 	ol := l.Options
 
@@ -328,7 +328,7 @@ func buildOptionValuesTable(ctx context.Context, deps *Deps, productID, optionID
 }
 
 // getOptionCountTyped returns the number of options for a product (for tab badge) using typed deps.
-func getOptionCountTyped(ctx context.Context, deps *Deps, productID string) int {
+func getOptionCountTyped(ctx context.Context, deps *DetailViewDeps, productID string) int {
 	if deps.ListProductOptions == nil {
 		return 0
 	}

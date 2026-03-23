@@ -15,8 +15,8 @@ import (
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// ListViewDeps holds view dependencies.
+type ListViewDeps struct {
 	Routes            centymo.DisbursementRoutes
 	ListDisbursements func(ctx context.Context, req *disbursementpb.ListDisbursementsRequest) (*disbursementpb.ListDisbursementsResponse, error)
 	RefreshURL        string
@@ -33,7 +33,7 @@ type PageData struct {
 }
 
 // NewView creates the disbursement list view.
-func NewView(deps *Deps) view.View {
+func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 

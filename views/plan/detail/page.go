@@ -8,6 +8,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -18,8 +19,8 @@ import (
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// DetailViewDeps holds view dependencies.
+type DetailViewDeps struct {
 	Routes           centymo.PlanRoutes
 	ReadPlan         func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
 	Labels           centymo.PlanLabels
@@ -28,12 +29,8 @@ type Deps struct {
 	ListProductPlans func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	ListPricePlans   func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
 
-	// Attachment deps
-	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
-	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	NewID            func() string
+	attachment.AttachmentOps
+	auditlog.AuditOps
 }
 
 // PageData holds the data for the plan detail page.
@@ -56,10 +53,15 @@ type PageData struct {
 	PriceListsTable     *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
+	// Audit history tab
+	AuditEntries    []auditlog.AuditEntryView
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
 }
 
 // NewView creates the plan detail view (full page).
-func NewView(deps *Deps) view.View {
+func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
@@ -79,7 +81,7 @@ func NewView(deps *Deps) view.View {
 
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 // Handles GET /action/plans/detail/{id}/tab/{tab}
-func NewTabAction(deps *Deps) view.View {
+func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
@@ -97,12 +99,15 @@ func NewTabAction(deps *Deps) view.View {
 		if tab == "attachments" {
 			templateName = "attachment-tab"
 		}
+		if tab == "audit-history" {
+			templateName = "audit-history-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }
 
 // buildPageData loads plan data and builds the PageData for the given active tab.
-func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCtx *view.ViewContext) (*PageData, error) {
+func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab string, viewCtx *view.ViewContext) (*PageData, error) {
 	resp, err := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{
 		Data: &planpb.Plan{Id: &id},
 	})
@@ -217,6 +222,25 @@ func buildPageData(ctx context.Context, deps *Deps, id, activeTab string, viewCt
 			pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 		}
 		pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+	case "audit-history":
+		if deps.ListAuditHistory != nil {
+			cursor := viewCtx.Request.URL.Query().Get("cursor")
+			auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+				EntityType:  "plan",
+				EntityID:    id,
+				Limit:       20,
+				CursorToken: cursor,
+			})
+			if err != nil {
+				log.Printf("Failed to load audit history: %v", err)
+			}
+			if auditResp != nil {
+				pageData.AuditEntries = auditResp.Entries
+				pageData.AuditHasNext = auditResp.HasNext
+				pageData.AuditNextCursor = auditResp.NextCursor
+			}
+		}
+		pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 	}
 
 	return pageData, nil
@@ -231,6 +255,7 @@ func buildTabItems(id string, l centymo.PlanLabels, productCount, priceListCount
 		{Key: "pricelists", Label: l.Tabs.PriceLists, Href: base + "?tab=pricelists", HxGet: action + "pricelists", Icon: "icon-tag", Count: priceListCount, Disabled: false},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock", Count: 0, Disabled: false},
+		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
 }
 
@@ -238,7 +263,7 @@ func buildTabItems(id string, l centymo.PlanLabels, productCount, priceListCount
 // Products tab table
 // ---------------------------------------------------------------------------
 
-func buildProductsTable(ctx context.Context, deps *Deps, planID string) *types.TableConfig {
+func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string) *types.TableConfig {
 	l := deps.Labels
 
 	columns := []types.TableColumn{
@@ -314,7 +339,7 @@ func buildProductsTable(ctx context.Context, deps *Deps, planID string) *types.T
 // Price Lists tab table
 // ---------------------------------------------------------------------------
 
-func buildPriceListsTable(ctx context.Context, deps *Deps, planID string) *types.TableConfig {
+func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID string) *types.TableConfig {
 	l := deps.Labels
 
 	columns := []types.TableColumn{

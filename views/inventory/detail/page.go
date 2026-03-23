@@ -6,9 +6,11 @@ import (
 	"log"
 
 	centymo "github.com/erniealice/centymo-golang"
+	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -23,8 +25,8 @@ import (
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// DetailViewDeps holds view dependencies.
+type DetailViewDeps struct {
 	Routes                    centymo.InventoryRoutes
 	ReadInventoryItem         func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ListInventorySerials      func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
@@ -37,12 +39,8 @@ type Deps struct {
 	CommonLabels              pyeza.CommonLabels
 	TableLabels               types.TableLabels
 
-	// Attachment operations (injected by composition root)
-	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
-	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
-	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	NewID            func() string
+	attachment.AttachmentOps
+	auditlog.AuditOps
 }
 
 // AttributeEntry holds a name-value pair for display.
@@ -93,10 +91,15 @@ type PageData struct {
 	AuditTable          *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
+	// Audit history tab
+	AuditEntries    []auditlog.AuditEntryView
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
 }
 
 // NewView creates the inventory detail view.
-func NewView(deps *Deps) view.View {
+func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
@@ -160,6 +163,16 @@ func NewView(deps *Deps) view.View {
 			AvailableQty:    available,
 		}
 
+		// KB help content
+		if viewCtx.Translations != nil {
+			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "inventory-detail"); kb != nil {
+					pageData.HasHelp = true
+					pageData.HelpContent = kb.Body
+				}
+			}
+		}
+
 		// Load tab-specific data
 		switch activeTab {
 		case "info":
@@ -198,6 +211,26 @@ func NewView(deps *Deps) view.View {
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.QueryParams["cursor"]
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "inventory_item",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 		}
 
 		return view.OK("inventory-detail", pageData)
@@ -205,7 +238,7 @@ func NewView(deps *Deps) view.View {
 }
 
 // NewTabAction creates an HTMX tab action view that returns only the tab content partial.
-func NewTabAction(deps *Deps) view.View {
+func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
@@ -276,11 +309,34 @@ func NewTabAction(deps *Deps) view.View {
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
 			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
+
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.QueryParams["cursor"]
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "inventory_item",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 		}
 
 		templateName := "inventory-tab-" + tab
 		if tab == "attachments" {
 			templateName = "attachment-tab"
+		}
+		if tab == "audit-history" {
+			templateName = "audit-history-tab"
 		}
 		return view.OK(templateName, pageData)
 	})
@@ -322,6 +378,7 @@ func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool, rout
 		pyeza.TabItem{Key: "depreciation", Label: l.Tabs.Depreciation, Href: base + "?tab=depreciation", HxGet: action + "depreciation", Icon: "icon-trending-down"},
 		pyeza.TabItem{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
+		pyeza.TabItem{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	)
 	return tabs
 }
@@ -356,7 +413,7 @@ func itemTypeDisplayVariant(itemType string) string {
 // Attributes tab
 // ---------------------------------------------------------------------------
 
-func loadAttributes(ctx context.Context, deps *Deps, item *inventoryitempb.InventoryItem) []AttributeEntry {
+func loadAttributes(ctx context.Context, deps *DetailViewDeps, item *inventoryitempb.InventoryItem) []AttributeEntry {
 	variantID := item.GetProductVariantId()
 	if variantID == "" {
 		return nil
@@ -469,7 +526,7 @@ func loadAttributes(ctx context.Context, deps *Deps, item *inventoryitempb.Inven
 // Serials tab
 // ---------------------------------------------------------------------------
 
-func loadSerials(ctx context.Context, deps *Deps, inventoryItemID string) []*inventoryserialpb.InventorySerial {
+func loadSerials(ctx context.Context, deps *DetailViewDeps, inventoryItemID string) []*inventoryserialpb.InventorySerial {
 	resp, err := deps.ListInventorySerials(ctx, &inventoryserialpb.ListInventorySerialsRequest{
 		InventoryItemId: &inventoryItemID,
 	})
@@ -579,7 +636,7 @@ func computeSerialSummary(serials []*inventoryserialpb.InventorySerial) *SerialS
 // Transactions tab
 // ---------------------------------------------------------------------------
 
-func buildTransactionTable(ctx context.Context, deps *Deps, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels, routes centymo.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
+func buildTransactionTable(ctx context.Context, deps *DetailViewDeps, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels, routes centymo.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
 	resp, err := deps.ListInventoryTransactions(ctx, &inventorytransactionpb.ListInventoryTransactionsRequest{
 		InventoryItemId: &inventoryItemID,
 	})
@@ -688,7 +745,7 @@ func formatQuantity(qty float64, txType string) string {
 // Depreciation tab
 // ---------------------------------------------------------------------------
 
-func loadDepreciation(ctx context.Context, deps *Deps, inventoryItemID string, l centymo.InventoryLabels) *DepreciationInfo {
+func loadDepreciation(ctx context.Context, deps *DetailViewDeps, inventoryItemID string, l centymo.InventoryLabels) *DepreciationInfo {
 	resp, err := deps.ListInventoryDepreciations(ctx, &inventorydepreciationpb.ListInventoryDepreciationsRequest{
 		InventoryItemId: &inventoryItemID,
 	})

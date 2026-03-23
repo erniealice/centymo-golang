@@ -15,8 +15,8 @@ import (
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// ListViewDeps holds view dependencies.
+type ListViewDeps struct {
 	Routes          centymo.CollectionRoutes
 	ListCollections func(ctx context.Context, req *collectionpb.ListCollectionsRequest) (*collectionpb.ListCollectionsResponse, error)
 	RefreshURL      string
@@ -33,7 +33,7 @@ type PageData struct {
 }
 
 // NewView creates the collection list view.
-func NewView(deps *Deps) view.View {
+func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 

@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 
+	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -14,14 +16,14 @@ import (
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 
 	"github.com/erniealice/centymo-golang"
+	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
 
-// Deps holds view dependencies.
-type Deps struct {
+// ListViewDeps holds view dependencies.
+type ListViewDeps struct {
 	Routes         centymo.PriceListRoutes
 	ListPriceLists func(ctx context.Context, req *pricelistpb.ListPriceListsRequest) (*pricelistpb.ListPriceListsResponse, error)
 	GetInUseIDs    func(ctx context.Context, ids []string) (map[string]bool, error)
-	RefreshURL     string
 	Labels         centymo.PriceListLabels
 	CommonLabels   pyeza.CommonLabels
 	TableLabels    types.TableLabels
@@ -34,90 +36,39 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-// NewView creates the price list list view.
-func NewView(deps *Deps) view.View {
-	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
+var priceListAllowedSortCols = []string{
+	"date_created", "name", "status",
+}
 
+var priceListSearchFields = []string{"name"}
+
+// NewView creates the price list list view (full page).
+func NewView(deps *ListViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
 		}
 
-		resp, err := deps.ListPriceLists(ctx, &pricelistpb.ListPriceListsRequest{})
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, priceListAllowedSortCols)
 		if err != nil {
-			log.Printf("Failed to list price lists: %v", err)
-			return view.Error(fmt.Errorf("failed to load price lists: %w", err))
+			return view.Error(err)
 		}
 
-		var inUseIDs map[string]bool
-		if deps.GetInUseIDs != nil {
-			var itemIDs []string
-			for _, item := range resp.GetData() {
-				itemIDs = append(itemIDs, item.GetId())
-			}
-			inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		if err != nil {
+			return view.Error(err)
 		}
-
-		l := deps.Labels
-		columns := priceListColumns(l)
-		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
-		types.ApplyColumnStyles(columns, rows)
-
-		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = []types.BulkAction{
-			{
-				Key:              "delete",
-				Label:            l.Bulk.Delete,
-				Icon:             "icon-trash-2",
-				Variant:          "danger",
-				Endpoint:         deps.Routes.BulkDeleteURL,
-				ConfirmTitle:     l.Bulk.Delete,
-				ConfirmMessage:   l.Confirm.BulkDeleteMessage,
-				RequiresDataAttr: "deletable",
-			},
-		}
-
-		tableConfig := &types.TableConfig{
-			ID:                   "price-lists-table",
-			RefreshURL:           deps.RefreshURL,
-			Columns:              columns,
-			Rows:                 rows,
-			ShowSearch:           true,
-			ShowActions:          true,
-			ShowFilters:          true,
-			ShowSort:             true,
-			ShowColumns:          true,
-			ShowExport:           true,
-			ShowDensity:          true,
-			ShowEntries:          true,
-			DefaultSortColumn:    "name",
-			DefaultSortDirection: "asc",
-			Labels:               deps.TableLabels,
-			EmptyState: types.TableEmptyState{
-				Title:   statusEmptyTitle(l, status),
-				Message: statusEmptyMessage(l, status),
-			},
-			PrimaryAction: &types.PrimaryAction{
-				Label:           l.Buttons.AddPriceList,
-				ActionURL:       deps.Routes.AddURL,
-				Icon:            "icon-plus",
-				Disabled:        !perms.Can("price_list", "create"),
-				DisabledTooltip: l.Errors.PermissionDenied,
-			},
-			BulkActions: &bulkCfg,
-		}
-		types.ApplyTableSettings(tableConfig)
 
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          statusPageTitle(l, status),
+				Title:          statusPageTitle(deps.Labels, status),
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      "sales",
 				ActiveSubNav:   "price-lists-" + status,
-				HeaderTitle:    statusPageTitle(l, status),
-				HeaderSubtitle: statusPageCaption(l, status),
+				HeaderTitle:    statusPageTitle(deps.Labels, status),
+				HeaderSubtitle: statusPageCaption(deps.Labels, status),
 				HeaderIcon:     "icon-tag",
 				CommonLabels:   deps.CommonLabels,
 			},
@@ -125,16 +76,150 @@ func NewView(deps *Deps) view.View {
 			Table:           tableConfig,
 		}
 
+		// KB help content
+		if viewCtx.Translations != nil {
+			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "pricelists"); kb != nil {
+					pageData.HasHelp = true
+					pageData.HelpContent = kb.Body
+				}
+			}
+		}
+
 		return view.OK("pricelist-list", pageData)
 	})
 }
 
+// NewTableView creates a view that returns only the table-card HTML.
+// Used as the refresh target after CRUD operations so that only the table
+// is swapped (not the entire page content).
+func NewTableView(deps *ListViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		status := viewCtx.Request.PathValue("status")
+		if status == "" {
+			status = "active"
+		}
+
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, priceListAllowedSortCols)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		return view.OK("table-card", tableConfig)
+	})
+}
+
+// buildTableConfig fetches price list data and builds the table configuration.
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+	perms := view.GetUserPermissions(ctx)
+
+	listParams := espynahttp.ToListParams(p, priceListSearchFields)
+	resp, err := deps.ListPriceLists(ctx, &pricelistpb.ListPriceListsRequest{
+		Search:     listParams.Search,
+		Filters:    listParams.Filters,
+		Sort:       listParams.Sort,
+		Pagination: listParams.Pagination,
+	})
+	if err != nil {
+		log.Printf("Failed to list price lists: %v", err)
+		return nil, fmt.Errorf("failed to load price lists: %w", err)
+	}
+
+	// Check which items are in use
+	var inUseIDs map[string]bool
+	if deps.GetInUseIDs != nil {
+		var itemIDs []string
+		for _, item := range resp.GetData() {
+			itemIDs = append(itemIDs, item.GetId())
+		}
+		inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+	}
+
+	l := deps.Labels
+	columns := priceListColumns(l)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
+	types.ApplyColumnStyles(columns, rows)
+
+	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg.Actions = []types.BulkAction{
+		{
+			Key:              "delete",
+			Label:            l.Bulk.Delete,
+			Icon:             "icon-trash-2",
+			Variant:          "danger",
+			Endpoint:         deps.Routes.BulkDeleteURL,
+			ConfirmTitle:     l.Bulk.Delete,
+			ConfirmMessage:   l.Confirm.BulkDeleteMessage,
+			RequiresDataAttr: "deletable",
+		},
+	}
+
+	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
+
+	// Build ServerPagination
+	totalRows := len(rows) // TODO: migrate to GetPriceListListPageData (CTE variant) to get resp.GetPagination().GetTotalItems(); ListPriceListsResponse has no pagination field
+	sp := &types.ServerPagination{
+		Enabled:       true,
+		Mode:          "offset",
+		CurrentPage:   p.Page,
+		PageSize:      p.PageSize,
+		TotalRows:     totalRows,
+		TotalPages:    int(math.Ceil(float64(totalRows) / float64(p.PageSize))),
+		SearchQuery:   p.Search,
+		SortColumn:    p.SortColumn,
+		SortDirection: p.SortDir,
+		FiltersJSON:   p.FiltersRaw,
+		PaginationURL: refreshURL,
+	}
+	sp.BuildDisplay()
+
+	tableConfig := &types.TableConfig{
+		ID:                   "price-lists-table",
+		RefreshURL:           refreshURL,
+		Columns:              columns,
+		Rows:                 rows,
+		ShowSearch:           true,
+		ShowActions:          true,
+		ShowFilters:          true,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowExport:           true,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "name",
+		DefaultSortDirection: "asc",
+		Labels:               deps.TableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   statusEmptyTitle(l, status),
+			Message: statusEmptyMessage(l, status),
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:           l.Buttons.AddPriceList,
+			ActionURL:       deps.Routes.AddURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("price_list", "create"),
+			DisabledTooltip: l.Errors.PermissionDenied,
+		},
+		BulkActions:      &bulkCfg,
+		ServerPagination: sp,
+	}
+	types.ApplyTableSettings(tableConfig)
+
+	return tableConfig, nil
+}
+
 func priceListColumns(l centymo.PriceListLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "date_start", Label: l.Columns.DateStart, Sortable: true, Width: "150px"},
-		{Key: "date_end", Label: l.Columns.DateEnd, Sortable: true, Width: "150px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "name", Label: l.Columns.Name, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
+		{Key: "date_start", Label: l.Columns.DateStart, Sortable: false, Width: "150px"},
+		{Key: "date_end", Label: l.Columns.DateEnd, Sortable: false, Width: "150px"},
+		{Key: "date_created", Label: "Date Created", Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, Width: "120px"},
 	}
 }
 
@@ -181,6 +266,7 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 				{Type: "text", Value: name},
 				{Type: "text", Value: dateStart},
 				{Type: "text", Value: dateEnd},
+				{Type: "text", Value: ""},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{

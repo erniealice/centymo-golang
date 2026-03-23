@@ -67,20 +67,20 @@ func NewModule(deps *ModuleDeps) *Module {
 		DeleteCollection: deps.DeleteCollection,
 	}
 
-	detailDeps := &collectiondetail.Deps{
-		Routes:           deps.Routes,
-		ReadCollection:   deps.ReadCollection,
-		Labels:           deps.Labels,
-		CommonLabels:     deps.CommonLabels,
-		TableLabels:      deps.TableLabels,
-		UploadFile:       deps.UploadFile,
-		ListAttachments:  deps.ListAttachments,
-		CreateAttachment: deps.CreateAttachment,
-		DeleteAttachment: deps.DeleteAttachment,
-		NewID:            deps.NewID,
+	detailDeps := &collectiondetail.DetailViewDeps{
+		Routes:         deps.Routes,
+		ReadCollection: deps.ReadCollection,
+		Labels:         deps.Labels,
+		CommonLabels:   deps.CommonLabels,
+		TableLabels:    deps.TableLabels,
 	}
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewID
 
-	listView := collectionlist.NewView(&collectionlist.Deps{
+	listView := collectionlist.NewView(&collectionlist.ListViewDeps{
 		Routes:          deps.Routes,
 		ListCollections: deps.ListCollections,
 		RefreshURL:      deps.Routes.ListURL,

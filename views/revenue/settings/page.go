@@ -7,6 +7,6 @@ import (
 
 // NewView creates the sales settings templates list view.
 // Route: GET /app/sales/settings/templates
-func NewView(deps *Deps) view.View {
+func NewView(deps *SettingsViewDeps) view.View {
 	return templateview.NewListView(templateConfig(deps))
 }

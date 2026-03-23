@@ -16,11 +16,11 @@ import (
 )
 
 // NewTableView returns a view that renders only the variants table (for HTMX refresh).
-func NewTableView(deps *Deps) view.View {
+func NewTableView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		productID := viewCtx.Request.PathValue("id")
 
-		detailDeps := &detail.Deps{
+		detailDeps := &detail.DetailViewDeps{
 			Routes:                    deps.Routes,
 			DB:                        deps.DB,
 			Labels:                    deps.Labels,
@@ -37,7 +37,7 @@ func NewTableView(deps *Deps) view.View {
 }
 
 // NewAssignView creates the variant assign action (GET = form, POST = create).
-func NewAssignView(deps *Deps) view.View {
+func NewAssignView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "create") {
@@ -105,7 +105,7 @@ func NewAssignView(deps *Deps) view.View {
 }
 
 // NewEditView creates the variant edit action (GET = form, POST = update).
-func NewEditView(deps *Deps) view.View {
+func NewEditView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "update") {
@@ -203,7 +203,7 @@ func NewEditView(deps *Deps) view.View {
 }
 
 // NewRemoveView creates the variant remove action (POST only, with dialog confirmation).
-func NewRemoveView(deps *Deps) view.View {
+func NewRemoveView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product", "delete") {
