@@ -15,7 +15,7 @@
 
 ## Phase 2: Widen Info Tab Section Spacing — COMPLETE
 
-- [x] Add section spacing CSS override in `packages/centymo-golang-ryta/assets/css/variant-detail.css`
+- [x] Add section spacing CSS override in `packages/centymo-golang/assets/css/variant-detail.css`
 - [x] Remove inline `style="margin-top: ..."` from `variant-detail.html`
 - [x] Mirror CSS to `apps/retail-admin/assets/css/centymo/variant-detail.css`
 

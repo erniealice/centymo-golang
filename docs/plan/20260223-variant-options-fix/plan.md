@@ -3,7 +3,7 @@
 **Date:** 2026-02-23
 **Branch:** `dev/20260223-variant-options-fix`
 **Status:** Draft
-**App/Package:** centymo-golang-ryta (primary), esqyma-ryta (proto), retail-admin (wiring)
+**App/Package:** centymo-golang (primary), esqyma (proto), retail-admin (wiring)
 
 ---
 
@@ -26,8 +26,8 @@ Additionally, the info tab completely hides the "Options" section when no varian
 ### Phase 1: Proto Change — Add `required` field to ProductOption
 
 - Add `bool required = 15` with default `false` to `product_option.proto`
-- Rebuild proto: `cd packages/esqyma-ryta && pnpm generate`
-- Run DDL generation: `cd packages/esqyma-ryta && pnpm run generate:ddl`
+- Rebuild proto: `cd packages/esqyma && pnpm generate`
+- Run DDL generation: `cd packages/esqyma && pnpm run generate:ddl`
 - Manually `ALTER TABLE product_option ADD COLUMN required BOOLEAN DEFAULT false` (or include in seed)
 
 ### Phase 2: Fix Variant Option Save — Hard Delete Junction Rows
@@ -75,13 +75,13 @@ The edit response sends `HtmxSuccess("product-variants-table")` which targets th
 
 | File | Change | Phase |
 |------|--------|-------|
-| `packages/esqyma-ryta/proto/v1/domain/product/product_option/product_option.proto` | Add `bool required = 15` | 1 |
-| `packages/esqyma-ryta/pkg/schema/v1/domain/product/product_option/product_option.pb.go` | Regenerated | 1 |
-| `packages/centymo-golang-ryta/views/product/detail/variant/deps.go` | Hard delete in `deleteVariantOptions`, add `Required` to `OptionSelection` | 2, 4 |
-| `packages/centymo-golang-ryta/views/product/detail/variant/action.go` | Update `NewRemoveView` to hard delete, add required validation | 2, 4 |
-| `packages/centymo-golang-ryta/views/product/detail/variant/page.go` | Refactor `loadVariantOptionEntries` to show all options | 3 |
-| `packages/centymo-golang-ryta/templates/product/variant-detail.html` | Remove `{{if .OptionEntries}}` guard, show "—" for unassigned | 3 |
-| `packages/centymo-golang-ryta/templates/product/variant-drawer-form.html` | Add `required` attribute and visual indicator | 4 |
+| `packages/esqyma/proto/v1/domain/product/product_option/product_option.proto` | Add `bool required = 15` | 1 |
+| `packages/esqyma/pkg/schema/v1/domain/product/product_option/product_option.pb.go` | Regenerated | 1 |
+| `packages/centymo-golang/views/product/detail/variant/deps.go` | Hard delete in `deleteVariantOptions`, add `Required` to `OptionSelection` | 2, 4 |
+| `packages/centymo-golang/views/product/detail/variant/action.go` | Update `NewRemoveView` to hard delete, add required validation | 2, 4 |
+| `packages/centymo-golang/views/product/detail/variant/page.go` | Refactor `loadVariantOptionEntries` to show all options | 3 |
+| `packages/centymo-golang/templates/product/variant-detail.html` | Remove `{{if .OptionEntries}}` guard, show "—" for unassigned | 3 |
+| `packages/centymo-golang/templates/product/variant-drawer-form.html` | Add `required` attribute and visual indicator | 4 |
 | `apps/retail-admin/internal/presentation/product/module.go` | Remove `DeleteProductVariantOption` wiring | 2 |
 | `apps/retail-admin/internal/composition/views.go` | Remove `DeleteProductVariantOption` wiring | 2 |
 | `apps/retail-admin/internal/composition/container.go` | Remove `DeleteProductVariantOption` wiring | 2 |

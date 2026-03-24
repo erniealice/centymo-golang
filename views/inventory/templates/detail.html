@@ -12,7 +12,7 @@
     </div>
 
     {{/* --- Tab Body (HTMX target) --- */}}
-    <div class="detail-body" id="tabContent" role="tabpanel" tabindex="0">
+    <div class="detail-body" id="tabContent" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}" tabindex="0">
         {{if eq .ActiveTab "info"}}{{template "inventory-tab-info" .}}{{end}}
         {{if eq .ActiveTab "attributes"}}{{template "inventory-tab-attributes" .}}{{end}}
         {{if eq .ActiveTab "serials"}}{{template "inventory-tab-serials" .}}{{end}}
@@ -273,7 +273,7 @@
     </div>
 
     {{/* Tab Body */}}
-    <div class="detail-body" id="tabContent">
+    <div class="detail-body" id="tabContent" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}" tabindex="0">
         {{if eq .ActiveTab "info"}}{{template "inventory-product-tab-info" .}}{{end}}
         {{if eq .ActiveTab "depreciation"}}{{template "inventory-product-tab-depreciation" .}}{{end}}
         {{if eq .ActiveTab "audit"}}{{template "inventory-product-tab-audit" .}}{{end}}

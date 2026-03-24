@@ -3,7 +3,7 @@
 **Date:** 2026-02-22
 **Branch:** `dev/20260222-variant-subpackage`
 **Status:** Draft
-**App/Package:** centymo-golang-ryta (primary), retail-admin (consumer)
+**App/Package:** centymo-golang (primary), retail-admin (consumer)
 
 ---
 
@@ -105,26 +105,26 @@ page.go → (nothing in variant files)  ← NO circular dependency
 
 Move `htmxSuccess` and `htmxError` out of `variants.go` into a new `helpers.go`, exporting them as `HtmxSuccess` and `HtmxError`.
 
-- Create `packages/centymo-golang-ryta/views/product/detail/helpers.go` with `HtmxSuccess` and `HtmxError`
-- Remove `htmxSuccess`/`htmxError` functions from `packages/centymo-golang-ryta/views/product/detail/variants.go:355-371`
+- Create `packages/centymo-golang/views/product/detail/helpers.go` with `HtmxSuccess` and `HtmxError`
+- Remove `htmxSuccess`/`htmxError` functions from `packages/centymo-golang/views/product/detail/variants.go:355-371`
 - Update all callers in `detail/` to use exported names:
-  - `packages/centymo-golang-ryta/views/product/detail/variants.go` — 6 call sites (lines 228, 244, 251, 265, 302, 317, 323, 336, 344, 347)
-  - `packages/centymo-golang-ryta/views/product/detail/option_action.go` — 6 call sites (lines 69, 95, 121, 136, 177, 204, 217, 224, 226)
-  - `packages/centymo-golang-ryta/views/product/detail/option_value_action.go` — 6 call sites (lines 84, 108, 111, 127, 166, 193, 209, 215)
-  - `packages/centymo-golang-ryta/views/product/detail/attributes.go` — 4 call sites (lines 105, 110, 138, 141, 155, 163)
+  - `packages/centymo-golang/views/product/detail/variants.go` — 6 call sites (lines 228, 244, 251, 265, 302, 317, 323, 336, 344, 347)
+  - `packages/centymo-golang/views/product/detail/option_action.go` — 6 call sites (lines 69, 95, 121, 136, 177, 204, 217, 224, 226)
+  - `packages/centymo-golang/views/product/detail/option_value_action.go` — 6 call sites (lines 84, 108, 111, 127, 166, 193, 209, 215)
+  - `packages/centymo-golang/views/product/detail/attributes.go` — 4 call sites (lines 105, 110, 138, 141, 155, 163)
 
 ### Phase 2: Export functions in page.go
 
 Export the three functions that the variant subpackage will need.
 
-- `packages/centymo-golang-ryta/views/product/detail/page.go:334` — rename `formatPrice` to `FormatPrice`
-- `packages/centymo-golang-ryta/views/product/detail/page.go:360` — rename `statusVariant` to `StatusVariant`
-- `packages/centymo-golang-ryta/views/product/detail/page.go:201` — rename `buildVariantsTable` to `BuildVariantsTable`
+- `packages/centymo-golang/views/product/detail/page.go:334` — rename `formatPrice` to `FormatPrice`
+- `packages/centymo-golang/views/product/detail/page.go:360` — rename `statusVariant` to `StatusVariant`
+- `packages/centymo-golang/views/product/detail/page.go:201` — rename `buildVariantsTable` to `BuildVariantsTable`
 - Update all call sites within `page.go` itself (lines 110, 116-118, 177, 285)
 
 ### Phase 3: Create variant/ subpackage
 
-Create three new files in `packages/centymo-golang-ryta/views/product/detail/variant/`.
+Create three new files in `packages/centymo-golang/views/product/detail/variant/`.
 
 **deps.go** — Types extracted from `variants.go:17-58`:
 - `Deps` (was `VariantDeps`) — lines 53-58
@@ -149,8 +149,8 @@ Create three new files in `packages/centymo-golang-ryta/views/product/detail/var
 
 ### Phase 4: Delete old files
 
-- Delete `packages/centymo-golang-ryta/views/product/detail/variants.go` (all code moved to variant/ or helpers.go)
-- Delete `packages/centymo-golang-ryta/views/product/detail/variant_page.go` (all code moved to variant/page.go)
+- Delete `packages/centymo-golang/views/product/detail/variants.go` (all code moved to variant/ or helpers.go)
+- Delete `packages/centymo-golang/views/product/detail/variant_page.go` (all code moved to variant/page.go)
 
 ### Phase 5: Update module.go imports and wiring
 
@@ -176,17 +176,17 @@ Create three new files in `packages/centymo-golang-ryta/views/product/detail/var
 
 | File | Change | Phase |
 |------|--------|-------|
-| `packages/centymo-golang-ryta/views/product/detail/helpers.go` | **New file** — HtmxSuccess, HtmxError | 1 |
-| `packages/centymo-golang-ryta/views/product/detail/variants.go` | Remove htmxSuccess/htmxError, update calls → HtmxSuccess/HtmxError | 1 |
-| `packages/centymo-golang-ryta/views/product/detail/option_action.go` | Update htmxSuccess→HtmxSuccess, htmxError→HtmxError | 1 |
-| `packages/centymo-golang-ryta/views/product/detail/option_value_action.go` | Update htmxSuccess→HtmxSuccess, htmxError→HtmxError | 1 |
-| `packages/centymo-golang-ryta/views/product/detail/attributes.go` | Update htmxSuccess→HtmxSuccess, htmxError→HtmxError | 1 |
-| `packages/centymo-golang-ryta/views/product/detail/page.go` | Export: FormatPrice, StatusVariant, BuildVariantsTable | 2 |
-| `packages/centymo-golang-ryta/views/product/detail/variant/deps.go` | **New file** — Deps, types, unexported helpers | 3 |
-| `packages/centymo-golang-ryta/views/product/detail/variant/action.go` | **New file** — NewTableView, NewAssignView, NewEditView, NewRemoveView | 3 |
-| `packages/centymo-golang-ryta/views/product/detail/variant/page.go` | **New file** — NewPageView, NewTabAction, VariantPageData, stock tab | 3 |
-| `packages/centymo-golang-ryta/views/product/detail/variants.go` | **Delete** — all code extracted | 4 |
-| `packages/centymo-golang-ryta/views/product/detail/variant_page.go` | **Delete** — all code extracted | 4 |
+| `packages/centymo-golang/views/product/detail/helpers.go` | **New file** — HtmxSuccess, HtmxError | 1 |
+| `packages/centymo-golang/views/product/detail/variants.go` | Remove htmxSuccess/htmxError, update calls → HtmxSuccess/HtmxError | 1 |
+| `packages/centymo-golang/views/product/detail/option_action.go` | Update htmxSuccess→HtmxSuccess, htmxError→HtmxError | 1 |
+| `packages/centymo-golang/views/product/detail/option_value_action.go` | Update htmxSuccess→HtmxSuccess, htmxError→HtmxError | 1 |
+| `packages/centymo-golang/views/product/detail/attributes.go` | Update htmxSuccess→HtmxSuccess, htmxError→HtmxError | 1 |
+| `packages/centymo-golang/views/product/detail/page.go` | Export: FormatPrice, StatusVariant, BuildVariantsTable | 2 |
+| `packages/centymo-golang/views/product/detail/variant/deps.go` | **New file** — Deps, types, unexported helpers | 3 |
+| `packages/centymo-golang/views/product/detail/variant/action.go` | **New file** — NewTableView, NewAssignView, NewEditView, NewRemoveView | 3 |
+| `packages/centymo-golang/views/product/detail/variant/page.go` | **New file** — NewPageView, NewTabAction, VariantPageData, stock tab | 3 |
+| `packages/centymo-golang/views/product/detail/variants.go` | **Delete** — all code extracted | 4 |
+| `packages/centymo-golang/views/product/detail/variant_page.go` | **Delete** — all code extracted | 4 |
 | `apps/retail-admin/internal/presentation/product/module.go` | New import, update deps + view constructors | 5 |
 
 ---

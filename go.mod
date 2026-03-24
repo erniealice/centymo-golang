@@ -24,16 +24,16 @@ require (
 
 replace leapfor.xyz/copya => ../../../master-monorepo-v2/packages/copya
 
-replace github.com/erniealice/espyna-golang => ../espyna-golang-ryta
+replace github.com/erniealice/espyna-golang => ../espyna-golang
 
-replace github.com/erniealice/fycha-golang => ../fycha-golang-ryta
+replace github.com/erniealice/fycha-golang => ../fycha-golang
 
-replace github.com/erniealice/hybra-golang => ../hybra-golang-ryta
+replace github.com/erniealice/hybra-golang => ../hybra-golang
 
-replace github.com/erniealice/esqyma => ../esqyma-ryta
+replace github.com/erniealice/esqyma => ../esqyma
 
-replace github.com/erniealice/lyngua => ../lyngua-ryta
+replace github.com/erniealice/lyngua => ../lyngua
 
 replace leapfor.xyz/vya => ../../../master-monorepo-v2/packages/vya
 
-replace github.com/erniealice/pyeza-golang => ../pyeza-golang-ryta
+replace github.com/erniealice/pyeza-golang => ../pyeza-golang

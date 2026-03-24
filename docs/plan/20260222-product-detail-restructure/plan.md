@@ -3,7 +3,7 @@
 **Date:** 2026-02-22
 **Branch:** `dev/20260222-product-detail-restructure`
 **Status:** Draft
-**Package:** centymo-golang-ryta + retail-admin seeder
+**Package:** centymo-golang + retail-admin seeder
 
 ---
 
@@ -39,14 +39,14 @@ HeaderTitle:    productName  // Variant/product name as primary title
 HeaderSubtitle: sku          // SKU as subtitle
 ```
 
-- **Step 1.1:** In `packages/centymo-golang-ryta/views/product/detail/variant_page.go`, find where `HeaderTitle` and `HeaderSubtitle` are set. Swap them so `HeaderTitle = productName` and `HeaderSubtitle = sku`
+- **Step 1.1:** In `packages/centymo-golang/views/product/detail/variant_page.go`, find where `HeaderTitle` and `HeaderSubtitle` are set. Swap them so `HeaderTitle = productName` and `HeaderSubtitle = sku`
 - **Step 1.2:** Update `Title` field (browser tab title) to use the product name instead of SKU, or a composite like `"productName — sku"`
 
 ### Phase 2: Widen Info Tab Section Spacing
 
 Currently sections use inline `style="margin-top: var(--spacing-lg);"` between Variant Information, Options, and Actions. The gap needs to be wider.
 
-- **Step 2.1:** In `packages/centymo-golang-ryta/assets/css/variant-detail.css`, add a spacing override targeting section titles after content:
+- **Step 2.1:** In `packages/centymo-golang/assets/css/variant-detail.css`, add a spacing override targeting section titles after content:
   ```css
   /* Widen gap between info tab sections */
   .tab-scroll .detail-section-title ~ .detail-section-title {
@@ -57,7 +57,7 @@ Currently sections use inline `style="margin-top: var(--spacing-lg);"` between V
       margin-top: 2.5rem;
   }
   ```
-- **Step 2.2:** In `packages/centymo-golang-ryta/templates/product/variant-detail.html`, remove the inline `style="margin-top: var(--spacing-lg);"` from the Options section title and the `.detail-actions` div — let CSS handle it
+- **Step 2.2:** In `packages/centymo-golang/templates/product/variant-detail.html`, remove the inline `style="margin-top: var(--spacing-lg);"` from the Options section title and the `.detail-actions` div — let CSS handle it
 - **Step 2.3:** Copy the updated CSS to `apps/retail-admin/assets/css/centymo/variant-detail.css`
 
 ### Phase 3: Fix "Edit Variant" Button
@@ -83,7 +83,7 @@ Fix to match working pattern (e.g., toolbar primary action in `table.html`):
    onclick="Sheet.open('{{.Labels.Variant.Edit}}')">
 ```
 
-- **Step 3.1:** In `packages/centymo-golang-ryta/templates/product/variant-detail.html`, replace `data-sheet-title="{{.Labels.Variant.Edit}}"` with `onclick="Sheet.open('{{.Labels.Variant.Edit}}')"` on the Edit Variant button
+- **Step 3.1:** In `packages/centymo-golang/templates/product/variant-detail.html`, replace `data-sheet-title="{{.Labels.Variant.Edit}}"` with `onclick="Sheet.open('{{.Labels.Variant.Edit}}')"` on the Edit Variant button
 - **Step 3.2:** Add `hx-push-url="false"` to prevent URL change when loading sheet content
 
 ### Phase 4: Fix Seeder — Link Inventory Items to Product Variants
@@ -103,10 +103,10 @@ The SQL seed file (`products-inventory-seed.sql`) does it correctly — it sets 
 
 | File | Change | Phase |
 |------|--------|-------|
-| `packages/centymo-golang-ryta/views/product/detail/variant_page.go` | Swap HeaderTitle ↔ HeaderSubtitle, update Title | 1 |
-| `packages/centymo-golang-ryta/assets/css/variant-detail.css` | Add section spacing overrides | 2 |
+| `packages/centymo-golang/views/product/detail/variant_page.go` | Swap HeaderTitle ↔ HeaderSubtitle, update Title | 1 |
+| `packages/centymo-golang/assets/css/variant-detail.css` | Add section spacing overrides | 2 |
 | `apps/retail-admin/assets/css/centymo/variant-detail.css` | Mirror CSS changes from package | 2 |
-| `packages/centymo-golang-ryta/templates/product/variant-detail.html` | Remove inline margin styles (Phase 2), fix Edit button onclick (Phase 3) | 2, 3 |
+| `packages/centymo-golang/templates/product/variant-detail.html` | Remove inline margin styles (Phase 2), fix Edit button onclick (Phase 3) | 2, 3 |
 | `apps/retail-admin/cmd/seeder/main.go` | Add product_variant_id to inventory item seeding | 4 |
 
 ---
@@ -151,4 +151,4 @@ No sub-agents needed. All four phases are small, targeted fixes. Single session 
 
 **Section spacing approach:** Using CSS class-based spacing (`variant-detail.css`) rather than inline styles for maintainability. The selector `.tab-scroll .detail-section-title ~ .detail-section-title` targets subsequent section titles without affecting the first one, creating natural visual separation.
 
-**Sheet.open pattern:** Following the established pattern from `pyeza-golang-ryta/components/table.html` where the toolbar primary action button uses `onclick="Sheet.open('...')"`. The `data-sheet-title` attribute was never wired to any JS handler and should be removed.
+**Sheet.open pattern:** Following the established pattern from `pyeza-golang/components/table.html` where the toolbar primary action button uses `onclick="Sheet.open('...')"`. The `data-sheet-title` attribute was never wired to any JS handler and should be removed.

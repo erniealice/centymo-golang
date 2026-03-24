@@ -3,7 +3,7 @@
 **Date:** 2026-02-22
 **Branch:** `dev/20260222-variant-tabs-fix`
 **Status:** In Progress
-**App/Package:** centymo-golang-ryta (primary), retail-admin seeder (secondary)
+**App/Package:** centymo-golang (primary), retail-admin seeder (secondary)
 
 ---
 
@@ -111,17 +111,17 @@ Fixed (hard-delete):
 
 The `deleteVariantOptions` function in `variants.go` currently uses `db.Delete()` (soft-delete). Junction table records like `product_variant_option` should be hard-deleted because they are pure association records with no business significance as inactive entities.
 
-- Change `deleteVariantOptions` to call a hard-delete operation instead of `db.Delete()`: `packages/centymo-golang-ryta/views/product/detail/variants.go:170-188`
-- The `centymo.DataSource` interface (`packages/centymo-golang-ryta/datasource.go`) currently only exposes `Delete()`. We need to either:
+- Change `deleteVariantOptions` to call a hard-delete operation instead of `db.Delete()`: `packages/centymo-golang/views/product/detail/variants.go:170-188`
+- The `centymo.DataSource` interface (`packages/centymo-golang/datasource.go`) currently only exposes `Delete()`. We need to either:
   - **Option A:** Add `HardDelete(ctx, collection, id)` to the `DataSource` interface
   - **Option B:** Use `db.Query()` or a raw SQL approach via the existing interface
   - **Option A is preferred** since `HardDelete` already exists on `PostgresOperations` and the `DatabaseAdapter` wraps it
 
 Steps:
-1. Add `HardDelete(ctx context.Context, collection string, id string) error` to `centymo.DataSource` interface: `packages/centymo-golang-ryta/datasource.go`
-2. Ensure `espyna.DatabaseAdapter` exposes `HardDelete`: `packages/espyna-golang-ryta/consumer/adapter_database.go`
-3. Check that `DatabaseOperation` interface already has `HardDelete`: `packages/espyna-golang-ryta/internal/infrastructure/adapters/secondary/database/common/interface/operations.go`
-4. Update `deleteVariantOptions` to use `db.HardDelete()`: `packages/centymo-golang-ryta/views/product/detail/variants.go:183`
+1. Add `HardDelete(ctx context.Context, collection string, id string) error` to `centymo.DataSource` interface: `packages/centymo-golang/datasource.go`
+2. Ensure `espyna.DatabaseAdapter` exposes `HardDelete`: `packages/espyna-golang/consumer/adapter_database.go`
+3. Check that `DatabaseOperation` interface already has `HardDelete`: `packages/espyna-golang/internal/infrastructure/adapters/secondary/database/common/interface/operations.go`
+4. Update `deleteVariantOptions` to use `db.HardDelete()`: `packages/centymo-golang/views/product/detail/variants.go:183`
 
 ### Phase 2: Fix seeder ON CONFLICT clauses
 
@@ -156,10 +156,10 @@ Write or update E2E tests to verify both tabs render correctly for variant `pv-0
 
 | File | Change | Phase |
 |------|--------|-------|
-| `packages/centymo-golang-ryta/datasource.go` | Add `HardDelete` method to `DataSource` interface | 1 |
-| `packages/espyna-golang-ryta/consumer/adapter_database.go` | Add `HardDelete` wrapper method | 1 |
-| `packages/espyna-golang-ryta/internal/infrastructure/adapters/secondary/database/common/interface/operations.go` | Verify `HardDelete` exists on `DatabaseOperation` interface (may need adding) | 1 |
-| `packages/centymo-golang-ryta/views/product/detail/variants.go:170-188` | Change `db.Delete()` to `db.HardDelete()` in `deleteVariantOptions` | 1 |
+| `packages/centymo-golang/datasource.go` | Add `HardDelete` method to `DataSource` interface | 1 |
+| `packages/espyna-golang/consumer/adapter_database.go` | Add `HardDelete` wrapper method | 1 |
+| `packages/espyna-golang/internal/infrastructure/adapters/secondary/database/common/interface/operations.go` | Verify `HardDelete` exists on `DatabaseOperation` interface (may need adding) | 1 |
+| `packages/centymo-golang/views/product/detail/variants.go:170-188` | Change `db.Delete()` to `db.HardDelete()` in `deleteVariantOptions` | 1 |
 | `apps/retail-admin/cmd/seeder/main.go:1964-1970` | Change `seedProductVariantOptions` `ON CONFLICT` to `DO UPDATE` | 2 |
 | `apps/retail-admin/cmd/seeder/main.go:966-976` | Change `seedInventoryItems` `ON CONFLICT` to `DO UPDATE` | 2 |
 | `apps/retail-admin/cmd/seeder/main.go:926` | Add `ALTER TABLE` for `product_variant_id` column before inventory seeding | 3 |

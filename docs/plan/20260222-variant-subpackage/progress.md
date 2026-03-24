@@ -8,7 +8,7 @@
 
 ## Phase 1: Extract helpers.go — DONE
 
-- [x] Create `packages/centymo-golang-ryta/views/product/detail/helpers.go` with `HtmxSuccess` and `HtmxError`
+- [x] Create `packages/centymo-golang/views/product/detail/helpers.go` with `HtmxSuccess` and `HtmxError`
 - [x] Remove `htmxSuccess`/`htmxError` from `variants.go:355-371`
 - [x] Update `variants.go` — replace all `htmxSuccess`/`htmxError` calls with `HtmxSuccess`/`HtmxError`
 - [x] Update `option_action.go` — replace all `htmxSuccess`/`htmxError` calls
@@ -33,7 +33,7 @@
 
 ## Phase 3: Create variant/ subpackage — DONE
 
-- [x] Create directory `packages/centymo-golang-ryta/views/product/detail/variant/`
+- [x] Create directory `packages/centymo-golang/views/product/detail/variant/`
 - [x] Create `variant/deps.go` — Deps type, VariantFormLabels, OptionValueChoice, OptionSelection, VariantFormData, unexported helpers (loadOptionSelections, loadVariantOptionSelections, saveVariantOptions, deleteVariantOptions)
 - [x] Create `variant/action.go` — NewTableView, NewAssignView, NewEditView, NewRemoveView (import detail for BuildVariantsTable, HtmxSuccess, HtmxError)
 - [x] Create `variant/page.go` — OptionEntry, VariantPageData, NewPageView, NewTabAction, buildVariantTabItems, loadVariantOptionEntries, buildStockTable (import detail for FormatPrice, StatusVariant, Breadcrumb)
@@ -43,8 +43,8 @@
 
 ## Phase 4: Delete old files — DONE
 
-- [x] Delete `packages/centymo-golang-ryta/views/product/detail/variants.go`
-- [x] Delete `packages/centymo-golang-ryta/views/product/detail/variant_page.go`
+- [x] Delete `packages/centymo-golang/views/product/detail/variants.go`
+- [x] Delete `packages/centymo-golang/views/product/detail/variant_page.go`
 - [x] Verify build compiles after deletion
 
 ---
@@ -97,7 +97,7 @@ All phases are complete. Only E2E verification remains:
 3. Specifically check: product-options and inventory-detail suites
 
 **Key files created:**
-- `packages/centymo-golang-ryta/views/product/detail/helpers.go` — HtmxSuccess, HtmxError
-- `packages/centymo-golang-ryta/views/product/detail/variant/deps.go` — Deps, types, helpers
-- `packages/centymo-golang-ryta/views/product/detail/variant/action.go` — CRUD views
-- `packages/centymo-golang-ryta/views/product/detail/variant/page.go` — detail page + tabs
+- `packages/centymo-golang/views/product/detail/helpers.go` — HtmxSuccess, HtmxError
+- `packages/centymo-golang/views/product/detail/variant/deps.go` — Deps, types, helpers
+- `packages/centymo-golang/views/product/detail/variant/action.go` — CRUD views
+- `packages/centymo-golang/views/product/detail/variant/page.go` — detail page + tabs

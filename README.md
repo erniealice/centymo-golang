@@ -1,6 +1,6 @@
 # centymo-golang
 
-Commerce domain package for Ryta OS applications. Provides reusable views, templates, route configurations, labels, and adapters for commerce-related modules (products, inventory, sales, price lists, plans, subscriptions, collections, disbursements, expenditures).
+Commerce domain package for Ichizen OS applications. Provides reusable views, templates, route configurations, labels, and adapters for commerce-related modules (products, inventory, sales, price lists, plans, subscriptions, collections, disbursements, expenditures).
 
 **Module path:** `github.com/erniealice/centymo-golang`
 

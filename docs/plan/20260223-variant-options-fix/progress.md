@@ -9,7 +9,7 @@
 ## Phase 1: Proto Change — Add `required` field — COMPLETE
 
 - [x] Add `bool required = 15` to `product_option.proto`
-- [x] Run `pnpm generate` in esqyma-ryta to rebuild Go + TS code
+- [x] Run `pnpm generate` in esqyma to rebuild Go + TS code
 - [x] Run `pnpm run generate:ddl` to update DDL
 - [x] ALTER TABLE product_option ADD COLUMN required BOOLEAN DEFAULT false
 

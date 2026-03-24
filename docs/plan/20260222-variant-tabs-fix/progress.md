@@ -8,11 +8,11 @@
 
 ## Phase 1: Fix deleteVariantOptions to use hard-delete -- COMPLETE
 
-- [x] Add `HardDelete(ctx context.Context, collection string, id string) error` to `centymo.DataSource` interface: `packages/centymo-golang-ryta/datasource.go`
-- [x] Add `HardDelete` to `DatabaseOperation` interface: `packages/espyna-golang-ryta/internal/infrastructure/adapters/secondary/database/common/interface/operations.go` (was missing, added between Delete and List)
-- [x] Add `HardDelete` wrapper to `espyna.DatabaseAdapter`: `packages/espyna-golang-ryta/consumer/adapter_database.go`
-- [x] Check for mock implementations — added `HardDelete` to `MockOperations` (delegates to `Delete`): `packages/espyna-golang-ryta/internal/infrastructure/adapters/secondary/database/mock/core/operations.go`
-- [x] Change `deleteVariantOptions` to call `db.HardDelete()` instead of `db.Delete()`: `packages/centymo-golang-ryta/views/product/detail/variants.go:183`
+- [x] Add `HardDelete(ctx context.Context, collection string, id string) error` to `centymo.DataSource` interface: `packages/centymo-golang/datasource.go`
+- [x] Add `HardDelete` to `DatabaseOperation` interface: `packages/espyna-golang/internal/infrastructure/adapters/secondary/database/common/interface/operations.go` (was missing, added between Delete and List)
+- [x] Add `HardDelete` wrapper to `espyna.DatabaseAdapter`: `packages/espyna-golang/consumer/adapter_database.go`
+- [x] Check for mock implementations — added `HardDelete` to `MockOperations` (delegates to `Delete`): `packages/espyna-golang/internal/infrastructure/adapters/secondary/database/mock/core/operations.go`
+- [x] Change `deleteVariantOptions` to call `db.HardDelete()` instead of `db.Delete()`: `packages/centymo-golang/views/product/detail/variants.go:183`
 - [x] Verify build: `go build -tags "google_uuidv7,mock_auth,mock_storage,noop,postgresql,vanilla"` — passed
 
 ---
@@ -55,11 +55,11 @@
 
 - **Phases complete:** 3 / 5 (code changes done, verification pending)
 - **Files modified:** 6 / 7
-  - `packages/espyna-golang-ryta/internal/infrastructure/adapters/secondary/database/common/interface/operations.go` — added HardDelete to interface
-  - `packages/espyna-golang-ryta/internal/infrastructure/adapters/secondary/database/mock/core/operations.go` — added HardDelete mock
-  - `packages/espyna-golang-ryta/consumer/adapter_database.go` — added HardDelete wrapper
-  - `packages/centymo-golang-ryta/datasource.go` — added HardDelete to DataSource
-  - `packages/centymo-golang-ryta/views/product/detail/variants.go` — changed deleteVariantOptions to use HardDelete
+  - `packages/espyna-golang/internal/infrastructure/adapters/secondary/database/common/interface/operations.go` — added HardDelete to interface
+  - `packages/espyna-golang/internal/infrastructure/adapters/secondary/database/mock/core/operations.go` — added HardDelete mock
+  - `packages/espyna-golang/consumer/adapter_database.go` — added HardDelete wrapper
+  - `packages/centymo-golang/datasource.go` — added HardDelete to DataSource
+  - `packages/centymo-golang/views/product/detail/variants.go` — changed deleteVariantOptions to use HardDelete
   - `apps/retail-admin/cmd/seeder/main.go` — fixed ON CONFLICT clauses + added ALTER TABLE migration
 
 ---
