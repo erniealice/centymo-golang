@@ -8,14 +8,14 @@
 <div class="page-content page-content--table" data-page-css="/assets/css/centymo/centymo-inventory-movements.css?v={{.CacheVersion}}">
     <div class="movements-filter-bar">
         <div class="filter-group">
-            <label class="form-label">{{.Labels.DateRange}}</label>
+            <label class="form-label" for="filter-date-from">{{.Labels.DateRange}}</label>
             <div class="movements-date-range">
                 <input type="date" id="filter-date-from" name="date_from" value="{{.DateFrom}}" class="form-input" />
-                <input type="date" id="filter-date-to" name="date_to" value="{{.DateTo}}" class="form-input" />
+                <input type="date" id="filter-date-to" name="date_to" value="{{.DateTo}}" class="form-input" aria-label="Date to" />
             </div>
         </div>
         <div class="filter-group">
-            <label class="form-label">{{.Labels.LocationFilter}}</label>
+            <label class="form-label" for="filter-location">{{.Labels.LocationFilter}}</label>
             <select id="filter-location" name="location" class="form-select">
                 <option value="">{{.Labels.AllLocations}}</option>
                 {{range .Locations}}
@@ -24,7 +24,7 @@
             </select>
         </div>
         <div class="filter-group">
-            <label class="form-label">{{.Labels.TypeFilter}}</label>
+            <label class="form-label" for="filter-type">{{.Labels.TypeFilter}}</label>
             <select id="filter-type" name="type" class="form-select">
                 <option value="">{{.Labels.AllTypes}}</option>
                 {{range .TransactionTypes}}
@@ -33,8 +33,8 @@
             </select>
         </div>
         <div class="filter-group">
-            <label class="form-label">{{.Labels.ProductSearch}}</label>
-            <input type="text" id="filter-search" name="search" value="{{.Search}}" class="form-input" placeholder="Search by name or SKU..." />
+            <label class="form-label" for="filter-search">{{.Labels.ProductSearch}}</label>
+            <input type="text" id="filter-search" name="search" value="{{.Search}}" class="form-input" placeholder="{{.Labels.ProductSearch}}" />
         </div>
         <div class="movements-filter-actions">
             <button type="button" class="btn btn--primary" id="apply-filters-btn"
