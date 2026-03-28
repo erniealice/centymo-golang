@@ -18,18 +18,19 @@ import (
 
 // FormLabels holds i18n labels for the subscription drawer form template.
 type FormLabels struct {
-	Customer                  string
-	CustomerPlaceholder       string
-	Plan                      string
-	PlanPlaceholder           string
-	StartDate                 string
-	EndDate                   string
-	Notes                     string
-	NotesPlaceholder          string
-	CustomerSearchPlaceholder string
-	PlanSearchPlaceholder     string
-	CustomerNoResults         string
-	PlanNoResults             string
+	Customer                      string
+	CustomerPlaceholder           string
+	Plan                          string
+	PlanPlaceholder               string
+	StartDate                     string
+	EndDate                       string
+	Notes                         string
+	NotesPlaceholder              string
+	CustomerSearchPlaceholder     string
+	PlanSearchPlaceholder         string
+	CustomerNoResults             string
+	PlanNoResults                 string
+	EngagementNamePlaceholder     string
 }
 
 // FormData is the template data for the subscription drawer form.
@@ -82,6 +83,7 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 		PlanSearchPlaceholder:     l.Form.PlanSearchPlaceholder,
 		CustomerNoResults:         l.Form.CustomerNoResults,
 		PlanNoResults:             l.Form.PlanNoResults,
+		EngagementNamePlaceholder: l.Form.EngagementNamePlaceholder,
 	}
 }
 
@@ -208,11 +210,19 @@ func NewAddAction(deps *Deps) view.View {
 		dateStart := r.FormValue("date_start_string")
 		dateEnd := r.FormValue("date_end_string")
 
+		// The form sends plan_id (from plan search). Resolve to price_plan_id.
+		pricePlanID := r.FormValue("price_plan_id")
+		if pricePlanID == "" {
+			// Form sends plan_id — use it directly as price_plan_id
+			// (the backend will resolve plan → first active price_plan)
+			pricePlanID = r.FormValue("plan_id")
+		}
+
 		resp, err := deps.CreateSubscription(ctx, &subscriptionpb.CreateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
 				Name:            r.FormValue("name"),
 				ClientId:        r.FormValue("client_id"),
-				PricePlanId:     r.FormValue("price_plan_id"),
+				PricePlanId:     pricePlanID,
 				DateStartString: strPtr(dateStart),
 				DateEndString:   strPtr(dateEnd),
 				Active:          true,

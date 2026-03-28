@@ -13,8 +13,9 @@ import (
 
 // PaymentMethodOption represents a selectable payment/collection method.
 type PaymentMethodOption struct {
-	Value string
-	Label string
+	Value    string
+	Label    string
+	Selected bool
 }
 
 // PaymentFormData is the template data for the payment drawer form.

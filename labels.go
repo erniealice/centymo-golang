@@ -441,17 +441,20 @@ type RevenueDetailLabels struct {
 	PaymentEmptyMessage string `json:"paymentEmptyMessage"`
 
 	// Line item management
-	AddItem          string `json:"addItem"`
-	AddDiscount      string `json:"addDiscount"`
-	EditItem         string `json:"editItem"`
-	RemoveItem       string `json:"removeItem"`
-	ItemType         string `json:"itemType"`
-	ItemTypeItem     string `json:"itemTypeItem"`
-	ItemTypeDiscount string `json:"itemTypeDiscount"`
-	InventoryItem    string `json:"inventoryItem"`
-	SerialNumber     string `json:"serialNumber"`
-	ItemEmptyTitle   string `json:"itemEmptyTitle"`
-	ItemEmptyMessage string `json:"itemEmptyMessage"`
+	AddItem                     string `json:"addItem"`
+	AddDiscount                 string `json:"addDiscount"`
+	EditItem                    string `json:"editItem"`
+	RemoveItem                  string `json:"removeItem"`
+	ItemType                    string `json:"itemType"`
+	ItemTypeItem                string `json:"itemTypeItem"`
+	ItemTypeDiscount            string `json:"itemTypeDiscount"`
+	InventoryItem               string `json:"inventoryItem"`
+	SelectInventoryItem         string `json:"selectInventoryItem"`
+	ItemDescriptionPlaceholder  string `json:"itemDescriptionPlaceholder"`
+	NotesPlaceholder            string `json:"notesPlaceholder"`
+	SerialNumber                string `json:"serialNumber"`
+	ItemEmptyTitle              string `json:"itemEmptyTitle"`
+	ItemEmptyMessage            string `json:"itemEmptyMessage"`
 
 	// Payment tab
 	TotalPaid                  string `json:"totalPaid"`

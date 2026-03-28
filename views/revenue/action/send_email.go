@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/fycha-golang/services/pdfconv"
 
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
@@ -30,12 +31,25 @@ type SendEmailDeps struct {
 }
 
 // NewSendEmailHandler creates an http.HandlerFunc that generates an invoice and emails it.
+//
+// Query parameters:
+//   - format: "pdf" (default) or "docx" — controls the attachment file format.
 func NewSendEmailHandler(deps *SendEmailDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		id := r.PathValue("id")
 		if id == "" {
 			http.Error(w, "sale ID required", http.StatusBadRequest)
+			return
+		}
+
+		// Determine attachment format from query param (default: pdf)
+		format := r.URL.Query().Get("format")
+		if format == "" {
+			format = "pdf"
+		}
+		if format != "pdf" && format != "docx" {
+			http.Error(w, "invalid format: must be \"pdf\" or \"docx\"", http.StatusBadRequest)
 			return
 		}
 
@@ -107,13 +121,35 @@ func NewSendEmailHandler(deps *SendEmailDeps) http.HandlerFunc {
 			return
 		}
 
-		// 5. Send email with invoice attachment
+		// 5. Prepare attachment in requested format
+		var attachmentBytes []byte
+		var attachmentName string
+
+		if format == "pdf" {
+			pdfBytes, ok, convErr := pdfconv.ConvertDocxToPDF(docBytes)
+			if convErr != nil {
+				log.Printf("send-email: PDF conversion failed, attaching DOCX: %v", convErr)
+				attachmentBytes = docBytes
+				attachmentName = fmt.Sprintf("invoice-%s.docx", refNumber)
+			} else if ok {
+				attachmentBytes = pdfBytes
+				attachmentName = fmt.Sprintf("invoice-%s.pdf", refNumber)
+			} else {
+				log.Printf("send-email: LibreOffice not installed, attaching DOCX")
+				attachmentBytes = docBytes
+				attachmentName = fmt.Sprintf("invoice-%s.docx", refNumber)
+			}
+		} else {
+			attachmentBytes = docBytes
+			attachmentName = fmt.Sprintf("invoice-%s.docx", refNumber)
+		}
+
+		// 6. Send email with invoice attachment
 		subject := fmt.Sprintf("Invoice %s", refNumber)
 		textBody := fmt.Sprintf("Dear %s,\n\nPlease find attached your invoice %s.\n\nThank you for your business.", customerName, refNumber)
 		htmlBody := fmt.Sprintf("<p>Dear %s,</p><p>Please find attached your invoice <strong>%s</strong>.</p><p>Thank you for your business.</p>", customerName, refNumber)
-		attachmentName := fmt.Sprintf("invoice-%s.docx", refNumber)
 
-		err = deps.SendEmail(ctx, []string{customerEmail}, subject, htmlBody, textBody, attachmentName, docBytes)
+		err = deps.SendEmail(ctx, []string{customerEmail}, subject, htmlBody, textBody, attachmentName, attachmentBytes)
 		if err != nil {
 			log.Printf("send-email: failed to send email for revenue %s: %v", id, err)
 			w.Header().Set("Content-Type", "text/plain")

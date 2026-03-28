@@ -35,13 +35,27 @@ type InvoiceDownloadDeps struct {
 }
 
 // NewInvoiceDownloadHandler creates an http.HandlerFunc that generates and downloads
-// an invoice DOCX for a given sale/revenue.
+// an invoice for a given sale/revenue.
+//
+// Query parameters:
+//   - format: "pdf" (default) or "docx" — controls the output file format.
+//     Example: /action/sales/detail/{id}/invoice/download?format=docx
 func NewInvoiceDownloadHandler(deps *InvoiceDownloadDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		id := r.PathValue("id")
 		if id == "" {
 			http.Error(w, "sale ID required", http.StatusBadRequest)
+			return
+		}
+
+		// Determine output format from query param (default: pdf)
+		format := r.URL.Query().Get("format")
+		if format == "" {
+			format = "pdf"
+		}
+		if format != "pdf" && format != "docx" {
+			http.Error(w, "invalid format: must be \"pdf\" or \"docx\"", http.StatusBadRequest)
 			return
 		}
 
@@ -98,30 +112,40 @@ func NewInvoiceDownloadHandler(deps *InvoiceDownloadDeps) http.HandlerFunc {
 			return
 		}
 
-		// 6. Convert DOCX to PDF (falls back to DOCX if LibreOffice unavailable)
-		outputBytes, isPDF, err := pdfconv.ConvertDocxToPDF(docBytes)
-		if err != nil {
-			log.Printf("invoice download: PDF conversion failed: %v", err)
-			http.Error(w, "failed to convert invoice to PDF", http.StatusInternalServerError)
-			return
-		}
-
-		// 7. Send as file download
+		// 6. Prepare output based on requested format
 		refNumber := revenue.GetReferenceNumber()
 		if refNumber == "" {
 			refNumber = id
 		}
-
 		ts := time.Now().Unix()
-		if isPDF {
-			filename := fmt.Sprintf("invoice-%s-%d.pdf", refNumber, ts)
-			w.Header().Set("Content-Type", "application/pdf")
-			w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+
+		var outputBytes []byte
+		var contentType, filename string
+
+		if format == "pdf" {
+			pdfBytes, ok, convErr := pdfconv.ConvertDocxToPDF(docBytes)
+			if convErr != nil {
+				log.Printf("invoice download: PDF conversion failed: %v", convErr)
+				http.Error(w, "failed to convert invoice to PDF", http.StatusInternalServerError)
+				return
+			}
+			if !ok {
+				log.Printf("invoice download: LibreOffice not installed — cannot generate PDF")
+				http.Error(w, "PDF generation unavailable: LibreOffice is not installed on the server", http.StatusServiceUnavailable)
+				return
+			}
+			outputBytes = pdfBytes
+			contentType = "application/pdf"
+			filename = fmt.Sprintf("invoice-%s-%d.pdf", refNumber, ts)
 		} else {
-			filename := fmt.Sprintf("invoice-%s-%d.docx", refNumber, ts)
-			w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-			w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+			outputBytes = docBytes
+			contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+			filename = fmt.Sprintf("invoice-%s-%d.docx", refNumber, ts)
 		}
+
+		// 7. Send as file download
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 		w.Write(outputBytes)
 	}
 }

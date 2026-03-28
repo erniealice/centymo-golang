@@ -14,7 +14,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
             <div class="form-group">
                 <label class="form-label" for="inventory_item_id">{{.Labels.InventoryItem}}</label>
                 <select class="form-select" id="inventory_item_id" name="inventory_item_id">
-                    <option value="">{{.Labels.Form.SelectInventoryItem}}</option>
+                    <option value="">{{.Labels.SelectInventoryItem}}</option>
                     {{range .InventoryItems}}
                     <option value="{{.Value}}" {{if eq .Value $.InventoryItemID}}selected{{end}}>{{.Label}}</option>
                     {{end}}
@@ -30,7 +30,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                 "Label" .Labels.Description
                 "Value" .Description
                 "Required" true
-                "Placeholder" .Labels.Form.ItemDescriptionPlaceholder
+                "Placeholder" .Labels.ItemDescriptionPlaceholder
             )}}
         </div>
 
@@ -73,9 +73,9 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
             {{template "form-group" (dict
                 "Type" "textarea"
                 "Name" "notes"
-                "Label" .Labels.Form.Notes
+                "Label" .Labels.Notes
                 "Value" .Notes
-                "Placeholder" .Labels.Form.NotesPlaceholder
+                "Placeholder" .Labels.NotesPlaceholder
             )}}
         </div>
     </div>

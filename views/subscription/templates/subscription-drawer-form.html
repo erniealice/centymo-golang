@@ -18,7 +18,7 @@ Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
                 "Label" .Labels.Customer
                 "Value" .Name
                 "Required" true
-                "Placeholder" .Labels.Form.EngagementNamePlaceholder
+                "Placeholder" .Labels.EngagementNamePlaceholder
             )}}
         </div>
 
@@ -42,7 +42,7 @@ Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
         <div class="form-row single">
             {{template "auto-complete" (dict
                 "ID" "plan-search"
-                "Name" "price_plan_id"
+                "Name" "plan_id"
                 "Label" .Labels.Plan
                 "Placeholder" .Labels.PlanPlaceholder
                 "SearchPlaceholder" .Labels.PlanSearchPlaceholder
