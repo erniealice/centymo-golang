@@ -20,6 +20,10 @@ type FormLabels struct {
 	Description     string
 	DescPlaceholder string
 	FulfillmentType string
+	TypeSchedule    string
+	TypeLicense     string
+	TypeContent     string
+	TypePhysical    string
 }
 
 // FormData is the template data for the plan drawer form.
@@ -53,6 +57,10 @@ func formLabels(l centymo.PlanLabels) FormLabels {
 		Description:     l.Form.Description,
 		DescPlaceholder: l.Form.DescPlaceholder,
 		FulfillmentType: l.Form.FulfillmentType,
+		TypeSchedule:    l.Form.TypeSchedule,
+		TypeLicense:     l.Form.TypeLicense,
+		TypeContent:     l.Form.TypeContent,
+		TypePhysical:    l.Form.TypePhysical,
 	}
 }
 

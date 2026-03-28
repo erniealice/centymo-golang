@@ -22,7 +22,6 @@ require (
 	google.golang.org/grpc v1.75.1 // indirect
 )
 
-replace leapfor.xyz/copya => ../../../master-monorepo-v2/packages/copya
 
 replace github.com/erniealice/espyna-golang => ../espyna-golang
 
@@ -34,6 +33,5 @@ replace github.com/erniealice/esqyma => ../esqyma
 
 replace github.com/erniealice/lyngua => ../lyngua
 
-replace leapfor.xyz/vya => ../../../master-monorepo-v2/packages/vya
 
 replace github.com/erniealice/pyeza-golang => ../pyeza-golang
