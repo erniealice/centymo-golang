@@ -221,6 +221,21 @@ const (
 	ExpenditureExpenseListURL       = "/app/expenses/list/{status}"
 	ExpenditureExpenseDashboardURL  = "/app/expenses/dashboard"
 
+	// Expenditure expense CRUD action routes
+	ExpenditureExpenseAddURL       = "/action/expenses/add"
+	ExpenditureExpenseEditURL      = "/action/expenses/edit/{id}"
+	ExpenditureExpenseDeleteURL    = "/action/expenses/delete"
+	ExpenditureExpenseSetStatusURL = "/action/expenses/set-status"
+	ExpenditureExpenseDetailURL    = "/app/expenses/detail/{id}"
+	ExpenditureExpenseTableURL     = "/action/expenses/table/{status}"
+	ExpenditureExpenseTabActionURL = "/action/expenses/detail/{id}/tab/{tab}"
+
+	// Expenditure expense line item action routes
+	ExpenditureExpenseLineItemAddURL    = "/action/expenses/detail/{id}/items/add"
+	ExpenditureExpenseLineItemEditURL   = "/action/expenses/detail/{id}/items/edit/{itemId}"
+	ExpenditureExpenseLineItemRemoveURL = "/action/expenses/detail/{id}/items/remove"
+	ExpenditureExpenseLineItemTableURL  = "/action/expenses/detail/{id}/items/table"
+
 	// Expenditure report routes
 	PurchasesSummaryURL = "/app/purchases/reports/purchases-summary"
 	ExpensesSummaryURL  = "/app/expenses/reports/expenses-summary"
@@ -230,6 +245,23 @@ const (
 	ExpenditureSettingsTemplateUploadURL  = "/action/purchases/settings/templates/upload"
 	ExpenditureSettingsTemplateDeleteURL  = "/action/purchases/settings/templates/delete"
 	ExpenditureSettingsTemplateDefaultURL = "/action/purchases/settings/templates/set-default/{id}"
+
+	// Purchase Order routes
+	PurchaseOrderListURL      = "/app/purchase-orders/list/{status}"
+	PurchaseOrderDetailURL    = "/app/purchase-orders/{id}"
+	PurchaseOrderAddURL       = "/action/purchase-orders/add"
+	PurchaseOrderEditURL      = "/action/purchase-orders/edit/{id}"
+	PurchaseOrderDeleteURL     = "/action/purchase-orders/delete"
+	PurchaseOrderSetStatusURL  = "/action/purchase-orders/set-status"
+	PurchaseOrderTableURL      = "/action/purchase-orders/table/{status}"
+	PurchaseOrderTabActionURL  = "/action/purchase-orders/detail/{id}/tab/{tab}"
+
+	// Expense category settings routes
+	ExpenditureExpenseCategoryListURL   = "/app/expenses/categories/list"
+	ExpenditureExpenseCategoryAddURL    = "/action/expenses/categories/add"
+	ExpenditureExpenseCategoryEditURL   = "/action/expenses/categories/edit/{id}"
+	ExpenditureExpenseCategoryDeleteURL = "/action/expenses/categories/delete"
+	ExpenditureExpenseCategoryTableURL  = "/action/expenses/categories/table"
 
 	// Price List routes
 	PriceListListURL       = "/app/price-lists/list/{status}"

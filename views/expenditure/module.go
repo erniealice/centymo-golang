@@ -12,6 +12,11 @@ import (
 
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
+	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
+	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
+	expenditureaction "github.com/erniealice/centymo-golang/views/expenditure/action"
+	expenditurecategory "github.com/erniealice/centymo-golang/views/expenditure/category"
+	expendituredetail "github.com/erniealice/centymo-golang/views/expenditure/detail"
 	expenditurelist "github.com/erniealice/centymo-golang/views/expenditure/list"
 	expendituresettings "github.com/erniealice/centymo-golang/views/expenditure/settings"
 )
@@ -25,6 +30,28 @@ type ModuleDeps struct {
 	TemplateLabels   templateview.Labels
 	CommonLabels     pyeza.CommonLabels
 	TableLabels      types.TableLabels
+
+	// Expense CRUD operations (for action handlers)
+	CreateExpenditure func(ctx context.Context, req *expenditurepb.CreateExpenditureRequest) (*expenditurepb.CreateExpenditureResponse, error)
+	ReadExpenditure   func(ctx context.Context, req *expenditurepb.ReadExpenditureRequest) (*expenditurepb.ReadExpenditureResponse, error)
+	UpdateExpenditure func(ctx context.Context, req *expenditurepb.UpdateExpenditureRequest) (*expenditurepb.UpdateExpenditureResponse, error)
+	DeleteExpenditure func(ctx context.Context, req *expenditurepb.DeleteExpenditureRequest) (*expenditurepb.DeleteExpenditureResponse, error)
+
+	// Category listing (optional — gracefully degrades when nil)
+	ListExpenditureCategories func(ctx context.Context, req *expenditurecategorypb.ListExpenditureCategoriesRequest) (*expenditurecategorypb.ListExpenditureCategoriesResponse, error)
+
+	// Category CRUD (optional — only built when provided)
+	CreateExpenditureCategory func(ctx context.Context, req *expenditurecategorypb.CreateExpenditureCategoryRequest) (*expenditurecategorypb.CreateExpenditureCategoryResponse, error)
+	ReadExpenditureCategory   func(ctx context.Context, req *expenditurecategorypb.ReadExpenditureCategoryRequest) (*expenditurecategorypb.ReadExpenditureCategoryResponse, error)
+	UpdateExpenditureCategory func(ctx context.Context, req *expenditurecategorypb.UpdateExpenditureCategoryRequest) (*expenditurecategorypb.UpdateExpenditureCategoryResponse, error)
+	DeleteExpenditureCategory func(ctx context.Context, req *expenditurecategorypb.DeleteExpenditureCategoryRequest) (*expenditurecategorypb.DeleteExpenditureCategoryResponse, error)
+
+	// Expense line item CRUD (optional — only built when provided)
+	CreateExpenditureLineItem func(ctx context.Context, req *expenditurelineitempb.CreateExpenditureLineItemRequest) (*expenditurelineitempb.CreateExpenditureLineItemResponse, error)
+	ReadExpenditureLineItem   func(ctx context.Context, req *expenditurelineitempb.ReadExpenditureLineItemRequest) (*expenditurelineitempb.ReadExpenditureLineItemResponse, error)
+	UpdateExpenditureLineItem func(ctx context.Context, req *expenditurelineitempb.UpdateExpenditureLineItemRequest) (*expenditurelineitempb.UpdateExpenditureLineItemResponse, error)
+	DeleteExpenditureLineItem func(ctx context.Context, req *expenditurelineitempb.DeleteExpenditureLineItemRequest) (*expenditurelineitempb.DeleteExpenditureLineItemResponse, error)
+	ListExpenditureLineItems  func(ctx context.Context, req *expenditurelineitempb.ListExpenditureLineItemsRequest) (*expenditurelineitempb.ListExpenditureLineItemsResponse, error)
 
 	// Document template CRUD
 	ListDocumentTemplates  func(ctx context.Context, req *documenttemplatepb.ListDocumentTemplatesRequest) (*documenttemplatepb.ListDocumentTemplatesResponse, error)
@@ -42,15 +69,47 @@ type Module struct {
 	ExpenseList       view.View
 	ExpenseDashboard  view.View
 
+	// Expense detail page
+	ExpenseDetail    view.View
+	ExpenseTabAction view.View
+
+	// Expense CRUD actions
+	ExpenseAdd       view.View
+	ExpenseEdit      view.View
+	ExpenseDelete    view.View
+	ExpenseSetStatus view.View
+
+	// Expense line item actions
+	ExpenseLineItemAdd    view.View
+	ExpenseLineItemEdit   view.View
+	ExpenseLineItemRemove view.View
+	ExpenseLineItemTable  view.View
+
 	// Settings (template management)
 	SettingsTemplates  view.View
 	SettingsUpload     view.View
 	SettingsDelete     view.View
 	SettingsSetDefault view.View
+
+	// Category CRUD
+	CategoryList   view.View
+	CategoryAdd    view.View
+	CategoryEdit   view.View
+	CategoryDelete view.View
 }
 
 // NewModule creates the expenditure module with purchase and expense views.
 func NewModule(deps *ModuleDeps) *Module {
+	actionDeps := &expenditureaction.Deps{
+		Routes:                    deps.Routes,
+		Labels:                    deps.Labels,
+		CreateExpenditure:         deps.CreateExpenditure,
+		ReadExpenditure:           deps.ReadExpenditure,
+		UpdateExpenditure:         deps.UpdateExpenditure,
+		DeleteExpenditure:         deps.DeleteExpenditure,
+		ListExpenditureCategories: deps.ListExpenditureCategories,
+	}
+
 	m := &Module{
 		routes: deps.Routes,
 		PurchaseList: expenditurelist.NewView(&expenditurelist.ListViewDeps{
@@ -65,6 +124,7 @@ func NewModule(deps *ModuleDeps) *Module {
 			ListExpenditures: deps.ListExpenditures,
 			RefreshURL:       deps.Routes.ExpenseListURL,
 			ExpenditureType:  "expense",
+			AddURL:           deps.Routes.AddURL,
 			Labels:           deps.Labels,
 			CommonLabels:     deps.CommonLabels,
 			TableLabels:      deps.TableLabels,
@@ -82,10 +142,80 @@ func NewModule(deps *ModuleDeps) *Module {
 			ListExpenditures: deps.ListExpenditures,
 			RefreshURL:       deps.Routes.ExpenseListURL,
 			ExpenditureType:  "expense",
+			AddURL:           deps.Routes.AddURL,
 			Labels:           deps.Labels,
 			CommonLabels:     deps.CommonLabels,
 			TableLabels:      deps.TableLabels,
 		}),
+	}
+
+	// Expense CRUD actions (nil-guarded — only built when CRUD deps are provided)
+	if deps.CreateExpenditure != nil {
+		m.ExpenseAdd = expenditureaction.NewAddAction(actionDeps)
+		m.ExpenseEdit = expenditureaction.NewEditAction(actionDeps)
+		m.ExpenseDelete = expenditureaction.NewDeleteAction(actionDeps)
+		m.ExpenseSetStatus = expenditureaction.NewSetStatusAction(actionDeps)
+	}
+
+	// Category views (nil-guarded — only built when category deps are provided)
+	if deps.ListExpenditureCategories != nil {
+		m.CategoryList = expenditurecategory.NewView(&expenditurecategory.ListViewDeps{
+			Routes:                    deps.Routes,
+			ListExpenditureCategories: deps.ListExpenditureCategories,
+			Labels:                    deps.Labels,
+			CommonLabels:              deps.CommonLabels,
+			TableLabels:               deps.TableLabels,
+		})
+	}
+	if deps.CreateExpenditureCategory != nil {
+		catActionDeps := &expenditurecategory.ActionDeps{
+			Routes:                    deps.Routes,
+			Labels:                    deps.Labels,
+			CreateExpenditureCategory: deps.CreateExpenditureCategory,
+			ReadExpenditureCategory:   deps.ReadExpenditureCategory,
+			UpdateExpenditureCategory: deps.UpdateExpenditureCategory,
+			DeleteExpenditureCategory: deps.DeleteExpenditureCategory,
+		}
+		m.CategoryAdd = expenditurecategory.NewAddAction(catActionDeps)
+		m.CategoryEdit = expenditurecategory.NewEditAction(catActionDeps)
+		m.CategoryDelete = expenditurecategory.NewDeleteAction(catActionDeps)
+	}
+
+	// Expense detail page (nil-guarded — only built when ReadExpenditure is provided)
+	if deps.ReadExpenditure != nil {
+		detailDeps := &expendituredetail.DetailViewDeps{
+			Routes:           deps.Routes,
+			Labels:           deps.Labels,
+			CommonLabels:     deps.CommonLabels,
+			TableLabels:      deps.TableLabels,
+			ReadExpenditure:  deps.ReadExpenditure,
+		}
+		if deps.ListExpenditureLineItems != nil {
+			detailDeps.ListExpenditureLineItems = deps.ListExpenditureLineItems
+		}
+		m.ExpenseDetail = expendituredetail.NewView(detailDeps)
+		m.ExpenseTabAction = expendituredetail.NewTabAction(detailDeps)
+	}
+
+	// Expense line item actions (nil-guarded)
+	if deps.CreateExpenditureLineItem != nil {
+		lineItemDeps := &expendituredetail.LineItemDeps{
+			Routes:                    deps.Routes,
+			Labels:                    deps.Labels,
+			CommonLabels:              deps.CommonLabels,
+			TableLabels:               deps.TableLabels,
+			ReadExpenditure:           deps.ReadExpenditure,
+			UpdateExpenditure:         deps.UpdateExpenditure,
+			CreateExpenditureLineItem: deps.CreateExpenditureLineItem,
+			ReadExpenditureLineItem:   deps.ReadExpenditureLineItem,
+			UpdateExpenditureLineItem: deps.UpdateExpenditureLineItem,
+			DeleteExpenditureLineItem: deps.DeleteExpenditureLineItem,
+			ListExpenditureLineItems:  deps.ListExpenditureLineItems,
+		}
+		m.ExpenseLineItemAdd = expendituredetail.NewLineItemAddView(lineItemDeps)
+		m.ExpenseLineItemEdit = expendituredetail.NewLineItemEditView(lineItemDeps)
+		m.ExpenseLineItemRemove = expendituredetail.NewLineItemRemoveView(lineItemDeps)
+		m.ExpenseLineItemTable = expendituredetail.NewLineItemTableView(lineItemDeps)
 	}
 
 	// Settings views (nil-guarded — only built when document template deps are provided)
@@ -117,6 +247,32 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	r.GET(m.routes.ExpenseListURL, m.ExpenseList)
 	r.GET(m.routes.ExpenseDashboardURL, m.ExpenseDashboard)
 
+	// Expense detail page (nil-guarded)
+	if m.ExpenseDetail != nil {
+		r.GET(m.routes.DetailURL, m.ExpenseDetail)
+		r.GET(m.routes.TabActionURL, m.ExpenseTabAction)
+	}
+
+	// Expense CRUD action routes (nil-guarded)
+	if m.ExpenseAdd != nil {
+		r.GET(m.routes.AddURL, m.ExpenseAdd)
+		r.POST(m.routes.AddURL, m.ExpenseAdd)
+		r.GET(m.routes.EditURL, m.ExpenseEdit)
+		r.POST(m.routes.EditURL, m.ExpenseEdit)
+		r.POST(m.routes.DeleteURL, m.ExpenseDelete)
+		r.POST(m.routes.SetStatusURL, m.ExpenseSetStatus)
+	}
+
+	// Expense line item action routes (nil-guarded)
+	if m.ExpenseLineItemAdd != nil {
+		r.GET(m.routes.LineItemAddURL, m.ExpenseLineItemAdd)
+		r.POST(m.routes.LineItemAddURL, m.ExpenseLineItemAdd)
+		r.GET(m.routes.LineItemEditURL, m.ExpenseLineItemEdit)
+		r.POST(m.routes.LineItemEditURL, m.ExpenseLineItemEdit)
+		r.POST(m.routes.LineItemRemoveURL, m.ExpenseLineItemRemove)
+		r.GET(m.routes.LineItemTableURL, m.ExpenseLineItemTable)
+	}
+
 	// Settings routes (nil-guarded)
 	if m.SettingsTemplates != nil {
 		r.GET(m.routes.SettingsTemplatesURL, m.SettingsTemplates)
@@ -124,5 +280,18 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 		r.POST(m.routes.SettingsTemplateUploadURL, m.SettingsUpload)
 		r.POST(m.routes.SettingsTemplateDeleteURL, m.SettingsDelete)
 		r.POST(m.routes.SettingsTemplateDefaultURL, m.SettingsSetDefault)
+	}
+
+	// Category routes (nil-guarded)
+	if m.CategoryList != nil {
+		r.GET(m.routes.ExpenseCategoryListURL, m.CategoryList)
+		r.GET(m.routes.ExpenseCategoryTableURL, m.CategoryList)
+	}
+	if m.CategoryAdd != nil {
+		r.GET(m.routes.ExpenseCategoryAddURL, m.CategoryAdd)
+		r.POST(m.routes.ExpenseCategoryAddURL, m.CategoryAdd)
+		r.GET(m.routes.ExpenseCategoryEditURL, m.CategoryEdit)
+		r.POST(m.routes.ExpenseCategoryEditURL, m.CategoryEdit)
+		r.POST(m.routes.ExpenseCategoryDeleteURL, m.CategoryDelete)
 	}
 }

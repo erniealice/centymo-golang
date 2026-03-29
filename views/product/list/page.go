@@ -13,6 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -119,9 +120,27 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	perms := view.GetUserPermissions(ctx)
 
 	listParams := espynahttp.ToListParams(p, productSearchFields)
+
+	// Inject fulfillment_method IN ('service', 'digital') filter so the services list shows
+	// only non-inventory products. fulfillment_method = "physical" or "make_to_order" → inventory items.
+	fulfillmentFilter := &commonpb.TypedFilter{
+		Field: "fulfillment_method",
+		FilterType: &commonpb.TypedFilter_ListFilter{
+			ListFilter: &commonpb.ListFilter{
+				Values:   []string{"service", "digital"},
+				Operator: commonpb.ListOperator_LIST_IN,
+			},
+		},
+	}
+	filters := listParams.Filters
+	if filters == nil {
+		filters = &commonpb.FilterRequest{}
+	}
+	filters.Filters = append(filters.Filters, fulfillmentFilter)
+
 	resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{
 		Search:     listParams.Search,
-		Filters:    listParams.Filters,
+		Filters:    filters,
 		Sort:       listParams.Sort,
 		Pagination: listParams.Pagination,
 	})

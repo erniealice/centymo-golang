@@ -1,0 +1,161 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "expense-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "expense-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Title}}">
+    <h2 class="visually-hidden">Expense Detail</h2>
+    {{/* ─── Tabs ─── */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "expense-tabs")}}
+    </div>
+
+    {{/* ─── Tab Body ─── */}}
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+        {{template "expense-tab-info" .}}
+        {{else if eq .ActiveTab "items"}}
+        {{template "expense-tab-items" .}}
+        {{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
+
+{{/* Basic Information Tab */}}
+{{define "expense-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">Expense Information</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">Reference</span>
+            <span class="detail-info-value mono">{{index .Expense "reference_number"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Name</span>
+            <span class="detail-info-value">{{index .Expense "name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Type</span>
+            <span class="detail-info-value">{{index .Expense "expenditure_type"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Amount</span>
+            <span class="detail-info-value mono">{{index .Expense "currency"}} {{index .Expense "total_amount"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Status</span>
+            <span>
+                <span class="badge badge--{{if eq (index .Expense "status") "paid"}}success{{else if eq (index .Expense "status") "approved"}}primary{{else if eq (index .Expense "status") "pending"}}warning{{else}}info{{end}}">
+                    {{index .Expense "status"}}
+                </span>
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Created</span>
+            <span class="detail-info-value">{{index .Expense "date_created_string"}}</span>
+        </div>
+    </div>
+    {{if index .Expense "notes"}}
+    <div class="sale-section-spacer">
+        <h4 class="detail-section-title">Notes</h4>
+        <div class="sale-notes-block">{{index .Expense "notes"}}</div>
+    </div>
+    {{end}}
+
+    {{/* ─── Status Actions ─── */}}
+    {{if .SetStatusURL}}
+    <div class="sale-section-spacer">
+        <h4 class="detail-section-title">Update Status</h4>
+        <form hx-post="{{.SetStatusURL}}" hx-swap="none" class="inline-status-form">
+            <input type="hidden" name="id" value="{{index .Expense "id"}}">
+            <div class="form-group" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <label for="status" class="form-label" style="margin-bottom:0;">Status</label>
+                <select id="status" name="status" class="form-control" style="width:auto;min-width:140px;">
+                    <option value="pending"{{if eq (index .Expense "status") "pending"}} selected{{end}}>Pending</option>
+                    <option value="approved"{{if eq (index .Expense "status") "approved"}} selected{{end}}>Approved</option>
+                    <option value="paid"{{if eq (index .Expense "status") "paid"}} selected{{end}}>Paid</option>
+                    <option value="cancelled"{{if eq (index .Expense "status") "cancelled"}} selected{{end}}>Cancelled</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Save Status</button>
+            </div>
+        </form>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Line Items Tab */}}
+{{define "expense-tab-items"}}
+<div class="line-items-toolbar">
+    <div class="sale-summary-item">
+        <span class="sale-summary-label">Total</span>
+        <span class="sale-summary-value">{{.TotalAmount}}</span>
+    </div>
+    <div class="line-items-actions">
+        <button type="button" class="btn btn-primary toolbar-primary-action"
+            aria-haspopup="dialog"
+            hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="Sheet.open('Add Item')">
+            Add Item
+        </button>
+    </div>
+</div>
+{{if .LineItemTable}}
+    <div class="tab-scroll">
+        {{template "table-card" .LineItemTable}}
+    </div>
+{{else}}
+    <div class="tab-scroll">
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">No line items</div>
+            <p class="coming-soon-text">Add line items to this expense.</p>
+        </div>
+    </div>
+{{end}}
+{{end}}
+
+{{/* Line Item Drawer Form */}}
+{{define "expense-line-item-drawer-form"}}
+<form
+    hx-post="{{.FormAction}}"
+    hx-target="#sheetContent"
+    hx-swap="innerHTML"
+    class="drawer-form">
+    {{if .IsEdit}}
+    <input type="hidden" name="id" value="{{.ID}}">
+    {{end}}
+    <input type="hidden" name="expenditure_id" value="{{.ExpenditureID}}">
+
+    <div class="form-group">
+        <label for="description" class="form-label">Description <span class="required-marker">*</span></label>
+        <input type="text" id="description" name="description" class="form-control"
+            value="{{.Description}}" required placeholder="e.g. Office supplies">
+    </div>
+
+    <div class="form-group">
+        <label for="quantity" class="form-label">Quantity <span class="required-marker">*</span></label>
+        <input type="number" id="quantity" name="quantity" class="form-control"
+            value="{{.Quantity}}" required min="1" step="1">
+    </div>
+
+    <div class="form-group">
+        <label for="unit_price" class="form-label">Unit Price <span class="required-marker">*</span></label>
+        <input type="number" id="unit_price" name="unit_price" class="form-control"
+            value="{{.UnitPrice}}" required min="0" step="0.01">
+    </div>
+
+    <div class="form-group">
+        <label for="notes" class="form-label">Notes</label>
+        <textarea id="notes" name="notes" class="form-control" rows="3">{{.Notes}}</textarea>
+    </div>
+
+    <div class="drawer-form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn--ghost" onclick="Sheet.close()">Cancel</button>
+    </div>
+</form>
+{{end}}

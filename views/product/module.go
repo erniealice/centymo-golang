@@ -40,6 +40,12 @@ type ModuleDeps struct {
 	// Deletable state
 	GetInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 
+	// DefaultFulfillmentMethod is applied when the product create form does not
+	// include a fulfillment_method value. Set to "service" for professional
+	// business types so new products created through the services UI appear in
+	// the services list (which filters fulfillment_method IN ('service','digital')).
+	DefaultFulfillmentMethod string
+
 	// Product CRUD
 	ListProducts     func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	ReadProduct      func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
@@ -156,13 +162,14 @@ type Module struct {
 
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &productaction.Deps{
-		Routes:           deps.Routes,
-		Labels:           deps.Labels,
-		CreateProduct:    deps.CreateProduct,
-		ReadProduct:      deps.ReadProduct,
-		UpdateProduct:    deps.UpdateProduct,
-		DeleteProduct:    deps.DeleteProduct,
-		SetProductActive: deps.SetProductActive,
+		Routes:                   deps.Routes,
+		Labels:                   deps.Labels,
+		CreateProduct:            deps.CreateProduct,
+		ReadProduct:              deps.ReadProduct,
+		UpdateProduct:            deps.UpdateProduct,
+		DeleteProduct:            deps.DeleteProduct,
+		SetProductActive:         deps.SetProductActive,
+		DefaultFulfillmentMethod: deps.DefaultFulfillmentMethod,
 	}
 	detailDeps := &productdetail.DetailViewDeps{
 		ReadProduct:               deps.ReadProduct,

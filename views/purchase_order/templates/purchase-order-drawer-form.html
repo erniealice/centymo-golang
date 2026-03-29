@@ -1,0 +1,125 @@
+{{/*
+Purchase Order drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Currency,
+      .PaymentTerms, .ShippingTerms, .Notes, .ReferenceNumber, .ID, .FormAction, .IsEdit,
+      .CommonLabels, .Labels
+*/}}
+{{define "purchase-order-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* --- PO Number + Type row --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "po_number"
+                "Label" .Labels.PONumber
+                "Value" .PONumber
+                "Required" true
+                "Placeholder" .Labels.PONumberPlaceholder
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "po_type"
+                "Label" .Labels.POType
+                "Value" .POType
+                "Options" (list
+                    (dict "Value" "standard" "Label" .Labels.POTypeStandard)
+                    (dict "Value" "blanket" "Label" .Labels.POTypeBlanket)
+                    (dict "Value" "contract" "Label" .Labels.POTypeContract)
+                )
+            )}}
+        </div>
+
+        {{/* --- Supplier ID --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "supplier_id"
+                "Label" .Labels.Supplier
+                "Value" .SupplierID
+                "Required" true
+                "Placeholder" .Labels.SupplierPlaceholder
+            )}}
+        </div>
+
+        {{/* --- Order Date + Expected Delivery Date row --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "order_date"
+                "Label" .Labels.OrderDate
+                "Value" .OrderDate
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "expected_delivery_date"
+                "Label" .Labels.ExpectedDeliveryDate
+                "Value" .ExpectedDeliveryDate
+            )}}
+        </div>
+
+        {{/* --- Currency + Payment Terms row --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "currency"
+                "Label" .Labels.Currency
+                "Value" .Currency
+                "Options" (list
+                    (dict "Value" "PHP" "Label" .Labels.CurrencyPHP)
+                    (dict "Value" "USD" "Label" .Labels.CurrencyUSD)
+                )
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "payment_terms"
+                "Label" .Labels.PaymentTerms
+                "Value" .PaymentTerms
+                "Options" (list
+                    (dict "Value" "cash" "Label" .Labels.PaymentTermsCash)
+                    (dict "Value" "net_30" "Label" .Labels.PaymentTermsNet30)
+                    (dict "Value" "net_60" "Label" .Labels.PaymentTermsNet60)
+                )
+            )}}
+        </div>
+
+        {{/* --- Shipping Terms --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "shipping_terms"
+                "Label" .Labels.ShippingTerms
+                "Value" .ShippingTerms
+                "Placeholder" .Labels.ShippingTermsPlaceholder
+            )}}
+        </div>
+
+        {{/* --- Reference Number --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "reference_number"
+                "Label" .Labels.ReferenceNumber
+                "Value" .ReferenceNumber
+            )}}
+        </div>
+
+        {{/* --- Notes --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" .Labels.Notes
+                "Value" .Notes
+                "Placeholder" .Labels.NotesPlaceholder
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

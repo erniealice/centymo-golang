@@ -1,0 +1,75 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "purchase-order-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "purchase-order-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Title}}">
+    <h2 class="visually-hidden">Purchase Order Detail</h2>
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "po-tabs")}}
+    </div>
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+        {{template "purchase-order-tab-info" .}}
+        {{else if eq .ActiveTab "items"}}
+        {{template "purchase-order-tab-items" .}}
+        {{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
+
+{{/* Info tab */}}
+{{define "purchase-order-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">Purchase Order Information</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">PO Number</span>
+            <span class="detail-info-value mono">{{index .PurchaseOrder "po_number"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Supplier</span>
+            <span class="detail-info-value">{{index .PurchaseOrder "supplier_name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Status</span>
+            <span class="detail-info-value">{{template "status-badge" (dict "Status" (index .PurchaseOrder "status") "Variant" .StatusVariant)}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Type</span>
+            <span class="detail-info-value">{{index .PurchaseOrder "po_type"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Order Date</span>
+            <span class="detail-info-value">{{index .PurchaseOrder "order_date_string"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Total Amount</span>
+            <span class="detail-info-value mono">{{index .PurchaseOrder "currency"}} {{index .PurchaseOrder "total_amount"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Payment Terms</span>
+            <span class="detail-info-value">{{index .PurchaseOrder "payment_terms"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Notes</span>
+            <span class="detail-info-value">{{index .PurchaseOrder "notes"}}</span>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{/* Items tab */}}
+{{define "purchase-order-tab-items"}}
+<div class="tab-scroll">
+    {{if .LineItemsTable}}
+    {{template "table-card" .LineItemsTable}}
+    {{else}}
+    <p class="text-muted">No line items found.</p>
+    {{end}}
+</div>
+{{end}}

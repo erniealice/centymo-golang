@@ -19,6 +19,7 @@ type ListViewDeps struct {
 	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
 	RefreshURL       string
 	ExpenditureType  string // "purchase" or "expense" — determines which type to filter
+	AddURL           string // action URL for the add drawer
 	Labels           centymo.ExpenditureLabels
 	CommonLabels     pyeza.CommonLabels
 	TableLabels      types.TableLabels
@@ -83,11 +84,24 @@ func NewView(deps *ListViewDeps) view.View {
 			icon = "icon-file-minus"
 		}
 
+		var primaryAction *types.PrimaryAction
+		if deps.AddURL != "" {
+			addLabel := "New Expense"
+			if deps.ExpenditureType == "purchase" {
+				addLabel = "New Purchase"
+			}
+			primaryAction = &types.PrimaryAction{
+				Label:     addLabel,
+				ActionURL: deps.AddURL,
+			}
+		}
+
 		tableConfig := &types.TableConfig{
 			ID:                   tableID,
 			RefreshURL:           deps.RefreshURL,
 			Columns:              columns,
 			Rows:                 rows,
+			PrimaryAction:        primaryAction,
 			ShowSearch:           true,
 			ShowActions:          true,
 			ShowFilters:          true,

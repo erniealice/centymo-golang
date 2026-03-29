@@ -509,6 +509,38 @@ type ExpenditureRoutes struct {
 	SettingsTemplateUploadURL  string `json:"settings_template_upload_url"`
 	SettingsTemplateDeleteURL  string `json:"settings_template_delete_url"`
 	SettingsTemplateDefaultURL string `json:"settings_template_default_url"`
+
+	// Expense CRUD action routes
+	AddURL       string `json:"add_url"`
+	EditURL      string `json:"edit_url"`
+	DeleteURL    string `json:"delete_url"`
+	SetStatusURL string `json:"set_status_url"`
+	DetailURL    string `json:"detail_url"`
+	TableURL     string `json:"table_url"`
+	TabActionURL string `json:"tab_action_url"`
+
+	// Expense line item action routes
+	LineItemAddURL    string `json:"line_item_add_url"`
+	LineItemEditURL   string `json:"line_item_edit_url"`
+	LineItemRemoveURL string `json:"line_item_remove_url"`
+	LineItemTableURL  string `json:"line_item_table_url"`
+
+	// Expense category CRUD routes
+	ExpenseCategoryListURL   string `json:"expense_category_list_url"`
+	ExpenseCategoryAddURL    string `json:"expense_category_add_url"`
+	ExpenseCategoryEditURL   string `json:"expense_category_edit_url"`
+	ExpenseCategoryDeleteURL string `json:"expense_category_delete_url"`
+	ExpenseCategoryTableURL  string `json:"expense_category_table_url"`
+
+	// Purchase Order routes
+	PurchaseOrderListURL      string `json:"purchase_order_list_url"`
+	PurchaseOrderDetailURL    string `json:"purchase_order_detail_url"`
+	PurchaseOrderAddURL       string `json:"purchase_order_add_url"`
+	PurchaseOrderEditURL      string `json:"purchase_order_edit_url"`
+	PurchaseOrderDeleteURL     string `json:"purchase_order_delete_url"`
+	PurchaseOrderSetStatusURL  string `json:"purchase_order_set_status_url"`
+	PurchaseOrderTableURL      string `json:"purchase_order_table_url"`
+	PurchaseOrderTabActionURL  string `json:"purchase_order_tab_action_url"`
 }
 
 // DefaultExpenditureRoutes returns an ExpenditureRoutes populated from the
@@ -527,6 +559,34 @@ func DefaultExpenditureRoutes() ExpenditureRoutes {
 		SettingsTemplateUploadURL:  ExpenditureSettingsTemplateUploadURL,
 		SettingsTemplateDeleteURL:  ExpenditureSettingsTemplateDeleteURL,
 		SettingsTemplateDefaultURL: ExpenditureSettingsTemplateDefaultURL,
+
+		AddURL:       ExpenditureExpenseAddURL,
+		EditURL:      ExpenditureExpenseEditURL,
+		DeleteURL:    ExpenditureExpenseDeleteURL,
+		SetStatusURL: ExpenditureExpenseSetStatusURL,
+		DetailURL:    ExpenditureExpenseDetailURL,
+		TableURL:     ExpenditureExpenseTableURL,
+		TabActionURL: ExpenditureExpenseTabActionURL,
+
+		LineItemAddURL:    ExpenditureExpenseLineItemAddURL,
+		LineItemEditURL:   ExpenditureExpenseLineItemEditURL,
+		LineItemRemoveURL: ExpenditureExpenseLineItemRemoveURL,
+		LineItemTableURL:  ExpenditureExpenseLineItemTableURL,
+
+		ExpenseCategoryListURL:   ExpenditureExpenseCategoryListURL,
+		ExpenseCategoryAddURL:    ExpenditureExpenseCategoryAddURL,
+		ExpenseCategoryEditURL:   ExpenditureExpenseCategoryEditURL,
+		ExpenseCategoryDeleteURL: ExpenditureExpenseCategoryDeleteURL,
+		ExpenseCategoryTableURL:  ExpenditureExpenseCategoryTableURL,
+
+		PurchaseOrderListURL:      PurchaseOrderListURL,
+		PurchaseOrderDetailURL:    PurchaseOrderDetailURL,
+		PurchaseOrderAddURL:       PurchaseOrderAddURL,
+		PurchaseOrderEditURL:      PurchaseOrderEditURL,
+		PurchaseOrderDeleteURL:    PurchaseOrderDeleteURL,
+		PurchaseOrderSetStatusURL: PurchaseOrderSetStatusURL,
+		PurchaseOrderTableURL:     PurchaseOrderTableURL,
+		PurchaseOrderTabActionURL: PurchaseOrderTabActionURL,
 	}
 }
 
@@ -546,6 +606,28 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 		"purchases.settings.template_upload":  r.SettingsTemplateUploadURL,
 		"purchases.settings.template_delete":  r.SettingsTemplateDeleteURL,
 		"purchases.settings.template_default": r.SettingsTemplateDefaultURL,
+
+		"expenditure.expense.add":        r.AddURL,
+		"expenditure.expense.edit":       r.EditURL,
+		"expenditure.expense.delete":     r.DeleteURL,
+		"expenditure.expense.set_status": r.SetStatusURL,
+		"expenditure.expense.detail":     r.DetailURL,
+		"expenditure.expense.table":      r.TableURL,
+
+		"expenditure.expense_category.list":   r.ExpenseCategoryListURL,
+		"expenditure.expense_category.add":    r.ExpenseCategoryAddURL,
+		"expenditure.expense_category.edit":   r.ExpenseCategoryEditURL,
+		"expenditure.expense_category.delete": r.ExpenseCategoryDeleteURL,
+		"expenditure.expense_category.table":  r.ExpenseCategoryTableURL,
+
+		"expenditure.purchase_order.list":       r.PurchaseOrderListURL,
+		"expenditure.purchase_order.detail":     r.PurchaseOrderDetailURL,
+		"expenditure.purchase_order.add":        r.PurchaseOrderAddURL,
+		"expenditure.purchase_order.edit":       r.PurchaseOrderEditURL,
+		"expenditure.purchase_order.delete":     r.PurchaseOrderDeleteURL,
+		"expenditure.purchase_order.set_status":  r.PurchaseOrderSetStatusURL,
+		"expenditure.purchase_order.table":       r.PurchaseOrderTableURL,
+		"expenditure.purchase_order.tab_action":  r.PurchaseOrderTabActionURL,
 	}
 }
 

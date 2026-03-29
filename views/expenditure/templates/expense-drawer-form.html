@@ -1,0 +1,111 @@
+{{/*
+Expense drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .Date, .TotalAmount, .Currency,
+      .Status, .ReferenceNumber, .Notes, .Categories, .ID, .FormAction, .IsEdit,
+      .CommonLabels, .Labels
+*/}}
+{{define "expense-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* --- Expense Description (name) --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.Name
+                "Value" .Name
+                "Required" true
+                "Placeholder" .Labels.NamePlaceholder
+            )}}
+        </div>
+
+        {{/* --- Type + Category row --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "expenditure_type"
+                "Label" .Labels.ExpenditureType
+                "Value" .ExpenditureType
+                "Options" (list
+                    (dict "Value" "expense" "Label" .Labels.TypeExpense)
+                    (dict "Value" "purchase" "Label" .Labels.TypePurchase)
+                )
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "expenditure_category_id"
+                "Label" .Labels.Category
+                "Value" .ExpenditureCategoryID
+                "Options" .Categories
+            )}}
+        </div>
+
+        {{/* --- Date + Amount row --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "expenditure_date_string"
+                "Label" .Labels.Date
+                "Value" .Date
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "total_amount"
+                "Label" .Labels.Amount
+                "Value" .TotalAmount
+                "Required" true
+            )}}
+        </div>
+
+        {{/* --- Currency + Status row --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "currency"
+                "Label" .Labels.Currency
+                "Value" .Currency
+                "Placeholder" .Labels.CurrencyPlaceholder
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "status"
+                "Label" .Labels.Status
+                "Value" .Status
+                "Options" (list
+                    (dict "Value" "pending" "Label" .Labels.StatusPending)
+                    (dict "Value" "approved" "Label" .Labels.StatusApproved)
+                    (dict "Value" "paid" "Label" .Labels.StatusPaid)
+                    (dict "Value" "cancelled" "Label" .Labels.StatusCancelled)
+                )
+            )}}
+        </div>
+
+        {{/* --- Reference Number --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "reference_number"
+                "Label" .Labels.ReferenceNumber
+                "Value" .ReferenceNumber
+            )}}
+        </div>
+
+        {{/* --- Notes --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" .Labels.Notes
+                "Value" .Notes
+                "Placeholder" .Labels.NotesPlaceholder
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

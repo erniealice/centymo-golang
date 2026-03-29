@@ -393,13 +393,23 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				getProductInUseIDs = refChecker.GetProductInUseIDs
 			}
 
+			// For professional business types the product list is branded as
+			// "services" and filters fulfillment_method IN ('service','digital').
+			// Default new products created through this UI to 'service' so they
+			// appear in the list immediately without extra steps.
+			defaultFulfillmentMethod := ""
+			if ctx.BusinessType == "professional" {
+				defaultFulfillmentMethod = "service"
+			}
+
 			productDeps := &productmod.ModuleDeps{
-				Routes:       productRoutes,
-				DB:           db,
-				Labels:       productLabels,
-				CommonLabels: ctx.Common,
-				TableLabels:  centymoTableLabels,
-				GetInUseIDs:  getProductInUseIDs,
+				Routes:                   productRoutes,
+				DB:                       db,
+				Labels:                   productLabels,
+				CommonLabels:             ctx.Common,
+				TableLabels:              centymoTableLabels,
+				GetInUseIDs:              getProductInUseIDs,
+				DefaultFulfillmentMethod: defaultFulfillmentMethod,
 				// SetProductActive uses raw DB update (proto3 omits false booleans)
 				SetProductActive: func(fctx context.Context, id string, active bool) error {
 					_, err := db.Update(fctx, "product", id, map[string]any{"active": active})
@@ -723,7 +733,28 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				UploadFile:             uploadTemplate,
 			}
 			if useCases.Expenditure != nil && useCases.Expenditure.Expenditure != nil {
-				expDeps.ListExpenditures = useCases.Expenditure.Expenditure.ListExpenditures.Execute
+				uc := useCases.Expenditure.Expenditure
+				expDeps.ListExpenditures     = uc.ListExpenditures.Execute
+				expDeps.CreateExpenditure    = uc.CreateExpenditure.Execute
+				expDeps.ReadExpenditure      = uc.ReadExpenditure.Execute
+				expDeps.UpdateExpenditure    = uc.UpdateExpenditure.Execute
+				expDeps.DeleteExpenditure    = uc.DeleteExpenditure.Execute
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.ExpenditureCategory != nil {
+				uc := useCases.Expenditure.ExpenditureCategory
+				expDeps.ListExpenditureCategories = uc.ListExpenditureCategories.Execute
+				expDeps.CreateExpenditureCategory = uc.CreateExpenditureCategory.Execute
+				expDeps.ReadExpenditureCategory = uc.ReadExpenditureCategory.Execute
+				expDeps.UpdateExpenditureCategory = uc.UpdateExpenditureCategory.Execute
+				expDeps.DeleteExpenditureCategory = uc.DeleteExpenditureCategory.Execute
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.ExpenditureLineItem != nil {
+				uc := useCases.Expenditure.ExpenditureLineItem
+				expDeps.CreateExpenditureLineItem = uc.CreateExpenditureLineItem.Execute
+				expDeps.ReadExpenditureLineItem = uc.ReadExpenditureLineItem.Execute
+				expDeps.UpdateExpenditureLineItem = uc.UpdateExpenditureLineItem.Execute
+				expDeps.DeleteExpenditureLineItem = uc.DeleteExpenditureLineItem.Execute
+				expDeps.ListExpenditureLineItems = uc.ListExpenditureLineItems.Execute
 			}
 			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
 		}

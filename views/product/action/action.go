@@ -29,13 +29,18 @@ type FormData struct {
 
 // Deps holds dependencies for product action handlers.
 type Deps struct {
-	Routes           centymo.ProductRoutes
-	Labels           centymo.ProductLabels
-	CreateProduct    func(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.CreateProductResponse, error)
-	ReadProduct      func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
-	UpdateProduct    func(ctx context.Context, req *productpb.UpdateProductRequest) (*productpb.UpdateProductResponse, error)
-	DeleteProduct    func(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.DeleteProductResponse, error)
-	SetProductActive func(ctx context.Context, id string, active bool) error
+	Routes                   centymo.ProductRoutes
+	Labels                   centymo.ProductLabels
+	CreateProduct            func(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.CreateProductResponse, error)
+	ReadProduct              func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
+	UpdateProduct            func(ctx context.Context, req *productpb.UpdateProductRequest) (*productpb.UpdateProductResponse, error)
+	DeleteProduct            func(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.DeleteProductResponse, error)
+	SetProductActive         func(ctx context.Context, id string, active bool) error
+	// DefaultFulfillmentMethod is applied when the form does not supply a
+	// fulfillment_method value. Set to "service" for professional business types
+	// so new products created through the services UI are immediately visible in
+	// the services list (which filters fulfillment_method IN ('service','digital')).
+	DefaultFulfillmentMethod string
 }
 
 func formLabels(l centymo.ProductLabels) centymo.ProductFormLabels {
@@ -70,13 +75,19 @@ func NewAddAction(deps *Deps) view.View {
 		price, _ := strconv.ParseFloat(r.FormValue("price"), 64)
 		desc := r.FormValue("description")
 
+		fulfillmentMethod := r.FormValue("fulfillment_method")
+		if fulfillmentMethod == "" {
+			fulfillmentMethod = deps.DefaultFulfillmentMethod
+		}
+
 		_, err := deps.CreateProduct(ctx, &productpb.CreateProductRequest{
 			Data: &productpb.Product{
-				Name:        r.FormValue("name"),
-				Description: &desc,
-				Price:       price,
-				Currency:    r.FormValue("currency"),
-				Active:      active,
+				Name:              r.FormValue("name"),
+				Description:       &desc,
+				Price:             price,
+				Currency:          r.FormValue("currency"),
+				Active:            active,
+				FulfillmentMethod: fulfillmentMethod,
 			},
 		})
 		if err != nil {

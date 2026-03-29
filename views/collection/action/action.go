@@ -27,6 +27,8 @@ type FormLabels struct {
 	Status               string
 	Notes                string
 	NotesPlaceholder     string
+	// Form holds extended placeholder and option labels used by the template.
+	Form centymo.CollectionFormLabels
 }
 
 // FormData is the template data for the collection drawer form.
@@ -71,6 +73,7 @@ func formLabels(l centymo.CollectionFormLabels) FormLabels {
 		Status:               l.Status,
 		Notes:                l.Notes,
 		NotesPlaceholder:     l.NotesPlaceholder,
+		Form:                 l,
 	}
 }
 

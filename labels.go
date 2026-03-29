@@ -950,17 +950,87 @@ type PriceListErrorLabels struct {
 // ExpenditureLabels holds all translatable strings for the expenditure module
 // (purchase + expense views).
 type ExpenditureLabels struct {
-	Labels  ExpenditureLabelNames   `json:"labels"`
-	Page    ExpenditurePageLabels   `json:"page"`
-	Buttons ExpenditureButtonLabels `json:"buttons"`
-	Columns ExpenditureColumnLabels `json:"columns"`
-	Empty   ExpenditureEmptyLabels  `json:"empty"`
-	Form    ExpenditureFormLabels   `json:"form"`
-	Status  ExpenditureStatusLabels `json:"status"`
-	Types   ExpenditureTypeLabels   `json:"types"`
-	Actions ExpenditureActionLabels `json:"actions"`
-	Bulk    ExpenditureBulkLabels   `json:"bulkActions"`
-	Detail  ExpenditureDetailLabels `json:"detail"`
+	Labels   ExpenditureLabelNames          `json:"labels"`
+	Page     ExpenditurePageLabels          `json:"page"`
+	Buttons  ExpenditureButtonLabels        `json:"buttons"`
+	Columns  ExpenditureColumnLabels        `json:"columns"`
+	Empty    ExpenditureEmptyLabels         `json:"empty"`
+	Form     ExpenditureFormLabels          `json:"form"`
+	Status   ExpenditureStatusLabels        `json:"status"`
+	Types    ExpenditureTypeLabels          `json:"types"`
+	Actions  ExpenditureActionLabels        `json:"actions"`
+	Bulk     ExpenditureBulkLabels          `json:"bulkActions"`
+	Detail   ExpenditureDetailLabels        `json:"detail"`
+	Errors   ExpenditureErrorLabels         `json:"errors"`
+	Category ExpenditureCategoryLabels      `json:"category"`
+}
+
+// ExpenditureCategoryLabels holds translatable strings for the expenditure
+// category settings list and CRUD drawer.
+type ExpenditureCategoryLabels struct {
+	Page    ExpenditureCategoryPageLabels    `json:"page"`
+	Columns ExpenditureCategoryColumnLabels  `json:"columns"`
+	Empty   ExpenditureCategoryEmptyLabels   `json:"empty"`
+	Form    ExpenditureCategoryFormLabels    `json:"form"`
+	Actions ExpenditureCategoryActionLabels  `json:"actions"`
+	Errors  ExpenditureCategoryErrorLabels   `json:"errors"`
+	Confirm ExpenditureCategoryConfirmLabels `json:"confirm"`
+	Buttons ExpenditureCategoryButtonLabels  `json:"buttons"`
+}
+
+type ExpenditureCategoryPageLabels struct {
+	Heading  string `json:"heading"`
+	Caption  string `json:"caption"`
+}
+
+type ExpenditureCategoryButtonLabels struct {
+	AddCategory string `json:"addCategory"`
+}
+
+type ExpenditureCategoryColumnLabels struct {
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+}
+
+type ExpenditureCategoryEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type ExpenditureCategoryFormLabels struct {
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type ExpenditureCategoryActionLabels struct {
+	Add    string `json:"add"`
+	Edit   string `json:"edit"`
+	Delete string `json:"delete"`
+}
+
+type ExpenditureCategoryErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	InvalidFormData  string `json:"invalidFormData"`
+}
+
+type ExpenditureCategoryConfirmLabels struct {
+	DeleteTitle   string `json:"deleteTitle"`
+	DeleteMessage string `json:"deleteMessage"`
+}
+
+// ExpenditureErrorLabels holds error messages for the expenditure action handlers.
+type ExpenditureErrorLabels struct {
+	PermissionDenied  string `json:"permissionDenied"`
+	InvalidFormData   string `json:"invalidFormData"`
+	NotFound          string `json:"notFound"`
+	IDRequired        string `json:"idRequired"`
+	NoIDsProvided     string `json:"noIDsProvided"`
+	InvalidStatus     string `json:"invalidStatus"`
 }
 
 type ExpenditureLabelNames struct {

@@ -1,0 +1,297 @@
+package detail
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	centymo "github.com/erniealice/centymo-golang"
+
+	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
+	"github.com/erniealice/pyeza-golang/types"
+	"github.com/erniealice/pyeza-golang/view"
+
+	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
+	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
+)
+
+// DetailViewDeps holds view dependencies for the purchase order detail page.
+type DetailViewDeps struct {
+	Routes       centymo.ExpenditureRoutes
+	Labels       centymo.ExpenditureLabels
+	CommonLabels pyeza.CommonLabels
+	TableLabels  types.TableLabels
+
+	ReadPurchaseOrder          func(ctx context.Context, req *purchaseorderpb.ReadPurchaseOrderRequest) (*purchaseorderpb.ReadPurchaseOrderResponse, error)
+	ListPurchaseOrderLineItems func(ctx context.Context, req *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error)
+}
+
+// PageData holds the data for the purchase order detail page.
+type PageData struct {
+	types.PageData
+	ContentTemplate string
+	PurchaseOrder   map[string]any
+	Labels          centymo.ExpenditureLabels
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
+	LineItemTable   *types.TableConfig
+	TotalAmount     string
+	SetStatusURL    string
+}
+
+// purchaseOrderToMap converts a PurchaseOrder proto to a map for template use.
+func purchaseOrderToMap(po *purchaseorderpb.PurchaseOrder) map[string]any {
+	supplierName := ""
+	if supplier := po.GetSupplier(); supplier != nil {
+		supplierName = supplier.GetCompanyName()
+	}
+	if supplierName == "" {
+		supplierName = po.GetSupplierId()
+	}
+
+	locationName := ""
+	if location := po.GetLocation(); location != nil {
+		locationName = location.GetName()
+	}
+
+	return map[string]any{
+		"id":                             po.GetId(),
+		"po_number":                      po.GetPoNumber(),
+		"po_type":                        po.GetPoType(),
+		"status":                         po.GetStatus(),
+		"supplier_id":                    po.GetSupplierId(),
+		"supplier_name":                  supplierName,
+		"location_id":                    po.GetLocationId(),
+		"location_name":                  locationName,
+		"order_date_string":              po.GetOrderDateString(),
+		"expected_delivery_date_string":  po.GetExpectedDeliveryDateString(),
+		"currency":                       po.GetCurrency(),
+		"subtotal":                       centymo.FormatWithCommas(po.GetSubtotal()),
+		"tax_amount":                     centymo.FormatWithCommas(po.GetTaxAmount()),
+		"total_amount":                   centymo.FormatWithCommas(po.GetTotalAmount()),
+		"payment_terms":                  po.GetPaymentTerms(),
+		"shipping_terms":                 po.GetShippingTerms(),
+		"approved_by":                    po.GetApprovedBy(),
+		"approved_date_string":           po.GetApprovedDateString(),
+		"reference_number":               po.GetReferenceNumber(),
+		"notes":                          po.GetNotes(),
+		"active":                         po.GetActive(),
+		"date_created_string":            po.GetDateCreatedString(),
+		"date_modified_string":           po.GetDateModifiedString(),
+	}
+}
+
+// buildTabItems builds the tab navigation for the purchase order detail page.
+func buildTabItems(id string, routes centymo.ExpenditureRoutes) []pyeza.TabItem {
+	base := route.ResolveURL(routes.PurchaseOrderDetailURL, "id", id)
+	action := route.ResolveURL(routes.PurchaseOrderTabActionURL, "id", id, "tab", "")
+	return []pyeza.TabItem{
+		{Key: "info", Label: "Details", Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "items", Label: "Line Items", Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
+	}
+}
+
+// buildLineItemTable builds the line items table config for a purchase order.
+func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, currency string) *types.TableConfig {
+	columns := []types.TableColumn{
+		{Key: "line_number", Label: "Line #", Sortable: false, Width: "80px"},
+		{Key: "description", Label: "Description", Sortable: false},
+		{Key: "line_type", Label: "Type", Sortable: false, Width: "100px"},
+		{Key: "quantity_ordered", Label: "Qty Ordered", Sortable: false, Width: "110px"},
+		{Key: "quantity_received", Label: "Qty Received", Sortable: false, Width: "120px"},
+		{Key: "quantity_billed", Label: "Qty Billed", Sortable: false, Width: "110px"},
+		{Key: "unit_price", Label: "Unit Price", Sortable: false, Width: "130px"},
+		{Key: "total", Label: "Total", Sortable: false, Width: "130px"},
+	}
+
+	rows := []types.TableRow{}
+	for _, item := range items {
+		lineNumber, _ := item["line_number"].(string)
+		description, _ := item["description"].(string)
+		lineType, _ := item["line_type"].(string)
+		qtyOrdered, _ := item["quantity_ordered"].(string)
+		qtyReceived, _ := item["quantity_received"].(string)
+		qtyBilled, _ := item["quantity_billed"].(string)
+		unitPrice, _ := item["unit_price"].(string)
+		total, _ := item["total"].(string)
+
+		rows = append(rows, types.TableRow{
+			ID: item["id"].(string),
+			Cells: []types.TableCell{
+				{Type: "text", Value: lineNumber},
+				{Type: "text", Value: description},
+				{Type: "text", Value: lineType},
+				{Type: "text", Value: qtyOrdered},
+				{Type: "text", Value: qtyReceived},
+				{Type: "text", Value: qtyBilled},
+				{Type: "text", Value: currency + " " + unitPrice},
+				{Type: "text", Value: currency + " " + total},
+			},
+		})
+	}
+
+	types.ApplyColumnStyles(columns, rows)
+
+	return &types.TableConfig{
+		ID:      "po-line-items-table",
+		Columns: columns,
+		Rows:    rows,
+		Labels:  tableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   "No line items",
+			Message: "This purchase order has no line items yet.",
+		},
+	}
+}
+
+// listLineItemMaps lists line items for a purchase order and returns as maps.
+func listLineItemMaps(ctx context.Context, listFn func(context.Context, *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error), purchaseOrderID string) []map[string]any {
+	resp, err := listFn(ctx, &purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest{
+		PurchaseOrderId: &purchaseOrderID,
+	})
+	if err != nil {
+		log.Printf("Failed to list line items for purchase order %s: %v", purchaseOrderID, err)
+		return []map[string]any{}
+	}
+	items := []map[string]any{}
+	for _, item := range resp.GetData() {
+		if item.GetPurchaseOrderId() == purchaseOrderID {
+			items = append(items, map[string]any{
+				"id":                item.GetId(),
+				"purchase_order_id": item.GetPurchaseOrderId(),
+				"description":       item.GetDescription(),
+				"line_number":       fmt.Sprintf("%d", item.GetLineNumber()),
+				"line_type":         item.GetLineType(),
+				"quantity_ordered":  fmt.Sprintf("%.0f", item.GetQuantityOrdered()),
+				"quantity_received": fmt.Sprintf("%.0f", item.GetQuantityReceived()),
+				"quantity_billed":   fmt.Sprintf("%.0f", item.GetQuantityBilled()),
+				"unit_price":        centymo.FormatWithCommas(item.GetUnitPrice()),
+				"total":             centymo.FormatWithCommas(item.GetTotalPrice()),
+				"notes":             item.GetNotes(),
+			})
+		}
+	}
+	return items
+}
+
+// NewView creates the purchase order detail view (full page).
+func NewView(deps *DetailViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		id := viewCtx.Request.PathValue("id")
+
+		resp, err := deps.ReadPurchaseOrder(ctx, &purchaseorderpb.ReadPurchaseOrderRequest{
+			Data: &purchaseorderpb.PurchaseOrder{Id: id},
+		})
+		if err != nil {
+			log.Printf("Failed to read purchase order %s: %v", id, err)
+			return view.Error(fmt.Errorf("failed to load purchase order: %w", err))
+		}
+		data := resp.GetData()
+		if len(data) == 0 {
+			return view.Error(fmt.Errorf("purchase order not found"))
+		}
+		po := purchaseOrderToMap(data[0])
+
+		poNumber, _ := po["po_number"].(string)
+		headerTitle := poNumber
+		if headerTitle == "" {
+			headerTitle, _ = po["reference_number"].(string)
+		}
+		if headerTitle == "" {
+			headerTitle = id
+		}
+
+		activeTab := viewCtx.QueryParams["tab"]
+		if activeTab == "" {
+			activeTab = "info"
+		}
+		tabItems := buildTabItems(id, deps.Routes)
+
+		pageData := &PageData{
+			PageData: types.PageData{
+				CacheVersion:   viewCtx.CacheVersion,
+				Title:          headerTitle,
+				CurrentPath:    viewCtx.CurrentPath,
+				ActiveNav:      "purchases",
+				HeaderTitle:    headerTitle,
+				HeaderSubtitle: deps.Labels.Page.PurchaseHeading,
+				HeaderIcon:     "icon-shopping-cart",
+				CommonLabels:   deps.CommonLabels,
+			},
+			ContentTemplate: "purchase-order-detail-content",
+			PurchaseOrder:   po,
+			Labels:          deps.Labels,
+			ActiveTab:       activeTab,
+			TabItems:        tabItems,
+			SetStatusURL:    deps.Routes.PurchaseOrderSetStatusURL,
+		}
+
+		switch activeTab {
+		case "info":
+			// po map has everything
+		case "items":
+			if deps.ListPurchaseOrderLineItems != nil {
+				lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, id)
+				currency, _ := po["currency"].(string)
+				pageData.LineItemTable = buildLineItemTable(lineItems, deps.TableLabels, currency)
+				totalAmount, _ := po["total_amount"].(string)
+				pageData.TotalAmount = currency + " " + totalAmount
+			}
+		}
+
+		return view.OK("purchase-order-detail", pageData)
+	})
+}
+
+// NewTabAction creates the tab action view (partial — returns only the tab content).
+func NewTabAction(deps *DetailViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		id := viewCtx.Request.PathValue("id")
+		tab := viewCtx.Request.PathValue("tab")
+		if tab == "" {
+			tab = "info"
+		}
+
+		resp, err := deps.ReadPurchaseOrder(ctx, &purchaseorderpb.ReadPurchaseOrderRequest{
+			Data: &purchaseorderpb.PurchaseOrder{Id: id},
+		})
+		if err != nil {
+			log.Printf("Failed to read purchase order %s: %v", id, err)
+			return view.Error(fmt.Errorf("failed to load purchase order: %w", err))
+		}
+		data := resp.GetData()
+		if len(data) == 0 {
+			return view.Error(fmt.Errorf("purchase order not found"))
+		}
+		po := purchaseOrderToMap(data[0])
+
+		pageData := &PageData{
+			PageData: types.PageData{
+				CacheVersion: viewCtx.CacheVersion,
+				CommonLabels: deps.CommonLabels,
+			},
+			PurchaseOrder: po,
+			Labels:        deps.Labels,
+			ActiveTab:     tab,
+			TabItems:      buildTabItems(id, deps.Routes),
+			SetStatusURL:  deps.Routes.PurchaseOrderSetStatusURL,
+		}
+
+		switch tab {
+		case "info":
+			// po map has everything
+		case "items":
+			if deps.ListPurchaseOrderLineItems != nil {
+				lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, id)
+				currency, _ := po["currency"].(string)
+				pageData.LineItemTable = buildLineItemTable(lineItems, deps.TableLabels, currency)
+				totalAmount, _ := po["total_amount"].(string)
+				pageData.TotalAmount = currency + " " + totalAmount
+			}
+		}
+
+		templateName := "purchase-order-tab-" + tab
+		return view.OK(templateName, pageData)
+	})
+}

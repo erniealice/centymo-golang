@@ -1,0 +1,43 @@
+{{/*
+Category drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions for expenditure categories.
+Data: .Code, .Name, .Description, .ID, .FormAction, .IsEdit,
+      .CommonLabels, .Labels (FormLabels with Code, Name, Description)
+*/}}
+{{define "category-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* --- Code + Name row --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "code"
+                "Label" .Labels.Code
+                "Value" .Code
+                "Required" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.Name
+                "Value" .Name
+                "Required" true
+            )}}
+        </div>
+
+        {{/* --- Description --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "description"
+                "Label" .Labels.Description
+                "Value" .Description
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}
