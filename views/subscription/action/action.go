@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -13,6 +14,7 @@ import (
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
@@ -67,6 +69,7 @@ type Deps struct {
 	ListPlans           func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
 	SearchPlansByName   func(ctx context.Context, req *planpb.SearchPlansByNameRequest) (*planpb.SearchPlansByNameResponse, error)
+	ListPricePlans      func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
 }
 
 func formLabels(l centymo.SubscriptionLabels) FormLabels {
@@ -210,12 +213,17 @@ func NewAddAction(deps *Deps) view.View {
 		dateStart := r.FormValue("date_start_string")
 		dateEnd := r.FormValue("date_end_string")
 
-		// The form sends plan_id (from plan search). Resolve to price_plan_id.
 		pricePlanID := r.FormValue("price_plan_id")
-		if pricePlanID == "" {
-			// Form sends plan_id — use it directly as price_plan_id
-			// (the backend will resolve plan → first active price_plan)
-			pricePlanID = r.FormValue("plan_id")
+
+		// Validate: start date must not be in the past
+		if dateStart != "" {
+			startTime, parseErr := time.Parse("2006-01-02", dateStart)
+			if parseErr == nil {
+				today := time.Now().Truncate(24 * time.Hour)
+				if startTime.Before(today) {
+					return centymo.HTMXError("Start date cannot be in the past")
+				}
+			}
 		}
 
 		resp, err := deps.CreateSubscription(ctx, &subscriptionpb.CreateSubscriptionRequest{
@@ -233,21 +241,7 @@ func NewAddAction(deps *Deps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
-		// Redirect to new subscription detail
-		newID := ""
-		if respData := resp.GetData(); len(respData) > 0 {
-			newID = respData[0].GetId()
-		}
-		if newID != "" {
-			return view.ViewResult{
-				StatusCode: http.StatusOK,
-				Headers: map[string]string{
-					"HX-Trigger":  `{"formSuccess":true}`,
-					"HX-Redirect": route.ResolveURL(deps.Routes.DetailURL, "id", newID),
-				},
-			}
-		}
-
+		_ = resp
 		return centymo.HTMXSuccess("subscriptions-table")
 	})
 }
@@ -307,12 +301,28 @@ func NewEditAction(deps *Deps) view.View {
 		dateStart := r.FormValue("date_start_string")
 		dateEnd := r.FormValue("date_end_string")
 
+		pricePlanID := r.FormValue("price_plan_id")
+		if pricePlanID == "" {
+			pricePlanID = r.FormValue("plan_id")
+		}
+
+		// Validate: start date must not be in the past
+		if dateStart != "" {
+			startTime, parseErr := time.Parse("2006-01-02", dateStart)
+			if parseErr == nil {
+				today := time.Now().Truncate(24 * time.Hour)
+				if startTime.Before(today) {
+					return centymo.HTMXError("Start date cannot be in the past")
+				}
+			}
+		}
+
 		_, err := deps.UpdateSubscription(ctx, &subscriptionpb.UpdateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
 				Id:              id,
 				Name:            r.FormValue("name"),
 				ClientId:        r.FormValue("client_id"),
-				PricePlanId:     r.FormValue("price_plan_id"),
+				PricePlanId:     pricePlanID,
 				DateStartString: strPtr(dateStart),
 				DateEndString:   strPtr(dateEnd),
 			},
@@ -322,14 +332,7 @@ func NewEditAction(deps *Deps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
-		// Redirect to detail page
-		return view.ViewResult{
-			StatusCode: http.StatusOK,
-			Headers: map[string]string{
-				"HX-Trigger":  `{"formSuccess":true}`,
-				"HX-Redirect": route.ResolveURL(deps.Routes.DetailURL, "id", id),
-			},
-		}
+		return centymo.HTMXSuccess("subscriptions-table")
 	})
 }
 

@@ -4,13 +4,16 @@ package action
 // They accept ?q=searchterm and return JSON: [{"value":"id","label":"Name"}, ...]
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 )
 
 // searchOption is the JSON shape returned by the search handlers.
@@ -121,65 +124,51 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 	}
 }
 
-// NewSearchPlansAction returns an http.HandlerFunc that searches plans
-// by name and returns JSON results for the auto-complete component.
+// NewSearchPlansAction returns an http.HandlerFunc that searches price plans
+// and returns JSON results for the auto-complete component.
+// Returns price_plan.id as value with label showing name + formatted amount + currency.
 func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		query := strings.TrimSpace(r.URL.Query().Get("q"))
 
-		// Use proto search if available (SQL ILIKE, no full load)
-		if deps.SearchPlansByName != nil {
-			resp, err := deps.SearchPlansByName(ctx, &planpb.SearchPlansByNameRequest{
-				Query: query,
-			})
-			if err != nil {
-				log.Printf("search plans: failed to search plans by name: %v", err)
+		if deps.ListPricePlans == nil {
+			// Fallback to plan search if ListPricePlans not wired
+			if deps.ListPlans != nil {
+				searchPlansLegacy(ctx, w, query, deps)
+			} else {
 				writeJSON(w, []searchOption{})
-				return
 			}
-			var results []searchOption
-			for _, r := range resp.GetResults() {
-				results = append(results, searchOption{
-					Value: r.GetId(),
-					Label: r.GetLabel(),
-				})
-			}
-			if results == nil {
-				results = []searchOption{}
-			}
-			writeJSON(w, results)
 			return
 		}
 
-		// Fallback: load all plans and filter in Go
-		if deps.ListPlans == nil {
+		resp, err := deps.ListPricePlans(ctx, &priceplanpb.ListPricePlansRequest{})
+		if err != nil {
+			log.Printf("search price plans: failed to list price plans: %v", err)
 			writeJSON(w, []searchOption{})
 			return
 		}
 
 		queryLower := strings.ToLower(query)
-		resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
-		if err != nil {
-			log.Printf("search plans: failed to list plans: %v", err)
-			writeJSON(w, []searchOption{})
-			return
-		}
-
 		var results []searchOption
-		for _, p := range resp.GetData() {
-			if !p.GetActive() {
+		for _, pp := range resp.GetData() {
+			if !pp.GetActive() {
 				continue
 			}
 
-			name := p.GetName()
+			name := pp.GetName()
 			if queryLower != "" && !strings.Contains(strings.ToLower(name), queryLower) {
 				continue
 			}
 
+			// Format: "Plan Name — 15,000.00 PHP"
+			amount := pp.GetAmount() / 100
+			currency := pp.GetCurrency()
+			label := fmt.Sprintf("%s — %s %s", name, formatAmount(amount), currency)
+
 			results = append(results, searchOption{
-				Value: p.GetId(),
-				Label: name,
+				Value: pp.GetId(),
+				Label: label,
 			})
 
 			if len(results) >= searchResultLimit {
@@ -192,6 +181,63 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 		}
 		writeJSON(w, results)
 	}
+}
+
+// searchPlansLegacy is the old plan-based search fallback.
+func searchPlansLegacy(ctx context.Context, w http.ResponseWriter, query string, deps *Deps) {
+	queryLower := strings.ToLower(query)
+	resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
+	if err != nil {
+		log.Printf("search plans: failed to list plans: %v", err)
+		writeJSON(w, []searchOption{})
+		return
+	}
+
+	var results []searchOption
+	for _, p := range resp.GetData() {
+		if !p.GetActive() {
+			continue
+		}
+		name := p.GetName()
+		if queryLower != "" && !strings.Contains(strings.ToLower(name), queryLower) {
+			continue
+		}
+		results = append(results, searchOption{
+			Value: p.GetId(),
+			Label: name,
+		})
+		if len(results) >= searchResultLimit {
+			break
+		}
+	}
+	if results == nil {
+		results = []searchOption{}
+	}
+	writeJSON(w, results)
+}
+
+// formatAmount formats a float amount with thousands separators and 2 decimal places.
+func formatAmount(amount float64) string {
+	s := fmt.Sprintf("%.2f", amount)
+	// Add thousands separators
+	parts := strings.Split(s, ".")
+	intPart := parts[0]
+	decPart := parts[1]
+
+	// Insert commas
+	n := len(intPart)
+	if n <= 3 {
+		return intPart + "." + decPart
+	}
+
+	var result []byte
+	for i, c := range intPart {
+		if i > 0 && (n-i)%3 == 0 {
+			result = append(result, ',')
+		}
+		result = append(result, byte(c))
+	}
+	return string(result) + "." + decPart
 }
 
 // writeJSON marshals data as JSON and writes it to the response writer.

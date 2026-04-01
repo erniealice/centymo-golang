@@ -121,6 +121,17 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 	listParams := espynahttp.ToListParams(p, productSearchFields)
 
+	// Inject active BooleanFilter so the repository returns records matching
+	// the requested status. dbOps.List defaults to active=true; by supplying an
+	// explicit filter here we override that default for the inactive list.
+	activeValue := status != "inactive"
+	activeFilter := &commonpb.TypedFilter{
+		Field: "active",
+		FilterType: &commonpb.TypedFilter_BooleanFilter{
+			BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
+		},
+	}
+
 	// Inject fulfillment_method IN ('service', 'digital') filter so the services list shows
 	// only non-inventory products. fulfillment_method = "physical" or "make_to_order" → inventory items.
 	fulfillmentFilter := &commonpb.TypedFilter{
@@ -136,7 +147,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	if filters == nil {
 		filters = &commonpb.FilterRequest{}
 	}
-	filters.Filters = append(filters.Filters, fulfillmentFilter)
+	filters.Filters = append(filters.Filters, activeFilter, fulfillmentFilter)
 
 	resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{
 		Search:     listParams.Search,

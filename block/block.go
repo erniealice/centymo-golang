@@ -624,6 +624,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						subActionDeps.SearchPlansByName = useCases.Subscription.Plan.SearchPlansByName.Execute
 					}
 				}
+				if useCases.Subscription.PricePlan != nil {
+					subActionDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
+				}
 				ctx.Routes.GET(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.GET(subscriptionRoutes.EditURL, subscriptionaction.NewEditAction(subActionDeps))
