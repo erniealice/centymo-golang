@@ -759,6 +759,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				expDeps.DeleteExpenditureLineItem = uc.DeleteExpenditureLineItem.Execute
 				expDeps.ListExpenditureLineItems = uc.ListExpenditureLineItems.Execute
 			}
+			if useCases.Entity != nil && useCases.Entity.Supplier != nil {
+				expDeps.ListSuppliers = useCases.Entity.Supplier.ListSuppliers.Execute
+			}
 			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
 		}
 

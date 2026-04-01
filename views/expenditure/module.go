@@ -14,6 +14,7 @@ import (
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
+	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	expenditureaction "github.com/erniealice/centymo-golang/views/expenditure/action"
 	expenditurecategory "github.com/erniealice/centymo-golang/views/expenditure/category"
 	expendituredetail "github.com/erniealice/centymo-golang/views/expenditure/detail"
@@ -39,6 +40,9 @@ type ModuleDeps struct {
 
 	// Category listing (optional — gracefully degrades when nil)
 	ListExpenditureCategories func(ctx context.Context, req *expenditurecategorypb.ListExpenditureCategoriesRequest) (*expenditurecategorypb.ListExpenditureCategoriesResponse, error)
+
+	// Supplier listing (optional — gracefully degrades when nil)
+	ListSuppliers func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)
 
 	// Category CRUD (optional — only built when provided)
 	CreateExpenditureCategory func(ctx context.Context, req *expenditurecategorypb.CreateExpenditureCategoryRequest) (*expenditurecategorypb.CreateExpenditureCategoryResponse, error)
@@ -108,6 +112,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		UpdateExpenditure:         deps.UpdateExpenditure,
 		DeleteExpenditure:         deps.DeleteExpenditure,
 		ListExpenditureCategories: deps.ListExpenditureCategories,
+		ListSuppliers:             deps.ListSuppliers,
 	}
 
 	m := &Module{

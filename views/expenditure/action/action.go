@@ -13,10 +13,18 @@ import (
 
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
+	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 )
 
 // CategoryOption represents a selectable category in the form dropdown.
 type CategoryOption struct {
+	Value    string
+	Label    string
+	Selected bool
+}
+
+// SupplierOption represents a selectable supplier in the form dropdown.
+type SupplierOption struct {
 	Value    string
 	Label    string
 	Selected bool
@@ -27,6 +35,7 @@ type FormLabels struct {
 	Name                string
 	NamePlaceholder     string
 	Category            string
+	Supplier            string
 	Date                string
 	Amount              string
 	Currency            string
@@ -52,6 +61,7 @@ type FormData struct {
 	Name                  string
 	ExpenditureType       string
 	ExpenditureCategoryID string
+	SupplierID            string
 	Date                  string
 	TotalAmount           string
 	Currency              string
@@ -59,6 +69,7 @@ type FormData struct {
 	ReferenceNumber       string
 	Notes                 string
 	Categories            []CategoryOption
+	Suppliers             []SupplierOption
 	Labels                FormLabels
 	CommonLabels          any
 }
@@ -76,6 +87,9 @@ type Deps struct {
 
 	// Category listing (optional — gracefully degrades to empty list if nil)
 	ListExpenditureCategories func(ctx context.Context, req *expenditurecategorypb.ListExpenditureCategoriesRequest) (*expenditurecategorypb.ListExpenditureCategoriesResponse, error)
+
+	// Supplier listing (optional — gracefully degrades to empty list if nil)
+	ListSuppliers func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)
 }
 
 // formLabels maps ExpenditureLabels into the flat FormLabels struct for the template.
@@ -84,6 +98,7 @@ func formLabels(l centymo.ExpenditureLabels) FormLabels {
 		Name:                l.Form.VendorName,
 		NamePlaceholder:     l.Form.VendorNamePlaceholder,
 		Category:            l.Form.ExpenditureCategory,
+		Supplier:            "Supplier",
 		Date:                l.Form.ExpenditureDate,
 		Amount:              l.Form.TotalAmount,
 		Currency:            l.Form.Currency,
@@ -130,6 +145,38 @@ func loadCategoryOptions(
 	return opts
 }
 
+// loadSupplierOptions loads suppliers for the dropdown, pre-selecting selectedID.
+func loadSupplierOptions(
+	ctx context.Context,
+	listFn func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error),
+	selectedID string,
+) []SupplierOption {
+	if listFn == nil {
+		return nil
+	}
+	resp, err := listFn(ctx, &supplierpb.ListSuppliersRequest{})
+	if err != nil {
+		log.Printf("Failed to list suppliers: %v", err)
+		return nil
+	}
+	var opts []SupplierOption
+	for _, s := range resp.GetData() {
+		if !s.GetActive() {
+			continue
+		}
+		label := s.GetCompanyName()
+		if label == "" {
+			label = s.GetId()
+		}
+		opts = append(opts, SupplierOption{
+			Value:    s.GetId(),
+			Label:    label,
+			Selected: s.GetId() == selectedID,
+		})
+	}
+	return opts
+}
+
 // strPtr returns a pointer to a string.
 func strPtr(s string) *string {
 	return &s
@@ -159,6 +206,7 @@ func NewAddAction(deps *Deps) view.View {
 				Currency:        "PHP",
 				Status:          "pending",
 				Categories:      loadCategoryOptions(ctx, deps.ListExpenditureCategories, ""),
+				Suppliers:       loadSupplierOptions(ctx, deps.ListSuppliers, ""),
 				Labels:          formLabels(deps.Labels),
 				CommonLabels:    nil, // injected by ViewAdapter
 			})
@@ -176,6 +224,7 @@ func NewAddAction(deps *Deps) view.View {
 				Name:                  r.FormValue("name"),
 				ExpenditureType:       r.FormValue("expenditure_type"),
 				ExpenditureCategoryId: strPtr(r.FormValue("expenditure_category_id")),
+				SupplierId:            strPtr(r.FormValue("supplier_id")),
 				ExpenditureDateString: strPtr(r.FormValue("expenditure_date_string")),
 				TotalAmount:           parseAmount(r.FormValue("total_amount")),
 				Currency:              r.FormValue("currency"),
@@ -238,6 +287,7 @@ func NewEditAction(deps *Deps) view.View {
 				Name:                  record.GetName(),
 				ExpenditureType:       record.GetExpenditureType(),
 				ExpenditureCategoryID: record.GetExpenditureCategoryId(),
+				SupplierID:            record.GetSupplierId(),
 				Date:                  record.GetExpenditureDateString(),
 				TotalAmount:           strconv.FormatFloat(record.GetTotalAmount(), 'f', 2, 64),
 				Currency:              record.GetCurrency(),
@@ -245,6 +295,7 @@ func NewEditAction(deps *Deps) view.View {
 				ReferenceNumber:       record.GetReferenceNumber(),
 				Notes:                 record.GetNotes(),
 				Categories:            loadCategoryOptions(ctx, deps.ListExpenditureCategories, record.GetExpenditureCategoryId()),
+				Suppliers:             loadSupplierOptions(ctx, deps.ListSuppliers, record.GetSupplierId()),
 				Labels:                formLabels(deps.Labels),
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
@@ -263,6 +314,7 @@ func NewEditAction(deps *Deps) view.View {
 				Name:                  r.FormValue("name"),
 				ExpenditureType:       r.FormValue("expenditure_type"),
 				ExpenditureCategoryId: strPtr(r.FormValue("expenditure_category_id")),
+				SupplierId:            strPtr(r.FormValue("supplier_id")),
 				ExpenditureDateString: strPtr(r.FormValue("expenditure_date_string")),
 				TotalAmount:           parseAmount(r.FormValue("total_amount")),
 				Currency:              r.FormValue("currency"),

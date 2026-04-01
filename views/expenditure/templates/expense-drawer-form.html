@@ -1,7 +1,8 @@
 {{/*
 Expense drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .Date, .TotalAmount, .Currency,
+Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
+      .Date, .TotalAmount, .Currency,
       .Status, .ReferenceNumber, .Notes, .Categories, .ID, .FormAction, .IsEdit,
       .CommonLabels, .Labels
 */}}
@@ -93,6 +94,19 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .Date, .TotalAmount, .Cur
                 "Value" .ReferenceNumber
             )}}
         </div>
+
+        {{/* --- Supplier --- */}}
+        {{if .Suppliers}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "supplier_id"
+                "Label" .Labels.Supplier
+                "Value" .SupplierID
+                "Options" .Suppliers
+            )}}
+        </div>
+        {{end}}
 
         {{/* --- Notes --- */}}
         <div class="form-row single">
