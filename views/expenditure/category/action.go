@@ -136,6 +136,9 @@ func NewEditAction(deps *ActionDeps) view.View {
 		}
 
 		id := viewCtx.Request.PathValue("id")
+		if id == "" || id == "{id}" {
+			id = viewCtx.Request.URL.Query().Get("id")
+		}
 
 		if viewCtx.Request.Method == http.MethodGet {
 			readResp, err := deps.ReadExpenditureCategory(ctx, &expenditurecategorypb.ReadExpenditureCategoryRequest{
