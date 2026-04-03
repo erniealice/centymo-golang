@@ -16,17 +16,19 @@ import (
 	productlist "github.com/erniealice/centymo-golang/views/product/list"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
-	"github.com/erniealice/hybra-golang/views/attachment"
-	"github.com/erniealice/hybra-golang/views/auditlog"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
+	linepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productattributepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_attribute"
+	productlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_line"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	productvariantimagepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_image"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
+	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 )
 
 // ModuleDeps holds all dependencies for the product module.
@@ -71,6 +73,13 @@ type ModuleDeps struct {
 	CreateProductOption func(ctx context.Context, req *productoptionpb.CreateProductOptionRequest) (*productoptionpb.CreateProductOptionResponse, error)
 	UpdateProductOption func(ctx context.Context, req *productoptionpb.UpdateProductOptionRequest) (*productoptionpb.UpdateProductOptionResponse, error)
 	DeleteProductOption func(ctx context.Context, req *productoptionpb.DeleteProductOptionRequest) (*productoptionpb.DeleteProductOptionResponse, error)
+
+	// Product Line association CRUD
+	ListLines         func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
+	ListProductLines  func(ctx context.Context, req *productlinepb.ListProductLinesRequest) (*productlinepb.ListProductLinesResponse, error)
+	CreateProductLine func(ctx context.Context, req *productlinepb.CreateProductLineRequest) (*productlinepb.CreateProductLineResponse, error)
+	UpdateProductLine func(ctx context.Context, req *productlinepb.UpdateProductLineRequest) (*productlinepb.UpdateProductLineResponse, error)
+	DeleteProductLine func(ctx context.Context, req *productlinepb.DeleteProductLineRequest) (*productlinepb.DeleteProductLineResponse, error)
 
 	// Product Option Value CRUD
 	ListProductOptionValues  func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
@@ -180,6 +189,11 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListProductVariants:       deps.ListProductVariants,
 		ListProductOptions:        deps.ListProductOptions,
 		ListProductOptionValues:   deps.ListProductOptionValues,
+		ListLines:                 deps.ListLines,
+		ListProductLines:          deps.ListProductLines,
+		CreateProductLine:         deps.CreateProductLine,
+		UpdateProductLine:         deps.UpdateProductLine,
+		DeleteProductLine:         deps.DeleteProductLine,
 		ListProductVariantOptions: deps.ListProductVariantOptions,
 		AttachmentOps: attachment.AttachmentOps{
 			UploadFile:       deps.UploadFile,

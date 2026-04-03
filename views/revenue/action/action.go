@@ -6,33 +6,41 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	"github.com/erniealice/centymo-golang"
 
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
 // PaymentTermOption is a minimal struct for rendering payment term options in the form.
 type PaymentTermOption struct {
-	Id       string
-	Name     string
-	NetDays  int32
+	Id      string
+	Name    string
+	NetDays int32
 }
 
 // FormInner holds nested form labels accessed via .Labels.Form.* in templates.
 type FormInner struct {
-	CurrencyPlaceholder    string
-	StatusOngoing          string
-	StatusComplete         string
-	StatusCancelled        string
-	CustomerNamePlaceholder string
+	CurrencyPlaceholder       string
+	StatusOngoing             string
+	StatusComplete            string
+	StatusCancelled           string
+	CustomerNamePlaceholder   string
+	CustomerSearchPlaceholder string
+	CustomerNoResults         string
 }
 
 // FormLabels holds i18n labels for the drawer form template.
@@ -49,6 +57,8 @@ type FormLabels struct {
 	PaymentTerms         string
 	SelectPaymentTerm    string
 	DueDate              string
+	Subscription         string
+	SubscriptionNoResults string
 	Form                 FormInner
 }
 
@@ -58,6 +68,12 @@ type FormData struct {
 	IsEdit                bool
 	ID                    string
 	Name                  string
+	ClientID              string
+	ClientLabel           string
+	SearchClientURL       string
+	SubscriptionID        string
+	SubscriptionLabel     string
+	SearchSubscriptionURL string
 	ReferenceNumber       string
 	Date                  string
 	Currency              string
@@ -81,6 +97,19 @@ type Deps struct {
 	// Payment terms dropdown (optional — gracefully degrades when nil)
 	ListPaymentTerms func(ctx context.Context) ([]*PaymentTermOption, error)
 
+	// Client search for autocomplete (optional — gracefully degrades when nil)
+	ListClients         func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
+
+	// Subscription search for revenue form autocomplete (optional — gracefully degrades when nil)
+	ListSubscriptions func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
+
+	// Subscription auto-populate (optional — gracefully degrades when nil)
+	ReadSubscription     func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
+	ReadPricePlan        func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	ReadProduct          func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
+
 	// Typed revenue operations
 	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
 	ReadRevenue   func(ctx context.Context, req *revenuepb.ReadRevenueRequest) (*revenuepb.ReadRevenueResponse, error)
@@ -88,7 +117,8 @@ type Deps struct {
 	DeleteRevenue func(ctx context.Context, req *revenuepb.DeleteRevenueRequest) (*revenuepb.DeleteRevenueResponse, error)
 
 	// Typed line item operations
-	ListRevenueLineItems func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
+	CreateRevenueLineItem func(ctx context.Context, req *revenuelineitempb.CreateRevenueLineItemRequest) (*revenuelineitempb.CreateRevenueLineItemResponse, error)
+	ListRevenueLineItems  func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
 
 	// Typed inventory operations
 	ReadInventoryItem            func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
@@ -100,24 +130,28 @@ type Deps struct {
 
 func formLabels(t func(string) string) FormLabels {
 	return FormLabels{
-		Customer:             t("sales.form.customer"),
-		Date:                 t("sales.form.date"),
-		Currency:             t("sales.form.currency"),
-		Reference:            t("sales.form.reference"),
-		ReferencePlaceholder: t("sales.form.referencePlaceholder"),
-		Status:               t("sales.form.status"),
-		Notes:                t("sales.form.notes"),
-		NotesPlaceholder:     t("sales.form.notesPlaceholder"),
-		Location:             t("sales.form.location"),
-		PaymentTerms:         t("revenue.form.paymentTerms"),
-		SelectPaymentTerm:    t("revenue.form.selectPaymentTerm"),
-		DueDate:              t("revenue.form.dueDate"),
+		Customer:              t("sales.form.customer"),
+		Date:                  t("sales.form.date"),
+		Currency:              t("sales.form.currency"),
+		Reference:             t("sales.form.reference"),
+		ReferencePlaceholder:  t("sales.form.referencePlaceholder"),
+		Status:                t("sales.form.status"),
+		Notes:                 t("sales.form.notes"),
+		NotesPlaceholder:      t("sales.form.notesPlaceholder"),
+		Location:              t("sales.form.location"),
+		PaymentTerms:          t("revenue.form.paymentTerms"),
+		SelectPaymentTerm:     t("revenue.form.selectPaymentTerm"),
+		DueDate:               t("revenue.form.dueDate"),
+		Subscription:          t("revenue.form.subscription"),
+		SubscriptionNoResults: t("revenue.form.subscriptionNoResults"),
 		Form: FormInner{
-			CurrencyPlaceholder:     t("revenue.form.currencyPlaceholder"),
-			StatusOngoing:           t("revenue.form.statusOngoing"),
-			StatusComplete:          t("revenue.form.statusComplete"),
-			StatusCancelled:         t("revenue.form.statusCancelled"),
-			CustomerNamePlaceholder: t("revenue.form.customerNamePlaceholder"),
+			CurrencyPlaceholder:       t("revenue.form.currencyPlaceholder"),
+			StatusOngoing:             t("revenue.form.statusOngoing"),
+			StatusComplete:            t("revenue.form.statusComplete"),
+			StatusCancelled:           t("revenue.form.statusCancelled"),
+			CustomerNamePlaceholder:   t("revenue.form.customerNamePlaceholder"),
+			CustomerSearchPlaceholder: t("revenue.form.customerSearchPlaceholder"),
+			CustomerNoResults:         t("revenue.form.customerNoResults"),
 		},
 	}
 }
@@ -162,6 +196,53 @@ func loadLocationOptions(ctx context.Context, db centymo.DataSource) []map[strin
 	return options
 }
 
+// resolveClientLabel finds the display name for a client by ID.
+func resolveClientLabel(ctx context.Context, clientID string, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)) string {
+	if clientID == "" || listClients == nil {
+		return ""
+	}
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		return clientID
+	}
+	for _, c := range resp.GetData() {
+		if c.GetId() == clientID {
+			if cn := c.GetName(); cn != "" {
+				return cn
+			}
+			if u := c.GetUser(); u != nil {
+				first := u.GetFirstName()
+				last := u.GetLastName()
+				if first != "" || last != "" {
+					return strings.TrimSpace(first + " " + last)
+				}
+			}
+			return clientID
+		}
+	}
+	return clientID
+}
+
+// resolveSubscriptionLabel finds the display name for a subscription by ID.
+func resolveSubscriptionLabel(ctx context.Context, subscriptionID string, listSubscriptions func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)) string {
+	if subscriptionID == "" || listSubscriptions == nil {
+		return ""
+	}
+	resp, err := listSubscriptions(ctx, &subscriptionpb.ListSubscriptionsRequest{})
+	if err != nil {
+		return subscriptionID
+	}
+	for _, s := range resp.GetData() {
+		if s.GetId() == subscriptionID {
+			if name := s.GetName(); name != "" {
+				return name
+			}
+			return subscriptionID
+		}
+	}
+	return subscriptionID
+}
+
 // NewAddAction creates the sales add action (GET = form, POST = create).
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -172,14 +253,16 @@ func NewAddAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			paymentTerms := loadPaymentTerms(ctx, deps)
-			return view.OK("sales-drawer-form", &FormData{
-				FormAction:   deps.Routes.AddURL,
-				Currency:     "PHP",
-				Status:       "ongoing",
-				Locations:    loadLocationOptions(ctx, deps.DB),
-				PaymentTerms: paymentTerms,
-				Labels:       formLabels(viewCtx.T),
-				CommonLabels: nil, // injected by ViewAdapter
+			return view.OK("revenue-drawer-form", &FormData{
+				FormAction:            deps.Routes.AddURL,
+				Currency:              "PHP",
+				Status:                "ongoing",
+				Locations:             loadLocationOptions(ctx, deps.DB),
+				PaymentTerms:          paymentTerms,
+				SearchClientURL:       deps.Routes.SearchClientURL,
+				SearchSubscriptionURL: deps.Routes.SearchSubscriptionURL,
+				Labels:                formLabels(viewCtx.T),
+				CommonLabels:          nil, // injected by ViewAdapter
 			})
 		}
 
@@ -190,17 +273,35 @@ func NewAddAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
+		// Resolve client: prefer autocomplete client_id, fall back to freetext name
+		customerName := r.FormValue("name")
+		clientID := r.FormValue("client_id")
+		if clientID != "" {
+			if label := resolveClientLabel(ctx, clientID, deps.ListClients); label != "" {
+				customerName = label
+			}
+		}
+
+		// Read subscription_id from form (optional)
+		subscriptionID := r.FormValue("subscription_id")
+
+		revenueData := &revenuepb.Revenue{
+			Name:            customerName,
+			ClientId:        clientID,
+			ReferenceNumber: strPtr(r.FormValue("reference_number")),
+			RevenueDate:     strPtr(r.FormValue("revenue_date_string")),
+			Currency:        r.FormValue("currency"),
+			Status:          r.FormValue("status"),
+			Notes:           strPtr(r.FormValue("notes")),
+			LocationId:      r.FormValue("location_id"),
+			PaymentTermId:   strPtr(r.FormValue("payment_term_id")),
+		}
+		if subscriptionID != "" {
+			revenueData.SubscriptionId = &subscriptionID
+		}
+
 		resp, err := deps.CreateRevenue(ctx, &revenuepb.CreateRevenueRequest{
-			Data: &revenuepb.Revenue{
-				Name:              r.FormValue("name"),
-				ReferenceNumber:   strPtr(r.FormValue("reference_number")),
-				RevenueDateString: strPtr(r.FormValue("revenue_date_string")),
-				Currency:          r.FormValue("currency"),
-				Status:            r.FormValue("status"),
-				Notes:             strPtr(r.FormValue("notes")),
-				LocationId:        r.FormValue("location_id"),
-				PaymentTermId:     strPtr(r.FormValue("payment_term_id")),
-			},
+			Data: revenueData,
 		})
 		if err != nil {
 			log.Printf("Failed to create sale: %v", err)
@@ -212,6 +313,12 @@ func NewAddAction(deps *Deps) view.View {
 		if respData := resp.GetData(); len(respData) > 0 {
 			newID = respData[0].GetId()
 		}
+
+		// Auto-populate line items from subscription's price plan (optional — gracefully degrades)
+		if subscriptionID != "" && newID != "" {
+			autoPopulateLineItems(r.Context(), deps, newID, subscriptionID)
+		}
+
 		if newID != "" {
 			return view.ViewResult{
 				StatusCode: http.StatusOK,
@@ -224,6 +331,109 @@ func NewAddAction(deps *Deps) view.View {
 
 		return centymo.HTMXSuccess("sales-table")
 	})
+}
+
+// autoPopulateLineItems creates revenue line items from a subscription's price plan.
+// It fetches the subscription to get the price_plan_id, then looks for associated
+// ProductPricePlan records. If itemized plans exist, each becomes its own line item;
+// otherwise a single bundle line item is created from the PricePlan amount.
+// All errors are logged and silently ignored — this is best-effort enrichment.
+func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscriptionID string) {
+	if deps.ReadSubscription == nil || deps.ListRevenueLineItems == nil {
+		return
+	}
+
+	// 1. Read subscription to get price_plan_id
+	subResp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
+		Data: &subscriptionpb.Subscription{Id: subscriptionID},
+	})
+	if err != nil || subResp.GetData() == nil || len(subResp.GetData()) == 0 {
+		log.Printf("autoPopulateLineItems: failed to read subscription %s: %v", subscriptionID, err)
+		return
+	}
+	pricePlanID := subResp.GetData()[0].GetPricePlanId()
+	if pricePlanID == "" {
+		return
+	}
+
+	// 2. List ProductPricePlans and filter by price_plan_id in Go
+	var items []*productpriceplanpb.ProductPricePlan
+	if deps.ListProductPricePlans != nil {
+		pppResp, err := deps.ListProductPricePlans(ctx, &productpriceplanpb.ListProductPricePlansRequest{})
+		if err == nil {
+			for _, ppp := range pppResp.GetData() {
+				if ppp.GetPricePlanId() == pricePlanID {
+					items = append(items, ppp)
+				}
+			}
+		} else {
+			log.Printf("autoPopulateLineItems: failed to list product price plans: %v", err)
+		}
+	}
+
+	if len(items) > 0 && deps.CreateRevenueLineItem != nil {
+		// Itemized mode — one line item per ProductPricePlan
+		for _, ppp := range items {
+			desc := "Subscription item"
+			if deps.ReadProduct != nil {
+				prodResp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{
+					Data: &productpb.Product{Id: ppp.GetProductId()},
+				})
+				if err == nil && prodResp.GetData() != nil && len(prodResp.GetData()) > 0 {
+					if name := prodResp.GetData()[0].GetName(); name != "" {
+						desc = name
+					}
+				}
+			}
+
+			price := ppp.GetPrice()
+			productID := ppp.GetProductId()
+
+			_, err := deps.CreateRevenueLineItem(ctx, &revenuelineitempb.CreateRevenueLineItemRequest{
+				Data: &revenuelineitempb.RevenueLineItem{
+					RevenueId:    revenueID,
+					ProductId:    &productID,
+					Description:  desc,
+					Quantity:     1,
+					UnitPrice:    price,
+					TotalPrice:   price,
+					LineItemType: "item",
+				},
+			})
+			if err != nil {
+				log.Printf("autoPopulateLineItems: failed to create line item for product %s: %v", productID, err)
+			}
+		}
+	} else if deps.ReadPricePlan != nil && deps.CreateRevenueLineItem != nil {
+		// Bundle mode — single line item from PricePlan.amount
+		ppResp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
+			Data: &priceplanpb.PricePlan{Id: pricePlanID},
+		})
+		if err != nil || ppResp.GetData() == nil || len(ppResp.GetData()) == 0 {
+			log.Printf("autoPopulateLineItems: failed to read price plan %s: %v", pricePlanID, err)
+			return
+		}
+		pp := ppResp.GetData()[0]
+		amount := pp.GetAmount()
+		name := pp.GetName()
+		if name == "" {
+			name = "Subscription"
+		}
+
+		_, err = deps.CreateRevenueLineItem(ctx, &revenuelineitempb.CreateRevenueLineItemRequest{
+			Data: &revenuelineitempb.RevenueLineItem{
+				RevenueId:    revenueID,
+				Description:  name,
+				Quantity:     1,
+				UnitPrice:    amount,
+				TotalPrice:   amount,
+				LineItemType: "item",
+			},
+		})
+		if err != nil {
+			log.Printf("autoPopulateLineItems: failed to create bundle line item: %v", err)
+		}
+	}
 }
 
 // NewEditAction creates the sales edit action (GET = form, POST = update).
@@ -252,13 +462,23 @@ func NewEditAction(deps *Deps) view.View {
 
 			paymentTerms := loadPaymentTerms(ctx, deps)
 			selectedPaymentTermID := record.GetPaymentTermId()
-			return view.OK("sales-drawer-form", &FormData{
+			existingClientID := record.GetClientId()
+			clientLabel := resolveClientLabel(ctx, existingClientID, deps.ListClients)
+			existingSubscriptionID := record.GetSubscriptionId()
+			subscriptionLabel := resolveSubscriptionLabel(ctx, existingSubscriptionID, deps.ListSubscriptions)
+			return view.OK("revenue-drawer-form", &FormData{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
 				ID:                    id,
 				Name:                  record.GetName(),
+				ClientID:              existingClientID,
+				ClientLabel:           clientLabel,
+				SearchClientURL:       deps.Routes.SearchClientURL,
+				SubscriptionID:        existingSubscriptionID,
+				SubscriptionLabel:     subscriptionLabel,
+				SearchSubscriptionURL: deps.Routes.SearchSubscriptionURL,
 				ReferenceNumber:       record.GetReferenceNumber(),
-				Date:                  record.GetRevenueDateString(),
+				Date:                  record.GetRevenueDate(),
 				Currency:              record.GetCurrency(),
 				Status:                record.GetStatus(),
 				Notes:                 record.GetNotes(),
@@ -266,7 +486,7 @@ func NewEditAction(deps *Deps) view.View {
 				Locations:             loadLocationOptions(ctx, deps.DB),
 				PaymentTerms:          paymentTerms,
 				SelectedPaymentTermID: selectedPaymentTermID,
-				DueDateString:         record.GetDueDateString(),
+				DueDateString:         record.GetDueDate(),
 				Labels:                formLabels(viewCtx.T),
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
@@ -279,17 +499,27 @@ func NewEditAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
+		// Resolve client: prefer autocomplete client_id, fall back to freetext name
+		customerName := r.FormValue("name")
+		clientID := r.FormValue("client_id")
+		if clientID != "" {
+			if label := resolveClientLabel(ctx, clientID, deps.ListClients); label != "" {
+				customerName = label
+			}
+		}
+
 		_, err := deps.UpdateRevenue(ctx, &revenuepb.UpdateRevenueRequest{
 			Data: &revenuepb.Revenue{
-				Id:                id,
-				Name:              r.FormValue("name"),
-				ReferenceNumber:   strPtr(r.FormValue("reference_number")),
-				RevenueDateString: strPtr(r.FormValue("revenue_date_string")),
-				Currency:          r.FormValue("currency"),
-				Status:            r.FormValue("status"),
-				Notes:             strPtr(r.FormValue("notes")),
-				LocationId:        r.FormValue("location_id"),
-				PaymentTermId:     strPtr(r.FormValue("payment_term_id")),
+				Id:              id,
+				Name:            customerName,
+				ClientId:        clientID,
+				ReferenceNumber: strPtr(r.FormValue("reference_number")),
+				RevenueDate:     strPtr(r.FormValue("revenue_date_string")),
+				Currency:        r.FormValue("currency"),
+				Status:          r.FormValue("status"),
+				Notes:           strPtr(r.FormValue("notes")),
+				LocationId:      r.FormValue("location_id"),
+				PaymentTermId:   strPtr(r.FormValue("payment_term_id")),
 			},
 		})
 		if err != nil {

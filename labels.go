@@ -357,19 +357,30 @@ type RevenueFormLabels struct {
 	Active               string `json:"active"`
 	Location             string `json:"location"`
 
+	// Payment terms and client search labels
+	PaymentTerms              string `json:"paymentTerms"`
+	SelectPaymentTerm         string `json:"selectPaymentTerm"`
+	DueDate                   string `json:"dueDate"`
+	CustomerSearchPlaceholder string `json:"customerSearchPlaceholder"`
+	CustomerNoResults         string `json:"customerNoResults"`
+
+	// Subscription search labels
+	Subscription          string `json:"subscription"`
+	SubscriptionNoResults string `json:"subscriptionNoResults"`
+
 	// Placeholders and translated option labels
-	CurrencyPlaceholder           string `json:"currencyPlaceholder"`
-	CustomerNamePlaceholder       string `json:"customerNamePlaceholder"`
-	StatusOngoing                 string `json:"statusOngoing"`
-	StatusComplete                string `json:"statusComplete"`
-	StatusCancelled               string `json:"statusCancelled"`
-	PaymentMethod                 string `json:"paymentMethod"`
-	ReferenceNumber               string `json:"referenceNumber"`
-	TransactionIdPlaceholder      string `json:"transactionIdPlaceholder"`
-	ReceivedBy                    string `json:"receivedBy"`
-	Role                          string `json:"role"`
-	SelectInventoryItem           string `json:"selectInventoryItem"`
-	ItemDescriptionPlaceholder    string `json:"itemDescriptionPlaceholder"`
+	CurrencyPlaceholder            string `json:"currencyPlaceholder"`
+	CustomerNamePlaceholder        string `json:"customerNamePlaceholder"`
+	StatusOngoing                  string `json:"statusOngoing"`
+	StatusComplete                 string `json:"statusComplete"`
+	StatusCancelled                string `json:"statusCancelled"`
+	PaymentMethod                  string `json:"paymentMethod"`
+	ReferenceNumber                string `json:"referenceNumber"`
+	TransactionIdPlaceholder       string `json:"transactionIdPlaceholder"`
+	ReceivedBy                     string `json:"receivedBy"`
+	Role                           string `json:"role"`
+	SelectInventoryItem            string `json:"selectInventoryItem"`
+	ItemDescriptionPlaceholder     string `json:"itemDescriptionPlaceholder"`
 	DiscountDescriptionPlaceholder string `json:"discountDescriptionPlaceholder"`
 }
 
@@ -410,12 +421,14 @@ type RevenueDetailLabels struct {
 	TabAuditTrail  string `json:"tabAuditTrail"`
 
 	// Basic info fields
-	Customer string `json:"customer"`
-	Date     string `json:"date"`
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
-	Status   string `json:"status"`
-	Notes    string `json:"notes"`
+	Customer     string `json:"customer"`
+	Date         string `json:"date"`
+	Amount       string `json:"amount"`
+	Currency     string `json:"currency"`
+	Status       string `json:"status"`
+	Notes        string `json:"notes"`
+	PaymentTerms string `json:"paymentTerms"`
+	DueDate      string `json:"dueDate"`
 
 	// Payment fields
 	PaymentMethod string `json:"paymentMethod"`
@@ -441,20 +454,20 @@ type RevenueDetailLabels struct {
 	PaymentEmptyMessage string `json:"paymentEmptyMessage"`
 
 	// Line item management
-	AddItem                     string `json:"addItem"`
-	AddDiscount                 string `json:"addDiscount"`
-	EditItem                    string `json:"editItem"`
-	RemoveItem                  string `json:"removeItem"`
-	ItemType                    string `json:"itemType"`
-	ItemTypeItem                string `json:"itemTypeItem"`
-	ItemTypeDiscount            string `json:"itemTypeDiscount"`
-	InventoryItem               string `json:"inventoryItem"`
-	SelectInventoryItem         string `json:"selectInventoryItem"`
-	ItemDescriptionPlaceholder  string `json:"itemDescriptionPlaceholder"`
-	NotesPlaceholder            string `json:"notesPlaceholder"`
-	SerialNumber                string `json:"serialNumber"`
-	ItemEmptyTitle              string `json:"itemEmptyTitle"`
-	ItemEmptyMessage            string `json:"itemEmptyMessage"`
+	AddItem                    string `json:"addItem"`
+	AddDiscount                string `json:"addDiscount"`
+	EditItem                   string `json:"editItem"`
+	RemoveItem                 string `json:"removeItem"`
+	ItemType                   string `json:"itemType"`
+	ItemTypeItem               string `json:"itemTypeItem"`
+	ItemTypeDiscount           string `json:"itemTypeDiscount"`
+	InventoryItem              string `json:"inventoryItem"`
+	SelectInventoryItem        string `json:"selectInventoryItem"`
+	ItemDescriptionPlaceholder string `json:"itemDescriptionPlaceholder"`
+	NotesPlaceholder           string `json:"notesPlaceholder"`
+	SerialNumber               string `json:"serialNumber"`
+	ItemEmptyTitle             string `json:"itemEmptyTitle"`
+	ItemEmptyMessage           string `json:"itemEmptyMessage"`
 
 	// Payment tab
 	TotalPaid                  string `json:"totalPaid"`
@@ -589,14 +602,14 @@ type ProductFormLabels struct {
 	Active          string `json:"active"`
 
 	// Variant / option / attribute form labels
-	PricePlaceholder       string `json:"pricePlaceholder"`
-	SelectOption           string `json:"selectOption"`
-	InitialValues          string `json:"initialValues"`
+	PricePlaceholder         string `json:"pricePlaceholder"`
+	SelectOption             string `json:"selectOption"`
+	InitialValues            string `json:"initialValues"`
 	InitialValuesPlaceholder string `json:"initialValuesPlaceholder"`
-	Required               string `json:"required"`
-	Option                 string `json:"option"`
-	SelectAttribute        string `json:"selectAttribute"`
-	AllAttributesAssigned  string `json:"allAttributesAssigned"`
+	Required                 string `json:"required"`
+	Option                   string `json:"option"`
+	SelectAttribute          string `json:"selectAttribute"`
+	AllAttributesAssigned    string `json:"allAttributesAssigned"`
 }
 
 type ProductActionLabels struct {
@@ -610,15 +623,15 @@ type ProductBulkLabels struct {
 }
 
 type ProductTabLabels struct {
-	Info           string `json:"info"`
-	Variants       string `json:"variants"`
-	Attributes     string `json:"attributes"`
-	Pricing        string `json:"pricing"`
-	Options        string `json:"options"`
-	Images         string `json:"images"`
-	Stock          string `json:"stock"`
-	Attachments    string `json:"attachments"`
-	AuditTrail     string `json:"auditTrail"`
+	Info        string `json:"info"`
+	Variants    string `json:"variants"`
+	Attributes  string `json:"attributes"`
+	Pricing     string `json:"pricing"`
+	Options     string `json:"options"`
+	Images      string `json:"images"`
+	Stock       string `json:"stock"`
+	Attachments string `json:"attachments"`
+	AuditTrail  string `json:"auditTrail"`
 	// Inventory item sub-tabs
 	Serials        string `json:"serials"`
 	PricingHistory string `json:"pricingHistory"`
@@ -641,20 +654,20 @@ type ProductDetailLabels struct {
 	NoSerialNumbersMsg string `json:"noSerialNumbersMsg"`
 
 	// Variant detail labels
-	VariantInformation string `json:"variantInformation"`
-	Options            string `json:"options"`
-	VariantPricing     string `json:"variantPricing"`
-	VariantPricingDesc string `json:"variantPricingDesc"`
-	InventoryStock     string `json:"inventoryStock"`
-	InventoryStockDesc string `json:"inventoryStockDesc"`
-	DropImagesHere     string `json:"dropImagesHere"`
-	ImageFileHint      string `json:"imageFileHint"`
-	DeleteSelected     string `json:"deleteSelected"`
-	PrimaryBadge       string `json:"primaryBadge"`
-	NoImages           string `json:"noImages"`
-	NoImagesDesc       string `json:"noImagesDesc"`
-	AuditTrail         string `json:"auditTrail"`
-	AuditTrailDesc     string `json:"auditTrailDesc"`
+	VariantInformation  string `json:"variantInformation"`
+	Options             string `json:"options"`
+	VariantPricing      string `json:"variantPricing"`
+	VariantPricingDesc  string `json:"variantPricingDesc"`
+	InventoryStock      string `json:"inventoryStock"`
+	InventoryStockDesc  string `json:"inventoryStockDesc"`
+	DropImagesHere      string `json:"dropImagesHere"`
+	ImageFileHint       string `json:"imageFileHint"`
+	DeleteSelected      string `json:"deleteSelected"`
+	PrimaryBadge        string `json:"primaryBadge"`
+	NoImages            string `json:"noImages"`
+	NoImagesDesc        string `json:"noImagesDesc"`
+	AuditTrail          string `json:"auditTrail"`
+	AuditTrailDesc      string `json:"auditTrailDesc"`
 	NoSerialNumbersDesc string `json:"noSerialNumbersDesc"`
 
 	// Stock detail labels
@@ -904,21 +917,21 @@ type PriceListBulkLabels struct {
 }
 
 type PriceListDetailLabels struct {
-	PageTitle      string `json:"pageTitle"`
-	BasicInfo      string `json:"basicInfo"`
-	Prices         string `json:"prices"`
-	TabAttachments string `json:"tabAttachments"`
-	ProductName    string `json:"productName"`
-	Amount         string `json:"amount"`
-	Currency       string `json:"currency"`
-	AddPrice       string `json:"addPrice"`
-	RemoveLabel    string `json:"removeLabel"`
-	EmptyTitle          string `json:"emptyTitle"`
-	EmptyMessage        string `json:"emptyMessage"`
-	ActiveBadge         string `json:"activeBadge"`
-	InactiveBadge       string `json:"inactiveBadge"`
-	NoPricesConfigured  string `json:"noPricesConfigured"`
-	NoPricesDesc        string `json:"noPricesDesc"`
+	PageTitle          string `json:"pageTitle"`
+	BasicInfo          string `json:"basicInfo"`
+	Prices             string `json:"prices"`
+	TabAttachments     string `json:"tabAttachments"`
+	ProductName        string `json:"productName"`
+	Amount             string `json:"amount"`
+	Currency           string `json:"currency"`
+	AddPrice           string `json:"addPrice"`
+	RemoveLabel        string `json:"removeLabel"`
+	EmptyTitle         string `json:"emptyTitle"`
+	EmptyMessage       string `json:"emptyMessage"`
+	ActiveBadge        string `json:"activeBadge"`
+	InactiveBadge      string `json:"inactiveBadge"`
+	NoPricesConfigured string `json:"noPricesConfigured"`
+	NoPricesDesc       string `json:"noPricesDesc"`
 }
 
 type PriceListConfirmLabels struct {
@@ -944,25 +957,343 @@ type PriceListErrorLabels struct {
 }
 
 // ---------------------------------------------------------------------------
+// Product Line labels
+// ---------------------------------------------------------------------------
+
+// ProductLineLabels holds all translatable strings for the product line module.
+type ProductLineLabels struct {
+	Page    ProductLinePageLabels    `json:"page"`
+	Buttons ProductLineButtonLabels  `json:"buttons"`
+	Columns ProductLineColumnLabels  `json:"columns"`
+	Empty   ProductLineEmptyLabels   `json:"empty"`
+	Form    ProductLineFormLabels    `json:"form"`
+	Actions ProductLineActionLabels  `json:"actions"`
+	Bulk    ProductLineBulkLabels    `json:"bulkActions"`
+	Tabs    ProductLineTabLabels     `json:"tabs"`
+	Detail  ProductLineDetailLabels  `json:"detail"`
+	Status  ProductLineStatusLabels  `json:"status"`
+	Confirm ProductLineConfirmLabels `json:"confirm"`
+	Errors  ProductLineErrorLabels   `json:"errors"`
+}
+
+type ProductLinePageLabels struct {
+	Heading          string `json:"heading"`
+	HeadingActive    string `json:"headingActive"`
+	HeadingInactive  string `json:"headingInactive"`
+	HeadingPending   string `json:"headingPending"`
+	HeadingCompleted string `json:"headingCompleted"`
+	HeadingFailed    string `json:"headingFailed"`
+	Caption          string `json:"caption"`
+	CaptionActive    string `json:"captionActive"`
+	CaptionInactive  string `json:"captionInactive"`
+	CaptionPending   string `json:"captionPending"`
+	CaptionCompleted string `json:"captionCompleted"`
+	CaptionFailed    string `json:"captionFailed"`
+}
+
+type ProductLineButtonLabels struct {
+	AddProductLine string `json:"addProductLine"`
+}
+
+type ProductLineColumnLabels struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	DateCreated string `json:"dateCreated"`
+	Reference   string `json:"reference"`
+	Customer    string `json:"customer"`
+	Amount      string `json:"amount"`
+	Method      string `json:"method"`
+	Date        string `json:"date"`
+	Status      string `json:"status"`
+}
+
+type ProductLineEmptyLabels struct {
+	ActiveTitle      string `json:"activeTitle"`
+	ActiveMessage    string `json:"activeMessage"`
+	InactiveTitle    string `json:"inactiveTitle"`
+	InactiveMessage  string `json:"inactiveMessage"`
+	PendingTitle     string `json:"pendingTitle"`
+	PendingMessage   string `json:"pendingMessage"`
+	CompletedTitle   string `json:"completedTitle"`
+	CompletedMessage string `json:"completedMessage"`
+	FailedTitle      string `json:"failedTitle"`
+	FailedMessage    string `json:"failedMessage"`
+}
+
+type ProductLineFormLabels struct {
+	Name                    string `json:"name"`
+	NamePlaceholder         string `json:"namePlaceholder"`
+	Description             string `json:"description"`
+	DescPlaceholder         string `json:"descriptionPlaceholder"`
+	Active                  string `json:"active"`
+	Customer                string `json:"customer"`
+	Date                    string `json:"date"`
+	Amount                  string `json:"amount"`
+	Currency                string `json:"currency"`
+	Reference               string `json:"reference"`
+	ReferencePlaceholder    string `json:"referencePlaceholder"`
+	PaymentMethod           string `json:"paymentMethod"`
+	Status                  string `json:"status"`
+	Notes                   string `json:"notes"`
+	NotesPlaceholder        string `json:"notesPlaceholder"`
+	CustomerNamePlaceholder string `json:"customerNamePlaceholder"`
+	AmountPlaceholder       string `json:"amountPlaceholder"`
+	CurrencyPlaceholder     string `json:"currencyPlaceholder"`
+	MethodCash              string `json:"methodCash"`
+	MethodBankTransfer      string `json:"methodBankTransfer"`
+	MethodCheck             string `json:"methodCheck"`
+	MethodGCash             string `json:"methodGCash"`
+	MethodMaya              string `json:"methodMaya"`
+	MethodCard              string `json:"methodCard"`
+	MethodOther             string `json:"methodOther"`
+	StatusPending           string `json:"statusPending"`
+	StatusCompleted         string `json:"statusCompleted"`
+	StatusFailed            string `json:"statusFailed"`
+}
+
+type ProductLineActionLabels struct {
+	View         string `json:"view"`
+	Edit         string `json:"edit"`
+	Delete       string `json:"delete"`
+	MarkComplete string `json:"markComplete"`
+	Reactivate   string `json:"reactivate"`
+}
+
+type ProductLineBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type ProductLineStatusLabels struct {
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type ProductLineTabLabels struct {
+	Info string `json:"info"`
+}
+
+type ProductLineDetailLabels struct {
+	TitlePrefix          string `json:"titlePrefix"`
+	PageTitle            string `json:"pageTitle"`
+	BasicInfo            string `json:"basicInfo"`
+	PaymentInfo          string `json:"paymentInfo"`
+	Reference            string `json:"reference"`
+	Customer             string `json:"customer"`
+	Amount               string `json:"amount"`
+	Currency             string `json:"currency"`
+	Method               string `json:"method"`
+	Date                 string `json:"date"`
+	Status               string `json:"status"`
+	Notes                string `json:"notes"`
+	CreatedDate          string `json:"createdDate"`
+	ModifiedDate         string `json:"modifiedDate"`
+	ActiveBadge          string `json:"activeBadge"`
+	InactiveBadge        string `json:"inactiveBadge"`
+	TabBasicInfo         string `json:"tabBasicInfo"`
+	TabAttachments       string `json:"tabAttachments"`
+	TabAuditTrail        string `json:"tabAuditTrail"`
+	AuditAction          string `json:"auditAction"`
+	AuditUser            string `json:"auditUser"`
+	AuditEmptyTitle      string `json:"auditEmptyTitle"`
+	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+	AuditTrailDesc       string `json:"auditTrailDesc"`
+}
+
+type ProductLineConfirmLabels struct {
+	MarkComplete          string `json:"markComplete"`
+	MarkCompleteMessage   string `json:"markCompleteMessage"`
+	Reactivate            string `json:"reactivate"`
+	ReactivateMessage     string `json:"reactivateMessage"`
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+	BulkComplete          string `json:"bulkComplete"`
+	BulkCompleteMessage   string `json:"bulkCompleteMessage"`
+	BulkReactivate        string `json:"bulkReactivate"`
+	BulkReactivateMessage string `json:"bulkReactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+}
+
+type ProductLineErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoIDsProvided    string `json:"noIDsProvided"`
+	InvalidStatus    string `json:"invalidStatus"`
+}
+
+// DefaultProductLineLabels returns ProductLineLabels with sensible English defaults.
+func DefaultProductLineLabels() ProductLineLabels {
+	return ProductLineLabels{
+		Page: ProductLinePageLabels{
+			Heading:          "Product Lines",
+			HeadingActive:    "Active Product Lines",
+			HeadingInactive:  "Inactive Product Lines",
+			HeadingPending:   "Pending Product Lines",
+			HeadingCompleted: "Completed Product Lines",
+			HeadingFailed:    "Failed Product Lines",
+			Caption:          "Manage product lines",
+			CaptionActive:    "Active product lines",
+			CaptionInactive:  "Inactive product lines",
+			CaptionPending:   "Product lines awaiting completion",
+			CaptionCompleted: "Completed product lines",
+			CaptionFailed:    "Failed product lines",
+		},
+		Buttons: ProductLineButtonLabels{
+			AddProductLine: "Add Product Line",
+		},
+		Columns: ProductLineColumnLabels{
+			Name:        "Name",
+			Description: "Description",
+			DateCreated: "Date Created",
+			Reference:   "Reference",
+			Customer:    "Customer",
+			Amount:      "Amount",
+			Method:      "Method",
+			Date:        "Date",
+			Status:      "Status",
+		},
+		Empty: ProductLineEmptyLabels{
+			ActiveTitle:      "No active product lines",
+			ActiveMessage:    "No active product lines to display.",
+			InactiveTitle:    "No inactive product lines",
+			InactiveMessage:  "No inactive product lines to display.",
+			PendingTitle:     "No pending product lines",
+			PendingMessage:   "No pending product lines to display.",
+			CompletedTitle:   "No completed product lines",
+			CompletedMessage: "No completed product lines to display.",
+			FailedTitle:      "No failed product lines",
+			FailedMessage:    "No failed product lines to display.",
+		},
+		Form: ProductLineFormLabels{
+			Name:                    "Name",
+			NamePlaceholder:         "Product line name",
+			Description:             "Description",
+			DescPlaceholder:         "Optional description",
+			Active:                  "Active",
+			Customer:                "Customer",
+			Date:                    "Date",
+			Amount:                  "Amount",
+			Currency:                "Currency",
+			Reference:               "Reference",
+			ReferencePlaceholder:    "e.g. PL-001",
+			PaymentMethod:           "Payment Method",
+			Status:                  "Status",
+			Notes:                   "Notes",
+			NotesPlaceholder:        "Additional notes...",
+			CustomerNamePlaceholder: "Customer name",
+			AmountPlaceholder:       "0.00",
+			CurrencyPlaceholder:     "PHP",
+			MethodCash:              "Cash",
+			MethodBankTransfer:      "Bank Transfer",
+			MethodCheck:             "Check",
+			MethodGCash:             "GCash",
+			MethodMaya:              "Maya",
+			MethodCard:              "Card",
+			MethodOther:             "Other",
+			StatusPending:           "Pending",
+			StatusCompleted:         "Completed",
+			StatusFailed:            "Failed",
+		},
+		Actions: ProductLineActionLabels{
+			View:         "View",
+			Edit:         "Edit",
+			Delete:       "Delete",
+			MarkComplete: "Mark Complete",
+			Reactivate:   "Reactivate",
+		},
+		Bulk: ProductLineBulkLabels{
+			Delete: "Delete",
+		},
+		Tabs: ProductLineTabLabels{
+			Info: "Info",
+		},
+		Detail: ProductLineDetailLabels{
+			TitlePrefix:          "Product Line ",
+			PageTitle:            "Product Line",
+			BasicInfo:            "Product Line Information",
+			PaymentInfo:          "Payment Information",
+			Reference:            "Reference",
+			Customer:             "Customer",
+			Amount:               "Amount",
+			Currency:             "Currency",
+			Method:               "Method",
+			Date:                 "Date",
+			Status:               "Status",
+			Notes:                "Notes",
+			CreatedDate:          "Created Date",
+			ModifiedDate:         "Modified Date",
+			ActiveBadge:          "Active",
+			InactiveBadge:        "Inactive",
+			TabBasicInfo:         "Info",
+			TabAttachments:       "Attachments",
+			TabAuditTrail:        "Audit Trail",
+			AuditAction:          "Action",
+			AuditUser:            "User",
+			AuditEmptyTitle:      "No audit entries",
+			AuditEmptyMessage:    "No audit entries to display.",
+			AuditTrailComingSoon: "Audit trail coming soon",
+			AuditTrailDesc:       "Audit trail is not yet available for this product line.",
+		},
+		Status: ProductLineStatusLabels{
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Confirm: ProductLineConfirmLabels{
+			MarkComplete:          "Mark Complete",
+			MarkCompleteMessage:   "Are you sure you want to mark this product line as complete?",
+			Reactivate:            "Reactivate",
+			ReactivateMessage:     "Are you sure you want to reactivate this product line?",
+			Delete:                "Delete Product Line",
+			DeleteMessage:         "Are you sure you want to delete this product line?",
+			BulkActivate:          "Activate",
+			BulkActivateMessage:   "Are you sure you want to activate the selected product lines?",
+			BulkDeactivate:        "Deactivate",
+			BulkDeactivateMessage: "Are you sure you want to deactivate the selected product lines?",
+			BulkComplete:          "Mark Complete",
+			BulkCompleteMessage:   "Are you sure you want to mark {{count}} product line(s) as complete?",
+			BulkReactivate:        "Reactivate",
+			BulkReactivateMessage: "Are you sure you want to reactivate {{count}} product line(s)?",
+			BulkDelete:            "Delete Product Lines",
+			BulkDeleteMessage:     "Are you sure you want to delete {{count}} product line(s)?",
+		},
+		Errors: ProductLineErrorLabels{
+			PermissionDenied: "Permission denied",
+			InvalidFormData:  "Invalid form data",
+			NotFound:         "Product line not found",
+			IDRequired:       "Product line ID is required",
+			NoIDsProvided:    "No product line IDs provided",
+			InvalidStatus:    "Invalid status",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Expenditure labels
 // ---------------------------------------------------------------------------
 
 // ExpenditureLabels holds all translatable strings for the expenditure module
 // (purchase + expense views).
 type ExpenditureLabels struct {
-	Labels   ExpenditureLabelNames          `json:"labels"`
-	Page     ExpenditurePageLabels          `json:"page"`
-	Buttons  ExpenditureButtonLabels        `json:"buttons"`
-	Columns  ExpenditureColumnLabels        `json:"columns"`
-	Empty    ExpenditureEmptyLabels         `json:"empty"`
-	Form     ExpenditureFormLabels          `json:"form"`
-	Status   ExpenditureStatusLabels        `json:"status"`
-	Types    ExpenditureTypeLabels          `json:"types"`
-	Actions  ExpenditureActionLabels        `json:"actions"`
-	Bulk     ExpenditureBulkLabels          `json:"bulkActions"`
-	Detail   ExpenditureDetailLabels        `json:"detail"`
-	Errors   ExpenditureErrorLabels         `json:"errors"`
-	Category ExpenditureCategoryLabels      `json:"category"`
+	Labels   ExpenditureLabelNames     `json:"labels"`
+	Page     ExpenditurePageLabels     `json:"page"`
+	Buttons  ExpenditureButtonLabels   `json:"buttons"`
+	Columns  ExpenditureColumnLabels   `json:"columns"`
+	Empty    ExpenditureEmptyLabels    `json:"empty"`
+	Form     ExpenditureFormLabels     `json:"form"`
+	Status   ExpenditureStatusLabels   `json:"status"`
+	Types    ExpenditureTypeLabels     `json:"types"`
+	Actions  ExpenditureActionLabels   `json:"actions"`
+	Bulk     ExpenditureBulkLabels     `json:"bulkActions"`
+	Detail   ExpenditureDetailLabels   `json:"detail"`
+	Errors   ExpenditureErrorLabels    `json:"errors"`
+	Category ExpenditureCategoryLabels `json:"category"`
 }
 
 // ExpenditureCategoryLabels holds translatable strings for the expenditure
@@ -979,8 +1310,8 @@ type ExpenditureCategoryLabels struct {
 }
 
 type ExpenditureCategoryPageLabels struct {
-	Heading  string `json:"heading"`
-	Caption  string `json:"caption"`
+	Heading string `json:"heading"`
+	Caption string `json:"caption"`
 }
 
 type ExpenditureCategoryButtonLabels struct {
@@ -1025,12 +1356,12 @@ type ExpenditureCategoryConfirmLabels struct {
 
 // ExpenditureErrorLabels holds error messages for the expenditure action handlers.
 type ExpenditureErrorLabels struct {
-	PermissionDenied  string `json:"permissionDenied"`
-	InvalidFormData   string `json:"invalidFormData"`
-	NotFound          string `json:"notFound"`
-	IDRequired        string `json:"idRequired"`
-	NoIDsProvided     string `json:"noIDsProvided"`
-	InvalidStatus     string `json:"invalidStatus"`
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoIDsProvided    string `json:"noIDsProvided"`
+	InvalidStatus    string `json:"invalidStatus"`
 }
 
 type ExpenditureLabelNames struct {
@@ -1295,21 +1626,21 @@ type CollectionBulkLabels struct {
 }
 
 type CollectionDetailLabels struct {
-	PageTitle         string `json:"pageTitle"`
-	TitlePrefix       string `json:"titlePrefix"`
-	PaymentInfo       string `json:"paymentInfo"`
-	Customer          string `json:"customer"`
-	Date              string `json:"date"`
-	Amount            string `json:"amount"`
-	Currency          string `json:"currency"`
-	Status            string `json:"status"`
-	Method            string `json:"method"`
-	Reference         string `json:"reference"`
-	Notes             string `json:"notes"`
-	TabBasicInfo      string `json:"tabBasicInfo"`
-	TabAttachments    string `json:"tabAttachments"`
-	TabAuditTrail     string `json:"tabAuditTrail"`
-	AuditAction       string `json:"auditAction"`
+	PageTitle            string `json:"pageTitle"`
+	TitlePrefix          string `json:"titlePrefix"`
+	PaymentInfo          string `json:"paymentInfo"`
+	Customer             string `json:"customer"`
+	Date                 string `json:"date"`
+	Amount               string `json:"amount"`
+	Currency             string `json:"currency"`
+	Status               string `json:"status"`
+	Method               string `json:"method"`
+	Reference            string `json:"reference"`
+	Notes                string `json:"notes"`
+	TabBasicInfo         string `json:"tabBasicInfo"`
+	TabAttachments       string `json:"tabAttachments"`
+	TabAuditTrail        string `json:"tabAuditTrail"`
+	AuditAction          string `json:"auditAction"`
 	AuditUser            string `json:"auditUser"`
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
 	AuditEmptyMessage    string `json:"auditEmptyMessage"`
@@ -1691,36 +2022,36 @@ func DefaultDisbursementLabels() DisbursementLabels {
 			CancelledMessage: "No cancelled disbursements to display.",
 		},
 		Form: DisbursementFormLabels{
-			Payee:                  "Payee",
-			PayeePlaceholder:       "Enter payee name",
-			Date:                   "Date",
-			Amount:                 "Amount",
-			Currency:               "Currency",
-			Reference:              "Reference",
-			ReferencePlaceholder:   "e.g. DISB-001",
-			PaymentMethod:          "Payment Method",
-			Category:               "Category",
-			Status:                 "Status",
-			Notes:                  "Notes",
-			NotesPlaceholder:       "Additional notes...",
-			ApprovedBy:             "Approved By",
-			AmountPlaceholder:      "0.00",
-			CurrencyPlaceholder:    "PHP",
-			MethodCash:             "Cash",
-			MethodBankTransfer:     "Bank Transfer",
-			MethodCheck:            "Check",
-			MethodGCash:            "GCash",
-			MethodOther:            "Other",
-			StatusDraft:            "Draft",
-			StatusPending:          "Pending",
-			StatusApproved:         "Approved",
-			StatusPaid:             "Paid",
-			StatusCancelled:        "Cancelled",
-			TypeSupplierPayment:    "Supplier Payment",
-			TypePayroll:            "Payroll",
-			TypeRent:               "Rent",
-			TypeUtilities:          "Utilities",
-			TypeOther:              "Other",
+			Payee:                   "Payee",
+			PayeePlaceholder:        "Enter payee name",
+			Date:                    "Date",
+			Amount:                  "Amount",
+			Currency:                "Currency",
+			Reference:               "Reference",
+			ReferencePlaceholder:    "e.g. DISB-001",
+			PaymentMethod:           "Payment Method",
+			Category:                "Category",
+			Status:                  "Status",
+			Notes:                   "Notes",
+			NotesPlaceholder:        "Additional notes...",
+			ApprovedBy:              "Approved By",
+			AmountPlaceholder:       "0.00",
+			CurrencyPlaceholder:     "PHP",
+			MethodCash:              "Cash",
+			MethodBankTransfer:      "Bank Transfer",
+			MethodCheck:             "Check",
+			MethodGCash:             "GCash",
+			MethodOther:             "Other",
+			StatusDraft:             "Draft",
+			StatusPending:           "Pending",
+			StatusApproved:          "Approved",
+			StatusPaid:              "Paid",
+			StatusCancelled:         "Cancelled",
+			TypeSupplierPayment:     "Supplier Payment",
+			TypePayroll:             "Payroll",
+			TypeRent:                "Rent",
+			TypeUtilities:           "Utilities",
+			TypeOther:               "Other",
 			ApproverNamePlaceholder: "Approver name",
 		},
 		Actions: DisbursementActionLabels{
@@ -1811,17 +2142,17 @@ func DefaultDisbursementLabels() DisbursementLabels {
 
 // PlanLabels holds all translatable strings for the plan module.
 type PlanLabels struct {
-	Page         PlanPageLabels         `json:"page"`
-	Buttons      PlanButtonLabels       `json:"buttons"`
-	Columns      PlanColumnLabels       `json:"columns"`
-	Empty        PlanEmptyLabels        `json:"empty"`
-	Form         PlanFormLabels         `json:"form"`
-	Actions      PlanActionLabels       `json:"actions"`
-	Detail       PlanDetailLabels       `json:"detail"`
-	Tabs         PlanTabLabels          `json:"tabs"`
-	Confirm      PlanConfirmLabels      `json:"confirm"`
-	Errors       PlanErrorLabels        `json:"errors"`
-	PricePlanForm PricePlanFormLabels   `json:"pricePlanForm"`
+	Page          PlanPageLabels      `json:"page"`
+	Buttons       PlanButtonLabels    `json:"buttons"`
+	Columns       PlanColumnLabels    `json:"columns"`
+	Empty         PlanEmptyLabels     `json:"empty"`
+	Form          PlanFormLabels      `json:"form"`
+	Actions       PlanActionLabels    `json:"actions"`
+	Detail        PlanDetailLabels    `json:"detail"`
+	Tabs          PlanTabLabels       `json:"tabs"`
+	Confirm       PlanConfirmLabels   `json:"confirm"`
+	Errors        PlanErrorLabels     `json:"errors"`
+	PricePlanForm PricePlanFormLabels `json:"pricePlanForm"`
 }
 
 // PricePlanFormLabels holds translatable labels for the PricePlan add/edit form.
@@ -1919,21 +2250,21 @@ type PlanFormLabels struct {
 }
 
 type PlanDetailLabels struct {
-	PageTitle              string `json:"pageTitle"`
-	Price                  string `json:"price"`
-	Currency               string `json:"currency"`
-	Status                 string `json:"status"`
-	Description            string `json:"description"`
-	FulfillmentType        string `json:"fulfillmentType"`
-	CreatedDate            string `json:"createdDate"`
-	ModifiedDate           string `json:"modifiedDate"`
-	NoProductsAssigned     string `json:"noProductsAssigned"`
-	NoProductsAssignedMsg  string `json:"noProductsAssignedMsg"`
-	NoProductsDesc         string `json:"noProductsDesc"`
-	NoPricePlans           string `json:"noPricePlans"`
-	NoPricePlansMsg        string `json:"noPricePlansMsg"`
-	NoPricePlansDesc       string `json:"noPricePlansDesc"`
-	AuditTrailComingSoon   string `json:"auditTrailComingSoon"`
+	PageTitle             string `json:"pageTitle"`
+	Price                 string `json:"price"`
+	Currency              string `json:"currency"`
+	Status                string `json:"status"`
+	Description           string `json:"description"`
+	FulfillmentType       string `json:"fulfillmentType"`
+	CreatedDate           string `json:"createdDate"`
+	ModifiedDate          string `json:"modifiedDate"`
+	NoProductsAssigned    string `json:"noProductsAssigned"`
+	NoProductsAssignedMsg string `json:"noProductsAssignedMsg"`
+	NoProductsDesc        string `json:"noProductsDesc"`
+	NoPricePlans          string `json:"noPricePlans"`
+	NoPricePlansMsg       string `json:"noPricePlansMsg"`
+	NoPricePlansDesc      string `json:"noPricePlansDesc"`
+	AuditTrailComingSoon  string `json:"auditTrailComingSoon"`
 }
 
 type PlanTabLabels struct {
@@ -2164,6 +2495,203 @@ func DefaultPlanLabels() PlanLabels {
 			LocationPlaceholder: "Select a location...",
 			SelectLocation:      "— No location (all locations) —",
 			Active:              "Active",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Price Plan labels
+// ---------------------------------------------------------------------------
+
+// PricePlanLabels holds all labels for the standalone price plan (rate card) module.
+type PricePlanLabels struct {
+	Page    PricePlanPageLabels    `json:"page"`
+	Buttons PricePlanButtonLabels  `json:"buttons"`
+	Columns PricePlanColumnLabels2 `json:"columns"`
+	Empty   PricePlanEmptyLabels   `json:"empty"`
+	Form    PricePlanFormLabels    `json:"form"`
+	Actions PricePlanActionLabels  `json:"actions"`
+	Bulk    PricePlanBulkLabels    `json:"bulk"`
+	Detail  PricePlanDetailLabels2 `json:"detail"`
+	Tabs    PricePlanTabLabels2    `json:"tabs"`
+	Confirm PricePlanConfirmLabels `json:"confirm"`
+	Errors  PricePlanErrorLabels   `json:"errors"`
+}
+
+type PricePlanPageLabels struct {
+	Title         string `json:"title"`
+	Subtitle      string `json:"subtitle"`
+	ActiveTitle   string `json:"activeTitle"`
+	InactiveTitle string `json:"inactiveTitle"`
+}
+
+type PricePlanButtonLabels struct {
+	Add        string `json:"add"`
+	Edit       string `json:"edit"`
+	Delete     string `json:"delete"`
+	BulkDelete string `json:"bulkDelete"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type PricePlanColumnLabels2 struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Amount      string `json:"amount"`
+	Currency    string `json:"currency"`
+	Duration    string `json:"duration"`
+	Location    string `json:"location"`
+	Plan        string `json:"plan"`
+	Status      string `json:"status"`
+	DateCreated string `json:"dateCreated"`
+	Actions     string `json:"actions"`
+}
+
+type PricePlanEmptyLabels struct {
+	Title       string `json:"title"`
+	Message     string `json:"message"`
+	Description string `json:"description"`
+	ActionLabel string `json:"actionLabel"`
+}
+
+type PricePlanActionLabels struct {
+	CreateSuccess string `json:"createSuccess"`
+	CreateError   string `json:"createError"`
+	UpdateSuccess string `json:"updateSuccess"`
+	UpdateError   string `json:"updateError"`
+	DeleteSuccess string `json:"deleteSuccess"`
+	DeleteError   string `json:"deleteError"`
+}
+
+type PricePlanBulkLabels struct {
+	DeleteTitle   string `json:"deleteTitle"`
+	DeleteMessage string `json:"deleteMessage"`
+	StatusTitle   string `json:"statusTitle"`
+	StatusMessage string `json:"statusMessage"`
+}
+
+type PricePlanDetailLabels2 struct {
+	Title          string `json:"title"`
+	InfoTab        string `json:"infoTab"`
+	AttachmentsTab string `json:"attachmentsTab"`
+	AuditTab       string `json:"auditTab"`
+	ProductsTab    string `json:"productsTab"`
+}
+
+type PricePlanTabLabels2 struct {
+	Info        string `json:"info"`
+	Products    string `json:"products"`
+	Attachments string `json:"attachments"`
+	Audit       string `json:"audit"`
+}
+
+type PricePlanConfirmLabels struct {
+	DeleteTitle       string `json:"deleteTitle"`
+	DeleteMessage     string `json:"deleteMessage"`
+	DeactivateTitle   string `json:"deactivateTitle"`
+	DeactivateMessage string `json:"deactivateMessage"`
+}
+
+type PricePlanErrorLabels struct {
+	NotFound     string `json:"notFound"`
+	LoadFailed   string `json:"loadFailed"`
+	Unauthorized string `json:"unauthorized"`
+	CreateFailed string `json:"createFailed"`
+	UpdateFailed string `json:"updateFailed"`
+	DeleteFailed string `json:"deleteFailed"`
+}
+
+// DefaultPricePlanLabels returns PricePlanLabels with sensible English defaults.
+func DefaultPricePlanLabels() PricePlanLabels {
+	return PricePlanLabels{
+		Page: PricePlanPageLabels{
+			Title:         "Rate Cards",
+			Subtitle:      "Manage your rate cards",
+			ActiveTitle:   "Active Rate Cards",
+			InactiveTitle: "Inactive Rate Cards",
+		},
+		Buttons: PricePlanButtonLabels{
+			Add:        "Add Rate Card",
+			Edit:       "Edit Rate Card",
+			Delete:     "Delete Rate Card",
+			BulkDelete: "Delete Rate Cards",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Columns: PricePlanColumnLabels2{
+			Name:        "Name",
+			Description: "Description",
+			Amount:      "Amount",
+			Currency:    "Currency",
+			Duration:    "Duration",
+			Location:    "Location",
+			Plan:        "Plan",
+			Status:      "Status",
+			DateCreated: "Date Created",
+			Actions:     "Actions",
+		},
+		Empty: PricePlanEmptyLabels{
+			Title:       "No Rate Cards",
+			Message:     "No rate cards to display.",
+			Description: "Add a rate card to define pricing for your plans.",
+			ActionLabel: "Add Rate Card",
+		},
+		Form: PricePlanFormLabels{
+			Name:                "Price Plan Name",
+			NamePlaceholder:     "Enter price plan name",
+			Description:         "Description",
+			DescPlaceholder:     "Enter description...",
+			Amount:              "Amount",
+			AmountPlaceholder:   "0.00",
+			Currency:            "Currency",
+			CurrencyPlaceholder: "e.g. PHP",
+			DurationValue:       "Duration",
+			DurationUnit:        "Unit",
+			Location:            "Location",
+			LocationPlaceholder: "Select a location...",
+			SelectLocation:      "— No location (all locations) —",
+			Active:              "Active",
+		},
+		Actions: PricePlanActionLabels{
+			CreateSuccess: "Rate card created successfully.",
+			CreateError:   "Failed to create rate card.",
+			UpdateSuccess: "Rate card updated successfully.",
+			UpdateError:   "Failed to update rate card.",
+			DeleteSuccess: "Rate card deleted successfully.",
+			DeleteError:   "Failed to delete rate card.",
+		},
+		Bulk: PricePlanBulkLabels{
+			DeleteTitle:   "Delete Rate Cards",
+			DeleteMessage: "Are you sure you want to delete the selected rate cards?",
+			StatusTitle:   "Update Status",
+			StatusMessage: "Are you sure you want to update the status of the selected rate cards?",
+		},
+		Detail: PricePlanDetailLabels2{
+			Title:          "Rate Card Details",
+			InfoTab:        "Information",
+			AttachmentsTab: "Attachments",
+			AuditTab:       "Audit Trail",
+			ProductsTab:    "Products",
+		},
+		Tabs: PricePlanTabLabels2{
+			Info:        "Information",
+			Products:    "Products",
+			Attachments: "Attachments",
+			Audit:       "Audit Trail",
+		},
+		Confirm: PricePlanConfirmLabels{
+			DeleteTitle:       "Delete Rate Card",
+			DeleteMessage:     "Are you sure you want to delete this rate card? This action cannot be undone.",
+			DeactivateTitle:   "Deactivate Rate Card",
+			DeactivateMessage: "Are you sure you want to deactivate this rate card?",
+		},
+		Errors: PricePlanErrorLabels{
+			NotFound:     "Rate card not found.",
+			LoadFailed:   "Failed to load rate cards.",
+			Unauthorized: "You do not have permission to access this resource.",
+			CreateFailed: "Failed to create rate card.",
+			UpdateFailed: "Failed to update rate card.",
+			DeleteFailed: "Failed to delete rate card.",
 		},
 	}
 }

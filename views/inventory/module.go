@@ -18,8 +18,6 @@ import (
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
-	"github.com/erniealice/hybra-golang/views/attachment"
-	"github.com/erniealice/hybra-golang/views/auditlog"
 	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
@@ -28,6 +26,8 @@ import (
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
+	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 )
 
 // ModuleDeps holds all dependencies for the inventory module.

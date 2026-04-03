@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "expense-detail-content"}}
-<div class="page-content detail-layout" data-page-title="{{.Title}}">
+<div class="page-content detail-layout" data-page-title="{{.Title}}" data-page-css="/assets/css/centymo/centymo-transaction-detail.css?v={{.CacheVersion}}">
     <h2 class="visually-hidden">Expense Detail</h2>
     {{/* ─── Tabs ─── */}}
     <div class="detail-tabs">
@@ -60,21 +60,21 @@
         </div>
     </div>
     {{if index .Expense "notes"}}
-    <div class="sale-section-spacer">
+    <div class="transaction-section-spacer">
         <h4 class="detail-section-title">Notes</h4>
-        <div class="sale-notes-block">{{index .Expense "notes"}}</div>
+        <div class="transaction-notes-block">{{index .Expense "notes"}}</div>
     </div>
     {{end}}
 
     {{/* ─── Status Actions ─── */}}
     {{if .SetStatusURL}}
-    <div class="sale-section-spacer">
+    <div class="transaction-section-spacer">
         <h4 class="detail-section-title">Update Status</h4>
         <form hx-post="{{.SetStatusURL}}" hx-swap="none" class="inline-status-form">
             <input type="hidden" name="id" value="{{index .Expense "id"}}">
-            <div class="form-group" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-                <label for="status" class="form-label" style="margin-bottom:0;">Status</label>
-                <select id="status" name="status" class="form-control" style="width:auto;min-width:140px;">
+            <div class="form-group transaction-inline-form__group">
+                <label for="status" class="form-label transaction-inline-form__label">Status</label>
+                <select id="status" name="status" class="form-control transaction-inline-form__control--auto">
                     <option value="pending"{{if eq (index .Expense "status") "pending"}} selected{{end}}>Pending</option>
                     <option value="approved"{{if eq (index .Expense "status") "approved"}} selected{{end}}>Approved</option>
                     <option value="paid"{{if eq (index .Expense "status") "paid"}} selected{{end}}>Paid</option>
@@ -90,12 +90,12 @@
 
 {{/* Line Items Tab */}}
 {{define "expense-tab-items"}}
-<div class="line-items-toolbar">
-    <div class="sale-summary-item">
-        <span class="sale-summary-label">Total</span>
-        <span class="sale-summary-value">{{.TotalAmount}}</span>
+<div class="transaction-items-toolbar">
+    <div class="transaction-summary-item">
+        <span class="transaction-summary-label">Total</span>
+        <span class="transaction-summary-value">{{.TotalAmount}}</span>
     </div>
-    <div class="line-items-actions">
+    <div class="transaction-items-actions">
         <button type="button" class="btn btn-primary toolbar-primary-action"
             aria-haspopup="dialog"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"

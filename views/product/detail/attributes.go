@@ -143,9 +143,9 @@ func NewAttributeAssignView(deps *AttributeDeps) view.View {
 
 		_, err := deps.CreateProductAttribute(ctx, &productattributepb.CreateProductAttributeRequest{
 			Data: &productattributepb.ProductAttribute{
-				ProductId:    productID,
-				AttributeId:  attributeID,
-				Value:        defaultValue,
+				ProductId:   productID,
+				AttributeId: attributeID,
+				Value:       defaultValue,
 			},
 		})
 		if err != nil {

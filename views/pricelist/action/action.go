@@ -87,14 +87,14 @@ func NewAddAction(deps *Deps) view.View {
 
 		req := &pricelistpb.CreatePriceListRequest{
 			Data: &pricelistpb.PriceList{
-				Name:            r.FormValue("name"),
-				Description:     &desc,
-				DateStartString: r.FormValue("date_start"),
-				Active:          active,
+				Name:        r.FormValue("name"),
+				Description: &desc,
+				DateStart:   r.FormValue("date_start"),
+				Active:      active,
 			},
 		}
 		if dateEnd != "" {
-			req.Data.DateEndString = &dateEnd
+			req.Data.DateEnd = &dateEnd
 		}
 
 		_, err := deps.CreatePriceList(ctx, req)
@@ -138,8 +138,8 @@ func NewEditAction(deps *Deps) view.View {
 				ID:           id,
 				Name:         pl.GetName(),
 				Description:  pl.GetDescription(),
-				DateStart:    pl.GetDateStartString(),
-				DateEnd:      pl.GetDateEndString(),
+				DateStart:    pl.GetDateStart(),
+				DateEnd:      pl.GetDateEnd(),
 				Active:       pl.GetActive(),
 				Labels:       formLabels(viewCtx.T),
 				CommonLabels: nil, // injected by ViewAdapter
@@ -158,15 +158,15 @@ func NewEditAction(deps *Deps) view.View {
 
 		req := &pricelistpb.UpdatePriceListRequest{
 			Data: &pricelistpb.PriceList{
-				Id:              id,
-				Name:            r.FormValue("name"),
-				Description:     &desc,
-				DateStartString: r.FormValue("date_start"),
-				Active:          active,
+				Id:          id,
+				Name:        r.FormValue("name"),
+				Description: &desc,
+				DateStart:   r.FormValue("date_start"),
+				Active:      active,
 			},
 		}
 		if dateEnd != "" {
-			req.Data.DateEndString = &dateEnd
+			req.Data.DateEnd = &dateEnd
 		}
 
 		_, err := deps.UpdatePriceList(ctx, req)

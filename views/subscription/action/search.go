@@ -162,7 +162,7 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 			}
 
 			// Format: "Plan Name — 15,000.00 PHP"
-			amount := pp.GetAmount() / 100
+			amount := float64(pp.GetAmount()) / 100.0
 			currency := pp.GetCurrency()
 			label := fmt.Sprintf("%s — %s %s", name, formatAmount(amount), currency)
 

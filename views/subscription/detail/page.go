@@ -7,9 +7,9 @@ import (
 
 	"github.com/erniealice/centymo-golang"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -86,8 +86,8 @@ func subscriptionToMap(s *subscriptionpb.Subscription) map[string]any {
 		"plan":                 planName,
 		"price_plan_id":        s.GetPricePlanId(),
 		"client_id":            s.GetClientId(),
-		"date_start_string":    s.GetDateStartString(),
-		"date_end_string":      s.GetDateEndString(),
+		"date_start_string":    s.GetDateStart(),
+		"date_end_string":      s.GetDateEnd(),
 		"status":               status,
 		"active":               s.GetActive(),
 		"date_created_string":  s.GetDateCreatedString(),

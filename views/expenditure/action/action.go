@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -11,9 +12,9 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 
+	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
-	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 )
 
 // CategoryOption represents a selectable category in the form dropdown.
@@ -213,13 +214,13 @@ func strPtr(s string) *string {
 	return &s
 }
 
-// parseAmount converts a form string amount to float64.
-func parseAmount(s string) float64 {
+// parseAmount converts a form string amount (decimal) to int64 centavos.
+func parseAmount(s string) int64 {
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
 		return 0
 	}
-	return f
+	return int64(math.Round(f * 100))
 }
 
 // NewAddAction creates the expense add action (GET = form, POST = create).
@@ -325,7 +326,7 @@ func NewEditAction(deps *Deps) view.View {
 				ExpenditureCategoryID: record.GetExpenditureCategoryId(),
 				SupplierID:            record.GetSupplierId(),
 				Date:                  record.GetExpenditureDateString(),
-				TotalAmount:           strconv.FormatFloat(record.GetTotalAmount(), 'f', 2, 64),
+				TotalAmount:           strconv.FormatFloat(float64(record.GetTotalAmount())/100.0, 'f', 2, 64),
 				Currency:              record.GetCurrency(),
 				Status:                record.GetStatus(),
 				ReferenceNumber:       record.GetReferenceNumber(),

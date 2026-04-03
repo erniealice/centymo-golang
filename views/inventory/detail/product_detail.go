@@ -17,8 +17,8 @@ import (
 
 // ProductDetailDeps holds dependencies for the product-context inventory detail.
 type ProductDetailDeps struct {
-	InventoryRoutes centymo.InventoryRoutes
-	ProductRoutes   centymo.ProductRoutes
+	InventoryRoutes   centymo.InventoryRoutes
+	ProductRoutes     centymo.ProductRoutes
 	ReadInventoryItem func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ReadProduct       func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
 	// Delegate to main DetailViewDeps for tab data loading

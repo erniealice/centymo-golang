@@ -15,14 +15,19 @@ import (
 	revenuelist "github.com/erniealice/centymo-golang/views/revenue/list"
 	revenuesettings "github.com/erniealice/centymo-golang/views/revenue/settings"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
-	"github.com/erniealice/hybra-golang/views/attachment"
-	"github.com/erniealice/hybra-golang/views/auditlog"
+	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
-	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
+	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 )
 
 // PaymentTermOption is re-exported from action for use by callers wiring ModuleDeps.
@@ -30,15 +35,28 @@ type PaymentTermOption = revenueaction.PaymentTermOption
 
 // ModuleDeps holds all dependencies for the revenue module.
 type ModuleDeps struct {
-	Routes       centymo.RevenueRoutes
+	Routes          centymo.RevenueRoutes
 	DB              centymo.DataSource // KEEP — used for revenue_payment, collection_method, location
 	GetListPageData func(ctx context.Context, req *revenuepb.GetRevenueListPageDataRequest) (*revenuepb.GetRevenueListPageDataResponse, error)
-	Labels       centymo.RevenueLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Labels          centymo.RevenueLabels
+	CommonLabels    pyeza.CommonLabels
+	TableLabels     types.TableLabels
 
 	// Payment terms dropdown (optional — gracefully degrades when nil)
 	ListPaymentTerms func(ctx context.Context) ([]*PaymentTermOption, error)
+
+	// Client search for autocomplete (optional — gracefully degrades when nil)
+	ListClients         func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
+
+	// Subscription search for revenue form autocomplete (optional — gracefully degrades when nil)
+	ListSubscriptions func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
+
+	// Subscription auto-populate (optional — gracefully degrades when nil)
+	ReadSubscription      func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
+	ReadPricePlan         func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	ReadProduct           func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
 
 	// Typed revenue operations (for detail + action views)
 	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
@@ -112,9 +130,11 @@ type Module struct {
 	PaymentAdd         view.View
 	PaymentEdit        view.View
 	PaymentRemove      view.View
-	InvoiceDownload    http.HandlerFunc
-	SendEmailHandler   http.HandlerFunc
-	SettingsTemplates  view.View
+	InvoiceDownload       http.HandlerFunc
+	SendEmailHandler      http.HandlerFunc
+	SearchClients         http.HandlerFunc
+	SearchSubscriptions   http.HandlerFunc
+	SettingsTemplates     view.View
 	SettingsUpload     view.View
 	SettingsDelete     view.View
 	SettingsSetDefault view.View
@@ -128,10 +148,18 @@ func NewModule(deps *ModuleDeps) *Module {
 		Labels:                       deps.Labels,
 		DB:                           deps.DB,
 		ListPaymentTerms:             deps.ListPaymentTerms,
+		ListClients:                  deps.ListClients,
+		SearchClientsByName:          deps.SearchClientsByName,
+		ListSubscriptions:            deps.ListSubscriptions,
+		ReadSubscription:             deps.ReadSubscription,
+		ReadPricePlan:                deps.ReadPricePlan,
+		ListProductPricePlans:        deps.ListProductPricePlans,
+		ReadProduct:                  deps.ReadProduct,
 		CreateRevenue:                deps.CreateRevenue,
 		ReadRevenue:                  deps.ReadRevenue,
 		UpdateRevenue:                deps.UpdateRevenue,
 		DeleteRevenue:                deps.DeleteRevenue,
+		CreateRevenueLineItem:        deps.CreateRevenueLineItem,
 		ListRevenueLineItems:         deps.ListRevenueLineItems,
 		ReadInventoryItem:            deps.ReadInventoryItem,
 		UpdateInventoryItem:          deps.UpdateInventoryItem,
@@ -223,7 +251,7 @@ func NewModule(deps *ModuleDeps) *Module {
 
 	return &Module{
 		routes:    deps.Routes,
-		Dashboard: revenuedashboard.NewView(&revenuedashboard.Deps{CommonLabels: deps.CommonLabels}),
+		Dashboard: revenuedashboard.NewView(&revenuedashboard.Deps{Labels: deps.Labels, CommonLabels: deps.CommonLabels}),
 		List: revenuelist.NewView(&revenuelist.ListViewDeps{
 			Routes: deps.Routes, GetListPageData: deps.GetListPageData,
 			Labels: deps.Labels, CommonLabels: deps.CommonLabels, TableLabels: deps.TableLabels,
@@ -249,9 +277,11 @@ func NewModule(deps *ModuleDeps) *Module {
 		PaymentAdd:         revenueaction.NewPaymentAddAction(paymentDeps),
 		PaymentEdit:        revenueaction.NewPaymentEditAction(paymentDeps),
 		PaymentRemove:      revenueaction.NewPaymentRemoveAction(paymentDeps),
-		InvoiceDownload:    invoiceDownload,
-		SendEmailHandler:   sendEmailHandler,
-		SettingsTemplates:  settingsTemplates,
+		InvoiceDownload:     invoiceDownload,
+		SendEmailHandler:    sendEmailHandler,
+		SearchClients:       revenueaction.NewSearchClientsAction(actionDeps),
+		SearchSubscriptions: revenueaction.NewSearchSubscriptionsAction(actionDeps),
+		SettingsTemplates:   settingsTemplates,
 		SettingsUpload:     settingsUpload,
 		SettingsDelete:     settingsDelete,
 		SettingsSetDefault: settingsSetDefault,

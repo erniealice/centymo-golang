@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -36,11 +36,11 @@ type DetailViewDeps struct {
 // PageData holds the data for the price list detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	PriceList       *pricelistpb.PriceList
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
-	ID              string
+	ContentTemplate     string
+	PriceList           *pricelistpb.PriceList
+	ActiveTab           string
+	TabItems            []pyeza.TabItem
+	ID                  string
 	PricesTable         *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
@@ -86,7 +86,7 @@ func NewView(deps *DetailViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          name,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "sales",
+				ActiveNav:      "sale",
 				HeaderTitle:    name,
 				HeaderSubtitle: description,
 				HeaderIcon:     "icon-tag",
@@ -149,7 +149,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		// KB help content
 		if viewCtx.Translations != nil {
 			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
-				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "pricelists-detail"); kb != nil {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "pricelist-detail"); kb != nil {
 					pageData.HasHelp = true
 					pageData.HelpContent = kb.Body
 				}

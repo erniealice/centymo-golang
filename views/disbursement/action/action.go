@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -46,13 +47,13 @@ type Deps struct {
 	DeleteDisbursement func(ctx context.Context, req *disbursementpb.DeleteDisbursementRequest) (*disbursementpb.DeleteDisbursementResponse, error)
 }
 
-// parseAmount converts a form string amount to float64.
-func parseAmount(s string) float64 {
+// parseAmount converts a form string amount (decimal) to int64 centavos.
+func parseAmount(s string) int64 {
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
 		return 0
 	}
-	return f
+	return int64(math.Round(f * 100))
 }
 
 // NewAddAction creates the disbursement add action (GET = form, POST = create).
@@ -146,7 +147,7 @@ func NewEditAction(deps *Deps) view.View {
 				ID:               id,
 				ReferenceNumber:  record.GetReferenceNumber(),
 				Payee:            record.GetName(),
-				Amount:           fmt.Sprintf("%.2f", record.GetAmount()),
+				Amount:           fmt.Sprintf("%.2f", float64(record.GetAmount())/100.0),
 				Currency:         record.GetCurrency(),
 				Method:           record.GetDisbursementMethodId(),
 				Date:             record.GetDateCreatedString(),

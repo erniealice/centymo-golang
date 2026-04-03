@@ -185,7 +185,7 @@ func buildInvoiceData(revenue *revenuepb.Revenue, lineItems []*revenuelineitempb
 	return map[string]any{
 		"invoice": map[string]any{
 			"reference_number": revenue.GetReferenceNumber(),
-			"date":             revenue.GetRevenueDateString(),
+			"date":             revenue.GetRevenueDate(),
 			"status":           revenue.GetStatus(),
 			"currency":         revenue.GetCurrency(),
 			"total_amount":     fmt.Sprintf("%.2f", revenue.GetTotalAmount()),

@@ -115,11 +115,11 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 			"currency":             r.FormValue("currency"),
 			"collection_method_id": collectionMethodID,
 			"reference_number":     r.FormValue("reference_number"),
-			"received_by":         r.FormValue("received_by"),
-			"received_role":       r.FormValue("received_role"),
-			"collection_type":     "sale",
-			"status":              "completed",
-			"notes":               r.FormValue("notes"),
+			"received_by":          r.FormValue("received_by"),
+			"received_role":        r.FormValue("received_role"),
+			"collection_type":      "sale",
+			"status":               "completed",
+			"notes":                r.FormValue("notes"),
 		}
 
 		_, err := deps.DB.Create(ctx, "revenue_payment", data)

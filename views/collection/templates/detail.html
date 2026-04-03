@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "collection-detail-content"}}
-<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.PageTitle}}">
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.PageTitle}}" data-page-css="/assets/css/centymo/centymo-transaction-detail.css?v={{.CacheVersion}}">
     {{/* --- Tabs --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "collection-tabs")}}
@@ -66,9 +66,9 @@
     </div>
 
     {{if index .Collection "notes"}}
-    <div class="sale-section-spacer">
+    <div class="transaction-section-spacer">
         <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
-        <div class="sale-notes-block">{{index .Collection "notes"}}</div>
+        <div class="transaction-notes-block">{{index .Collection "notes"}}</div>
     </div>
     {{end}}
 </div>

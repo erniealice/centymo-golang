@@ -6,18 +6,18 @@ import (
 	"log"
 
 	centymo "github.com/erniealice/centymo-golang"
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
-	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 )
 
@@ -39,19 +39,19 @@ type DetailViewDeps struct {
 // PageData holds the data for the plan detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	Plan            *planpb.Plan
-	Labels          centymo.PlanLabels
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
-	ID              string
-	PlanName        string
-	PlanDesc        string
-	FulfillmentType string
-	PlanStatus      string
-	StatusVariant   string
-	CreatedDate     string
-	ModifiedDate    string
+	ContentTemplate     string
+	Plan                *planpb.Plan
+	Labels              centymo.PlanLabels
+	ActiveTab           string
+	TabItems            []pyeza.TabItem
+	ID                  string
+	PlanName            string
+	PlanDesc            string
+	FulfillmentType     string
+	PlanStatus          string
+	StatusVariant       string
+	CreatedDate         string
+	ModifiedDate        string
 	ProductsTable       *types.TableConfig
 	PriceListsTable     *types.TableConfig
 	AttachmentTable     *types.TableConfig

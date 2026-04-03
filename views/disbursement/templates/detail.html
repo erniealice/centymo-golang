@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "disbursement-detail-content"}}
-<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-disbursement-detail.css?v={{.CacheVersion}}" data-page-title="{{.Labels.Detail.PageTitle}}">
+<div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-transaction-detail.css?v={{.CacheVersion}} /assets/css/centymo/centymo-disbursement-detail.css?v={{.CacheVersion}}" data-page-title="{{.Labels.Detail.PageTitle}}">
     {{/* --- Tabs --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "disbursement-tabs")}}
@@ -77,7 +77,7 @@
     {{if index .Disbursement "notes"}}
     <div class="disbursement-section-spacer">
         <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
-        <div class="sale-notes-block">{{index .Disbursement "notes"}}</div>
+        <div class="transaction-notes-block">{{index .Disbursement "notes"}}</div>
     </div>
     {{end}}
 </div>

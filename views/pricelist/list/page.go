@@ -65,7 +65,7 @@ func NewView(deps *ListViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          statusPageTitle(deps.Labels, status),
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "sales",
+				ActiveNav:      "sale",
 				ActiveSubNav:   "price-lists-" + status,
 				HeaderTitle:    statusPageTitle(deps.Labels, status),
 				HeaderSubtitle: statusPageCaption(deps.Labels, status),
@@ -79,7 +79,7 @@ func NewView(deps *ListViewDeps) view.View {
 		// KB help content
 		if viewCtx.Translations != nil {
 			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
-				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "pricelists"); kb != nil {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "pricelist"); kb != nil {
 					pageData.HasHelp = true
 					pageData.HelpContent = kb.Body
 				}
@@ -237,8 +237,8 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 
 		id := pl.GetId()
 		name := pl.GetName()
-		dateStart := pl.GetDateStartString()
-		dateEnd := pl.GetDateEndString()
+		dateStart := pl.GetDateStart()
+		dateEnd := pl.GetDateEnd()
 		if dateEnd == "" {
 			dateEnd = "—"
 		}

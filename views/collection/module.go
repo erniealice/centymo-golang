@@ -90,15 +90,15 @@ func NewModule(deps *ModuleDeps) *Module {
 	})
 
 	return &Module{
-		routes:    deps.Routes,
-		Dashboard: listView, // Dashboard reuses list view for now
-		List:      listView,
-		Detail:    collectiondetail.NewView(detailDeps),
-		TabAction: collectiondetail.NewTabAction(detailDeps),
-		Add:           collectionaction.NewAddAction(actionDeps),
-		Edit:          collectionaction.NewEditAction(actionDeps),
-		Delete:        collectionaction.NewDeleteAction(actionDeps),
-		BulkDelete:    collectionaction.NewBulkDeleteAction(actionDeps),
+		routes:           deps.Routes,
+		Dashboard:        listView, // Dashboard reuses list view for now
+		List:             listView,
+		Detail:           collectiondetail.NewView(detailDeps),
+		TabAction:        collectiondetail.NewTabAction(detailDeps),
+		Add:              collectionaction.NewAddAction(actionDeps),
+		Edit:             collectionaction.NewEditAction(actionDeps),
+		Delete:           collectionaction.NewDeleteAction(actionDeps),
+		BulkDelete:       collectionaction.NewBulkDeleteAction(actionDeps),
 		SetStatus:        collectionaction.NewSetStatusAction(actionDeps),
 		BulkSetStatus:    collectionaction.NewBulkSetStatusAction(actionDeps),
 		AttachmentUpload: collectiondetail.NewAttachmentUploadAction(detailDeps),

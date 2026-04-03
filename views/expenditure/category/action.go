@@ -22,13 +22,13 @@ type FormLabels struct {
 
 // FormData is the template data for the category drawer form.
 type FormData struct {
-	FormAction  string
-	IsEdit      bool
-	ID          string
-	Code        string
-	Name        string
-	Description string
-	Labels      FormLabels
+	FormAction   string
+	IsEdit       bool
+	ID           string
+	Code         string
+	Name         string
+	Description  string
+	Labels       FormLabels
 	CommonLabels any
 }
 

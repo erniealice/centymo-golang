@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -75,9 +76,10 @@ func NewAssignView(deps *DetailViewDeps) view.View {
 
 		active := r.FormValue("active") == "true"
 
-		priceOverride := 0.0
+		var priceOverride int64
 		if v := r.FormValue("price_override"); v != "" {
-			priceOverride, _ = strconv.ParseFloat(v, 64)
+			f, _ := strconv.ParseFloat(v, 64)
+			priceOverride = int64(math.Round(f * 100))
 		}
 
 		resp, err := deps.CreateProductVariant(ctx, &productvariantpb.CreateProductVariantRequest{
@@ -171,9 +173,10 @@ func NewEditView(deps *DetailViewDeps) view.View {
 
 		active := r.FormValue("active") == "true"
 
-		editPriceOverride := 0.0
+		var editPriceOverride int64
 		if v := r.FormValue("price_override"); v != "" {
-			editPriceOverride, _ = strconv.ParseFloat(v, 64)
+			f, _ := strconv.ParseFloat(v, 64)
+			editPriceOverride = int64(math.Round(f * 100))
 		}
 
 		_, err := deps.UpdateProductVariant(ctx, &productvariantpb.UpdateProductVariantRequest{

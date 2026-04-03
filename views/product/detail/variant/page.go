@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -101,7 +101,7 @@ func NewPageView(deps *DetailViewDeps) view.View {
 		priceOverride := variant.GetPriceOverride()
 		variantPrice := ""
 		if priceOverride != 0 {
-			variantPrice = detail.FormatPrice(currency, priceOverride)
+			variantPrice = detail.FormatPrice(currency, float64(priceOverride))
 		}
 
 		activeTab := viewCtx.Request.URL.Query().Get("tab")
@@ -231,7 +231,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		priceOverride := variant.GetPriceOverride()
 		variantPrice := ""
 		if priceOverride != 0 {
-			variantPrice = detail.FormatPrice(currency, priceOverride)
+			variantPrice = detail.FormatPrice(currency, float64(priceOverride))
 		}
 
 		l := deps.Labels

@@ -12,10 +12,10 @@ import (
 	pricelistdetail "github.com/erniealice/centymo-golang/views/pricelist/detail"
 	pricelistlist "github.com/erniealice/centymo-golang/views/pricelist/list"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
-	"github.com/erniealice/hybra-golang/views/attachment"
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
+	"github.com/erniealice/hybra-golang/views/attachment"
 )
 
 // ModuleDeps holds all dependencies for the price list module.
@@ -105,9 +105,9 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	return &Module{
-		routes:    deps.Routes,
-		List:      pricelistlist.NewView(listDeps),
-		TableView: pricelistlist.NewTableView(listDeps),
+		routes:           deps.Routes,
+		List:             pricelistlist.NewView(listDeps),
+		TableView:        pricelistlist.NewTableView(listDeps),
 		Detail:           pricelistdetail.NewView(detailDeps),
 		TabAction:        pricelistdetail.NewTabAction(detailDeps),
 		Add:              pricelistaction.NewAddAction(actionDeps),

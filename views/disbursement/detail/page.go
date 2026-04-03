@@ -7,9 +7,9 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -59,19 +59,19 @@ type PageData struct {
 // disbursementToMap converts a Disbursement protobuf to a map[string]any for template use.
 func disbursementToMap(d *disbursementpb.Disbursement) map[string]any {
 	return map[string]any{
-		"id":                      d.GetId(),
-		"name":                    d.GetName(),
-		"reference_number":        d.GetReferenceNumber(),
-		"amount":                  centymo.FormatWithCommas(d.GetAmount() / 100.0),
-		"currency":                d.GetCurrency(),
-		"status":                  d.GetStatus(),
-		"disbursement_method_id":  d.GetDisbursementMethodId(),
-		"disbursement_type":       d.GetDisbursementType(),
-		"expenditure_id":          d.GetExpenditureId(),
-		"approved_by":             d.GetApprovedBy(),
-		"active":                  d.GetActive(),
-		"date_created_string":     d.GetDateCreatedString(),
-		"date_modified_string":    d.GetDateModifiedString(),
+		"id":                     d.GetId(),
+		"name":                   d.GetName(),
+		"reference_number":       d.GetReferenceNumber(),
+		"amount":                 centymo.FormatWithCommas(float64(d.GetAmount()) / 100.0),
+		"currency":               d.GetCurrency(),
+		"status":                 d.GetStatus(),
+		"disbursement_method_id": d.GetDisbursementMethodId(),
+		"disbursement_type":      d.GetDisbursementType(),
+		"expenditure_id":         d.GetExpenditureId(),
+		"approved_by":            d.GetApprovedBy(),
+		"active":                 d.GetActive(),
+		"date_created_string":    d.GetDateCreatedString(),
+		"date_modified_string":   d.GetDateModifiedString(),
 	}
 }
 
@@ -98,7 +98,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		refNumber := record.GetReferenceNumber()
 		status := record.GetStatus()
 		currency := record.GetCurrency()
-		amount := centymo.FormatWithCommas(record.GetAmount() / 100.0)
+		amount := centymo.FormatWithCommas(float64(record.GetAmount()) / 100.0)
 
 		l := deps.Labels
 		headerTitle := l.Detail.TitlePrefix + refNumber
@@ -214,7 +214,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 
 		status := record.GetStatus()
 		currency := record.GetCurrency()
-		amount := centymo.FormatWithCommas(record.GetAmount() / 100.0)
+		amount := centymo.FormatWithCommas(float64(record.GetAmount()) / 100.0)
 		refNumber := record.GetReferenceNumber()
 
 		l := deps.Labels

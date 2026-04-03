@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -83,15 +84,15 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 		}
 
 		r := viewCtx.Request
-		costBasis, _ := strconv.ParseFloat(r.FormValue("cost_basis"), 64)
-		salvageValue, _ := strconv.ParseFloat(r.FormValue("salvage_value"), 64)
+		costBasisF, _ := strconv.ParseFloat(r.FormValue("cost_basis"), 64)
+		salvageValueF, _ := strconv.ParseFloat(r.FormValue("salvage_value"), 64)
 		usefulLife, _ := strconv.ParseInt(r.FormValue("useful_life_months"), 10, 32)
 
 		data := &inventorydepreciationpb.InventoryDepreciation{
 			InventoryItemId:  inventoryItemID,
 			Method:           r.FormValue("method"),
-			CostBasis:        costBasis,
-			SalvageValue:     salvageValue,
+			CostBasis:        int64(math.Round(costBasisF * 100)),
+			SalvageValue:     int64(math.Round(salvageValueF * 100)),
 			UsefulLifeMonths: int32(usefulLife),
 			StartDate:        r.FormValue("start_date"),
 		}
@@ -143,8 +144,8 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 				IsEdit:        true,
 				ID:            depreciationID,
 				Method:        record.GetMethod(),
-				CostBasis:     fmt.Sprintf("%g", record.GetCostBasis()),
-				SalvageValue:  fmt.Sprintf("%g", record.GetSalvageValue()),
+				CostBasis:     fmt.Sprintf("%.2f", float64(record.GetCostBasis())/100.0),
+				SalvageValue:  fmt.Sprintf("%.2f", float64(record.GetSalvageValue())/100.0),
 				UsefulLife:    fmt.Sprintf("%d", record.GetUsefulLifeMonths()),
 				StartDate:     record.GetStartDate(),
 				Labels:        depreciationFormLabels(viewCtx.T),
@@ -159,15 +160,15 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 		}
 
 		r := viewCtx.Request
-		costBasis, _ := strconv.ParseFloat(r.FormValue("cost_basis"), 64)
-		salvageValue, _ := strconv.ParseFloat(r.FormValue("salvage_value"), 64)
+		costBasisF, _ := strconv.ParseFloat(r.FormValue("cost_basis"), 64)
+		salvageValueF, _ := strconv.ParseFloat(r.FormValue("salvage_value"), 64)
 		usefulLife, _ := strconv.ParseInt(r.FormValue("useful_life_months"), 10, 32)
 
 		data := &inventorydepreciationpb.InventoryDepreciation{
 			Id:               depreciationID,
 			Method:           r.FormValue("method"),
-			CostBasis:        costBasis,
-			SalvageValue:     salvageValue,
+			CostBasis:        int64(math.Round(costBasisF * 100)),
+			SalvageValue:     int64(math.Round(salvageValueF * 100)),
 			UsefulLifeMonths: int32(usefulLife),
 			StartDate:        r.FormValue("start_date"),
 		}

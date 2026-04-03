@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -60,13 +61,13 @@ type PricePlanFormData struct {
 
 // PricePlanDeps holds dependencies for price plan action handlers.
 type PricePlanDeps struct {
-	Routes            centymo.PlanRoutes
-	Labels            centymo.PlanLabels
-	CreatePricePlan   func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
-	ReadPricePlan     func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
-	UpdatePricePlan   func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
-	DeletePricePlan   func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
-	ListLocations     func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	Routes          centymo.PlanRoutes
+	Labels          centymo.PlanLabels
+	CreatePricePlan func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
+	ReadPricePlan   func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	UpdatePricePlan func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
+	DeletePricePlan func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
+	ListLocations   func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
 }
 
 // pricePlanFormLabels converts centymo.PricePlanFormLabels into the local type.
@@ -142,9 +143,9 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 
-		amount := float64(0)
+		amount := int64(0)
 		if v, err := strconv.ParseFloat(r.FormValue("amount"), 64); err == nil {
-			amount = v
+			amount = int64(math.Round(v * 100))
 		}
 
 		durationValue := int32(0)
@@ -204,7 +205,7 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			}
 			pp := data[0]
 
-			amountStr := strconv.FormatFloat(pp.GetAmount(), 'f', 2, 64)
+			amountStr := strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64)
 			durationStr := strconv.FormatInt(int64(pp.GetDurationValue()), 10)
 
 			return view.OK("price-plan-drawer-form", &PricePlanFormData{
@@ -234,9 +235,9 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 
-		amount := float64(0)
+		amount := int64(0)
 		if v, err := strconv.ParseFloat(r.FormValue("amount"), 64); err == nil {
-			amount = v
+			amount = int64(math.Round(v * 100))
 		}
 
 		durationValue := int32(0)

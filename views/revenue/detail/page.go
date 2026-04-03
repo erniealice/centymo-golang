@@ -10,9 +10,9 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -54,21 +54,21 @@ type PaymentInfo struct {
 // PageData holds the data for the sales detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	Revenue         map[string]any
-	Labels          centymo.RevenueLabels
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
+	ContentTemplate     string
+	Revenue             map[string]any
+	Labels              centymo.RevenueLabels
+	ActiveTab           string
+	TabItems            []pyeza.TabItem
 	LineItemTable       *types.TableConfig
 	LineItemAddURL      string
 	LineItemDiscountURL string
 	TotalAmount         string
 	Payment             *PaymentInfo
-	PaymentTable     *types.TableConfig
-	PaymentAddURL    string
-	TotalPaid        string
-	RemainingBalance string
-	PaymentStatus    string
+	PaymentTable        *types.TableConfig
+	PaymentAddURL       string
+	TotalPaid           string
+	RemainingBalance    string
+	PaymentStatus       string
 	AuditTable          *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
@@ -115,16 +115,16 @@ func NewView(deps *DetailViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          headerTitle,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "sales",
+				ActiveNav:      "sale",
 				HeaderTitle:    headerTitle,
 				HeaderSubtitle: l.Detail.PageTitle,
 				HeaderIcon:     "icon-shopping-bag",
 				CommonLabels:   deps.CommonLabels,
 			},
-			ContentTemplate: "sales-detail-content",
-			Revenue:         revenue,
-			Labels:          l,
-			ActiveTab:       activeTab,
+			ContentTemplate:    "sales-detail-content",
+			Revenue:            revenue,
+			Labels:             l,
+			ActiveTab:          activeTab,
 			TabItems:           tabItems,
 			InvoiceDownloadURL: route.ResolveURL(deps.Routes.InvoiceDownloadURL, "id", id),
 		}
@@ -215,14 +215,14 @@ func NewView(deps *DetailViewDeps) view.View {
 		// KB help content
 		if viewCtx.Translations != nil {
 			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
-				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "sales-detail"); kb != nil {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "sale-detail"); kb != nil {
 					pageData.HasHelp = true
 					pageData.HelpContent = kb.Body
 				}
 			}
 		}
 
-		return view.OK("sales-detail", pageData)
+		return view.OK("sale-detail", pageData)
 	})
 }
 
@@ -268,9 +268,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				CacheVersion: viewCtx.CacheVersion,
 				CommonLabels: deps.CommonLabels,
 			},
-			Revenue:   revenue,
-			Labels:    l,
-			ActiveTab: tab,
+			Revenue:            revenue,
+			Labels:             l,
+			ActiveTab:          tab,
 			TabItems:           buildTabItems(l, id, deps.Routes),
 			InvoiceDownloadURL: route.ResolveURL(deps.Routes.InvoiceDownloadURL, "id", id),
 		}
@@ -552,19 +552,28 @@ func formatAmount(f float64) string {
 // revenueToMap converts a Revenue protobuf to a map[string]any for template use.
 func revenueToMap(r *revenuepb.Revenue) map[string]any {
 	return map[string]any{
-		"id":                  r.GetId(),
-		"name":                r.GetName(),
-		"client_id":           r.GetClientId(),
-		"revenue_date_string": r.GetRevenueDateString(),
-		"total_amount":        centymo.FormatWithCommas(r.GetTotalAmount() / 100.0),
-		"currency":            r.GetCurrency(),
-		"status":              r.GetStatus(),
-		"reference_number":    r.GetReferenceNumber(),
-		"notes":               r.GetNotes(),
-		"location_id":         r.GetLocationId(),
-		"active":              r.GetActive(),
-		"date_created_string": r.GetDateCreatedString(),
+		"id":                   r.GetId(),
+		"name":                 r.GetName(),
+		"client_id":            r.GetClientId(),
+		"revenue_date_string":  r.GetRevenueDate(),
+		"total_amount":         centymo.FormatWithCommas(float64(r.GetTotalAmount()) / 100.0),
+		"currency":             r.GetCurrency(),
+		"status":               r.GetStatus(),
+		"reference_number":     r.GetReferenceNumber(),
+		"notes":                r.GetNotes(),
+		"location_id":          r.GetLocationId(),
+		"active":               r.GetActive(),
+		"date_created_string":  r.GetDateCreatedString(),
 		"date_modified_string": r.GetDateModifiedString(),
+		"payment_term_id":      r.GetPaymentTermId(),
+		"due_date_string":      r.GetDueDate(),
+		"payment_term_name": func() string {
+			if pt := r.GetPaymentTerm(); pt != nil {
+				return pt.GetName()
+			}
+			return ""
+		}(),
+		"subscription_id": r.GetSubscriptionId(),
 	}
 }
 
@@ -575,10 +584,10 @@ func lineItemToMap(item *revenuelineitempb.RevenueLineItem) map[string]any {
 		"revenue_id":          item.GetRevenueId(),
 		"description":         item.GetDescription(),
 		"quantity":            fmt.Sprintf("%.0f", item.GetQuantity()),
-		"unit_price":          centymo.FormatWithCommas(item.GetUnitPrice() / 100.0),
-		"cost_price":          centymo.FormatWithCommas(item.GetCostPrice() / 100.0),
+		"unit_price":          centymo.FormatWithCommas(float64(item.GetUnitPrice()) / 100.0),
+		"cost_price":          centymo.FormatWithCommas(float64(item.GetCostPrice()) / 100.0),
 		"discount":            "0",
-		"total":               centymo.FormatWithCommas(item.GetTotalPrice() / 100.0),
+		"total":               centymo.FormatWithCommas(float64(item.GetTotalPrice()) / 100.0),
 		"line_item_type":      item.GetLineItemType(),
 		"inventory_item_id":   item.GetInventoryItemId(),
 		"inventory_serial_id": item.GetInventorySerialId(),

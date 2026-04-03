@@ -1,0 +1,47 @@
+{{/*
+Product line association drawer form — used to link a product to a line.
+Data: .ProductID, .LineID, .SortOrder, .Active, .LineOptions, .ID, .FormAction,
+      .IsEdit, .CommonLabels, .Labels
+*/}}
+{{define "product-line-association-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="plid" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "line_id"
+                "Label" .Labels.Line
+                "Value" .LineID
+                "Required" true
+                "Placeholder" .Labels.LinePlaceholder
+                "Options" .LineOptions
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "sort_order"
+                "Label" .Labels.SortOrder
+                "Value" .SortOrder
+                "Placeholder" "0"
+            )}}
+        </div>
+
+        {{if .IsEdit}}
+        <div class="form-row single">
+            {{template "toggle" (dict
+                "Name" "active"
+                "Label" .Labels.Active
+                "Checked" .Active
+                "Value" "true"
+            )}}
+        </div>
+        {{end}}
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

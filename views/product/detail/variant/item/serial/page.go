@@ -22,20 +22,20 @@ import (
 // SerialDetailPageData holds data for the inventory serial detail page.
 type SerialDetailPageData struct {
 	types.PageData
-	ContentTemplate   string
-	Breadcrumbs       []detail.Breadcrumb
-	ProductID         string
-	VariantID         string
-	InventoryItemID   string
-	SerialID          string
+	ContentTemplate string
+	Breadcrumbs     []detail.Breadcrumb
+	ProductID       string
+	VariantID       string
+	InventoryItemID string
+	SerialID        string
 	// Serial fields
-	SerialNumber      string
-	IMEI              string
-	Status            string
-	StatusVariant     string
-	WarrantyEnd       string
-	PurchaseOrder     string
-	Labels            centymo.ProductLabels
+	SerialNumber  string
+	IMEI          string
+	Status        string
+	StatusVariant string
+	WarrantyEnd   string
+	PurchaseOrder string
+	Labels        centymo.ProductLabels
 }
 
 // NewPageView creates the inventory serial detail view (full page).

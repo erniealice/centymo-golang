@@ -212,6 +212,73 @@ func (r ProductRoutes) RouteMap() map[string]string {
 	}
 }
 
+// ProductLineRoutes holds all route paths for product line views and actions.
+type ProductLineRoutes struct {
+	// Sidebar navigation context — set via defaults or routes.json override
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	DashboardURL     string `json:"dashboard_url"`
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+
+	// Attachment routes
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
+}
+
+// DefaultProductLineRoutes returns a ProductLineRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultProductLineRoutes() ProductLineRoutes {
+	return ProductLineRoutes{
+		ActiveNav:    "services",
+		ActiveSubNav: "product-lines",
+
+		DashboardURL:     ProductLineDashboardURL,
+		ListURL:          ProductLineListURL,
+		TableURL:         ProductLineTableURL,
+		DetailURL:        ProductLineDetailURL,
+		AddURL:           ProductLineAddURL,
+		EditURL:          ProductLineEditURL,
+		DeleteURL:        ProductLineDeleteURL,
+		BulkDeleteURL:    ProductLineBulkDeleteURL,
+		SetStatusURL:     ProductLineSetStatusURL,
+		BulkSetStatusURL: ProductLineBulkSetStatusURL,
+		TabActionURL:     ProductLineTabActionURL,
+
+		AttachmentUploadURL: ProductLineAttachmentUploadURL,
+		AttachmentDeleteURL: ProductLineAttachmentDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// product line routes.
+func (r ProductLineRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"product_line.dashboard":         r.DashboardURL,
+		"product_line.list":              r.ListURL,
+		"product_line.table":             r.TableURL,
+		"product_line.detail":            r.DetailURL,
+		"product_line.add":               r.AddURL,
+		"product_line.edit":              r.EditURL,
+		"product_line.delete":            r.DeleteURL,
+		"product_line.bulk_delete":       r.BulkDeleteURL,
+		"product_line.set_status":        r.SetStatusURL,
+		"product_line.bulk_set_status":   r.BulkSetStatusURL,
+		"product_line.tab_action":        r.TabActionURL,
+		"product_line.attachment.upload": r.AttachmentUploadURL,
+		"product_line.attachment.delete": r.AttachmentDeleteURL,
+	}
+}
+
 // InventoryRoutes holds all route paths for inventory views and actions,
 // including serial, transaction, depreciation, dashboard, and movement sub-routes.
 type InventoryRoutes struct {
@@ -409,6 +476,12 @@ type RevenueRoutes struct {
 	SettingsTemplateUploadURL  string `json:"settings_template_upload_url"`
 	SettingsTemplateDeleteURL  string `json:"settings_template_delete_url"`
 	SettingsTemplateDefaultURL string `json:"settings_template_default_url"`
+
+	// Client search for revenue form autocomplete
+	SearchClientURL string `json:"search_client_url"`
+
+	// Subscription search for revenue form autocomplete
+	SearchSubscriptionURL string `json:"search_subscription_url"`
 }
 
 // DefaultRevenueRoutes returns a RevenueRoutes populated from the package-level
@@ -449,6 +522,8 @@ func DefaultRevenueRoutes() RevenueRoutes {
 		SettingsTemplateUploadURL:  RevenueSettingsTemplateUploadURL,
 		SettingsTemplateDeleteURL:  RevenueSettingsTemplateDeleteURL,
 		SettingsTemplateDefaultURL: RevenueSettingsTemplateDefaultURL,
+		SearchClientURL:            RevenueSearchClientURL,
+		SearchSubscriptionURL:      SalesSearchSubscriptionURL,
 	}
 }
 
@@ -490,6 +565,8 @@ func (r RevenueRoutes) RouteMap() map[string]string {
 		"sales.settings.template_upload":  r.SettingsTemplateUploadURL,
 		"sales.settings.template_delete":  r.SettingsTemplateDeleteURL,
 		"sales.settings.template_default": r.SettingsTemplateDefaultURL,
+		"sales.search_client":        r.SearchClientURL,
+		"sales.search.subscriptions": r.SearchSubscriptionURL,
 	}
 }
 
@@ -537,10 +614,10 @@ type ExpenditureRoutes struct {
 	PurchaseOrderDetailURL    string `json:"purchase_order_detail_url"`
 	PurchaseOrderAddURL       string `json:"purchase_order_add_url"`
 	PurchaseOrderEditURL      string `json:"purchase_order_edit_url"`
-	PurchaseOrderDeleteURL     string `json:"purchase_order_delete_url"`
-	PurchaseOrderSetStatusURL  string `json:"purchase_order_set_status_url"`
-	PurchaseOrderTableURL      string `json:"purchase_order_table_url"`
-	PurchaseOrderTabActionURL  string `json:"purchase_order_tab_action_url"`
+	PurchaseOrderDeleteURL    string `json:"purchase_order_delete_url"`
+	PurchaseOrderSetStatusURL string `json:"purchase_order_set_status_url"`
+	PurchaseOrderTableURL     string `json:"purchase_order_table_url"`
+	PurchaseOrderTabActionURL string `json:"purchase_order_tab_action_url"`
 }
 
 // DefaultExpenditureRoutes returns an ExpenditureRoutes populated from the
@@ -625,9 +702,9 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 		"expenditure.purchase_order.add":        r.PurchaseOrderAddURL,
 		"expenditure.purchase_order.edit":       r.PurchaseOrderEditURL,
 		"expenditure.purchase_order.delete":     r.PurchaseOrderDeleteURL,
-		"expenditure.purchase_order.set_status":  r.PurchaseOrderSetStatusURL,
-		"expenditure.purchase_order.table":       r.PurchaseOrderTableURL,
-		"expenditure.purchase_order.tab_action":  r.PurchaseOrderTabActionURL,
+		"expenditure.purchase_order.set_status": r.PurchaseOrderSetStatusURL,
+		"expenditure.purchase_order.table":      r.PurchaseOrderTableURL,
+		"expenditure.purchase_order.tab_action": r.PurchaseOrderTabActionURL,
 	}
 }
 
@@ -694,6 +771,67 @@ func (r PlanRoutes) RouteMap() map[string]string {
 		"plan.pricelist.add":    r.PricePlanAddURL,
 		"plan.pricelist.edit":   r.PricePlanEditURL,
 		"plan.pricelist.delete": r.PricePlanDeleteURL,
+	}
+}
+
+// PricePlanRoutes holds all route paths for price plan (rate card) views and actions.
+type PricePlanRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+	DashboardURL        string `json:"dashboard_url"`
+	ListURL             string `json:"list_url"`
+	TableURL            string `json:"table_url"`
+	DetailURL           string `json:"detail_url"`
+	AddURL              string `json:"add_url"`
+	EditURL             string `json:"edit_url"`
+	DeleteURL           string `json:"delete_url"`
+	BulkDeleteURL       string `json:"bulk_delete_url"`
+	SetStatusURL        string `json:"set_status_url"`
+	BulkSetStatusURL    string `json:"bulk_set_status_url"`
+	TabActionURL        string `json:"tab_action_url"`
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
+}
+
+// DefaultPricePlanRoutes returns a PricePlanRoutes populated from the package-level
+// route constants defined in routes.go.
+func DefaultPricePlanRoutes() PricePlanRoutes {
+	return PricePlanRoutes{
+		ActiveNav:           "services",
+		ActiveSubNav:        "rate-cards",
+		DashboardURL:        PricePlanDashboardURL,
+		ListURL:             PricePlanListURL,
+		TableURL:            PricePlanTableURL,
+		DetailURL:           PricePlanDetailURL,
+		AddURL:              PricePlanStandaloneAddURL,
+		EditURL:             PricePlanStandaloneEditURL,
+		DeleteURL:           PricePlanStandaloneDeleteURL,
+		BulkDeleteURL:       PricePlanBulkDeleteURL,
+		SetStatusURL:        PricePlanSetStatusURL,
+		BulkSetStatusURL:    PricePlanBulkSetStatusURL,
+		TabActionURL:        PricePlanTabActionURL,
+		AttachmentUploadURL: PricePlanAttachmentUploadURL,
+		AttachmentDeleteURL: PricePlanAttachmentDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// price plan routes.
+func (r PricePlanRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"price_plan.dashboard":         r.DashboardURL,
+		"price_plan.list":              r.ListURL,
+		"price_plan.table":             r.TableURL,
+		"price_plan.detail":            r.DetailURL,
+		"price_plan.add":               r.AddURL,
+		"price_plan.edit":              r.EditURL,
+		"price_plan.delete":            r.DeleteURL,
+		"price_plan.bulk_delete":       r.BulkDeleteURL,
+		"price_plan.set_status":        r.SetStatusURL,
+		"price_plan.bulk_set_status":   r.BulkSetStatusURL,
+		"price_plan.tab_action":        r.TabActionURL,
+		"price_plan.attachment.upload": r.AttachmentUploadURL,
+		"price_plan.attachment.delete": r.AttachmentDeleteURL,
 	}
 }
 

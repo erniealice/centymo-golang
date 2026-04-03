@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"strconv"
 	"strings"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -17,7 +19,9 @@ import (
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	linepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
+	productlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_line"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
@@ -38,6 +42,11 @@ type DetailViewDeps struct {
 	ListProductVariants       func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
 	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
 	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	ListLines                 func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
+	ListProductLines          func(ctx context.Context, req *productlinepb.ListProductLinesRequest) (*productlinepb.ListProductLinesResponse, error)
+	CreateProductLine         func(ctx context.Context, req *productlinepb.CreateProductLineRequest) (*productlinepb.CreateProductLineResponse, error)
+	UpdateProductLine         func(ctx context.Context, req *productlinepb.UpdateProductLineRequest) (*productlinepb.UpdateProductLineResponse, error)
+	DeleteProductLine         func(ctx context.Context, req *productlinepb.DeleteProductLineRequest) (*productlinepb.DeleteProductLineResponse, error)
 	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 
 	attachment.AttachmentOps
@@ -47,21 +56,21 @@ type DetailViewDeps struct {
 // PageData holds the data for the product detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	Product         *productpb.Product
-	Labels          centymo.ProductLabels
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
-	ID              string
-	ProductName     string
-	ProductDesc     string
-	ProductPrice    string
-	ProductCurrency string
-	ProductStatus   string
-	StatusVariant   string
-	Collections     []string
+	ContentTemplate     string
+	Product             *productpb.Product
+	Labels              centymo.ProductLabels
+	ActiveTab           string
+	TabItems            []pyeza.TabItem
+	ID                  string
+	ProductName         string
+	ProductDesc         string
+	ProductPrice        string
+	ProductCurrency     string
+	ProductStatus       string
+	StatusVariant       string
 	VariantsTable       *types.TableConfig
 	OptionsTable        *types.TableConfig
+	LinesTable          *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
 	// Audit history tab
@@ -69,6 +78,27 @@ type PageData struct {
 	AuditHasNext    bool
 	AuditNextCursor string
 	AuditHistoryURL string
+}
+
+type ProductLineFormLabels struct {
+	Title           string
+	Line            string
+	LinePlaceholder string
+	SortOrder       string
+	Active          string
+}
+
+type ProductLineFormData struct {
+	FormAction   string
+	IsEdit       bool
+	ID           string
+	ProductID    string
+	LineID       string
+	SortOrder    string
+	Active       bool
+	LineOptions  []types.SelectOption
+	Labels       ProductLineFormLabels
+	CommonLabels pyeza.CommonLabels
 }
 
 // NewView creates the product detail view (full page).
@@ -89,7 +119,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		// KB help content
 		if viewCtx.Translations != nil {
 			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
-				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "products-detail"); kb != nil {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "product-detail"); kb != nil {
 					pageData.HasHelp = true
 					pageData.HelpContent = kb.Body
 				}
@@ -108,6 +138,17 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {
 			tab = "info"
+		}
+
+		if tab == "lines" {
+			switch viewCtx.Request.URL.Query().Get("mode") {
+			case "add":
+				return handleProductLineAssociationAdd(ctx, deps, viewCtx, id)
+			case "edit":
+				return handleProductLineAssociationEdit(ctx, deps, viewCtx, id)
+			case "delete":
+				return handleProductLineAssociationDelete(ctx, deps, viewCtx, id)
+			}
 		}
 
 		pageData, err := buildPageData(ctx, deps, id, tab, viewCtx)
@@ -149,7 +190,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	if currency == "" {
 		currency = "PHP"
 	}
-	priceFormatted := FormatPrice(currency, product.GetPrice())
+	priceFormatted := FormatPrice(currency, float64(product.GetPrice())/100.0)
 
 	productStatus := "active"
 	if !product.GetActive() {
@@ -158,14 +199,6 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	StatusVariant := "success"
 	if productStatus == "inactive" {
 		StatusVariant = "warning"
-	}
-
-	// Extract collection names
-	var collections []string
-	for _, pc := range product.GetProductCollections() {
-		if pc != nil {
-			collections = append(collections, pc.GetCollectionId())
-		}
 	}
 
 	// Get counts for tab badges
@@ -182,9 +215,10 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	}
 
 	optionCount := getOptionCountTyped(ctx, deps, id)
+	lineCount, linesTable := buildLinesTable(ctx, deps, id)
 
 	l := deps.Labels
-	tabItems := buildTabItems(id, l, variantCount, optionCount, deps.Routes)
+	tabItems := buildTabItems(id, l, variantCount, optionCount, lineCount, deps.Routes)
 
 	pageData := &PageData{
 		PageData: types.PageData{
@@ -210,7 +244,6 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ProductCurrency: currency,
 		ProductStatus:   productStatus,
 		StatusVariant:   StatusVariant,
-		Collections:     collections,
 	}
 
 	// Load tab-specific data
@@ -222,6 +255,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	case "options":
 		tableConfig := buildOptionsTable(ctx, deps, id)
 		pageData.OptionsTable = tableConfig
+	case "lines":
+		pageData.LinesTable = linesTable
 	case "attachments":
 		if deps.ListAttachments != nil {
 			cfg := attachmentConfig(deps)
@@ -260,15 +295,326 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	return pageData, nil
 }
 
-func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount int, routes centymo.ProductRoutes) []pyeza.TabItem {
+func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount, lineCount int, routes centymo.ProductRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
 		{Key: "options", Label: l.Tabs.Options, Href: base + "?tab=options", HxGet: action + "options", Icon: "icon-settings", Count: optionCount, Disabled: false},
 		{Key: "variants", Label: l.Tabs.Variants, Href: base + "?tab=variants", HxGet: action + "variants", Icon: "icon-layers", Count: variantCount, Disabled: false},
+		{Key: "lines", Label: "Lines", Href: base + "?tab=lines", HxGet: action + "lines", Icon: "icon-layers", Count: lineCount, Disabled: false},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+	}
+}
+
+func buildLinesTable(ctx context.Context, deps *DetailViewDeps, productID string) (int, *types.TableConfig) {
+	if deps.ListLines == nil || deps.ListProductLines == nil {
+		return 0, nil
+	}
+
+	lineResp, err := deps.ListLines(ctx, &linepb.ListLinesRequest{})
+	if err != nil {
+		log.Printf("Failed to list product lines: %v", err)
+		return 0, nil
+	}
+	lineNameByID := map[string]string{}
+	for _, line := range lineResp.GetData() {
+		if line != nil {
+			lineNameByID[line.GetId()] = line.GetName()
+		}
+	}
+
+	assocResp, err := deps.ListProductLines(ctx, &productlinepb.ListProductLinesRequest{})
+	if err != nil {
+		log.Printf("Failed to list product line associations: %v", err)
+		return 0, nil
+	}
+
+	perms := view.GetUserPermissions(ctx)
+	rows := []types.TableRow{}
+	for _, assoc := range assocResp.GetData() {
+		if assoc == nil || assoc.GetProductId() != productID {
+			continue
+		}
+		lineID := assoc.GetLineId()
+		lineName := lineNameByID[lineID]
+		if lineName == "" {
+			lineName = lineID
+		}
+		sortOrder := ""
+		if assoc.GetSortOrder() != 0 {
+			sortOrder = fmt.Sprintf("%d", assoc.GetSortOrder())
+		}
+		rows = append(rows, types.TableRow{
+			ID: assoc.GetId(),
+			Cells: []types.TableCell{
+				{Type: "text", Value: lineName},
+				{Type: "text", Value: lineID},
+				{Type: "text", Value: sortOrder},
+			},
+			DataAttrs: map[string]string{
+				"line_id": lineID,
+			},
+			Actions: []types.TableAction{
+				{
+					Type:   "view",
+					Label:  deps.Labels.Actions.View,
+					Action: "view",
+					Href:   route.ResolveURL(deps.Routes.DetailURL, "id", lineID),
+				},
+				{
+					Type:            "edit",
+					Label:           deps.Labels.Actions.Edit,
+					Action:          "edit",
+					URL:             route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "lines") + "?mode=edit&plid=" + assoc.GetId(),
+					DrawerTitle:     "Edit Line",
+					Disabled:        !perms.Can("product_line", "update"),
+					DisabledTooltip: deps.Labels.Errors.PermissionDenied,
+				},
+				{
+					Type:            "delete",
+					Label:           deps.Labels.Actions.Delete,
+					Action:          "delete",
+					URL:             route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "lines") + "?mode=delete&plid=" + assoc.GetId(),
+					ItemName:        lineName,
+					ConfirmTitle:    deps.Labels.Actions.Delete,
+					ConfirmMessage:  fmt.Sprintf("Remove %s from this product?", lineName),
+					Disabled:        !perms.Can("product_line", "delete"),
+					DisabledTooltip: deps.Labels.Errors.PermissionDenied,
+				},
+			},
+		})
+	}
+
+	columns := []types.TableColumn{
+		{Key: "name", Label: "Line", Sortable: false},
+		{Key: "line_id", Label: "Line ID", Sortable: false},
+		{Key: "sort_order", Label: "Sort Order", Sortable: false, Width: "120px"},
+	}
+	types.ApplyColumnStyles(columns, rows)
+
+	table := &types.TableConfig{
+		ID:          "product-lines-table",
+		Columns:     columns,
+		Rows:        rows,
+		ShowActions: true,
+		ShowEntries: true,
+		PrimaryAction: &types.PrimaryAction{
+			Label:           "Add Line",
+			ActionURL:       route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "lines") + "?mode=add",
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("product_line", "create"),
+			DisabledTooltip: deps.Labels.Errors.PermissionDenied,
+		},
+	}
+	types.ApplyTableSettings(table)
+	return len(rows), table
+}
+
+func handleProductLineAssociationAdd(ctx context.Context, deps *DetailViewDeps, viewCtx *view.ViewContext, productID string) view.ViewResult {
+	perms := view.GetUserPermissions(ctx)
+	if !perms.Can("product_line", "create") {
+		return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+	}
+	if deps.CreateProductLine == nil {
+		return centymo.HTMXError("Product line create is not available")
+	}
+
+	if viewCtx.Request.Method == http.MethodGet {
+		return view.OK("product-line-association-drawer-form", &ProductLineFormData{
+			FormAction:   route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "lines") + "?mode=add",
+			ProductID:    productID,
+			SortOrder:    "0",
+			Active:       true,
+			LineOptions:  loadLineOptions(ctx, deps, ""),
+			Labels:       productLineFormLabels("Add Line"),
+			CommonLabels: deps.CommonLabels,
+		})
+	}
+
+	if err := viewCtx.Request.ParseForm(); err != nil {
+		return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+	}
+
+	lineID := viewCtx.Request.FormValue("line_id")
+	if lineID == "" {
+		return centymo.HTMXError("Line is required")
+	}
+
+	productLine := &productlinepb.ProductLine{
+		ProductId: productID,
+		LineId:    lineID,
+		Active:    true,
+	}
+	if v := viewCtx.Request.FormValue("sort_order"); v != "" {
+		if so, err := strconv.ParseInt(v, 10, 32); err == nil {
+			productLine.SortOrder = int32(so)
+		}
+	}
+
+	if _, err := deps.CreateProductLine(ctx, &productlinepb.CreateProductLineRequest{Data: productLine}); err != nil {
+		log.Printf("Failed to create product line association for product %s: %v", productID, err)
+		return centymo.HTMXError(err.Error())
+	}
+
+	return centymo.HTMXSuccess("product-lines-table")
+}
+
+func handleProductLineAssociationEdit(ctx context.Context, deps *DetailViewDeps, viewCtx *view.ViewContext, productID string) view.ViewResult {
+	perms := view.GetUserPermissions(ctx)
+	if !perms.Can("product_line", "update") {
+		return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+	}
+	if deps.UpdateProductLine == nil {
+		return centymo.HTMXError("Product line update is not available")
+	}
+
+	assocID := viewCtx.Request.URL.Query().Get("plid")
+	if assocID == "" {
+		assocID = viewCtx.Request.FormValue("plid")
+	}
+	if assocID == "" {
+		return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+	}
+
+	assoc, err := findProductLineAssociation(ctx, deps, assocID)
+	if err != nil {
+		return centymo.HTMXError(err.Error())
+	}
+
+	if viewCtx.Request.Method == http.MethodGet {
+		return view.OK("product-line-association-drawer-form", &ProductLineFormData{
+			FormAction:   route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "lines") + "?mode=edit&plid=" + assocID,
+			IsEdit:       true,
+			ID:           assocID,
+			ProductID:    productID,
+			LineID:       assoc.GetLineId(),
+			SortOrder:    fmt.Sprintf("%d", assoc.GetSortOrder()),
+			Active:       assoc.GetActive(),
+			LineOptions:  loadLineOptions(ctx, deps, assoc.GetLineId()),
+			Labels:       productLineFormLabels("Edit Line"),
+			CommonLabels: deps.CommonLabels,
+		})
+	}
+
+	if err := viewCtx.Request.ParseForm(); err != nil {
+		return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+	}
+
+	lineID := viewCtx.Request.FormValue("line_id")
+	if lineID == "" {
+		return centymo.HTMXError("Line is required")
+	}
+
+	updated := &productlinepb.ProductLine{
+		Id:        assocID,
+		ProductId: productID,
+		LineId:    lineID,
+		Active:    viewCtx.Request.FormValue("active") == "true",
+	}
+	if v := viewCtx.Request.FormValue("sort_order"); v != "" {
+		if so, err := strconv.ParseInt(v, 10, 32); err == nil {
+			updated.SortOrder = int32(so)
+		}
+	}
+
+	if _, err := deps.UpdateProductLine(ctx, &productlinepb.UpdateProductLineRequest{Data: updated}); err != nil {
+		log.Printf("Failed to update product line association %s: %v", assocID, err)
+		return centymo.HTMXError(err.Error())
+	}
+
+	return centymo.HTMXSuccess("product-lines-table")
+}
+
+func handleProductLineAssociationDelete(ctx context.Context, deps *DetailViewDeps, viewCtx *view.ViewContext, productID string) view.ViewResult {
+	perms := view.GetUserPermissions(ctx)
+	if !perms.Can("product_line", "delete") {
+		return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+	}
+	if deps.DeleteProductLine == nil {
+		return centymo.HTMXError("Product line delete is not available")
+	}
+
+	assocID := viewCtx.Request.URL.Query().Get("plid")
+	if assocID == "" {
+		_ = viewCtx.Request.ParseForm()
+		assocID = viewCtx.Request.FormValue("plid")
+	}
+	if assocID == "" {
+		return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+	}
+
+	if _, err := deps.DeleteProductLine(ctx, &productlinepb.DeleteProductLineRequest{Data: &productlinepb.ProductLine{Id: assocID}}); err != nil {
+		log.Printf("Failed to delete product line association %s for product %s: %v", assocID, productID, err)
+		return centymo.HTMXError(err.Error())
+	}
+
+	return centymo.HTMXSuccess("product-lines-table")
+}
+
+func findProductLineAssociation(ctx context.Context, deps *DetailViewDeps, assocID string) (*productlinepb.ProductLine, error) {
+	if deps.ListProductLines == nil {
+		return nil, fmt.Errorf("product line associations not available")
+	}
+
+	resp, err := deps.ListProductLines(ctx, &productlinepb.ListProductLinesRequest{})
+	if err != nil {
+		log.Printf("Failed to list product line associations: %v", err)
+		return nil, fmt.Errorf("failed to load product line associations")
+	}
+
+	for _, assoc := range resp.GetData() {
+		if assoc != nil && assoc.GetId() == assocID {
+			return assoc, nil
+		}
+	}
+
+	return nil, fmt.Errorf("product line association not found")
+}
+
+func loadLineOptions(ctx context.Context, deps *DetailViewDeps, selectedID string) []types.SelectOption {
+	if deps.ListLines == nil {
+		return nil
+	}
+
+	resp, err := deps.ListLines(ctx, &linepb.ListLinesRequest{})
+	if err != nil {
+		log.Printf("Failed to load lines for product association form: %v", err)
+		return nil
+	}
+
+	options := make([]types.SelectOption, 0, len(resp.GetData()))
+	for _, line := range resp.GetData() {
+		if line == nil {
+			continue
+		}
+		if !line.GetActive() && line.GetId() != selectedID {
+			continue
+		}
+		label := line.GetName()
+		if label == "" {
+			label = line.GetId()
+		} else if line.GetId() != "" {
+			label = fmt.Sprintf("%s (%s)", label, line.GetId())
+		}
+		options = append(options, types.SelectOption{
+			Value:    line.GetId(),
+			Label:    label,
+			Selected: line.GetId() == selectedID,
+		})
+	}
+
+	return options
+}
+
+func productLineFormLabels(title string) ProductLineFormLabels {
+	return ProductLineFormLabels{
+		Title:           title,
+		Line:            "Line",
+		LinePlaceholder: "Select a line",
+		SortOrder:       "Sort Order",
+		Active:          "Active",
 	}
 }
 

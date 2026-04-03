@@ -5,45 +5,6 @@
 .tab-fixed {
     flex-shrink: 0;
 }
-/* .detail-info-grid, .detail-info-item, .detail-info-label — provided by pyeza detail-layout.css */
-
-.sale-info-value {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
-    font-family: var(--font-body);
-}
-.sale-info-value.mono {
-    font-family: var(--font-mono);
-    font-size: var(--text-base);
-}
-/* .detail-section-title — provided by pyeza detail-layout.css */
-
-/* Section spacer — replaces inline margin-top: 1.75rem on section wrappers */
-.sale-section-spacer {
-    margin-top: var(--spacing-3xl);
-}
-
-/* Info tab toolbar (e.g. invoice download button row) */
-.info-toolbar {
-    display: flex;
-    justify-content: flex-end;
-    padding: 0 0 var(--spacing-md) 0;
-}
-
-/* Line items tab toolbar */
-.line-items-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-md) var(--spacing-lg);
-}
-
-/* Line items actions group */
-.line-items-actions {
-    display: flex;
-    gap: var(--spacing-sm);
-}
 
 /* Payment tab toolbar */
 .payment-toolbar {
@@ -58,44 +19,6 @@
     display: flex;
     gap: var(--spacing-2xl);
     align-items: center;
-}
-
-.sale-notes-block {
-    background: var(--bg-sidebar);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-lg) var(--spacing-xl);
-    font-size: var(--text-base);
-    color: var(--text-secondary);
-    line-height: var(--leading-relaxed);
-    border-left: var(--border-width-accent) solid var(--accent-primary);
-}
-.sale-summary-row {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: var(--spacing-lg);
-    margin-top: var(--spacing-sm);
-    border-top: var(--border-width-thick) solid var(--border);
-}
-.sale-summary-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-lg);
-    background: var(--accent-primary-light);
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-}
-.sale-summary-label {
-    font-size: var(--text-sm);
-    font-weight: var(--font-weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-secondary);
-}
-.sale-summary-value {
-    font-family: var(--font-mono);
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--accent-primary);
 }
 .payment-card {
     background: var(--bg-sidebar);
@@ -180,6 +103,4 @@
 /* .detail-body and .detail-info-grid responsive rules — provided by pyeza detail-layout.css */
 @media (max-width: 768px) {
     .payment-detail-grid { grid-template-columns: 1fr; }
-    .sale-summary-row { justify-content: stretch; }
-    .sale-summary-item { justify-content: space-between; width: 100%; }
 }

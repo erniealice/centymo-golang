@@ -26,11 +26,11 @@ type ModuleDeps struct {
 	TableLabels  types.TableLabels
 
 	// Purchase order CRUD operations (nil-guarded — only built when provided)
-	ListPurchaseOrders   func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error)
-	CreatePurchaseOrder  func(ctx context.Context, req *purchaseorderpb.CreatePurchaseOrderRequest) (*purchaseorderpb.CreatePurchaseOrderResponse, error)
-	ReadPurchaseOrder    func(ctx context.Context, req *purchaseorderpb.ReadPurchaseOrderRequest) (*purchaseorderpb.ReadPurchaseOrderResponse, error)
-	UpdatePurchaseOrder  func(ctx context.Context, req *purchaseorderpb.UpdatePurchaseOrderRequest) (*purchaseorderpb.UpdatePurchaseOrderResponse, error)
-	DeletePurchaseOrder  func(ctx context.Context, req *purchaseorderpb.DeletePurchaseOrderRequest) (*purchaseorderpb.DeletePurchaseOrderResponse, error)
+	ListPurchaseOrders  func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error)
+	CreatePurchaseOrder func(ctx context.Context, req *purchaseorderpb.CreatePurchaseOrderRequest) (*purchaseorderpb.CreatePurchaseOrderResponse, error)
+	ReadPurchaseOrder   func(ctx context.Context, req *purchaseorderpb.ReadPurchaseOrderRequest) (*purchaseorderpb.ReadPurchaseOrderResponse, error)
+	UpdatePurchaseOrder func(ctx context.Context, req *purchaseorderpb.UpdatePurchaseOrderRequest) (*purchaseorderpb.UpdatePurchaseOrderResponse, error)
+	DeletePurchaseOrder func(ctx context.Context, req *purchaseorderpb.DeletePurchaseOrderRequest) (*purchaseorderpb.DeletePurchaseOrderResponse, error)
 
 	// Purchase order line item operations (optional — used by detail view)
 	ListPurchaseOrderLineItems func(ctx context.Context, req *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error)
@@ -38,14 +38,14 @@ type ModuleDeps struct {
 
 // Module holds all constructed purchase order views.
 type Module struct {
-	routes                  centymo.ExpenditureRoutes
-	PurchaseOrderList       view.View
-	PurchaseOrderAdd        view.View
-	PurchaseOrderEdit       view.View
-	PurchaseOrderDelete     view.View
-	PurchaseOrderSetStatus  view.View
-	PurchaseOrderDetail     view.View
-	PurchaseOrderTabAction  view.View
+	routes                 centymo.ExpenditureRoutes
+	PurchaseOrderList      view.View
+	PurchaseOrderAdd       view.View
+	PurchaseOrderEdit      view.View
+	PurchaseOrderDelete    view.View
+	PurchaseOrderSetStatus view.View
+	PurchaseOrderDetail    view.View
+	PurchaseOrderTabAction view.View
 }
 
 // NewModule creates the purchase order module views.

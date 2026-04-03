@@ -13,9 +13,9 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
-	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 )
 
 // Deps holds view dependencies.
@@ -353,8 +353,8 @@ func queryFallbackRows(ctx context.Context, deps *Deps) []types.TableRow {
 			Cells: []types.TableCell{
 				{Type: "text", Value: txDate},
 				{Type: "text", Value: itemName},
-				{Type: "text", Value: ""},     // product_name (not available without JOIN)
-				{Type: "text", Value: ""},     // variant_sku (not available without JOIN)
+				{Type: "text", Value: ""}, // product_name (not available without JOIN)
+				{Type: "text", Value: ""}, // variant_sku (not available without JOIN)
 				{Type: "text", Value: itemSKU},
 				{Type: "text", Value: locationName},
 				{Type: "badge", Value: txType, Variant: txTypeVariant(txType)},

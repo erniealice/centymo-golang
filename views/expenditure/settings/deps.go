@@ -4,10 +4,10 @@ import (
 	"context"
 
 	centymo "github.com/erniealice/centymo-golang"
+	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	templateview "github.com/erniealice/hybra-golang/views/template"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
-	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 )
 
 // SettingsViewDeps holds view dependencies for the purchases settings (template management) views.
@@ -29,20 +29,20 @@ type SettingsViewDeps struct {
 
 func templateConfig(deps *SettingsViewDeps) *templateview.Config {
 	return &templateview.Config{
-		DocumentPurpose:    "purchase_order",
-		AllowedExtensions:  []string{".docx"},
-		AllowedContentType: templateview.DocxContentType,
-		StoragePrefix:      "templates/purchase_order",
-		BucketName:         "templates",
-		ListURL:            deps.Routes.SettingsTemplatesURL,
-		UploadURL:          deps.Routes.SettingsTemplateUploadURL,
-		DeleteURL:          deps.Routes.SettingsTemplateDeleteURL,
-		SetDefaultURL:      deps.Routes.SettingsTemplateDefaultURL,
-		Labels:             deps.Labels,
-		CommonLabels:       deps.CommonLabels,
-		TableLabels:        deps.TableLabels,
-		ActiveNav:          "purchases",
-		PageIcon:           "icon-file-text",
+		DocumentPurpose:        "purchase_order",
+		AllowedExtensions:      []string{".docx"},
+		AllowedContentType:     templateview.DocxContentType,
+		StoragePrefix:          "templates/purchase_order",
+		BucketName:             "templates",
+		ListURL:                deps.Routes.SettingsTemplatesURL,
+		UploadURL:              deps.Routes.SettingsTemplateUploadURL,
+		DeleteURL:              deps.Routes.SettingsTemplateDeleteURL,
+		SetDefaultURL:          deps.Routes.SettingsTemplateDefaultURL,
+		Labels:                 deps.Labels,
+		CommonLabels:           deps.CommonLabels,
+		TableLabels:            deps.TableLabels,
+		ActiveNav:              "purchases",
+		PageIcon:               "icon-file-text",
 		ListDocumentTemplates:  deps.ListDocumentTemplates,
 		CreateDocumentTemplate: deps.CreateDocumentTemplate,
 		UpdateDocumentTemplate: deps.UpdateDocumentTemplate,

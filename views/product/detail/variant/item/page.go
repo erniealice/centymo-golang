@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -33,13 +33,13 @@ type SerialSummary struct {
 // StockDetailPageData holds data for the inventory item detail page.
 type StockDetailPageData struct {
 	types.PageData
-	ContentTemplate   string
-	Breadcrumbs       []detail.Breadcrumb
-	ProductID         string
-	VariantID         string
-	InventoryItemID   string
-	ActiveTab         string
-	TabItems          []pyeza.TabItem
+	ContentTemplate string
+	Breadcrumbs     []detail.Breadcrumb
+	ProductID       string
+	VariantID       string
+	InventoryItemID string
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
 	// Item info fields
 	ItemName          string
 	ItemSKU           string
@@ -53,8 +53,8 @@ type StockDetailPageData struct {
 	ItemStatus        string
 	ItemStatusVariant string
 	// Serial data
-	SerialTable         *types.TableConfig
-	SerialSummary       *SerialSummary
+	SerialTable   *types.TableConfig
+	SerialSummary *SerialSummary
 	// Attachments tab
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string

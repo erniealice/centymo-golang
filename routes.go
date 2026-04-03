@@ -17,6 +17,21 @@ const (
 	PricePlanEditURL   = "/action/plans/{id}/pricelists/edit/{ppid}"
 	PricePlanDeleteURL = "/action/plans/{id}/pricelists/delete"
 
+	// PricePlan standalone routes (rate cards as independent entity)
+	PricePlanDashboardURL        = "/app/price-plans/dashboard"
+	PricePlanListURL             = "/app/price-plans/list/{status}"
+	PricePlanTableURL            = "/action/price-plans/table/{status}"
+	PricePlanDetailURL           = "/app/price-plans/{id}"
+	PricePlanStandaloneAddURL    = "/action/price-plans/add"
+	PricePlanStandaloneEditURL   = "/action/price-plans/edit/{id}"
+	PricePlanStandaloneDeleteURL = "/action/price-plans/delete"
+	PricePlanBulkDeleteURL       = "/action/price-plans/bulk-delete"
+	PricePlanSetStatusURL        = "/action/price-plans/set-status"
+	PricePlanBulkSetStatusURL    = "/action/price-plans/bulk-set-status"
+	PricePlanTabActionURL        = "/action/price-plans/{id}/tab/{tab}"
+	PricePlanAttachmentUploadURL = "/action/price-plans/{id}/attachments/upload"
+	PricePlanAttachmentDeleteURL = "/action/price-plans/{id}/attachments/delete"
+
 	SubscriptionListURL             = "/app/subscriptions/list/{status}"
 	SubscriptionDetailURL           = "/app/subscriptions/{id}"
 	SubscriptionAddURL              = "/action/subscriptions/add"
@@ -133,6 +148,21 @@ const (
 	ProductOptionValueEditURL   = "/action/products/detail/{id}/options/{oid}/values/edit/{vid}"
 	ProductOptionValueDeleteURL = "/action/products/detail/{id}/options/{oid}/values/delete"
 
+	// Product line routes
+	ProductLineDashboardURL        = "/app/product-lines/dashboard"
+	ProductLineListURL             = "/app/product-lines/list/{status}"
+	ProductLineTableURL            = "/action/product-lines/table/{status}"
+	ProductLineDetailURL           = "/app/product-lines/{id}"
+	ProductLineAddURL              = "/action/product-lines/add"
+	ProductLineEditURL             = "/action/product-lines/edit/{id}"
+	ProductLineDeleteURL           = "/action/product-lines/delete"
+	ProductLineBulkDeleteURL       = "/action/product-lines/bulk-delete"
+	ProductLineSetStatusURL        = "/action/product-lines/set-status"
+	ProductLineBulkSetStatusURL    = "/action/product-lines/bulk-set-status"
+	ProductLineTabActionURL        = "/action/product-lines/{id}/tab/{tab}"
+	ProductLineAttachmentUploadURL = "/action/product-lines/{id}/attachments/upload"
+	ProductLineAttachmentDeleteURL = "/action/product-lines/{id}/attachments/delete"
+
 	// Inventory status routes
 	InventorySetStatusURL     = "/action/inventory/set-status"
 	InventoryBulkSetStatusURL = "/action/inventory/bulk-set-status"
@@ -219,6 +249,8 @@ const (
 	RevenueSettingsTemplateUploadURL  = "/action/sales/settings/templates/upload"
 	RevenueSettingsTemplateDeleteURL  = "/action/sales/settings/templates/delete"
 	RevenueSettingsTemplateDefaultURL = "/action/sales/settings/templates/set-default/{id}"
+	RevenueSearchClientURL            = "/action/sales/search/clients"
+	SalesSearchSubscriptionURL        = "/action/sales/search/subscriptions"
 
 	// Expenditure (purchase + expense) routes
 	ExpenditurePurchaseListURL      = "/app/purchases/list/{status}"
@@ -256,10 +288,10 @@ const (
 	PurchaseOrderDetailURL    = "/app/purchase-orders/{id}"
 	PurchaseOrderAddURL       = "/action/purchase-orders/add"
 	PurchaseOrderEditURL      = "/action/purchase-orders/edit/{id}"
-	PurchaseOrderDeleteURL     = "/action/purchase-orders/delete"
-	PurchaseOrderSetStatusURL  = "/action/purchase-orders/set-status"
-	PurchaseOrderTableURL      = "/action/purchase-orders/table/{status}"
-	PurchaseOrderTabActionURL  = "/action/purchase-orders/detail/{id}/tab/{tab}"
+	PurchaseOrderDeleteURL    = "/action/purchase-orders/delete"
+	PurchaseOrderSetStatusURL = "/action/purchase-orders/set-status"
+	PurchaseOrderTableURL     = "/action/purchase-orders/table/{status}"
+	PurchaseOrderTabActionURL = "/action/purchase-orders/detail/{id}/tab/{tab}"
 
 	// Expense category settings routes
 	ExpenditureExpenseCategoryListURL   = "/app/expenses/categories/list"
@@ -284,5 +316,4 @@ const (
 	// Price Product routes (within price list detail)
 	PriceProductAddURL    = "/action/price-lists/{id}/products/add"
 	PriceProductDeleteURL = "/action/price-lists/{id}/products/delete"
-
 )

@@ -201,19 +201,15 @@ func resolvePlanLabel(ctx context.Context, planID string, listPlans func(ctx con
 }
 
 // formatDateForInput normalizes subscription dates for HTML date inputs.
-// ReadSubscription may return the raw millis field without the companion
-// *_string value, so edit forms need to fall back to formatting the timestamp.
-func formatDateForInput(dateString string, dateMillis int64) string {
-	if dateString != "" {
-		if len(dateString) >= len("2006-01-02") {
-			return dateString[:10]
-		}
-		return dateString
+// DateStart/DateEnd are now ISO 8601 strings (YYYY-MM-DD); trim any timestamp suffix.
+func formatDateForInput(dateString string) string {
+	if dateString == "" {
+		return ""
 	}
-	if dateMillis > 0 {
-		return time.UnixMilli(dateMillis).Format("2006-01-02")
+	if len(dateString) >= len("2006-01-02") {
+		return dateString[:10]
 	}
-	return ""
+	return dateString
 }
 
 // NewAddAction creates the subscription add action (GET = form, POST = create).
@@ -285,10 +281,10 @@ func NewAddAction(deps *Deps) view.View {
 				Name:            name,
 				ClientId:        r.FormValue("client_id"),
 				PricePlanId:     pricePlanID,
-				Code:            strPtr(code),
-				DateStartString: strPtr(dateStart),
-				DateEndString:   strPtr(dateEnd),
-				Active:          true,
+				Code:      strPtr(code),
+				DateStart: strPtr(dateStart),
+				DateEnd:   strPtr(dateEnd),
+				Active:    true,
 			},
 		})
 		if err != nil {
@@ -338,8 +334,8 @@ func NewEditAction(deps *Deps) view.View {
 				Code:            record.GetCode(),
 				ClientID:        record.GetClientId(),
 				PricePlanID:     record.GetPricePlanId(),
-				DateStart:       formatDateForInput(record.GetDateStartString(), record.GetDateStart()),
-				DateEnd:         formatDateForInput(record.GetDateEndString(), record.GetDateEnd()),
+				DateStart:       formatDateForInput(record.GetDateStart()),
+				DateEnd:         formatDateForInput(record.GetDateEnd()),
 				SearchClientURL: deps.Routes.SearchClientURL,
 				SearchPlanURL:   deps.Routes.SearchPlanURL,
 				ClientLabel:     clientLabel,
@@ -397,9 +393,9 @@ func NewEditAction(deps *Deps) view.View {
 				Name:            name,
 				ClientId:        r.FormValue("client_id"),
 				PricePlanId:     pricePlanID,
-				Code:            strPtr(code),
-				DateStartString: strPtr(dateStart),
-				DateEndString:   strPtr(dateEnd),
+				Code:      strPtr(code),
+				DateStart: strPtr(dateStart),
+				DateEnd:   strPtr(dateEnd),
 			},
 		})
 		if err != nil {

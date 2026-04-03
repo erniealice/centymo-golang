@@ -8,36 +8,36 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
-	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
-	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
-	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
+	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
+	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
 )
 
 // DetailViewDeps holds view dependencies.
 type DetailViewDeps struct {
-	Routes                    centymo.InventoryRoutes
-	ReadInventoryItem         func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
-	ListInventorySerials      func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
-	ListInventoryTransactions func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
+	Routes                     centymo.InventoryRoutes
+	ReadInventoryItem          func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
+	ListInventorySerials       func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
+	ListInventoryTransactions  func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
 	ListInventoryDepreciations func(ctx context.Context, req *inventorydepreciationpb.ListInventoryDepreciationsRequest) (*inventorydepreciationpb.ListInventoryDepreciationsResponse, error)
-	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
-	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
-	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
-	Labels                    centymo.InventoryLabels
-	CommonLabels              pyeza.CommonLabels
-	TableLabels               types.TableLabels
+	ListProductVariantOptions  func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
+	ListProductOptionValues    func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	ListProductOptions         func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
+	Labels                     centymo.InventoryLabels
+	CommonLabels               pyeza.CommonLabels
+	TableLabels                types.TableLabels
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -72,20 +72,20 @@ type DepreciationInfo struct {
 // PageData holds the data for the inventory detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate  string
-	Item             map[string]any
-	Labels           centymo.InventoryLabels
-	ActiveTab        string
-	TabItems         []pyeza.TabItem
-	IsSerialized     bool
-	ItemType         string
-	ItemTypeLabel    string
-	ItemTypeVariant  string
-	LocationName     string
-	AvailableQty     string
-	Attributes       []AttributeEntry
-	SerialTable      *types.TableConfig
-	SerialSummary    *SerialSummary
+	ContentTemplate     string
+	Item                map[string]any
+	Labels              centymo.InventoryLabels
+	ActiveTab           string
+	TabItems            []pyeza.TabItem
+	IsSerialized        bool
+	ItemType            string
+	ItemTypeLabel       string
+	ItemTypeVariant     string
+	LocationName        string
+	AvailableQty        string
+	Attributes          []AttributeEntry
+	SerialTable         *types.TableConfig
+	SerialSummary       *SerialSummary
 	TransactionTable    *types.TableConfig
 	Depreciation        *DepreciationInfo
 	AuditTable          *types.TableConfig

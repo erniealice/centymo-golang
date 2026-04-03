@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -21,21 +22,21 @@ import (
 
 // LineItemFormData is the template data for the line item drawer form.
 type LineItemFormData struct {
-	FormAction       string
-	IsEdit           bool
-	ID               string
-	RevenueID        string
-	Description      string
-	Quantity         string
-	UnitPrice        string
-	CostPrice        string
-	Discount         string
-	Notes            string
-	LineItemType     string
-	InventoryItemID  string
-	InventoryItems   []SelectOption
-	CommonLabels     any
-	Labels           centymo.RevenueDetailLabels
+	FormAction      string
+	IsEdit          bool
+	ID              string
+	RevenueID       string
+	Description     string
+	Quantity        string
+	UnitPrice       string
+	CostPrice       string
+	Discount        string
+	Notes           string
+	LineItemType    string
+	InventoryItemID string
+	InventoryItems  []SelectOption
+	CommonLabels    any
+	Labels          centymo.RevenueDetailLabels
 }
 
 // DiscountFormData is the template data for the discount drawer form.
@@ -65,15 +66,15 @@ type LineItemDeps struct {
 	ListInventoryItems func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
 
 	// Typed revenue operations
-	ReadRevenue  func(ctx context.Context, req *revenuepb.ReadRevenueRequest) (*revenuepb.ReadRevenueResponse, error)
+	ReadRevenue   func(ctx context.Context, req *revenuepb.ReadRevenueRequest) (*revenuepb.ReadRevenueResponse, error)
 	UpdateRevenue func(ctx context.Context, req *revenuepb.UpdateRevenueRequest) (*revenuepb.UpdateRevenueResponse, error)
 
 	// Typed line item operations
-	CreateRevenueLineItem  func(ctx context.Context, req *revenuelineitempb.CreateRevenueLineItemRequest) (*revenuelineitempb.CreateRevenueLineItemResponse, error)
-	ReadRevenueLineItem    func(ctx context.Context, req *revenuelineitempb.ReadRevenueLineItemRequest) (*revenuelineitempb.ReadRevenueLineItemResponse, error)
-	UpdateRevenueLineItem  func(ctx context.Context, req *revenuelineitempb.UpdateRevenueLineItemRequest) (*revenuelineitempb.UpdateRevenueLineItemResponse, error)
-	DeleteRevenueLineItem  func(ctx context.Context, req *revenuelineitempb.DeleteRevenueLineItemRequest) (*revenuelineitempb.DeleteRevenueLineItemResponse, error)
-	ListRevenueLineItems   func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
+	CreateRevenueLineItem func(ctx context.Context, req *revenuelineitempb.CreateRevenueLineItemRequest) (*revenuelineitempb.CreateRevenueLineItemResponse, error)
+	ReadRevenueLineItem   func(ctx context.Context, req *revenuelineitempb.ReadRevenueLineItemRequest) (*revenuelineitempb.ReadRevenueLineItemResponse, error)
+	UpdateRevenueLineItem func(ctx context.Context, req *revenuelineitempb.UpdateRevenueLineItemRequest) (*revenuelineitempb.UpdateRevenueLineItemResponse, error)
+	DeleteRevenueLineItem func(ctx context.Context, req *revenuelineitempb.DeleteRevenueLineItemRequest) (*revenuelineitempb.DeleteRevenueLineItemResponse, error)
+	ListRevenueLineItems  func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
 }
 
 // NewLineItemTableView returns a view that renders only the line items table (for HTMX refresh).
@@ -114,13 +115,13 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
 			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
-				FormAction:      route.ResolveURL(deps.Routes.LineItemAddURL, "id", revenueID),
-				RevenueID:       revenueID,
-				Quantity:        "1",
-				LineItemType:    "item",
-				InventoryItems:  inventoryItems,
-				Labels:          deps.Labels.Detail,
-				CommonLabels:    nil, // injected by ViewAdapter
+				FormAction:     route.ResolveURL(deps.Routes.LineItemAddURL, "id", revenueID),
+				RevenueID:      revenueID,
+				Quantity:       "1",
+				LineItemType:   "item",
+				InventoryItems: inventoryItems,
+				Labels:         deps.Labels.Detail,
+				CommonLabels:   nil, // injected by ViewAdapter
 			})
 		}
 
@@ -140,14 +141,16 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		quantityF, _ := strconv.ParseFloat(quantity, 64)
 		unitPriceF, _ := strconv.ParseFloat(unitPrice, 64)
 		costPriceF, _ := strconv.ParseFloat(costPrice, 64)
+		unitPriceCentavos := int64(math.Round(unitPriceF * 100))
+		costPriceCentavos := int64(math.Round(costPriceF * 100))
 
 		_, err := deps.CreateRevenueLineItem(ctx, &revenuelineitempb.CreateRevenueLineItemRequest{
 			Data: &revenuelineitempb.RevenueLineItem{
 				RevenueId:       revenueID,
 				Description:     r.FormValue("description"),
 				Quantity:        quantityF,
-				UnitPrice:       unitPriceF,
-				CostPrice:       &costPriceF,
+				UnitPrice:       unitPriceCentavos,
+				CostPrice:       &costPriceCentavos,
 				TotalPrice:      total,
 				LineItemType:    "item",
 				InventoryItemId: r.FormValue("inventory_item_id"),
@@ -210,8 +213,8 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 				RevenueID:       revenueID,
 				Description:     record.GetDescription(),
 				Quantity:        fmt.Sprintf("%.0f", record.GetQuantity()),
-				UnitPrice:       fmt.Sprintf("%.2f", record.GetUnitPrice()),
-				CostPrice:       fmt.Sprintf("%.2f", record.GetCostPrice()),
+				UnitPrice:       fmt.Sprintf("%.2f", float64(record.GetUnitPrice())/100.0),
+				CostPrice:       fmt.Sprintf("%.2f", float64(record.GetCostPrice())/100.0),
 				Discount:        "0",
 				Notes:           record.GetNotes(),
 				LineItemType:    "item",
@@ -237,14 +240,16 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 		quantityF, _ := strconv.ParseFloat(quantity, 64)
 		unitPriceF, _ := strconv.ParseFloat(unitPrice, 64)
 		costPriceF, _ := strconv.ParseFloat(r.FormValue("cost_price"), 64)
+		unitPriceCentavos := int64(math.Round(unitPriceF * 100))
+		costPriceCentavos := int64(math.Round(costPriceF * 100))
 
 		_, err := deps.UpdateRevenueLineItem(ctx, &revenuelineitempb.UpdateRevenueLineItemRequest{
 			Data: &revenuelineitempb.RevenueLineItem{
 				Id:              itemID,
 				Description:     r.FormValue("description"),
 				Quantity:        quantityF,
-				UnitPrice:       unitPriceF,
-				CostPrice:       &costPriceF,
+				UnitPrice:       unitPriceCentavos,
+				CostPrice:       &costPriceCentavos,
 				TotalPrice:      total,
 				InventoryItemId: r.FormValue("inventory_item_id"),
 				Notes:           strPtr(r.FormValue("notes")),
@@ -306,9 +311,9 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("sales-line-item-discount-form", &DiscountFormData{
-				FormAction:  route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", revenueID),
-				RevenueID:   revenueID,
-				Labels:      deps.Labels.Detail,
+				FormAction:   route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", revenueID),
+				RevenueID:    revenueID,
+				Labels:       deps.Labels.Detail,
 				CommonLabels: nil,
 			})
 		}
@@ -333,7 +338,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 				Description:  r.FormValue("description"),
 				Quantity:     1,
 				UnitPrice:    0,
-				TotalPrice:   -amountF,
+				TotalPrice:   -int64(math.Round(amountF * 100)),
 				LineItemType: "discount",
 			},
 		})
@@ -463,7 +468,9 @@ func loadInventoryItems(ctx context.Context, listFn func(ctx context.Context, re
 }
 
 // calculateLineItemTotal calculates total from quantity * unit_price - discount.
-func calculateLineItemTotal(quantityStr, unitPriceStr, discountStr string) float64 {
+// All monetary values are in centavos (int64). unitPrice and discount are parsed
+// as decimal strings and converted to centavos internally.
+func calculateLineItemTotal(quantityStr, unitPriceStr, discountStr string) int64 {
 	quantity, _ := strconv.ParseFloat(quantityStr, 64)
 	unitPrice, _ := strconv.ParseFloat(unitPriceStr, 64)
 	discount, _ := strconv.ParseFloat(discountStr, 64)
@@ -473,7 +480,7 @@ func calculateLineItemTotal(quantityStr, unitPriceStr, discountStr string) float
 	}
 
 	total := quantity*unitPrice - discount
-	return total
+	return int64(math.Round(total * 100))
 }
 
 // recalculateSaleTotalTyped recalculates the sale's total_amount from its line items using typed use cases.
@@ -491,7 +498,7 @@ func recalculateSaleTotalTyped(
 		return
 	}
 
-	var totalAmount float64
+	var totalAmount int64
 	for _, item := range resp.GetData() {
 		if item.GetRevenueId() == revenueID {
 			totalAmount += item.GetTotalPrice()

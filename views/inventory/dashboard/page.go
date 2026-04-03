@@ -11,10 +11,10 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
-	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 )
 
 // Deps holds view dependencies.
@@ -120,7 +120,7 @@ func NewDashboardMovementsAction(deps *Deps) view.View {
 				"quantity":          t.GetQuantity(),
 				"transaction_date":  t.GetTransactionDateString(),
 				"serial_number":     t.GetSerialNumber(),
-				"performed_by":     t.GetPerformedBy(),
+				"performed_by":      t.GetPerformedBy(),
 				"inventory_item_id": t.GetInventoryItemId(),
 			})
 		}
@@ -234,7 +234,7 @@ func buildDashboardWidgets(ctx context.Context, deps *Deps, l centymo.InventoryL
 	if depResp != nil {
 		depreciations = depResp.GetData()
 	}
-	var totalCostBasis, totalBookValue float64
+	var totalCostBasis, totalBookValue int64
 	for _, d := range depreciations {
 		totalCostBasis += d.GetCostBasis()
 		totalBookValue += d.GetBookValue()
@@ -245,7 +245,7 @@ func buildDashboardWidgets(ctx context.Context, deps *Deps, l centymo.InventoryL
 		{Icon: "icon-alert-triangle", Value: fmt.Sprintf("%d", lowStockCount), Label: l.Dashboard.LowStockAlerts, Color: "amber"},
 		{Icon: "icon-repeat", Value: fmt.Sprintf("%d", totalItems), Label: l.Dashboard.StockTurnover, Color: "sage"},
 		{Icon: "icon-map-pin", Value: fmt.Sprintf("%d", len(centymo.LocationMap)), Label: l.Dashboard.ItemsByLocation, Color: "navy"},
-		{Icon: "icon-trending-down", Value: fmt.Sprintf("%.0f / %.0f", totalCostBasis, totalBookValue), Label: l.Dashboard.DepreciationSummary, Color: "terracotta"},
+		{Icon: "icon-trending-down", Value: fmt.Sprintf("%.0f / %.0f", float64(totalCostBasis)/100.0, float64(totalBookValue)/100.0), Label: l.Dashboard.DepreciationSummary, Color: "terracotta"},
 		{Icon: "icon-hash", Value: fmt.Sprintf("%d / %d", serialAvailable, len(serials)), Label: l.Dashboard.SerialUnitStatus, Color: "sage"},
 		{Icon: "icon-activity", Value: "\u2014", Label: l.Dashboard.RecentMovements, Color: "navy"},
 		{Icon: "icon-pie-chart", Value: fmt.Sprintf("%d %s", len(categoryCount), l.Dashboard.TypesUnit), Label: l.Dashboard.CategoryDistribution, Color: "amber"},

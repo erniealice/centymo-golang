@@ -1,0 +1,83 @@
+/* centymo — shared transaction detail styles */
+
+/* .page-content.detail-layout, .detail-tabs, .detail-body — provided by pyeza detail-layout.css */
+/* .detail-info-grid, .detail-info-item, .detail-info-label, .detail-section-title — provided by pyeza detail-layout.css */
+
+.transaction-section-spacer {
+    margin-top: var(--spacing-3xl);
+}
+
+.transaction-inline-form__group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.transaction-inline-form__label {
+    margin-bottom: 0;
+}
+
+.transaction-inline-form__control--auto {
+    width: auto;
+    min-width: 140px;
+}
+
+.transaction-info-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 0 var(--spacing-md) 0;
+}
+
+.transaction-items-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.transaction-items-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.transaction-notes-block {
+    background: var(--bg-sidebar);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
+    border-left: var(--border-width-accent) solid var(--accent-primary);
+}
+
+.transaction-summary-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    background: var(--accent-primary-light);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-md);
+}
+
+.transaction-summary-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+}
+
+.transaction-summary-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--accent-primary);
+}
+
+@media (max-width: 768px) {
+    .transaction-summary-item {
+        justify-content: space-between;
+        width: 100%;
+    }
+}

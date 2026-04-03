@@ -147,7 +147,7 @@ func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string,
 			}
 		}
 
-		startDate := s.GetDateStartString()
+		startDate := s.GetDateStart()
 
 		rows = append(rows, types.TableRow{
 			ID: id,

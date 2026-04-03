@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -25,7 +26,7 @@ type DetailViewDeps struct {
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
-	ReadExpenditure         func(ctx context.Context, req *expenditurepb.ReadExpenditureRequest) (*expenditurepb.ReadExpenditureResponse, error)
+	ReadExpenditure          func(ctx context.Context, req *expenditurepb.ReadExpenditureRequest) (*expenditurepb.ReadExpenditureResponse, error)
 	ListExpenditureLineItems func(ctx context.Context, req *expenditurelineitempb.ListExpenditureLineItemsRequest) (*expenditurelineitempb.ListExpenditureLineItemsResponse, error)
 }
 
@@ -36,8 +37,8 @@ type LineItemDeps struct {
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
-	ReadExpenditure         func(ctx context.Context, req *expenditurepb.ReadExpenditureRequest) (*expenditurepb.ReadExpenditureResponse, error)
-	UpdateExpenditure       func(ctx context.Context, req *expenditurepb.UpdateExpenditureRequest) (*expenditurepb.UpdateExpenditureResponse, error)
+	ReadExpenditure           func(ctx context.Context, req *expenditurepb.ReadExpenditureRequest) (*expenditurepb.ReadExpenditureResponse, error)
+	UpdateExpenditure         func(ctx context.Context, req *expenditurepb.UpdateExpenditureRequest) (*expenditurepb.UpdateExpenditureResponse, error)
 	CreateExpenditureLineItem func(ctx context.Context, req *expenditurelineitempb.CreateExpenditureLineItemRequest) (*expenditurelineitempb.CreateExpenditureLineItemResponse, error)
 	ReadExpenditureLineItem   func(ctx context.Context, req *expenditurelineitempb.ReadExpenditureLineItemRequest) (*expenditurelineitempb.ReadExpenditureLineItemResponse, error)
 	UpdateExpenditureLineItem func(ctx context.Context, req *expenditurelineitempb.UpdateExpenditureLineItemRequest) (*expenditurelineitempb.UpdateExpenditureLineItemResponse, error)
@@ -80,7 +81,7 @@ func expenditureToMap(e *expenditurepb.Expenditure) map[string]any {
 		"name":                 e.GetName(),
 		"reference_number":     e.GetReferenceNumber(),
 		"expenditure_type":     e.GetExpenditureType(),
-		"total_amount":         centymo.FormatWithCommas(e.GetTotalAmount()),
+		"total_amount":         centymo.FormatWithCommas(float64(e.GetTotalAmount()) / 100.0),
 		"currency":             e.GetCurrency(),
 		"status":               e.GetStatus(),
 		"notes":                e.GetNotes(),
@@ -267,8 +268,8 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 				ExpenditureId: expenditureID,
 				Description:   r.FormValue("description"),
 				Quantity:      quantityF,
-				UnitPrice:     unitPriceF,
-				TotalPrice:    total,
+				UnitPrice:     int64(math.Round(unitPriceF * 100)),
+				TotalPrice:    int64(math.Round(total * 100)),
 				Notes:         &notesCreate,
 			},
 		})
@@ -311,7 +312,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 				ExpenditureID: expenditureID,
 				Description:   item.GetDescription(),
 				Quantity:      fmt.Sprintf("%.0f", item.GetQuantity()),
-				UnitPrice:     fmt.Sprintf("%.2f", item.GetUnitPrice()),
+				UnitPrice:     fmt.Sprintf("%.2f", float64(item.GetUnitPrice())/100.0),
 				Notes:         item.GetNotes(),
 				Labels:        deps.Labels,
 				CommonLabels:  nil,
@@ -340,8 +341,8 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 				Id:          itemID,
 				Description: r.FormValue("description"),
 				Quantity:    quantityF,
-				UnitPrice:   unitPriceF,
-				TotalPrice:  total,
+				UnitPrice:   int64(math.Round(unitPriceF * 100)),
+				TotalPrice:  int64(math.Round(total * 100)),
 				Notes:       &notesUpdate,
 			},
 		})
@@ -476,13 +477,13 @@ func listLineItemMaps(ctx context.Context, listFn func(context.Context, *expendi
 	for _, item := range resp.GetData() {
 		if item.GetExpenditureId() == expenditureID {
 			items = append(items, map[string]any{
-				"id":            item.GetId(),
+				"id":             item.GetId(),
 				"expenditure_id": item.GetExpenditureId(),
-				"description":   item.GetDescription(),
-				"quantity":      fmt.Sprintf("%.0f", item.GetQuantity()),
-				"unit_price":    centymo.FormatWithCommas(item.GetUnitPrice()),
-				"total":         centymo.FormatWithCommas(item.GetTotalPrice()),
-				"notes":         item.GetNotes(),
+				"description":    item.GetDescription(),
+				"quantity":       fmt.Sprintf("%.0f", item.GetQuantity()),
+				"unit_price":     centymo.FormatWithCommas(float64(item.GetUnitPrice()) / 100.0),
+				"total":          centymo.FormatWithCommas(float64(item.GetTotalPrice()) / 100.0),
+				"notes":          item.GetNotes(),
 			})
 		}
 	}
@@ -507,7 +508,7 @@ func recalculateExpenseTotal(
 		return
 	}
 
-	var total float64
+	var total int64
 	for _, item := range resp.GetData() {
 		if item.GetExpenditureId() == expenditureID {
 			total += item.GetTotalPrice()

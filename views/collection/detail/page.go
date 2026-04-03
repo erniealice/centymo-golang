@@ -7,9 +7,9 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -33,11 +33,11 @@ type DetailViewDeps struct {
 // PageData holds the data for the collection detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	Collection      map[string]any
-	Labels          centymo.CollectionLabels
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
+	ContentTemplate     string
+	Collection          map[string]any
+	Labels              centymo.CollectionLabels
+	ActiveTab           string
+	TabItems            []pyeza.TabItem
 	AuditTable          *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
@@ -54,7 +54,7 @@ func collectionToMap(c *collectionpb.Collection) map[string]any {
 		"id":                   c.GetId(),
 		"name":                 c.GetName(),
 		"reference_number":     c.GetReferenceNumber(),
-		"amount":               centymo.FormatWithCommas(c.GetAmount() / 100.0),
+		"amount":               centymo.FormatWithCommas(float64(c.GetAmount()) / 100.0),
 		"currency":             c.GetCurrency(),
 		"status":               c.GetStatus(),
 		"collection_method_id": c.GetCollectionMethodId(),

@@ -10,16 +10,16 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
-	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
-	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
-	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
-	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
-	expenditureaction  "github.com/erniealice/centymo-golang/views/expenditure/action"
+	expenditureaction "github.com/erniealice/centymo-golang/views/expenditure/action"
 	expenditurecategory "github.com/erniealice/centymo-golang/views/expenditure/category"
 	expendituredetail "github.com/erniealice/centymo-golang/views/expenditure/detail"
 	expenditurelist "github.com/erniealice/centymo-golang/views/expenditure/list"
 	expendituresettings "github.com/erniealice/centymo-golang/views/expenditure/settings"
+	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
+	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
+	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
+	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
+	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
 )
 
 // PaymentTermOption is re-exported from action for use by callers wiring ModuleDeps.
@@ -196,11 +196,11 @@ func NewModule(deps *ModuleDeps) *Module {
 	// Expense detail page (nil-guarded — only built when ReadExpenditure is provided)
 	if deps.ReadExpenditure != nil {
 		detailDeps := &expendituredetail.DetailViewDeps{
-			Routes:           deps.Routes,
-			Labels:           deps.Labels,
-			CommonLabels:     deps.CommonLabels,
-			TableLabels:      deps.TableLabels,
-			ReadExpenditure:  deps.ReadExpenditure,
+			Routes:          deps.Routes,
+			Labels:          deps.Labels,
+			CommonLabels:    deps.CommonLabels,
+			TableLabels:     deps.TableLabels,
+			ReadExpenditure: deps.ReadExpenditure,
 		}
 		if deps.ListExpenditureLineItems != nil {
 			detailDeps.ListExpenditureLineItems = deps.ListExpenditureLineItems

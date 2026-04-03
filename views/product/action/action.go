@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -29,13 +30,13 @@ type FormData struct {
 
 // Deps holds dependencies for product action handlers.
 type Deps struct {
-	Routes                   centymo.ProductRoutes
-	Labels                   centymo.ProductLabels
-	CreateProduct            func(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.CreateProductResponse, error)
-	ReadProduct              func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
-	UpdateProduct            func(ctx context.Context, req *productpb.UpdateProductRequest) (*productpb.UpdateProductResponse, error)
-	DeleteProduct            func(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.DeleteProductResponse, error)
-	SetProductActive         func(ctx context.Context, id string, active bool) error
+	Routes           centymo.ProductRoutes
+	Labels           centymo.ProductLabels
+	CreateProduct    func(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.CreateProductResponse, error)
+	ReadProduct      func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
+	UpdateProduct    func(ctx context.Context, req *productpb.UpdateProductRequest) (*productpb.UpdateProductResponse, error)
+	DeleteProduct    func(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.DeleteProductResponse, error)
+	SetProductActive func(ctx context.Context, id string, active bool) error
 	// DefaultFulfillmentMethod is applied when the form does not supply a
 	// fulfillment_method value. Set to "service" for professional business types
 	// so new products created through the services UI are immediately visible in
@@ -72,7 +73,8 @@ func NewAddAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
-		price, _ := strconv.ParseFloat(r.FormValue("price"), 64)
+		priceF, _ := strconv.ParseFloat(r.FormValue("price"), 64)
+		price := int64(math.Round(priceF * 100))
 		desc := r.FormValue("description")
 
 		fulfillmentMethod := r.FormValue("fulfillment_method")
@@ -130,7 +132,7 @@ func NewEditAction(deps *Deps) view.View {
 				ID:           id,
 				Name:         p.GetName(),
 				Description:  p.GetDescription(),
-				Price:        strconv.FormatFloat(p.GetPrice(), 'f', 2, 64),
+				Price:        strconv.FormatFloat(float64(p.GetPrice())/100.0, 'f', 2, 64),
 				Currency:     p.GetCurrency(),
 				Active:       p.GetActive(),
 				Labels:       formLabels(deps.Labels),
@@ -145,7 +147,8 @@ func NewEditAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
-		price, _ := strconv.ParseFloat(r.FormValue("price"), 64)
+		priceF, _ := strconv.ParseFloat(r.FormValue("price"), 64)
+		price := int64(math.Round(priceF * 100))
 		desc := r.FormValue("description")
 
 		_, err := deps.UpdateProduct(ctx, &productpb.UpdateProductRequest{

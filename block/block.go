@@ -1,6 +1,6 @@
 // Package block exposes centymo.Block() — the Lego composition entry point
-// for the centymo commerce domain (inventory, revenue, product, pricelist,
-// plan, subscription, collection, disbursement, expenditure, and inline report
+// for the centymo commerce domain (inventory, revenue, product, product line,
+// pricelist, plan, subscription, collection, disbursement, expenditure, and inline report
 // routes). Consumer apps import this package and optionally alias it:
 //
 //	import centymoblock "github.com/erniealice/centymo-golang/block"
@@ -22,8 +22,8 @@ import (
 	"log"
 	"net/http"
 
-	pyeza "github.com/erniealice/pyeza-golang"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
+	pyeza "github.com/erniealice/pyeza-golang"
 
 	consumer "github.com/erniealice/espyna-golang/consumer"
 	"github.com/erniealice/espyna-golang/contrib/postgres/reference"
@@ -44,6 +44,8 @@ import (
 	planlist "github.com/erniealice/centymo-golang/views/plan/list"
 	pricelistmod "github.com/erniealice/centymo-golang/views/pricelist"
 	productmod "github.com/erniealice/centymo-golang/views/product"
+	productlinemod "github.com/erniealice/centymo-golang/views/product/line"
+	priceplanmod "github.com/erniealice/centymo-golang/views/price_plan"
 	revenuemod "github.com/erniealice/centymo-golang/views/revenue"
 	subscriptionaction "github.com/erniealice/centymo-golang/views/subscription/action"
 	subscriptiondetail "github.com/erniealice/centymo-golang/views/subscription/detail"
@@ -90,6 +92,8 @@ type blockConfig struct {
 	inventory    bool
 	revenue      bool
 	product      bool
+	productLine  bool
+	pricePlan    bool
 	priceList    bool
 	plan         bool
 	subscription bool
@@ -101,6 +105,8 @@ type blockConfig struct {
 func WithInventory() BlockOption    { return func(c *blockConfig) { c.inventory = true } }
 func WithRevenue() BlockOption      { return func(c *blockConfig) { c.revenue = true } }
 func WithProduct() BlockOption      { return func(c *blockConfig) { c.product = true } }
+func WithProductLine() BlockOption  { return func(c *blockConfig) { c.productLine = true } }
+func WithPricePlan() BlockOption    { return func(c *blockConfig) { c.pricePlan = true } }
 func WithPriceList() BlockOption    { return func(c *blockConfig) { c.priceList = true } }
 func WithPlan() BlockOption         { return func(c *blockConfig) { c.plan = true } }
 func WithSubscription() BlockOption { return func(c *blockConfig) { c.subscription = true } }
@@ -111,6 +117,8 @@ func WithExpenditure() BlockOption  { return func(c *blockConfig) { c.expenditur
 func (c *blockConfig) wantInventory() bool    { return c.enableAll || c.inventory }
 func (c *blockConfig) wantRevenue() bool      { return c.enableAll || c.revenue }
 func (c *blockConfig) wantProduct() bool      { return c.enableAll || c.product }
+func (c *blockConfig) wantProductLine() bool  { return c.enableAll || c.productLine }
+func (c *blockConfig) wantPricePlan() bool    { return c.enableAll || c.pricePlan }
 func (c *blockConfig) wantPriceList() bool    { return c.enableAll || c.priceList }
 func (c *blockConfig) wantPlan() bool         { return c.enableAll || c.plan }
 func (c *blockConfig) wantSubscription() bool { return c.enableAll || c.subscription }
@@ -123,7 +131,7 @@ func (c *blockConfig) wantExpenditure() bool  { return c.enableAll || c.expendit
 // ---------------------------------------------------------------------------
 
 // Block registers centymo domain modules (commerce: inventory, revenue, product,
-// pricelist, plan, subscription, collection, disbursement, expenditure, and inline
+// product line, pricelist, plan, subscription, collection, disbursement, expenditure, and inline
 // report routes). Call with no options to register ALL modules. Call with specific
 // WithX() options for a subset.
 func Block(opts ...BlockOption) pyeza.AppOption {
@@ -187,6 +195,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		productRoutes := centymo.DefaultProductRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product", &productRoutes)
 
+		productLineRoutes := centymo.DefaultProductLineRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_line", &productLineRoutes)
+
+		pricePlanRoutes := centymo.DefaultPricePlanRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_plan", &pricePlanRoutes)
+
 		priceListRoutes := centymo.DefaultPriceListRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_list", &priceListRoutes)
 
@@ -220,6 +234,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if err := translations.LoadPath("en", ctx.BusinessType, "product.json", "product", &productLabels); err != nil {
 			log.Printf("centymo.Block: warning loading product labels: %v", err)
 		}
+
+		productLineLabels := centymo.DefaultProductLineLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_line.json", "product_line", &productLineLabels)
+
+		pricePlanLabels := centymo.DefaultPricePlanLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_plan.json", "price_plan", &pricePlanLabels)
 
 		var priceListLabels centymo.PriceListLabels
 		if err := translations.LoadPath("en", ctx.BusinessType, "pricelist.json", "pricelist", &priceListLabels); err != nil {
@@ -365,6 +385,32 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				DeleteAttachment: deleteAttachment,
 				NewID:            newAttachmentID,
 			}
+			// Client search for revenue form autocomplete
+			if useCases.Entity != nil && useCases.Entity.Client != nil {
+				revDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+				if useCases.Entity.Client.SearchClientsByName != nil {
+					revDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName.Execute
+				}
+			}
+			// Subscription search for revenue form autocomplete
+			if useCases.Subscription != nil && useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.ListSubscriptions != nil {
+				revDeps.ListSubscriptions = useCases.Subscription.Subscription.ListSubscriptions.Execute
+			}
+			// Subscription auto-populate for revenue add (read subscription + price plan + product price plans)
+			if useCases.Subscription != nil {
+				if useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.ReadSubscription != nil {
+					revDeps.ReadSubscription = useCases.Subscription.Subscription.ReadSubscription.Execute
+				}
+				if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.ReadPricePlan != nil {
+					revDeps.ReadPricePlan = useCases.Subscription.PricePlan.ReadPricePlan.Execute
+				}
+				if useCases.Subscription.ProductPricePlan != nil && useCases.Subscription.ProductPricePlan.ListProductPricePlans != nil {
+					revDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
+				}
+			}
+			if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ReadProduct != nil {
+				revDeps.ReadProduct = useCases.Product.Product.ReadProduct.Execute
+			}
 			// Revenue CRUD + list page data
 			if useCases.Revenue != nil && useCases.Revenue.Revenue != nil {
 				revDeps.GetListPageData = useCases.Revenue.Revenue.GetRevenueListPageData.Execute
@@ -403,6 +449,8 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			handleFunc(ctx.Routes, "GET", revenueRoutes.InvoiceDownloadURL, revenueMod.InvoiceDownload)
 			// Send email is http.HandlerFunc (bypasses view/template layer)
 			handleFunc(ctx.Routes, "POST", revenueRoutes.SendEmailURL, revenueMod.SendEmailHandler)
+			handleFunc(ctx.Routes, "GET", revenueRoutes.SearchClientURL, revenueMod.SearchClients)
+			handleFunc(ctx.Routes, "GET", revenueRoutes.SearchSubscriptionURL, revenueMod.SearchSubscriptions)
 		}
 
 		// =====================================================================
@@ -484,6 +532,15 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					productDeps.CreateProductAttribute = uc.CreateProductAttribute.Execute
 					productDeps.DeleteProductAttribute = uc.DeleteProductAttribute.Execute
 				}
+				if uc := useCases.Product.Line; uc != nil {
+					productDeps.ListLines = uc.ListLines.Execute
+				}
+				if uc := useCases.Product.ProductLine; uc != nil {
+					productDeps.ListProductLines = uc.ListProductLines.Execute
+					productDeps.CreateProductLine = uc.CreateProductLine.Execute
+					productDeps.UpdateProductLine = uc.UpdateProductLine.Execute
+					productDeps.DeleteProductLine = uc.DeleteProductLine.Execute
+				}
 				if uc := useCases.Product.ProductVariantImage; uc != nil {
 					productDeps.ListProductVariantImages = uc.ListProductVariantImages.Execute
 					productDeps.CreateProductVariantImage = uc.CreateProductVariantImage.Execute
@@ -506,6 +563,57 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 			}
 			productmod.NewModule(productDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// Product Line module
+		// =====================================================================
+
+		if cfg.wantProductLine() {
+			if useCases.Product != nil && useCases.Product.Line != nil {
+				uc := useCases.Product.Line
+				productlinemod.NewModule(&productlinemod.ModuleDeps{
+					Routes:       productLineRoutes,
+					Labels:       productLineLabels,
+					CommonLabels: ctx.Common,
+					TableLabels:  centymoTableLabels,
+					ListLines:    uc.ListLines.Execute,
+					ReadLine:     uc.ReadLine.Execute,
+					CreateLine:   uc.CreateLine.Execute,
+					UpdateLine:   uc.UpdateLine.Execute,
+					DeleteLine:   uc.DeleteLine.Execute,
+				}).RegisterRoutes(ctx.Routes)
+			}
+		}
+
+		// =====================================================================
+		// Price Plan module (standalone — separate from plan-nested price plans)
+		// =====================================================================
+
+		if cfg.wantPricePlan() {
+			if useCases.Subscription != nil && useCases.Subscription.PricePlan != nil {
+				uc := useCases.Subscription.PricePlan
+				pricePlanDeps := &priceplanmod.ModuleDeps{
+					Routes:          pricePlanRoutes,
+					Labels:          pricePlanLabels,
+					CommonLabels:    ctx.Common,
+					TableLabels:     centymoTableLabels,
+					ListPricePlans:  uc.ListPricePlans.Execute,
+					ReadPricePlan:   uc.ReadPricePlan.Execute,
+					CreatePricePlan: uc.CreatePricePlan.Execute,
+					UpdatePricePlan: uc.UpdatePricePlan.Execute,
+					DeletePricePlan: uc.DeletePricePlan.Execute,
+				}
+				// Add location listing if available
+				if useCases.Entity != nil && useCases.Entity.Location != nil {
+					pricePlanDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+				}
+				// Add plan listing if available
+				if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
+					pricePlanDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+				}
+				priceplanmod.NewModule(pricePlanDeps).RegisterRoutes(ctx.Routes)
+			}
 		}
 
 		// =====================================================================
@@ -803,11 +911,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			}
 			if useCases.Expenditure != nil && useCases.Expenditure.Expenditure != nil {
 				uc := useCases.Expenditure.Expenditure
-				expDeps.ListExpenditures     = uc.ListExpenditures.Execute
-				expDeps.CreateExpenditure    = uc.CreateExpenditure.Execute
-				expDeps.ReadExpenditure      = uc.ReadExpenditure.Execute
-				expDeps.UpdateExpenditure    = uc.UpdateExpenditure.Execute
-				expDeps.DeleteExpenditure    = uc.DeleteExpenditure.Execute
+				expDeps.ListExpenditures = uc.ListExpenditures.Execute
+				expDeps.CreateExpenditure = uc.CreateExpenditure.Execute
+				expDeps.ReadExpenditure = uc.ReadExpenditure.Execute
+				expDeps.UpdateExpenditure = uc.UpdateExpenditure.Execute
+				expDeps.DeleteExpenditure = uc.DeleteExpenditure.Execute
 			}
 			if useCases.Expenditure != nil && useCases.Expenditure.ExpenditureCategory != nil {
 				uc := useCases.Expenditure.ExpenditureCategory

@@ -259,11 +259,11 @@ func NewSetStatusAction(deps *Deps) view.View {
 		}
 
 		validStatuses := map[string]bool{
-			"approved":         true,
+			"approved":           true,
 			"partially_received": true,
-			"fully_received":   true,
-			"closed":           true,
-			"cancelled":        true,
+			"fully_received":     true,
+			"closed":             true,
+			"cancelled":          true,
 		}
 		if !validStatuses[targetStatus] {
 			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
@@ -280,4 +280,3 @@ func NewSetStatusAction(deps *Deps) view.View {
 		return centymo.HTMXSuccess("purchase-orders-table")
 	})
 }
-

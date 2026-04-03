@@ -80,7 +80,7 @@ func NewView(deps *ListViewDeps) view.View {
 		// KB help content
 		if viewCtx.Translations != nil {
 			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
-				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "products"); kb != nil {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "product"); kb != nil {
 					pageData.HasHelp = true
 					pageData.HelpContent = kb.Body
 				}
@@ -287,7 +287,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 		id := p.GetId()
 		name := p.GetName()
 		description := p.GetDescription()
-		price := formatPrice(p.GetCurrency(), p.GetPrice())
+		price := formatPrice(p.GetCurrency(), float64(p.GetPrice())/100.0)
 		isInUse := inUseIDs[id]
 
 		deleteAction := types.TableAction{

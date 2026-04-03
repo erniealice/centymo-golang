@@ -1,11 +1,11 @@
 {{/*
-Sales drawer form — loaded into #sheetContent via HTMX.
+Revenue drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
 Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .Locations,
       .PaymentTerms, .SelectedPaymentTermID, .DueDateString,
       .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
-{{define "sales-drawer-form"}}
+{{define "revenue-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
@@ -71,15 +71,108 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
         {{template "form-section" (dict "Title" .Labels.Customer)}}
 
         <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "text"
-                "Name" "name"
+            {{template "auto-complete" (dict
+                "ID" "client-search"
+                "Name" "client_id"
                 "Label" .Labels.Customer
-                "Value" .Name
-                "Required" true
                 "Placeholder" .Labels.Form.CustomerNamePlaceholder
+                "SearchPlaceholder" .Labels.Form.CustomerSearchPlaceholder
+                "SearchURL" .SearchClientURL
+                "Value" .ClientID
+                "SelectedLabel" .ClientLabel
+                "Required" true
+                "NoResults" .Labels.Form.CustomerNoResults
             )}}
         </div>
+
+        {{if .SearchSubscriptionURL}}
+        <div class="form-row single" id="subscription-row">
+            {{template "auto-complete" (dict
+                "ID" "subscription-search"
+                "Name" "subscription_id"
+                "Label" .Labels.Subscription
+                "SearchURL" .SearchSubscriptionURL
+                "Value" .SubscriptionID
+                "SelectedLabel" .SubscriptionLabel
+                "Required" false
+                "NoResults" .Labels.SubscriptionNoResults
+            )}}
+        </div>
+        <script>
+        (function() {
+            var subContainer = document.getElementById('subscription-search');
+            if (!subContainer) return;
+
+            var baseURL = '{{.SearchSubscriptionURL}}';
+
+            function clearSubscription() {
+                var hiddenInput = subContainer.querySelector('.auto-complete-input');
+                var display = subContainer.querySelector('.auto-complete-display');
+                var clearBtn = subContainer.querySelector('.auto-complete-clear');
+                if (hiddenInput) hiddenInput.value = '';
+                if (display) {
+                    var placeholder = display.querySelector('.auto-complete-placeholder');
+                    if (placeholder) {
+                        display.innerHTML = placeholder.outerHTML;
+                    } else {
+                        display.innerHTML = '<span class="auto-complete-placeholder"></span>';
+                    }
+                }
+                if (clearBtn) clearBtn.style.display = 'none';
+                subContainer.classList.remove('open');
+            }
+
+            function updateSearchURL(clientID) {
+                if (clientID) {
+                    subContainer.dataset.searchUrl = baseURL + (baseURL.includes('?') ? '&' : '?') + 'client_id=' + encodeURIComponent(clientID);
+                } else {
+                    subContainer.dataset.searchUrl = '';
+                }
+            }
+
+            var clientContainer = document.getElementById('client-search');
+            if (clientContainer) {
+                var clientHidden = clientContainer.querySelector('.auto-complete-input');
+                // Set initial URL from any pre-selected client
+                if (clientHidden && clientHidden.value) {
+                    updateSearchURL(clientHidden.value);
+                }
+
+                // Watch for client selection changes via MutationObserver on the hidden input
+                if (clientHidden) {
+                    var observer = new MutationObserver(function() {
+                        updateSearchURL(clientHidden.value);
+                        clearSubscription();
+                    });
+                    observer.observe(clientHidden, { attributes: true, attributeFilter: ['value'] });
+                }
+
+                // Also listen on the results container for click-driven selection
+                var clientResults = clientContainer.querySelector('.auto-complete-results');
+                if (clientResults) {
+                    clientResults.addEventListener('click', function() {
+                        setTimeout(function() {
+                            var val = clientHidden ? clientHidden.value : '';
+                            updateSearchURL(val);
+                            clearSubscription();
+                        }, 50);
+                    });
+                }
+
+                // Listen on clear button
+                var clientClear = clientContainer.querySelector('.auto-complete-clear');
+                if (clientClear) {
+                    clientClear.addEventListener('click', function() {
+                        setTimeout(function() {
+                            updateSearchURL('');
+                            clearSubscription();
+                        }, 50);
+                    });
+                }
+            }
+        })();
+        </script>
+        {{end}}
 
         {{/* --- Payment Terms --- */}}
         {{if .PaymentTerms}}

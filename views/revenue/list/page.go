@@ -63,7 +63,7 @@ func NewView(deps *ListViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          statusPageTitle(deps.Labels, status),
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "sales",
+				ActiveNav:      "sale",
 				ActiveSubNav:   status,
 				HeaderTitle:    statusPageTitle(deps.Labels, status),
 				HeaderSubtitle: statusPageCaption(deps.Labels, status),
@@ -77,7 +77,7 @@ func NewView(deps *ListViewDeps) view.View {
 		// KB help content
 		if viewCtx.Translations != nil {
 			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
-				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "sales"); kb != nil {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "sale"); kb != nil {
 					pageData.HasHelp = true
 					pageData.HelpContent = kb.Body
 				}
@@ -211,7 +211,7 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 		id := r.GetId()
 		refNumber := r.GetReferenceNumber()
 		name := r.GetName()
-		date := r.GetRevenueDateString()
+		date := r.GetRevenueDate()
 		amount := centymo.FormatCentavoAmount(r.GetTotalAmount(), r.GetCurrency())
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
