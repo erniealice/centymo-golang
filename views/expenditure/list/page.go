@@ -170,7 +170,7 @@ func buildTableRows(expenditures []*expenditurepb.Expenditure, l centymo.Expendi
 		if expenditureType != "expense" {
 			// For purchases, try to get the vendor name from the nested Vendor object
 			if vendor := e.GetVendor(); vendor != nil {
-				secondCol = vendor.GetCompanyName()
+				secondCol = vendor.GetName()
 				if secondCol == "" {
 					secondCol = e.GetName()
 				}

@@ -77,7 +77,7 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 			}
 
 			label := c.GetId()
-			companyName := c.GetCompanyName()
+			companyName := c.GetName()
 			if companyName != "" {
 				label = companyName
 			} else if u := c.GetUser(); u != nil {
@@ -92,7 +92,7 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 				labelLower := strings.ToLower(label)
 				match := strings.Contains(labelLower, queryLower)
 				if !match {
-					if cn := c.GetCompanyName(); cn != "" {
+					if cn := c.GetName(); cn != "" {
 						match = strings.Contains(strings.ToLower(cn), queryLower)
 					}
 				}

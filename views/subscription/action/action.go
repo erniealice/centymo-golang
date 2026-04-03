@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -20,19 +21,20 @@ import (
 
 // FormLabels holds i18n labels for the subscription drawer form template.
 type FormLabels struct {
-	Customer                      string
-	CustomerPlaceholder           string
-	Plan                          string
-	PlanPlaceholder               string
-	StartDate                     string
-	EndDate                       string
-	Notes                         string
-	NotesPlaceholder              string
-	CustomerSearchPlaceholder     string
-	PlanSearchPlaceholder         string
-	CustomerNoResults             string
-	PlanNoResults                 string
-	EngagementNamePlaceholder     string
+	Customer                  string
+	CustomerPlaceholder       string
+	Plan                      string
+	PlanPlaceholder           string
+	StartDate                 string
+	EndDate                   string
+	Notes                     string
+	NotesPlaceholder          string
+	CustomerSearchPlaceholder string
+	PlanSearchPlaceholder     string
+	CustomerNoResults         string
+	PlanNoResults             string
+	Code                      string
+	CodePlaceholder           string
 }
 
 // FormData is the template data for the subscription drawer form.
@@ -40,7 +42,7 @@ type FormData struct {
 	FormAction   string
 	IsEdit       bool
 	ID           string
-	Name         string
+	Code         string
 	ClientID     string
 	PricePlanID  string
 	DateStart    string
@@ -52,6 +54,7 @@ type FormData struct {
 	SearchPlanURL   string
 	ClientLabel     string
 	PlanLabel       string
+	ClientLocked    bool
 	Labels          FormLabels
 	CommonLabels    any
 }
@@ -74,20 +77,32 @@ type Deps struct {
 
 func formLabels(l centymo.SubscriptionLabels) FormLabels {
 	return FormLabels{
-		Customer:            l.Form.Customer,
-		CustomerPlaceholder: l.Form.CustomerPlaceholder,
-		Plan:                l.Form.Plan,
-		PlanPlaceholder:     l.Form.PlanPlaceholder,
-		StartDate:           l.Form.StartDate,
-		EndDate:             l.Form.EndDate,
+		Customer:                  l.Form.Customer,
+		CustomerPlaceholder:       l.Form.CustomerPlaceholder,
+		Plan:                      l.Form.Plan,
+		PlanPlaceholder:           l.Form.PlanPlaceholder,
+		StartDate:                 l.Form.StartDate,
+		EndDate:                   l.Form.EndDate,
 		Notes:                     l.Form.Notes,
 		NotesPlaceholder:          l.Form.NotesPlaceholder,
 		CustomerSearchPlaceholder: l.Form.CustomerSearchPlaceholder,
 		PlanSearchPlaceholder:     l.Form.PlanSearchPlaceholder,
 		CustomerNoResults:         l.Form.CustomerNoResults,
 		PlanNoResults:             l.Form.PlanNoResults,
-		EngagementNamePlaceholder: l.Form.EngagementNamePlaceholder,
+		Code:                      l.Form.Code,
+		CodePlaceholder:           l.Form.CodePlaceholder,
 	}
+}
+
+// generateCode returns a random 7-character uppercase alphanumeric code,
+// using chars that are visually unambiguous (no O, I, 0, 1).
+func generateCode() string {
+	const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+	b := make([]byte, 7)
+	for i := range b {
+		b[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(b)
 }
 
 // loadClientOptions fetches the client list and converts to select options.
@@ -152,7 +167,7 @@ func resolveClientLabel(ctx context.Context, clientID string, listClients func(c
 	}
 	for _, c := range resp.GetData() {
 		if c.GetId() == clientID {
-			if cn := c.GetCompanyName(); cn != "" {
+			if cn := c.GetName(); cn != "" {
 				return cn
 			}
 			if u := c.GetUser(); u != nil {
@@ -194,10 +209,18 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
+			clientID := viewCtx.Request.URL.Query().Get("client_id")
+			clientName := viewCtx.Request.URL.Query().Get("client_name")
+			clientLocked := clientID != ""
+
 			return view.OK("subscription-drawer-form", &FormData{
 				FormAction:      deps.Routes.AddURL,
 				SearchClientURL: deps.Routes.SearchClientURL,
 				SearchPlanURL:   deps.Routes.SearchPlanURL,
+				ClientID:        clientID,
+				ClientLabel:     clientName,
+				ClientLocked:    clientLocked,
+				Code:            generateCode(),
 				Labels:          formLabels(deps.Labels),
 				CommonLabels:    nil, // injected by ViewAdapter
 			})
@@ -215,6 +238,21 @@ func NewAddAction(deps *Deps) view.View {
 
 		pricePlanID := r.FormValue("price_plan_id")
 
+		code := r.FormValue("code")
+		if code == "" {
+			code = generateCode()
+		}
+
+		// Resolve plan name for auto-generated subscription name
+		planName := ""
+		if deps.ListPlans != nil && pricePlanID != "" {
+			planName = resolvePlanLabel(ctx, pricePlanID, deps.ListPlans)
+		}
+		name := planName
+		if code != "" {
+			name = planName + " [" + code + "]"
+		}
+
 		// Validate: start date must not be in the past
 		if dateStart != "" {
 			startTime, parseErr := time.Parse("2006-01-02", dateStart)
@@ -228,9 +266,10 @@ func NewAddAction(deps *Deps) view.View {
 
 		resp, err := deps.CreateSubscription(ctx, &subscriptionpb.CreateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
-				Name:            r.FormValue("name"),
+				Name:            name,
 				ClientId:        r.FormValue("client_id"),
 				PricePlanId:     pricePlanID,
+				Code:            strPtr(code),
 				DateStartString: strPtr(dateStart),
 				DateEndString:   strPtr(dateEnd),
 				Active:          true,
@@ -273,11 +312,14 @@ func NewEditAction(deps *Deps) view.View {
 			clientLabel := resolveClientLabel(ctx, record.GetClientId(), deps.ListClients)
 			planLabel := resolvePlanLabel(ctx, record.GetPricePlanId(), deps.ListPlans)
 
+			// Lock client field when opened from client detail page
+			clientLocked := viewCtx.Request.URL.Query().Get("client_id") != ""
+
 			return view.OK("subscription-drawer-form", &FormData{
 				FormAction:      route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:          true,
 				ID:              id,
-				Name:            record.GetName(),
+				Code:            record.GetCode(),
 				ClientID:        record.GetClientId(),
 				PricePlanID:     record.GetPricePlanId(),
 				DateStart:       record.GetDateStartString(),
@@ -285,6 +327,7 @@ func NewEditAction(deps *Deps) view.View {
 				SearchClientURL: deps.Routes.SearchClientURL,
 				SearchPlanURL:   deps.Routes.SearchPlanURL,
 				ClientLabel:     clientLabel,
+				ClientLocked:    clientLocked,
 				PlanLabel:       planLabel,
 				Labels:          formLabels(deps.Labels),
 				CommonLabels:    nil, // injected by ViewAdapter
@@ -306,6 +349,21 @@ func NewEditAction(deps *Deps) view.View {
 			pricePlanID = r.FormValue("plan_id")
 		}
 
+		code := r.FormValue("code")
+		if code == "" {
+			code = generateCode()
+		}
+
+		// Resolve plan name for auto-generated subscription name
+		planName := ""
+		if deps.ListPlans != nil && pricePlanID != "" {
+			planName = resolvePlanLabel(ctx, pricePlanID, deps.ListPlans)
+		}
+		name := planName
+		if code != "" {
+			name = planName + " [" + code + "]"
+		}
+
 		// Validate: start date must not be in the past
 		if dateStart != "" {
 			startTime, parseErr := time.Parse("2006-01-02", dateStart)
@@ -320,9 +378,10 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateSubscription(ctx, &subscriptionpb.UpdateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
 				Id:              id,
-				Name:            r.FormValue("name"),
+				Name:            name,
 				ClientId:        r.FormValue("client_id"),
 				PricePlanId:     pricePlanID,
+				Code:            strPtr(code),
 				DateStartString: strPtr(dateStart),
 				DateEndString:   strPtr(dateEnd),
 			},

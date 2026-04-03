@@ -2006,7 +2006,8 @@ type SubscriptionFormLabels struct {
 	PlanSearchPlaceholder     string `json:"planSearchPlaceholder"`
 	CustomerNoResults         string `json:"customerNoResults"`
 	PlanNoResults             string `json:"planNoResults"`
-	EngagementNamePlaceholder string `json:"engagementNamePlaceholder"`
+	Code                      string `json:"code"`
+	CodePlaceholder           string `json:"codePlaceholder"`
 }
 
 type SubscriptionDetailLabels struct {
@@ -2168,7 +2169,8 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			PlanSearchPlaceholder:     "Search plans...",
 			CustomerNoResults:         "No customers found",
 			PlanNoResults:             "No plans found",
-			EngagementNamePlaceholder: "Engagement name",
+			Code:                      "Code",
+			CodePlaceholder:           "e.g. A3K7PXR",
 		},
 		Actions: SubscriptionActionLabels{
 			View:   "View Subscription",

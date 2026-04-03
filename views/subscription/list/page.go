@@ -125,7 +125,7 @@ func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string,
 		// Build customer display name: prefer company_name, fallback to user name
 		customer := s.GetName()
 		if c := s.GetClient(); c != nil {
-			if companyName := c.GetCompanyName(); companyName != "" {
+			if companyName := c.GetName(); companyName != "" {
 				customer = companyName
 			} else if u := c.GetUser(); u != nil {
 				firstName := u.GetFirstName()

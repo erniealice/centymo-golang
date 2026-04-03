@@ -1,7 +1,7 @@
 {{/*
 Subscription drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
+Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
       .SearchClientURL, .SearchPlanURL, .ClientLabel, .PlanLabel,
       .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
@@ -10,19 +10,19 @@ Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     <div class="sheet-body">
-        {{/* --- Engagement Name --- */}}
+        {{/* --- Customer --- */}}
+        {{if .ClientLocked}}
         <div class="form-row single">
+            <input type="hidden" name="client_id" value="{{.ClientID}}">
             {{template "form-group" (dict
                 "Type" "text"
-                "Name" "name"
+                "Name" "client_display"
                 "Label" .Labels.Customer
-                "Value" .Name
-                "Required" true
-                "Placeholder" .Labels.EngagementNamePlaceholder
+                "Value" .ClientLabel
+                "Readonly" true
             )}}
         </div>
-
-        {{/* --- Customer --- */}}
+        {{else}}
         <div class="form-row single">
             {{template "auto-complete" (dict
                 "ID" "client-search"
@@ -37,6 +37,7 @@ Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
                 "NoResults" .Labels.CustomerNoResults
             )}}
         </div>
+        {{end}}
 
         {{/* --- Price Plan --- */}}
         <div class="form-row single">
@@ -51,6 +52,18 @@ Data: .Name, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
                 "SelectedLabel" .PlanLabel
                 "Required" true
                 "NoResults" .Labels.PlanNoResults
+            )}}
+        </div>
+
+        {{/* --- Engagement Code --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "code"
+                "Label" .Labels.Code
+                "Value" .Code
+                "Placeholder" .Labels.CodePlaceholder
+                "MaxLength" "7"
             )}}
         </div>
 
