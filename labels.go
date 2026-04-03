@@ -1811,16 +1811,35 @@ func DefaultDisbursementLabels() DisbursementLabels {
 
 // PlanLabels holds all translatable strings for the plan module.
 type PlanLabels struct {
-	Page    PlanPageLabels    `json:"page"`
-	Buttons PlanButtonLabels  `json:"buttons"`
-	Columns PlanColumnLabels  `json:"columns"`
-	Empty   PlanEmptyLabels   `json:"empty"`
-	Form    PlanFormLabels    `json:"form"`
-	Actions PlanActionLabels  `json:"actions"`
-	Detail  PlanDetailLabels  `json:"detail"`
-	Tabs    PlanTabLabels     `json:"tabs"`
-	Confirm PlanConfirmLabels `json:"confirm"`
-	Errors  PlanErrorLabels   `json:"errors"`
+	Page         PlanPageLabels         `json:"page"`
+	Buttons      PlanButtonLabels       `json:"buttons"`
+	Columns      PlanColumnLabels       `json:"columns"`
+	Empty        PlanEmptyLabels        `json:"empty"`
+	Form         PlanFormLabels         `json:"form"`
+	Actions      PlanActionLabels       `json:"actions"`
+	Detail       PlanDetailLabels       `json:"detail"`
+	Tabs         PlanTabLabels          `json:"tabs"`
+	Confirm      PlanConfirmLabels      `json:"confirm"`
+	Errors       PlanErrorLabels        `json:"errors"`
+	PricePlanForm PricePlanFormLabels   `json:"pricePlanForm"`
+}
+
+// PricePlanFormLabels holds translatable labels for the PricePlan add/edit form.
+type PricePlanFormLabels struct {
+	Name                string `json:"name"`
+	NamePlaceholder     string `json:"namePlaceholder"`
+	Description         string `json:"description"`
+	DescPlaceholder     string `json:"descriptionPlaceholder"`
+	Amount              string `json:"amount"`
+	AmountPlaceholder   string `json:"amountPlaceholder"`
+	Currency            string `json:"currency"`
+	CurrencyPlaceholder string `json:"currencyPlaceholder"`
+	DurationValue       string `json:"durationValue"`
+	DurationUnit        string `json:"durationUnit"`
+	Location            string `json:"location"`
+	LocationPlaceholder string `json:"locationPlaceholder"`
+	SelectLocation      string `json:"selectLocation"`
+	Active              string `json:"active"`
 }
 
 type PlanPageLabels struct {
@@ -1845,6 +1864,7 @@ type PlanColumnLabels struct {
 	Product     string `json:"product"`
 	PricePlan   string `json:"pricePlan"`
 	Duration    string `json:"duration"`
+	Location    string `json:"location"`
 }
 
 type PlanEmptyLabels struct {
@@ -2058,6 +2078,7 @@ func DefaultPlanLabels() PlanLabels {
 			Product:     "Product",
 			PricePlan:   "Price Plan",
 			Duration:    "Duration",
+			Location:    "Location",
 		},
 		Empty: PlanEmptyLabels{
 			Title:           "No plans found",
@@ -2127,6 +2148,22 @@ func DefaultPlanLabels() PlanLabels {
 			NotFound:         "Plan not found",
 			IDRequired:       "Plan ID is required",
 			NoPermission:     "No permission",
+		},
+		PricePlanForm: PricePlanFormLabels{
+			Name:                "Price Plan Name",
+			NamePlaceholder:     "Enter price plan name",
+			Description:         "Description",
+			DescPlaceholder:     "Enter description...",
+			Amount:              "Amount",
+			AmountPlaceholder:   "0.00",
+			Currency:            "Currency",
+			CurrencyPlaceholder: "e.g. PHP",
+			DurationValue:       "Duration",
+			DurationUnit:        "Unit",
+			Location:            "Location",
+			LocationPlaceholder: "Select a location...",
+			SelectLocation:      "— No location (all locations) —",
+			Active:              "Active",
 		},
 	}
 }

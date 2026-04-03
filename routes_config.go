@@ -647,6 +647,11 @@ type PlanRoutes struct {
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
+
+	// PricePlan CRUD routes (within plan context)
+	PricePlanAddURL    string `json:"price_plan_add_url"`
+	PricePlanEditURL   string `json:"price_plan_edit_url"`
+	PricePlanDeleteURL string `json:"price_plan_delete_url"`
 }
 
 // DefaultPlanRoutes returns a PlanRoutes populated from the package-level
@@ -665,6 +670,10 @@ func DefaultPlanRoutes() PlanRoutes {
 
 		AttachmentUploadURL: PlanAttachmentUploadURL,
 		AttachmentDeleteURL: PlanAttachmentDeleteURL,
+
+		PricePlanAddURL:    PricePlanAddURL,
+		PricePlanEditURL:   PricePlanEditURL,
+		PricePlanDeleteURL: PricePlanDeleteURL,
 	}
 }
 
@@ -681,6 +690,10 @@ func (r PlanRoutes) RouteMap() map[string]string {
 
 		"plan.attachment.upload": r.AttachmentUploadURL,
 		"plan.attachment.delete": r.AttachmentDeleteURL,
+
+		"plan.pricelist.add":    r.PricePlanAddURL,
+		"plan.pricelist.edit":   r.PricePlanEditURL,
+		"plan.pricelist.delete": r.PricePlanDeleteURL,
 	}
 }
 

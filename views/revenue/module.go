@@ -25,6 +25,9 @@ import (
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 )
 
+// PaymentTermOption is re-exported from action for use by callers wiring ModuleDeps.
+type PaymentTermOption = revenueaction.PaymentTermOption
+
 // ModuleDeps holds all dependencies for the revenue module.
 type ModuleDeps struct {
 	Routes       centymo.RevenueRoutes
@@ -33,6 +36,9 @@ type ModuleDeps struct {
 	Labels       centymo.RevenueLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+
+	// Payment terms dropdown (optional — gracefully degrades when nil)
+	ListPaymentTerms func(ctx context.Context) ([]*PaymentTermOption, error)
 
 	// Typed revenue operations (for detail + action views)
 	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
@@ -121,6 +127,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		Routes:                       deps.Routes,
 		Labels:                       deps.Labels,
 		DB:                           deps.DB,
+		ListPaymentTerms:             deps.ListPaymentTerms,
 		CreateRevenue:                deps.CreateRevenue,
 		ReadRevenue:                  deps.ReadRevenue,
 		UpdateRevenue:                deps.UpdateRevenue,

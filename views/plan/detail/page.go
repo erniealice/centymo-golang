@@ -14,6 +14,8 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
@@ -28,6 +30,7 @@ type DetailViewDeps struct {
 	TableLabels      types.TableLabels
 	ListProductPlans func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	ListPricePlans   func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListLocations    func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -141,20 +144,27 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	createdDate := plan.GetDateCreatedString()
 	modifiedDate := plan.GetDateModifiedString()
 
-	// Get counts for tab badges
+	// Get counts for tab badges — filter by plan_id so only this plan's products are counted
 	productCount := 0
 	if deps.ListProductPlans != nil {
-		ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+		ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
+			Filters: &commonpb.FilterRequest{
+				Logic: commonpb.FilterLogic_AND,
+				Filters: []*commonpb.TypedFilter{
+					{
+						Field: "plan_id",
+						FilterType: &commonpb.TypedFilter_StringFilter{
+							StringFilter: &commonpb.StringFilter{
+								Value:    id,
+								Operator: commonpb.StringOperator_STRING_EQUALS,
+							},
+						},
+					},
+				},
+			},
+		})
 		if err == nil {
-			for _, pp := range ppResp.GetData() {
-				if pp.GetProductId() != "" {
-					// product_plan records don't have a plan_id — they link product to plan
-					// Filter by checking if this product_plan is associated with this plan
-					// ProductPlan has product_id field; we need to match somehow
-					// Actually ProductPlan doesn't have plan_id. We count all for now.
-					productCount++
-				}
-			}
+			productCount = len(ppResp.GetData())
 		}
 	}
 
@@ -276,7 +286,22 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 	rows := []types.TableRow{}
 
 	if deps.ListProductPlans != nil {
-		ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+		ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
+			Filters: &commonpb.FilterRequest{
+				Logic: commonpb.FilterLogic_AND,
+				Filters: []*commonpb.TypedFilter{
+					{
+						Field: "plan_id",
+						FilterType: &commonpb.TypedFilter_StringFilter{
+							StringFilter: &commonpb.StringFilter{
+								Value:    planID,
+								Operator: commonpb.StringOperator_STRING_EQUALS,
+							},
+						},
+					},
+				},
+			},
+		})
 		if err != nil {
 			log.Printf("Failed to list product plans: %v", err)
 		} else {
@@ -346,7 +371,21 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 		{Key: "name", Label: l.Columns.PricePlan, Sortable: true},
 		{Key: "amount", Label: l.Detail.Price, Sortable: true, Width: "150px"},
 		{Key: "duration", Label: l.Columns.Duration, Sortable: true, Width: "150px"},
+		{Key: "location", Label: l.Columns.Location, Sortable: true, Width: "180px"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+	}
+
+	// Build a location ID → name map for display.
+	locationNames := map[string]string{}
+	if deps.ListLocations != nil {
+		locResp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
+		if err != nil {
+			log.Printf("Failed to list locations for pricelists table: %v", err)
+		} else {
+			for _, loc := range locResp.GetData() {
+				locationNames[loc.GetId()] = loc.GetName()
+			}
+		}
 	}
 
 	rows := []types.TableRow{}
@@ -366,6 +405,15 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 				amount := fmt.Sprintf("%.2f", pp.GetAmount())
 				duration := fmt.Sprintf("%d %s", pp.GetDurationValue(), pp.GetDurationUnit())
 
+				locationName := "—"
+				if locID := pp.GetLocationId(); locID != "" {
+					if n, ok := locationNames[locID]; ok && n != "" {
+						locationName = n
+					} else {
+						locationName = locID
+					}
+				}
+
 				active := pp.GetActive()
 				status := "active"
 				if !active {
@@ -378,6 +426,7 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 						{Type: "text", Value: name},
 						{Type: "text", Value: amount},
 						{Type: "text", Value: duration},
+						{Type: "text", Value: locationName},
 						{Type: "badge", Value: status, Variant: statusVariant(status)},
 					},
 				})

@@ -39,15 +39,15 @@ type FormLabels struct {
 
 // FormData is the template data for the subscription drawer form.
 type FormData struct {
-	FormAction   string
-	IsEdit       bool
-	ID           string
-	Code         string
-	ClientID     string
-	PricePlanID  string
-	DateStart    string
-	DateEnd      string
-	Notes        string
+	FormAction      string
+	IsEdit          bool
+	ID              string
+	Code            string
+	ClientID        string
+	PricePlanID     string
+	DateStart       string
+	DateEnd         string
+	Notes           string
 	Clients         []map[string]string
 	PricePlans      []map[string]string
 	SearchClientURL string
@@ -200,6 +200,22 @@ func resolvePlanLabel(ctx context.Context, planID string, listPlans func(ctx con
 	return planID
 }
 
+// formatDateForInput normalizes subscription dates for HTML date inputs.
+// ReadSubscription may return the raw millis field without the companion
+// *_string value, so edit forms need to fall back to formatting the timestamp.
+func formatDateForInput(dateString string, dateMillis int64) string {
+	if dateString != "" {
+		if len(dateString) >= len("2006-01-02") {
+			return dateString[:10]
+		}
+		return dateString
+	}
+	if dateMillis > 0 {
+		return time.UnixMilli(dateMillis).Format("2006-01-02")
+	}
+	return ""
+}
+
 // NewAddAction creates the subscription add action (GET = form, POST = create).
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -322,8 +338,8 @@ func NewEditAction(deps *Deps) view.View {
 				Code:            record.GetCode(),
 				ClientID:        record.GetClientId(),
 				PricePlanID:     record.GetPricePlanId(),
-				DateStart:       record.GetDateStartString(),
-				DateEnd:         record.GetDateEndString(),
+				DateStart:       formatDateForInput(record.GetDateStartString(), record.GetDateStart()),
+				DateEnd:         formatDateForInput(record.GetDateEndString(), record.GetDateEnd()),
 				SearchClientURL: deps.Routes.SearchClientURL,
 				SearchPlanURL:   deps.Routes.SearchPlanURL,
 				ClientLabel:     clientLabel,

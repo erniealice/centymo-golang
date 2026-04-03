@@ -30,6 +30,13 @@ type SupplierOption struct {
 	Selected bool
 }
 
+// PaymentTermOption is a minimal struct for rendering payment term options in the form.
+type PaymentTermOption struct {
+	Id      string
+	Name    string
+	NetDays int32
+}
+
 // FormLabels holds flat i18n labels for the expense drawer form template.
 type FormLabels struct {
 	Name                string
@@ -51,6 +58,9 @@ type FormLabels struct {
 	StatusPaid          string
 	StatusCancelled     string
 	CurrencyPlaceholder string
+	PaymentTerms        string
+	SelectPaymentTerm   string
+	DueDate             string
 }
 
 // FormData is the template data for the expense drawer form.
@@ -70,6 +80,8 @@ type FormData struct {
 	Notes                 string
 	Categories            []CategoryOption
 	Suppliers             []SupplierOption
+	PaymentTerms          []*PaymentTermOption
+	SelectedPaymentTermID string
 	Labels                FormLabels
 	CommonLabels          any
 }
@@ -78,6 +90,9 @@ type FormData struct {
 type Deps struct {
 	Routes centymo.ExpenditureRoutes
 	Labels centymo.ExpenditureLabels
+
+	// Payment terms dropdown (optional — gracefully degrades when nil)
+	ListPaymentTerms func(ctx context.Context) ([]*PaymentTermOption, error)
 
 	// Typed expenditure CRUD operations
 	CreateExpenditure func(ctx context.Context, req *expenditurepb.CreateExpenditureRequest) (*expenditurepb.CreateExpenditureResponse, error)
@@ -114,7 +129,23 @@ func formLabels(l centymo.ExpenditureLabels) FormLabels {
 		StatusPaid:          l.Status.Paid,
 		StatusCancelled:     l.Status.Cancelled,
 		CurrencyPlaceholder: "e.g. PHP",
+		PaymentTerms:        "Payment Terms",
+		SelectPaymentTerm:   "Select payment term",
+		DueDate:             "Due Date",
 	}
+}
+
+// loadPaymentTerms fetches payment term options. Returns nil on error (graceful degradation).
+func loadPaymentTerms(ctx context.Context, deps *Deps) []*PaymentTermOption {
+	if deps.ListPaymentTerms == nil {
+		return nil
+	}
+	terms, err := deps.ListPaymentTerms(ctx)
+	if err != nil {
+		log.Printf("Failed to load payment terms: %v", err)
+		return nil
+	}
+	return terms
 }
 
 // loadCategoryOptions loads expenditure categories for the dropdown, pre-selecting selectedID.
@@ -200,6 +231,7 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
+			paymentTerms := loadPaymentTerms(ctx, deps)
 			return view.OK("expense-drawer-form", &FormData{
 				FormAction:      deps.Routes.AddURL,
 				ExpenditureType: "expense",
@@ -207,6 +239,7 @@ func NewAddAction(deps *Deps) view.View {
 				Status:          "pending",
 				Categories:      loadCategoryOptions(ctx, deps.ListExpenditureCategories, ""),
 				Suppliers:       loadSupplierOptions(ctx, deps.ListSuppliers, ""),
+				PaymentTerms:    paymentTerms,
 				Labels:          formLabels(deps.Labels),
 				CommonLabels:    nil, // injected by ViewAdapter
 			})
@@ -231,6 +264,7 @@ func NewAddAction(deps *Deps) view.View {
 				Status:                r.FormValue("status"),
 				ReferenceNumber:       strPtr(r.FormValue("reference_number")),
 				Notes:                 strPtr(r.FormValue("notes")),
+				PaymentTermId:         strPtr(r.FormValue("payment_term_id")),
 			},
 		})
 		if err != nil {
@@ -280,6 +314,8 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := readData[0]
 
+			paymentTerms := loadPaymentTerms(ctx, deps)
+			selectedPaymentTermID := record.GetPaymentTermId()
 			return view.OK("expense-drawer-form", &FormData{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
@@ -296,6 +332,8 @@ func NewEditAction(deps *Deps) view.View {
 				Notes:                 record.GetNotes(),
 				Categories:            loadCategoryOptions(ctx, deps.ListExpenditureCategories, record.GetExpenditureCategoryId()),
 				Suppliers:             loadSupplierOptions(ctx, deps.ListSuppliers, record.GetSupplierId()),
+				PaymentTerms:          paymentTerms,
+				SelectedPaymentTermID: selectedPaymentTermID,
 				Labels:                formLabels(deps.Labels),
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
@@ -321,6 +359,7 @@ func NewEditAction(deps *Deps) view.View {
 				Status:                r.FormValue("status"),
 				ReferenceNumber:       strPtr(r.FormValue("reference_number")),
 				Notes:                 strPtr(r.FormValue("notes")),
+				PaymentTermId:         strPtr(r.FormValue("payment_term_id")),
 			},
 		})
 		if err != nil {

@@ -15,12 +15,15 @@ import (
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
-	expenditureaction "github.com/erniealice/centymo-golang/views/expenditure/action"
+	expenditureaction  "github.com/erniealice/centymo-golang/views/expenditure/action"
 	expenditurecategory "github.com/erniealice/centymo-golang/views/expenditure/category"
 	expendituredetail "github.com/erniealice/centymo-golang/views/expenditure/detail"
 	expenditurelist "github.com/erniealice/centymo-golang/views/expenditure/list"
 	expendituresettings "github.com/erniealice/centymo-golang/views/expenditure/settings"
 )
+
+// PaymentTermOption is re-exported from action for use by callers wiring ModuleDeps.
+type PaymentTermOption = expenditureaction.PaymentTermOption
 
 // ModuleDeps holds all dependencies for the expenditure module.
 type ModuleDeps struct {
@@ -31,6 +34,9 @@ type ModuleDeps struct {
 	TemplateLabels   templateview.Labels
 	CommonLabels     pyeza.CommonLabels
 	TableLabels      types.TableLabels
+
+	// Payment terms dropdown (optional — gracefully degrades when nil)
+	ListPaymentTerms func(ctx context.Context) ([]*PaymentTermOption, error)
 
 	// Expense CRUD operations (for action handlers)
 	CreateExpenditure func(ctx context.Context, req *expenditurepb.CreateExpenditureRequest) (*expenditurepb.CreateExpenditureResponse, error)
@@ -107,6 +113,7 @@ func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &expenditureaction.Deps{
 		Routes:                    deps.Routes,
 		Labels:                    deps.Labels,
+		ListPaymentTerms:          deps.ListPaymentTerms,
 		CreateExpenditure:         deps.CreateExpenditure,
 		ReadExpenditure:           deps.ReadExpenditure,
 		UpdateExpenditure:         deps.UpdateExpenditure,

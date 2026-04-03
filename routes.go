@@ -12,6 +12,11 @@ const (
 	PlanAttachmentUploadURL = "/action/plans/detail/{id}/attachments/upload"
 	PlanAttachmentDeleteURL = "/action/plans/detail/{id}/attachments/delete"
 
+	// PricePlan CRUD routes (within plan context)
+	PricePlanAddURL    = "/action/plans/{id}/pricelists/add"
+	PricePlanEditURL   = "/action/plans/{id}/pricelists/edit/{ppid}"
+	PricePlanDeleteURL = "/action/plans/{id}/pricelists/delete"
+
 	SubscriptionListURL             = "/app/subscriptions/list/{status}"
 	SubscriptionDetailURL           = "/app/subscriptions/{id}"
 	SubscriptionAddURL              = "/action/subscriptions/add"

@@ -328,6 +328,28 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				Labels:       revenueLabels,
 				CommonLabels: ctx.Common,
 				TableLabels:  centymoTableLabels,
+				// Payment terms dropdown (client/both scope)
+				ListPaymentTerms: func(fctx context.Context) ([]*revenuemod.PaymentTermOption, error) {
+					rows, err := db.ListSimple(fctx, "payment_term")
+					if err != nil {
+						return nil, err
+					}
+					opts := make([]*revenuemod.PaymentTermOption, 0, len(rows))
+					for _, row := range rows {
+						id, _ := row["id"].(string)
+						name, _ := row["name"].(string)
+						entityScope, _ := row["entity_scope"].(string)
+						if id == "" {
+							continue
+						}
+						if entityScope != "client" && entityScope != "both" {
+							continue
+						}
+						netDays, _ := row["net_days"].(int32)
+						opts = append(opts, &revenuemod.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
+					}
+					return opts, nil
+				},
 				// Document generation + template CRUD
 				GenerateDoc:            generateDoc,
 				ListDocumentTemplates:  listDocTemplates,
@@ -575,6 +597,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if useCases.Subscription.PricePlan != nil {
 					planDetailDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
 				}
+				if useCases.Entity != nil && useCases.Entity.Location != nil {
+					planDetailDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+				}
 				ctx.Routes.GET(planRoutes.DetailURL, plandetail.NewView(planDetailDeps))
 				ctx.Routes.GET(planRoutes.TabActionURL, plandetail.NewTabAction(planDetailDeps))
 				// Plan attachments
@@ -582,6 +607,25 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ctx.Routes.GET(planRoutes.AttachmentUploadURL, plandetail.NewAttachmentUploadAction(planDetailDeps))
 					ctx.Routes.POST(planRoutes.AttachmentUploadURL, plandetail.NewAttachmentUploadAction(planDetailDeps))
 					ctx.Routes.POST(planRoutes.AttachmentDeleteURL, plandetail.NewAttachmentDeleteAction(planDetailDeps))
+				}
+				// PricePlan CRUD within plan detail
+				if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.CreatePricePlan != nil {
+					ppActionDeps := &planaction.PricePlanDeps{
+						Routes:          planRoutes,
+						Labels:          planLabels,
+						CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
+						ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
+						UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,
+						DeletePricePlan: useCases.Subscription.PricePlan.DeletePricePlan.Execute,
+					}
+					if useCases.Entity != nil && useCases.Entity.Location != nil {
+						ppActionDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+					}
+					ctx.Routes.GET(planRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppActionDeps))
+					ctx.Routes.POST(planRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppActionDeps))
+					ctx.Routes.GET(planRoutes.PricePlanEditURL, planaction.NewPricePlanEditAction(ppActionDeps))
+					ctx.Routes.POST(planRoutes.PricePlanEditURL, planaction.NewPricePlanEditAction(ppActionDeps))
+					ctx.Routes.POST(planRoutes.PricePlanDeleteURL, planaction.NewPricePlanDeleteAction(ppActionDeps))
 				}
 			}
 		}
@@ -728,6 +772,28 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				TemplateLabels: templateview.DefaultLabels(),
 				CommonLabels:   ctx.Common,
 				TableLabels:    centymoTableLabels,
+				// Payment terms dropdown (supplier/both scope)
+				ListPaymentTerms: func(fctx context.Context) ([]*expendituremod.PaymentTermOption, error) {
+					rows, err := db.ListSimple(fctx, "payment_term")
+					if err != nil {
+						return nil, err
+					}
+					opts := make([]*expendituremod.PaymentTermOption, 0, len(rows))
+					for _, row := range rows {
+						id, _ := row["id"].(string)
+						name, _ := row["name"].(string)
+						entityScope, _ := row["entity_scope"].(string)
+						if id == "" {
+							continue
+						}
+						if entityScope != "supplier" && entityScope != "both" {
+							continue
+						}
+						netDays, _ := row["net_days"].(int32)
+						opts = append(opts, &expendituremod.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
+					}
+					return opts, nil
+				},
 				// Document template CRUD
 				ListDocumentTemplates:  listDocTemplates,
 				CreateDocumentTemplate: createDocTemplate,

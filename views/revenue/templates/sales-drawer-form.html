@@ -1,7 +1,9 @@
 {{/*
 Sales drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .Locations, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
+Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .Locations,
+      .PaymentTerms, .SelectedPaymentTermID, .DueDateString,
+      .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "sales-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
@@ -78,6 +80,51 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                 "Placeholder" .Labels.Form.CustomerNamePlaceholder
             )}}
         </div>
+
+        {{/* --- Payment Terms --- */}}
+        {{if .PaymentTerms}}
+        {{template "form-section" (dict "Title" .Labels.PaymentTerms)}}
+
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.PaymentTerms}}</label>
+                <select name="payment_term_id" id="revenue-payment-term" class="form-control">
+                    <option value="">{{.Labels.SelectPaymentTerm}}</option>
+                    {{range .PaymentTerms}}
+                    <option value="{{.Id}}" data-net-days="{{.NetDays}}" {{if eq .Id $.SelectedPaymentTermID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.DueDate}}</label>
+                <div id="revenue-due-date-preview" class="form-hint">
+                    {{if .DueDateString}}{{.DueDateString}}{{end}}
+                </div>
+            </div>
+        </div>
+        <script>
+        (function() {
+            var termSel = document.getElementById('revenue-payment-term');
+            var dateSel = document.querySelector('[name="revenue_date_string"]');
+            var preview = document.getElementById('revenue-due-date-preview');
+            function update() {
+                var opt = termSel.options[termSel.selectedIndex];
+                var netDays = opt ? parseInt(opt.getAttribute('data-net-days') || '0', 10) : 0;
+                var dateVal = dateSel ? dateSel.value : '';
+                if (!dateVal || !opt || !opt.value) { preview.textContent = ''; return; }
+                var base = new Date(dateVal + 'T00:00:00');
+                if (isNaN(base.getTime())) { preview.textContent = ''; return; }
+                base.setDate(base.getDate() + netDays);
+                preview.textContent = base.toISOString().slice(0, 10);
+            }
+            if (termSel) termSel.addEventListener('change', update);
+            if (dateSel) dateSel.addEventListener('change', update);
+            update();
+        })();
+        </script>
+        {{end}}
 
         {{/* --- Notes --- */}}
         {{template "form-section" (dict "Title" .Labels.Notes)}}

@@ -3,7 +3,9 @@ Expense drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
 Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
       .Date, .TotalAmount, .Currency,
-      .Status, .ReferenceNumber, .Notes, .Categories, .ID, .FormAction, .IsEdit,
+      .Status, .ReferenceNumber, .Notes, .Categories,
+      .PaymentTerms, .SelectedPaymentTermID,
+      .ID, .FormAction, .IsEdit,
       .CommonLabels, .Labels
 */}}
 {{define "expense-drawer-form"}}
@@ -106,6 +108,47 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Options" .Suppliers
             )}}
         </div>
+        {{end}}
+
+        {{/* --- Payment Terms --- */}}
+        {{if .PaymentTerms}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.PaymentTerms}}</label>
+                <select name="payment_term_id" id="expense-payment-term" class="form-control">
+                    <option value="">{{.Labels.SelectPaymentTerm}}</option>
+                    {{range .PaymentTerms}}
+                    <option value="{{.Id}}" data-net-days="{{.NetDays}}" {{if eq .Id $.SelectedPaymentTermID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.DueDate}}</label>
+                <div id="expense-due-date-preview" class="form-hint"></div>
+            </div>
+        </div>
+        <script>
+        (function() {
+            var termSel = document.getElementById('expense-payment-term');
+            var dateSel = document.querySelector('[name="expenditure_date_string"]');
+            var preview = document.getElementById('expense-due-date-preview');
+            function update() {
+                var opt = termSel.options[termSel.selectedIndex];
+                var netDays = opt ? parseInt(opt.getAttribute('data-net-days') || '0', 10) : 0;
+                var dateVal = dateSel ? dateSel.value : '';
+                if (!dateVal || !opt || !opt.value) { preview.textContent = ''; return; }
+                var base = new Date(dateVal + 'T00:00:00');
+                if (isNaN(base.getTime())) { preview.textContent = ''; return; }
+                base.setDate(base.getDate() + netDays);
+                preview.textContent = base.toISOString().slice(0, 10);
+            }
+            if (termSel) termSel.addEventListener('change', update);
+            if (dateSel) dateSel.addEventListener('change', update);
+            update();
+        })();
+        </script>
         {{end}}
 
         {{/* --- Notes --- */}}

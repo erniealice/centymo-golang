@@ -19,6 +19,13 @@ import (
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 )
 
+// PaymentTermOption is a minimal struct for rendering payment term options in the form.
+type PaymentTermOption struct {
+	Id       string
+	Name     string
+	NetDays  int32
+}
+
 // FormInner holds nested form labels accessed via .Labels.Form.* in templates.
 type FormInner struct {
 	CurrencyPlaceholder    string
@@ -39,24 +46,30 @@ type FormLabels struct {
 	Notes                string
 	NotesPlaceholder     string
 	Location             string
+	PaymentTerms         string
+	SelectPaymentTerm    string
+	DueDate              string
 	Form                 FormInner
 }
 
 // FormData is the template data for the sales drawer form.
 type FormData struct {
-	FormAction      string
-	IsEdit          bool
-	ID              string
-	Name            string
-	ReferenceNumber string
-	Date            string
-	Currency        string
-	Status          string
-	Notes           string
-	LocationID      string
-	Locations       []map[string]string
-	Labels          FormLabels
-	CommonLabels    any
+	FormAction            string
+	IsEdit                bool
+	ID                    string
+	Name                  string
+	ReferenceNumber       string
+	Date                  string
+	Currency              string
+	Status                string
+	Notes                 string
+	LocationID            string
+	Locations             []map[string]string
+	PaymentTerms          []*PaymentTermOption
+	SelectedPaymentTermID string
+	DueDateString         string
+	Labels                FormLabels
+	CommonLabels          any
 }
 
 // Deps holds dependencies for sales action handlers.
@@ -64,6 +77,9 @@ type Deps struct {
 	Routes centymo.RevenueRoutes
 	Labels centymo.RevenueLabels
 	DB     centymo.DataSource // KEEP — used for location, revenue_payment, and collection_method operations
+
+	// Payment terms dropdown (optional — gracefully degrades when nil)
+	ListPaymentTerms func(ctx context.Context) ([]*PaymentTermOption, error)
 
 	// Typed revenue operations
 	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
@@ -93,6 +109,9 @@ func formLabels(t func(string) string) FormLabels {
 		Notes:                t("sales.form.notes"),
 		NotesPlaceholder:     t("sales.form.notesPlaceholder"),
 		Location:             t("sales.form.location"),
+		PaymentTerms:         t("revenue.form.paymentTerms"),
+		SelectPaymentTerm:    t("revenue.form.selectPaymentTerm"),
+		DueDate:              t("revenue.form.dueDate"),
 		Form: FormInner{
 			CurrencyPlaceholder:     t("revenue.form.currencyPlaceholder"),
 			StatusOngoing:           t("revenue.form.statusOngoing"),
@@ -101,6 +120,19 @@ func formLabels(t func(string) string) FormLabels {
 			CustomerNamePlaceholder: t("revenue.form.customerNamePlaceholder"),
 		},
 	}
+}
+
+// loadPaymentTerms fetches payment term options. Returns nil on error (graceful degradation).
+func loadPaymentTerms(ctx context.Context, deps *Deps) []*PaymentTermOption {
+	if deps.ListPaymentTerms == nil {
+		return nil
+	}
+	terms, err := deps.ListPaymentTerms(ctx)
+	if err != nil {
+		log.Printf("Failed to load payment terms: %v", err)
+		return nil
+	}
+	return terms
 }
 
 // loadLocationOptions loads active locations for the dropdown.
@@ -139,11 +171,13 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
+			paymentTerms := loadPaymentTerms(ctx, deps)
 			return view.OK("sales-drawer-form", &FormData{
 				FormAction:   deps.Routes.AddURL,
 				Currency:     "PHP",
 				Status:       "ongoing",
 				Locations:    loadLocationOptions(ctx, deps.DB),
+				PaymentTerms: paymentTerms,
 				Labels:       formLabels(viewCtx.T),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
@@ -165,6 +199,7 @@ func NewAddAction(deps *Deps) view.View {
 				Status:            r.FormValue("status"),
 				Notes:             strPtr(r.FormValue("notes")),
 				LocationId:        r.FormValue("location_id"),
+				PaymentTermId:     strPtr(r.FormValue("payment_term_id")),
 			},
 		})
 		if err != nil {
@@ -215,20 +250,25 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := readData[0]
 
+			paymentTerms := loadPaymentTerms(ctx, deps)
+			selectedPaymentTermID := record.GetPaymentTermId()
 			return view.OK("sales-drawer-form", &FormData{
-				FormAction:      route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:          true,
-				ID:              id,
-				Name:            record.GetName(),
-				ReferenceNumber: record.GetReferenceNumber(),
-				Date:            record.GetRevenueDateString(),
-				Currency:        record.GetCurrency(),
-				Status:          record.GetStatus(),
-				Notes:           record.GetNotes(),
-				LocationID:      record.GetLocationId(),
-				Locations:       loadLocationOptions(ctx, deps.DB),
-				Labels:          formLabels(viewCtx.T),
-				CommonLabels:    nil, // injected by ViewAdapter
+				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
+				IsEdit:                true,
+				ID:                    id,
+				Name:                  record.GetName(),
+				ReferenceNumber:       record.GetReferenceNumber(),
+				Date:                  record.GetRevenueDateString(),
+				Currency:              record.GetCurrency(),
+				Status:                record.GetStatus(),
+				Notes:                 record.GetNotes(),
+				LocationID:            record.GetLocationId(),
+				Locations:             loadLocationOptions(ctx, deps.DB),
+				PaymentTerms:          paymentTerms,
+				SelectedPaymentTermID: selectedPaymentTermID,
+				DueDateString:         record.GetDueDateString(),
+				Labels:                formLabels(viewCtx.T),
+				CommonLabels:          nil, // injected by ViewAdapter
 			})
 		}
 
@@ -249,6 +289,7 @@ func NewEditAction(deps *Deps) view.View {
 				Status:            r.FormValue("status"),
 				Notes:             strPtr(r.FormValue("notes")),
 				LocationId:        r.FormValue("location_id"),
+				PaymentTermId:     strPtr(r.FormValue("payment_term_id")),
 			},
 		})
 		if err != nil {

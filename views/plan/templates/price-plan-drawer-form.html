@@ -1,0 +1,111 @@
+{{/*
+Price Plan drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit price plan actions within a plan detail.
+Data: .Name, .Description, .Amount, .Currency, .DurationValue, .DurationUnit,
+      .Active, .PlanID, .ID, .FormAction, .IsEdit, .Locations, .SelectedLocationID,
+      .CommonLabels, .Labels
+*/}}
+{{define "price-plan-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="plan_id" value="{{.PlanID}}">
+
+    <div class="sheet-body">
+        {{/* --- Name --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.Name
+                "Value" .Name
+                "Required" true
+                "Placeholder" .Labels.NamePlaceholder
+            )}}
+        </div>
+
+        {{/* --- Description --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "description"
+                "Label" .Labels.Description
+                "Value" .Description
+                "Placeholder" .Labels.DescPlaceholder
+            )}}
+        </div>
+
+        {{/* --- Amount + Currency --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "amount"
+                "Label" .Labels.Amount
+                "Value" .Amount
+                "Required" true
+                "Placeholder" .Labels.AmountPlaceholder
+                "Step" "0.01"
+                "Min" "0"
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "currency"
+                "Label" .Labels.Currency
+                "Value" .Currency
+                "Required" true
+                "Placeholder" .Labels.CurrencyPlaceholder
+            )}}
+        </div>
+
+        {{/* --- Duration --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "duration_value"
+                "Label" .Labels.DurationValue
+                "Value" .DurationValue
+                "Required" true
+                "Placeholder" "1"
+                "Min" "0"
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "duration_unit"
+                "Label" .Labels.DurationUnit
+                "Value" .DurationUnit
+                "Options" (list
+                    (dict "Value" "days" "Label" "Days")
+                    (dict "Value" "weeks" "Label" "Weeks")
+                    (dict "Value" "months" "Label" "Months")
+                    (dict "Value" "years" "Label" "Years")
+                )
+            )}}
+        </div>
+
+        {{/* --- Location --- */}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.Location}}</label>
+                <select name="location_id" class="form-control">
+                    <option value="">{{.Labels.SelectLocation}}</option>
+                    {{range .Locations}}
+                    <option value="{{.Id}}" {{if eq .Id $.SelectedLocationID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+
+        {{/* --- Active toggle --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "checkbox"
+                "Name" "active"
+                "Label" .Labels.Active
+                "Value" .Active
+                "CheckboxValue" "true"
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}
