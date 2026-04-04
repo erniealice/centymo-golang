@@ -7,6 +7,17 @@
 {{define "purchase-order-detail-content"}}
 <div class="page-content detail-layout" data-page-title="{{.Title}}">
     <h2 class="visually-hidden">Purchase Order Detail</h2>
+    {{if .ConfirmReceiptURL}}
+    <div class="detail-header-actions">
+        <button type="button" class="btn btn-primary"
+            aria-haspopup="dialog"
+            data-testid="confirm-receipt-btn"
+            hx-get="{{.ConfirmReceiptURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="Sheet.open('Confirm Receipt')">
+            Confirm Receipt
+        </button>
+    </div>
+    {{end}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "po-tabs")}}
     </div>
@@ -65,11 +76,29 @@
 
 {{/* Items tab */}}
 {{define "purchase-order-tab-items"}}
-<div class="tab-scroll">
-    {{if .LineItemsTable}}
-    {{template "table-card" .LineItemsTable}}
-    {{else}}
-    <p class="text-muted">No line items found.</p>
+<div class="transaction-items-toolbar">
+    <div class="transaction-summary-item">
+        <span class="transaction-summary-label">Total</span>
+        <span class="transaction-summary-value">{{.TotalAmount}}</span>
+    </div>
+    {{if .LineItemAddURL}}
+    <div class="transaction-items-actions">
+        <button type="button" class="btn btn-primary toolbar-primary-action"
+            aria-haspopup="dialog"
+            hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="Sheet.open('Add Line Item')">
+            Add Line Item
+        </button>
+    </div>
     {{end}}
 </div>
+{{if .LineItemTable}}
+<div class="tab-scroll">
+    {{template "table-card" .LineItemTable}}
+</div>
+{{else}}
+<div class="tab-scroll">
+    <p class="text-muted">No line items found.</p>
+</div>
+{{end}}
 {{end}}

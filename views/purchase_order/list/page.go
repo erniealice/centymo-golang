@@ -131,7 +131,7 @@ func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l centymo.Expenditu
 		poNumber := po.GetPoNumber()
 		currency := po.GetCurrency()
 		recordStatus := po.GetStatus()
-		totalAmount := centymo.FormatCentavoAmount(float64(po.GetTotalAmount()), currency)
+		totalAmount := centymo.FormatCentavoAmount(po.GetTotalAmount(), currency)
 		orderDate := po.GetOrderDateString()
 		expectedDelivery := po.GetExpectedDeliveryDateString()
 

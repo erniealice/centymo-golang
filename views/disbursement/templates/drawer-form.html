@@ -1,7 +1,7 @@
 {{/*
 Disbursement drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy, .Notes, .Status, .DisbursementType, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
+Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy, .Notes, .Status, .DisbursementType, .ExpenditureID, .Expenditures, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "disbursement-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
@@ -57,6 +57,21 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Placeholder" .Labels.CurrencyPlaceholder
             )}}
         </div>
+
+        {{/* --- Link to Bill (Expenditure) --- */}}
+        {{if .Expenditures}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.LinkToBill}}</label>
+                <select name="expenditure_id" class="form-control">
+                    <option value="">— No Bill —</option>
+                    {{range .Expenditures}}
+                    <option value="{{.Id}}" {{if eq .Id $.ExpenditureID}}selected{{end}}>{{.Name}}{{if .Amount}} — {{.Amount}}{{end}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+        {{end}}
 
         {{/* --- Method & Status --- */}}
         <div class="form-row">

@@ -17,6 +17,8 @@ import (
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
+	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
+	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
@@ -34,32 +36,38 @@ type PaymentTermOption struct {
 
 // FormInner holds nested form labels accessed via .Labels.Form.* in templates.
 type FormInner struct {
-	CurrencyPlaceholder       string
-	StatusOngoing             string
-	StatusComplete            string
-	StatusCancelled           string
-	CustomerNamePlaceholder   string
-	CustomerSearchPlaceholder string
-	CustomerNoResults         string
+	CurrencyPlaceholder        string
+	StatusOngoing              string
+	StatusComplete             string
+	StatusCancelled            string
+	CustomerNamePlaceholder    string
+	CustomerSearchPlaceholder  string
+	CustomerNoResults          string
+	LocationPlaceholder        string
+	LocationSearchPlaceholder  string
+	LocationNoResults          string
 }
 
 // FormLabels holds i18n labels for the drawer form template.
 type FormLabels struct {
-	Customer             string
-	Date                 string
-	Currency             string
-	Reference            string
-	ReferencePlaceholder string
-	Status               string
-	Notes                string
-	NotesPlaceholder     string
-	Location             string
-	PaymentTerms         string
-	SelectPaymentTerm    string
-	DueDate              string
-	Subscription         string
-	SubscriptionNoResults string
-	Form                 FormInner
+	Customer                  string
+	Date                      string
+	Currency                  string
+	Reference                 string
+	ReferencePlaceholder      string
+	Status                    string
+	Notes                     string
+	NotesPlaceholder          string
+	Location                  string
+	PaymentTerms              string
+	SelectPaymentTerm         string
+	DueDate                   string
+	Subscription              string
+	SubscriptionNoResults     string
+	RevenueType               string
+	RevenueTypeOneTime        string
+	RevenueTypeFromEngagement string
+	Form                      FormInner
 }
 
 // FormData is the template data for the sales drawer form.
@@ -80,10 +88,12 @@ type FormData struct {
 	Status                string
 	Notes                 string
 	LocationID            string
-	Locations             []map[string]string
+	LocationLabel         string
+	SearchLocationURL     string
 	PaymentTerms          []*PaymentTermOption
 	SelectedPaymentTermID string
 	DueDateString         string
+	RevenueType           string
 	Labels                FormLabels
 	CommonLabels          any
 }
@@ -109,6 +119,7 @@ type Deps struct {
 	ReadPricePlan        func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 	ReadProduct          func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
+	ListProducts         func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 
 	// Typed revenue operations
 	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
@@ -126,24 +137,31 @@ type Deps struct {
 	ListInventoryItems           func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
 	UpdateInventorySerial        func(ctx context.Context, req *inventoryserialpb.UpdateInventorySerialRequest) (*inventoryserialpb.UpdateInventorySerialResponse, error)
 	CreateInventorySerialHistory func(ctx context.Context, req *serialhistorypb.CreateInventorySerialHistoryRequest) (*serialhistorypb.CreateInventorySerialHistoryResponse, error)
+
+	// Price lookup for line item (optional — gracefully degrades when nil)
+	FindApplicablePriceList func(ctx context.Context, req *pricelistpb.FindApplicablePriceListRequest) (*pricelistpb.FindApplicablePriceListResponse, error)
+	ListPriceProducts       func(ctx context.Context, req *priceproductpb.ListPriceProductsRequest) (*priceproductpb.ListPriceProductsResponse, error)
 }
 
 func formLabels(t func(string) string) FormLabels {
 	return FormLabels{
-		Customer:              t("sales.form.customer"),
-		Date:                  t("sales.form.date"),
-		Currency:              t("sales.form.currency"),
-		Reference:             t("sales.form.reference"),
-		ReferencePlaceholder:  t("sales.form.referencePlaceholder"),
-		Status:                t("sales.form.status"),
-		Notes:                 t("sales.form.notes"),
-		NotesPlaceholder:      t("sales.form.notesPlaceholder"),
-		Location:              t("sales.form.location"),
-		PaymentTerms:          t("revenue.form.paymentTerms"),
-		SelectPaymentTerm:     t("revenue.form.selectPaymentTerm"),
-		DueDate:               t("revenue.form.dueDate"),
-		Subscription:          t("revenue.form.subscription"),
-		SubscriptionNoResults: t("revenue.form.subscriptionNoResults"),
+		Customer:                  t("sales.form.customer"),
+		Date:                      t("sales.form.date"),
+		Currency:                  t("sales.form.currency"),
+		Reference:                 t("sales.form.reference"),
+		ReferencePlaceholder:      t("sales.form.referencePlaceholder"),
+		Status:                    t("sales.form.status"),
+		Notes:                     t("sales.form.notes"),
+		NotesPlaceholder:          t("sales.form.notesPlaceholder"),
+		Location:                  t("sales.form.location"),
+		PaymentTerms:              t("revenue.form.paymentTerms"),
+		SelectPaymentTerm:         t("revenue.form.selectPaymentTerm"),
+		DueDate:                   t("revenue.form.dueDate"),
+		Subscription:              t("revenue.form.subscription"),
+		SubscriptionNoResults:     t("revenue.form.subscriptionNoResults"),
+		RevenueType:               t("revenue.form.revenueType"),
+		RevenueTypeOneTime:        t("revenue.form.revenueTypeOneTime"),
+		RevenueTypeFromEngagement: t("revenue.form.revenueTypeFromEngagement"),
 		Form: FormInner{
 			CurrencyPlaceholder:       t("revenue.form.currencyPlaceholder"),
 			StatusOngoing:             t("revenue.form.statusOngoing"),
@@ -152,6 +170,9 @@ func formLabels(t func(string) string) FormLabels {
 			CustomerNamePlaceholder:   t("revenue.form.customerNamePlaceholder"),
 			CustomerSearchPlaceholder: t("revenue.form.customerSearchPlaceholder"),
 			CustomerNoResults:         t("revenue.form.customerNoResults"),
+			LocationPlaceholder:       t("revenue.form.locationPlaceholder"),
+			LocationSearchPlaceholder: t("revenue.form.locationSearchPlaceholder"),
+			LocationNoResults:         t("revenue.form.locationNoResults"),
 		},
 	}
 }
@@ -167,33 +188,6 @@ func loadPaymentTerms(ctx context.Context, deps *Deps) []*PaymentTermOption {
 		return nil
 	}
 	return terms
-}
-
-// loadLocationOptions loads active locations for the dropdown.
-func loadLocationOptions(ctx context.Context, db centymo.DataSource) []map[string]string {
-	records, err := db.ListSimple(ctx, "location")
-	if err != nil {
-		log.Printf("Failed to list locations: %v", err)
-		return nil
-	}
-
-	options := []map[string]string{}
-	for _, r := range records {
-		active, _ := r["active"].(bool)
-		if !active {
-			continue
-		}
-		id, _ := r["id"].(string)
-		name, _ := r["name"].(string)
-		if id == "" {
-			continue
-		}
-		options = append(options, map[string]string{
-			"Value": id,
-			"Label": name,
-		})
-	}
-	return options
 }
 
 // resolveClientLabel finds the display name for a client by ID.
@@ -243,6 +237,28 @@ func resolveSubscriptionLabel(ctx context.Context, subscriptionID string, listSu
 	return subscriptionID
 }
 
+// resolveLocationLabel finds the display name for a location by ID using the DB.
+func resolveLocationLabel(ctx context.Context, locationID string, db centymo.DataSource) string {
+	if locationID == "" || db == nil {
+		return ""
+	}
+	records, err := db.ListSimple(ctx, "location")
+	if err != nil {
+		return locationID
+	}
+	for _, r := range records {
+		id, _ := r["id"].(string)
+		if id == locationID {
+			name, _ := r["name"].(string)
+			if name != "" {
+				return name
+			}
+			return locationID
+		}
+	}
+	return locationID
+}
+
 // NewAddAction creates the sales add action (GET = form, POST = create).
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -257,7 +273,7 @@ func NewAddAction(deps *Deps) view.View {
 				FormAction:            deps.Routes.AddURL,
 				Currency:              "PHP",
 				Status:                "ongoing",
-				Locations:             loadLocationOptions(ctx, deps.DB),
+				SearchLocationURL:     deps.Routes.SearchLocationURL,
 				PaymentTerms:          paymentTerms,
 				SearchClientURL:       deps.Routes.SearchClientURL,
 				SearchSubscriptionURL: deps.Routes.SearchSubscriptionURL,
@@ -388,16 +404,18 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 
 			price := ppp.GetPrice()
 			productID := ppp.GetProductId()
+			pppID := ppp.GetId()
 
 			_, err := deps.CreateRevenueLineItem(ctx, &revenuelineitempb.CreateRevenueLineItemRequest{
 				Data: &revenuelineitempb.RevenueLineItem{
-					RevenueId:    revenueID,
-					ProductId:    &productID,
-					Description:  desc,
-					Quantity:     1,
-					UnitPrice:    price,
-					TotalPrice:   price,
-					LineItemType: "item",
+					RevenueId:          revenueID,
+					ProductId:          &productID,
+					Description:        desc,
+					Quantity:           1,
+					UnitPrice:          price,
+					TotalPrice:         price,
+					LineItemType:       "item",
+					ProductPricePlanId: &pppID,
 				},
 			})
 			if err != nil {
@@ -466,6 +484,12 @@ func NewEditAction(deps *Deps) view.View {
 			clientLabel := resolveClientLabel(ctx, existingClientID, deps.ListClients)
 			existingSubscriptionID := record.GetSubscriptionId()
 			subscriptionLabel := resolveSubscriptionLabel(ctx, existingSubscriptionID, deps.ListSubscriptions)
+			existingLocationID := record.GetLocationId()
+			locationLabel := resolveLocationLabel(ctx, existingLocationID, deps.DB)
+			revenueType := "one_time"
+			if existingSubscriptionID != "" {
+				revenueType = "from_engagement"
+			}
 			return view.OK("revenue-drawer-form", &FormData{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
@@ -482,11 +506,13 @@ func NewEditAction(deps *Deps) view.View {
 				Currency:              record.GetCurrency(),
 				Status:                record.GetStatus(),
 				Notes:                 record.GetNotes(),
-				LocationID:            record.GetLocationId(),
-				Locations:             loadLocationOptions(ctx, deps.DB),
+				LocationID:            existingLocationID,
+				LocationLabel:         locationLabel,
+				SearchLocationURL:     deps.Routes.SearchLocationURL,
 				PaymentTerms:          paymentTerms,
 				SelectedPaymentTermID: selectedPaymentTermID,
 				DueDateString:         record.GetDueDate(),
+				RevenueType:           revenueType,
 				Labels:                formLabels(viewCtx.T),
 				CommonLabels:          nil, // injected by ViewAdapter
 			})

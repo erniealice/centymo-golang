@@ -53,18 +53,41 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
             )}}
         </div>
 
+        {{/* --- Revenue Type --- */}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.RevenueType}}</label>
+                <div class="radio-group" data-testid="revenue-type-radio">
+                    <label class="radio-option">
+                        <input type="radio" name="revenue_type" value="one_time" {{if ne .RevenueType "from_engagement"}}checked{{end}}>
+                        <span>{{.Labels.RevenueTypeOneTime}}</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="revenue_type" value="from_engagement" {{if eq .RevenueType "from_engagement"}}checked{{end}}>
+                        <span>{{.Labels.RevenueTypeFromEngagement}}</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
         {{/* --- Location --- */}}
+        <div id="location-row">
         {{template "form-section" (dict "Title" .Labels.Location)}}
 
         <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "select"
+            {{template "auto-complete" (dict
+                "ID" "location-search"
                 "Name" "location_id"
                 "Label" .Labels.Location
+                "Placeholder" .Labels.Form.LocationPlaceholder
+                "SearchPlaceholder" .Labels.Form.LocationSearchPlaceholder
+                "SearchURL" .SearchLocationURL
                 "Value" .LocationID
+                "SelectedLabel" .LocationLabel
                 "Required" true
-                "Options" .Locations
+                "NoResults" .Labels.Form.LocationNoResults
             )}}
+        </div>
         </div>
 
         {{/* --- Customer --- */}}
@@ -103,76 +126,119 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
             var subContainer = document.getElementById('subscription-search');
             if (!subContainer) return;
 
+            // Store the base URL once so repeated client changes don't corrupt it.
             var baseURL = '{{.SearchSubscriptionURL}}';
+            subContainer.dataset.baseSearchUrl = baseURL;
+
+            // Update the subscription autocomplete's search URL and open the dropdown
+            // so results load immediately (minChars=0, so doSearch('') fires on open).
+            function loadSubscriptionResults(clientID) {
+                subContainer.dataset.searchUrl = baseURL + (baseURL.includes('?') ? '&' : '?') + 'client_id=' + encodeURIComponent(clientID);
+                // Open the dropdown so the autocomplete component fetches results.
+                var subTrigger = subContainer.querySelector('.auto-complete-trigger');
+                if (subTrigger && !subContainer.classList.contains('open')) {
+                    subTrigger.click();
+                } else {
+                    // Already open — re-trigger a search with the updated URL.
+                    var subSearch = subContainer.querySelector('.auto-complete-search');
+                    if (subSearch) {
+                        subSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }
+            }
 
             function clearSubscription() {
+                // Reset the search URL so empty-state is shown until a new client is picked.
+                subContainer.dataset.searchUrl = '';
+                // Reset the hidden value and display.
                 var hiddenInput = subContainer.querySelector('.auto-complete-input');
                 var display = subContainer.querySelector('.auto-complete-display');
                 var clearBtn = subContainer.querySelector('.auto-complete-clear');
-                if (hiddenInput) hiddenInput.value = '';
+                if (hiddenInput) {
+                    hiddenInput.value = '';
+                    hiddenInput.setAttribute('value', '');
+                }
                 if (display) {
-                    var placeholder = display.querySelector('.auto-complete-placeholder');
-                    if (placeholder) {
-                        display.innerHTML = placeholder.outerHTML;
-                    } else {
-                        display.innerHTML = '<span class="auto-complete-placeholder"></span>';
-                    }
+                    display.innerHTML = '<span class="auto-complete-placeholder"></span>';
                 }
                 if (clearBtn) clearBtn.style.display = 'none';
                 subContainer.classList.remove('open');
             }
 
-            function updateSearchURL(clientID) {
-                if (clientID) {
-                    subContainer.dataset.searchUrl = baseURL + (baseURL.includes('?') ? '&' : '?') + 'client_id=' + encodeURIComponent(clientID);
-                } else {
-                    subContainer.dataset.searchUrl = '';
-                }
+            var clientContainer = document.getElementById('client-search');
+            if (!clientContainer) return;
+
+            var clientHidden = clientContainer.querySelector('.auto-complete-input');
+
+            // On drawer open: if a client is already selected, load engagements immediately.
+            if (clientHidden && clientHidden.value) {
+                loadSubscriptionResults(clientHidden.value);
+            } else {
+                // No client pre-selected — disable URL so autocomplete shows nothing.
+                subContainer.dataset.searchUrl = '';
             }
 
-            var clientContainer = document.getElementById('client-search');
-            if (clientContainer) {
-                var clientHidden = clientContainer.querySelector('.auto-complete-input');
-                // Set initial URL from any pre-selected client
-                if (clientHidden && clientHidden.value) {
-                    updateSearchURL(clientHidden.value);
-                }
-
-                // Watch for client selection changes via MutationObserver on the hidden input
-                if (clientHidden) {
-                    var observer = new MutationObserver(function() {
-                        updateSearchURL(clientHidden.value);
-                        clearSubscription();
+            // Watch for client selection or clearing via MutationObserver.
+            // This works because auto-complete.html calls hiddenInput.setAttribute('value', value)
+            // whenever a selection is made (the Opus fix at line 129 of auto-complete.html).
+            if (clientHidden) {
+                var observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(m) {
+                        if (m.attributeName === 'value') {
+                            var val = clientHidden.getAttribute('value');
+                            if (val) {
+                                clearSubscription();
+                                loadSubscriptionResults(val);
+                            } else {
+                                clearSubscription();
+                            }
+                        }
                     });
-                    observer.observe(clientHidden, { attributes: true, attributeFilter: ['value'] });
-                }
-
-                // Also listen on the results container for click-driven selection
-                var clientResults = clientContainer.querySelector('.auto-complete-results');
-                if (clientResults) {
-                    clientResults.addEventListener('click', function() {
-                        setTimeout(function() {
-                            var val = clientHidden ? clientHidden.value : '';
-                            updateSearchURL(val);
-                            clearSubscription();
-                        }, 50);
-                    });
-                }
-
-                // Listen on clear button
-                var clientClear = clientContainer.querySelector('.auto-complete-clear');
-                if (clientClear) {
-                    clientClear.addEventListener('click', function() {
-                        setTimeout(function() {
-                            updateSearchURL('');
-                            clearSubscription();
-                        }, 50);
-                    });
-                }
+                });
+                observer.observe(clientHidden, { attributes: true, attributeFilter: ['value'] });
             }
         })();
         </script>
         {{end}}
+
+        <script>
+        (function() {
+            var radios = document.querySelectorAll('[name="revenue_type"]');
+            var locationRow = document.getElementById('location-row');
+            var subscriptionRow = document.getElementById('subscription-row');
+
+            function applyRevenueType(value) {
+                if (value === 'from_engagement') {
+                    if (locationRow) locationRow.style.display = 'none';
+                    if (subscriptionRow) subscriptionRow.style.display = '';
+                } else {
+                    if (locationRow) locationRow.style.display = '';
+                    if (subscriptionRow) subscriptionRow.style.display = 'none';
+                    // Clear subscription selection when switching away
+                    if (subscriptionRow) {
+                        var subContainer = subscriptionRow.querySelector('.auto-complete-input');
+                        var subDisplay = subscriptionRow.querySelector('.auto-complete-display');
+                        var subClear = subscriptionRow.querySelector('.auto-complete-clear');
+                        if (subContainer) { subContainer.value = ''; subContainer.setAttribute('value', ''); }
+                        if (subDisplay) { subDisplay.innerHTML = '<span class="auto-complete-placeholder"></span>'; }
+                        if (subClear) subClear.style.display = 'none';
+                    }
+                }
+            }
+
+            radios.forEach(function(r) {
+                r.addEventListener('change', function() {
+                    applyRevenueType(this.value);
+                });
+            });
+
+            // Apply initial state
+            var checked = document.querySelector('[name="revenue_type"]:checked');
+            if (checked) {
+                applyRevenueType(checked.value);
+            }
+        })();
+        </script>
 
         {{/* --- Payment Terms --- */}}
         {{if .PaymentTerms}}
@@ -180,9 +246,9 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
 
         <div class="form-row single">
             <div class="form-group">
-                <label class="form-label">{{.Labels.PaymentTerms}}</label>
-                <select name="payment_term_id" id="revenue-payment-term" class="form-control">
-                    <option value="">{{.Labels.SelectPaymentTerm}}</option>
+                <label class="form-label" for="revenue-payment-term">{{.Labels.PaymentTerms}}</label>
+                <select name="payment_term_id" id="revenue-payment-term" class="form-select">
+                    <option value="" disabled {{if not .SelectedPaymentTermID}}selected{{end}}>{{.Labels.SelectPaymentTerm}}</option>
                     {{range .PaymentTerms}}
                     <option value="{{.Id}}" data-net-days="{{.NetDays}}" {{if eq .Id $.SelectedPaymentTermID}}selected{{end}}>{{.Name}}</option>
                     {{end}}
@@ -210,7 +276,10 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                 var base = new Date(dateVal + 'T00:00:00');
                 if (isNaN(base.getTime())) { preview.textContent = ''; return; }
                 base.setDate(base.getDate() + netDays);
-                preview.textContent = base.toISOString().slice(0, 10);
+                var yyyy = base.getFullYear();
+                var mm = String(base.getMonth() + 1).padStart(2, '0');
+                var dd = String(base.getDate()).padStart(2, '0');
+                preview.textContent = yyyy + '-' + mm + '-' + dd;
             }
             if (termSel) termSel.addEventListener('change', update);
             if (dateSel) dateSel.addEventListener('change', update);

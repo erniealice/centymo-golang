@@ -1,0 +1,73 @@
+{{/*
+Purchase Order confirm-receipt drawer form — loaded into #sheetContent via HTMX.
+Displays unreceived (non-expense) lines and allows entering received quantities.
+Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .LocationID, .CommonLabels
+*/}}
+{{define "po-receipt-form"}}
+<form
+    hx-post="{{.FormAction}}"
+    hx-target="#sheetContent"
+    hx-swap="innerHTML"
+    class="drawer-form">
+    <input type="hidden" name="purchase_order_id" value="{{.PurchaseOrderID}}">
+
+    <div class="form-group">
+        <label for="receipt_date" class="form-label">Receipt Date <span class="required-marker">*</span></label>
+        <input type="date" id="receipt_date" name="receipt_date" class="form-control"
+            value="{{.Today}}" required>
+    </div>
+
+    <div class="form-group">
+        <label for="location_id" class="form-label">Receiving Location</label>
+        <input type="text" id="location_id" name="location_id" class="form-control"
+            value="{{.LocationID}}" placeholder="Location ID (for goods lines)">
+    </div>
+
+    {{if .Lines}}
+    <div class="form-group">
+        <table class="table table--compact" data-testid="receipt-lines-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th class="text-right">Ordered</th>
+                    <th class="text-right">Received</th>
+                    <th class="text-right">Remaining</th>
+                    <th class="text-right">Qty to Receive</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Lines}}
+                <tr data-testid="receipt-line-{{.ID}}">
+                    <td>{{.Description}}</td>
+                    <td>{{.LineType}}</td>
+                    <td class="text-right mono">{{.QuantityOrdered}}</td>
+                    <td class="text-right mono">{{.QuantityReceived}}</td>
+                    <td class="text-right mono">{{.Remaining}}</td>
+                    <td class="text-right">
+                        <input
+                            type="number"
+                            id="line_{{.ID}}_qty"
+                            name="line_{{.ID}}_qty"
+                            class="form-control form-control--inline"
+                            data-testid="receipt-qty-{{.ID}}"
+                            min="0"
+                            max="{{.Remaining}}"
+                            step="1"
+                            placeholder="0">
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <p class="text-muted">All line items have been fully received.</p>
+    {{end}}
+
+    <div class="drawer-form-actions">
+        <button type="submit" class="btn btn-primary" data-testid="receipt-submit-btn">Confirm Receipt</button>
+        <button type="button" class="btn btn--ghost" onclick="Sheet.close()">Cancel</button>
+    </div>
+</form>
+{{end}}

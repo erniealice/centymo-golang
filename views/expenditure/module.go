@@ -20,6 +20,7 @@ import (
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
+	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 )
 
 // PaymentTermOption is re-exported from action for use by callers wiring ModuleDeps.
@@ -49,6 +50,9 @@ type ModuleDeps struct {
 
 	// Supplier listing (optional — gracefully degrades when nil)
 	ListSuppliers func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)
+
+	// Purchase order listing (optional — used to populate PO dropdown on expense form)
+	ListPurchaseOrders func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error)
 
 	// Category CRUD (optional — only built when provided)
 	CreateExpenditureCategory func(ctx context.Context, req *expenditurecategorypb.CreateExpenditureCategoryRequest) (*expenditurecategorypb.CreateExpenditureCategoryResponse, error)
@@ -120,6 +124,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		DeleteExpenditure:         deps.DeleteExpenditure,
 		ListExpenditureCategories: deps.ListExpenditureCategories,
 		ListSuppliers:             deps.ListSuppliers,
+		ListPurchaseOrders:        deps.ListPurchaseOrders,
 	}
 
 	m := &Module{

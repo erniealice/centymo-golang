@@ -13,8 +13,16 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
+	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 )
+
+// ExpenditureOption is a minimal struct for rendering expenditure (bill) options in the form.
+type ExpenditureOption struct {
+	Id     string
+	Name   string
+	Amount string
+}
 
 // FormData is the template data for the disbursement drawer form.
 type FormData struct {
@@ -32,6 +40,7 @@ type FormData struct {
 	Notes            string
 	DisbursementType string
 	ExpenditureID    string
+	Expenditures     []*ExpenditureOption
 	Status           string
 	Labels           centymo.DisbursementFormLabels
 	CommonLabels     any
@@ -45,6 +54,39 @@ type Deps struct {
 	ReadDisbursement   func(ctx context.Context, req *disbursementpb.ReadDisbursementRequest) (*disbursementpb.ReadDisbursementResponse, error)
 	UpdateDisbursement func(ctx context.Context, req *disbursementpb.UpdateDisbursementRequest) (*disbursementpb.UpdateDisbursementResponse, error)
 	DeleteDisbursement func(ctx context.Context, req *disbursementpb.DeleteDisbursementRequest) (*disbursementpb.DeleteDisbursementResponse, error)
+
+	// Expenditure (bill) listing (optional — gracefully degrades to empty list if nil)
+	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
+}
+
+// loadExpenditureOptions loads unpaid expenditures (bills) for the dropdown.
+// Only expenditures with status "pending" or "approved" are included.
+func loadExpenditureOptions(
+	ctx context.Context,
+	listFn func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error),
+) []*ExpenditureOption {
+	if listFn == nil {
+		return nil
+	}
+	resp, err := listFn(ctx, &expenditurepb.ListExpendituresRequest{})
+	if err != nil {
+		log.Printf("Failed to list expenditures: %v", err)
+		return nil
+	}
+	var opts []*ExpenditureOption
+	for _, e := range resp.GetData() {
+		status := e.GetStatus()
+		if status != "pending" && status != "approved" {
+			continue
+		}
+		amount := fmt.Sprintf("%.2f", float64(e.GetTotalAmount())/100.0)
+		opts = append(opts, &ExpenditureOption{
+			Id:     e.GetId(),
+			Name:   e.GetName(),
+			Amount: e.GetCurrency() + " " + amount,
+		})
+	}
+	return opts
 }
 
 // parseAmount converts a form string amount (decimal) to int64 centavos.
@@ -69,6 +111,7 @@ func NewAddAction(deps *Deps) view.View {
 				FormAction:   deps.Routes.AddURL,
 				Currency:     "PHP",
 				Status:       "draft",
+				Expenditures: loadExpenditureOptions(ctx, deps.ListExpenditures),
 				Labels:       deps.Labels.Form,
 				CommonLabels: nil, // injected by ViewAdapter
 			})
@@ -156,6 +199,7 @@ func NewEditAction(deps *Deps) view.View {
 				Notes:            "",
 				DisbursementType: record.GetDisbursementType(),
 				ExpenditureID:    record.GetExpenditureId(),
+				Expenditures:     loadExpenditureOptions(ctx, deps.ListExpenditures),
 				Status:           record.GetStatus(),
 				Labels:           deps.Labels.Form,
 				CommonLabels:     nil, // injected by ViewAdapter

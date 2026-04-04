@@ -1,12 +1,14 @@
 {{/*
 Sales line item drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .InventoryItemID, .InventoryItems, .ID, .RevenueID, .FormAction, .IsEdit, .CommonLabels, .Labels
+Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .InventoryItemID, .InventoryItems, .ID, .RevenueID, .FormAction, .IsEdit, .CommonLabels, .Labels, .SearchProductURL, .ProductID, .ProductLabel, .PriceListID, .PriceProductID
 */}}
 {{define "sales-line-item-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="revenue_id" value="{{.RevenueID}}">
+    <input type="hidden" name="price_list_id" id="price_list_id_input" value="{{.PriceListID}}">
+    <input type="hidden" name="price_product_id" id="price_product_id_input" value="{{.PriceProductID}}">
 
     <div class="sheet-body">
         {{if .InventoryItems}}
@@ -20,6 +22,22 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                     {{end}}
                 </select>
             </div>
+        </div>
+        {{end}}
+
+        {{if .SearchProductURL}}
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "product-search"
+                "Name" "product_id"
+                "Label" .Labels.Product
+                "SearchURL" .SearchProductURL
+                "Value" .ProductID
+                "SelectedLabel" .ProductLabel
+                "Required" false
+                "NoResults" .Labels.ProductNoResults
+                "Placeholder" .Labels.ProductPlaceholder
+            )}}
         </div>
         {{end}}
 
@@ -82,4 +100,67 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
+
+{{if .SearchProductURL}}
+<script>
+(function() {
+    var productAC = document.getElementById('product-search');
+    if (!productAC) return;
+
+    var hiddenInput = productAC.querySelector('.auto-complete-input');
+    if (!hiddenInput) return;
+
+    function lookupPrice(productId) {
+        var priceListInput = document.getElementById('price_list_id_input');
+        var priceProductInput = document.getElementById('price_product_id_input');
+
+        // Clear previous price IDs on new product selection
+        if (priceListInput) priceListInput.value = '';
+        if (priceProductInput) priceProductInput.value = '';
+
+        if (!productId) return;
+
+        var url = '/action/sales/price-lookup?product_id=' + encodeURIComponent(productId);
+        fetch(url)
+            .then(function(res) { return res.ok ? res.json() : null; })
+            .then(function(data) {
+                if (!data) return;
+                var unitPriceField = document.querySelector('input[name="unit_price"]');
+                if (unitPriceField && data.unit_price != null) {
+                    unitPriceField.value = (data.unit_price / 100).toFixed(2);
+                }
+                if (priceListInput && data.price_list_id) {
+                    priceListInput.value = data.price_list_id;
+                }
+                if (priceProductInput && data.price_product_id) {
+                    priceProductInput.value = data.price_product_id;
+                }
+            })
+            .catch(function() {});
+    }
+
+    // Auto-fill description and trigger price lookup when a product is selected via MutationObserver
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+            if (m.type === 'attributes' && m.attributeName === 'value') {
+                var selectedLabel = '';
+                var display = productAC.querySelector('.auto-complete-value');
+                if (display) selectedLabel = display.textContent.trim();
+
+                if (selectedLabel) {
+                    var descField = document.querySelector('input[name="description"], textarea[name="description"]');
+                    if (descField && !descField.value) {
+                        descField.value = selectedLabel;
+                    }
+                }
+
+                lookupPrice(hiddenInput.value);
+            }
+        });
+    });
+
+    observer.observe(hiddenInput, { attributes: true, attributeFilter: ['value'] });
+})();
+</script>
+{{end}}
 {{end}}

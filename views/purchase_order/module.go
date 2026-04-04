@@ -11,6 +11,8 @@ import (
 
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	inventorymovementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/inventory_movement"
 
 	purchaseorderaction "github.com/erniealice/centymo-golang/views/purchase_order/action"
 	purchaseorderdetail "github.com/erniealice/centymo-golang/views/purchase_order/detail"
@@ -32,20 +34,34 @@ type ModuleDeps struct {
 	UpdatePurchaseOrder func(ctx context.Context, req *purchaseorderpb.UpdatePurchaseOrderRequest) (*purchaseorderpb.UpdatePurchaseOrderResponse, error)
 	DeletePurchaseOrder func(ctx context.Context, req *purchaseorderpb.DeletePurchaseOrderRequest) (*purchaseorderpb.DeletePurchaseOrderResponse, error)
 
-	// Purchase order line item operations (optional — used by detail view)
-	ListPurchaseOrderLineItems func(ctx context.Context, req *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error)
+	// Purchase order line item operations (optional — used by detail and line item action views)
+	ListPurchaseOrderLineItems  func(ctx context.Context, req *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error)
+	CreatePurchaseOrderLineItem func(ctx context.Context, req *purchaseorderlineitempb.CreatePurchaseOrderLineItemRequest) (*purchaseorderlineitempb.CreatePurchaseOrderLineItemResponse, error)
+	ReadPurchaseOrderLineItem   func(ctx context.Context, req *purchaseorderlineitempb.ReadPurchaseOrderLineItemRequest) (*purchaseorderlineitempb.ReadPurchaseOrderLineItemResponse, error)
+	UpdatePurchaseOrderLineItem func(ctx context.Context, req *purchaseorderlineitempb.UpdatePurchaseOrderLineItemRequest) (*purchaseorderlineitempb.UpdatePurchaseOrderLineItemResponse, error)
+	DeletePurchaseOrderLineItem func(ctx context.Context, req *purchaseorderlineitempb.DeletePurchaseOrderLineItemRequest) (*purchaseorderlineitempb.DeletePurchaseOrderLineItemResponse, error)
+
+	// Inventory operations (optional — used by confirm-receipt for goods lines)
+	CreateInventoryMovement func(ctx context.Context, req *inventorymovementpb.CreateInventoryMovementRequest) (*inventorymovementpb.CreateInventoryMovementResponse, error)
+	ReadInventoryItem       func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
+	UpdateInventoryItem     func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
 }
 
 // Module holds all constructed purchase order views.
 type Module struct {
-	routes                 centymo.ExpenditureRoutes
-	PurchaseOrderList      view.View
-	PurchaseOrderAdd       view.View
-	PurchaseOrderEdit      view.View
-	PurchaseOrderDelete    view.View
-	PurchaseOrderSetStatus view.View
-	PurchaseOrderDetail    view.View
-	PurchaseOrderTabAction view.View
+	routes                       centymo.ExpenditureRoutes
+	PurchaseOrderList            view.View
+	PurchaseOrderAdd             view.View
+	PurchaseOrderEdit            view.View
+	PurchaseOrderDelete          view.View
+	PurchaseOrderSetStatus       view.View
+	PurchaseOrderDetail          view.View
+	PurchaseOrderTabAction       view.View
+	PurchaseOrderLineItemTable   view.View
+	PurchaseOrderLineItemAdd     view.View
+	PurchaseOrderLineItemEdit    view.View
+	PurchaseOrderLineItemRemove  view.View
+	PurchaseOrderConfirmReceipt  view.View
 }
 
 // NewModule creates the purchase order module views.
@@ -96,6 +112,50 @@ func NewModule(deps *ModuleDeps) *Module {
 		m.PurchaseOrderTabAction = purchaseorderdetail.NewTabAction(detailDeps)
 	}
 
+	// Line item table view (nil-guarded — only built when ListPurchaseOrderLineItems is provided)
+	if deps.ListPurchaseOrderLineItems != nil {
+		lineItemTableDeps := &purchaseorderdetail.LineItemDeps{
+			Routes:                     deps.Routes,
+			Labels:                     deps.Labels,
+			TableLabels:                deps.TableLabels,
+			ReadPurchaseOrder:          deps.ReadPurchaseOrder,
+			ListPurchaseOrderLineItems: deps.ListPurchaseOrderLineItems,
+		}
+		m.PurchaseOrderLineItemTable = purchaseorderdetail.NewLineItemTableView(lineItemTableDeps)
+	}
+
+	// Line item action views (nil-guarded — only built when CreatePurchaseOrderLineItem is provided)
+	if deps.CreatePurchaseOrderLineItem != nil {
+		lineItemActionDeps := &purchaseorderaction.LineItemDeps{
+			Routes:                      deps.Routes,
+			Labels:                      deps.Labels,
+			CreatePurchaseOrderLineItem: deps.CreatePurchaseOrderLineItem,
+			ReadPurchaseOrderLineItem:   deps.ReadPurchaseOrderLineItem,
+			UpdatePurchaseOrderLineItem: deps.UpdatePurchaseOrderLineItem,
+			DeletePurchaseOrderLineItem: deps.DeletePurchaseOrderLineItem,
+		}
+		m.PurchaseOrderLineItemAdd = purchaseorderaction.NewLineItemAddAction(lineItemActionDeps)
+		m.PurchaseOrderLineItemEdit = purchaseorderaction.NewLineItemEditAction(lineItemActionDeps)
+		m.PurchaseOrderLineItemRemove = purchaseorderaction.NewLineItemRemoveAction(lineItemActionDeps)
+	}
+
+	// Confirm-receipt action (nil-guarded — only built when ReadPurchaseOrder + ListPurchaseOrderLineItems + UpdatePurchaseOrderLineItem are provided)
+	if deps.ReadPurchaseOrder != nil && deps.ListPurchaseOrderLineItems != nil && deps.UpdatePurchaseOrderLineItem != nil {
+		receiptDeps := &purchaseorderaction.ReceiptActionDeps{
+			Routes:                      deps.Routes,
+			Labels:                      deps.Labels,
+			ReadPurchaseOrder:           deps.ReadPurchaseOrder,
+			UpdatePurchaseOrder:         deps.UpdatePurchaseOrder,
+			ListPurchaseOrderLineItems:  deps.ListPurchaseOrderLineItems,
+			ReadPurchaseOrderLineItem:   deps.ReadPurchaseOrderLineItem,
+			UpdatePurchaseOrderLineItem: deps.UpdatePurchaseOrderLineItem,
+			CreateInventoryMovement:     deps.CreateInventoryMovement,
+			ReadInventoryItem:           deps.ReadInventoryItem,
+			UpdateInventoryItem:         deps.UpdateInventoryItem,
+		}
+		m.PurchaseOrderConfirmReceipt = purchaseorderaction.NewConfirmReceiptAction(receiptDeps)
+	}
+
 	return m
 }
 
@@ -121,5 +181,25 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	if m.PurchaseOrderDetail != nil {
 		r.GET(m.routes.PurchaseOrderDetailURL, m.PurchaseOrderDetail)
 		r.GET(m.routes.PurchaseOrderTabActionURL, m.PurchaseOrderTabAction)
+	}
+
+	// Line item table route (nil-guarded)
+	if m.PurchaseOrderLineItemTable != nil {
+		r.GET(m.routes.PurchaseOrderLineItemTableURL, m.PurchaseOrderLineItemTable)
+	}
+
+	// Line item action routes (nil-guarded)
+	if m.PurchaseOrderLineItemAdd != nil {
+		r.GET(m.routes.PurchaseOrderLineItemAddURL, m.PurchaseOrderLineItemAdd)
+		r.POST(m.routes.PurchaseOrderLineItemAddURL, m.PurchaseOrderLineItemAdd)
+		r.GET(m.routes.PurchaseOrderLineItemEditURL, m.PurchaseOrderLineItemEdit)
+		r.POST(m.routes.PurchaseOrderLineItemEditURL, m.PurchaseOrderLineItemEdit)
+		r.POST(m.routes.PurchaseOrderLineItemRemoveURL, m.PurchaseOrderLineItemRemove)
+	}
+
+	// Confirm-receipt action routes (nil-guarded)
+	if m.PurchaseOrderConfirmReceipt != nil {
+		r.GET(m.routes.PurchaseOrderConfirmReceiptURL, m.PurchaseOrderConfirmReceipt)
+		r.POST(m.routes.PurchaseOrderConfirmReceiptURL, m.PurchaseOrderConfirmReceipt)
 	}
 }

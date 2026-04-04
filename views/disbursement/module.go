@@ -10,6 +10,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 
 	disbursementaction "github.com/erniealice/centymo-golang/views/disbursement/action"
@@ -30,6 +31,9 @@ type ModuleDeps struct {
 	UpdateDisbursement func(ctx context.Context, req *disbursementpb.UpdateDisbursementRequest) (*disbursementpb.UpdateDisbursementResponse, error)
 	DeleteDisbursement func(ctx context.Context, req *disbursementpb.DeleteDisbursementRequest) (*disbursementpb.DeleteDisbursementResponse, error)
 	ListDisbursements  func(ctx context.Context, req *disbursementpb.ListDisbursementsRequest) (*disbursementpb.ListDisbursementsResponse, error)
+
+	// Expenditure (bill) listing (optional — used to populate bill dropdown on disbursement form)
+	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
 
 	// Attachment operations
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
@@ -87,6 +91,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		ReadDisbursement:   deps.ReadDisbursement,
 		UpdateDisbursement: deps.UpdateDisbursement,
 		DeleteDisbursement: deps.DeleteDisbursement,
+		ListExpenditures:   deps.ListExpenditures,
 	}
 
 	return &Module{

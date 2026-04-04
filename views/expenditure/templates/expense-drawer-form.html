@@ -5,6 +5,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
       .Date, .TotalAmount, .Currency,
       .Status, .ReferenceNumber, .Notes, .Categories,
       .PaymentTerms, .SelectedPaymentTermID,
+      .PurchaseOrders, .PurchaseOrderID,
       .ID, .FormAction, .IsEdit,
       .CommonLabels, .Labels
 */}}
@@ -107,6 +108,21 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Value" .SupplierID
                 "Options" .Suppliers
             )}}
+        </div>
+        {{end}}
+
+        {{/* --- Link to Purchase Order --- */}}
+        {{if .PurchaseOrders}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.LinkToPurchaseOrder}}</label>
+                <select name="purchase_order_id" class="form-control">
+                    <option value="">— No PO —</option>
+                    {{range .PurchaseOrders}}
+                    <option value="{{.Id}}" {{if eq .Id $.PurchaseOrderID}}selected{{end}}>{{.PoNumber}}{{if .SupplierName}} — {{.SupplierName}}{{end}}</option>
+                    {{end}}
+                </select>
+            </div>
         </div>
         {{end}}
 

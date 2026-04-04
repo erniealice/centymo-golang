@@ -482,6 +482,15 @@ type RevenueRoutes struct {
 
 	// Subscription search for revenue form autocomplete
 	SearchSubscriptionURL string `json:"search_subscription_url"`
+
+	// Location search for revenue form autocomplete
+	SearchLocationURL string `json:"search_location_url"`
+
+	// Product/service search for revenue line item autocomplete
+	SearchProductURL string `json:"search_product_url"`
+
+	// Price lookup for revenue line item (product_id + location_id + date → price)
+	PriceLookupURL string `json:"price_lookup_url"`
 }
 
 // DefaultRevenueRoutes returns a RevenueRoutes populated from the package-level
@@ -524,6 +533,9 @@ func DefaultRevenueRoutes() RevenueRoutes {
 		SettingsTemplateDefaultURL: RevenueSettingsTemplateDefaultURL,
 		SearchClientURL:            RevenueSearchClientURL,
 		SearchSubscriptionURL:      SalesSearchSubscriptionURL,
+		SearchLocationURL:          RevenueSearchLocationURL,
+		SearchProductURL:           RevenueSearchProductURL,
+		PriceLookupURL:             RevenuePriceLookupURL,
 	}
 }
 
@@ -567,6 +579,9 @@ func (r RevenueRoutes) RouteMap() map[string]string {
 		"sales.settings.template_default": r.SettingsTemplateDefaultURL,
 		"sales.search_client":        r.SearchClientURL,
 		"sales.search.subscriptions": r.SearchSubscriptionURL,
+		"sales.search.locations":     r.SearchLocationURL,
+		"sales.search.products":      r.SearchProductURL,
+		"sales.price_lookup":         r.PriceLookupURL,
 	}
 }
 
@@ -618,6 +633,15 @@ type ExpenditureRoutes struct {
 	PurchaseOrderSetStatusURL string `json:"purchase_order_set_status_url"`
 	PurchaseOrderTableURL     string `json:"purchase_order_table_url"`
 	PurchaseOrderTabActionURL string `json:"purchase_order_tab_action_url"`
+
+	// Purchase Order line item routes (within PO detail)
+	PurchaseOrderLineItemTableURL  string `json:"purchase_order_line_item_table_url"`
+	PurchaseOrderLineItemAddURL    string `json:"purchase_order_line_item_add_url"`
+	PurchaseOrderLineItemEditURL   string `json:"purchase_order_line_item_edit_url"`
+	PurchaseOrderLineItemRemoveURL string `json:"purchase_order_line_item_remove_url"`
+
+	// Purchase Order receipt action
+	PurchaseOrderConfirmReceiptURL string `json:"purchase_order_confirm_receipt_url"`
 }
 
 // DefaultExpenditureRoutes returns an ExpenditureRoutes populated from the
@@ -664,6 +688,13 @@ func DefaultExpenditureRoutes() ExpenditureRoutes {
 		PurchaseOrderSetStatusURL: PurchaseOrderSetStatusURL,
 		PurchaseOrderTableURL:     PurchaseOrderTableURL,
 		PurchaseOrderTabActionURL: PurchaseOrderTabActionURL,
+
+		PurchaseOrderLineItemTableURL:  PurchaseOrderLineItemTableURL,
+		PurchaseOrderLineItemAddURL:    PurchaseOrderLineItemAddURL,
+		PurchaseOrderLineItemEditURL:   PurchaseOrderLineItemEditURL,
+		PurchaseOrderLineItemRemoveURL: PurchaseOrderLineItemRemoveURL,
+
+		PurchaseOrderConfirmReceiptURL: PurchaseOrderConfirmReceiptURL,
 	}
 }
 
@@ -697,14 +728,19 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 		"expenditure.expense_category.delete": r.ExpenseCategoryDeleteURL,
 		"expenditure.expense_category.table":  r.ExpenseCategoryTableURL,
 
-		"expenditure.purchase_order.list":       r.PurchaseOrderListURL,
-		"expenditure.purchase_order.detail":     r.PurchaseOrderDetailURL,
-		"expenditure.purchase_order.add":        r.PurchaseOrderAddURL,
-		"expenditure.purchase_order.edit":       r.PurchaseOrderEditURL,
-		"expenditure.purchase_order.delete":     r.PurchaseOrderDeleteURL,
-		"expenditure.purchase_order.set_status": r.PurchaseOrderSetStatusURL,
-		"expenditure.purchase_order.table":      r.PurchaseOrderTableURL,
-		"expenditure.purchase_order.tab_action": r.PurchaseOrderTabActionURL,
+		"expenditure.purchase_order.list":                  r.PurchaseOrderListURL,
+		"expenditure.purchase_order.detail":                r.PurchaseOrderDetailURL,
+		"expenditure.purchase_order.add":                   r.PurchaseOrderAddURL,
+		"expenditure.purchase_order.edit":                  r.PurchaseOrderEditURL,
+		"expenditure.purchase_order.delete":                r.PurchaseOrderDeleteURL,
+		"expenditure.purchase_order.set_status":            r.PurchaseOrderSetStatusURL,
+		"expenditure.purchase_order.table":                 r.PurchaseOrderTableURL,
+		"expenditure.purchase_order.tab_action":            r.PurchaseOrderTabActionURL,
+		"expenditure.purchase_order.line_item.table":       r.PurchaseOrderLineItemTableURL,
+		"expenditure.purchase_order.line_item.add":         r.PurchaseOrderLineItemAddURL,
+		"expenditure.purchase_order.line_item.edit":        r.PurchaseOrderLineItemEditURL,
+		"expenditure.purchase_order.line_item.remove":      r.PurchaseOrderLineItemRemoveURL,
+		"expenditure.purchase_order.confirm_receipt":       r.PurchaseOrderConfirmReceiptURL,
 	}
 }
 

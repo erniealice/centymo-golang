@@ -222,7 +222,7 @@ func NewView(deps *DetailViewDeps) view.View {
 			}
 		}
 
-		return view.OK("sale-detail", pageData)
+		return view.OK("sales-detail", pageData)
 	})
 }
 

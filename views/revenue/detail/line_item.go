@@ -22,21 +22,26 @@ import (
 
 // LineItemFormData is the template data for the line item drawer form.
 type LineItemFormData struct {
-	FormAction      string
-	IsEdit          bool
-	ID              string
-	RevenueID       string
-	Description     string
-	Quantity        string
-	UnitPrice       string
-	CostPrice       string
-	Discount        string
-	Notes           string
-	LineItemType    string
-	InventoryItemID string
-	InventoryItems  []SelectOption
-	CommonLabels    any
-	Labels          centymo.RevenueDetailLabels
+	FormAction       string
+	IsEdit           bool
+	ID               string
+	RevenueID        string
+	Description      string
+	Quantity         string
+	UnitPrice        string
+	CostPrice        string
+	Discount         string
+	Notes            string
+	LineItemType     string
+	InventoryItemID  string
+	InventoryItems   []SelectOption
+	SearchProductURL string
+	ProductID        string
+	ProductLabel     string
+	PriceListID      string
+	PriceProductID   string
+	CommonLabels     any
+	Labels           centymo.RevenueDetailLabels
 }
 
 // DiscountFormData is the template data for the discount drawer form.
@@ -57,10 +62,11 @@ type SelectOption struct {
 
 // LineItemDeps holds dependencies for line item action handlers.
 type LineItemDeps struct {
-	Routes       centymo.RevenueRoutes
-	Labels       centymo.RevenueLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes           centymo.RevenueRoutes
+	Labels           centymo.RevenueLabels
+	CommonLabels     pyeza.CommonLabels
+	TableLabels      types.TableLabels
+	SearchProductURL string
 
 	// Typed inventory operations
 	ListInventoryItems func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
@@ -115,13 +121,14 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
 			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
-				FormAction:     route.ResolveURL(deps.Routes.LineItemAddURL, "id", revenueID),
-				RevenueID:      revenueID,
-				Quantity:       "1",
-				LineItemType:   "item",
-				InventoryItems: inventoryItems,
-				Labels:         deps.Labels.Detail,
-				CommonLabels:   nil, // injected by ViewAdapter
+				FormAction:       route.ResolveURL(deps.Routes.LineItemAddURL, "id", revenueID),
+				RevenueID:        revenueID,
+				Quantity:         "1",
+				LineItemType:     "item",
+				InventoryItems:   inventoryItems,
+				SearchProductURL: deps.SearchProductURL,
+				Labels:           deps.Labels.Detail,
+				CommonLabels:     nil, // injected by ViewAdapter
 			})
 		}
 
@@ -144,18 +151,28 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		unitPriceCentavos := int64(math.Round(unitPriceF * 100))
 		costPriceCentavos := int64(math.Round(costPriceF * 100))
 
+		lineItemData := &revenuelineitempb.RevenueLineItem{
+			RevenueId:       revenueID,
+			Description:     r.FormValue("description"),
+			Quantity:        quantityF,
+			UnitPrice:       unitPriceCentavos,
+			CostPrice:       &costPriceCentavos,
+			TotalPrice:      total,
+			LineItemType:    "item",
+			InventoryItemId: r.FormValue("inventory_item_id"),
+			Notes:           strPtr(r.FormValue("notes")),
+		}
+		if pid := r.FormValue("product_id"); pid != "" {
+			lineItemData.ProductId = strPtr(pid)
+		}
+		if v := r.FormValue("price_list_id"); v != "" {
+			lineItemData.PriceListId = strPtr(v)
+		}
+		if v := r.FormValue("price_product_id"); v != "" {
+			lineItemData.PriceProductId = strPtr(v)
+		}
 		_, err := deps.CreateRevenueLineItem(ctx, &revenuelineitempb.CreateRevenueLineItemRequest{
-			Data: &revenuelineitempb.RevenueLineItem{
-				RevenueId:       revenueID,
-				Description:     r.FormValue("description"),
-				Quantity:        quantityF,
-				UnitPrice:       unitPriceCentavos,
-				CostPrice:       &costPriceCentavos,
-				TotalPrice:      total,
-				LineItemType:    "item",
-				InventoryItemId: r.FormValue("inventory_item_id"),
-				Notes:           strPtr(r.FormValue("notes")),
-			},
+			Data: lineItemData,
 		})
 		if err != nil {
 			log.Printf("Failed to create line item: %v", err)
@@ -206,22 +223,37 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 
 			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
 
+			productID := record.GetProductId()
+			productLabel := ""
+			if productID != "" {
+				if p := record.GetProduct(); p != nil && p.GetName() != "" {
+					productLabel = p.GetName()
+				} else {
+					productLabel = record.GetDescription()
+				}
+			}
+
 			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
-				FormAction:      route.ResolveURL(deps.Routes.LineItemEditURL, "id", revenueID, "itemId", itemID),
-				IsEdit:          true,
-				ID:              itemID,
-				RevenueID:       revenueID,
-				Description:     record.GetDescription(),
-				Quantity:        fmt.Sprintf("%.0f", record.GetQuantity()),
-				UnitPrice:       fmt.Sprintf("%.2f", float64(record.GetUnitPrice())/100.0),
-				CostPrice:       fmt.Sprintf("%.2f", float64(record.GetCostPrice())/100.0),
-				Discount:        "0",
-				Notes:           record.GetNotes(),
-				LineItemType:    "item",
-				InventoryItemID: record.GetInventoryItemId(),
-				InventoryItems:  inventoryItems,
-				Labels:          deps.Labels.Detail,
-				CommonLabels:    nil,
+				FormAction:       route.ResolveURL(deps.Routes.LineItemEditURL, "id", revenueID, "itemId", itemID),
+				IsEdit:           true,
+				ID:               itemID,
+				RevenueID:        revenueID,
+				Description:      record.GetDescription(),
+				Quantity:         fmt.Sprintf("%.0f", record.GetQuantity()),
+				UnitPrice:        fmt.Sprintf("%.2f", float64(record.GetUnitPrice())/100.0),
+				CostPrice:        fmt.Sprintf("%.2f", float64(record.GetCostPrice())/100.0),
+				Discount:         "0",
+				Notes:            record.GetNotes(),
+				LineItemType:     "item",
+				InventoryItemID:  record.GetInventoryItemId(),
+				InventoryItems:   inventoryItems,
+				SearchProductURL: deps.SearchProductURL,
+				ProductID:        productID,
+				ProductLabel:     productLabel,
+				PriceListID:      record.GetPriceListId(),
+				PriceProductID:   record.GetPriceProductId(),
+				Labels:           deps.Labels.Detail,
+				CommonLabels:     nil,
 			})
 		}
 
@@ -243,17 +275,27 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 		unitPriceCentavos := int64(math.Round(unitPriceF * 100))
 		costPriceCentavos := int64(math.Round(costPriceF * 100))
 
+		updateData := &revenuelineitempb.RevenueLineItem{
+			Id:              itemID,
+			Description:     r.FormValue("description"),
+			Quantity:        quantityF,
+			UnitPrice:       unitPriceCentavos,
+			CostPrice:       &costPriceCentavos,
+			TotalPrice:      total,
+			InventoryItemId: r.FormValue("inventory_item_id"),
+			Notes:           strPtr(r.FormValue("notes")),
+		}
+		if pid := r.FormValue("product_id"); pid != "" {
+			updateData.ProductId = strPtr(pid)
+		}
+		if v := r.FormValue("price_list_id"); v != "" {
+			updateData.PriceListId = strPtr(v)
+		}
+		if v := r.FormValue("price_product_id"); v != "" {
+			updateData.PriceProductId = strPtr(v)
+		}
 		_, err := deps.UpdateRevenueLineItem(ctx, &revenuelineitempb.UpdateRevenueLineItemRequest{
-			Data: &revenuelineitempb.RevenueLineItem{
-				Id:              itemID,
-				Description:     r.FormValue("description"),
-				Quantity:        quantityF,
-				UnitPrice:       unitPriceCentavos,
-				CostPrice:       &costPriceCentavos,
-				TotalPrice:      total,
-				InventoryItemId: r.FormValue("inventory_item_id"),
-				Notes:           strPtr(r.FormValue("notes")),
-			},
+			Data: updateData,
 		})
 		if err != nil {
 			log.Printf("Failed to update line item %s: %v", itemID, err)

@@ -16,6 +16,16 @@ import (
 	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
 )
 
+// LineItemDeps holds dependencies for the PO line item table view.
+type LineItemDeps struct {
+	Routes      centymo.ExpenditureRoutes
+	Labels      centymo.ExpenditureLabels
+	TableLabels types.TableLabels
+
+	ReadPurchaseOrder          func(ctx context.Context, req *purchaseorderpb.ReadPurchaseOrderRequest) (*purchaseorderpb.ReadPurchaseOrderResponse, error)
+	ListPurchaseOrderLineItems func(ctx context.Context, req *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error)
+}
+
 // DetailViewDeps holds view dependencies for the purchase order detail page.
 type DetailViewDeps struct {
 	Routes       centymo.ExpenditureRoutes
@@ -30,14 +40,16 @@ type DetailViewDeps struct {
 // PageData holds the data for the purchase order detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	PurchaseOrder   map[string]any
-	Labels          centymo.ExpenditureLabels
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
-	LineItemTable   *types.TableConfig
-	TotalAmount     string
-	SetStatusURL    string
+	ContentTemplate    string
+	PurchaseOrder      map[string]any
+	Labels             centymo.ExpenditureLabels
+	ActiveTab          string
+	TabItems           []pyeza.TabItem
+	LineItemTable      *types.TableConfig
+	LineItemAddURL     string
+	TotalAmount        string
+	SetStatusURL       string
+	ConfirmReceiptURL  string
 }
 
 // purchaseOrderToMap converts a PurchaseOrder proto to a map for template use.
@@ -93,7 +105,7 @@ func buildTabItems(id string, routes centymo.ExpenditureRoutes) []pyeza.TabItem 
 }
 
 // buildLineItemTable builds the line items table config for a purchase order.
-func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, currency string) *types.TableConfig {
+func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, currency string, purchaseOrderID string, routes centymo.ExpenditureRoutes, isDraft bool, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "line_number", Label: "Line #", Sortable: false, Width: "80px"},
 		{Key: "description", Label: "Description", Sortable: false},
@@ -105,8 +117,11 @@ func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, c
 		{Key: "total", Label: "Total", Sortable: false, Width: "130px"},
 	}
 
+	canEdit := isDraft && perms != nil && perms.Can("purchase_order", "update")
+
 	rows := []types.TableRow{}
 	for _, item := range items {
+		id, _ := item["id"].(string)
 		lineNumber, _ := item["line_number"].(string)
 		description, _ := item["description"].(string)
 		lineType, _ := item["line_type"].(string)
@@ -116,8 +131,32 @@ func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, c
 		unitPrice, _ := item["unit_price"].(string)
 		total, _ := item["total"].(string)
 
+		var actions []types.TableAction
+		if isDraft {
+			actions = []types.TableAction{
+				{
+					Type:            "edit",
+					Label:           "Edit",
+					Action:          "edit",
+					URL:             route.ResolveURL(routes.PurchaseOrderLineItemEditURL, "id", purchaseOrderID, "itemId", id),
+					DrawerTitle:     "Edit Line Item",
+					Disabled:        !canEdit,
+					DisabledTooltip: "No permission",
+				},
+				{
+					Type:            "delete",
+					Label:           "Remove",
+					Action:          "delete",
+					URL:             route.ResolveURL(routes.PurchaseOrderLineItemRemoveURL, "id", purchaseOrderID) + "?itemId=" + id,
+					ItemName:        description,
+					Disabled:        !canEdit,
+					DisabledTooltip: "No permission",
+				},
+			}
+		}
+
 		rows = append(rows, types.TableRow{
-			ID: item["id"].(string),
+			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: lineNumber},
 				{Type: "text", Value: description},
@@ -128,6 +167,7 @@ func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, c
 				{Type: "text", Value: currency + " " + unitPrice},
 				{Type: "text", Value: currency + " " + total},
 			},
+			Actions: actions,
 		})
 	}
 
@@ -208,6 +248,12 @@ func NewView(deps *DetailViewDeps) view.View {
 		}
 		tabItems := buildTabItems(id, deps.Routes)
 
+		poStatus, _ := po["status"].(string)
+		confirmReceiptURL := ""
+		if poStatus == "approved" || poStatus == "partially_received" {
+			confirmReceiptURL = route.ResolveURL(deps.Routes.PurchaseOrderConfirmReceiptURL, "id", id)
+		}
+
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
@@ -219,12 +265,13 @@ func NewView(deps *DetailViewDeps) view.View {
 				HeaderIcon:     "icon-shopping-cart",
 				CommonLabels:   deps.CommonLabels,
 			},
-			ContentTemplate: "purchase-order-detail-content",
-			PurchaseOrder:   po,
-			Labels:          deps.Labels,
-			ActiveTab:       activeTab,
-			TabItems:        tabItems,
-			SetStatusURL:    deps.Routes.PurchaseOrderSetStatusURL,
+			ContentTemplate:   "purchase-order-detail-content",
+			PurchaseOrder:     po,
+			Labels:            deps.Labels,
+			ActiveTab:         activeTab,
+			TabItems:          tabItems,
+			SetStatusURL:      deps.Routes.PurchaseOrderSetStatusURL,
+			ConfirmReceiptURL: confirmReceiptURL,
 		}
 
 		switch activeTab {
@@ -232,9 +279,15 @@ func NewView(deps *DetailViewDeps) view.View {
 			// po map has everything
 		case "items":
 			if deps.ListPurchaseOrderLineItems != nil {
+				perms := view.GetUserPermissions(ctx)
 				lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, id)
 				currency, _ := po["currency"].(string)
-				pageData.LineItemTable = buildLineItemTable(lineItems, deps.TableLabels, currency)
+				status, _ := po["status"].(string)
+				isDraft := status == "draft"
+				pageData.LineItemTable = buildLineItemTable(lineItems, deps.TableLabels, currency, id, deps.Routes, isDraft, perms)
+				if isDraft {
+					pageData.LineItemAddURL = route.ResolveURL(deps.Routes.PurchaseOrderLineItemAddURL, "id", id)
+				}
 				totalAmount, _ := po["total_amount"].(string)
 				pageData.TotalAmount = currency + " " + totalAmount
 			}
@@ -266,16 +319,23 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		}
 		po := purchaseOrderToMap(data[0])
 
+		tabPoStatus, _ := po["status"].(string)
+		tabConfirmReceiptURL := ""
+		if tabPoStatus == "approved" || tabPoStatus == "partially_received" {
+			tabConfirmReceiptURL = route.ResolveURL(deps.Routes.PurchaseOrderConfirmReceiptURL, "id", id)
+		}
+
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion: viewCtx.CacheVersion,
 				CommonLabels: deps.CommonLabels,
 			},
-			PurchaseOrder: po,
-			Labels:        deps.Labels,
-			ActiveTab:     tab,
-			TabItems:      buildTabItems(id, deps.Routes),
-			SetStatusURL:  deps.Routes.PurchaseOrderSetStatusURL,
+			PurchaseOrder:     po,
+			Labels:            deps.Labels,
+			ActiveTab:         tab,
+			TabItems:          buildTabItems(id, deps.Routes),
+			SetStatusURL:      deps.Routes.PurchaseOrderSetStatusURL,
+			ConfirmReceiptURL: tabConfirmReceiptURL,
 		}
 
 		switch tab {
@@ -283,9 +343,15 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			// po map has everything
 		case "items":
 			if deps.ListPurchaseOrderLineItems != nil {
+				perms := view.GetUserPermissions(ctx)
 				lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, id)
 				currency, _ := po["currency"].(string)
-				pageData.LineItemTable = buildLineItemTable(lineItems, deps.TableLabels, currency)
+				status, _ := po["status"].(string)
+				isDraft := status == "draft"
+				pageData.LineItemTable = buildLineItemTable(lineItems, deps.TableLabels, currency, id, deps.Routes, isDraft, perms)
+				if isDraft {
+					pageData.LineItemAddURL = route.ResolveURL(deps.Routes.PurchaseOrderLineItemAddURL, "id", id)
+				}
 				totalAmount, _ := po["total_amount"].(string)
 				pageData.TotalAmount = currency + " " + totalAmount
 			}
@@ -293,5 +359,31 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 
 		templateName := "purchase-order-tab-" + tab
 		return view.OK(templateName, pageData)
+	})
+}
+
+// NewLineItemTableView returns a view that renders only the PO line items table (HTMX refresh).
+func NewLineItemTableView(deps *LineItemDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		purchaseOrderID := viewCtx.Request.PathValue("id")
+
+		// Re-read PO to get status and currency
+		var currency string
+		var isDraft bool
+		if deps.ReadPurchaseOrder != nil {
+			resp, err := deps.ReadPurchaseOrder(ctx, &purchaseorderpb.ReadPurchaseOrderRequest{
+				Data: &purchaseorderpb.PurchaseOrder{Id: purchaseOrderID},
+			})
+			if err == nil && len(resp.GetData()) > 0 {
+				po := resp.GetData()[0]
+				currency = po.GetCurrency()
+				isDraft = po.GetStatus() == "draft"
+			}
+		}
+
+		lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, purchaseOrderID)
+		perms := view.GetUserPermissions(ctx)
+		table := buildLineItemTable(lineItems, deps.TableLabels, currency, purchaseOrderID, deps.Routes, isDraft, perms)
+		return view.OK("table-card", table)
 	})
 }

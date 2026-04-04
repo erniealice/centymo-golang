@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
@@ -171,6 +172,113 @@ func NewSearchSubscriptionsAction(deps *Deps) http.HandlerFunc {
 
 		if results == nil {
 			results = []searchOption{}
+		}
+		writeJSON(w, results)
+	}
+}
+
+// NewSearchLocationsAction returns an http.HandlerFunc that searches active
+// locations by name and returns JSON results for the auto-complete component.
+func NewSearchLocationsAction(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		if deps.DB == nil {
+			writeJSON(w, []searchOption{})
+			return
+		}
+
+		query := strings.TrimSpace(r.URL.Query().Get("q"))
+		queryLower := strings.ToLower(query)
+
+		records, err := deps.DB.ListSimple(ctx, "location")
+		if err != nil {
+			log.Printf("search locations: failed to list locations: %v", err)
+			writeJSON(w, []searchOption{})
+			return
+		}
+
+		var results []searchOption
+		for _, rec := range records {
+			active, _ := rec["active"].(bool)
+			if !active {
+				continue
+			}
+			id, _ := rec["id"].(string)
+			name, _ := rec["name"].(string)
+			if id == "" {
+				continue
+			}
+			if queryLower != "" && !strings.Contains(strings.ToLower(name), queryLower) {
+				continue
+			}
+			results = append(results, searchOption{
+				Value: id,
+				Label: name,
+			})
+			if len(results) >= searchResultLimit {
+				break
+			}
+		}
+
+		if results == nil {
+			results = []searchOption{}
+		}
+		writeJSON(w, results)
+	}
+}
+
+// productSearchOption extends searchOption with an optional price field for auto-fill.
+type productSearchOption struct {
+	Value string `json:"value"`
+	Label string `json:"label"`
+	Price string `json:"price,omitempty"`
+}
+
+// NewSearchProductsAction returns an http.HandlerFunc that searches active
+// products/services by name and returns JSON results for the auto-complete
+// component. Includes a price field in each result for unit_price auto-fill.
+func NewSearchProductsAction(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		if deps.ListProducts == nil {
+			writeJSON(w, []productSearchOption{})
+			return
+		}
+
+		query := strings.TrimSpace(r.URL.Query().Get("q"))
+		queryLower := strings.ToLower(query)
+
+		resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+		if err != nil {
+			log.Printf("search products: failed to list products: %v", err)
+			writeJSON(w, []productSearchOption{})
+			return
+		}
+
+		var results []productSearchOption
+		for _, p := range resp.GetData() {
+			if !p.GetActive() {
+				continue
+			}
+			name := p.GetName()
+			if queryLower != "" && !strings.Contains(strings.ToLower(name), queryLower) {
+				continue
+			}
+			id := p.GetId()
+			if id == "" {
+				continue
+			}
+			results = append(results, productSearchOption{
+				Value: id,
+				Label: name,
+			})
+			if len(results) >= searchResultLimit {
+				break
+			}
+		}
+
+		if results == nil {
+			results = []productSearchOption{}
 		}
 		writeJSON(w, results)
 	}

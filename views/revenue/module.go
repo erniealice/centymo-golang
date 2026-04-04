@@ -20,6 +20,8 @@ import (
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
+	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
+	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
@@ -57,6 +59,7 @@ type ModuleDeps struct {
 	ReadPricePlan         func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 	ReadProduct           func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
+	ListProducts          func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 
 	// Typed revenue operations (for detail + action views)
 	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
@@ -105,6 +108,10 @@ type ModuleDeps struct {
 
 	// Audit history
 	ListAuditHistory func(ctx context.Context, req *auditlog.ListAuditRequest) (*auditlog.ListAuditResponse, error)
+
+	// Price lookup for line item (optional — gracefully degrades when nil)
+	FindApplicablePriceList func(ctx context.Context, req *pricelistpb.FindApplicablePriceListRequest) (*pricelistpb.FindApplicablePriceListResponse, error)
+	ListPriceProducts       func(ctx context.Context, req *priceproductpb.ListPriceProductsRequest) (*priceproductpb.ListPriceProductsResponse, error)
 }
 
 // Module holds all constructed revenue views.
@@ -134,6 +141,9 @@ type Module struct {
 	SendEmailHandler      http.HandlerFunc
 	SearchClients         http.HandlerFunc
 	SearchSubscriptions   http.HandlerFunc
+	SearchLocations       http.HandlerFunc
+	SearchProducts        http.HandlerFunc
+	PriceLookup           http.HandlerFunc
 	SettingsTemplates     view.View
 	SettingsUpload     view.View
 	SettingsDelete     view.View
@@ -155,6 +165,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		ReadPricePlan:                deps.ReadPricePlan,
 		ListProductPricePlans:        deps.ListProductPricePlans,
 		ReadProduct:                  deps.ReadProduct,
+		ListProducts:                 deps.ListProducts,
 		CreateRevenue:                deps.CreateRevenue,
 		ReadRevenue:                  deps.ReadRevenue,
 		UpdateRevenue:                deps.UpdateRevenue,
@@ -166,6 +177,8 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListInventoryItems:           deps.ListInventoryItems,
 		UpdateInventorySerial:        deps.UpdateInventorySerial,
 		CreateInventorySerialHistory: deps.CreateInventorySerialHistory,
+		FindApplicablePriceList:      deps.FindApplicablePriceList,
+		ListPriceProducts:            deps.ListPriceProducts,
 	}
 	paymentDeps := &revenueaction.PaymentDeps{Routes: deps.Routes, DB: deps.DB, Labels: deps.Labels}
 	detailDeps := &revenuedetail.DetailViewDeps{
@@ -193,6 +206,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		CommonLabels:          deps.CommonLabels,
 		TableLabels:           deps.TableLabels,
 		ListInventoryItems:    deps.ListInventoryItems,
+		SearchProductURL:      deps.Routes.SearchProductURL,
 		ReadRevenue:           deps.ReadRevenue,
 		UpdateRevenue:         deps.UpdateRevenue,
 		CreateRevenueLineItem: deps.CreateRevenueLineItem,
@@ -281,6 +295,9 @@ func NewModule(deps *ModuleDeps) *Module {
 		SendEmailHandler:    sendEmailHandler,
 		SearchClients:       revenueaction.NewSearchClientsAction(actionDeps),
 		SearchSubscriptions: revenueaction.NewSearchSubscriptionsAction(actionDeps),
+		SearchLocations:     revenueaction.NewSearchLocationsAction(actionDeps),
+		SearchProducts:      revenueaction.NewSearchProductsAction(actionDeps),
+		PriceLookup:         revenueaction.NewPriceLookupAction(actionDeps),
 		SettingsTemplates:   settingsTemplates,
 		SettingsUpload:     settingsUpload,
 		SettingsDelete:     settingsDelete,

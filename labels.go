@@ -466,6 +466,9 @@ type RevenueDetailLabels struct {
 	ItemDescriptionPlaceholder string `json:"itemDescriptionPlaceholder"`
 	NotesPlaceholder           string `json:"notesPlaceholder"`
 	SerialNumber               string `json:"serialNumber"`
+	Product                    string `json:"product"`
+	ProductNoResults           string `json:"productNoResults"`
+	ProductPlaceholder         string `json:"productPlaceholder"`
 	ItemEmptyTitle             string `json:"itemEmptyTitle"`
 	ItemEmptyMessage           string `json:"itemEmptyMessage"`
 
@@ -782,15 +785,26 @@ type ProductOptionColumnLabels struct {
 }
 
 type ProductOptionFormLabels struct {
-	Name            string `json:"name"`
-	NamePlaceholder string `json:"namePlaceholder"`
-	Code            string `json:"code"`
-	CodePlaceholder string `json:"codePlaceholder"`
-	DataType        string `json:"dataType"`
-	SortOrder       string `json:"sortOrder"`
-	MinValue        string `json:"minValue"`
-	MaxValue        string `json:"maxValue"`
-	Active          string `json:"active"`
+	Name                    string `json:"name"`
+	NamePlaceholder         string `json:"namePlaceholder"`
+	Code                    string `json:"code"`
+	CodePlaceholder         string `json:"codePlaceholder"`
+	DataType                string `json:"dataType"`
+	SortOrder               string `json:"sortOrder"`
+	MinValue                string `json:"minValue"`
+	MaxValue                string `json:"maxValue"`
+	Active                  string `json:"active"`
+	InitialValues           string `json:"initialValues"`
+	InitialValuesPlaceholder string `json:"initialValuesPlaceholder"`
+	Required                string `json:"required"`
+	Form                    ProductOptionFormInnerLabels `json:"form"`
+}
+
+// ProductOptionFormInnerLabels holds nested form labels referenced by the template as .Labels.Form.*
+type ProductOptionFormInnerLabels struct {
+	InitialValues           string `json:"initialValues"`
+	InitialValuesPlaceholder string `json:"initialValuesPlaceholder"`
+	Required                string `json:"required"`
 }
 
 type ProductOptionDataTypeLabels struct {
@@ -1892,6 +1906,7 @@ type DisbursementFormLabels struct {
 	TypeUtilities           string `json:"typeUtilities"`
 	TypeOther               string `json:"typeOther"`
 	ApproverNamePlaceholder string `json:"approverNamePlaceholder"`
+	LinkToBill              string `json:"linkToBill"`
 }
 
 type DisbursementActionLabels struct {
@@ -2053,6 +2068,7 @@ func DefaultDisbursementLabels() DisbursementLabels {
 			TypeUtilities:           "Utilities",
 			TypeOther:               "Other",
 			ApproverNamePlaceholder: "Approver name",
+			LinkToBill:              "Link to Bill",
 		},
 		Actions: DisbursementActionLabels{
 			View:       "View",

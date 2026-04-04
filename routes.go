@@ -265,6 +265,9 @@ const (
 	RevenueSettingsTemplateDefaultURL = "/action/sales/settings/templates/set-default/{id}"
 	RevenueSearchClientURL            = "/action/sales/search/clients"
 	SalesSearchSubscriptionURL        = "/action/sales/search/subscriptions"
+	RevenueSearchLocationURL          = "/action/sales/search/locations"
+	RevenueSearchProductURL           = "/action/sales/search/products"
+	RevenuePriceLookupURL             = "/action/sales/price-lookup"
 
 	// Expenditure (purchase + expense) routes
 	ExpenditurePurchaseListURL      = "/app/purchases/list/{status}"
@@ -306,6 +309,15 @@ const (
 	PurchaseOrderSetStatusURL = "/action/purchase-orders/set-status"
 	PurchaseOrderTableURL     = "/action/purchase-orders/table/{status}"
 	PurchaseOrderTabActionURL = "/action/purchase-orders/detail/{id}/tab/{tab}"
+
+	// Purchase Order line item routes (within PO detail)
+	PurchaseOrderLineItemTableURL  = "/action/purchase-orders/detail/{id}/items/table"
+	PurchaseOrderLineItemAddURL    = "/action/purchase-orders/detail/{id}/items/add"
+	PurchaseOrderLineItemEditURL   = "/action/purchase-orders/detail/{id}/items/edit/{itemId}"
+	PurchaseOrderLineItemRemoveURL = "/action/purchase-orders/detail/{id}/items/remove"
+
+	// Purchase Order receipt action
+	PurchaseOrderConfirmReceiptURL = "/action/purchase-orders/{id}/confirm-receipt"
 
 	// Expense category settings routes
 	ExpenditureExpenseCategoryListURL   = "/app/expenses/categories/list"

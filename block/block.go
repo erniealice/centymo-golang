@@ -365,7 +365,15 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						if entityScope != "client" && entityScope != "both" {
 							continue
 						}
-						netDays, _ := row["net_days"].(int32)
+						var netDays int32
+						switch v := row["net_days"].(type) {
+						case int32:
+							netDays = v
+						case int64:
+							netDays = int32(v)
+						case float64:
+							netDays = int32(v)
+						}
 						opts = append(opts, &revenuemod.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
 					}
 					return opts, nil
@@ -408,8 +416,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					revDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
 				}
 			}
-			if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ReadProduct != nil {
-				revDeps.ReadProduct = useCases.Product.Product.ReadProduct.Execute
+			if useCases.Product != nil && useCases.Product.Product != nil {
+				if useCases.Product.Product.ReadProduct != nil {
+					revDeps.ReadProduct = useCases.Product.Product.ReadProduct.Execute
+				}
+				if useCases.Product.Product.ListProducts != nil {
+					revDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+				}
 			}
 			// Revenue CRUD + list page data
 			if useCases.Revenue != nil && useCases.Revenue.Revenue != nil {
@@ -443,6 +456,14 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 			}
 
+			// Price lookup for line item (find applicable price list + price product)
+			if useCases.Product != nil && useCases.Product.PriceList != nil && useCases.Product.PriceList.FindApplicablePriceList != nil {
+				revDeps.FindApplicablePriceList = useCases.Product.PriceList.FindApplicablePriceList.Execute
+			}
+			if useCases.Product != nil && useCases.Product.PriceProduct != nil && useCases.Product.PriceProduct.ListPriceProducts != nil {
+				revDeps.ListPriceProducts = useCases.Product.PriceProduct.ListPriceProducts.Execute
+			}
+
 			revenueMod := revenuemod.NewModule(revDeps)
 			revenueMod.RegisterRoutes(ctx.Routes)
 			// Invoice download is http.HandlerFunc (bypasses view/template layer)
@@ -451,6 +472,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			handleFunc(ctx.Routes, "POST", revenueRoutes.SendEmailURL, revenueMod.SendEmailHandler)
 			handleFunc(ctx.Routes, "GET", revenueRoutes.SearchClientURL, revenueMod.SearchClients)
 			handleFunc(ctx.Routes, "GET", revenueRoutes.SearchSubscriptionURL, revenueMod.SearchSubscriptions)
+			handleFunc(ctx.Routes, "GET", revenueRoutes.SearchLocationURL, revenueMod.SearchLocations)
+			handleFunc(ctx.Routes, "GET", revenueRoutes.SearchProductURL, revenueMod.SearchProducts)
+			handleFunc(ctx.Routes, "GET", revenueRoutes.PriceLookupURL, revenueMod.PriceLookup)
 		}
 
 		// =====================================================================
@@ -932,7 +956,15 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						if entityScope != "supplier" && entityScope != "both" {
 							continue
 						}
-						netDays, _ := row["net_days"].(int32)
+						var netDays int32
+						switch v := row["net_days"].(type) {
+						case int32:
+							netDays = v
+						case int64:
+							netDays = int32(v)
+						case float64:
+							netDays = int32(v)
+						}
 						opts = append(opts, &expendituremod.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
 					}
 					return opts, nil

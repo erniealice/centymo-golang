@@ -15,6 +15,7 @@ import (
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
+	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 )
 
 // CategoryOption represents a selectable category in the form dropdown.
@@ -38,6 +39,13 @@ type PaymentTermOption struct {
 	NetDays int32
 }
 
+// PurchaseOrderOption is a minimal struct for rendering purchase order options in the form.
+type PurchaseOrderOption struct {
+	Id           string
+	PoNumber     string
+	SupplierName string
+}
+
 // FormLabels holds flat i18n labels for the expense drawer form template.
 type FormLabels struct {
 	Name                string
@@ -58,10 +66,11 @@ type FormLabels struct {
 	StatusApproved      string
 	StatusPaid          string
 	StatusCancelled     string
-	CurrencyPlaceholder string
-	PaymentTerms        string
-	SelectPaymentTerm   string
-	DueDate             string
+	CurrencyPlaceholder  string
+	PaymentTerms         string
+	SelectPaymentTerm    string
+	DueDate              string
+	LinkToPurchaseOrder  string
 }
 
 // FormData is the template data for the expense drawer form.
@@ -83,6 +92,8 @@ type FormData struct {
 	Suppliers             []SupplierOption
 	PaymentTerms          []*PaymentTermOption
 	SelectedPaymentTermID string
+	PurchaseOrders        []*PurchaseOrderOption
+	PurchaseOrderID       string
 	Labels                FormLabels
 	CommonLabels          any
 }
@@ -106,6 +117,9 @@ type Deps struct {
 
 	// Supplier listing (optional — gracefully degrades to empty list if nil)
 	ListSuppliers func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)
+
+	// Purchase order listing (optional — gracefully degrades to empty list if nil)
+	ListPurchaseOrders func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error)
 }
 
 // formLabels maps ExpenditureLabels into the flat FormLabels struct for the template.
@@ -133,6 +147,7 @@ func formLabels(l centymo.ExpenditureLabels) FormLabels {
 		PaymentTerms:        "Payment Terms",
 		SelectPaymentTerm:   "Select payment term",
 		DueDate:             "Due Date",
+		LinkToPurchaseOrder: "Link to Purchase Order",
 	}
 }
 
@@ -209,6 +224,37 @@ func loadSupplierOptions(
 	return opts
 }
 
+// loadPurchaseOrderOptions loads purchase orders for the dropdown.
+func loadPurchaseOrderOptions(
+	ctx context.Context,
+	listFn func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error),
+) []*PurchaseOrderOption {
+	if listFn == nil {
+		return nil
+	}
+	resp, err := listFn(ctx, &purchaseorderpb.ListPurchaseOrdersRequest{})
+	if err != nil {
+		log.Printf("Failed to list purchase orders: %v", err)
+		return nil
+	}
+	var opts []*PurchaseOrderOption
+	for _, po := range resp.GetData() {
+		if !po.GetActive() {
+			continue
+		}
+		supplierName := ""
+		if s := po.GetSupplier(); s != nil {
+			supplierName = s.GetCompanyName()
+		}
+		opts = append(opts, &PurchaseOrderOption{
+			Id:           po.GetId(),
+			PoNumber:     po.GetPoNumber(),
+			SupplierName: supplierName,
+		})
+	}
+	return opts
+}
+
 // strPtr returns a pointer to a string.
 func strPtr(s string) *string {
 	return &s
@@ -241,6 +287,7 @@ func NewAddAction(deps *Deps) view.View {
 				Categories:      loadCategoryOptions(ctx, deps.ListExpenditureCategories, ""),
 				Suppliers:       loadSupplierOptions(ctx, deps.ListSuppliers, ""),
 				PaymentTerms:    paymentTerms,
+				PurchaseOrders:  loadPurchaseOrderOptions(ctx, deps.ListPurchaseOrders),
 				Labels:          formLabels(deps.Labels),
 				CommonLabels:    nil, // injected by ViewAdapter
 			})
@@ -266,6 +313,7 @@ func NewAddAction(deps *Deps) view.View {
 				ReferenceNumber:       strPtr(r.FormValue("reference_number")),
 				Notes:                 strPtr(r.FormValue("notes")),
 				PaymentTermId:         strPtr(r.FormValue("payment_term_id")),
+				PurchaseOrderId:       strPtr(r.FormValue("purchase_order_id")),
 			},
 		})
 		if err != nil {
@@ -335,6 +383,8 @@ func NewEditAction(deps *Deps) view.View {
 				Suppliers:             loadSupplierOptions(ctx, deps.ListSuppliers, record.GetSupplierId()),
 				PaymentTerms:          paymentTerms,
 				SelectedPaymentTermID: selectedPaymentTermID,
+				PurchaseOrders:        loadPurchaseOrderOptions(ctx, deps.ListPurchaseOrders),
+				PurchaseOrderID:       record.GetPurchaseOrderId(),
 				Labels:                formLabels(deps.Labels),
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
@@ -361,6 +411,7 @@ func NewEditAction(deps *Deps) view.View {
 				ReferenceNumber:       strPtr(r.FormValue("reference_number")),
 				Notes:                 strPtr(r.FormValue("notes")),
 				PaymentTermId:         strPtr(r.FormValue("payment_term_id")),
+				PurchaseOrderId:       strPtr(r.FormValue("purchase_order_id")),
 			},
 		})
 		if err != nil {
