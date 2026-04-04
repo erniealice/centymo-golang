@@ -1,0 +1,29 @@
+{{define "product-price-plan-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="price_plan_id" value="{{.PricePlanID}}">
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">Product <span class="required">*</span></label>
+                <select name="product_id" class="form-control" required {{if .IsEdit}}disabled{{end}}>
+                    <option value="">Select a product</option>
+                    {{range .ProductOptions}}
+                    <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+                    {{end}}
+                </select>
+                {{if .IsEdit}}
+                <input type="hidden" name="product_id" value="{{.ProductID}}">
+                {{end}}
+            </div>
+        </div>
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" "Price" "Value" .Price "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0")}}
+            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" .Currency "Required" true "Placeholder" "e.g. PHP")}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

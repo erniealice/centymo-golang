@@ -133,7 +133,7 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l cen
 		method := c.GetCollectionMethodId()
 		date := c.GetDateCreatedString()
 
-		amountDisplay := centymo.FormatCentavoAmount(c.GetAmount(), currency)
+		amountDisplay := centymo.FormatCentavoAmount(float64(c.GetAmount()), currency)
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{

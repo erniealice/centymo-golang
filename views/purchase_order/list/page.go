@@ -98,7 +98,7 @@ func NewView(deps *ListViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          heading,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "purchases",
+				ActiveNav:      "purchase",
 				ActiveSubNav:   status,
 				HeaderTitle:    heading,
 				HeaderSubtitle: caption,
@@ -131,7 +131,7 @@ func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l centymo.Expenditu
 		poNumber := po.GetPoNumber()
 		currency := po.GetCurrency()
 		recordStatus := po.GetStatus()
-		totalAmount := centymo.FormatCentavoAmount(po.GetTotalAmount(), currency)
+		totalAmount := centymo.FormatCentavoAmount(float64(po.GetTotalAmount()), currency)
 		orderDate := po.GetOrderDateString()
 		expectedDelivery := po.GetExpectedDeliveryDateString()
 

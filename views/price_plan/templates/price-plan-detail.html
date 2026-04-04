@@ -1,0 +1,102 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "price-plan-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "price-plan-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.Title}}">
+    {{/* --- HTMX Tab Buttons --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "price-plan-detail-tabs")}}
+    </div>
+
+    {{/* --- Tab Content Area --- */}}
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+            {{template "price-plan-tab-info" .}}
+        {{else if eq .ActiveTab "product-prices"}}
+            {{template "price-plan-tab-product-prices" .}}
+        {{end}}
+    </div>
+</div>
+{{template "sheet-form" .}}
+<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "price-plan-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">{{.Labels.Tabs.Info}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Name}}</span>
+            <span class="detail-info-value">{{.PricePlanName}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Description}}</span>
+            <span class="detail-info-value">{{if .PricePlanDesc}}{{.PricePlanDesc}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Amount}}</span>
+            <span class="detail-info-value">{{.PricePlanAmount}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Currency}}</span>
+            <span class="detail-info-value">{{.PricePlanCurrency}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Duration}}</span>
+            <span class="detail-info-value">{{if .PricePlanDuration}}{{.PricePlanDuration}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Location}}</span>
+            <span class="detail-info-value">{{if .PricePlanLocation}}{{.PricePlanLocation}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span>
+                <span class="badge badge--{{.StatusVariant}}">
+                    {{.PricePlanStatus}}
+                </span>
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Date Created</span>
+            <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Date Modified</span>
+            <span class="detail-info-value">{{if .ModifiedDate}}{{.ModifiedDate}}{{else}}—{{end}}</span>
+        </div>
+    </div>
+
+    <div class="detail-actions" style="margin-top: var(--spacing-lg);">
+        <a class="btn btn--ghost btn--sm"
+           hx-get="{{routeWith "price_plan.edit" "id" .ID}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           onclick="if(window.Sheet) Sheet.open('{{.Labels.Buttons.Edit}}')">
+            {{.Labels.Buttons.Edit}}
+        </a>
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Product Prices
+     ============================================= */}}
+{{define "price-plan-tab-product-prices"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .ProductPricesTable}}
+        {{template "table-card" .ProductPricesTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">No Product Prices</div>
+            <p class="coming-soon-text">No product prices have been configured for this rate card yet.</p>
+        </div>
+    {{end}}
+</div>
+{{end}}

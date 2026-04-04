@@ -239,7 +239,7 @@ type ProductLineRoutes struct {
 // package-level route constants defined in routes.go.
 func DefaultProductLineRoutes() ProductLineRoutes {
 	return ProductLineRoutes{
-		ActiveNav:    "services",
+		ActiveNav:    "service",
 		ActiveSubNav: "product-lines",
 
 		DashboardURL:     ProductLineDashboardURL,
@@ -714,12 +714,16 @@ type PlanRoutes struct {
 	ActiveNav    string `json:"active_nav"`
 	ActiveSubNav string `json:"active_sub_nav"`
 
-	ListURL      string `json:"list_url"`
-	DetailURL    string `json:"detail_url"`
-	AddURL       string `json:"add_url"`
-	EditURL      string `json:"edit_url"`
-	DeleteURL    string `json:"delete_url"`
-	TabActionURL string `json:"tab_action_url"`
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
 
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
@@ -729,21 +733,30 @@ type PlanRoutes struct {
 	PricePlanAddURL    string `json:"price_plan_add_url"`
 	PricePlanEditURL   string `json:"price_plan_edit_url"`
 	PricePlanDeleteURL string `json:"price_plan_delete_url"`
+
+	// ProductPlan CRUD routes (within plan context)
+	ProductPlanAddURL    string `json:"product_plan_add_url"`
+	ProductPlanEditURL   string `json:"product_plan_edit_url"`
+	ProductPlanDeleteURL string `json:"product_plan_delete_url"`
 }
 
 // DefaultPlanRoutes returns a PlanRoutes populated from the package-level
 // route constants defined in routes.go.
 func DefaultPlanRoutes() PlanRoutes {
 	return PlanRoutes{
-		ActiveNav:    "services",
+		ActiveNav:    "service",
 		ActiveSubNav: "plans",
 
-		ListURL:      PlanListURL,
-		DetailURL:    PlanDetailURL,
-		AddURL:       PlanAddURL,
-		EditURL:      PlanEditURL,
-		DeleteURL:    PlanDeleteURL,
-		TabActionURL: PlanTabActionURL,
+		ListURL:          PlanListURL,
+		TableURL:         PlanTableURL,
+		DetailURL:        PlanDetailURL,
+		AddURL:           PlanAddURL,
+		EditURL:          PlanEditURL,
+		DeleteURL:        PlanDeleteURL,
+		BulkDeleteURL:    PlanBulkDeleteURL,
+		SetStatusURL:     PlanSetStatusURL,
+		BulkSetStatusURL: PlanBulkSetStatusURL,
+		TabActionURL:     PlanTabActionURL,
 
 		AttachmentUploadURL: PlanAttachmentUploadURL,
 		AttachmentDeleteURL: PlanAttachmentDeleteURL,
@@ -751,6 +764,10 @@ func DefaultPlanRoutes() PlanRoutes {
 		PricePlanAddURL:    PricePlanAddURL,
 		PricePlanEditURL:   PricePlanEditURL,
 		PricePlanDeleteURL: PricePlanDeleteURL,
+
+		ProductPlanAddURL:    PlanProductPlanAddURL,
+		ProductPlanEditURL:   PlanProductPlanEditURL,
+		ProductPlanDeleteURL: PlanProductPlanDeleteURL,
 	}
 }
 
@@ -758,12 +775,16 @@ func DefaultPlanRoutes() PlanRoutes {
 // plan routes.
 func (r PlanRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"plan.list":       r.ListURL,
-		"plan.detail":     r.DetailURL,
-		"plan.add":        r.AddURL,
-		"plan.edit":       r.EditURL,
-		"plan.delete":     r.DeleteURL,
-		"plan.tab_action": r.TabActionURL,
+		"plan.list":             r.ListURL,
+		"plan.table":            r.TableURL,
+		"plan.detail":           r.DetailURL,
+		"plan.add":              r.AddURL,
+		"plan.edit":             r.EditURL,
+		"plan.delete":           r.DeleteURL,
+		"plan.bulk_delete":      r.BulkDeleteURL,
+		"plan.set_status":       r.SetStatusURL,
+		"plan.bulk_set_status":  r.BulkSetStatusURL,
+		"plan.tab_action":       r.TabActionURL,
 
 		"plan.attachment.upload": r.AttachmentUploadURL,
 		"plan.attachment.delete": r.AttachmentDeleteURL,
@@ -771,6 +792,10 @@ func (r PlanRoutes) RouteMap() map[string]string {
 		"plan.pricelist.add":    r.PricePlanAddURL,
 		"plan.pricelist.edit":   r.PricePlanEditURL,
 		"plan.pricelist.delete": r.PricePlanDeleteURL,
+
+		"plan.product_plan.add":    r.ProductPlanAddURL,
+		"plan.product_plan.edit":   r.ProductPlanEditURL,
+		"plan.product_plan.delete": r.ProductPlanDeleteURL,
 	}
 }
 
@@ -791,27 +816,35 @@ type PricePlanRoutes struct {
 	TabActionURL        string `json:"tab_action_url"`
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
+
+	// ProductPricePlan CRUD routes (within rate card detail)
+	ProductPriceAddURL    string `json:"product_price_add_url"`
+	ProductPriceEditURL   string `json:"product_price_edit_url"`
+	ProductPriceDeleteURL string `json:"product_price_delete_url"`
 }
 
 // DefaultPricePlanRoutes returns a PricePlanRoutes populated from the package-level
 // route constants defined in routes.go.
 func DefaultPricePlanRoutes() PricePlanRoutes {
 	return PricePlanRoutes{
-		ActiveNav:           "services",
-		ActiveSubNav:        "rate-cards",
-		DashboardURL:        PricePlanDashboardURL,
-		ListURL:             PricePlanListURL,
-		TableURL:            PricePlanTableURL,
-		DetailURL:           PricePlanDetailURL,
-		AddURL:              PricePlanStandaloneAddURL,
-		EditURL:             PricePlanStandaloneEditURL,
-		DeleteURL:           PricePlanStandaloneDeleteURL,
-		BulkDeleteURL:       PricePlanBulkDeleteURL,
-		SetStatusURL:        PricePlanSetStatusURL,
-		BulkSetStatusURL:    PricePlanBulkSetStatusURL,
-		TabActionURL:        PricePlanTabActionURL,
-		AttachmentUploadURL: PricePlanAttachmentUploadURL,
-		AttachmentDeleteURL: PricePlanAttachmentDeleteURL,
+		ActiveNav:             "service",
+		ActiveSubNav:          "rate-cards",
+		DashboardURL:          PricePlanDashboardURL,
+		ListURL:               PricePlanListURL,
+		TableURL:              PricePlanTableURL,
+		DetailURL:             PricePlanDetailURL,
+		AddURL:                PricePlanStandaloneAddURL,
+		EditURL:               PricePlanStandaloneEditURL,
+		DeleteURL:             PricePlanStandaloneDeleteURL,
+		BulkDeleteURL:         PricePlanBulkDeleteURL,
+		SetStatusURL:          PricePlanSetStatusURL,
+		BulkSetStatusURL:      PricePlanBulkSetStatusURL,
+		TabActionURL:          PricePlanTabActionURL,
+		AttachmentUploadURL:   PricePlanAttachmentUploadURL,
+		AttachmentDeleteURL:   PricePlanAttachmentDeleteURL,
+		ProductPriceAddURL:    PricePlanProductPriceAddURL,
+		ProductPriceEditURL:   PricePlanProductPriceEditURL,
+		ProductPriceDeleteURL: PricePlanProductPriceDeleteURL,
 	}
 }
 
@@ -830,8 +863,11 @@ func (r PricePlanRoutes) RouteMap() map[string]string {
 		"price_plan.set_status":        r.SetStatusURL,
 		"price_plan.bulk_set_status":   r.BulkSetStatusURL,
 		"price_plan.tab_action":        r.TabActionURL,
-		"price_plan.attachment.upload": r.AttachmentUploadURL,
-		"price_plan.attachment.delete": r.AttachmentDeleteURL,
+		"price_plan.attachment.upload":       r.AttachmentUploadURL,
+		"price_plan.attachment.delete":       r.AttachmentDeleteURL,
+		"price_plan.product_price.add":       r.ProductPriceAddURL,
+		"price_plan.product_price.edit":      r.ProductPriceEditURL,
+		"price_plan.product_price.delete":    r.ProductPriceDeleteURL,
 	}
 }
 
@@ -859,7 +895,7 @@ type SubscriptionRoutes struct {
 // package-level route constants defined in routes.go.
 func DefaultSubscriptionRoutes() SubscriptionRoutes {
 	return SubscriptionRoutes{
-		ActiveNav:    "engagements",
+		ActiveNav:    "client",
 		ActiveSubNav: "subscriptions",
 
 		ListURL:         SubscriptionListURL,

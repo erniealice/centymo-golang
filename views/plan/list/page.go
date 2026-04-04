@@ -34,60 +34,25 @@ type PageData struct {
 // NewView creates the plan list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
-
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
 		}
 
-		resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
+		tableConfig, err := buildTableConfig(ctx, deps, status)
 		if err != nil {
-			log.Printf("Failed to list plans: %v", err)
-			return view.Error(fmt.Errorf("failed to load plans: %w", err))
+			return view.Error(err)
 		}
-
-		l := deps.Labels
-		columns := planColumns(l)
-		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
-		types.ApplyColumnStyles(columns, rows)
-
-		tableConfig := &types.TableConfig{
-			ID:                   "plans-table",
-			Columns:              columns,
-			Rows:                 rows,
-			ShowSearch:           true,
-			ShowActions:          true,
-			ShowSort:             true,
-			ShowColumns:          true,
-			ShowDensity:          true,
-			ShowEntries:          true,
-			DefaultSortColumn:    "name",
-			DefaultSortDirection: "asc",
-			Labels:               deps.TableLabels,
-			EmptyState: types.TableEmptyState{
-				Title:   l.Empty.Title,
-				Message: l.Empty.Message,
-			},
-			PrimaryAction: &types.PrimaryAction{
-				Label:           l.Buttons.AddPlan,
-				ActionURL:       deps.Routes.AddURL,
-				Icon:            "icon-plus",
-				Disabled:        !perms.Can("plan", "create"),
-				DisabledTooltip: l.Errors.NoPermission,
-			},
-		}
-		types.ApplyTableSettings(tableConfig)
 
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          statusTitle(l, status),
+				Title:          statusTitle(deps.Labels, status),
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      deps.Routes.ActiveNav,
 				ActiveSubNav:   deps.Routes.ActiveSubNav + "-" + status,
-				HeaderTitle:    statusTitle(l, status),
-				HeaderSubtitle: statusSubtitle(l, status),
+				HeaderTitle:    statusTitle(deps.Labels, status),
+				HeaderSubtitle: statusSubtitle(deps.Labels, status),
 				HeaderIcon:     "icon-file-text",
 				CommonLabels:   deps.CommonLabels,
 			},
@@ -97,6 +62,107 @@ func NewView(deps *ListViewDeps) view.View {
 
 		return view.OK("plan-list", pageData)
 	})
+}
+
+// NewTableView creates a view that returns only the table-card HTML.
+// Used as the refresh target after status/CRUD operations so that only the table
+// is swapped (not the entire page content).
+func NewTableView(deps *ListViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		status := viewCtx.Request.PathValue("status")
+		if status == "" {
+			status = "active"
+		}
+
+		tableConfig, err := buildTableConfig(ctx, deps, status)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		return view.OK("table-card", tableConfig)
+	})
+}
+
+// buildTableConfig fetches plan data and builds the table configuration.
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string) (*types.TableConfig, error) {
+	perms := view.GetUserPermissions(ctx)
+
+	resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
+	if err != nil {
+		log.Printf("Failed to list plans: %v", err)
+		return nil, fmt.Errorf("failed to load plans: %w", err)
+	}
+
+	l := deps.Labels
+	columns := planColumns(l)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
+	types.ApplyColumnStyles(columns, rows)
+
+	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg.Actions = []types.BulkAction{
+		{
+			Key:             "activate",
+			Label:           l.Status.Activate,
+			Icon:            "icon-check-circle",
+			Variant:         "success",
+			Endpoint:        deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON: `{"target_status":"active"}`,
+			ConfirmTitle:    l.Confirm.BulkActivate,
+			ConfirmMessage:  l.Confirm.BulkActivateMessage,
+		},
+		{
+			Key:             "deactivate",
+			Label:           l.Status.Deactivate,
+			Icon:            "icon-x-circle",
+			Variant:         "warning",
+			Endpoint:        deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON: `{"target_status":"inactive"}`,
+			ConfirmTitle:    l.Confirm.BulkDeactivate,
+			ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
+		},
+		{
+			Key:            "delete",
+			Label:          l.Bulk.Delete,
+			Icon:           "icon-trash-2",
+			Variant:        "danger",
+			Endpoint:       deps.Routes.BulkDeleteURL,
+			ConfirmTitle:   l.Confirm.BulkDelete,
+			ConfirmMessage: l.Confirm.BulkDeleteMessage,
+		},
+	}
+
+	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
+
+	tableConfig := &types.TableConfig{
+		ID:                   "plans-table",
+		RefreshURL:           refreshURL,
+		Columns:              columns,
+		Rows:                 rows,
+		ShowSearch:           true,
+		ShowActions:          true,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "name",
+		DefaultSortDirection: "asc",
+		Labels:               deps.TableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   l.Empty.Title,
+			Message: l.Empty.Message,
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:           l.Buttons.AddPlan,
+			ActionURL:       deps.Routes.AddURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("plan", "create"),
+			DisabledTooltip: l.Errors.NoPermission,
+		},
+		BulkActions: &bulkCfg,
+	}
+	types.ApplyTableSettings(tableConfig)
+
+	return tableConfig, nil
 }
 
 func planColumns(l centymo.PlanLabels) []types.TableColumn {
@@ -128,6 +194,47 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, r
 		}
 		description := p.GetDescription()
 
+		actions := []types.TableAction{
+			{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("plan", "update"), DisabledTooltip: l.Errors.NoPermission},
+		}
+
+		if recordStatus == "active" {
+			actions = append(actions, types.TableAction{
+				Type:            "deactivate",
+				Label:           l.Actions.Deactivate,
+				Action:          "deactivate",
+				URL:             routes.SetStatusURL + "?status=inactive",
+				ItemName:        name,
+				ConfirmTitle:    l.Confirm.Deactivate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.DeactivateMessage, name),
+				Disabled:        !perms.Can("plan", "update"),
+				DisabledTooltip: l.Errors.NoPermission,
+			})
+		} else {
+			actions = append(actions, types.TableAction{
+				Type:            "activate",
+				Label:           l.Actions.Activate,
+				Action:          "activate",
+				URL:             routes.SetStatusURL + "?status=active",
+				ItemName:        name,
+				ConfirmTitle:    l.Confirm.Activate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.ActivateMessage, name),
+				Disabled:        !perms.Can("plan", "update"),
+				DisabledTooltip: l.Errors.NoPermission,
+			})
+		}
+
+		actions = append(actions, types.TableAction{
+			Type:            "delete",
+			Label:           l.Actions.Delete,
+			Action:          "delete",
+			URL:             routes.DeleteURL,
+			ItemName:        name,
+			Disabled:        !perms.Can("plan", "delete"),
+			DisabledTooltip: l.Errors.NoPermission,
+		})
+
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
@@ -142,11 +249,7 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, r
 				"price":    description,
 				"status":   recordStatus,
 			},
-			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("plan", "update"), DisabledTooltip: l.Errors.NoPermission},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: routes.DeleteURL, ItemName: name, Disabled: !perms.Can("plan", "delete"), DisabledTooltip: l.Errors.NoPermission},
-			},
+			Actions: actions,
 		})
 	}
 	return rows

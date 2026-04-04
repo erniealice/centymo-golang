@@ -90,7 +90,7 @@ func NewView(deps *ListViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          heading,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "expenses",
+				ActiveNav:      "expense",
 				ActiveSubNav:   "expense-categories",
 				HeaderTitle:    heading,
 				HeaderSubtitle: caption,

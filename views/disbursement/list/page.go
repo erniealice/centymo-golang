@@ -137,7 +137,7 @@ func buildTableRows(disbursements []*disbursementpb.Disbursement, l centymo.Disb
 		method := d.GetDisbursementMethodId()
 		recordStatus := d.GetStatus()
 
-		amountDisplay := centymo.FormatCentavoAmount(d.GetAmount(), currency)
+		amountDisplay := centymo.FormatCentavoAmount(float64(d.GetAmount()), currency)
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{

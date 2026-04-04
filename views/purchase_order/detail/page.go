@@ -213,7 +213,7 @@ func NewView(deps *DetailViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          headerTitle,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "purchases",
+				ActiveNav:      "purchase",
 				HeaderTitle:    headerTitle,
 				HeaderSubtitle: deps.Labels.Page.PurchaseHeading,
 				HeaderIcon:     "icon-shopping-cart",

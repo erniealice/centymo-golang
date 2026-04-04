@@ -4,10 +4,14 @@ package centymo
 // Consumer apps can use these or define their own.
 const (
 	PlanListURL             = "/app/plans/list/{status}"
-	PlanDetailURL           = "/app/plans/{id}"
+	PlanDetailURL           = "/app/plans/detail/{id}"
 	PlanAddURL              = "/action/plans/add"
 	PlanEditURL             = "/action/plans/edit/{id}"
 	PlanDeleteURL           = "/action/plans/delete"
+	PlanBulkDeleteURL       = "/action/plans/bulk-delete"
+	PlanSetStatusURL        = "/action/plans/set-status"
+	PlanBulkSetStatusURL    = "/action/plans/bulk-set-status"
+	PlanTableURL            = "/action/plans/table/{status}"
 	PlanTabActionURL        = "/action/plans/detail/{id}/tab/{tab}"
 	PlanAttachmentUploadURL = "/action/plans/detail/{id}/attachments/upload"
 	PlanAttachmentDeleteURL = "/action/plans/detail/{id}/attachments/delete"
@@ -16,6 +20,11 @@ const (
 	PricePlanAddURL    = "/action/plans/{id}/pricelists/add"
 	PricePlanEditURL   = "/action/plans/{id}/pricelists/edit/{ppid}"
 	PricePlanDeleteURL = "/action/plans/{id}/pricelists/delete"
+
+	// ProductPlan CRUD routes (within plan context)
+	PlanProductPlanAddURL    = "/action/plans/{id}/products/add"
+	PlanProductPlanEditURL   = "/action/plans/{id}/products/edit/{ppid}"
+	PlanProductPlanDeleteURL = "/action/plans/{id}/products/delete"
 
 	// PricePlan standalone routes (rate cards as independent entity)
 	PricePlanDashboardURL        = "/app/price-plans/dashboard"
@@ -31,6 +40,11 @@ const (
 	PricePlanTabActionURL        = "/action/price-plans/{id}/tab/{tab}"
 	PricePlanAttachmentUploadURL = "/action/price-plans/{id}/attachments/upload"
 	PricePlanAttachmentDeleteURL = "/action/price-plans/{id}/attachments/delete"
+
+	// ProductPricePlan CRUD routes (within price plan / rate card detail)
+	PricePlanProductPriceAddURL    = "/action/price-plans/{id}/product-prices/add"
+	PricePlanProductPriceEditURL   = "/action/price-plans/{id}/product-prices/edit/{ppid}"
+	PricePlanProductPriceDeleteURL = "/action/price-plans/{id}/product-prices/delete"
 
 	SubscriptionListURL             = "/app/subscriptions/list/{status}"
 	SubscriptionDetailURL           = "/app/subscriptions/{id}"

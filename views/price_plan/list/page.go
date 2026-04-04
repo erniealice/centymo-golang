@@ -223,6 +223,7 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 				"deletable": strconv.FormatBool(true),
 			},
 			Actions: []types.TableAction{
+				{Type: "view", Label: l.Buttons.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
 				{Type: "edit", Label: l.Buttons.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Buttons.Edit, Disabled: !perms.Can("price_plan", "update"), DisabledTooltip: l.Errors.Unauthorized},
 				deleteAction,
 			},

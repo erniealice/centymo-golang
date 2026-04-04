@@ -275,6 +275,7 @@ func buildTabItems(id string, l centymo.PlanLabels, productCount, priceListCount
 
 func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string) *types.TableConfig {
 	l := deps.Labels
+	perms := view.GetUserPermissions(ctx)
 
 	columns := []types.TableColumn{
 		{Key: "name", Label: l.Columns.Product, Sortable: true},
@@ -308,7 +309,7 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 			for _, pp := range ppResp.GetData() {
 				ppID := pp.GetId()
 				name := pp.GetName()
-				price := fmt.Sprintf("%.2f", pp.GetPrice())
+				price := fmt.Sprintf("%.2f", float64(pp.GetPrice())/100.0)
 				currency := pp.GetCurrency()
 				if currency == "" {
 					currency = "PHP"
@@ -320,6 +321,23 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 					status = "inactive"
 				}
 
+				rowActions := []types.TableAction{
+					{
+						Type:        "edit",
+						Label:       l.Actions.Edit,
+						Action:      "edit",
+						URL:         route.ResolveURL(deps.Routes.ProductPlanEditURL, "id", planID, "ppid", ppID),
+						DrawerTitle: l.Actions.Edit,
+					},
+					{
+						Type:     "delete",
+						Label:    l.Actions.Delete,
+						Action:   "delete",
+						URL:      route.ResolveURL(deps.Routes.ProductPlanDeleteURL, "id", planID),
+						ItemName: name,
+					},
+				}
+
 				rows = append(rows, types.TableRow{
 					ID: ppID,
 					Cells: []types.TableCell{
@@ -328,6 +346,7 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 						{Type: "text", Value: currency},
 						{Type: "badge", Value: status, Variant: statusVariant(status)},
 					},
+					Actions: rowActions,
 				})
 			}
 		}
@@ -340,7 +359,7 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
-		ShowActions:          false,
+		ShowActions:          true,
 		ShowFilters:          false,
 		ShowSort:             true,
 		ShowColumns:          true,
@@ -354,6 +373,13 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 			Title:   l.Detail.NoProductsAssigned,
 			Message: l.Detail.NoProductsAssignedMsg,
 		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:           l.Buttons.AddProduct,
+			ActionURL:       route.ResolveURL(deps.Routes.ProductPlanAddURL, "id", planID),
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("product_plan", "create"),
+			DisabledTooltip: l.Errors.PermissionDenied,
+		},
 	}
 	types.ApplyTableSettings(tableConfig)
 
@@ -366,6 +392,7 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 
 func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID string) *types.TableConfig {
 	l := deps.Labels
+	perms := view.GetUserPermissions(ctx)
 
 	columns := []types.TableColumn{
 		{Key: "name", Label: l.Columns.PricePlan, Sortable: true},
@@ -402,7 +429,7 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 
 				ppID := pp.GetId()
 				name := pp.GetName()
-				amount := fmt.Sprintf("%.2f", pp.GetAmount())
+				amount := fmt.Sprintf("%.2f", float64(pp.GetAmount())/100.0)
 				duration := fmt.Sprintf("%d %s", pp.GetDurationValue(), pp.GetDurationUnit())
 
 				locationName := "—"
@@ -420,6 +447,23 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 					status = "inactive"
 				}
 
+				rowActions := []types.TableAction{
+					{
+						Type:        "edit",
+						Label:       l.Actions.Edit,
+						Action:      "edit",
+						URL:         route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
+						DrawerTitle: l.Actions.Edit,
+					},
+					{
+						Type:    "delete",
+						Label:   l.Actions.Delete,
+						Action:  "delete",
+						URL:     route.ResolveURL(deps.Routes.PricePlanDeleteURL, "id", planID),
+						ItemName: name,
+					},
+				}
+
 				rows = append(rows, types.TableRow{
 					ID: ppID,
 					Cells: []types.TableCell{
@@ -429,6 +473,7 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 						{Type: "text", Value: locationName},
 						{Type: "badge", Value: status, Variant: statusVariant(status)},
 					},
+					Actions: rowActions,
 				})
 			}
 		}
@@ -441,7 +486,7 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
-		ShowActions:          false,
+		ShowActions:          true,
 		ShowFilters:          false,
 		ShowSort:             true,
 		ShowColumns:          true,
@@ -454,6 +499,13 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 		EmptyState: types.TableEmptyState{
 			Title:   l.Detail.NoPricePlans,
 			Message: l.Detail.NoPricePlansMsg,
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:           l.Buttons.AddPricePlan,
+			ActionURL:       route.ResolveURL(deps.Routes.PricePlanAddURL, "id", planID),
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("price_plan", "create"),
+			DisabledTooltip: l.Errors.PermissionDenied,
 		},
 	}
 	types.ApplyTableSettings(tableConfig)

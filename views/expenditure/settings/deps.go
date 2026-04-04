@@ -41,7 +41,7 @@ func templateConfig(deps *SettingsViewDeps) *templateview.Config {
 		Labels:                 deps.Labels,
 		CommonLabels:           deps.CommonLabels,
 		TableLabels:            deps.TableLabels,
-		ActiveNav:              "purchases",
+		ActiveNav:              "purchase",
 		PageIcon:               "icon-file-text",
 		ListDocumentTemplates:  deps.ListDocumentTemplates,
 		CreateDocumentTemplate: deps.CreateDocumentTemplate,

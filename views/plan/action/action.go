@@ -44,10 +44,11 @@ type Deps struct {
 	Labels centymo.PlanLabels
 
 	// Typed plan operations
-	CreatePlan func(ctx context.Context, req *planpb.CreatePlanRequest) (*planpb.CreatePlanResponse, error)
-	ReadPlan   func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
-	UpdatePlan func(ctx context.Context, req *planpb.UpdatePlanRequest) (*planpb.UpdatePlanResponse, error)
-	DeletePlan func(ctx context.Context, req *planpb.DeletePlanRequest) (*planpb.DeletePlanResponse, error)
+	CreatePlan    func(ctx context.Context, req *planpb.CreatePlanRequest) (*planpb.CreatePlanResponse, error)
+	ReadPlan      func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+	UpdatePlan    func(ctx context.Context, req *planpb.UpdatePlanRequest) (*planpb.UpdatePlanResponse, error)
+	DeletePlan    func(ctx context.Context, req *planpb.DeletePlanRequest) (*planpb.DeletePlanResponse, error)
+	SetPlanActive func(ctx context.Context, id string, active bool) error
 }
 
 func formLabels(l centymo.PlanLabels) FormLabels {
@@ -215,6 +216,76 @@ func NewDeleteAction(deps *Deps) view.View {
 		if err != nil {
 			log.Printf("Failed to delete plan %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
+		}
+
+		return centymo.HTMXSuccess("plans-table")
+	})
+}
+
+// NewSetStatusAction creates the plan activate/deactivate action (POST only).
+// Expects query params: ?id={planId}&status={active|inactive}
+//
+// Uses SetPlanActive (raw map update) instead of protobuf because
+// proto3's protojson omits bool fields with value false, which means
+// deactivation (active=false) would silently be skipped.
+func NewSetStatusAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("plan", "update") {
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+		}
+
+		id := viewCtx.Request.URL.Query().Get("id")
+		targetStatus := viewCtx.Request.URL.Query().Get("status")
+
+		if id == "" {
+			_ = viewCtx.Request.ParseForm()
+			id = viewCtx.Request.FormValue("id")
+			targetStatus = viewCtx.Request.FormValue("status")
+		}
+		if id == "" {
+			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+		}
+		if targetStatus != "active" && targetStatus != "inactive" {
+			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+		}
+
+		if err := deps.SetPlanActive(ctx, id, targetStatus == "active"); err != nil {
+			log.Printf("Failed to update plan status %s: %v", id, err)
+			return centymo.HTMXError(err.Error())
+		}
+
+		return centymo.HTMXSuccess("plans-table")
+	})
+}
+
+// NewBulkSetStatusAction creates the plan bulk activate/deactivate action (POST only).
+// Selected IDs come as multiple "id" form fields; target status from "target_status" field.
+func NewBulkSetStatusAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("plan", "update") {
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+		}
+
+		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
+
+		ids := viewCtx.Request.Form["id"]
+		targetStatus := viewCtx.Request.FormValue("target_status")
+
+		if len(ids) == 0 {
+			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+		}
+		if targetStatus != "active" && targetStatus != "inactive" {
+			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+		}
+
+		active := targetStatus == "active"
+
+		for _, id := range ids {
+			if err := deps.SetPlanActive(ctx, id, active); err != nil {
+				log.Printf("Failed to update plan status %s: %v", id, err)
+			}
 		}
 
 		return centymo.HTMXSuccess("plans-table")

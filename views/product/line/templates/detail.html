@@ -27,38 +27,28 @@
     <div class="detail-info-grid">
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Form.Name}}</span>
-            <span class="detail-info-value">{{.Collection.GetName}}</span>
+            <span class="detail-info-value">{{index .Line "name"}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Form.Description}}</span>
-            <span class="detail-info-value">{{if .Collection.GetDescription}}{{.Collection.GetDescription}}{{else}}—{{end}}</span>
+            <span class="detail-info-value">{{if index .Line "description"}}{{index .Line "description"}}{{else}}—{{end}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
             <span>
-                <span class="badge badge--{{if .Collection.GetActive}}success{{else}}warning{{end}}">
-                    {{if .Collection.GetActive}}{{.Labels.Detail.ActiveBadge}}{{else}}{{.Labels.Detail.InactiveBadge}}{{end}}
+                <span class="badge badge--{{if eq (index .Line "status") "active"}}success{{else}}warning{{end}}">
+                    {{if eq (index .Line "status") "active"}}{{.Labels.Detail.ActiveBadge}}{{else}}{{.Labels.Detail.InactiveBadge}}{{end}}
                 </span>
             </span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.CreatedDate}}</span>
-            <span class="detail-info-value">{{if .Collection.GetDateCreatedString}}{{.Collection.GetDateCreatedString}}{{else}}—{{end}}</span>
+            <span class="detail-info-value">{{if index .Line "date_created_string"}}{{index .Line "date_created_string"}}{{else}}—{{end}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.ModifiedDate}}</span>
-            <span class="detail-info-value">{{if .Collection.GetDateModifiedString}}{{.Collection.GetDateModifiedString}}{{else}}—{{end}}</span>
+            <span class="detail-info-value">{{if index .Line "date_modified_string"}}{{index .Line "date_modified_string"}}{{else}}—{{end}}</span>
         </div>
-    </div>
-
-    <div class="detail-actions">
-        <a class="btn btn--ghost btn--sm"
-           hx-get="{{routeWith "product_line.edit" "id" .ID}}"
-           hx-target="#sheetContent"
-           hx-swap="innerHTML"
-           onclick="if(window.Sheet) Sheet.open('{{.Labels.Actions.Edit}}')">
-            {{.Labels.Actions.Edit}}
-        </a>
     </div>
 </div>
 {{end}}

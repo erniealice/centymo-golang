@@ -2142,17 +2142,32 @@ func DefaultDisbursementLabels() DisbursementLabels {
 
 // PlanLabels holds all translatable strings for the plan module.
 type PlanLabels struct {
-	Page          PlanPageLabels      `json:"page"`
-	Buttons       PlanButtonLabels    `json:"buttons"`
-	Columns       PlanColumnLabels    `json:"columns"`
-	Empty         PlanEmptyLabels     `json:"empty"`
-	Form          PlanFormLabels      `json:"form"`
-	Actions       PlanActionLabels    `json:"actions"`
-	Detail        PlanDetailLabels    `json:"detail"`
-	Tabs          PlanTabLabels       `json:"tabs"`
-	Confirm       PlanConfirmLabels   `json:"confirm"`
-	Errors        PlanErrorLabels     `json:"errors"`
-	PricePlanForm PricePlanFormLabels `json:"pricePlanForm"`
+	Page            PlanPageLabels         `json:"page"`
+	Buttons         PlanButtonLabels       `json:"buttons"`
+	Columns         PlanColumnLabels       `json:"columns"`
+	Empty           PlanEmptyLabels        `json:"empty"`
+	Form            PlanFormLabels         `json:"form"`
+	Actions         PlanActionLabels       `json:"actions"`
+	Bulk            PlanBulkLabels         `json:"bulkActions"`
+	Status          PlanStatusLabels       `json:"status"`
+	Detail          PlanDetailLabels       `json:"detail"`
+	Tabs            PlanTabLabels          `json:"tabs"`
+	Confirm         PlanConfirmLabels      `json:"confirm"`
+	Errors          PlanErrorLabels        `json:"errors"`
+	PricePlanForm   PricePlanFormLabels    `json:"pricePlanForm"`
+	ProductPlanForm ProductPlanFormLabels  `json:"productPlanForm"`
+}
+
+// ProductPlanFormLabels holds translatable labels for the ProductPlan add/edit form within a plan.
+type ProductPlanFormLabels struct {
+	Product            string `json:"product"`
+	ProductPlaceholder string `json:"productPlaceholder"`
+	SelectProduct      string `json:"selectProduct"`
+	Price              string `json:"price"`
+	PricePlaceholder   string `json:"pricePlaceholder"`
+	Currency           string `json:"currency"`
+	CurrencyPlaceholder string `json:"currencyPlaceholder"`
+	Active             string `json:"active"`
 }
 
 // PricePlanFormLabels holds translatable labels for the PricePlan add/edit form.
@@ -2183,7 +2198,9 @@ type PlanPageLabels struct {
 }
 
 type PlanButtonLabels struct {
-	AddPlan string `json:"addPlan"`
+	AddPlan       string `json:"addPlan"`
+	AddPricePlan  string `json:"addPricePlan"`
+	AddProduct    string `json:"addProduct"`
 }
 
 type PlanColumnLabels struct {
@@ -2208,9 +2225,20 @@ type PlanEmptyLabels struct {
 }
 
 type PlanActionLabels struct {
-	View   string `json:"view"`
-	Edit   string `json:"edit"`
+	View       string `json:"view"`
+	Edit       string `json:"edit"`
+	Delete     string `json:"delete"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type PlanBulkLabels struct {
 	Delete string `json:"delete"`
+}
+
+type PlanStatusLabels struct {
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
 }
 
 type PlanErrorLabels struct {
@@ -2218,6 +2246,8 @@ type PlanErrorLabels struct {
 	InvalidFormData  string `json:"invalidFormData"`
 	NotFound         string `json:"notFound"`
 	IDRequired       string `json:"idRequired"`
+	NoIDsProvided    string `json:"noIDsProvided"`
+	InvalidStatus    string `json:"invalidStatus"`
 	NoPermission     string `json:"noPermission"`
 }
 
@@ -2276,10 +2306,18 @@ type PlanTabLabels struct {
 }
 
 type PlanConfirmLabels struct {
-	Delete            string `json:"delete"`
-	DeleteMessage     string `json:"deleteMessage"`
-	Deactivate        string `json:"deactivate"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
 }
 
 // ---------------------------------------------------------------------------
@@ -2398,7 +2436,9 @@ func DefaultPlanLabels() PlanLabels {
 			CaptionInactive: "View inactive or archived plans",
 		},
 		Buttons: PlanButtonLabels{
-			AddPlan: "Add Plan",
+			AddPlan:      "Add Plan",
+			AddPricePlan: "Add Price Plan",
+			AddProduct:   "Add Product",
 		},
 		Columns: PlanColumnLabels{
 			Name:        "Name",
@@ -2439,9 +2479,18 @@ func DefaultPlanLabels() PlanLabels {
 			},
 		},
 		Actions: PlanActionLabels{
-			View:   "View Plan",
-			Edit:   "Edit Plan",
-			Delete: "Delete Plan",
+			View:       "View Plan",
+			Edit:       "Edit Plan",
+			Delete:     "Delete Plan",
+			Activate:   "Activate Plan",
+			Deactivate: "Deactivate Plan",
+		},
+		Bulk: PlanBulkLabels{
+			Delete: "Delete Selected",
+		},
+		Status: PlanStatusLabels{
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
 		},
 		Detail: PlanDetailLabels{
 			PageTitle:             "Plan Details",
@@ -2468,16 +2517,26 @@ func DefaultPlanLabels() PlanLabels {
 			AuditTrail:  "Audit Trail",
 		},
 		Confirm: PlanConfirmLabels{
-			Delete:            "Delete Plan",
-			DeleteMessage:     "Are you sure you want to delete \"%s\"? This action cannot be undone.",
-			Deactivate:        "Deactivate Plan",
-			DeactivateMessage: "Are you sure you want to deactivate \"%s\"?",
+			Delete:                "Delete Plan",
+			DeleteMessage:         "Are you sure you want to delete \"%s\"? This action cannot be undone.",
+			Activate:              "Activate Plan",
+			ActivateMessage:       "Are you sure you want to activate \"%s\"?",
+			Deactivate:            "Deactivate Plan",
+			DeactivateMessage:     "Are you sure you want to deactivate \"%s\"?",
+			BulkActivate:          "Activate Selected",
+			BulkActivateMessage:   "Are you sure you want to activate the selected plans?",
+			BulkDeactivate:        "Deactivate Selected",
+			BulkDeactivateMessage: "Are you sure you want to deactivate the selected plans?",
+			BulkDelete:            "Delete Selected",
+			BulkDeleteMessage:     "Are you sure you want to delete the selected plans? This action cannot be undone.",
 		},
 		Errors: PlanErrorLabels{
 			PermissionDenied: "You do not have permission to perform this action",
 			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
 			NotFound:         "Plan not found",
 			IDRequired:       "Plan ID is required",
+			NoIDsProvided:    "No plan IDs provided",
+			InvalidStatus:    "Invalid status",
 			NoPermission:     "No permission",
 		},
 		PricePlanForm: PricePlanFormLabels{
@@ -2494,6 +2553,16 @@ func DefaultPlanLabels() PlanLabels {
 			Location:            "Location",
 			LocationPlaceholder: "Select a location...",
 			SelectLocation:      "— No location (all locations) —",
+			Active:              "Active",
+		},
+		ProductPlanForm: ProductPlanFormLabels{
+			Product:             "Product",
+			ProductPlaceholder:  "Select a product...",
+			SelectProduct:       "— Select a product —",
+			Price:               "Price",
+			PricePlaceholder:    "0.00",
+			Currency:            "Currency",
+			CurrencyPlaceholder: "e.g. PHP",
 			Active:              "Active",
 		},
 	}
@@ -2526,6 +2595,7 @@ type PricePlanPageLabels struct {
 }
 
 type PricePlanButtonLabels struct {
+	View       string `json:"view"`
 	Add        string `json:"add"`
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
@@ -2611,6 +2681,7 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			InactiveTitle: "Inactive Rate Cards",
 		},
 		Buttons: PricePlanButtonLabels{
+			View:       "View",
 			Add:        "Add Rate Card",
 			Edit:       "Edit Rate Card",
 			Delete:     "Delete Rate Card",

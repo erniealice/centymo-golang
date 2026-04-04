@@ -212,7 +212,7 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 		refNumber := r.GetReferenceNumber()
 		name := r.GetName()
 		date := r.GetRevenueDate()
-		amount := centymo.FormatCentavoAmount(r.GetTotalAmount(), r.GetCurrency())
+		amount := centymo.FormatCentavoAmount(float64(r.GetTotalAmount()), r.GetCurrency())
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{

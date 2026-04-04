@@ -163,7 +163,7 @@ func buildTableRows(expenditures []*expenditurepb.Expenditure, l centymo.Expendi
 		date := e.GetExpenditureDateString()
 		currency := e.GetCurrency()
 		recordStatus := e.GetStatus()
-		amount := centymo.FormatCentavoAmount(e.GetTotalAmount(), currency)
+		amount := centymo.FormatCentavoAmount(float64(e.GetTotalAmount()), currency)
 
 		// Second column is vendor name or expenditure name depending on type
 		secondCol := e.GetName()

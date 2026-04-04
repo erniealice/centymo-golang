@@ -612,6 +612,22 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
 					pricePlanDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
 				}
+				// Add product listing for detail page product selector
+				if useCases.Product != nil && useCases.Product.Product != nil {
+					pricePlanDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+				}
+				// Add product plan listing for scoping product selector to plan's products
+				if useCases.Product != nil && useCases.Product.ProductPlan != nil {
+					pricePlanDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+				}
+				// Add ProductPricePlan CRUD for detail page
+				if useCases.Subscription.ProductPricePlan != nil {
+					ppp := useCases.Subscription.ProductPricePlan
+					pricePlanDeps.ListProductPricePlans = ppp.ListProductPricePlans.Execute
+					pricePlanDeps.CreateProductPricePlan = ppp.CreateProductPricePlan.Execute
+					pricePlanDeps.UpdateProductPricePlan = ppp.UpdateProductPricePlan.Execute
+					pricePlanDeps.DeleteProductPricePlan = ppp.DeleteProductPricePlan.Execute
+				}
 				priceplanmod.NewModule(pricePlanDeps).RegisterRoutes(ctx.Routes)
 			}
 		}
@@ -734,6 +750,25 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ctx.Routes.GET(planRoutes.PricePlanEditURL, planaction.NewPricePlanEditAction(ppActionDeps))
 					ctx.Routes.POST(planRoutes.PricePlanEditURL, planaction.NewPricePlanEditAction(ppActionDeps))
 					ctx.Routes.POST(planRoutes.PricePlanDeleteURL, planaction.NewPricePlanDeleteAction(ppActionDeps))
+				}
+				// ProductPlan CRUD within plan detail
+				if useCases.Product != nil && useCases.Product.ProductPlan != nil && useCases.Product.ProductPlan.CreateProductPlan != nil {
+					productPlanActionDeps := &planaction.ProductPlanDeps{
+						Routes:            planRoutes,
+						Labels:            planLabels,
+						CreateProductPlan: useCases.Product.ProductPlan.CreateProductPlan.Execute,
+						ReadProductPlan:   useCases.Product.ProductPlan.ReadProductPlan.Execute,
+						UpdateProductPlan: useCases.Product.ProductPlan.UpdateProductPlan.Execute,
+						DeleteProductPlan: useCases.Product.ProductPlan.DeleteProductPlan.Execute,
+					}
+					if useCases.Product.Product != nil {
+						productPlanActionDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+					}
+					ctx.Routes.GET(planRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(productPlanActionDeps))
+					ctx.Routes.POST(planRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(productPlanActionDeps))
+					ctx.Routes.GET(planRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(productPlanActionDeps))
+					ctx.Routes.POST(planRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(productPlanActionDeps))
+					ctx.Routes.POST(planRoutes.ProductPlanDeleteURL, planaction.NewProductPlanDeleteAction(productPlanActionDeps))
 				}
 			}
 		}
