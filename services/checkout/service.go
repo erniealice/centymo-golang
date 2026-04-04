@@ -83,7 +83,7 @@ func (s *Service) PlaceOrder(ctx context.Context, req CheckoutRequest) (*Checkou
 			DateCreatedString:  &nowStr,
 			DateModified:       &nowMillis,
 			DateModifiedString: &nowStr,
-			TotalAmount:        float64(req.TotalAmount) / 100.0,
+			TotalAmount:        int64(req.TotalAmount),
 			Currency:           req.Currency,
 			Status:             "pending",
 			ReferenceNumber:    &refNum,
@@ -111,14 +111,14 @@ func (s *Service) PlaceOrder(ctx context.Context, req CheckoutRequest) (*Checkou
 				ProductId:          &item.ProductID,
 				Description:        item.ProductName,
 				Quantity:           float64(item.Quantity),
-				UnitPrice:          float64(item.UnitPrice) / 100.0,
-				TotalPrice:         float64(item.TotalPrice) / 100.0,
+				UnitPrice:          int64(item.UnitPrice),
+				TotalPrice:         int64(item.TotalPrice),
 				LineItemType:       "item",
 				PriceListId:        &item.PriceListID,
 				VariantId:          &item.VariantID,
 				VariantLabel:       &item.VariantLabel,
 				LocationId:         &item.LocationID,
-				CostPrice:          &item.CostPrice,
+				CostPrice:          ptr(int64(math.Round(item.CostPrice * 100))),
 				DateCreated:        &nowMillis,
 				DateCreatedString:  &nowStr,
 				DateModified:       &nowMillis,
@@ -150,7 +150,7 @@ func (s *Service) PlaceOrder(ctx context.Context, req CheckoutRequest) (*Checkou
 	if s.deps.CreateCheckoutSession != nil && req.PaymentProvider != "" {
 		sessionResp, err := s.deps.CreateCheckoutSession(ctx, &paymentpb.CreateCheckoutSessionRequest{
 			Data: &paymentpb.CheckoutSessionData{
-				Amount:      float64(req.TotalAmount),
+				Amount:      int64(req.TotalAmount),
 				Currency:    req.Currency,
 				Description: "Order " + refNum,
 				PaymentId:   revenueID,
@@ -178,9 +178,9 @@ func (s *Service) PlaceOrder(ctx context.Context, req CheckoutRequest) (*Checkou
 			checkoutSessionID := session.GetId()
 			_, updateErr := s.deps.UpdateRevenue(ctx, &revenuepb.UpdateRevenueRequest{
 				Data: &revenuepb.Revenue{
-					Id:                revenueID,
-					CheckoutSessionId: &checkoutSessionID,
-					DateModified:      ptr(time.Now().UnixMilli()),
+					Id:                 revenueID,
+					CheckoutSessionId:  &checkoutSessionID,
+					DateModified:       ptr(time.Now().UnixMilli()),
 					DateModifiedString: ptr(time.Now().Format(time.RFC3339)),
 				},
 			})
@@ -220,12 +220,12 @@ func (s *Service) reserveStock(ctx context.Context, items []CheckoutItem) {
 
 		_, err = s.deps.UpdateInventoryItem(ctx, &inventoryItempb.UpdateInventoryItemRequest{
 			Data: &inventoryItempb.InventoryItem{
-				Id:                invItem.GetId(),
-				QuantityAvailable: newAvailable,
-				QuantityReserved:  newReserved,
-				QuantityOnHand:    invItem.GetQuantityOnHand(),
-				Active:            invItem.GetActive(),
-				DateModified:      ptr(time.Now().UnixMilli()),
+				Id:                 invItem.GetId(),
+				QuantityAvailable:  newAvailable,
+				QuantityReserved:   newReserved,
+				QuantityOnHand:     invItem.GetQuantityOnHand(),
+				Active:             invItem.GetActive(),
+				DateModified:       ptr(time.Now().UnixMilli()),
 				DateModifiedString: ptr(time.Now().Format(time.RFC3339)),
 			},
 		})
@@ -339,8 +339,8 @@ func (s *Service) GetOrder(ctx context.Context, referenceNumber string) (*OrderD
 				ProductID:   li.GetProductId(),
 				ProductName: li.GetDescription(),
 				Quantity:    int(math.Round(li.GetQuantity())),
-				UnitPrice:   int(math.Round(li.GetUnitPrice() * 100)),
-				TotalPrice:  int(math.Round(li.GetTotalPrice() * 100)),
+				UnitPrice:   int(li.GetUnitPrice()),
+				TotalPrice:  int(li.GetTotalPrice()),
 			})
 		}
 	}
@@ -348,7 +348,7 @@ func (s *Service) GetOrder(ctx context.Context, referenceNumber string) (*OrderD
 	return &OrderData{
 		RevenueID:       revenueID,
 		ReferenceNumber: revenue.GetReferenceNumber(),
-		TotalAmount:     int(math.Round(revenue.GetTotalAmount() * 100)),
+		TotalAmount:     int(revenue.GetTotalAmount()),
 		Status:          revenue.GetStatus(),
 		Items:           items,
 	}, nil

@@ -41,6 +41,7 @@ func TestRouteMap_ValuesBelongToStructAndCoverRouteFields(t *testing.T) {
 func centymoRouteContractCases() []routeContractCase {
 	return []routeContractCase{
 		{name: "ProductRoutes", routes: DefaultProductRoutes(), routeMap: DefaultProductRoutes().RouteMap()},
+		{name: "ProductLineRoutes", routes: DefaultProductLineRoutes(), routeMap: DefaultProductLineRoutes().RouteMap()},
 		{name: "InventoryRoutes", routes: DefaultInventoryRoutes(), routeMap: DefaultInventoryRoutes().RouteMap()},
 		{name: "RevenueRoutes", routes: DefaultRevenueRoutes(), routeMap: DefaultRevenueRoutes().RouteMap()},
 		{

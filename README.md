@@ -84,7 +84,7 @@ centymo-golang/
         payment.go            # Payment CRUD actions (add, edit, remove, table)
       detail/
         page.go               # Sales detail view (info, line items, payments tabs)
-        line_items.go         # Line item CRUD views (add, edit, remove, discount, table)
+        line_item.go          # Line item CRUD views (add, edit, remove, discount, table)
       dashboard/page.go       # Sales dashboard
     pricelist/
       embed.go

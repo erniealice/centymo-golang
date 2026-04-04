@@ -81,12 +81,12 @@ func (s *Service) reserveSerialsForItem(ctx context.Context, revenueID string, i
 		// Update serial status to "reserved"
 		_, err := s.deps.UpdateSerial(ctx, &serialpb.UpdateInventorySerialRequest{
 			Data: &serialpb.InventorySerial{
-				Id:                serial.GetId(),
-				InventoryItemId:   serial.GetInventoryItemId(),
-				SerialNumber:      serial.GetSerialNumber(),
-				Status:            "reserved",
-				Active:            true,
-				DateModified:      &nowMillis,
+				Id:                 serial.GetId(),
+				InventoryItemId:    serial.GetInventoryItemId(),
+				SerialNumber:       serial.GetSerialNumber(),
+				Status:             "reserved",
+				Active:             true,
+				DateModified:       &nowMillis,
 				DateModifiedString: &nowStr,
 			},
 		})
