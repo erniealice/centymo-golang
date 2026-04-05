@@ -7,7 +7,8 @@ import (
 	consumer "github.com/erniealice/espyna-golang/consumer"
 	expreportpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/expenditure_report"
 	reportpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/gross_profit"
-	agingpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/receivables_aging"
+	agingpb    "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/receivables_aging"
+	payagingpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/payables_aging"
 	revreportpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/revenue_report"
 	collsumpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/reporting/collection_summary"
 	disbreportpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/reporting/disbursement_report"
@@ -65,6 +66,14 @@ func (d *espynaLedgerDataSource) GetReceivablesAgingReport(
 	req *agingpb.ReceivablesAgingRequest,
 ) (*agingpb.ReceivablesAgingResponse, error) {
 	return d.svc.GetReceivablesAgingReport(ctx, req)
+}
+
+// GetPayablesAgingReport delegates to the espyna LedgerReportingAdapter.
+func (d *espynaLedgerDataSource) GetPayablesAgingReport(
+	ctx context.Context,
+	req *payagingpb.PayablesAgingRequest,
+) (*payagingpb.PayablesAgingResponse, error) {
+	return d.svc.GetPayablesAgingReport(ctx, req)
 }
 
 // GetCollectionSummaryReport delegates to the espyna LedgerReportingAdapter.

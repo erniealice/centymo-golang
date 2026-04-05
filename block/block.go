@@ -50,7 +50,6 @@ import (
 	subscriptionaction "github.com/erniealice/centymo-golang/views/subscription/action"
 	subscriptiondetail "github.com/erniealice/centymo-golang/views/subscription/detail"
 	subscriptionlist "github.com/erniealice/centymo-golang/views/subscription/list"
-	reportmod "github.com/erniealice/fycha-golang/views/reports"
 )
 
 // ---------------------------------------------------------------------------
@@ -1010,26 +1009,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				expDeps.CreateDisbursement = useCases.Treasury.Disbursement.CreateDisbursement.Execute
 			}
 			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
-		}
-
-		// =====================================================================
-		// Inline report routes
-		// These centymo-owned report views are registered here because they
-		// require centymo SQL labels. Consumer apps that also need the
-		// Payables Aging (Supplier route) and Receivables Aging (Client route)
-		// reports should register those via the entydad block or directly,
-		// since those URL keys live in entydad's route structs.
-		// =====================================================================
-
-		if cfg.wantRevenue() {
-			// Revenue → Reports → Sales Summary
-			ctx.Routes.GET(revenueRoutes.RevenueSummaryURL, reportmod.NewSalesSummaryView(ctx.SqlDB, ctx.Common, ctx.Table))
-		}
-		if cfg.wantExpenditure() {
-			// Purchases → Reports → Purchases Summary
-			ctx.Routes.GET(expenditureRoutes.PurchasesSummaryURL, reportmod.NewPurchasesSummaryView(ctx.SqlDB, ctx.Common, ctx.Table))
-			// Expenses → Reports → Expenses Summary
-			ctx.Routes.GET(expenditureRoutes.ExpensesSummaryURL, reportmod.NewExpensesSummaryView(ctx.SqlDB, ctx.Common, ctx.Table))
 		}
 
 		log.Println("  centymo commerce domain initialized")
