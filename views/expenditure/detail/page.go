@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
 
@@ -17,6 +18,7 @@ import (
 
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
+	disbursementschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement_schedule"
 )
 
 // DetailViewDeps holds view dependencies for the expense detail page.
@@ -28,6 +30,12 @@ type DetailViewDeps struct {
 
 	ReadExpenditure          func(ctx context.Context, req *expenditurepb.ReadExpenditureRequest) (*expenditurepb.ReadExpenditureResponse, error)
 	ListExpenditureLineItems func(ctx context.Context, req *expenditurelineitempb.ListExpenditureLineItemsRequest) (*expenditurelineitempb.ListExpenditureLineItemsResponse, error)
+
+	// GetPaidAmount returns total paid centavos for an expenditure (optional — gracefully degrades when nil).
+	GetPaidAmount func(ctx context.Context, expenditureID string) (int64, error)
+
+	// ListDisbursementSchedules lists payment schedule installments for an expenditure (optional).
+	ListDisbursementSchedules func(ctx context.Context, expenditureID string) ([]*disbursementschedulepb.DisbursementSchedule, error)
 }
 
 // LineItemDeps holds dependencies for line item action handlers.
@@ -60,18 +68,44 @@ type LineItemFormData struct {
 	Labels        centymo.ExpenditureLabels
 }
 
+// PaymentScheduleRow holds one row of disbursement schedule data for the template.
+type PaymentScheduleRow struct {
+	Sequence       int32
+	DueDate        string
+	Amount         string
+	Status         string
+	StatusClass    string
+	PaidAmount     string
+	PaidDate       string
+	DisbursementID string
+}
+
+// PaymentsScheduleData holds the payments tab content.
+type PaymentsScheduleData struct {
+	Rows           []PaymentScheduleRow
+	TotalScheduled string
+	TotalPaid      string
+	TotalRemaining string
+	Currency       string
+}
+
 // PageData holds the data for the expense detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	Expense         map[string]any
-	Labels          centymo.ExpenditureLabels
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
-	LineItemTable   *types.TableConfig
-	LineItemAddURL  string
-	TotalAmount     string
-	SetStatusURL    string
+	ContentTemplate   string
+	Expense           map[string]any
+	Labels            centymo.ExpenditureLabels
+	ActiveTab         string
+	TabItems          []pyeza.TabItem
+	LineItemTable     *types.TableConfig
+	LineItemAddURL    string
+	TotalAmount       string
+	SetStatusURL      string
+	PaidAmount        string
+	OutstandingAmount string
+	PaymentStatus     string
+	PayURL            string
+	PaymentsSchedule  *PaymentsScheduleData
 }
 
 // expenditureToMap converts an Expenditure proto to a map for template use.
@@ -138,12 +172,13 @@ func NewView(deps *DetailViewDeps) view.View {
 			ActiveTab:       activeTab,
 			TabItems:        tabItems,
 			SetStatusURL:    deps.Routes.SetStatusURL,
+			PayURL:          route.ResolveURL(deps.Routes.PayURL, "id", id),
 		}
 
 		// Load tab-specific data
 		switch activeTab {
 		case "info":
-			// expense map has everything
+			populateBalance(ctx, deps, id, data[0].GetTotalAmount(), pageData)
 		case "items":
 			if deps.ListExpenditureLineItems != nil {
 				perms := view.GetUserPermissions(ctx)
@@ -154,6 +189,9 @@ func NewView(deps *DetailViewDeps) view.View {
 				totalAmount, _ := expense["total_amount"].(string)
 				pageData.TotalAmount = currency + " " + totalAmount
 			}
+		case "payments":
+			currency, _ := expense["currency"].(string)
+			pageData.PaymentsSchedule = buildPaymentsSchedule(ctx, deps, id, currency)
 		}
 
 		return view.OK("expense-detail", pageData)
@@ -192,11 +230,12 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			ActiveTab:    tab,
 			TabItems:     buildTabItems(deps.Labels, id, deps.Routes),
 			SetStatusURL: deps.Routes.SetStatusURL,
+			PayURL:       route.ResolveURL(deps.Routes.PayURL, "id", id),
 		}
 
 		switch tab {
 		case "info":
-			// expense map has everything
+			populateBalance(ctx, deps, id, data[0].GetTotalAmount(), pageData)
 		case "items":
 			if deps.ListExpenditureLineItems != nil {
 				perms := view.GetUserPermissions(ctx)
@@ -207,6 +246,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				totalAmount, _ := expense["total_amount"].(string)
 				pageData.TotalAmount = currency + " " + totalAmount
 			}
+		case "payments":
+			currency, _ := expense["currency"].(string)
+			pageData.PaymentsSchedule = buildPaymentsSchedule(ctx, deps, id, currency)
 		}
 
 		templateName := "expense-tab-" + tab
@@ -390,6 +432,117 @@ func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 	})
 }
 
+// populateBalance queries the paid amount and sets PaidAmount, OutstandingAmount,
+// and PaymentStatus on pageData. Silently skips if GetPaidAmount is nil.
+func populateBalance(ctx context.Context, deps *DetailViewDeps, expenditureID string, totalAmountRaw int64, pageData *PageData) {
+	if deps.GetPaidAmount == nil {
+		return
+	}
+	paidRaw, err := deps.GetPaidAmount(ctx, expenditureID)
+	if err != nil {
+		log.Printf("Failed to get paid amount for expenditure %s: %v", expenditureID, err)
+		return
+	}
+	outstandingRaw := totalAmountRaw - paidRaw
+	if outstandingRaw < 0 {
+		outstandingRaw = 0
+	}
+
+	pageData.PaidAmount = centymo.FormatWithCommas(float64(paidRaw) / 100.0)
+	pageData.OutstandingAmount = centymo.FormatWithCommas(float64(outstandingRaw) / 100.0)
+
+	switch {
+	case paidRaw <= 0:
+		pageData.PaymentStatus = "Unpaid"
+	case outstandingRaw <= 0:
+		pageData.PaymentStatus = "Fully Paid"
+	default:
+		pageData.PaymentStatus = "Partially Paid"
+	}
+}
+
+// scheduleStatusBadgeClass maps a disbursement schedule status to a badge CSS class.
+func scheduleStatusBadgeClass(status string) string {
+	switch status {
+	case "paid":
+		return "badge--success"
+	case "partial":
+		return "badge--warning"
+	case "overdue":
+		return "badge--danger"
+	default:
+		return "badge--secondary"
+	}
+}
+
+// buildPaymentsSchedule builds the PaymentsScheduleData for the payments tab.
+func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditureID, currency string) *PaymentsScheduleData {
+	empty := &PaymentsScheduleData{
+		Rows:           []PaymentScheduleRow{},
+		TotalScheduled: currency + " 0.00",
+		TotalPaid:      currency + " 0.00",
+		TotalRemaining: currency + " 0.00",
+		Currency:       currency,
+	}
+
+	if deps.ListDisbursementSchedules == nil {
+		return empty
+	}
+
+	schedules, err := deps.ListDisbursementSchedules(ctx, expenditureID)
+	if err != nil {
+		log.Printf("Failed to list disbursement schedules for expenditure %s: %v", expenditureID, err)
+		return empty
+	}
+
+	var totalScheduled, totalPaid int64
+	rows := make([]PaymentScheduleRow, 0, len(schedules))
+
+	for _, s := range schedules {
+		paidAmt := ""
+		if s.PaidAmount != nil {
+			paidAmt = currency + " " + centymo.FormatWithCommas(float64(*s.PaidAmount)/100.0)
+			totalPaid += *s.PaidAmount
+		}
+
+		paidDate := ""
+		if s.PaidDate != nil && *s.PaidDate > 0 {
+			paidDate = time.UnixMilli(*s.PaidDate).UTC().Format("2006-01-02")
+		}
+
+		disbID := ""
+		if s.DisbursementId != nil {
+			disbID = *s.DisbursementId
+		}
+
+		totalScheduled += s.GetAmount()
+
+		rows = append(rows, PaymentScheduleRow{
+			Sequence:       s.GetSequence(),
+			DueDate:        s.GetDueDate(),
+			Amount:         currency + " " + centymo.FormatWithCommas(float64(s.GetAmount())/100.0),
+			Status:         s.GetStatus(),
+			StatusClass:    scheduleStatusBadgeClass(s.GetStatus()),
+			PaidAmount:     paidAmt,
+			PaidDate:       paidDate,
+			DisbursementID: disbID,
+		})
+	}
+
+	remaining := totalScheduled - totalPaid
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	return &PaymentsScheduleData{
+		Rows:           rows,
+		TotalScheduled: currency + " " + centymo.FormatWithCommas(float64(totalScheduled)/100.0),
+		TotalPaid:      currency + " " + centymo.FormatWithCommas(float64(totalPaid)/100.0),
+		TotalRemaining: currency + " " + centymo.FormatWithCommas(float64(remaining)/100.0),
+		Currency:       currency,
+	}
+}
+
 // buildTabItems builds the tab navigation for the expense detail page.
 func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.ExpenditureRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
@@ -397,6 +550,7 @@ func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.Expend
 	return []pyeza.TabItem{
 		{Key: "info", Label: "Details", Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "items", Label: "Line Items", Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
+		{Key: "payments", Label: "Payments", Href: base + "?tab=payments", HxGet: action + "payments", Icon: "icon-credit-card"},
 	}
 }
 

@@ -935,6 +935,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			expDeps := &expendituremod.ModuleDeps{
 				Routes:         expenditureRoutes,
 				DB:             db,
+				SqlDB:          ctx.SqlDB,
 				Labels:         expenditureLabels,
 				TemplateLabels: templateview.DefaultLabels(),
 				CommonLabels:   ctx.Common,
@@ -1002,6 +1003,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			}
 			if useCases.Entity != nil && useCases.Entity.Supplier != nil {
 				expDeps.ListSuppliers = useCases.Entity.Supplier.ListSuppliers.Execute
+			}
+			if useCases.Treasury != nil && useCases.Treasury.Disbursement != nil {
+				expDeps.DisbursementRoutes = disbursementRoutes
+				expDeps.DisbursementLabels = disbursementLabels
+				expDeps.CreateDisbursement = useCases.Treasury.Disbursement.CreateDisbursement.Execute
 			}
 			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
 		}

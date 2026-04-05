@@ -80,7 +80,7 @@ func NewView(deps *ListViewDeps) view.View {
 
 		if deps.ExpenditureType == "expense" {
 			tableID = "expenses-table"
-			activeNav = "expenses"
+			activeNav = "expense"
 			icon = "icon-file-minus"
 		}
 

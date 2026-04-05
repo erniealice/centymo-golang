@@ -18,6 +18,8 @@
         {{template "expense-tab-info" .}}
         {{else if eq .ActiveTab "items"}}
         {{template "expense-tab-items" .}}
+        {{else if eq .ActiveTab "payments"}}
+        {{template "expense-tab-payments" .}}
         {{end}}
     </div>
 </div>
@@ -59,6 +61,34 @@
             <span class="detail-info-value">{{index .Expense "date_created_string"}}</span>
         </div>
     </div>
+    {{if .PaidAmount}}
+    <div class="transaction-section-spacer">
+        <h4 class="detail-section-title">Payment Summary</h4>
+        <div class="detail-info-grid">
+            <div class="detail-info-item">
+                <span class="detail-info-label">Total Amount</span>
+                <span class="detail-info-value mono">{{index .Expense "currency"}} {{index .Expense "total_amount"}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Paid</span>
+                <span class="detail-info-value mono">{{index .Expense "currency"}} {{.PaidAmount}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Outstanding</span>
+                <span class="detail-info-value mono">{{index .Expense "currency"}} {{.OutstandingAmount}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Payment Status</span>
+                <span>
+                    <span class="badge badge--{{if eq .PaymentStatus "Fully Paid"}}success{{else if eq .PaymentStatus "Partially Paid"}}warning{{else}}info{{end}}">
+                        {{.PaymentStatus}}
+                    </span>
+                </span>
+            </div>
+        </div>
+    </div>
+    {{end}}
+
     {{if index .Expense "notes"}}
     <div class="transaction-section-spacer">
         <h4 class="detail-section-title">Notes</h4>
@@ -83,6 +113,24 @@
                 <button type="submit" class="btn btn-primary">Save Status</button>
             </div>
         </form>
+    </div>
+    {{end}}
+
+    {{/* ─── Pay Action ─── */}}
+    {{if and .PayURL (eq (index .Expense "status") "approved")}}
+    <div class="transaction-section-spacer">
+        <h4 class="detail-section-title">Payment</h4>
+        <div class="transaction-inline-form__group">
+            <button type="button" class="btn btn-primary"
+                data-testid="btn-pay-expense"
+                aria-haspopup="dialog"
+                hx-get="{{.PayURL}}"
+                hx-target="#sheetContent"
+                hx-swap="innerHTML"
+                onclick="Sheet.open('Record Payment')">
+                Pay
+            </button>
+        </div>
     </div>
     {{end}}
 </div>
@@ -116,6 +164,135 @@
         </div>
     </div>
 {{end}}
+{{end}}
+
+{{/* Payments / Disbursement Schedule Tab */}}
+{{define "expense-tab-payments"}}
+<div class="tab-scroll">
+{{if and .PaymentsSchedule (gt (len .PaymentsSchedule.Rows) 0)}}
+    {{/* ─── Summary Bar ─── */}}
+    <div class="transaction-items-toolbar">
+        <div class="transaction-summary-item">
+            <span class="transaction-summary-label">Scheduled</span>
+            <span class="transaction-summary-value mono">{{.PaymentsSchedule.TotalScheduled}}</span>
+        </div>
+        <div class="transaction-summary-item">
+            <span class="transaction-summary-label">Paid</span>
+            <span class="transaction-summary-value mono" style="color:var(--color-success)">{{.PaymentsSchedule.TotalPaid}}</span>
+        </div>
+        <div class="transaction-summary-item">
+            <span class="transaction-summary-label">Remaining</span>
+            <span class="transaction-summary-value mono" style="color:var(--color-warning)">{{.PaymentsSchedule.TotalRemaining}}</span>
+        </div>
+    </div>
+
+    {{/* ─── Schedule Table ─── */}}
+    <table class="data-table" data-testid="payments-schedule-table">
+        <thead>
+            <tr>
+                <th class="data-table__cell data-table__cell--header" style="width:60px">#</th>
+                <th class="data-table__cell data-table__cell--header">Due Date</th>
+                <th class="data-table__cell data-table__cell--header">Amount Due</th>
+                <th class="data-table__cell data-table__cell--header" style="width:110px">Status</th>
+                <th class="data-table__cell data-table__cell--header">Paid Amount</th>
+                <th class="data-table__cell data-table__cell--header">Paid Date</th>
+                <th class="data-table__cell data-table__cell--header">Reference</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{range .PaymentsSchedule.Rows}}
+            <tr class="data-table__row" data-testid="payment-row-{{.Sequence}}">
+                <td class="data-table__cell">{{.Sequence}}</td>
+                <td class="data-table__cell mono">{{.DueDate}}</td>
+                <td class="data-table__cell mono">{{.Amount}}</td>
+                <td class="data-table__cell">
+                    <span class="badge {{.StatusClass}}">{{.Status}}</span>
+                </td>
+                <td class="data-table__cell mono">{{if .PaidAmount}}{{.PaidAmount}}{{else}}&mdash;{{end}}</td>
+                <td class="data-table__cell mono">{{if .PaidDate}}{{.PaidDate}}{{else}}&mdash;{{end}}</td>
+                <td class="data-table__cell mono">{{if .DisbursementID}}<span class="text-truncate">{{.DisbursementID}}</span>{{else}}&mdash;{{end}}</td>
+            </tr>
+        {{end}}
+        </tbody>
+    </table>
+{{else}}
+    <div class="coming-soon-panel">
+        <div class="coming-soon-title">No payment schedule</div>
+        <p class="coming-soon-text">No disbursement schedule has been set up for this expense.</p>
+    </div>
+{{end}}
+</div>
+{{end}}
+
+{{/* Pay Drawer Form — creates a disbursement pre-linked to this expense */}}
+{{define "expense-pay-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+    <input type="hidden" name="expenditure_id" value="{{.ExpenditureID}}">
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            <div class="form-group">
+                <label for="pay-reference_number" class="form-label">Reference</label>
+                <input type="text" id="pay-reference_number" name="reference_number" class="form-control"
+                    placeholder="e.g. DIS-2026-001">
+            </div>
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group">
+                <label for="pay-payee" class="form-label">Payee <span class="required-marker">*</span></label>
+                <input type="text" id="pay-payee" name="payee" class="form-control"
+                    value="{{.Name}}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="pay-amount" class="form-label">Amount <span class="required-marker">*</span></label>
+                <input type="number" id="pay-amount" name="amount" class="form-control"
+                    value="{{.Amount}}" required min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="pay-currency" class="form-label">Currency</label>
+                <input type="text" id="pay-currency" name="currency" class="form-control"
+                    value="{{.Currency}}" placeholder="PHP">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="pay-disbursement_method" class="form-label">Payment Method</label>
+                <select id="pay-disbursement_method" name="disbursement_method" class="form-control">
+                    <option value="cash">Cash</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="check">Check</option>
+                    <option value="gcash">GCash</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="pay-disbursement_type" class="form-label">Category</label>
+                <select id="pay-disbursement_type" name="disbursement_type" class="form-control">
+                    <option value="supplier"{{if eq .DisbursementType "supplier"}} selected{{end}}>Supplier Payment</option>
+                    <option value="payroll"{{if eq .DisbursementType "payroll"}} selected{{end}}>Payroll</option>
+                    <option value="rent"{{if eq .DisbursementType "rent"}} selected{{end}}>Rent</option>
+                    <option value="utilities"{{if eq .DisbursementType "utilities"}} selected{{end}}>Utilities</option>
+                    <option value="other"{{if eq .DisbursementType "other"}} selected{{end}}>Other</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group">
+                <label for="pay-approved_by" class="form-label">Approved By</label>
+                <input type="text" id="pay-approved_by" name="approved_by" class="form-control"
+                    placeholder="Approver name">
+            </div>
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
+</form>
 {{end}}
 
 {{/* Line Item Drawer Form */}}

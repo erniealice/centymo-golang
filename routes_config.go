@@ -617,6 +617,9 @@ type ExpenditureRoutes struct {
 	LineItemRemoveURL string `json:"line_item_remove_url"`
 	LineItemTableURL  string `json:"line_item_table_url"`
 
+	// Pay action route (creates pre-linked disbursement)
+	PayURL string `json:"pay_url"`
+
 	// Expense category CRUD routes
 	ExpenseCategoryListURL   string `json:"expense_category_list_url"`
 	ExpenseCategoryAddURL    string `json:"expense_category_add_url"`
@@ -674,6 +677,8 @@ func DefaultExpenditureRoutes() ExpenditureRoutes {
 		LineItemRemoveURL: ExpenditureExpenseLineItemRemoveURL,
 		LineItemTableURL:  ExpenditureExpenseLineItemTableURL,
 
+		PayURL: ExpenditureExpensePayURL,
+
 		ExpenseCategoryListURL:   ExpenditureExpenseCategoryListURL,
 		ExpenseCategoryAddURL:    ExpenditureExpenseCategoryAddURL,
 		ExpenseCategoryEditURL:   ExpenditureExpenseCategoryEditURL,
@@ -721,6 +726,7 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 		"expenditure.expense.set_status": r.SetStatusURL,
 		"expenditure.expense.detail":     r.DetailURL,
 		"expenditure.expense.table":      r.TableURL,
+		"expenditure.expense.pay":        r.PayURL,
 
 		"expenditure.expense_category.list":   r.ExpenseCategoryListURL,
 		"expenditure.expense_category.add":    r.ExpenseCategoryAddURL,

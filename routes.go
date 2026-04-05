@@ -290,6 +290,9 @@ const (
 	ExpenditureExpenseLineItemRemoveURL = "/action/expenses/detail/{id}/items/remove"
 	ExpenditureExpenseLineItemTableURL  = "/action/expenses/detail/{id}/items/table"
 
+	// Expenditure pay action route (creates a pre-linked disbursement)
+	ExpenditureExpensePayURL = "/action/expenses/detail/{id}/pay"
+
 	// Expenditure report routes
 	PurchasesSummaryURL = "/app/purchases/reports/purchases-summary"
 	ExpensesSummaryURL  = "/app/expenses/reports/expenses-summary"
