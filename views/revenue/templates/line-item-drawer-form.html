@@ -7,7 +7,6 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="revenue_id" value="{{.RevenueID}}">
-    <input type="hidden" name="price_list_id" id="price_list_id_input" value="{{.PriceListID}}">
     <input type="hidden" name="price_product_id" id="price_product_id_input" value="{{.PriceProductID}}">
 
     <div class="sheet-body">
@@ -111,11 +110,9 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
     if (!hiddenInput) return;
 
     function lookupPrice(productId) {
-        var priceListInput = document.getElementById('price_list_id_input');
         var priceProductInput = document.getElementById('price_product_id_input');
 
-        // Clear previous price IDs on new product selection
-        if (priceListInput) priceListInput.value = '';
+        // Clear previous price ID on new product selection
         if (priceProductInput) priceProductInput.value = '';
 
         if (!productId) return;
@@ -128,9 +125,6 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                 var unitPriceField = document.querySelector('input[name="unit_price"]');
                 if (unitPriceField && data.unit_price != null) {
                     unitPriceField.value = (data.unit_price / 100).toFixed(2);
-                }
-                if (priceListInput && data.price_list_id) {
-                    priceListInput.value = data.price_list_id;
                 }
                 if (priceProductInput && data.price_product_id) {
                     priceProductInput.value = data.price_product_id;

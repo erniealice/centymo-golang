@@ -165,9 +165,6 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		if pid := r.FormValue("product_id"); pid != "" {
 			lineItemData.ProductId = strPtr(pid)
 		}
-		if v := r.FormValue("price_list_id"); v != "" {
-			lineItemData.PriceListId = strPtr(v)
-		}
 		if v := r.FormValue("price_product_id"); v != "" {
 			lineItemData.PriceProductId = strPtr(v)
 		}
@@ -287,9 +284,6 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 		}
 		if pid := r.FormValue("product_id"); pid != "" {
 			updateData.ProductId = strPtr(pid)
-		}
-		if v := r.FormValue("price_list_id"); v != "" {
-			updateData.PriceListId = strPtr(v)
 		}
 		if v := r.FormValue("price_product_id"); v != "" {
 			updateData.PriceProductId = strPtr(v)
