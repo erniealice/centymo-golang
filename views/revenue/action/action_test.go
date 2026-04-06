@@ -140,12 +140,12 @@ func TestNewAddAction_POST_MissingFields(t *testing.T) {
 		},
 		{
 			name:   "missing name",
-			form:   url.Values{"currency": {"PHP"}, "status": {"ongoing"}},
+			form:   url.Values{"currency": {"PHP"}, "status": {"draft"}},
 			wantOK: true,
 		},
 		{
 			name:   "missing currency",
-			form:   url.Values{"name": {"Test Sale"}, "status": {"ongoing"}},
+			form:   url.Values{"name": {"Test Sale"}, "status": {"draft"}},
 			wantOK: true,
 		},
 	}

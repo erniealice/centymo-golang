@@ -13,6 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	linepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
@@ -99,6 +100,19 @@ func NewTableView(deps *ListViewDeps) view.View {
 func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 	listParams := espynahttp.ToListParams(p, productLineSearchFields)
+
+	// Inject status filter for server-side pagination
+	activeValue := status != "inactive"
+	if listParams.Filters == nil {
+		listParams.Filters = &commonpb.FilterRequest{}
+	}
+	listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+		Field: "active",
+		FilterType: &commonpb.TypedFilter_BooleanFilter{
+			BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
+		},
+	})
+
 	resp, err := deps.ListLines(ctx, &linepb.ListLinesRequest{
 		Search:     listParams.Search,
 		Filters:    listParams.Filters,
@@ -178,9 +192,6 @@ func buildTableRows(lines []*linepb.Line, status string, l centymo.ProductLineLa
 		recordStatus := "active"
 		if !line.GetActive() {
 			recordStatus = "inactive"
-		}
-		if recordStatus != status {
-			continue
 		}
 		id := line.GetId()
 		name := line.GetName()

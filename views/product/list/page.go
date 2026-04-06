@@ -211,7 +211,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
 
 	// Build ServerPagination
-	totalRows := len(rows) // TODO: migrate to GetProductListPageData (CTE variant) to get resp.GetPagination().GetTotalItems(); ListProductsResponse has no pagination field
+	totalRows := len(rows)
 	sp := &types.ServerPagination{
 		Enabled:       true,
 		Mode:          "offset",
@@ -279,9 +279,6 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 		recordStatus := "active"
 		if !active {
 			recordStatus = "inactive"
-		}
-		if recordStatus != status {
-			continue
 		}
 
 		id := p.GetId()

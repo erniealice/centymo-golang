@@ -13,6 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 )
 
@@ -89,6 +90,19 @@ func NewTableView(deps *ListViewDeps) view.View {
 func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 	listParams := espynahttp.ToListParams(p, pricePlanSearchFields)
+
+	// Inject status filter for server-side pagination
+	activeValue := status != "inactive"
+	if listParams.Filters == nil {
+		listParams.Filters = &commonpb.FilterRequest{}
+	}
+	listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+		Field: "active",
+		FilterType: &commonpb.TypedFilter_BooleanFilter{
+			BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
+		},
+	})
+
 	resp, err := deps.ListPricePlans(ctx, &priceplanpb.ListPricePlansRequest{
 		Search:     listParams.Search,
 		Filters:    listParams.Filters,
@@ -170,9 +184,6 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 		recordStatus := "active"
 		if !pp.GetActive() {
 			recordStatus = "inactive"
-		}
-		if recordStatus != status {
-			continue
 		}
 
 		id := pp.GetId()

@@ -314,11 +314,11 @@ type RevenueLabels struct {
 
 type RevenuePageLabels struct {
 	Heading          string `json:"heading"`
-	HeadingOngoing   string `json:"headingOngoing"`
+	HeadingDraft     string `json:"headingDraft"`
 	HeadingComplete  string `json:"headingComplete"`
 	HeadingCancelled string `json:"headingCancelled"`
 	Caption          string `json:"caption"`
-	CaptionOngoing   string `json:"captionOngoing"`
+	CaptionDraft     string `json:"captionDraft"`
 	CaptionComplete  string `json:"captionComplete"`
 	CaptionCancelled string `json:"captionCancelled"`
 }
@@ -336,8 +336,8 @@ type RevenueColumnLabels struct {
 }
 
 type RevenueEmptyLabels struct {
-	OngoingTitle     string `json:"ongoingTitle"`
-	OngoingMessage   string `json:"ongoingMessage"`
+	DraftTitle       string `json:"draftTitle"`
+	DraftMessage     string `json:"draftMessage"`
 	CompleteTitle    string `json:"completeTitle"`
 	CompleteMessage  string `json:"completeMessage"`
 	CancelledTitle   string `json:"cancelledTitle"`
@@ -371,7 +371,7 @@ type RevenueFormLabels struct {
 	// Placeholders and translated option labels
 	CurrencyPlaceholder            string `json:"currencyPlaceholder"`
 	CustomerNamePlaceholder        string `json:"customerNamePlaceholder"`
-	StatusOngoing                  string `json:"statusOngoing"`
+	StatusDraft                    string `json:"statusDraft"`
 	StatusComplete                 string `json:"statusComplete"`
 	StatusCancelled                string `json:"statusCancelled"`
 	PaymentMethod                  string `json:"paymentMethod"`
@@ -385,13 +385,15 @@ type RevenueFormLabels struct {
 }
 
 type RevenueActionLabels struct {
-	View            string `json:"view"`
-	Edit            string `json:"edit"`
-	Delete          string `json:"delete"`
-	Complete        string `json:"complete"`
-	Reactivate      string `json:"reactivate"`
-	DownloadInvoice string `json:"downloadInvoice"`
-	SendEmail       string `json:"sendEmail"`
+	View              string `json:"view"`
+	Edit              string `json:"edit"`
+	Delete            string `json:"delete"`
+	Complete          string `json:"complete"`
+	Reactivate        string `json:"reactivate"`
+	DownloadInvoice   string `json:"downloadInvoice"`
+	SendEmail         string `json:"sendEmail"`
+	Cancel            string `json:"cancel"`
+	ReclassifyToDraft string `json:"reclassifyToDraft"`
 }
 
 type RevenueBulkLabels struct {
@@ -481,16 +483,20 @@ type RevenueDetailLabels struct {
 }
 
 type RevenueConfirmLabels struct {
-	Complete              string `json:"complete"`
-	CompleteMessage       string `json:"completeMessage"`
-	Reactivate            string `json:"reactivate"`
-	ReactivateMessage     string `json:"reactivateMessage"`
-	BulkComplete          string `json:"bulkComplete"`
-	BulkCompleteMessage   string `json:"bulkCompleteMessage"`
-	BulkReactivate        string `json:"bulkReactivate"`
-	BulkReactivateMessage string `json:"bulkReactivateMessage"`
-	SendEmail             string `json:"sendEmail"`
-	SendEmailMessage      string `json:"sendEmailMessage"`
+	Complete                 string `json:"complete"`
+	CompleteMessage          string `json:"completeMessage"`
+	Reactivate               string `json:"reactivate"`
+	ReactivateMessage        string `json:"reactivateMessage"`
+	BulkComplete             string `json:"bulkComplete"`
+	BulkCompleteMessage      string `json:"bulkCompleteMessage"`
+	BulkReactivate           string `json:"bulkReactivate"`
+	BulkReactivateMessage    string `json:"bulkReactivateMessage"`
+	SendEmail                string `json:"sendEmail"`
+	SendEmailMessage         string `json:"sendEmailMessage"`
+	Cancel                   string `json:"cancel"`
+	CancelMessage            string `json:"cancelMessage"`
+	ReclassifyToDraft        string `json:"reclassifyToDraft"`
+	ReclassifyToDraftMessage string `json:"reclassifyToDraftMessage"`
 }
 
 type RevenueErrorLabels struct {
@@ -2880,6 +2886,7 @@ func MapTableLabels(common pyeza.CommonLabels) types.TableLabels {
 		Columns:            common.Table.Columns,
 		Export:             common.Table.Export,
 		DensityLabel:       common.Table.Density.Title,
+		DensityDense:       common.Table.Density.Dense,
 		DensityDefault:     common.Table.Density.Default,
 		DensityComfortable: common.Table.Density.Comfortable,
 		DensityCompact:     common.Table.Density.Compact,

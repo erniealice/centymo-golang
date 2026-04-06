@@ -6,12 +6,14 @@ import (
 	"log"
 
 	centymo "github.com/erniealice/centymo-golang"
+	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 )
 
@@ -31,6 +33,9 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
+var planAllowedSortCols = []string{"date_created", "name", "status"}
+var planSearchFields = []string{"name", "description"}
+
 // NewView creates the plan list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -39,7 +44,12 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, status)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, planAllowedSortCols)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		tableConfig, err := buildTableConfig(ctx, deps, status, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -74,7 +84,12 @@ func NewTableView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, status)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, planAllowedSortCols)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		tableConfig, err := buildTableConfig(ctx, deps, status, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -84,10 +99,29 @@ func NewTableView(deps *ListViewDeps) view.View {
 }
 
 // buildTableConfig fetches plan data and builds the table configuration.
-func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string) (*types.TableConfig, error) {
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 
-	resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
+	listParams := espynahttp.ToListParams(p, planSearchFields)
+
+	// Inject status filter for server-side pagination
+	activeValue := status != "inactive"
+	if listParams.Filters == nil {
+		listParams.Filters = &commonpb.FilterRequest{}
+	}
+	listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+		Field: "active",
+		FilterType: &commonpb.TypedFilter_BooleanFilter{
+			BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
+		},
+	})
+
+	resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{
+		Search:     listParams.Search,
+		Filters:    listParams.Filters,
+		Sort:       listParams.Sort,
+		Pagination: listParams.Pagination,
+	})
 	if err != nil {
 		log.Printf("Failed to list plans: %v", err)
 		return nil, fmt.Errorf("failed to load plans: %w", err)
@@ -181,9 +215,6 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, r
 		recordStatus := "active"
 		if !active {
 			recordStatus = "inactive"
-		}
-		if recordStatus != status {
-			continue
 		}
 
 		id := p.GetId()

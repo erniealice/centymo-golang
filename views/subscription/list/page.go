@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 
 	centymo "github.com/erniealice/centymo-golang"
+	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
@@ -31,6 +34,12 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
+var subscriptionAllowedSortCols = []string{
+	"date_created", "date_start", "date_end", "name",
+}
+
+var subscriptionSearchFields = []string{"name"}
+
 // NewView creates the subscription list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -41,7 +50,31 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 
-		resp, err := deps.GetSubscriptionListPageData(ctx, &subscriptionpb.GetSubscriptionListPageDataRequest{})
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, subscriptionAllowedSortCols)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		listParams := espynahttp.ToListParams(p, subscriptionSearchFields)
+
+		// Inject status filter for server-side pagination
+		activeValue := status != "inactive"
+		if listParams.Filters == nil {
+			listParams.Filters = &commonpb.FilterRequest{}
+		}
+		listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+			Field: "s.active",
+			FilterType: &commonpb.TypedFilter_BooleanFilter{
+				BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
+			},
+		})
+
+		resp, err := deps.GetSubscriptionListPageData(ctx, &subscriptionpb.GetSubscriptionListPageDataRequest{
+			Search:     listParams.Search,
+			Filters:    listParams.Filters,
+			Sort:       listParams.Sort,
+			Pagination: listParams.Pagination,
+		})
 		if err != nil {
 			log.Printf("Failed to list subscriptions: %v", err)
 			return view.Error(fmt.Errorf("failed to load subscriptions: %w", err))
@@ -52,8 +85,28 @@ func NewView(deps *ListViewDeps) view.View {
 		rows := buildTableRows(resp.GetSubscriptionList(), status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
+		refreshURL := route.ResolveURL(deps.Routes.ListURL, "status", status)
+
+		// Build ServerPagination
+		totalRows := int(resp.GetPagination().GetTotalItems())
+		sp := &types.ServerPagination{
+			Enabled:       true,
+			Mode:          "offset",
+			CurrentPage:   p.Page,
+			PageSize:      p.PageSize,
+			TotalRows:     totalRows,
+			TotalPages:    int(math.Ceil(float64(totalRows) / float64(p.PageSize))),
+			SearchQuery:   p.Search,
+			SortColumn:    p.SortColumn,
+			SortDirection: p.SortDir,
+			FiltersJSON:   p.FiltersRaw,
+			PaginationURL: refreshURL,
+		}
+		sp.BuildDisplay()
+
 		tableConfig := &types.TableConfig{
 			ID:                   "subscriptions-table",
+			RefreshURL:           refreshURL,
 			Columns:              columns,
 			Rows:                 rows,
 			ShowSearch:           true,
@@ -76,6 +129,7 @@ func NewView(deps *ListViewDeps) view.View {
 				Disabled:        !perms.Can("subscription", "create"),
 				DisabledTooltip: l.Errors.NoPermission,
 			},
+			ServerPagination: sp,
 		}
 		types.ApplyTableSettings(tableConfig)
 
@@ -115,9 +169,6 @@ func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string,
 		recordStatus := "active"
 		if !active {
 			recordStatus = "inactive"
-		}
-		if recordStatus != status {
-			continue
 		}
 
 		id := s.GetId()

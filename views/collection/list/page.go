@@ -6,12 +6,14 @@ import (
 	"log"
 
 	centymo "github.com/erniealice/centymo-golang"
+	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 )
 
@@ -32,6 +34,9 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
+var collectionAllowedSortCols = []string{"date_created", "date_modified", "status"}
+var collectionSearchFields = []string{"name", "reference_number", "status"}
+
 // NewView creates the collection list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -42,7 +47,33 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "pending"
 		}
 
-		resp, err := deps.ListCollections(ctx, &collectionpb.ListCollectionsRequest{})
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, collectionAllowedSortCols)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		listParams := espynahttp.ToListParams(p, collectionSearchFields)
+
+		// Inject status filter for server-side pagination
+		if listParams.Filters == nil {
+			listParams.Filters = &commonpb.FilterRequest{}
+		}
+		listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+			Field: "status",
+			FilterType: &commonpb.TypedFilter_StringFilter{
+				StringFilter: &commonpb.StringFilter{
+					Value:    status,
+					Operator: commonpb.StringOperator_STRING_EQUALS,
+				},
+			},
+		})
+
+		resp, err := deps.ListCollections(ctx, &collectionpb.ListCollectionsRequest{
+			Search:     listParams.Search,
+			Filters:    listParams.Filters,
+			Sort:       listParams.Sort,
+			Pagination: listParams.Pagination,
+		})
 		if err != nil {
 			log.Printf("Failed to list collections: %v", err)
 			return view.Error(fmt.Errorf("failed to load collections: %w", err))
@@ -122,9 +153,6 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l cen
 	rows := []types.TableRow{}
 	for _, c := range collections {
 		recordStatus := c.GetStatus()
-		if recordStatus != status {
-			continue
-		}
 
 		id := c.GetId()
 		refNumber := c.GetReferenceNumber()

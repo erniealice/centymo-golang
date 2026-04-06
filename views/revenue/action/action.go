@@ -37,7 +37,7 @@ type PaymentTermOption struct {
 // FormInner holds nested form labels accessed via .Labels.Form.* in templates.
 type FormInner struct {
 	CurrencyPlaceholder        string
-	StatusOngoing              string
+	StatusDraft                string
 	StatusComplete             string
 	StatusCancelled            string
 	CustomerNamePlaceholder    string
@@ -164,7 +164,7 @@ func formLabels(t func(string) string) FormLabels {
 		RevenueTypeFromEngagement: t("revenue.form.revenueTypeFromEngagement"),
 		Form: FormInner{
 			CurrencyPlaceholder:       t("revenue.form.currencyPlaceholder"),
-			StatusOngoing:             t("revenue.form.statusOngoing"),
+			StatusDraft:               t("revenue.form.statusDraft"),
 			StatusComplete:            t("revenue.form.statusComplete"),
 			StatusCancelled:           t("revenue.form.statusCancelled"),
 			CustomerNamePlaceholder:   t("revenue.form.customerNamePlaceholder"),
@@ -272,7 +272,7 @@ func NewAddAction(deps *Deps) view.View {
 			return view.OK("revenue-drawer-form", &FormData{
 				FormAction:            deps.Routes.AddURL,
 				Currency:              "PHP",
-				Status:                "ongoing",
+				Status:                "draft",
 				SearchLocationURL:     deps.Routes.SearchLocationURL,
 				PaymentTerms:          paymentTerms,
 				SearchClientURL:       deps.Routes.SearchClientURL,
@@ -309,8 +309,13 @@ func NewAddAction(deps *Deps) view.View {
 			Currency:        r.FormValue("currency"),
 			Status:          r.FormValue("status"),
 			Notes:           strPtr(r.FormValue("notes")),
-			LocationId:      r.FormValue("location_id"),
-			PaymentTermId:   strPtr(r.FormValue("payment_term_id")),
+			LocationId: r.FormValue("location_id"),
+			PaymentTermId: func() *string {
+				if v := r.FormValue("payment_term_id"); v != "" {
+					return &v
+				}
+				return nil
+			}(),
 		}
 		if subscriptionID != "" {
 			revenueData.SubscriptionId = &subscriptionID
@@ -543,9 +548,14 @@ func NewEditAction(deps *Deps) view.View {
 				RevenueDate:     strPtr(r.FormValue("revenue_date_string")),
 				Currency:        r.FormValue("currency"),
 				Status:          r.FormValue("status"),
-				Notes:           strPtr(r.FormValue("notes")),
-				LocationId:      r.FormValue("location_id"),
-				PaymentTermId:   strPtr(r.FormValue("payment_term_id")),
+				Notes:      strPtr(r.FormValue("notes")),
+				LocationId: r.FormValue("location_id"),
+				PaymentTermId: func() *string {
+					if v := r.FormValue("payment_term_id"); v != "" {
+						return &v
+					}
+					return nil
+				}(),
 			},
 		})
 		if err != nil {
@@ -624,7 +634,7 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 }
 
 // NewSetStatusAction creates the sales status update action (POST only).
-// Expects query params: ?id={saleId}&status={ongoing|complete|cancelled}
+// Expects query params: ?id={saleId}&status={draft|complete|cancelled}
 //
 // Business rules:
 //   - D20: Block completion with zero line items
@@ -649,7 +659,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 		if id == "" {
 			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
-		if targetStatus != "ongoing" && targetStatus != "complete" && targetStatus != "cancelled" {
+		if targetStatus != "draft" && targetStatus != "complete" && targetStatus != "cancelled" {
 			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
@@ -708,7 +718,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			return centymo.HTMXSuccess("sales-table")
 		}
 
-		// Default: ongoing — just update status
+		// Default: draft — just update status
 		if _, err := deps.UpdateRevenue(ctx, &revenuepb.UpdateRevenueRequest{
 			Data: &revenuepb.Revenue{Id: id, Status: targetStatus},
 		}); err != nil {
@@ -743,7 +753,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		if len(ids) == 0 {
 			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
-		if targetStatus != "ongoing" && targetStatus != "complete" && targetStatus != "cancelled" {
+		if targetStatus != "draft" && targetStatus != "complete" && targetStatus != "cancelled" {
 			return centymo.HTMXError(deps.Labels.Errors.InvalidTargetStatus)
 		}
 

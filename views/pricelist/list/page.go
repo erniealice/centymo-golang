@@ -13,6 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 
 	"github.com/erniealice/centymo-golang"
@@ -119,6 +120,19 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	perms := view.GetUserPermissions(ctx)
 
 	listParams := espynahttp.ToListParams(p, priceListSearchFields)
+
+	// Inject status filter for server-side pagination
+	activeValue := status != "inactive"
+	if listParams.Filters == nil {
+		listParams.Filters = &commonpb.FilterRequest{}
+	}
+	listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+		Field: "active",
+		FilterType: &commonpb.TypedFilter_BooleanFilter{
+			BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
+		},
+	})
+
 	resp, err := deps.ListPriceLists(ctx, &pricelistpb.ListPriceListsRequest{
 		Search:     listParams.Search,
 		Filters:    listParams.Filters,
@@ -162,7 +176,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
 
 	// Build ServerPagination
-	totalRows := len(rows) // TODO: migrate to GetPriceListListPageData (CTE variant) to get resp.GetPagination().GetTotalItems(); ListPriceListsResponse has no pagination field
+	totalRows := len(rows)
 	sp := &types.ServerPagination{
 		Enabled:       true,
 		Mode:          "offset",
@@ -230,9 +244,6 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 		recordStatus := "active"
 		if !active {
 			recordStatus = "inactive"
-		}
-		if recordStatus != status {
-			continue
 		}
 
 		id := pl.GetId()

@@ -13,6 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
@@ -45,7 +46,7 @@ func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
-			status = "ongoing"
+			status = "draft"
 		}
 
 		p, err := espynahttp.ParseTableParams(viewCtx.Request, revenueAllowedSortCols)
@@ -95,7 +96,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
-			status = "ongoing"
+			status = "draft"
 		}
 
 		p, err := espynahttp.ParseTableParams(viewCtx.Request, revenueAllowedSortCols)
@@ -117,6 +118,21 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	perms := view.GetUserPermissions(ctx)
 
 	listParams := espynahttp.ToListParams(p, revenueSearchFields)
+
+	// Inject status filter for server-side pagination
+	if listParams.Filters == nil {
+		listParams.Filters = &commonpb.FilterRequest{}
+	}
+	listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+		Field: "rv.status",
+		FilterType: &commonpb.TypedFilter_StringFilter{
+			StringFilter: &commonpb.StringFilter{
+				Value:    status,
+				Operator: commonpb.StringOperator_STRING_EQUALS,
+			},
+		},
+	})
+
 	resp, err := deps.GetListPageData(ctx, &revenuepb.GetRevenueListPageDataRequest{
 		Search:     listParams.Search,
 		Filters:    listParams.Filters,
@@ -196,7 +212,6 @@ func salesColumns(l centymo.RevenueLabels) []types.TableColumn {
 		{Key: "client_name", Label: l.Columns.Customer, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
 		{Key: "date_created", Label: l.Columns.Date, Sortable: true, Filterable: true, FilterType: types.FilterTypeDate, Width: "140px"},
 		{Key: "total_amount", Label: l.Columns.Amount, Sortable: true, Filterable: true, FilterType: types.FilterTypeMoney, Width: "140px", Align: "right"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, Width: "120px"},
 	}
 }
 
@@ -204,9 +219,6 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 	rows := []types.TableRow{}
 	for _, r := range revenues {
 		recordStatus := r.GetStatus()
-		if recordStatus != status {
-			continue
-		}
 
 		id := r.GetId()
 		refNumber := r.GetReferenceNumber()
@@ -218,26 +230,32 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
 			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
-			// Download invoice action
-			{Type: "download", Label: l.Actions.DownloadInvoice, Action: "download", URL: route.ResolveURL(routes.InvoiceDownloadURL, "id", id), ItemName: refNumber, ConfirmTitle: l.Actions.DownloadInvoice, ConfirmMessage: fmt.Sprintf("Download invoice for %s?", refNumber), Disabled: !perms.Can("invoice", "read"), DisabledTooltip: l.Errors.PermissionDenied},
-			// Send email action
-			{Type: "mail", Label: l.Actions.SendEmail, Action: "send-email", URL: route.ResolveURL(routes.SendEmailURL, "id", id), ItemName: refNumber, ConfirmTitle: l.Confirm.SendEmail, ConfirmMessage: fmt.Sprintf(l.Confirm.SendEmailMessage, refNumber), Disabled: !perms.Can("invoice", "read"), DisabledTooltip: l.Errors.PermissionDenied},
 		}
-		if recordStatus == "ongoing" {
-			actions = append(actions, types.TableAction{
-				Type: "deactivate", Label: l.Actions.Complete, Action: "deactivate",
-				URL: routes.SetStatusURL + "?status=complete", ItemName: refNumber,
-				ConfirmTitle:    l.Confirm.Complete,
-				ConfirmMessage:  fmt.Sprintf(l.Confirm.CompleteMessage, refNumber),
-				Disabled:        !perms.Can("invoice", "update"),
-				DisabledTooltip: l.Errors.PermissionDenied,
-			})
+		if recordStatus == "draft" {
+			actions = append(actions,
+				types.TableAction{
+					Type: "complete", Label: l.Actions.Complete, Action: "complete",
+					URL: routes.SetStatusURL + "?status=complete", ItemName: refNumber,
+					ConfirmTitle:    l.Confirm.Complete,
+					ConfirmMessage:  fmt.Sprintf(l.Confirm.CompleteMessage, refNumber),
+					Disabled:        !perms.Can("invoice", "update"),
+					DisabledTooltip: l.Errors.PermissionDenied,
+				},
+				types.TableAction{
+					Type: "cancel", Label: l.Actions.Cancel, Action: "cancel",
+					URL: routes.SetStatusURL + "?status=cancelled", ItemName: refNumber,
+					ConfirmTitle:    l.Confirm.Cancel,
+					ConfirmMessage:  fmt.Sprintf(l.Confirm.CancelMessage, refNumber),
+					Disabled:        !perms.Can("invoice", "update"),
+					DisabledTooltip: l.Errors.PermissionDenied,
+				},
+			)
 		} else {
 			actions = append(actions, types.TableAction{
-				Type: "activate", Label: l.Actions.Reactivate, Action: "activate",
-				URL: routes.SetStatusURL + "?status=ongoing", ItemName: refNumber,
-				ConfirmTitle:    l.Confirm.Reactivate,
-				ConfirmMessage:  fmt.Sprintf(l.Confirm.ReactivateMessage, refNumber),
+				Type: "reclassify", Label: l.Actions.ReclassifyToDraft, Action: "reclassify",
+				URL: routes.SetStatusURL + "?status=draft", ItemName: refNumber,
+				ConfirmTitle:    l.Confirm.ReclassifyToDraft,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.ReclassifyToDraftMessage, refNumber),
 				Disabled:        !perms.Can("invoice", "update"),
 				DisabledTooltip: l.Errors.PermissionDenied,
 			})
@@ -250,14 +268,12 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 				{Type: "text", Value: name},
 				types.DateTimeCell(date, types.DateReadable),
 				{Type: "text", Value: amount},
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"reference": refNumber,
 				"customer":  name,
 				"date":      date,
 				"amount":    amount,
-				"status":    recordStatus,
 			},
 			Actions: actions,
 		})
@@ -267,8 +283,8 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 
 func statusPageTitle(l centymo.RevenueLabels, status string) string {
 	switch status {
-	case "ongoing":
-		return l.Page.HeadingOngoing
+	case "draft":
+		return l.Page.HeadingDraft
 	case "complete":
 		return l.Page.HeadingComplete
 	case "cancelled":
@@ -280,8 +296,8 @@ func statusPageTitle(l centymo.RevenueLabels, status string) string {
 
 func statusPageCaption(l centymo.RevenueLabels, status string) string {
 	switch status {
-	case "ongoing":
-		return l.Page.CaptionOngoing
+	case "draft":
+		return l.Page.CaptionDraft
 	case "complete":
 		return l.Page.CaptionComplete
 	case "cancelled":
@@ -293,40 +309,27 @@ func statusPageCaption(l centymo.RevenueLabels, status string) string {
 
 func statusEmptyTitle(l centymo.RevenueLabels, status string) string {
 	switch status {
-	case "ongoing":
-		return l.Empty.OngoingTitle
+	case "draft":
+		return l.Empty.DraftTitle
 	case "complete":
 		return l.Empty.CompleteTitle
 	case "cancelled":
 		return l.Empty.CancelledTitle
 	default:
-		return l.Empty.OngoingTitle
+		return l.Empty.DraftTitle
 	}
 }
 
 func statusEmptyMessage(l centymo.RevenueLabels, status string) string {
 	switch status {
-	case "ongoing":
-		return l.Empty.OngoingMessage
+	case "draft":
+		return l.Empty.DraftMessage
 	case "complete":
 		return l.Empty.CompleteMessage
 	case "cancelled":
 		return l.Empty.CancelledMessage
 	default:
-		return l.Empty.OngoingMessage
-	}
-}
-
-func statusVariant(status string) string {
-	switch status {
-	case "ongoing":
-		return "info"
-	case "complete":
-		return "success"
-	case "cancelled":
-		return "warning"
-	default:
-		return "default"
+		return l.Empty.DraftMessage
 	}
 }
 
@@ -334,7 +337,7 @@ func buildBulkActions(common pyeza.CommonLabels, l centymo.RevenueLabels, status
 	actions := []types.BulkAction{}
 
 	switch status {
-	case "ongoing":
+	case "draft":
 		actions = append(actions, types.BulkAction{
 			Key:             "complete",
 			Label:           l.Confirm.BulkComplete,
@@ -354,7 +357,7 @@ func buildBulkActions(common pyeza.CommonLabels, l centymo.RevenueLabels, status
 			Endpoint:        routes.BulkSetStatusURL,
 			ConfirmTitle:    l.Confirm.BulkReactivate,
 			ConfirmMessage:  l.Confirm.BulkReactivateMessage,
-			ExtraParamsJSON: `{"target_status":"ongoing"}`,
+			ExtraParamsJSON: `{"target_status":"draft"}`,
 		})
 	}
 
