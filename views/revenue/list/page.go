@@ -145,12 +145,21 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 
 	l := deps.Labels
-	columns := salesColumns(l)
+	columns := revenueColumns(l)
 	rows := buildTableRows(resp.GetRevenueList(), status, l, deps.Routes, perms)
 	types.ApplyColumnStyles(columns, rows)
 
+	// Check if any revenue in list has a treasury collection (blocks bulk revert)
+	hasAnyCollection := false
+	for _, r := range resp.GetRevenueList() {
+		if r.GetFulfillmentStatus() == "has_collection" {
+			hasAnyCollection = true
+			break
+		}
+	}
+
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-	bulkCfg.Actions = buildBulkActions(deps.CommonLabels, l, status, deps.Routes)
+	bulkCfg.Actions = buildBulkActions(deps.CommonLabels, l, status, deps.Routes, hasAnyCollection)
 
 	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
 
@@ -206,7 +215,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	return tableConfig, nil
 }
 
-func salesColumns(l centymo.RevenueLabels) []types.TableColumn {
+func revenueColumns(l centymo.RevenueLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "reference_number", Label: l.Columns.Reference, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
 		{Key: "client_name", Label: l.Columns.Customer, Sortable: true, Filterable: true, FilterType: types.FilterTypeString, Width: "300px"},
@@ -292,6 +301,7 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 				"customer":  name,
 				"date":      revenueDate,
 				"amount":    amount,
+				"undoable":  func() string { if r.GetFulfillmentStatus() == "has_collection" { return "false" }; return "true" }(),
 			},
 			Actions: actions,
 		})
@@ -351,7 +361,7 @@ func statusEmptyMessage(l centymo.RevenueLabels, status string) string {
 	}
 }
 
-func buildBulkActions(common pyeza.CommonLabels, l centymo.RevenueLabels, status string, routes centymo.RevenueRoutes) []types.BulkAction {
+func buildBulkActions(common pyeza.CommonLabels, l centymo.RevenueLabels, status string, routes centymo.RevenueRoutes, hasAnyCollection bool) []types.BulkAction {
 	actions := []types.BulkAction{}
 
 	switch status {
@@ -366,17 +376,20 @@ func buildBulkActions(common pyeza.CommonLabels, l centymo.RevenueLabels, status
 			ConfirmMessage:  l.Confirm.BulkCompleteMessage,
 			ExtraParamsJSON: `{"target_status":"complete"}`,
 		})
-	case "complete", "cancelled":
+	case "complete":
 		actions = append(actions, types.BulkAction{
-			Key:             "reactivate",
-			Label:           l.Confirm.BulkReactivate,
-			Icon:            "icon-play",
-			Variant:         "primary",
-			Endpoint:        routes.BulkSetStatusURL,
-			ConfirmTitle:    l.Confirm.BulkReactivate,
-			ConfirmMessage:  l.Confirm.BulkReactivateMessage,
-			ExtraParamsJSON: `{"target_status":"draft"}`,
+			Key:              "revert",
+			Label:            l.Confirm.BulkReactivate,
+			Icon:             "icon-undo",
+			Variant:          "warning",
+			Endpoint:         routes.BulkSetStatusURL,
+			ConfirmTitle:     l.Confirm.BulkReactivate,
+			ConfirmMessage:   l.Confirm.BulkReactivateMessage,
+			ExtraParamsJSON:  `{"target_status":"draft"}`,
+			RequiresDataAttr: "undoable",
 		})
+	case "cancelled":
+		// view only — no bulk actions
 	}
 
 	return actions
