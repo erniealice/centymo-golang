@@ -36,7 +36,7 @@ type PageData struct {
 }
 
 var revenueAllowedSortCols = []string{
-	"date_created", "date_modified", "total_amount", "status",
+	"revenue_date_string", "date_created", "date_modified", "total_amount", "status",
 }
 
 var revenueSearchFields = []string{"reference_number", "client_name"}
@@ -184,7 +184,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		ShowExport:           true,
 		ShowDensity:          true,
 		ShowEntries:          true,
-		DefaultSortColumn:    "date_created",
+		DefaultSortColumn:    "revenue_date_string",
 		DefaultSortDirection: "desc",
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
@@ -209,9 +209,11 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 func salesColumns(l centymo.RevenueLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "reference_number", Label: l.Columns.Reference, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "client_name", Label: l.Columns.Customer, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "date_created", Label: l.Columns.Date, Sortable: true, Filterable: true, FilterType: types.FilterTypeDate, Width: "140px"},
+		{Key: "client_name", Label: l.Columns.Customer, Sortable: true, Filterable: true, FilterType: types.FilterTypeString, Width: "300px"},
+		{Key: "revenue_date_string", Label: l.Form.Date, Sortable: true, Filterable: true, FilterType: types.FilterTypeDate, Width: "140px"},
 		{Key: "total_amount", Label: l.Columns.Amount, Sortable: true, Filterable: true, FilterType: types.FilterTypeMoney, Width: "140px", Align: "right"},
+		{Key: "due_date", Label: l.Form.DueDate, Sortable: true, Width: "140px"},
+		{Key: "payment_term", Label: l.Form.PaymentTerms, Sortable: false, Width: "140px"},
 	}
 }
 
@@ -223,42 +225,56 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 		id := r.GetId()
 		refNumber := r.GetReferenceNumber()
 		name := r.GetName()
-		date := r.GetRevenueDate()
+		revenueDate := r.GetRevenueDate()
 		amount := centymo.FormatCentavoAmount(r.GetTotalAmount(), r.GetCurrency())
+		dueDate := r.GetDueDate()
+		paymentTermName := ""
+		if pt := r.GetPaymentTerm(); pt != nil {
+			paymentTermName = pt.GetName()
+		}
 
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
-			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
 		}
-		if recordStatus == "draft" {
+		switch recordStatus {
+		case "draft":
+			actions = append(actions,
+				types.TableAction{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+				types.TableAction{
+					Type: "check", Label: l.Actions.Complete, Action: "deactivate",
+					URL: routes.SetStatusURL + "?status=complete", ItemName: refNumber,
+					ConfirmTitle: l.Confirm.Complete, ConfirmMessage: fmt.Sprintf(l.Confirm.CompleteMessage, refNumber),
+					Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied,
+				},
+				types.TableAction{
+					Type: "delete", Label: l.Actions.Cancel, Action: "delete",
+					URL: routes.SetStatusURL + "?status=cancelled", ItemName: refNumber,
+					ConfirmTitle: l.Confirm.Cancel, ConfirmMessage: fmt.Sprintf(l.Confirm.CancelMessage, refNumber),
+					Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied,
+				},
+				types.TableAction{Type: "download", Label: l.Actions.DownloadInvoice, Action: "download", URL: route.ResolveURL(routes.InvoiceDownloadURL, "id", id), ItemName: refNumber, ConfirmTitle: l.Actions.DownloadInvoice, ConfirmMessage: fmt.Sprintf("Download invoice for %s?", refNumber), Disabled: !perms.Can("invoice", "read"), DisabledTooltip: l.Errors.PermissionDenied},
+				types.TableAction{Type: "mail", Label: l.Actions.SendEmail, Action: "send-email", URL: route.ResolveURL(routes.SendEmailURL, "id", id), ItemName: refNumber, ConfirmTitle: l.Confirm.SendEmail, ConfirmMessage: fmt.Sprintf(l.Confirm.SendEmailMessage, refNumber), Disabled: !perms.Can("invoice", "read"), DisabledTooltip: l.Errors.PermissionDenied},
+			)
+		case "complete":
+			hasCollection := r.GetFulfillmentStatus() == "has_collection"
+			undoDisabled := !perms.Can("invoice", "update") || hasCollection
+			undoTooltip := l.Errors.PermissionDenied
+			if hasCollection {
+				undoTooltip = l.Errors.HasPaymentsCannotCancel
+			}
 			actions = append(actions,
 				types.TableAction{
-					Type: "complete", Label: l.Actions.Complete, Action: "complete",
-					URL: routes.SetStatusURL + "?status=complete", ItemName: refNumber,
-					ConfirmTitle:    l.Confirm.Complete,
-					ConfirmMessage:  fmt.Sprintf(l.Confirm.CompleteMessage, refNumber),
-					Disabled:        !perms.Can("invoice", "update"),
-					DisabledTooltip: l.Errors.PermissionDenied,
+					Type: "undo", Label: l.Actions.ReclassifyToDraft, Action: "undo",
+					URL: routes.SetStatusURL + "?status=draft", ItemName: refNumber,
+					ConfirmTitle: l.Confirm.ReclassifyToDraft, ConfirmMessage: fmt.Sprintf(l.Confirm.ReclassifyToDraftMessage, refNumber),
+					Disabled: undoDisabled, DisabledTooltip: undoTooltip,
 				},
-				types.TableAction{
-					Type: "cancel", Label: l.Actions.Cancel, Action: "cancel",
-					URL: routes.SetStatusURL + "?status=cancelled", ItemName: refNumber,
-					ConfirmTitle:    l.Confirm.Cancel,
-					ConfirmMessage:  fmt.Sprintf(l.Confirm.CancelMessage, refNumber),
-					Disabled:        !perms.Can("invoice", "update"),
-					DisabledTooltip: l.Errors.PermissionDenied,
-				},
+				types.TableAction{Type: "download", Label: l.Actions.DownloadInvoice, Action: "download", URL: route.ResolveURL(routes.InvoiceDownloadURL, "id", id), ItemName: refNumber, ConfirmTitle: l.Actions.DownloadInvoice, ConfirmMessage: fmt.Sprintf("Download invoice for %s?", refNumber), Disabled: !perms.Can("invoice", "read"), DisabledTooltip: l.Errors.PermissionDenied},
+				types.TableAction{Type: "mail", Label: l.Actions.SendEmail, Action: "send-email", URL: route.ResolveURL(routes.SendEmailURL, "id", id), ItemName: refNumber, ConfirmTitle: l.Confirm.SendEmail, ConfirmMessage: fmt.Sprintf(l.Confirm.SendEmailMessage, refNumber), Disabled: !perms.Can("invoice", "read"), DisabledTooltip: l.Errors.PermissionDenied},
 			)
-		} else {
-			actions = append(actions, types.TableAction{
-				Type: "reclassify", Label: l.Actions.ReclassifyToDraft, Action: "reclassify",
-				URL: routes.SetStatusURL + "?status=draft", ItemName: refNumber,
-				ConfirmTitle:    l.Confirm.ReclassifyToDraft,
-				ConfirmMessage:  fmt.Sprintf(l.Confirm.ReclassifyToDraftMessage, refNumber),
-				Disabled:        !perms.Can("invoice", "update"),
-				DisabledTooltip: l.Errors.PermissionDenied,
-			})
+		case "cancelled":
+			// view only — no other actions
 		}
 		rows = append(rows, types.TableRow{
 			ID:   id,
@@ -266,13 +282,15 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 			Cells: []types.TableCell{
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: name},
-				types.DateTimeCell(date, types.DateReadable),
+				types.DateTimeCell(revenueDate, types.DateReadable),
 				{Type: "text", Value: amount},
+				types.DateTimeCell(dueDate, types.DateReadable),
+				{Type: "text", Value: paymentTermName},
 			},
 			DataAttrs: map[string]string{
 				"reference": refNumber,
 				"customer":  name,
-				"date":      date,
+				"date":      revenueDate,
 				"amount":    amount,
 			},
 			Actions: actions,
