@@ -36,6 +36,7 @@ type PaymentTermOption struct {
 
 // FormInner holds nested form labels accessed via .Labels.Form.* in templates.
 type FormInner struct {
+	SectionInfo                string
 	CurrencyPlaceholder        string
 	StatusDraft                string
 	StatusComplete             string
@@ -163,6 +164,7 @@ func formLabels(t func(string) string) FormLabels {
 		RevenueTypeOneTime:        t("revenue.form.revenueTypeOneTime"),
 		RevenueTypeFromEngagement: t("revenue.form.revenueTypeFromEngagement"),
 		Form: FormInner{
+			SectionInfo:               t("revenue.form.sectionInfo"),
 			CurrencyPlaceholder:       t("revenue.form.currencyPlaceholder"),
 			StatusDraft:               t("revenue.form.statusDraft"),
 			StatusComplete:            t("revenue.form.statusComplete"),

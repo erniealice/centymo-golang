@@ -1,16 +1,17 @@
 {{/*
 Revenue drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .Locations,
-      .PaymentTerms, .SelectedPaymentTermID, .DueDateString,
-      .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "revenue-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="status" value="{{if .Status}}{{.Status}}{{else}}draft{{end}}">
 
     <div class="sheet-body">
-        {{/* --- Sale Information --- */}}
+
+        {{/* ─── Invoice Details ─── */}}
+        {{template "form-section" (dict "Title" .Labels.Form.SectionInfo)}}
+
         <div class="form-row single">
             {{template "form-group" (dict
                 "Type" "text"
@@ -40,21 +41,6 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
         </div>
 
         <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "select"
-                "Name" "status"
-                "Label" .Labels.Status
-                "Value" .Status
-                "Options" (list
-                    (dict "Value" "draft" "Label" .Labels.Form.StatusDraft)
-                    (dict "Value" "complete" "Label" .Labels.Form.StatusComplete)
-                    (dict "Value" "cancelled" "Label" .Labels.Form.StatusCancelled)
-                )
-            )}}
-        </div>
-
-        {{/* --- Revenue Type --- */}}
-        <div class="form-row single">
             <div class="form-group">
                 <label class="form-label">{{.Labels.RevenueType}}</label>
                 <div class="radio-group" data-testid="revenue-type-radio">
@@ -70,27 +56,7 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
             </div>
         </div>
 
-        {{/* --- Location --- */}}
-        <div id="location-row">
-        {{template "form-section" (dict "Title" .Labels.Location)}}
-
-        <div class="form-row single">
-            {{template "auto-complete" (dict
-                "ID" "location-search"
-                "Name" "location_id"
-                "Label" .Labels.Location
-                "Placeholder" .Labels.Form.LocationPlaceholder
-                "SearchPlaceholder" .Labels.Form.LocationSearchPlaceholder
-                "SearchURL" .SearchLocationURL
-                "Value" .LocationID
-                "SelectedLabel" .LocationLabel
-                "Required" true
-                "NoResults" .Labels.Form.LocationNoResults
-            )}}
-        </div>
-        </div>
-
-        {{/* --- Customer --- */}}
+        {{/* ─── Client & Location ─── */}}
         {{template "form-section" (dict "Title" .Labels.Customer)}}
 
         <div class="form-row single">
@@ -106,6 +72,23 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                 "Required" true
                 "NoResults" .Labels.Form.CustomerNoResults
             )}}
+        </div>
+
+        <div id="location-row">
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "location-search"
+                "Name" "location_id"
+                "Label" .Labels.Location
+                "Placeholder" .Labels.Form.LocationPlaceholder
+                "SearchPlaceholder" .Labels.Form.LocationSearchPlaceholder
+                "SearchURL" .SearchLocationURL
+                "Value" .LocationID
+                "SelectedLabel" .LocationLabel
+                "Required" true
+                "NoResults" .Labels.Form.LocationNoResults
+            )}}
+        </div>
         </div>
 
         {{if .SearchSubscriptionURL}}
@@ -125,73 +108,48 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
         (function() {
             var subContainer = document.getElementById('subscription-search');
             if (!subContainer) return;
-
-            // Store the base URL once so repeated client changes don't corrupt it.
             var baseURL = '{{.SearchSubscriptionURL}}';
             subContainer.dataset.baseSearchUrl = baseURL;
 
-            // Update the subscription autocomplete's search URL and open the dropdown
-            // so results load immediately (minChars=0, so doSearch('') fires on open).
             function loadSubscriptionResults(clientID) {
                 subContainer.dataset.searchUrl = baseURL + (baseURL.includes('?') ? '&' : '?') + 'client_id=' + encodeURIComponent(clientID);
-                // Open the dropdown so the autocomplete component fetches results.
                 var subTrigger = subContainer.querySelector('.auto-complete-trigger');
                 if (subTrigger && !subContainer.classList.contains('open')) {
                     subTrigger.click();
                 } else {
-                    // Already open — re-trigger a search with the updated URL.
                     var subSearch = subContainer.querySelector('.auto-complete-search');
-                    if (subSearch) {
-                        subSearch.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
+                    if (subSearch) subSearch.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             }
 
             function clearSubscription() {
-                // Reset the search URL so empty-state is shown until a new client is picked.
                 subContainer.dataset.searchUrl = '';
-                // Reset the hidden value and display.
                 var hiddenInput = subContainer.querySelector('.auto-complete-input');
                 var display = subContainer.querySelector('.auto-complete-display');
                 var clearBtn = subContainer.querySelector('.auto-complete-clear');
-                if (hiddenInput) {
-                    hiddenInput.value = '';
-                    hiddenInput.setAttribute('value', '');
-                }
-                if (display) {
-                    display.innerHTML = '<span class="auto-complete-placeholder"></span>';
-                }
+                if (hiddenInput) { hiddenInput.value = ''; hiddenInput.setAttribute('value', ''); }
+                if (display) display.innerHTML = '<span class="auto-complete-placeholder"></span>';
                 if (clearBtn) clearBtn.style.display = 'none';
                 subContainer.classList.remove('open');
             }
 
             var clientContainer = document.getElementById('client-search');
             if (!clientContainer) return;
-
             var clientHidden = clientContainer.querySelector('.auto-complete-input');
 
-            // On drawer open: if a client is already selected, load engagements immediately.
             if (clientHidden && clientHidden.value) {
                 loadSubscriptionResults(clientHidden.value);
             } else {
-                // No client pre-selected — disable URL so autocomplete shows nothing.
                 subContainer.dataset.searchUrl = '';
             }
 
-            // Watch for client selection or clearing via MutationObserver.
-            // This works because auto-complete.html calls hiddenInput.setAttribute('value', value)
-            // whenever a selection is made (the Opus fix at line 129 of auto-complete.html).
             if (clientHidden) {
                 var observer = new MutationObserver(function(mutations) {
                     mutations.forEach(function(m) {
                         if (m.attributeName === 'value') {
                             var val = clientHidden.getAttribute('value');
-                            if (val) {
-                                clearSubscription();
-                                loadSubscriptionResults(val);
-                            } else {
-                                clearSubscription();
-                            }
+                            if (val) { clearSubscription(); loadSubscriptionResults(val); }
+                            else { clearSubscription(); }
                         }
                     });
                 });
@@ -214,37 +172,31 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                 } else {
                     if (locationRow) locationRow.style.display = '';
                     if (subscriptionRow) subscriptionRow.style.display = 'none';
-                    // Clear subscription selection when switching away
                     if (subscriptionRow) {
-                        var subContainer = subscriptionRow.querySelector('.auto-complete-input');
-                        var subDisplay = subscriptionRow.querySelector('.auto-complete-display');
-                        var subClear = subscriptionRow.querySelector('.auto-complete-clear');
-                        if (subContainer) { subContainer.value = ''; subContainer.setAttribute('value', ''); }
-                        if (subDisplay) { subDisplay.innerHTML = '<span class="auto-complete-placeholder"></span>'; }
-                        if (subClear) subClear.style.display = 'none';
+                        var sub = subscriptionRow.querySelector('.auto-complete-input');
+                        var disp = subscriptionRow.querySelector('.auto-complete-display');
+                        var clr = subscriptionRow.querySelector('.auto-complete-clear');
+                        if (sub) { sub.value = ''; sub.setAttribute('value', ''); }
+                        if (disp) disp.innerHTML = '<span class="auto-complete-placeholder"></span>';
+                        if (clr) clr.style.display = 'none';
                     }
                 }
             }
 
             radios.forEach(function(r) {
-                r.addEventListener('change', function() {
-                    applyRevenueType(this.value);
-                });
+                r.addEventListener('change', function() { applyRevenueType(this.value); });
             });
 
-            // Apply initial state
             var checked = document.querySelector('[name="revenue_type"]:checked');
-            if (checked) {
-                applyRevenueType(checked.value);
-            }
+            if (checked) applyRevenueType(checked.value);
         })();
         </script>
 
-        {{/* --- Payment Terms --- */}}
+        {{/* ─── Payment ─── */}}
         {{if .PaymentTerms}}
         {{template "form-section" (dict "Title" .Labels.PaymentTerms)}}
 
-        <div class="form-row single">
+        <div class="form-row">
             <div class="form-group">
                 <label class="form-label" for="revenue-payment-term">{{.Labels.PaymentTerms}}</label>
                 <select name="payment_term_id" id="revenue-payment-term" class="form-select">
@@ -254,12 +206,10 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                     {{end}}
                 </select>
             </div>
-        </div>
-        <div class="form-row single">
             <div class="form-group">
                 <label class="form-label">{{.Labels.DueDate}}</label>
-                <div id="revenue-due-date-preview" class="form-hint">
-                    {{if .DueDateString}}{{.DueDateString}}{{end}}
+                <div id="revenue-due-date-preview" class="form-input" style="background: var(--bg-muted); border-color: transparent; font-weight: 600; color: var(--text-primary);">
+                    {{if .DueDateString}}{{.DueDateString}}{{else}}&mdash;{{end}}
                 </div>
             </div>
         </div>
@@ -272,9 +222,9 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
                 var opt = termSel.options[termSel.selectedIndex];
                 var netDays = opt ? parseInt(opt.getAttribute('data-net-days') || '0', 10) : 0;
                 var dateVal = dateSel ? dateSel.value : '';
-                if (!dateVal || !opt || !opt.value) { preview.textContent = ''; return; }
+                if (!dateVal || !opt || !opt.value) { preview.textContent = '\u2014'; return; }
                 var base = new Date(dateVal + 'T00:00:00');
-                if (isNaN(base.getTime())) { preview.textContent = ''; return; }
+                if (isNaN(base.getTime())) { preview.textContent = '\u2014'; return; }
                 base.setDate(base.getDate() + netDays);
                 var yyyy = base.getFullYear();
                 var mm = String(base.getMonth() + 1).padStart(2, '0');
@@ -288,7 +238,7 @@ Data: .Name, .ReferenceNumber, .Date, .Currency, .Status, .Notes, .LocationID, .
         </script>
         {{end}}
 
-        {{/* --- Notes --- */}}
+        {{/* ─── Notes ─── */}}
         {{template "form-section" (dict "Title" .Labels.Notes)}}
 
         <div class="form-row single">
