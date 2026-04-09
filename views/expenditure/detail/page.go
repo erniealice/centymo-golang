@@ -461,17 +461,17 @@ func populateBalance(ctx context.Context, deps *DetailViewDeps, expenditureID st
 	}
 }
 
-// scheduleStatusBadgeClass maps a disbursement schedule status to a badge CSS class.
-func scheduleStatusBadgeClass(status string) string {
+// scheduleStatusVariant maps a disbursement schedule status to a semantic badge variant.
+func scheduleStatusVariant(status string) string {
 	switch status {
 	case "paid":
-		return "badge--success"
+		return "success"
 	case "partial":
-		return "badge--warning"
+		return "warning"
 	case "overdue":
-		return "badge--danger"
+		return "error"
 	default:
-		return "badge--secondary"
+		return "pending"
 	}
 }
 
@@ -522,7 +522,7 @@ func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditur
 			DueDate:        s.GetDueDate(),
 			Amount:         currency + " " + centymo.FormatWithCommas(float64(s.GetAmount())/100.0),
 			Status:         s.GetStatus(),
-			StatusClass:    scheduleStatusBadgeClass(s.GetStatus()),
+			StatusClass:    scheduleStatusVariant(s.GetStatus()),
 			PaidAmount:     paidAmt,
 			PaidDate:       paidDate,
 			DisbursementID: disbID,

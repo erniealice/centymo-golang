@@ -207,7 +207,7 @@
                 <td class="data-table__cell mono">{{.DueDate}}</td>
                 <td class="data-table__cell mono">{{.Amount}}</td>
                 <td class="data-table__cell">
-                    <span class="badge {{.StatusClass}}">{{.Status}}</span>
+                    {{template "status-badge" (dict "Status" .StatusClass "Label" .Status)}}
                 </td>
                 <td class="data-table__cell mono">{{if .PaidAmount}}{{.PaidAmount}}{{else}}&mdash;{{end}}</td>
                 <td class="data-table__cell mono">{{if .PaidDate}}{{.PaidDate}}{{else}}&mdash;{{end}}</td>

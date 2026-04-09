@@ -68,7 +68,8 @@ type PageData struct {
 	PaymentAddURL       string
 	TotalPaid           string
 	RemainingBalance    string
-	PaymentStatus       string
+	PaymentStatus        string
+	PaymentStatusVariant string
 	AuditTable          *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
@@ -165,10 +166,13 @@ func NewView(deps *DetailViewDeps) view.View {
 			pageData.RemainingBalance = currency + " " + formatAmount(remaining)
 			if remaining <= 0 {
 				pageData.PaymentStatus = "paid"
+				pageData.PaymentStatusVariant = "success"
 			} else if totalPaid > 0 {
 				pageData.PaymentStatus = "partial"
+				pageData.PaymentStatusVariant = "warning"
 			} else {
 				pageData.PaymentStatus = "unpaid"
+				pageData.PaymentStatusVariant = "info"
 			}
 			// Keep legacy field for backward compat
 			pageData.Payment = findPayment(allPayments, id, revenue)
@@ -309,10 +313,13 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			pageData.RemainingBalance = currency + " " + formatAmount(remaining)
 			if remaining <= 0 {
 				pageData.PaymentStatus = "paid"
+				pageData.PaymentStatusVariant = "success"
 			} else if totalPaid > 0 {
 				pageData.PaymentStatus = "partial"
+				pageData.PaymentStatusVariant = "warning"
 			} else {
 				pageData.PaymentStatus = "unpaid"
+				pageData.PaymentStatusVariant = "info"
 			}
 			pageData.Payment = findPayment(allPayments, id, revenue)
 

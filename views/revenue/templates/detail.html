@@ -168,9 +168,7 @@ function downloadInvoice(btn, url) {
                 <span class="transaction-summary-label">{{.Labels.Detail.Remaining}}</span>
                 <span class="transaction-summary-value payment-remaining">{{.RemainingBalance}}</span>
             </span>
-            <span class="badge badge--{{if eq .PaymentStatus "paid"}}success{{else if eq .PaymentStatus "partial"}}warning{{else}}info{{end}} payment-status-badge">
-                {{.PaymentStatus}}
-            </span>
+            {{template "status-badge" (dict "Status" .PaymentStatusVariant "Label" .PaymentStatus)}}
         </div>
         <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="revenue-record-payment-btn"
             aria-haspopup="dialog"
