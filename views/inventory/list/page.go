@@ -224,13 +224,13 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, location string, 
 func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "product_name", Label: l.Columns.ProductName, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "sku", Label: l.Columns.SKU, Sortable: false, Filterable: false, Width: "150px"},
-		{Key: "item_type", Label: l.Columns.Type, Sortable: false, Filterable: false, Width: "130px"},
-		{Key: "quantity", Label: l.Columns.OnHand, Sortable: true, Filterable: true, FilterType: types.FilterTypeNumeric, Width: "120px"},
-		{Key: "available", Label: l.Columns.Available, Sortable: false, Filterable: false, Width: "120px"},
-		{Key: "reorder_level", Label: l.Columns.ReorderLvl, Sortable: false, Filterable: false, Width: "140px"},
+		{Key: "sku", Label: l.Columns.SKU, Sortable: false, Filterable: false, WidthClass: "col-4xl"},
+		{Key: "item_type", Label: l.Columns.Type, Sortable: false, Filterable: false, WidthClass: "col-3xl"},
+		{Key: "quantity", Label: l.Columns.OnHand, Sortable: true, Filterable: true, FilterType: types.FilterTypeNumeric, WidthClass: "col-2xl"},
+		{Key: "available", Label: l.Columns.Available, Sortable: false, Filterable: false, WidthClass: "col-2xl"},
+		{Key: "reorder_level", Label: l.Columns.ReorderLvl, Sortable: false, Filterable: false, WidthClass: "col-3xl"},
 		{Key: "date_created", Label: "Date Created", Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, Width: "120px"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, WidthClass: "col-2xl"},
 	}
 }
 

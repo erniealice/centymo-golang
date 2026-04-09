@@ -287,9 +287,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 
 func buildAuditTable(l centymo.DisbursementLabels, tableLabels types.TableLabels) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "date", Label: l.Detail.Date, Sortable: true, Width: "160px"},
+		{Key: "date", Label: l.Detail.Date, Sortable: true, WidthClass: "col-5xl"},
 		{Key: "action", Label: l.Detail.AuditAction, Sortable: true},
-		{Key: "user", Label: l.Detail.AuditUser, Sortable: true, Width: "180px"},
+		{Key: "user", Label: l.Detail.AuditUser, Sortable: true, WidthClass: "col-6xl"},
 	}
 
 	rows := []types.TableRow{}

@@ -69,10 +69,10 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 	columns := []types.TableColumn{
 		{Key: "name", Label: ol.Columns.Name, Sortable: true},
 		{Key: "code", Label: ol.Columns.Code, Sortable: true},
-		{Key: "dataType", Label: ol.Columns.DataType, Sortable: true, Width: "140px"},
-		{Key: "valuesCount", Label: ol.Columns.ValuesCount, Sortable: true, Width: "100px"},
-		{Key: "sortOrder", Label: ol.Columns.SortOrder, Sortable: true, Width: "100px"},
-		{Key: "status", Label: ol.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "dataType", Label: ol.Columns.DataType, Sortable: true, WidthClass: "col-3xl"},
+		{Key: "valuesCount", Label: ol.Columns.ValuesCount, Sortable: true, WidthClass: "col-lg"},
+		{Key: "sortOrder", Label: ol.Columns.SortOrder, Sortable: true, WidthClass: "col-lg"},
+		{Key: "status", Label: ol.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	rows := []types.TableRow{}
@@ -201,9 +201,9 @@ func buildOptionValuesTable(ctx context.Context, deps *DetailViewDeps, productID
 	columns := []types.TableColumn{
 		{Key: "label", Label: ol.Value.Columns.Label, Sortable: true},
 		{Key: "value", Label: ol.Value.Columns.Value, Sortable: true},
-		{Key: "sortOrder", Label: ol.Value.Columns.SortOrder, Sortable: true, Width: "100px"},
-		{Key: "colorPreview", Label: ol.Value.Columns.ColorPreview, Sortable: false, Width: "100px"},
-		{Key: "status", Label: ol.Value.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "sortOrder", Label: ol.Value.Columns.SortOrder, Sortable: true, WidthClass: "col-lg"},
+		{Key: "colorPreview", Label: ol.Value.Columns.ColorPreview, Sortable: false, WidthClass: "col-lg"},
+		{Key: "status", Label: ol.Value.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	rows := []types.TableRow{}

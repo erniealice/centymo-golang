@@ -1301,19 +1301,25 @@ func DefaultProductLineLabels() ProductLineLabels {
 // ExpenditureLabels holds all translatable strings for the expenditure module
 // (purchase + expense views).
 type ExpenditureLabels struct {
-	Labels   ExpenditureLabelNames     `json:"labels"`
-	Page     ExpenditurePageLabels     `json:"page"`
-	Buttons  ExpenditureButtonLabels   `json:"buttons"`
-	Columns  ExpenditureColumnLabels   `json:"columns"`
-	Empty    ExpenditureEmptyLabels    `json:"empty"`
-	Form     ExpenditureFormLabels     `json:"form"`
-	Status   ExpenditureStatusLabels   `json:"status"`
-	Types    ExpenditureTypeLabels     `json:"types"`
-	Actions  ExpenditureActionLabels   `json:"actions"`
-	Bulk     ExpenditureBulkLabels     `json:"bulkActions"`
-	Detail   ExpenditureDetailLabels   `json:"detail"`
-	Errors   ExpenditureErrorLabels    `json:"errors"`
-	Category ExpenditureCategoryLabels `json:"category"`
+	Labels              ExpenditureLabelNames              `json:"labels"`
+	Page                ExpenditurePageLabels              `json:"page"`
+	Buttons             ExpenditureButtonLabels            `json:"buttons"`
+	Columns             ExpenditureColumnLabels            `json:"columns"`
+	Empty               ExpenditureEmptyLabels             `json:"empty"`
+	Form                ExpenditureFormLabels              `json:"form"`
+	Status              ExpenditureStatusLabels            `json:"status"`
+	Types               ExpenditureTypeLabels              `json:"types"`
+	Actions             ExpenditureActionLabels            `json:"actions"`
+	Bulk                ExpenditureBulkLabels              `json:"bulkActions"`
+	Detail              ExpenditureDetailLabels            `json:"detail"`
+	Errors              ExpenditureErrorLabels             `json:"errors"`
+	Category            ExpenditureCategoryLabels          `json:"category"`
+	PaymentMethod       ExpenditurePaymentMethodLabels     `json:"paymentMethod"`
+	DisbursementCategory ExpenditureDisbursementCategoryLabels `json:"disbursementCategory"`
+	Schedule            ExpenditureScheduleLabels          `json:"schedule"`
+	LineItemForm        ExpenditureLineItemFormLabels      `json:"lineItemForm"`
+	DisbursementForm    ExpenditureDisbursementFormLabels  `json:"disbursementForm"`
+	PurchaseOrder       PurchaseOrderLabels                `json:"purchaseOrder"`
 }
 
 // ExpenditureCategoryLabels holds translatable strings for the expenditure
@@ -1552,6 +1558,342 @@ type ExpenditureDetailLabels struct {
 	AuditUser            string `json:"auditUser"`
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
 	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	// Additional fields used in the expense detail template
+	Title               string `json:"title"`
+	InfoSection         string `json:"infoSection"`
+	Name                string `json:"name"`
+	PaymentSummary      string `json:"paymentSummary"`
+	TotalAmount         string `json:"totalAmount"`
+	Paid                string `json:"paid"`
+	Outstanding         string `json:"outstanding"`
+	PaymentStatus       string `json:"paymentStatus"`
+	UpdateStatus        string `json:"updateStatus"`
+	SaveStatus          string `json:"saveStatus"`
+	Payment             string `json:"payment"`
+	Pay                 string `json:"pay"`
+	AddItem             string `json:"addItem"`
+	EmptyTitle          string `json:"emptyTitle"`
+	EmptyMessage        string `json:"emptyMessage"`
+	TabDetails          string `json:"tabDetails"`
+	TabPayments         string `json:"tabPayments"`
+}
+
+// ExpenditurePaymentMethodLabels holds translatable strings for disbursement payment methods.
+type ExpenditurePaymentMethodLabels struct {
+	Cash         string `json:"cash"`
+	BankTransfer string `json:"bankTransfer"`
+	Check        string `json:"check"`
+	GCash        string `json:"gcash"`
+	Other        string `json:"other"`
+}
+
+// ExpenditureDisbursementCategoryLabels holds translatable strings for disbursement categories.
+type ExpenditureDisbursementCategoryLabels struct {
+	SupplierPayment string `json:"supplierPayment"`
+	Payroll         string `json:"payroll"`
+	Rent            string `json:"rent"`
+	Utilities       string `json:"utilities"`
+	Other           string `json:"other"`
+}
+
+// ExpenditureScheduleLabels holds translatable strings for the payment schedule tab.
+type ExpenditureScheduleLabels struct {
+	Scheduled   string `json:"scheduled"`
+	Paid        string `json:"paid"`
+	Remaining   string `json:"remaining"`
+	DueDate     string `json:"dueDate"`
+	AmountDue   string `json:"amountDue"`
+	PaidAmount  string `json:"paidAmount"`
+	PaidDate    string `json:"paidDate"`
+	Reference   string `json:"reference"`
+	EmptyTitle  string `json:"emptyTitle"`
+	EmptyMessage string `json:"emptyMessage"`
+}
+
+// ExpenditureLineItemFormLabels holds translatable strings for the line item drawer form.
+type ExpenditureLineItemFormLabels struct {
+	EditTitle           string `json:"editTitle"`
+	Description         string `json:"description"`
+	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
+	Quantity            string `json:"quantity"`
+	UnitPrice           string `json:"unitPrice"`
+	Notes               string `json:"notes"`
+	Save                string `json:"save"`
+	Cancel              string `json:"cancel"`
+}
+
+// ExpenditureDisbursementFormLabels holds translatable strings for the pay (disbursement) drawer form.
+type ExpenditureDisbursementFormLabels struct {
+	Reference          string `json:"reference"`
+	ReferencePlaceholder string `json:"referencePlaceholder"`
+	Payee              string `json:"payee"`
+	Amount             string `json:"amount"`
+	Currency           string `json:"currency"`
+	CurrencyPlaceholder string `json:"currencyPlaceholder"`
+	PaymentMethod      string `json:"paymentMethod"`
+	Category           string `json:"category"`
+	ApprovedBy         string `json:"approvedBy"`
+	ApproverPlaceholder string `json:"approverPlaceholder"`
+}
+
+// ---------------------------------------------------------------------------
+// Purchase Order labels
+// ---------------------------------------------------------------------------
+
+// PurchaseOrderLabels holds all translatable strings for the purchase order module.
+type PurchaseOrderLabels struct {
+	Labels      PurchaseOrderLabelNames      `json:"labels"`
+	Page        PurchaseOrderPageLabels      `json:"page"`
+	Buttons     PurchaseOrderButtonLabels    `json:"buttons"`
+	Columns     PurchaseOrderColumnLabels    `json:"columns"`
+	Empty       PurchaseOrderEmptyLabels     `json:"empty"`
+	Form        PurchaseOrderFormLabels      `json:"form"`
+	Status      PurchaseOrderStatusLabels    `json:"status"`
+	POTypes     PurchaseOrderPOTypeLabels    `json:"poTypes"`
+	LineTypes   PurchaseOrderLineTypeLabels  `json:"lineTypes"`
+	Actions     PurchaseOrderActionLabels    `json:"actions"`
+	Bulk        PurchaseOrderBulkLabels      `json:"bulkActions"`
+	Detail      PurchaseOrderDetailLabels    `json:"detail"`
+	LineItems   PurchaseOrderLineItemLabels  `json:"lineItems"`
+	Receipt     PurchaseOrderReceiptLabels   `json:"receipt"`
+}
+
+type PurchaseOrderLabelNames struct {
+	Name         string `json:"name"`
+	NamePlural   string `json:"namePlural"`
+	LineItem     string `json:"lineItem"`
+	LineItemPlural string `json:"lineItemPlural"`
+}
+
+type PurchaseOrderPageLabels struct {
+	Heading                  string `json:"heading"`
+	Caption                  string `json:"caption"`
+	HeadingDraft             string `json:"headingDraft"`
+	HeadingPendingApproval   string `json:"headingPendingApproval"`
+	HeadingApproved          string `json:"headingApproved"`
+	HeadingPartiallyReceived string `json:"headingPartiallyReceived"`
+	HeadingFullyReceived     string `json:"headingFullyReceived"`
+	HeadingBilled            string `json:"headingBilled"`
+	HeadingClosed            string `json:"headingClosed"`
+	HeadingCancelled         string `json:"headingCancelled"`
+	Dashboard                string `json:"dashboard"`
+}
+
+type PurchaseOrderButtonLabels struct {
+	Add         string `json:"add"`
+	AddLineItem string `json:"addLineItem"`
+}
+
+type PurchaseOrderColumnLabels struct {
+	PONumber       string `json:"poNumber"`
+	POType         string `json:"poType"`
+	Supplier       string `json:"supplier"`
+	Location       string `json:"location"`
+	OrderDate      string `json:"orderDate"`
+	Status         string `json:"status"`
+	Currency       string `json:"currency"`
+	Subtotal       string `json:"subtotal"`
+	TaxAmount      string `json:"taxAmount"`
+	TotalAmount    string `json:"totalAmount"`
+	PaymentTerms   string `json:"paymentTerms"`
+	ShippingTerms  string `json:"shippingTerms"`
+	ApprovedBy     string `json:"approvedBy"`
+	ReferenceNumber string `json:"referenceNumber"`
+	Notes          string `json:"notes"`
+}
+
+type PurchaseOrderEmptyLabels struct {
+	Title                    string `json:"title"`
+	Message                  string `json:"message"`
+	DraftTitle               string `json:"draftTitle"`
+	DraftMessage             string `json:"draftMessage"`
+	PendingApprovalTitle     string `json:"pendingApprovalTitle"`
+	PendingApprovalMessage   string `json:"pendingApprovalMessage"`
+	ApprovedTitle            string `json:"approvedTitle"`
+	ApprovedMessage          string `json:"approvedMessage"`
+	PartiallyReceivedTitle   string `json:"partiallyReceivedTitle"`
+	PartiallyReceivedMessage string `json:"partiallyReceivedMessage"`
+	FullyReceivedTitle       string `json:"fullyReceivedTitle"`
+	FullyReceivedMessage     string `json:"fullyReceivedMessage"`
+	BilledTitle              string `json:"billedTitle"`
+	BilledMessage            string `json:"billedMessage"`
+	ClosedTitle              string `json:"closedTitle"`
+	ClosedMessage            string `json:"closedMessage"`
+	CancelledTitle           string `json:"cancelledTitle"`
+	CancelledMessage         string `json:"cancelledMessage"`
+}
+
+type PurchaseOrderFormLabels struct {
+	PONumber                 string `json:"poNumber"`
+	PONumberPlaceholder      string `json:"poNumberPlaceholder"`
+	POType                   string `json:"poType"`
+	SelectPOType             string `json:"selectPoType"`
+	Supplier                 string `json:"supplier"`
+	SelectSupplier           string `json:"selectSupplier"`
+	Location                 string `json:"location"`
+	SelectLocation           string `json:"selectLocation"`
+	OrderDate                string `json:"orderDate"`
+	Currency                 string `json:"currency"`
+	Subtotal                 string `json:"subtotal"`
+	TaxAmount                string `json:"taxAmount"`
+	TotalAmount              string `json:"totalAmount"`
+	PaymentTerms             string `json:"paymentTerms"`
+	ShippingTerms            string `json:"shippingTerms"`
+	ApprovedBy               string `json:"approvedBy"`
+	ReferenceNumber          string `json:"referenceNumber"`
+	ReferenceNumberPlaceholder string `json:"referenceNumberPlaceholder"`
+	Notes                    string `json:"notes"`
+	NotesPlaceholder         string `json:"notesPlaceholder"`
+	SectionInfo              string `json:"sectionInfo"`
+	SectionSupplier          string `json:"sectionSupplier"`
+	SectionFinancials        string `json:"sectionFinancials"`
+	SectionNotes             string `json:"sectionNotes"`
+}
+
+type PurchaseOrderStatusLabels struct {
+	Draft              string `json:"draft"`
+	PendingApproval    string `json:"pending_approval"`
+	Approved           string `json:"approved"`
+	PartiallyReceived  string `json:"partially_received"`
+	FullyReceived      string `json:"fully_received"`
+	Billed             string `json:"billed"`
+	Closed             string `json:"closed"`
+	Cancelled          string `json:"cancelled"`
+}
+
+type PurchaseOrderPOTypeLabels struct {
+	Standard string `json:"standard"`
+	Blanket  string `json:"blanket"`
+	Contract string `json:"contract"`
+}
+
+type PurchaseOrderLineTypeLabels struct {
+	Goods   string `json:"goods"`
+	Service string `json:"service"`
+	Expense string `json:"expense"`
+}
+
+type PurchaseOrderActionLabels struct {
+	Cancel         string `json:"cancel"`
+	Close          string `json:"close"`
+	ConfirmReceipt string `json:"confirmReceipt"`
+	Create         string `json:"create"`
+	Delete         string `json:"delete"`
+	Edit           string `json:"edit"`
+	Approve        string `json:"approve"`
+	Receive        string `json:"receive"`
+	Reject         string `json:"reject"`
+	View           string `json:"view"`
+}
+
+type PurchaseOrderBulkLabels struct {
+	Delete  string `json:"delete"`
+	Approve string `json:"approve"`
+	Close   string `json:"close"`
+}
+
+// PurchaseOrderDetailLabels holds translatable strings for the PO detail page.
+type PurchaseOrderDetailLabels struct {
+	PageTitle            string `json:"pageTitle"`
+	Title                string `json:"title"`
+	InfoSection          string `json:"supplierInfo"`
+	Supplier             string `json:"supplier"`
+	Location             string `json:"location"`
+	OrderDate            string `json:"orderDate"`
+	PONumber             string `json:"poNumber"`
+	POType               string `json:"poType"`
+	Status               string `json:"status"`
+	Currency             string `json:"currency"`
+	Subtotal             string `json:"subtotal"`
+	TaxAmount            string `json:"taxAmount"`
+	TotalAmount          string `json:"totalAmount"`
+	PaymentTerms         string `json:"paymentTerms"`
+	ShippingTerms        string `json:"shippingTerms"`
+	ApprovedBy           string `json:"approvedBy"`
+	ReferenceNumber      string `json:"referenceNumber"`
+	Notes                string `json:"notes"`
+	LineItems            string `json:"lineItems"`
+	Description          string `json:"description"`
+	LineType             string `json:"lineType"`
+	LineNumber           string `json:"lineNumber"`
+	QuantityOrdered      string `json:"quantityOrdered"`
+	QuantityReceived     string `json:"quantityReceived"`
+	QuantityBilled       string `json:"quantityBilled"`
+	UnitPrice            string `json:"unitPrice"`
+	TotalPrice           string `json:"totalPrice"`
+	SubTotal             string `json:"subTotal"`
+	GrandTotal           string `json:"grandTotal"`
+	TabBasicInfo         string `json:"tabBasicInfo"`
+	TabLineItems         string `json:"tabLineItems"`
+	TabReceiving         string `json:"tabReceiving"`
+	TabAuditTrail        string `json:"tabAuditTrail"`
+	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+	AuditAction          string `json:"auditAction"`
+	AuditUser            string `json:"auditUser"`
+	AuditEmptyTitle      string `json:"auditEmptyTitle"`
+	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	Total                string `json:"total"`
+	AddLineItem          string `json:"addLineItem"`
+	NoLineItems          string `json:"noLineItems"`
+	ConfirmReceiptBtn    string `json:"confirmReceiptBtn"`
+}
+
+// PurchaseOrderLineItemLabels holds translatable strings for the PO line item drawer form.
+type PurchaseOrderLineItemLabels struct {
+	AddItem                string `json:"addItem"`
+	AddLineItem            string `json:"addLineItem"`
+	Description            string `json:"description"`
+	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
+	EditItem               string `json:"editItem"`
+	EditLineItem           string `json:"editLineItem"`
+	InventoryItem          string `json:"inventoryItem"`
+	LineNumber             string `json:"lineNumber"`
+	LineType               string `json:"lineType"`
+	Location               string `json:"location"`
+	Locked                 string `json:"locked"`
+	NoItems                string `json:"noItems"`
+	Notes                  string `json:"notes"`
+	Product                string `json:"product"`
+	QtyOrdered             string `json:"qtyOrdered"`
+	QuantityBilled         string `json:"quantityBilled"`
+	QuantityOrdered        string `json:"quantityOrdered"`
+	QuantityReceived       string `json:"quantityReceived"`
+	RemoveItem             string `json:"removeItem"`
+	RemoveLineItem         string `json:"removeLineItem"`
+	SelectItem             string `json:"selectItem"`
+	TotalPrice             string `json:"totalPrice"`
+	TypeExpense            string `json:"typeExpense"`
+	TypeGoods              string `json:"typeGoods"`
+	TypeService            string `json:"typeService"`
+	UnitPrice              string `json:"unitPrice"`
+	Type                   string `json:"type"`
+	ProductID              string `json:"productId"`
+	InventoryItemID        string `json:"inventoryItemId"`
+	LocationID             string `json:"locationId"`
+	Save                   string `json:"save"`
+	Cancel                 string `json:"cancel"`
+}
+
+// PurchaseOrderReceiptLabels holds translatable strings for the confirm receipt drawer form.
+type PurchaseOrderReceiptLabels struct {
+	AutoConfirmed       string `json:"autoConfirmed"`
+	NoLines             string `json:"noLines"`
+	OverReceiptError    string `json:"overReceiptError"`
+	PartialSuccess      string `json:"partialSuccess"`
+	QtyToReceive        string `json:"qtyToReceive"`
+	ReceiptDate         string `json:"receiptDate"`
+	ReceivingLocation   string `json:"receivingLocation"`
+	ServiceRendered     string `json:"serviceRendered"`
+	Success             string `json:"success"`
+	Title               string `json:"title"`
+	AllReceived         string `json:"allReceived"`
+	Description         string `json:"description"`
+	Type                string `json:"type"`
+	Ordered             string `json:"ordered"`
+	Received            string `json:"received"`
+	Remaining           string `json:"remaining"`
+	ConfirmButton       string `json:"confirmButton"`
+	Cancel              string `json:"cancel"`
 }
 
 // ---------------------------------------------------------------------------
@@ -2185,10 +2527,6 @@ type ProductPlanFormLabels struct {
 	Product            string `json:"product"`
 	ProductPlaceholder string `json:"productPlaceholder"`
 	SelectProduct      string `json:"selectProduct"`
-	Price              string `json:"price"`
-	PricePlaceholder   string `json:"pricePlaceholder"`
-	Currency           string `json:"currency"`
-	CurrencyPlaceholder string `json:"currencyPlaceholder"`
 	Active             string `json:"active"`
 }
 
@@ -2578,14 +2916,10 @@ func DefaultPlanLabels() PlanLabels {
 			Active:              "Active",
 		},
 		ProductPlanForm: ProductPlanFormLabels{
-			Product:             "Product",
-			ProductPlaceholder:  "Select a product...",
-			SelectProduct:       "— Select a product —",
-			Price:               "Price",
-			PricePlaceholder:    "0.00",
-			Currency:            "Currency",
-			CurrencyPlaceholder: "e.g. PHP",
-			Active:              "Active",
+			Product:            "Product",
+			ProductPlaceholder: "Select a product...",
+			SelectProduct:      "— Select a product —",
+			Active:             "Active",
 		},
 	}
 }

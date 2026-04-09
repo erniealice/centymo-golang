@@ -768,6 +768,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					if useCases.Entity != nil && useCases.Entity.Location != nil {
 						ppActionDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
 					}
+					if useCases.Product != nil && useCases.Product.ProductPlan != nil {
+						ppActionDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+					}
+					if useCases.Subscription.ProductPricePlan != nil {
+						ppActionDeps.CreateProductPricePlan = useCases.Subscription.ProductPricePlan.CreateProductPricePlan.Execute
+						ppActionDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
+					}
 					ctx.Routes.GET(planRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppActionDeps))
 					ctx.Routes.POST(planRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppActionDeps))
 					ctx.Routes.GET(planRoutes.PricePlanEditURL, planaction.NewPricePlanEditAction(ppActionDeps))

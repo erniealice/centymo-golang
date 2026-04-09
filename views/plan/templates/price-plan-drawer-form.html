@@ -2,8 +2,9 @@
 Price Plan drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit price plan actions within a plan detail.
 Data: .Name, .Description, .Amount, .Currency, .DurationValue, .DurationUnit,
-      .Active, .PlanID, .ID, .FormAction, .IsEdit, .Locations, .SelectedLocationID,
-      .CommonLabels, .Labels
+      .Active, .PlanID, .ID, .FormAction, .IsEdit,
+      .LocationOptions, .SelectedLocationID, .SelectedLocationLabel,
+      .ProductPlans, .CommonLabels, .Labels
 */}}
 {{define "price-plan-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
@@ -11,6 +12,11 @@ Data: .Name, .Description, .Amount, .Currency, .DurationValue, .DurationUnit,
     <input type="hidden" name="plan_id" value="{{.PlanID}}">
 
     <div class="sheet-body">
+        {{/* ================================================================ */}}
+        {{/* Section 1: Plan Details                                          */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" "Plan Details")}}
+
         {{/* --- Name --- */}}
         <div class="form-row single">
             {{template "form-group" (dict
@@ -31,28 +37,6 @@ Data: .Name, .Description, .Amount, .Currency, .DurationValue, .DurationUnit,
                 "Label" .Labels.Description
                 "Value" .Description
                 "Placeholder" .Labels.DescPlaceholder
-            )}}
-        </div>
-
-        {{/* --- Amount + Currency --- */}}
-        <div class="form-row">
-            {{template "form-group" (dict
-                "Type" "number"
-                "Name" "amount"
-                "Label" .Labels.Amount
-                "Value" .Amount
-                "Required" true
-                "Placeholder" .Labels.AmountPlaceholder
-                "Step" "0.01"
-                "Min" "0"
-            )}}
-            {{template "form-group" (dict
-                "Type" "text"
-                "Name" "currency"
-                "Label" .Labels.Currency
-                "Value" .Currency
-                "Required" true
-                "Placeholder" .Labels.CurrencyPlaceholder
             )}}
         </div>
 
@@ -81,28 +65,69 @@ Data: .Name, .Description, .Amount, .Currency, .DurationValue, .DurationUnit,
             )}}
         </div>
 
+        {{/* --- Currency --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "currency"
+                "Label" .Labels.Currency
+                "Value" .Currency
+                "Required" true
+                "Placeholder" .Labels.CurrencyPlaceholder
+            )}}
+        </div>
+
         {{/* --- Location --- */}}
         <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label">{{.Labels.Location}}</label>
-                <select name="location_id" class="form-control">
-                    <option value="">{{.Labels.SelectLocation}}</option>
-                    {{range .Locations}}
-                    <option value="{{.Id}}" {{if eq .Id $.SelectedLocationID}}selected{{end}}>{{.Name}}</option>
-                    {{end}}
-                </select>
-            </div>
+            {{template "auto-complete" (dict
+                "ID" "location-select"
+                "Name" "location_id"
+                "Label" .Labels.Location
+                "Placeholder" .Labels.LocationPlaceholder
+                "SearchPlaceholder" "Filter..."
+                "Options" .LocationOptions
+                "Value" .SelectedLocationID
+                "SelectedLabel" .SelectedLocationLabel
+            )}}
         </div>
 
         {{/* --- Active toggle --- */}}
         <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "checkbox"
+            {{template "toggle" (dict
                 "Name" "active"
                 "Label" .Labels.Active
-                "Value" .Active
-                "CheckboxValue" "true"
+                "Checked" .Active
+                "Value" "true"
             )}}
+        </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section 2: Product Pricing                                        */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" "Product Pricing")}}
+
+        <div class="product-pricing-list">
+            {{if .ProductPlans}}
+                {{range .ProductPlans}}
+                <div class="product-pricing-row">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="price-{{.ProductPlanID}}" class="form-label">{{.ProductName}}</label>
+                            <input type="number"
+                                   id="price-{{.ProductPlanID}}"
+                                   class="form-control"
+                                   name="product_prices[{{.ProductPlanID}}]"
+                                   value="{{.Price}}"
+                                   step="0.01"
+                                   min="0"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            {{else}}
+                <p class="form-empty-message">No products assigned to this plan yet.</p>
+            {{end}}
         </div>
     </div>
 

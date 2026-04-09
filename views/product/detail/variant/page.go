@@ -373,9 +373,9 @@ func buildStockTable(ctx context.Context, deps *DetailViewDeps, productID, varia
 	columns := []types.TableColumn{
 		{Key: "sku", Label: l.Variant.SKU, Sortable: true},
 		{Key: "location", Label: l.Variant.Location, Sortable: true},
-		{Key: "quantity", Label: l.Variant.QtyOnHand, Sortable: true, Width: "120px"},
-		{Key: "serials", Label: l.Variant.SerialCount, Sortable: true, Width: "120px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "quantity", Label: l.Variant.QtyOnHand, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "serials", Label: l.Variant.SerialCount, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	rows := []types.TableRow{}

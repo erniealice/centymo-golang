@@ -6,6 +6,13 @@
     flex-shrink: 0;
 }
 
+.form-input--preview {
+    background: var(--bg-muted);
+    border-color: transparent;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+}
+
 /* Payment tab toolbar */
 .payment-toolbar {
     display: flex;

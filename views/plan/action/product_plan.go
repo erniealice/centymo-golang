@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -23,30 +22,27 @@ type ProductOption struct {
 
 // ProductPlanFormLabels holds i18n labels for the product plan drawer form template.
 type ProductPlanFormLabels struct {
-	Product             string
-	ProductPlaceholder  string
-	SelectProduct       string
-	Price               string
-	PricePlaceholder    string
-	Currency            string
-	CurrencyPlaceholder string
-	Active              string
+	Product            string
+	ProductPlaceholder string
+	SelectProduct      string
+	Active             string
 }
 
 // ProductPlanFormData is the template data for the product plan drawer form.
 type ProductPlanFormData struct {
-	FormAction        string
-	IsEdit            bool
-	ID                string
-	PlanID            string
-	Name              string
-	SelectedProductID string
-	Price             string
-	Currency          string
-	Active            bool
-	Products          []*ProductOption
-	Labels            ProductPlanFormLabels
-	CommonLabels      any
+	FormAction           string
+	IsEdit               bool
+	ID                   string
+	PlanID               string
+	Name                 string
+	Mode                 string
+	SelectedProductID    string
+	SelectedProductLabel string
+	Active               bool
+	Products             []*ProductOption
+	ProductOptions       []map[string]any
+	Labels               ProductPlanFormLabels
+	CommonLabels         any
 }
 
 // ProductPlanDeps holds dependencies for product plan action handlers.
@@ -63,14 +59,10 @@ type ProductPlanDeps struct {
 // productPlanFormLabels converts centymo.ProductPlanFormLabels into the local type.
 func productPlanFormLabels(l centymo.ProductPlanFormLabels) ProductPlanFormLabels {
 	return ProductPlanFormLabels{
-		Product:             l.Product,
-		ProductPlaceholder:  l.ProductPlaceholder,
-		SelectProduct:       l.SelectProduct,
-		Price:               l.Price,
-		PricePlaceholder:    l.PricePlaceholder,
-		Currency:            l.Currency,
-		CurrencyPlaceholder: l.CurrencyPlaceholder,
-		Active:              l.Active,
+		Product:            l.Product,
+		ProductPlaceholder: l.ProductPlaceholder,
+		SelectProduct:      l.SelectProduct,
+		Active:             l.Active,
 	}
 }
 
@@ -95,6 +87,29 @@ func loadProductOptions(ctx context.Context, deps *ProductPlanDeps) []*ProductOp
 	return options
 }
 
+// buildProductAutoCompleteOptions converts []*ProductOption to the auto-complete compatible format.
+func buildProductAutoCompleteOptions(products []*ProductOption, selectedID string) []map[string]any {
+	opts := make([]map[string]any, 0, len(products))
+	for _, p := range products {
+		opts = append(opts, map[string]any{
+			"Value":    p.Id,
+			"Label":    p.Name,
+			"Selected": p.Id == selectedID,
+		})
+	}
+	return opts
+}
+
+// findProductLabel returns the name of the product with the given ID, or empty string.
+func findProductLabel(products []*ProductOption, id string) string {
+	for _, p := range products {
+		if p.Id == id {
+			return p.Name
+		}
+	}
+	return ""
+}
+
 // NewProductPlanAddAction creates the product plan add action (GET = form, POST = create).
 // URL: /action/plans/{id}/products/add
 func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
@@ -107,15 +122,17 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 		planID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
+			products := loadProductOptions(ctx, deps)
 			return view.OK("product-plan-drawer-form", &ProductPlanFormData{
-				FormAction:   route.ResolveURL(deps.Routes.ProductPlanAddURL, "id", planID),
-				PlanID:       planID,
-				Name:         "",
-				Active:       true,
-				Currency:     "PHP",
-				Products:     loadProductOptions(ctx, deps),
-				Labels:       productPlanFormLabels(deps.Labels.ProductPlanForm),
-				CommonLabels: nil, // injected by ViewAdapter
+				FormAction:     route.ResolveURL(deps.Routes.ProductPlanAddURL, "id", planID),
+				PlanID:         planID,
+				Name:           "",
+				Mode:           "service",
+				Active:         true,
+				Products:       products,
+				ProductOptions: buildProductAutoCompleteOptions(products, ""),
+				Labels:         productPlanFormLabels(deps.Labels.ProductPlanForm),
+				CommonLabels:   nil, // injected by ViewAdapter
 			})
 		}
 
@@ -127,23 +144,17 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 
-		price := int64(0)
-		if v, err := strconv.ParseFloat(r.FormValue("price"), 64); err == nil {
-			price = int64(v * 100)
-		}
-
 		// Use product name as the product plan name (required field, min 3 chars enforced by usecase)
 		name := r.FormValue("name")
 		if name == "" {
 			name = r.FormValue("product_name")
 		}
 
+		// No price/currency at creation — pricing is set via price plans
 		pp := &productplanpb.ProductPlan{
 			PlanId:    planID,
 			ProductId: r.FormValue("product_id"),
 			Name:      name,
-			Price:     price,
-			Currency:  r.FormValue("currency"),
 			Active:    active,
 		}
 
@@ -185,21 +196,22 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 			}
 			pp := data[0]
 
-			priceStr := strconv.FormatFloat(float64(pp.GetPrice())/100.0, 'f', 2, 64)
-
+			products := loadProductOptions(ctx, deps)
+			selectedProductID := pp.GetProductId()
 			return view.OK("product-plan-drawer-form", &ProductPlanFormData{
-				FormAction:        route.ResolveURL(deps.Routes.ProductPlanEditURL, "id", planID, "ppid", ppID),
-				IsEdit:            true,
-				ID:                ppID,
-				PlanID:            planID,
-				Name:              pp.GetName(),
-				SelectedProductID: pp.GetProductId(),
-				Price:             priceStr,
-				Currency:          pp.GetCurrency(),
-				Active:            pp.GetActive(),
-				Products:          loadProductOptions(ctx, deps),
-				Labels:            productPlanFormLabels(deps.Labels.ProductPlanForm),
-				CommonLabels:      nil, // injected by ViewAdapter
+				FormAction:           route.ResolveURL(deps.Routes.ProductPlanEditURL, "id", planID, "ppid", ppID),
+				IsEdit:               true,
+				ID:                   ppID,
+				PlanID:               planID,
+				Name:                 pp.GetName(),
+				Mode:                 "service",
+				SelectedProductID:    selectedProductID,
+				SelectedProductLabel: findProductLabel(products, selectedProductID),
+				Active:               pp.GetActive(),
+				Products:             products,
+				ProductOptions:       buildProductAutoCompleteOptions(products, selectedProductID),
+				Labels:               productPlanFormLabels(deps.Labels.ProductPlanForm),
+				CommonLabels:         nil, // injected by ViewAdapter
 			})
 		}
 
@@ -211,11 +223,6 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 
-		price := int64(0)
-		if v, err := strconv.ParseFloat(r.FormValue("price"), 64); err == nil {
-			price = int64(v * 100)
-		}
-
 		name := r.FormValue("name")
 		if name == "" {
 			name = r.FormValue("product_name")
@@ -226,8 +233,6 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 			PlanId:    planID,
 			ProductId: r.FormValue("product_id"),
 			Name:      name,
-			Price:     price,
-			Currency:  r.FormValue("currency"),
 			Active:    active,
 		}
 

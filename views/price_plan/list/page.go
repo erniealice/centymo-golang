@@ -170,11 +170,11 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 func pricePlanColumns(l centymo.PricePlanLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "120px"},
-		{Key: "duration", Label: l.Columns.Duration, Sortable: false, Width: "120px"},
+		{Key: "amount", Label: l.Columns.Amount, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "duration", Label: l.Columns.Duration, Sortable: false, WidthClass: "col-2xl"},
 		{Key: "plan", Label: l.Columns.Plan, Sortable: false},
 		{Key: "location", Label: l.Columns.Location, Sortable: false},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, Width: "120px"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, WidthClass: "col-2xl"},
 	}
 }
 

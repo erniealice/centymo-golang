@@ -17,6 +17,10 @@
     margin-bottom: var(--spacing-lg);
 }
 
+.detail-actions--spaced {
+    margin-top: var(--spacing-lg);
+}
+
 /* Tab scroll for table-containing tabs */
 .tab-scroll--table {
     flex: 1 1 0;

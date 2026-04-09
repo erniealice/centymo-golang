@@ -28,23 +28,27 @@ type PlanOption struct {
 }
 
 type FormData struct {
-	FormAction         string
-	IsEdit             bool
-	ID                 string
-	Name               string
-	Description        string
-	Amount             string
-	Currency           string
-	DurationValue      string
-	DurationUnit       string
-	Active             bool
-	PlanID             string
-	Locations          []*LocationOption
-	SelectedLocationID string
-	Plans              []*PlanOption
-	SelectedPlanID     string
-	Labels             centymo.PricePlanFormLabels
-	CommonLabels       any
+	FormAction            string
+	IsEdit                bool
+	ID                    string
+	Name                  string
+	Description           string
+	Amount                string
+	Currency              string
+	DurationValue         string
+	DurationUnit          string
+	Active                bool
+	PlanID                string
+	Locations             []*LocationOption
+	SelectedLocationID    string
+	SelectedLocationLabel string
+	LocationOptions       []map[string]any
+	Plans                 []*PlanOption
+	SelectedPlanID        string
+	SelectedPlanLabel     string
+	PlanOptions           []map[string]any
+	Labels                centymo.PricePlanFormLabels
+	CommonLabels          any
 }
 
 type Deps struct {
@@ -88,6 +92,48 @@ func loadPlans(ctx context.Context, deps *Deps) []*PlanOption {
 	return opts
 }
 
+func buildPlanAutoCompleteOptions(plans []*PlanOption, selectedID string) []map[string]any {
+	opts := make([]map[string]any, 0, len(plans))
+	for _, p := range plans {
+		opts = append(opts, map[string]any{
+			"Value":    p.Id,
+			"Label":    p.Name,
+			"Selected": p.Id == selectedID,
+		})
+	}
+	return opts
+}
+
+func findPlanLabel(plans []*PlanOption, id string) string {
+	for _, p := range plans {
+		if p.Id == id {
+			return p.Name
+		}
+	}
+	return ""
+}
+
+func buildLocationAutoCompleteOptions(locations []*LocationOption, selectedID string) []map[string]any {
+	opts := make([]map[string]any, 0, len(locations))
+	for _, loc := range locations {
+		opts = append(opts, map[string]any{
+			"Value":    loc.Id,
+			"Label":    loc.Name,
+			"Selected": loc.Id == selectedID,
+		})
+	}
+	return opts
+}
+
+func findLocationLabel(locations []*LocationOption, id string) string {
+	for _, loc := range locations {
+		if loc.Id == id {
+			return loc.Name
+		}
+	}
+	return ""
+}
+
 func parseAmount(s string) int64 {
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
@@ -107,13 +153,17 @@ func NewAddAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if viewCtx.Request.Method == http.MethodGet {
+			locations := loadLocations(ctx, deps)
+			plans := loadPlans(ctx, deps)
 			return view.OK("price-plan-drawer-form", &FormData{
-				FormAction: deps.Routes.AddURL,
-				Active:     true,
-				Currency:   "PHP",
-				Locations:  loadLocations(ctx, deps),
-				Plans:      loadPlans(ctx, deps),
-				Labels:     deps.Labels.Form,
+				FormAction:      deps.Routes.AddURL,
+				Active:          true,
+				Currency:        "PHP",
+				Locations:       locations,
+				LocationOptions: buildLocationAutoCompleteOptions(locations, ""),
+				Plans:           plans,
+				PlanOptions:     buildPlanAutoCompleteOptions(plans, ""),
+				Labels:          deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -159,23 +209,31 @@ func NewEditAction(deps *Deps) view.View {
 				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := resp.GetData()[0]
+			locations := loadLocations(ctx, deps)
+			plans := loadPlans(ctx, deps)
+			selectedPlanID := record.GetPlanId()
+			selectedLocationID := record.GetLocationId()
 			return view.OK("price-plan-drawer-form", &FormData{
-				FormAction:         route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:             true,
-				ID:                 id,
-				Name:               record.GetName(),
-				Description:        record.GetDescription(),
-				Amount:             formatAmount(record.GetAmount()),
-				Currency:           record.GetCurrency(),
-				DurationValue:      fmt.Sprintf("%d", record.GetDurationValue()),
-				DurationUnit:       record.GetDurationUnit(),
-				Active:             record.GetActive(),
-				PlanID:             record.GetPlanId(),
-				SelectedPlanID:     record.GetPlanId(),
-				SelectedLocationID: record.GetLocationId(),
-				Locations:          loadLocations(ctx, deps),
-				Plans:              loadPlans(ctx, deps),
-				Labels:             deps.Labels.Form,
+				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
+				IsEdit:                true,
+				ID:                    id,
+				Name:                  record.GetName(),
+				Description:           record.GetDescription(),
+				Amount:                formatAmount(record.GetAmount()),
+				Currency:              record.GetCurrency(),
+				DurationValue:         fmt.Sprintf("%d", record.GetDurationValue()),
+				DurationUnit:          record.GetDurationUnit(),
+				Active:                record.GetActive(),
+				PlanID:                selectedPlanID,
+				SelectedPlanID:        selectedPlanID,
+				SelectedPlanLabel:     findPlanLabel(plans, selectedPlanID),
+				SelectedLocationID:    selectedLocationID,
+				SelectedLocationLabel: findLocationLabel(locations, selectedLocationID),
+				Locations:             locations,
+				LocationOptions:       buildLocationAutoCompleteOptions(locations, selectedLocationID),
+				Plans:                 plans,
+				PlanOptions:           buildPlanAutoCompleteOptions(plans, selectedPlanID),
+				Labels:                deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {

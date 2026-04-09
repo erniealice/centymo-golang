@@ -95,26 +95,34 @@ func purchaseOrderToMap(po *purchaseorderpb.PurchaseOrder) map[string]any {
 }
 
 // buildTabItems builds the tab navigation for the purchase order detail page.
-func buildTabItems(id string, routes centymo.ExpenditureRoutes) []pyeza.TabItem {
+func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.ExpenditureRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.PurchaseOrderDetailURL, "id", id)
 	action := route.ResolveURL(routes.PurchaseOrderTabActionURL, "id", id, "tab", "")
+	tabDetails := l.PurchaseOrder.Detail.TabBasicInfo
+	if tabDetails == "" {
+		tabDetails = "Details"
+	}
+	tabLineItems := l.PurchaseOrder.Detail.TabLineItems
+	if tabLineItems == "" {
+		tabLineItems = "Line Items"
+	}
 	return []pyeza.TabItem{
-		{Key: "info", Label: "Details", Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
-		{Key: "items", Label: "Line Items", Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
+		{Key: "info", Label: tabDetails, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "items", Label: tabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
 	}
 }
 
 // buildLineItemTable builds the line items table config for a purchase order.
 func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, currency string, purchaseOrderID string, routes centymo.ExpenditureRoutes, isDraft bool, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "line_number", Label: "Line #", Sortable: false, Width: "80px"},
+		{Key: "line_number", Label: "Line #", Sortable: false, WidthClass: "col-md"},
 		{Key: "description", Label: "Description", Sortable: false},
-		{Key: "line_type", Label: "Type", Sortable: false, Width: "100px"},
-		{Key: "quantity_ordered", Label: "Qty Ordered", Sortable: false, Width: "110px"},
-		{Key: "quantity_received", Label: "Qty Received", Sortable: false, Width: "120px"},
-		{Key: "quantity_billed", Label: "Qty Billed", Sortable: false, Width: "110px"},
-		{Key: "unit_price", Label: "Unit Price", Sortable: false, Width: "130px"},
-		{Key: "total", Label: "Total", Sortable: false, Width: "130px"},
+		{Key: "line_type", Label: "Type", Sortable: false, WidthClass: "col-lg"},
+		{Key: "quantity_ordered", Label: "Qty Ordered", Sortable: false, WidthClass: "col-xl"},
+		{Key: "quantity_received", Label: "Qty Received", Sortable: false, WidthClass: "col-2xl"},
+		{Key: "quantity_billed", Label: "Qty Billed", Sortable: false, WidthClass: "col-xl"},
+		{Key: "unit_price", Label: "Unit Price", Sortable: false, WidthClass: "col-3xl"},
+		{Key: "total", Label: "Total", Sortable: false, WidthClass: "col-3xl"},
 	}
 
 	canEdit := isDraft && perms != nil && perms.Can("purchase_order", "update")
@@ -246,7 +254,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		if activeTab == "" {
 			activeTab = "info"
 		}
-		tabItems := buildTabItems(id, deps.Routes)
+		tabItems := buildTabItems(deps.Labels, id, deps.Routes)
 
 		poStatus, _ := po["status"].(string)
 		confirmReceiptURL := ""
@@ -333,7 +341,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			PurchaseOrder:     po,
 			Labels:            deps.Labels,
 			ActiveTab:         tab,
-			TabItems:          buildTabItems(id, deps.Routes),
+			TabItems:          buildTabItems(deps.Labels, id, deps.Routes),
 			SetStatusURL:      deps.Routes.PurchaseOrderSetStatusURL,
 			ConfirmReceiptURL: tabConfirmReceiptURL,
 		}

@@ -3,6 +3,11 @@
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     <div class="sheet-body">
+        {{/* ================================================================ */}}
+        {{/* Section: Plan Details                                            */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" "Plan Details")}}
+
         <div class="form-row single">
             {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder)}}
         </div>
@@ -10,37 +15,51 @@
             {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder)}}
         </div>
         <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label">Plan <span class="required">*</span></label>
-                <select name="plan_id" class="form-control" required>
-                    <option value="">Select a plan</option>
-                    {{range .Plans}}
-                    <option value="{{.Id}}" {{if eq .Id $.SelectedPlanID}}selected{{end}}>{{.Name}}</option>
-                    {{end}}
-                </select>
-            </div>
+            {{template "auto-complete" (dict
+                "ID" "plan-select"
+                "Name" "plan_id"
+                "Label" "Plan"
+                "Placeholder" "Select a plan..."
+                "SearchPlaceholder" "Filter..."
+                "Options" .PlanOptions
+                "Value" .SelectedPlanID
+                "SelectedLabel" .SelectedPlanLabel
+            )}}
         </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section: Pricing                                                  */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" "Pricing")}}
+
         <div class="form-row">
             {{template "form-group" (dict "Type" "number" "Name" "amount" "Label" .Labels.Amount "Value" .Amount "Required" true "Placeholder" .Labels.AmountPlaceholder "Step" "0.01" "Min" "0")}}
             {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" .Labels.Currency "Value" .Currency "Required" true "Placeholder" .Labels.CurrencyPlaceholder)}}
         </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section: Duration & Location                                      */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" "Duration & Location")}}
+
         <div class="form-row">
             {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" .Labels.DurationValue "Value" .DurationValue "Required" true "Placeholder" "1" "Min" "0")}}
             {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" .Labels.DurationUnit "Value" .DurationUnit "Options" (list (dict "Value" "days" "Label" "Days") (dict "Value" "weeks" "Label" "Weeks") (dict "Value" "months" "Label" "Months") (dict "Value" "years" "Label" "Years")))}}
         </div>
         <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label">{{.Labels.Location}}</label>
-                <select name="location_id" class="form-control">
-                    <option value="">{{.Labels.SelectLocation}}</option>
-                    {{range .Locations}}
-                    <option value="{{.Id}}" {{if eq .Id $.SelectedLocationID}}selected{{end}}>{{.Name}}</option>
-                    {{end}}
-                </select>
-            </div>
+            {{template "auto-complete" (dict
+                "ID" "location-select"
+                "Name" "location_id"
+                "Label" .Labels.Location
+                "Placeholder" .Labels.LocationPlaceholder
+                "SearchPlaceholder" "Filter..."
+                "Options" .LocationOptions
+                "Value" .SelectedLocationID
+                "SelectedLabel" .SelectedLocationLabel
+            )}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "checkbox" "Name" "active" "Label" .Labels.Active "Value" .Active "CheckboxValue" "true")}}
+            {{template "toggle" (dict "Name" "active" "Label" .Labels.Active "Checked" .Active "Value" "true")}}
         </div>
     </div>
 

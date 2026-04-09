@@ -182,7 +182,7 @@ func productLineColumns(l centymo.ProductLineLabels) []types.TableColumn {
 		{Key: "name", Label: l.Columns.Name, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
 		{Key: "description", Label: l.Columns.Description, Sortable: false},
 		{Key: "date_created", Label: l.Columns.DateCreated, Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, Width: "120px"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, WidthClass: "col-2xl"},
 	}
 }
 

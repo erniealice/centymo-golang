@@ -32,12 +32,13 @@ type ReceiptLineRow struct {
 
 // ReceiptFormData is the template data for the PO receipt form.
 type ReceiptFormData struct {
-	FormAction   string
+	FormAction      string
 	PurchaseOrderID string
-	Lines        []ReceiptLineRow
-	Today        string
-	LocationID   string
-	CommonLabels any
+	Lines           []ReceiptLineRow
+	Today           string
+	LocationID      string
+	Labels          centymo.ExpenditureLabels
+	CommonLabels    any
 }
 
 // ReceiptActionDeps holds dependencies for the confirm-receipt action handler.
@@ -122,6 +123,7 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 				Lines:           lines,
 				Today:           time.Now().Format("2006-01-02"),
 				LocationID:      locationID,
+				Labels:          deps.Labels,
 				CommonLabels:    nil,
 			})
 		}

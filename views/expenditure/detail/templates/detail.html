@@ -6,7 +6,7 @@
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "expense-detail-content"}}
 <div class="page-content detail-layout" data-page-title="{{.Title}}" data-page-css="/assets/css/centymo/centymo-transaction-detail.css?v={{.CacheVersion}}">
-    <h2 class="visually-hidden">Expense Detail</h2>
+    <h2 class="visually-hidden">{{.Labels.Detail.Title}}</h2>
     {{/* ─── Tabs ─── */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "expense-tabs")}}
@@ -30,26 +30,26 @@
 {{/* Basic Information Tab */}}
 {{define "expense-tab-info"}}
 <div class="tab-scroll">
-    <h4 class="detail-section-title">Expense Information</h4>
+    <h4 class="detail-section-title">{{.Labels.Detail.InfoSection}}</h4>
     <div class="detail-info-grid">
         <div class="detail-info-item">
-            <span class="detail-info-label">Reference</span>
+            <span class="detail-info-label">{{.Labels.Detail.ReferenceNumber}}</span>
             <span class="detail-info-value mono">{{index .Expense "reference_number"}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Name</span>
+            <span class="detail-info-label">{{.Labels.Detail.Name}}</span>
             <span class="detail-info-value">{{index .Expense "name"}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Type</span>
+            <span class="detail-info-label">{{.Labels.Detail.Type}}</span>
             <span class="detail-info-value">{{index .Expense "expenditure_type"}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Amount</span>
+            <span class="detail-info-label">{{.Labels.Detail.Amount}}</span>
             <span class="detail-info-value mono">{{index .Expense "currency"}} {{index .Expense "total_amount"}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Status</span>
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
             <span>
                 <span class="badge badge--{{if eq (index .Expense "status") "paid"}}success{{else if eq (index .Expense "status") "approved"}}primary{{else if eq (index .Expense "status") "pending"}}warning{{else}}info{{end}}">
                     {{index .Expense "status"}}
@@ -57,28 +57,28 @@
             </span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">Created</span>
+            <span class="detail-info-label">{{.Labels.Detail.Date}}</span>
             <span class="detail-info-value">{{index .Expense "date_created_string"}}</span>
         </div>
     </div>
     {{if .PaidAmount}}
     <div class="transaction-section-spacer">
-        <h4 class="detail-section-title">Payment Summary</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.PaymentSummary}}</h4>
         <div class="detail-info-grid">
             <div class="detail-info-item">
-                <span class="detail-info-label">Total Amount</span>
+                <span class="detail-info-label">{{.Labels.Detail.TotalAmount}}</span>
                 <span class="detail-info-value mono">{{index .Expense "currency"}} {{index .Expense "total_amount"}}</span>
             </div>
             <div class="detail-info-item">
-                <span class="detail-info-label">Paid</span>
+                <span class="detail-info-label">{{.Labels.Detail.Paid}}</span>
                 <span class="detail-info-value mono">{{index .Expense "currency"}} {{.PaidAmount}}</span>
             </div>
             <div class="detail-info-item">
-                <span class="detail-info-label">Outstanding</span>
+                <span class="detail-info-label">{{.Labels.Detail.Outstanding}}</span>
                 <span class="detail-info-value mono">{{index .Expense "currency"}} {{.OutstandingAmount}}</span>
             </div>
             <div class="detail-info-item">
-                <span class="detail-info-label">Payment Status</span>
+                <span class="detail-info-label">{{.Labels.Detail.PaymentStatus}}</span>
                 <span>
                     <span class="badge badge--{{if eq .PaymentStatus "Fully Paid"}}success{{else if eq .PaymentStatus "Partially Paid"}}warning{{else}}info{{end}}">
                         {{.PaymentStatus}}
@@ -91,7 +91,7 @@
 
     {{if index .Expense "notes"}}
     <div class="transaction-section-spacer">
-        <h4 class="detail-section-title">Notes</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
         <div class="transaction-notes-block">{{index .Expense "notes"}}</div>
     </div>
     {{end}}
@@ -99,18 +99,18 @@
     {{/* ─── Status Actions ─── */}}
     {{if .SetStatusURL}}
     <div class="transaction-section-spacer">
-        <h4 class="detail-section-title">Update Status</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.UpdateStatus}}</h4>
         <form hx-post="{{.SetStatusURL}}" hx-swap="none" class="inline-status-form">
             <input type="hidden" name="id" value="{{index .Expense "id"}}">
             <div class="form-group transaction-inline-form__group">
-                <label for="status" class="form-label transaction-inline-form__label">Status</label>
+                <label for="status" class="form-label transaction-inline-form__label">{{.Labels.Detail.Status}}</label>
                 <select id="status" name="status" class="form-control transaction-inline-form__control--auto">
-                    <option value="pending"{{if eq (index .Expense "status") "pending"}} selected{{end}}>Pending</option>
-                    <option value="approved"{{if eq (index .Expense "status") "approved"}} selected{{end}}>Approved</option>
-                    <option value="paid"{{if eq (index .Expense "status") "paid"}} selected{{end}}>Paid</option>
-                    <option value="cancelled"{{if eq (index .Expense "status") "cancelled"}} selected{{end}}>Cancelled</option>
+                    <option value="pending"{{if eq (index .Expense "status") "pending"}} selected{{end}}>{{.Labels.Status.Pending}}</option>
+                    <option value="approved"{{if eq (index .Expense "status") "approved"}} selected{{end}}>{{.Labels.Status.Approved}}</option>
+                    <option value="paid"{{if eq (index .Expense "status") "paid"}} selected{{end}}>{{.Labels.Status.Paid}}</option>
+                    <option value="cancelled"{{if eq (index .Expense "status") "cancelled"}} selected{{end}}>{{.Labels.Status.Cancelled}}</option>
                 </select>
-                <button type="submit" class="btn btn-primary">Save Status</button>
+                <button type="submit" class="btn btn-primary">{{.Labels.Detail.SaveStatus}}</button>
             </div>
         </form>
     </div>
@@ -119,7 +119,7 @@
     {{/* ─── Pay Action ─── */}}
     {{if and .PayURL (eq (index .Expense "status") "approved")}}
     <div class="transaction-section-spacer">
-        <h4 class="detail-section-title">Payment</h4>
+        <h4 class="detail-section-title">{{.Labels.Detail.Payment}}</h4>
         <div class="transaction-inline-form__group">
             <button type="button" class="btn btn-primary"
                 data-testid="btn-pay-expense"
@@ -127,8 +127,8 @@
                 hx-get="{{.PayURL}}"
                 hx-target="#sheetContent"
                 hx-swap="innerHTML"
-                onclick="Sheet.open('Record Payment')">
-                Pay
+                onclick="Sheet.open('{{.Labels.Detail.Payment}}')">
+                {{.Labels.Detail.Pay}}
             </button>
         </div>
     </div>
@@ -140,15 +140,16 @@
 {{define "expense-tab-items"}}
 <div class="transaction-items-toolbar">
     <div class="transaction-summary-item">
-        <span class="transaction-summary-label">Total</span>
+        <span class="transaction-summary-label">{{.Labels.Detail.Total}}</span>
         <span class="transaction-summary-value">{{.TotalAmount}}</span>
     </div>
     <div class="transaction-items-actions">
         <button type="button" class="btn btn-primary toolbar-primary-action"
+            title="{{.Labels.Detail.AddItem}}"
             aria-haspopup="dialog"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="Sheet.open('Add Item')">
-            Add Item
+            onclick="Sheet.open('{{.Labels.Detail.AddItem}}')">
+            {{.Labels.Detail.AddItem}}
         </button>
     </div>
 </div>
@@ -159,8 +160,8 @@
 {{else}}
     <div class="tab-scroll">
         <div class="coming-soon-panel">
-            <div class="coming-soon-title">No line items</div>
-            <p class="coming-soon-text">Add line items to this expense.</p>
+            <div class="coming-soon-title">{{.Labels.Detail.EmptyTitle}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.EmptyMessage}}</p>
         </div>
     </div>
 {{end}}
@@ -173,16 +174,16 @@
     {{/* ─── Summary Bar ─── */}}
     <div class="transaction-items-toolbar">
         <div class="transaction-summary-item">
-            <span class="transaction-summary-label">Scheduled</span>
+            <span class="transaction-summary-label">{{.Labels.Schedule.Scheduled}}</span>
             <span class="transaction-summary-value mono">{{.PaymentsSchedule.TotalScheduled}}</span>
         </div>
         <div class="transaction-summary-item">
-            <span class="transaction-summary-label">Paid</span>
-            <span class="transaction-summary-value mono" style="color:var(--color-success)">{{.PaymentsSchedule.TotalPaid}}</span>
+            <span class="transaction-summary-label">{{.Labels.Schedule.Paid}}</span>
+            <span class="transaction-summary-value mono text-success">{{.PaymentsSchedule.TotalPaid}}</span>
         </div>
         <div class="transaction-summary-item">
-            <span class="transaction-summary-label">Remaining</span>
-            <span class="transaction-summary-value mono" style="color:var(--color-warning)">{{.PaymentsSchedule.TotalRemaining}}</span>
+            <span class="transaction-summary-label">{{.Labels.Schedule.Remaining}}</span>
+            <span class="transaction-summary-value mono text-warning">{{.PaymentsSchedule.TotalRemaining}}</span>
         </div>
     </div>
 
@@ -190,13 +191,13 @@
     <table class="data-table" data-testid="payments-schedule-table">
         <thead>
             <tr>
-                <th class="data-table__cell data-table__cell--header" style="width:60px">#</th>
-                <th class="data-table__cell data-table__cell--header">Due Date</th>
-                <th class="data-table__cell data-table__cell--header">Amount Due</th>
-                <th class="data-table__cell data-table__cell--header" style="width:110px">Status</th>
-                <th class="data-table__cell data-table__cell--header">Paid Amount</th>
-                <th class="data-table__cell data-table__cell--header">Paid Date</th>
-                <th class="data-table__cell data-table__cell--header">Reference</th>
+                <th class="data-table__cell data-table__cell--header col-sm">#</th>
+                <th class="data-table__cell data-table__cell--header">{{.Labels.Schedule.DueDate}}</th>
+                <th class="data-table__cell data-table__cell--header">{{.Labels.Schedule.AmountDue}}</th>
+                <th class="data-table__cell data-table__cell--header col-xl">{{.Labels.Detail.Status}}</th>
+                <th class="data-table__cell data-table__cell--header">{{.Labels.Schedule.PaidAmount}}</th>
+                <th class="data-table__cell data-table__cell--header">{{.Labels.Schedule.PaidDate}}</th>
+                <th class="data-table__cell data-table__cell--header">{{.Labels.Schedule.Reference}}</th>
             </tr>
         </thead>
         <tbody>
@@ -217,8 +218,8 @@
     </table>
 {{else}}
     <div class="coming-soon-panel">
-        <div class="coming-soon-title">No payment schedule</div>
-        <p class="coming-soon-text">No disbursement schedule has been set up for this expense.</p>
+        <div class="coming-soon-title">{{.Labels.Schedule.EmptyTitle}}</div>
+        <p class="coming-soon-text">{{.Labels.Schedule.EmptyMessage}}</p>
     </div>
 {{end}}
 </div>
@@ -232,15 +233,15 @@
     <div class="sheet-body">
         <div class="form-row single">
             <div class="form-group">
-                <label for="pay-reference_number" class="form-label">Reference</label>
+                <label for="pay-reference_number" class="form-label">{{.Labels.Reference}}</label>
                 <input type="text" id="pay-reference_number" name="reference_number" class="form-control"
-                    placeholder="e.g. DIS-2026-001">
+                    placeholder="{{.Labels.ReferencePlaceholder}}">
             </div>
         </div>
 
         <div class="form-row single">
             <div class="form-group">
-                <label for="pay-payee" class="form-label">Payee <span class="required-marker">*</span></label>
+                <label for="pay-payee" class="form-label">{{.Labels.Payee}} <span class="required-marker">*</span></label>
                 <input type="text" id="pay-payee" name="payee" class="form-control"
                     value="{{.Name}}" required>
             </div>
@@ -248,45 +249,45 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="pay-amount" class="form-label">Amount <span class="required-marker">*</span></label>
+                <label for="pay-amount" class="form-label">{{.Labels.Amount}} <span class="required-marker">*</span></label>
                 <input type="number" id="pay-amount" name="amount" class="form-control"
                     value="{{.Amount}}" required min="0" step="0.01">
             </div>
             <div class="form-group">
-                <label for="pay-currency" class="form-label">Currency</label>
+                <label for="pay-currency" class="form-label">{{.Labels.Currency}}</label>
                 <input type="text" id="pay-currency" name="currency" class="form-control"
-                    value="{{.Currency}}" placeholder="PHP">
+                    value="{{.Currency}}" placeholder="{{.Labels.CurrencyPlaceholder}}">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="pay-disbursement_method" class="form-label">Payment Method</label>
+                <label for="pay-disbursement_method" class="form-label">{{.Labels.PaymentMethod}}</label>
                 <select id="pay-disbursement_method" name="disbursement_method" class="form-control">
-                    <option value="cash">Cash</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="check">Check</option>
-                    <option value="gcash">GCash</option>
-                    <option value="other">Other</option>
+                    <option value="cash">{{.Labels.MethodCash}}</option>
+                    <option value="bank_transfer">{{.Labels.MethodBankTransfer}}</option>
+                    <option value="check">{{.Labels.MethodCheck}}</option>
+                    <option value="gcash">{{.Labels.MethodGCash}}</option>
+                    <option value="other">{{.Labels.MethodOther}}</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="pay-disbursement_type" class="form-label">Category</label>
+                <label for="pay-disbursement_type" class="form-label">{{.Labels.Category}}</label>
                 <select id="pay-disbursement_type" name="disbursement_type" class="form-control">
-                    <option value="supplier"{{if eq .DisbursementType "supplier"}} selected{{end}}>Supplier Payment</option>
-                    <option value="payroll"{{if eq .DisbursementType "payroll"}} selected{{end}}>Payroll</option>
-                    <option value="rent"{{if eq .DisbursementType "rent"}} selected{{end}}>Rent</option>
-                    <option value="utilities"{{if eq .DisbursementType "utilities"}} selected{{end}}>Utilities</option>
-                    <option value="other"{{if eq .DisbursementType "other"}} selected{{end}}>Other</option>
+                    <option value="supplier"{{if eq .DisbursementType "supplier"}} selected{{end}}>{{.Labels.TypeSupplierPayment}}</option>
+                    <option value="payroll"{{if eq .DisbursementType "payroll"}} selected{{end}}>{{.Labels.TypePayroll}}</option>
+                    <option value="rent"{{if eq .DisbursementType "rent"}} selected{{end}}>{{.Labels.TypeRent}}</option>
+                    <option value="utilities"{{if eq .DisbursementType "utilities"}} selected{{end}}>{{.Labels.TypeUtilities}}</option>
+                    <option value="other"{{if eq .DisbursementType "other"}} selected{{end}}>{{.Labels.TypeOther}}</option>
                 </select>
             </div>
         </div>
 
         <div class="form-row single">
             <div class="form-group">
-                <label for="pay-approved_by" class="form-label">Approved By</label>
+                <label for="pay-approved_by" class="form-label">{{.Labels.ApprovedBy}}</label>
                 <input type="text" id="pay-approved_by" name="approved_by" class="form-control"
-                    placeholder="Approver name">
+                    placeholder="{{.Labels.ApproverNamePlaceholder}}">
             </div>
         </div>
     </div>
@@ -308,31 +309,31 @@
     <input type="hidden" name="expenditure_id" value="{{.ExpenditureID}}">
 
     <div class="form-group">
-        <label for="description" class="form-label">Description <span class="required-marker">*</span></label>
+        <label for="description" class="form-label">{{.Labels.LineItemForm.Description}} <span class="required-marker">*</span></label>
         <input type="text" id="description" name="description" class="form-control"
-            value="{{.Description}}" required placeholder="e.g. Office supplies">
+            value="{{.Description}}" required placeholder="{{.Labels.LineItemForm.DescriptionPlaceholder}}">
     </div>
 
     <div class="form-group">
-        <label for="quantity" class="form-label">Quantity <span class="required-marker">*</span></label>
+        <label for="quantity" class="form-label">{{.Labels.LineItemForm.Quantity}} <span class="required-marker">*</span></label>
         <input type="number" id="quantity" name="quantity" class="form-control"
             value="{{.Quantity}}" required min="1" step="1">
     </div>
 
     <div class="form-group">
-        <label for="unit_price" class="form-label">Unit Price <span class="required-marker">*</span></label>
+        <label for="unit_price" class="form-label">{{.Labels.LineItemForm.UnitPrice}} <span class="required-marker">*</span></label>
         <input type="number" id="unit_price" name="unit_price" class="form-control"
             value="{{.UnitPrice}}" required min="0" step="0.01">
     </div>
 
     <div class="form-group">
-        <label for="notes" class="form-label">Notes</label>
+        <label for="notes" class="form-label">{{.Labels.LineItemForm.Notes}}</label>
         <textarea id="notes" name="notes" class="form-control" rows="3">{{.Notes}}</textarea>
     </div>
 
     <div class="drawer-form-actions">
-        <button type="submit" class="btn btn-primary">Save</button>
-        <button type="button" class="btn btn--ghost" onclick="Sheet.close()">Cancel</button>
+        <button type="submit" class="btn btn-primary">{{.Labels.LineItemForm.Save}}</button>
+        <button type="button" class="btn btn-ghost" onclick="Sheet.close()">{{.Labels.LineItemForm.Cancel}}</button>
     </div>
 </form>
 {{end}}

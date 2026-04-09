@@ -58,8 +58,10 @@
                 <a class="card-btn" href="{{route "inventory.movements"}}">View All</a>
             </div>
             <div class="centymo-activity-list"
+                 id="inventory-recent-activity"
                  hx-get="{{route "inventory.dashboard.movements"}}"
                  hx-trigger="load"
+                 hx-target="this"
                  hx-swap="innerHTML">
                 <!-- Loaded async via HTMX -->
                 <div class="centymo-activity-item" data-testid="activity-1">

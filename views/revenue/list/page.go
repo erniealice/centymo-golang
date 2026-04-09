@@ -218,11 +218,11 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 func revenueColumns(l centymo.RevenueLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "reference_number", Label: l.Columns.Reference, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "client_name", Label: l.Columns.Customer, Sortable: true, Filterable: true, FilterType: types.FilterTypeString, Width: "300px"},
-		{Key: "revenue_date_string", Label: l.Form.Date, Sortable: true, Filterable: true, FilterType: types.FilterTypeDate, Width: "140px"},
-		{Key: "total_amount", Label: l.Columns.Amount, Sortable: true, Filterable: true, FilterType: types.FilterTypeMoney, Width: "140px", Align: "right"},
-		{Key: "due_date", Label: l.Form.DueDate, Sortable: true, Width: "140px"},
-		{Key: "payment_term", Label: l.Form.PaymentTerms, Sortable: false, Width: "140px"},
+		{Key: "client_name", Label: l.Columns.Customer, Sortable: true, Filterable: true, FilterType: types.FilterTypeString, WidthClass: "col-9xl"},
+		{Key: "revenue_date_string", Label: l.Form.Date, Sortable: true, Filterable: true, FilterType: types.FilterTypeDate, WidthClass: "col-3xl"},
+		{Key: "total_amount", Label: l.Columns.Amount, Sortable: true, Filterable: true, FilterType: types.FilterTypeMoney, WidthClass: "col-3xl", Align: "right"},
+		{Key: "due_date", Label: l.Form.DueDate, Sortable: true, WidthClass: "col-3xl"},
+		{Key: "payment_term", Label: l.Form.PaymentTerms, Sortable: false, WidthClass: "col-3xl"},
 	}
 }
 

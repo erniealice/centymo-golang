@@ -12,13 +12,13 @@ Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .Locatio
     <input type="hidden" name="purchase_order_id" value="{{.PurchaseOrderID}}">
 
     <div class="form-group">
-        <label for="receipt_date" class="form-label">Receipt Date <span class="required-marker">*</span></label>
+        <label for="receipt_date" class="form-label">{{.Labels.PurchaseOrder.Receipt.ReceiptDate}} <span class="required-marker">*</span></label>
         <input type="date" id="receipt_date" name="receipt_date" class="form-control"
             value="{{.Today}}" required>
     </div>
 
     <div class="form-group">
-        <label for="location_id" class="form-label">Receiving Location</label>
+        <label for="location_id" class="form-label">{{.Labels.PurchaseOrder.Receipt.ReceivingLocation}}</label>
         <input type="text" id="location_id" name="location_id" class="form-control"
             value="{{.LocationID}}" placeholder="Location ID (for goods lines)">
     </div>
@@ -28,12 +28,12 @@ Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .Locatio
         <table class="table table--compact" data-testid="receipt-lines-table">
             <thead>
                 <tr>
-                    <th>Description</th>
-                    <th>Type</th>
-                    <th class="text-right">Ordered</th>
-                    <th class="text-right">Received</th>
-                    <th class="text-right">Remaining</th>
-                    <th class="text-right">Qty to Receive</th>
+                    <th>{{.Labels.PurchaseOrder.Receipt.Description}}</th>
+                    <th>{{.Labels.PurchaseOrder.Receipt.Type}}</th>
+                    <th class="text-right">{{.Labels.PurchaseOrder.Receipt.Ordered}}</th>
+                    <th class="text-right">{{.Labels.PurchaseOrder.Receipt.Received}}</th>
+                    <th class="text-right">{{.Labels.PurchaseOrder.Receipt.Remaining}}</th>
+                    <th class="text-right">{{.Labels.PurchaseOrder.Receipt.QtyToReceive}}</th>
                 </tr>
             </thead>
             <tbody>
@@ -62,12 +62,12 @@ Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .Locatio
         </table>
     </div>
     {{else}}
-    <p class="text-muted">All line items have been fully received.</p>
+    <p class="text-muted">{{.Labels.PurchaseOrder.Receipt.AllReceived}}</p>
     {{end}}
 
     <div class="drawer-form-actions">
-        <button type="submit" class="btn btn-primary" data-testid="receipt-submit-btn">Confirm Receipt</button>
-        <button type="button" class="btn btn--ghost" onclick="Sheet.close()">Cancel</button>
+        <button type="submit" class="btn btn-primary" data-testid="receipt-submit-btn">{{.Labels.PurchaseOrder.Receipt.ConfirmButton}}</button>
+        <button type="button" class="btn btn-ghost" onclick="Sheet.close()">{{.Labels.PurchaseOrder.Receipt.Cancel}}</button>
     </div>
 </form>
 {{end}}

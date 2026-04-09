@@ -1,8 +1,8 @@
 {{/*
 Product Plan drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit product plan actions within a plan detail.
-Data: .SelectedProductID, .Price, .Currency, .Active, .PlanID, .ID,
-      .FormAction, .IsEdit, .Products, .CommonLabels, .Labels
+Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
+      .FormAction, .IsEdit, .ProductOptions, .CommonLabels, .Labels
 */}}
 {{define "product-plan-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
@@ -12,50 +12,27 @@ Data: .SelectedProductID, .Price, .Currency, .Active, .PlanID, .ID,
     <div class="sheet-body">
         {{/* --- Product selector --- */}}
         <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label">{{.Labels.Product}}</label>
-                <select name="product_id" class="form-control" required
-                    onchange="this.form.querySelector('[name=name]').value = this.options[this.selectedIndex].text">
-                    <option value="">{{.Labels.SelectProduct}}</option>
-                    {{range .Products}}
-                    <option value="{{.Id}}" {{if eq .Id $.SelectedProductID}}selected{{end}}>{{.Name}}</option>
-                    {{end}}
-                </select>
-                {{/* Hidden name field — populated from selected product name on change, or pre-filled in edit mode */}}
-                <input type="hidden" name="name" value="{{.Name}}">
-            </div>
-        </div>
-
-        {{/* --- Price + Currency --- */}}
-        <div class="form-row">
-            {{template "form-group" (dict
-                "Type" "number"
-                "Name" "price"
-                "Label" .Labels.Price
-                "Value" .Price
-                "Required" true
-                "Placeholder" .Labels.PricePlaceholder
-                "Step" "0.01"
-                "Min" "0"
+            {{template "auto-complete" (dict
+                "ID" "product-select"
+                "Name" "product_id"
+                "Label" .Labels.Product
+                "Placeholder" .Labels.ProductPlaceholder
+                "SearchPlaceholder" "Filter..."
+                "Options" .ProductOptions
+                "Value" .SelectedProductID
+                "SelectedLabel" .SelectedProductLabel
             )}}
-            {{template "form-group" (dict
-                "Type" "text"
-                "Name" "currency"
-                "Label" .Labels.Currency
-                "Value" .Currency
-                "Required" true
-                "Placeholder" .Labels.CurrencyPlaceholder
-            )}}
+            {{/* Hidden name field — populated on form submit via product name */}}
+            <input type="hidden" name="name" value="{{.Name}}">
         </div>
 
         {{/* --- Active toggle --- */}}
         <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "checkbox"
+            {{template "toggle" (dict
                 "Name" "active"
                 "Label" .Labels.Active
-                "Value" .Active
-                "CheckboxValue" "true"
+                "Checked" .Active
+                "Value" "true"
             )}}
         </div>
     </div>

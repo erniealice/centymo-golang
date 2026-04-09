@@ -123,10 +123,10 @@ func categoryColumns(l centymo.ExpenditureCategoryLabels) []types.TableColumn {
 		status = "Status"
 	}
 	return []types.TableColumn{
-		{Key: "code", Label: code, Sortable: true, Width: "120px"},
+		{Key: "code", Label: code, Sortable: true, WidthClass: "col-2xl"},
 		{Key: "name", Label: name, Sortable: true},
 		{Key: "description", Label: description, Sortable: false},
-		{Key: "status", Label: status, Sortable: true, Width: "100px"},
+		{Key: "status", Label: status, Sortable: true, WidthClass: "col-lg"},
 	}
 }
 

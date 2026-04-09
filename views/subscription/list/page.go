@@ -157,8 +157,8 @@ func subscriptionColumns(l centymo.SubscriptionLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "customer", Label: l.Columns.Customer, Sortable: true},
 		{Key: "plan", Label: l.Columns.Plan, Sortable: true},
-		{Key: "start_date", Label: l.Columns.StartDate, Sortable: true, Width: "150px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "start_date", Label: l.Columns.StartDate, Sortable: true, WidthClass: "col-4xl"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 }
 

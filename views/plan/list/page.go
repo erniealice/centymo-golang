@@ -202,9 +202,9 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 func planColumns(l centymo.PlanLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "interval", Label: l.Columns.Interval, Sortable: true, Width: "150px"},
-		{Key: "price", Label: l.Columns.Price, Sortable: true, Width: "120px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "interval", Label: l.Columns.Interval, Sortable: true, WidthClass: "col-4xl"},
+		{Key: "price", Label: l.Columns.Price, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 }
 

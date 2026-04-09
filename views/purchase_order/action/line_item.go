@@ -30,6 +30,7 @@ type LineItemFormData struct {
 	QuantityOrdered string
 	UnitPrice       string
 	Notes           string
+	Labels          centymo.ExpenditureLabels
 	CommonLabels    any
 }
 
@@ -80,6 +81,7 @@ func NewLineItemAddAction(deps *LineItemDeps) view.View {
 				PurchaseOrderID: purchaseOrderID,
 				LineType:        "goods",
 				QuantityOrdered: "1",
+				Labels:          deps.Labels,
 				CommonLabels:    nil,
 			})
 		}
@@ -171,6 +173,7 @@ func NewLineItemEditAction(deps *LineItemDeps) view.View {
 				QuantityOrdered: fmt.Sprintf("%.0f", item.GetQuantityOrdered()),
 				UnitPrice:       fmt.Sprintf("%.2f", float64(item.GetUnitPrice())/100.0),
 				Notes:           item.GetNotes(),
+				Labels:          deps.Labels,
 				CommonLabels:    nil,
 			})
 		}

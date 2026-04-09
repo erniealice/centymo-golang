@@ -279,9 +279,7 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 
 	columns := []types.TableColumn{
 		{Key: "name", Label: l.Columns.Product, Sortable: true},
-		{Key: "price", Label: l.Detail.Price, Sortable: true, Width: "150px"},
-		{Key: "currency", Label: l.Detail.Currency, Sortable: true, Width: "120px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	rows := []types.TableRow{}
@@ -309,11 +307,6 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 			for _, pp := range ppResp.GetData() {
 				ppID := pp.GetId()
 				name := pp.GetName()
-				price := fmt.Sprintf("%.2f", float64(pp.GetPrice())/100.0)
-				currency := pp.GetCurrency()
-				if currency == "" {
-					currency = "PHP"
-				}
 
 				active := pp.GetActive()
 				status := "active"
@@ -342,8 +335,6 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 					ID: ppID,
 					Cells: []types.TableCell{
 						{Type: "text", Value: name},
-						{Type: "text", Value: price},
-						{Type: "text", Value: currency},
 						{Type: "badge", Value: status, Variant: statusVariant(status)},
 					},
 					Actions: rowActions,
@@ -396,10 +387,10 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 
 	columns := []types.TableColumn{
 		{Key: "name", Label: l.Columns.PricePlan, Sortable: true},
-		{Key: "amount", Label: l.Detail.Price, Sortable: true, Width: "150px"},
-		{Key: "duration", Label: l.Columns.Duration, Sortable: true, Width: "150px"},
-		{Key: "location", Label: l.Columns.Location, Sortable: true, Width: "180px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "amount", Label: l.Detail.Price, Sortable: true, WidthClass: "col-4xl"},
+		{Key: "duration", Label: l.Columns.Duration, Sortable: true, WidthClass: "col-4xl"},
+		{Key: "location", Label: l.Columns.Location, Sortable: true, WidthClass: "col-6xl"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	// Build a location ID → name map for display.

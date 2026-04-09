@@ -119,10 +119,10 @@ func disbursementColumns(l centymo.DisbursementLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
 		{Key: "payee", Label: l.Columns.Payee, Sortable: true},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, Width: "140px", Align: "right"},
-		{Key: "method", Label: l.Columns.Method, Sortable: true, Width: "140px"},
-		{Key: "date", Label: l.Columns.Date, Sortable: true, Width: "140px"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Width: "120px"},
+		{Key: "amount", Label: l.Columns.Amount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
+		{Key: "method", Label: l.Columns.Method, Sortable: true, WidthClass: "col-3xl"},
+		{Key: "date", Label: l.Columns.Date, Sortable: true, WidthClass: "col-3xl"},
+		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 }
 

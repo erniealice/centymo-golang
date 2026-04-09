@@ -115,8 +115,8 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
         {{if .PurchaseOrders}}
         <div class="form-row single">
             <div class="form-group">
-                <label class="form-label">{{.Labels.LinkToPurchaseOrder}}</label>
-                <select name="purchase_order_id" class="form-control">
+                <label for="purchase_order_id" class="form-label">{{.Labels.LinkToPurchaseOrder}}</label>
+                <select name="purchase_order_id" id="purchase_order_id" class="form-control">
                     <option value="">— No PO —</option>
                     {{range .PurchaseOrders}}
                     <option value="{{.Id}}" {{if eq .Id $.PurchaseOrderID}}selected{{end}}>{{.PoNumber}}{{if .SupplierName}} — {{.SupplierName}}{{end}}</option>

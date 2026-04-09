@@ -401,8 +401,8 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 
 	columns := []types.TableColumn{
 		{Key: "product", Label: "Product", Sortable: true},
-		{Key: "price", Label: "Price", Sortable: true, Width: "150px"},
-		{Key: "currency", Label: "Currency", Sortable: true, Width: "120px"},
+		{Key: "price", Label: "Price", Sortable: true, WidthClass: "col-4xl"},
+		{Key: "currency", Label: "Currency", Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	// Build product ID → name map for display

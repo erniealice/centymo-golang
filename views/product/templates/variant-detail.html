@@ -78,7 +78,7 @@
     {{end}}
 
     <div class="detail-actions">
-        <button type="button" class="btn btn--ghost btn--sm"
+        <button type="button" class="btn btn-ghost btn-sm"
            aria-haspopup="dialog"
            hx-get="{{routeWith "product.variant.edit" "id" .ProductID "vid" .VariantID}}"
            hx-target="#sheetContent"
@@ -154,7 +154,8 @@
 <div class="image-gallery">
     {{if .Images}}
     <div class="image-gallery__toolbar">
-        <button class="btn btn--danger btn--sm" id="bulk-delete-btn" disabled
+        <button class="btn btn-danger btn-sm" id="bulk-delete-btn" disabled
+                aria-label="Delete selected images"
                 hx-post="{{routeWith "product.variant.image.delete" "id" .ProductID "vid" .VariantID}}"
                 hx-target="#image-gallery" hx-swap="innerHTML"
                 hx-include=".image-gallery__checkbox:checked">

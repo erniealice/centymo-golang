@@ -272,8 +272,8 @@ func buildPricesTable(ctx context.Context, deps *DetailViewDeps, priceListID str
 	l := deps.Labels
 	columns := []types.TableColumn{
 		{Key: "product_name", Label: l.Detail.ProductName, Sortable: true},
-		{Key: "amount", Label: l.Detail.Amount, Sortable: true, Width: "150px"},
-		{Key: "currency", Label: l.Detail.Currency, Sortable: true, Width: "120px"},
+		{Key: "amount", Label: l.Detail.Amount, Sortable: true, WidthClass: "col-4xl"},
+		{Key: "currency", Label: l.Detail.Currency, Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	rows := []types.TableRow{}

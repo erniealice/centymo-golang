@@ -547,10 +547,22 @@ func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditur
 func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.ExpenditureRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
+	tabDetails := l.Detail.TabDetails
+	if tabDetails == "" {
+		tabDetails = "Details"
+	}
+	tabLineItems := l.Detail.TabLineItems
+	if tabLineItems == "" {
+		tabLineItems = "Line Items"
+	}
+	tabPayments := l.Detail.TabPayments
+	if tabPayments == "" {
+		tabPayments = "Payments"
+	}
 	return []pyeza.TabItem{
-		{Key: "info", Label: "Details", Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
-		{Key: "items", Label: "Line Items", Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
-		{Key: "payments", Label: "Payments", Href: base + "?tab=payments", HxGet: action + "payments", Icon: "icon-credit-card"},
+		{Key: "info", Label: tabDetails, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "items", Label: tabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
+		{Key: "payments", Label: tabPayments, Href: base + "?tab=payments", HxGet: action + "payments", Icon: "icon-credit-card"},
 	}
 }
 
@@ -558,9 +570,9 @@ func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.Expend
 func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tableLabels types.TableLabels, currency string, expenditureID string, routes centymo.ExpenditureRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "description", Label: "Description", Sortable: false},
-		{Key: "quantity", Label: "Qty", Sortable: false, Width: "80px"},
-		{Key: "unit_price", Label: "Unit Price", Sortable: false, Width: "130px"},
-		{Key: "total", Label: "Total", Sortable: false, Width: "130px"},
+		{Key: "quantity", Label: "Qty", Sortable: false, WidthClass: "col-md"},
+		{Key: "unit_price", Label: "Unit Price", Sortable: false, WidthClass: "col-3xl"},
+		{Key: "total", Label: "Total", Sortable: false, WidthClass: "col-3xl"},
 	}
 
 	rows := []types.TableRow{}

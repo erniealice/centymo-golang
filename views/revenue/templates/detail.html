@@ -60,7 +60,7 @@ function downloadInvoice(btn, url) {
 <div class="tab-scroll">
     {{if .InvoiceDownloadURL}}
     <div class="transaction-info-toolbar">
-        <button type="button" class="btn btn--ghost btn--sm" data-testid="revenue-info-download"
+        <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-info-download"
             onclick="downloadInvoice(this, '{{.InvoiceDownloadURL}}')">
             {{template "icon-download" .}} {{.Labels.Actions.DownloadInvoice}}
         </button>
@@ -127,7 +127,7 @@ function downloadInvoice(btn, url) {
         <span class="transaction-summary-value">{{.TotalAmount}}</span>
     </div>
     <div class="transaction-items-actions">
-        <button type="button" class="btn btn--ghost btn--sm" data-testid="revenue-line-discount-btn"
+        <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-line-discount-btn"
             aria-haspopup="dialog"
             hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
             onclick="Sheet.open('{{.Labels.Detail.AddDiscount}}')">

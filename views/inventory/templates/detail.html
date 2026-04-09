@@ -218,7 +218,7 @@
         <div class="coming-soon-title">{{.Labels.Depreciation.NotConfigured}}</div>
         <p class="coming-soon-text">{{.Labels.Depreciation.Title}}</p>
         {{if index .Item "id"}}
-        <button class="btn btn--primary btn--sm"
+        <button class="btn btn-primary btn-sm"
                 hx-get="{{routeWith "inventory.depreciation.assign" "id" (index .Item "id")}}"
                 hx-target="#sheetContent"
                 hx-swap="innerHTML"
