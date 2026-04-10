@@ -40,8 +40,6 @@
         {{end}}
     </div>
 </div>
-{{template "sheet-form" .}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}
 
 {{/* =============================================
@@ -84,7 +82,7 @@
            hx-target="#sheetContent"
            hx-swap="innerHTML"
            hx-push-url="false"
-           onclick="Sheet.open('{{.Labels.Variant.Edit}}')">
+           onclick="lf.Sheet.open('{{.Labels.Variant.Edit}}')">
             {{.Labels.Variant.Edit}}
         </button>
     </div>
@@ -133,7 +131,7 @@
             <span class="image-upload-zone__text">{{.Labels.Detail.DropImagesHere}}</span>
             <span class="image-upload-zone__hint">{{.Labels.Detail.ImageFileHint}}</span>
         </div>
-        <input type="file" id="image-file-input" multiple accept="image/jpeg,image/png,image/webp" class="image-upload-zone__input">
+        <input type="file" id="image-file-input" multiple accept="image/jpeg,image/png,image/webp" class="image-upload-zone__input" aria-label="{{.Labels.Detail.DropImagesHere}}">
     </div>
 
     {{/* Upload progress area */}}
@@ -168,7 +166,7 @@
         <div class="image-gallery__item">
             <img src="{{.ImageURL}}" alt="{{.AltText}}" class="image-gallery__img" loading="lazy">
             <div class="image-gallery__overlay">
-                <input type="checkbox" name="image_ids[]" value="{{.ID}}" id="image-{{.ID}}" class="image-gallery__checkbox">
+                <input type="checkbox" name="image_ids[]" value="{{.ID}}" id="image-{{.ID}}" class="image-gallery__checkbox" aria-label="Select image {{.AltText}}">
                 {{if .IsPrimary}}<span class="badge badge--info image-gallery__primary">{{$.Labels.Detail.PrimaryBadge}}</span>{{end}}
             </div>
         </div>

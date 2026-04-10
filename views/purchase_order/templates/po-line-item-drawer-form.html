@@ -17,8 +17,8 @@ Data: .FormAction, .IsEdit, .ID, .PurchaseOrderID, .LineType, .Description,
     <input type="hidden" name="purchase_order_id" value="{{.PurchaseOrderID}}">
 
     <div class="form-group">
-        <label for="line_type" class="form-label">{{.Labels.PurchaseOrder.LineItems.LineType}} <span class="required-marker">*</span></label>
-        <select id="line_type" name="line_type" class="form-control" required>
+        <label for="line_type" class="form-label">{{.Labels.PurchaseOrder.LineItems.LineType}} <span class="form-required">*</span></label>
+        <select id="line_type" name="line_type" class="form-select" required>
             <option value="goods"{{if eq .LineType "goods"}} selected{{end}}>{{.Labels.PurchaseOrder.LineItems.TypeGoods}}</option>
             <option value="service"{{if eq .LineType "service"}} selected{{end}}>{{.Labels.PurchaseOrder.LineItems.TypeService}}</option>
             <option value="expense"{{if eq .LineType "expense"}} selected{{end}}>{{.Labels.PurchaseOrder.LineItems.TypeExpense}}</option>
@@ -26,49 +26,49 @@ Data: .FormAction, .IsEdit, .ID, .PurchaseOrderID, .LineType, .Description,
     </div>
 
     <div class="form-group">
-        <label for="description" class="form-label">{{.Labels.PurchaseOrder.LineItems.Description}} <span class="required-marker">*</span></label>
-        <input type="text" id="description" name="description" class="form-control"
+        <label for="description" class="form-label">{{.Labels.PurchaseOrder.LineItems.Description}} <span class="form-required">*</span></label>
+        <input type="text" id="description" name="description" class="form-input"
             value="{{.Description}}" required placeholder="{{.Labels.PurchaseOrder.LineItems.DescriptionPlaceholder}}">
     </div>
 
     <div class="form-group">
         <label for="product_id" class="form-label">{{.Labels.PurchaseOrder.LineItems.Product}}</label>
-        <input type="text" id="product_id" name="product_id" class="form-control"
+        <input type="text" id="product_id" name="product_id" class="form-input"
             value="{{.ProductID}}" placeholder="Optional — for goods lines">
     </div>
 
     <div class="form-group">
         <label for="inventory_item_id" class="form-label">{{.Labels.PurchaseOrder.LineItems.InventoryItem}}</label>
-        <input type="text" id="inventory_item_id" name="inventory_item_id" class="form-control"
+        <input type="text" id="inventory_item_id" name="inventory_item_id" class="form-input"
             value="{{.InventoryItemID}}" placeholder="Optional — for goods lines">
     </div>
 
     <div class="form-group">
         <label for="location_id" class="form-label">{{.Labels.PurchaseOrder.LineItems.Location}}</label>
-        <input type="text" id="location_id" name="location_id" class="form-control"
+        <input type="text" id="location_id" name="location_id" class="form-input"
             value="{{.LocationID}}" placeholder="Optional — for goods lines">
     </div>
 
     <div class="form-group">
-        <label for="quantity_ordered" class="form-label">{{.Labels.PurchaseOrder.LineItems.QuantityOrdered}} <span class="required-marker">*</span></label>
-        <input type="number" id="quantity_ordered" name="quantity_ordered" class="form-control"
+        <label for="quantity_ordered" class="form-label">{{.Labels.PurchaseOrder.LineItems.QuantityOrdered}} <span class="form-required">*</span></label>
+        <input type="number" id="quantity_ordered" name="quantity_ordered" class="form-input"
             value="{{.QuantityOrdered}}" required min="1" step="1">
     </div>
 
     <div class="form-group">
-        <label for="unit_price" class="form-label">{{.Labels.PurchaseOrder.LineItems.UnitPrice}} <span class="required-marker">*</span></label>
-        <input type="number" id="unit_price" name="unit_price" class="form-control"
+        <label for="unit_price" class="form-label">{{.Labels.PurchaseOrder.LineItems.UnitPrice}} <span class="form-required">*</span></label>
+        <input type="number" id="unit_price" name="unit_price" class="form-input"
             value="{{.UnitPrice}}" required min="0" step="0.01">
     </div>
 
     <div class="form-group">
         <label for="notes" class="form-label">{{.Labels.PurchaseOrder.LineItems.Notes}}</label>
-        <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Optional notes">{{.Notes}}</textarea>
+        <textarea id="notes" name="notes" class="form-input" rows="3" placeholder="Optional notes">{{.Notes}}</textarea>
     </div>
 
     <div class="drawer-form-actions">
-        <button type="submit" class="btn btn-primary">{{.Labels.PurchaseOrder.LineItems.Save}}</button>
-        <button type="button" class="btn btn-ghost" onclick="Sheet.close()">{{.Labels.PurchaseOrder.LineItems.Cancel}}</button>
+        <button type="submit" class="btn btn-primary" data-testid="po-line-item-save-btn">{{.Labels.PurchaseOrder.LineItems.Save}}</button>
+        <button type="button" class="btn btn-ghost" data-testid="po-line-item-cancel-btn" onclick="lf.Sheet.close()">{{.Labels.PurchaseOrder.LineItems.Cancel}}</button>
     </div>
 </form>
 {{end}}

@@ -31,16 +31,16 @@ func NewView(deps *Deps) view.View {
 				CacheVersion: viewCtx.CacheVersion,
 				Title:        deps.Labels.Dashboard.Title,
 				CurrentPath:  viewCtx.CurrentPath,
-				ActiveNav:    "sale",
+				ActiveNav:    "revenue",
 				ActiveSubNav: "dashboard",
 				HeaderTitle:  deps.Labels.Dashboard.Title,
 				HeaderIcon:   "icon-shopping-bag",
 				CommonLabels: deps.CommonLabels,
 			},
-			ContentTemplate: "sales-dashboard-content",
+			ContentTemplate: "revenue-dashboard-content",
 			Labels:          deps.Labels.Dashboard,
 		}
 
-		return view.OK("sales-dashboard", pageData)
+		return view.OK("revenue-dashboard", pageData)
 	})
 }

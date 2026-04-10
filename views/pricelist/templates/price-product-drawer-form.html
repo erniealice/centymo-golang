@@ -4,13 +4,13 @@ Used by the Add Price Product action on the price list detail prices tab.
 Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
 */}}
 {{define "price-product-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
 
     <div class="sheet-body">
         <div class="form-row single">
             <div class="form-group">
                 <label class="form-label" for="product_id">{{.Labels.Form.Product}} <span class="form-required">*</span></label>
-                <select class="form-select" name="product_id" id="product_id" required onchange="PriceProductForm.onProductChange(this)">
+                <select class="form-select" name="product_id" id="product_id" required onchange="lf.PriceProductForm.onProductChange(this)">
                     <option value="">{{.Labels.Form.SelectProduct}}</option>
                     {{range .Products}}
                     <option value="{{.ID}}">{{.Name}}</option>
@@ -43,7 +43,8 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
 </form>
 <script>
-window.PriceProductForm = {
+window.lf = window.lf || {};
+window.lf.PriceProductForm = {
     onProductChange: function(select) {
         var nameInput = document.getElementById('price_product_name');
         if (nameInput && select.selectedIndex > 0) {

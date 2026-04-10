@@ -22,8 +22,6 @@
         {{if eq .ActiveTab "attachments"}}{{template "attachment-tab" .}}{{end}}
     </div>
 </div>
-{{template "sheet-form" .}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}
 
 {{/* ======================================================================
@@ -222,7 +220,7 @@
                 hx-get="{{routeWith "inventory.depreciation.assign" "id" (index .Item "id")}}"
                 hx-target="#sheetContent"
                 hx-swap="innerHTML"
-                onclick="Sheet.open(this)">
+                onclick="lf.Sheet.open(this)">
             {{.Labels.Depreciation.Configure}}
         </button>
         {{end}}
@@ -280,8 +278,6 @@
         {{if eq .ActiveTab "attachments"}}{{template "attachment-tab" .}}{{end}}
     </div>
 </div>
-{{template "sheet-form" .}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}
 
 {{/* Product-context Info tab: item info + option values + embedded serials */}}

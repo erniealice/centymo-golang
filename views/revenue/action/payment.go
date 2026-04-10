@@ -79,7 +79,7 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			methods := loadCollectionMethods(ctx, deps.DB)
-			return view.OK("sales-payment-drawer-form", &PaymentFormData{
+			return view.OK("revenue-payment-drawer-form", &PaymentFormData{
 				FormAction:     route.ResolveURL(deps.Routes.PaymentAddURL, "id", revenueID),
 				RevenueID:      revenueID,
 				Currency:       "PHP",
@@ -159,7 +159,7 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 			receivedRole, _ := record["received_role"].(string)
 
 			methods := loadCollectionMethods(ctx, deps.DB)
-			return view.OK("sales-payment-drawer-form", &PaymentFormData{
+			return view.OK("revenue-payment-drawer-form", &PaymentFormData{
 				FormAction:         route.ResolveURL(deps.Routes.PaymentEditURL, "id", revenueID, "pid", paymentID),
 				IsEdit:             true,
 				ID:                 paymentID,

@@ -3,7 +3,7 @@ Depreciation configuration drawer form -- loaded into #sheetContent via HTMX.
 Data: .FormAction, .IsEdit, .ID, .Method, .CostBasis, .SalvageValue, .UsefulLife, .StartDate, .Labels, .MethodOptions, .CommonLabels
 */}}
 {{define "depreciation-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     <div class="sheet-body">

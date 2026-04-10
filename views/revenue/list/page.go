@@ -64,28 +64,28 @@ func NewView(deps *ListViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          statusPageTitle(deps.Labels, status),
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "sale",
+				ActiveNav:      "revenue",
 				ActiveSubNav:   status,
 				HeaderTitle:    statusPageTitle(deps.Labels, status),
 				HeaderSubtitle: statusPageCaption(deps.Labels, status),
 				HeaderIcon:     "icon-shopping-bag",
 				CommonLabels:   deps.CommonLabels,
 			},
-			ContentTemplate: "sales-list-content",
+			ContentTemplate: "revenue-list-content",
 			Table:           tableConfig,
 		}
 
 		// KB help content
 		if viewCtx.Translations != nil {
 			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
-				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "sale"); kb != nil {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "revenue"); kb != nil {
 					pageData.HasHelp = true
 					pageData.HelpContent = kb.Body
 				}
 			}
 		}
 
-		return view.OK("sales-list", pageData)
+		return view.OK("revenue-list", pageData)
 	})
 }
 
@@ -181,7 +181,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	sp.BuildDisplay()
 
 	tableConfig := &types.TableConfig{
-		ID:                   "sales-table",
+		ID:                   "revenue-table",
 		RefreshURL:           refreshURL,
 		Columns:              columns,
 		Rows:                 rows,

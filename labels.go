@@ -116,7 +116,7 @@ type InventoryDetailLabels struct {
 	SerialStatus  string `json:"serialStatus"`
 	WarrantyEnd   string `json:"warrantyEnd"`
 	PurchaseOrder string `json:"purchaseOrder"`
-	SaleReference string `json:"saleReference"`
+	RevenueReference string `json:"revenueReference"`
 
 	// Serial summary
 	TotalUnits     string `json:"totalUnits"`
@@ -242,6 +242,12 @@ type InventoryDashboardLabels struct {
 	RecentMovements      string `json:"recentMovements"`
 	CategoryDistribution string `json:"categoryDistribution"`
 	TypesUnit            string `json:"typesUnit"`
+	StockLevels          string `json:"stockLevels"`
+	RecentActivity       string `json:"recentActivity"`
+	ViewAll              string `json:"viewAll"`
+	Week                 string `json:"week"`
+	Month                string `json:"month"`
+	Year                 string `json:"year"`
 }
 
 type InventoryMovementsLabels struct {
@@ -517,7 +523,7 @@ type RevenueErrorLabels struct {
 
 type RevenueDashboardLabels struct {
 	Title          string `json:"title"`
-	TotalSales     string `json:"totalSales"`
+	TotalRevenue   string `json:"totalRevenue"`
 	Revenue        string `json:"revenue"`
 	Completed      string `json:"completed"`
 	Active         string `json:"active"`
@@ -525,12 +531,12 @@ type RevenueDashboardLabels struct {
 	Week           string `json:"week"`
 	Month          string `json:"month"`
 	Year           string `json:"year"`
-	RecentSales    string `json:"recentSales"`
+	RecentRevenue  string `json:"recentRevenue"`
 	ViewAll        string `json:"viewAll"`
-	NewSaleCreated string `json:"newSaleCreated"`
-	SaleCompleted  string `json:"saleCompleted"`
-	SaleUpdated    string `json:"saleUpdated"`
-	SaleCancelled  string `json:"saleCancelled"`
+	NewRevenueCreated string `json:"newRevenueCreated"`
+	RevenueCompleted  string `json:"revenueCompleted"`
+	RevenueUpdated    string `json:"revenueUpdated"`
+	RevenueCancelled  string `json:"revenueCancelled"`
 }
 
 // RevenueSettingsLabels holds translatable strings for the revenue settings page

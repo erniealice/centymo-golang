@@ -66,7 +66,7 @@ func NewView(deps *ListViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          statusPageTitle(deps.Labels, status),
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "sale",
+				ActiveNav:      "revenue",
 				ActiveSubNav:   "price-lists-" + status,
 				HeaderTitle:    statusPageTitle(deps.Labels, status),
 				HeaderSubtitle: statusPageCaption(deps.Labels, status),

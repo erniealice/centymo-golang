@@ -10,7 +10,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
       .CommonLabels, .Labels
 */}}
 {{define "expense-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     <div class="sheet-body">
@@ -116,7 +116,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
         <div class="form-row single">
             <div class="form-group">
                 <label for="purchase_order_id" class="form-label">{{.Labels.LinkToPurchaseOrder}}</label>
-                <select name="purchase_order_id" id="purchase_order_id" class="form-control">
+                <select name="purchase_order_id" id="purchase_order_id" class="form-select">
                     <option value="">— No PO —</option>
                     {{range .PurchaseOrders}}
                     <option value="{{.Id}}" {{if eq .Id $.PurchaseOrderID}}selected{{end}}>{{.PoNumber}}{{if .SupplierName}} — {{.SupplierName}}{{end}}</option>
@@ -130,8 +130,8 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
         {{if .PaymentTerms}}
         <div class="form-row single">
             <div class="form-group">
-                <label class="form-label">{{.Labels.PaymentTerms}}</label>
-                <select name="payment_term_id" id="expense-payment-term" class="form-control">
+                <label class="form-label" for="expense-payment-term">{{.Labels.PaymentTerms}}</label>
+                <select name="payment_term_id" id="expense-payment-term" class="form-select">
                     <option value="">{{.Labels.SelectPaymentTerm}}</option>
                     {{range .PaymentTerms}}
                     <option value="{{.Id}}" data-net-days="{{.NetDays}}" {{if eq .Id $.SelectedPaymentTermID}}selected{{end}}>{{.Name}}</option>

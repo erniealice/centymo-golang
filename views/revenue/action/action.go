@@ -146,15 +146,15 @@ type Deps struct {
 
 func formLabels(t func(string) string) FormLabels {
 	return FormLabels{
-		Customer:                  t("sales.form.customer"),
-		Date:                      t("sales.form.date"),
-		Currency:                  t("sales.form.currency"),
-		Reference:                 t("sales.form.reference"),
-		ReferencePlaceholder:      t("sales.form.referencePlaceholder"),
-		Status:                    t("sales.form.status"),
-		Notes:                     t("sales.form.notes"),
-		NotesPlaceholder:          t("sales.form.notesPlaceholder"),
-		Location:                  t("sales.form.location"),
+		Customer:                  t("revenue.form.customer"),
+		Date:                      t("revenue.form.date"),
+		Currency:                  t("revenue.form.currency"),
+		Reference:                 t("revenue.form.reference"),
+		ReferencePlaceholder:      t("revenue.form.referencePlaceholder"),
+		Status:                    t("revenue.form.status"),
+		Notes:                     t("revenue.form.notes"),
+		NotesPlaceholder:          t("revenue.form.notesPlaceholder"),
+		Location:                  t("revenue.form.location"),
 		PaymentTerms:              t("revenue.form.paymentTerms"),
 		SelectPaymentTerm:         t("revenue.form.selectPaymentTerm"),
 		DueDate:                   t("revenue.form.dueDate"),
@@ -352,7 +352,7 @@ func NewAddAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("sales-table")
+		return centymo.HTMXSuccess("revenue-table")
 	})
 }
 
@@ -602,7 +602,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("sales-table")
+		return centymo.HTMXSuccess("revenue-table")
 	})
 }
 
@@ -631,7 +631,7 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("sales-table")
+		return centymo.HTMXSuccess("revenue-table")
 	})
 }
 
@@ -687,7 +687,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			// D5: Deduct stock on completion
 			deductStockForLineItems(ctx, deps, id, lineItems)
 
-			return centymo.HTMXSuccess("sales-table")
+			return centymo.HTMXSuccess("revenue-table")
 		}
 
 		// D21: Block cancellation if payments exist
@@ -717,7 +717,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				releaseSerialsForLineItems(ctx, deps, id, lineItems)
 			}
 
-			return centymo.HTMXSuccess("sales-table")
+			return centymo.HTMXSuccess("revenue-table")
 		}
 
 		// Default: draft — just update status
@@ -728,7 +728,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("sales-table")
+		return centymo.HTMXSuccess("revenue-table")
 	})
 }
 
@@ -831,7 +831,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("sales-table")
+		return centymo.HTMXSuccess("revenue-table")
 	})
 }
 

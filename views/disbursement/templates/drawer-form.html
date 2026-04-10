@@ -4,7 +4,7 @@ Used by both Add and Edit actions.
 Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy, .Notes, .Status, .DisbursementType, .ExpenditureID, .Expenditures, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "disbursement-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     <div class="sheet-body">
@@ -63,7 +63,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
         <div class="form-row single">
             <div class="form-group">
                 <label for="expenditure_id" class="form-label">{{.Labels.LinkToBill}}</label>
-                <select name="expenditure_id" id="expenditure_id" class="form-control">
+                <select name="expenditure_id" id="expenditure_id" class="form-select">
                     <option value="">— No Bill —</option>
                     {{range .Expenditures}}
                     <option value="{{.Id}}" {{if eq .Id $.ExpenditureID}}selected{{end}}>{{.Name}}{{if .Amount}} — {{.Amount}}{{end}}</option>

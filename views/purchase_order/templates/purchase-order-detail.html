@@ -13,7 +13,7 @@
             aria-haspopup="dialog"
             data-testid="confirm-receipt-btn"
             hx-get="{{.ConfirmReceiptURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="Sheet.open('{{.Labels.PurchaseOrder.Receipt.Title}}')">
+            onclick="lf.Sheet.open('{{.Labels.PurchaseOrder.Receipt.Title}}')">
             {{.Labels.PurchaseOrder.Actions.ConfirmReceipt}}
         </button>
     </div>
@@ -29,14 +29,12 @@
         {{end}}
     </div>
 </div>
-{{template "sheet-form" .}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}
 
 {{/* Info tab */}}
 {{define "purchase-order-tab-info"}}
 <div class="tab-scroll">
-    <h4 class="detail-section-title">{{.Labels.PurchaseOrder.Detail.InfoSection}}</h4>
+    <h3 class="detail-section-title">{{.Labels.PurchaseOrder.Detail.InfoSection}}</h3>
     <div class="detail-info-grid">
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.PurchaseOrder.Detail.PONumber}}</span>
@@ -85,8 +83,9 @@
     <div class="transaction-items-actions">
         <button type="button" class="btn btn-primary toolbar-primary-action"
             aria-haspopup="dialog"
+            data-testid="po-add-line-item-btn"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="Sheet.open('{{.Labels.PurchaseOrder.LineItems.AddLineItem}}')">
+            onclick="lf.Sheet.open('{{.Labels.PurchaseOrder.LineItems.AddLineItem}}')">
             {{.Labels.PurchaseOrder.LineItems.AddLineItem}}
         </button>
     </div>

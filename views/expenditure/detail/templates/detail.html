@@ -23,14 +23,12 @@
         {{end}}
     </div>
 </div>
-{{template "sheet-form" .}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}
 
 {{/* Basic Information Tab */}}
 {{define "expense-tab-info"}}
 <div class="tab-scroll">
-    <h4 class="detail-section-title">{{.Labels.Detail.InfoSection}}</h4>
+    <h3 class="detail-section-title">{{.Labels.Detail.InfoSection}}</h3>
     <div class="detail-info-grid">
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.ReferenceNumber}}</span>
@@ -63,7 +61,7 @@
     </div>
     {{if .PaidAmount}}
     <div class="transaction-section-spacer">
-        <h4 class="detail-section-title">{{.Labels.Detail.PaymentSummary}}</h4>
+        <h3 class="detail-section-title">{{.Labels.Detail.PaymentSummary}}</h3>
         <div class="detail-info-grid">
             <div class="detail-info-item">
                 <span class="detail-info-label">{{.Labels.Detail.TotalAmount}}</span>
@@ -91,7 +89,7 @@
 
     {{if index .Expense "notes"}}
     <div class="transaction-section-spacer">
-        <h4 class="detail-section-title">{{.Labels.Detail.Notes}}</h4>
+        <h3 class="detail-section-title">{{.Labels.Detail.Notes}}</h3>
         <div class="transaction-notes-block">{{index .Expense "notes"}}</div>
     </div>
     {{end}}
@@ -99,7 +97,7 @@
     {{/* ─── Status Actions ─── */}}
     {{if .SetStatusURL}}
     <div class="transaction-section-spacer">
-        <h4 class="detail-section-title">{{.Labels.Detail.UpdateStatus}}</h4>
+        <h3 class="detail-section-title">{{.Labels.Detail.UpdateStatus}}</h3>
         <form hx-post="{{.SetStatusURL}}" hx-swap="none" class="inline-status-form">
             <input type="hidden" name="id" value="{{index .Expense "id"}}">
             <div class="form-group transaction-inline-form__group">
@@ -119,7 +117,7 @@
     {{/* ─── Pay Action ─── */}}
     {{if and .PayURL (eq (index .Expense "status") "approved")}}
     <div class="transaction-section-spacer">
-        <h4 class="detail-section-title">{{.Labels.Detail.Payment}}</h4>
+        <h3 class="detail-section-title">{{.Labels.Detail.Payment}}</h3>
         <div class="transaction-inline-form__group">
             <button type="button" class="btn btn-primary"
                 data-testid="btn-pay-expense"
@@ -127,7 +125,7 @@
                 hx-get="{{.PayURL}}"
                 hx-target="#sheetContent"
                 hx-swap="innerHTML"
-                onclick="Sheet.open('{{.Labels.Detail.Payment}}')">
+                onclick="lf.Sheet.open('{{.Labels.Detail.Payment}}')">
                 {{.Labels.Detail.Pay}}
             </button>
         </div>
@@ -148,7 +146,7 @@
             title="{{.Labels.Detail.AddItem}}"
             aria-haspopup="dialog"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="Sheet.open('{{.Labels.Detail.AddItem}}')">
+            onclick="lf.Sheet.open('{{.Labels.Detail.AddItem}}')">
             {{.Labels.Detail.AddItem}}
         </button>
     </div>
@@ -227,7 +225,7 @@
 
 {{/* Pay Drawer Form — creates a disbursement pre-linked to this expense */}}
 {{define "expense-pay-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     <input type="hidden" name="expenditure_id" value="{{.ExpenditureID}}">
 
     <div class="sheet-body">
@@ -333,7 +331,7 @@
 
     <div class="drawer-form-actions">
         <button type="submit" class="btn btn-primary">{{.Labels.LineItemForm.Save}}</button>
-        <button type="button" class="btn btn-ghost" onclick="Sheet.close()">{{.Labels.LineItemForm.Cancel}}</button>
+        <button type="button" class="btn btn-ghost" onclick="lf.Sheet.close()">{{.Labels.LineItemForm.Cancel}}</button>
     </div>
 </form>
 {{end}}

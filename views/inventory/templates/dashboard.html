@@ -18,11 +18,11 @@
         <!-- Stock Level Chart -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Stock Levels</h2>
+                <h2 class="card-title">{{.Labels.Dashboard.StockLevels}}</h2>
                 <div class="card-actions">
-                    <button class="card-btn" id="filter-week">Week</button>
-                    <button class="card-btn" id="filter-month">Month</button>
-                    <button class="card-btn primary" id="filter-year">Year</button>
+                    <button class="card-btn" id="filter-week" data-testid="inventory-filter-week-btn">{{.Labels.Dashboard.Week}}</button>
+                    <button class="card-btn" id="filter-month" data-testid="inventory-filter-month-btn">{{.Labels.Dashboard.Month}}</button>
+                    <button class="card-btn primary" id="filter-year" data-testid="inventory-filter-year-btn">{{.Labels.Dashboard.Year}}</button>
                 </div>
             </div>
             <div class="centymo-chart-area">
@@ -54,8 +54,8 @@
         <!-- Recent Activity -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Recent Activity</h2>
-                <a class="card-btn" href="{{route "inventory.movements"}}">View All</a>
+                <h2 class="card-title">{{.Labels.Dashboard.RecentActivity}}</h2>
+                <a class="card-btn" href="{{route "inventory.movements"}}">{{.Labels.Dashboard.ViewAll}}</a>
             </div>
             <div class="centymo-activity-list"
                  id="inventory-recent-activity"

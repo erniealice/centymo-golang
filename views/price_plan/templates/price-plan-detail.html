@@ -20,8 +20,6 @@
         {{end}}
     </div>
 </div>
-{{template "sheet-form" .}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}
 
 {{/* =============================================
@@ -78,7 +76,7 @@
            hx-get="{{routeWith "price_plan.edit" "id" .ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
-           onclick="if(window.Sheet) Sheet.open('{{.Labels.Buttons.Edit}}')">
+           onclick="if(window.lf && lf.Sheet) lf.Sheet.open('{{.Labels.Buttons.Edit}}')">
             {{.Labels.Buttons.Edit}}
         </a>
     </div>

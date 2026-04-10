@@ -6,7 +6,7 @@ import { waitForHtmxSettle } from '../helpers/htmx';
  * CEN-REV-002: Revenue Add via Drawer
  * CEN-REV-003: Revenue Edit via Drawer
  *
- * Table ID: #sales-table
+ * Table ID: #revenue-table
  * Form fields (visible): #reference_number, #revenue_date_string
  * Form fields (BUG: not rendered): #currency, #status, #location_id, #name, #notes
  * Routes: /app/revenue/list/ongoing, /action/revenue/add, /action/revenue/edit/{id}
@@ -35,28 +35,28 @@ async function hasDrawerRenderError(page: import('@playwright/test').Page): Prom
 test.describe('CEN-REV-001: Revenue List', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/app/revenue/list/ongoing');
-    await expect(page.locator('#sales-table')).toBeVisible();
+    await expect(page.locator('#revenue-table')).toBeVisible();
   });
 
   test('displays revenue table with correct column headers', async ({ page }) => {
-    const headers = page.locator('#sales-table thead th');
+    const headers = page.locator('#revenue-table thead th');
     const count = await headers.count();
     // Checkbox + Reference + Customer + Date + Amount + Status + Actions
     expect(count).toBeGreaterThanOrEqual(6);
 
-    const headerTexts = await page.locator('#sales-table thead th .column-label').allTextContents();
+    const headerTexts = await page.locator('#revenue-table thead th .column-label').allTextContents();
     // 5 data columns: Reference, Customer, Date, Amount, Status
     expect(headerTexts.length).toBeGreaterThanOrEqual(5);
   });
 
   test('shows data rows or empty state', async ({ page }) => {
     // Use data-id selector to find real data rows (not empty state rows)
-    const dataRows = page.locator('#sales-table tbody tr[data-id]');
+    const dataRows = page.locator('#revenue-table tbody tr[data-id]');
     const count = await dataRows.count();
 
     if (count === 0) {
       // Empty state is valid — verify the empty state message renders
-      const tbodyText = await page.locator('#sales-table tbody').textContent();
+      const tbodyText = await page.locator('#revenue-table tbody').textContent();
       expect(tbodyText?.length).toBeGreaterThan(0);
       return;
     }
@@ -75,7 +75,7 @@ test.describe('CEN-REV-001: Revenue List', () => {
   });
 
   test('row has action buttons (view, edit) when rows exist', async ({ page }) => {
-    const rows = page.locator('#sales-table tbody tr[data-id]');
+    const rows = page.locator('#revenue-table tbody tr[data-id]');
     const rowCount = await rows.count();
     if (rowCount === 0) {
       test.skip(true, 'No ongoing revenue rows in seed data — cannot test row actions');
@@ -91,7 +91,7 @@ test.describe('CEN-REV-001: Revenue List', () => {
   });
 
   test('view link navigates to revenue detail when rows exist', async ({ page }) => {
-    const rows = page.locator('#sales-table tbody tr[data-id]');
+    const rows = page.locator('#revenue-table tbody tr[data-id]');
     const rowCount = await rows.count();
     if (rowCount === 0) {
       test.skip(true, 'No ongoing revenue rows in seed data — cannot test view link');
@@ -110,19 +110,19 @@ test.describe('CEN-REV-001: Revenue List', () => {
 
   test('can navigate to complete status tab', async ({ page }) => {
     await page.goto('/app/revenue/list/complete');
-    await expect(page.locator('#sales-table')).toBeVisible();
+    await expect(page.locator('#revenue-table')).toBeVisible();
   });
 
   test('can navigate to cancelled status tab', async ({ page }) => {
     await page.goto('/app/revenue/list/cancelled');
-    await expect(page.locator('#sales-table')).toBeVisible();
+    await expect(page.locator('#revenue-table')).toBeVisible();
   });
 });
 
 test.describe('CEN-REV-002: Revenue Add via Drawer', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/app/revenue/list/ongoing');
-    await expect(page.locator('#sales-table')).toBeVisible();
+    await expect(page.locator('#revenue-table')).toBeVisible();
   });
 
   test('opens drawer when primary action clicked', async ({ page }) => {
@@ -227,11 +227,11 @@ test.describe('CEN-REV-002: Revenue Add via Drawer', () => {
 test.describe('CEN-REV-003: Revenue Edit via Drawer', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/app/revenue/list/ongoing');
-    await expect(page.locator('#sales-table')).toBeVisible();
+    await expect(page.locator('#revenue-table')).toBeVisible();
   });
 
   test('opens edit drawer with pre-filled data', async ({ page }) => {
-    const rows = page.locator('#sales-table tbody tr[data-id]');
+    const rows = page.locator('#revenue-table tbody tr[data-id]');
     const rowCount = await rows.count();
     if (rowCount === 0) {
       test.skip(true, 'No ongoing revenue rows in seed data — cannot test edit');
@@ -248,7 +248,7 @@ test.describe('CEN-REV-003: Revenue Edit via Drawer', () => {
   });
 
   test('saves edit and redirects to detail', async ({ page }) => {
-    const rows = page.locator('#sales-table tbody tr[data-id]');
+    const rows = page.locator('#revenue-table tbody tr[data-id]');
     const rowCount = await rows.count();
     if (rowCount === 0) {
       test.skip(true, 'No ongoing revenue rows in seed data — cannot test edit save');
@@ -288,9 +288,9 @@ test.describe('CEN-REV-003: Revenue Edit via Drawer', () => {
 test.describe('CEN-REV-004: Revenue Detail Page', () => {
   test('detail page loads and renders correctly when rows exist', async ({ page }) => {
     await page.goto('/app/revenue/list/ongoing');
-    await expect(page.locator('#sales-table')).toBeVisible();
+    await expect(page.locator('#revenue-table')).toBeVisible();
 
-    const rows = page.locator('#sales-table tbody tr[data-id]');
+    const rows = page.locator('#revenue-table tbody tr[data-id]');
     const rowCount = await rows.count();
     if (rowCount === 0) {
       test.skip(true, 'No ongoing revenue rows in seed data — cannot test detail page');
@@ -322,7 +322,7 @@ test.describe('CEN-REV-LIFECYCLE: Revenue Full Lifecycle', () => {
 
     // 1. Navigate to list page
     await page.goto('/app/revenue/list/ongoing');
-    await expect(page.locator('#sales-table')).toBeVisible();
+    await expect(page.locator('#revenue-table')).toBeVisible();
 
     // 2. Open drawer and check if form renders fully
     await page.locator('.toolbar-primary-action').click();

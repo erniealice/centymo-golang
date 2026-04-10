@@ -120,7 +120,7 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			inventoryItems := loadInventoryItems(ctx, deps.ListInventoryItems)
-			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
+			return view.OK("revenue-line-item-drawer-form", &LineItemFormData{
 				FormAction:       route.ResolveURL(deps.Routes.LineItemAddURL, "id", revenueID),
 				RevenueID:        revenueID,
 				Quantity:         "1",
@@ -177,7 +177,7 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 		}
 
 		// Recalculate sale total
-		recalculateSaleTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
+		recalculateRevenueTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
 
 		return lineItemHTMXSuccess("line-items-table")
 	})
@@ -230,7 +230,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 				}
 			}
 
-			return view.OK("sales-line-item-drawer-form", &LineItemFormData{
+			return view.OK("revenue-line-item-drawer-form", &LineItemFormData{
 				FormAction:       route.ResolveURL(deps.Routes.LineItemEditURL, "id", revenueID, "itemId", itemID),
 				IsEdit:           true,
 				ID:               itemID,
@@ -296,7 +296,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 			return lineItemHTMXError(err.Error())
 		}
 
-		recalculateSaleTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
+		recalculateRevenueTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
 
 		return lineItemHTMXSuccess("line-items-table")
 	})
@@ -329,7 +329,7 @@ func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 			return lineItemHTMXError(err.Error())
 		}
 
-		recalculateSaleTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
+		recalculateRevenueTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
 
 		return lineItemHTMXSuccess("line-items-table")
 	})
@@ -346,7 +346,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 		revenueID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("sales-line-item-discount-form", &DiscountFormData{
+			return view.OK("revenue-line-item-discount-form", &DiscountFormData{
 				FormAction:   route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", revenueID),
 				RevenueID:    revenueID,
 				Labels:       deps.Labels.Detail,
@@ -383,7 +383,7 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 			return lineItemHTMXError(err.Error())
 		}
 
-		recalculateSaleTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
+		recalculateRevenueTotalTyped(ctx, deps.ListRevenueLineItems, deps.UpdateRevenue, revenueID)
 
 		return lineItemHTMXSuccess("line-items-table")
 	})
@@ -519,8 +519,8 @@ func calculateLineItemTotal(quantityStr, unitPriceStr, discountStr string) int64
 	return int64(math.Round(total * 100))
 }
 
-// recalculateSaleTotalTyped recalculates the sale's total_amount from its line items using typed use cases.
-func recalculateSaleTotalTyped(
+// recalculateRevenueTotalTyped recalculates the sale's total_amount from its line items using typed use cases.
+func recalculateRevenueTotalTyped(
 	ctx context.Context,
 	listFn func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error),
 	updateFn func(ctx context.Context, req *revenuepb.UpdateRevenueRequest) (*revenuepb.UpdateRevenueResponse, error),

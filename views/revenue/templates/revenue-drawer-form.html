@@ -3,7 +3,7 @@ Revenue drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
 */}}
 {{define "revenue-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="status" value="{{if .Status}}{{.Status}}{{else}}draft{{end}}">
 
@@ -41,8 +41,8 @@ Used by both Add and Edit actions.
         </div>
 
         <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label">{{.Labels.RevenueType}}</label>
+            <fieldset class="form-group">
+                <legend class="form-label">{{.Labels.RevenueType}}</legend>
                 <div class="radio-group" data-testid="revenue-type-radio">
                     <label class="radio-option">
                         <input type="radio" name="revenue_type" value="one_time" {{if ne .RevenueType "from_engagement"}}checked{{end}}>
@@ -53,7 +53,7 @@ Used by both Add and Edit actions.
                         <span>{{.Labels.RevenueTypeFromEngagement}}</span>
                     </label>
                 </div>
-            </div>
+            </fieldset>
         </div>
 
         {{/* ─── Client & Location ─── */}}

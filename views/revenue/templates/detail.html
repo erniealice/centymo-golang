@@ -1,36 +1,35 @@
 {{/* Full page — for direct access / non-HTMX */}}
-{{define "sales-detail"}}
+{{define "revenue-detail"}}
 {{template "app-shell" .}}
 {{end}}
 
 {{/* Content-only partial — for HTMX navigation */}}
-{{define "sales-detail-content"}}
-<div class="page-content detail-layout" data-page-title="{{.Title}}" data-page-css="/assets/css/centymo/centymo-transaction-detail.css?v={{.CacheVersion}} /assets/css/centymo/centymo-sales-detail.css?v={{.CacheVersion}}">
+{{define "revenue-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Title}}" data-page-css="/assets/css/centymo/centymo-transaction-detail.css?v={{.CacheVersion}} /assets/css/centymo/centymo-revenue-detail.css?v={{.CacheVersion}}">
     <h2 class="visually-hidden">{{.Labels.Detail.PageTitle}}</h2>
     {{/* ─── Tabs ─── */}}
     <div class="detail-tabs">
-        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "sale-tabs")}}
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "revenue-tabs")}}
     </div>
 
     {{/* ─── Tab Body ─── */}}
     <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
-        {{template "sales-tab-info" .}}
+        {{template "revenue-tab-info" .}}
         {{else if eq .ActiveTab "items"}}
-        {{template "sales-tab-items" .}}
+        {{template "revenue-tab-items" .}}
         {{else if eq .ActiveTab "payment"}}
-        {{template "sales-tab-payment" .}}
+        {{template "revenue-tab-payment" .}}
         {{else if eq .ActiveTab "audit"}}
-        {{template "sales-tab-audit" .}}
+        {{template "revenue-tab-audit" .}}
         {{else if eq .ActiveTab "attachments"}}
         {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>
-{{template "sheet-form" .}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 <script>
-function downloadInvoice(btn, url) {
+window.lf = window.lf || {};
+lf.downloadInvoice = function(btn, url) {
     btn.classList.add('btn-loading');
     fetch(url)
         .then(function(res) {
@@ -51,17 +50,17 @@ function downloadInvoice(btn, url) {
         })
         .catch(function(err) { console.error('Invoice download failed:', err); })
         .finally(function() { btn.classList.remove('btn-loading'); });
-}
+};
 </script>
 {{end}}
 
 {{/* Basic Information Tab */}}
-{{define "sales-tab-info"}}
+{{define "revenue-tab-info"}}
 <div class="tab-scroll">
     {{if .InvoiceDownloadURL}}
     <div class="transaction-info-toolbar">
         <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-info-download"
-            onclick="downloadInvoice(this, '{{.InvoiceDownloadURL}}')">
+            onclick="lf.downloadInvoice(this, '{{.InvoiceDownloadURL}}')">
             {{template "icon-download" .}} {{.Labels.Actions.DownloadInvoice}}
         </button>
     </div>
@@ -120,7 +119,7 @@ function downloadInvoice(btn, url) {
 {{end}}
 
 {{/* Line Items Tab */}}
-{{define "sales-tab-items"}}
+{{define "revenue-tab-items"}}
 <div class="transaction-items-toolbar">
     <div class="transaction-summary-item">
         <span class="transaction-summary-label">{{.Labels.Detail.GrandTotal}}</span>
@@ -130,13 +129,13 @@ function downloadInvoice(btn, url) {
         <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-line-discount-btn"
             aria-haspopup="dialog"
             hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="Sheet.open('{{.Labels.Detail.AddDiscount}}')">
+            onclick="lf.Sheet.open('{{.Labels.Detail.AddDiscount}}')">
             {{.Labels.Detail.AddDiscount}}
         </button>
         <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="revenue-line-add-btn"
             aria-haspopup="dialog"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="Sheet.open('{{.Labels.Detail.AddItem}}')">
+            onclick="lf.Sheet.open('{{.Labels.Detail.AddItem}}')">
             {{.Labels.Detail.AddItem}}
         </button>
     </div>
@@ -156,7 +155,7 @@ function downloadInvoice(btn, url) {
 {{end}}
 
 {{/* Payment Tab */}}
-{{define "sales-tab-payment"}}
+{{define "revenue-tab-payment"}}
 {{if .PaymentTable}}
     <div class="payment-toolbar">
         <div class="payment-summary">
@@ -173,7 +172,7 @@ function downloadInvoice(btn, url) {
         <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="revenue-record-payment-btn"
             aria-haspopup="dialog"
             hx-get="{{.PaymentAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="Sheet.open('{{.Labels.Detail.RecordPayment}}')">
+            onclick="lf.Sheet.open('{{.Labels.Detail.RecordPayment}}')">
             {{.Labels.Detail.RecordPayment}}
         </button>
     </div>
@@ -191,7 +190,7 @@ function downloadInvoice(btn, url) {
 {{end}}
 
 {{/* Audit Trail Tab */}}
-{{define "sales-tab-audit"}}
+{{define "revenue-tab-audit"}}
 <div class="tab-scroll">
     {{if .AuditTable}}
         {{template "table-card" .AuditTable}}

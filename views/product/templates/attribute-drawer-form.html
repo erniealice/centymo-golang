@@ -4,7 +4,7 @@ Used by the Assign action to add an attribute to a product.
 Data: .ProductID, .FormAction, .CommonLabels, .Labels, .AvailableAttributes
 */}}
 {{define "attribute-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     <input type="hidden" name="product_id" value="{{.ProductID}}">
 
     <div class="sheet-body">

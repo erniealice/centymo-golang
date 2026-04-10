@@ -1,13 +1,11 @@
 {{/* Full page — for direct access / non-HTMX */}}
-{{define "sales-list"}}
+{{define "revenue-list"}}
 {{template "app-shell" .}}
 {{end}}
 
 {{/* Content-only partial — for HTMX navigation */}}
-{{define "sales-list-content"}}
+{{define "revenue-list-content"}}
 <div class="page-content page-content--table">
     {{template "table-card" .Table}}
 </div>
-{{template "sheet-form" .}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}

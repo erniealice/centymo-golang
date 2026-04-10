@@ -4,7 +4,7 @@ Used by both Assign and Edit serial actions.
 Data: .FormAction, .IsEdit, .ID, .SerialNumber, .IMEI, .Status, .WarrantyStart, .WarrantyEnd, .PurchaseOrder, .SoldReference, .Labels, .CommonLabels
 */}}
 {{define "serial-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     <div class="sheet-body">

@@ -12,14 +12,14 @@ Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .Locatio
     <input type="hidden" name="purchase_order_id" value="{{.PurchaseOrderID}}">
 
     <div class="form-group">
-        <label for="receipt_date" class="form-label">{{.Labels.PurchaseOrder.Receipt.ReceiptDate}} <span class="required-marker">*</span></label>
-        <input type="date" id="receipt_date" name="receipt_date" class="form-control"
+        <label for="receipt_date" class="form-label">{{.Labels.PurchaseOrder.Receipt.ReceiptDate}} <span class="form-required">*</span></label>
+        <input type="date" id="receipt_date" name="receipt_date" class="form-input"
             value="{{.Today}}" required>
     </div>
 
     <div class="form-group">
         <label for="location_id" class="form-label">{{.Labels.PurchaseOrder.Receipt.ReceivingLocation}}</label>
-        <input type="text" id="location_id" name="location_id" class="form-control"
+        <input type="text" id="location_id" name="location_id" class="form-input"
             value="{{.LocationID}}" placeholder="Location ID (for goods lines)">
     </div>
 
@@ -49,8 +49,9 @@ Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .Locatio
                             type="number"
                             id="line_{{.ID}}_qty"
                             name="line_{{.ID}}_qty"
-                            class="form-control form-control--inline"
+                            class="form-input form-input--inline"
                             data-testid="receipt-qty-{{.ID}}"
+                            aria-label="Quantity to receive for {{.Description}}"
                             min="0"
                             max="{{.Remaining}}"
                             step="1"
@@ -67,7 +68,7 @@ Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .Locatio
 
     <div class="drawer-form-actions">
         <button type="submit" class="btn btn-primary" data-testid="receipt-submit-btn">{{.Labels.PurchaseOrder.Receipt.ConfirmButton}}</button>
-        <button type="button" class="btn btn-ghost" onclick="Sheet.close()">{{.Labels.PurchaseOrder.Receipt.Cancel}}</button>
+        <button type="button" class="btn btn-ghost" data-testid="po-receipt-cancel-btn" onclick="lf.Sheet.close()">{{.Labels.PurchaseOrder.Receipt.Cancel}}</button>
     </div>
 </form>
 {{end}}

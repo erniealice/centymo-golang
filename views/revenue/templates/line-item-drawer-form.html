@@ -3,8 +3,8 @@ Sales line item drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
 Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .InventoryItemID, .InventoryItems, .ID, .RevenueID, .FormAction, .IsEdit, .CommonLabels, .Labels, .SearchProductURL, .ProductID, .ProductLabel, .PriceListID, .PriceProductID
 */}}
-{{define "sales-line-item-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+{{define "revenue-line-item-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="revenue_id" value="{{.RevenueID}}">
     <input type="hidden" name="price_product_id" id="price_product_id_input" value="{{.PriceProductID}}">

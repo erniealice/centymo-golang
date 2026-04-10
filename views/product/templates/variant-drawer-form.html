@@ -4,7 +4,7 @@ Used by both Assign (create) and Edit actions.
 Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "variant-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="product_id" value="{{.ProductID}}">
 
@@ -35,7 +35,7 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
         <div class="form-row single">
             <div class="form-group">
                 <label class="form-label" for="{{.FieldName}}">{{.OptionName}}{{if .Required}} *{{end}}</label>
-                <select id="{{.FieldName}}" name="{{.FieldName}}" class="form-control"{{if .Required}} required{{end}}>
+                <select id="{{.FieldName}}" name="{{.FieldName}}" class="form-select"{{if .Required}} required{{end}}>
                     <option value="" disabled {{if not $selected}}selected{{end}}>{{$.Labels.Form.SelectOption}} {{.OptionName}}</option>
                     {{range .Values}}
                     <option value="{{.ID}}" {{if eq $selected .ID}}selected{{end}}>{{.Label}}</option>

@@ -7,7 +7,7 @@ Data: .Name, .Description, .Amount, .Currency, .DurationValue, .DurationUnit,
       .ProductPlans, .CommonLabels, .Labels
 */}}
 {{define "price-plan-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="plan_id" value="{{.PlanID}}">
 
@@ -115,7 +115,7 @@ Data: .Name, .Description, .Amount, .Currency, .DurationValue, .DurationUnit,
                             <label for="price-{{.ProductPlanID}}" class="form-label">{{.ProductName}}</label>
                             <input type="number"
                                    id="price-{{.ProductPlanID}}"
-                                   class="form-control"
+                                   class="form-input"
                                    name="product_prices[{{.ProductPlanID}}]"
                                    value="{{.Price}}"
                                    step="0.01"

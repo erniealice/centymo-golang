@@ -26,8 +26,6 @@
         {{end}}
     </div>
 </div>
-{{/* sheet-form is already provided by page-end.html via app-shell — do not duplicate */}}
-<script src="/assets/js/pyeza/sheet.js?v={{.CacheVersion}}"></script>
 {{end}}
 
 {{/* =============================================
@@ -68,7 +66,7 @@
            hx-get="{{routeWith "product.edit" "id" .ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
-           onclick="if(window.Sheet) Sheet.open('{{.Labels.Actions.Edit}}')">
+           onclick="if(window.lf && lf.Sheet) lf.Sheet.open('{{.Labels.Actions.Edit}}')">
             {{.Labels.Actions.Edit}}
         </a>
     </div>

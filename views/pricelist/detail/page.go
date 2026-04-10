@@ -86,7 +86,7 @@ func NewView(deps *DetailViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          name,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "sale",
+				ActiveNav:      "revenue",
 				HeaderTitle:    name,
 				HeaderSubtitle: description,
 				HeaderIcon:     "icon-tag",

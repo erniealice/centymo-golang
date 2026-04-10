@@ -463,7 +463,7 @@ type RevenueRoutes struct {
 	PaymentRemoveURL string `json:"payment_remove_url"`
 
 	// Report routes
-	RevenueSummaryURL string `json:"sales_summary_url"`
+	RevenueSummaryURL string `json:"revenue_summary_url"`
 
 	// Document generation routes
 	InvoiceDownloadURL string `json:"invoice_download_url"`
@@ -532,7 +532,7 @@ func DefaultRevenueRoutes() RevenueRoutes {
 		SettingsTemplateDeleteURL:  RevenueSettingsTemplateDeleteURL,
 		SettingsTemplateDefaultURL: RevenueSettingsTemplateDefaultURL,
 		SearchClientURL:            RevenueSearchClientURL,
-		SearchSubscriptionURL:      SalesSearchSubscriptionURL,
+		SearchSubscriptionURL:      RevenueSearchSubscriptionURL,
 		SearchLocationURL:          RevenueSearchLocationURL,
 		SearchProductURL:           RevenueSearchProductURL,
 		PriceLookupURL:             RevenuePriceLookupURL,
@@ -543,45 +543,45 @@ func DefaultRevenueRoutes() RevenueRoutes {
 // revenue routes.
 func (r RevenueRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"sales.dashboard":       r.DashboardURL,
-		"sales.list":            r.ListURL,
-		"sales.table":           r.TableURL,
-		"sales.detail":          r.DetailURL,
-		"sales.add":             r.AddURL,
-		"sales.edit":            r.EditURL,
-		"sales.delete":          r.DeleteURL,
-		"sales.bulk_delete":     r.BulkDeleteURL,
-		"sales.set_status":      r.SetStatusURL,
-		"sales.bulk_set_status": r.BulkSetStatusURL,
+		"revenue.dashboard":       r.DashboardURL,
+		"revenue.list":            r.ListURL,
+		"revenue.table":           r.TableURL,
+		"revenue.detail":          r.DetailURL,
+		"revenue.add":             r.AddURL,
+		"revenue.edit":            r.EditURL,
+		"revenue.delete":          r.DeleteURL,
+		"revenue.bulk_delete":     r.BulkDeleteURL,
+		"revenue.set_status":      r.SetStatusURL,
+		"revenue.bulk_set_status": r.BulkSetStatusURL,
 
-		"sales.tab_action": r.TabActionURL,
+		"revenue.tab_action": r.TabActionURL,
 
-		"sales.attachment.upload": r.AttachmentUploadURL,
-		"sales.attachment.delete": r.AttachmentDeleteURL,
+		"revenue.attachment.upload": r.AttachmentUploadURL,
+		"revenue.attachment.delete": r.AttachmentDeleteURL,
 
-		"sales.line_item.table":    r.LineItemTableURL,
-		"sales.line_item.add":      r.LineItemAddURL,
-		"sales.line_item.edit":     r.LineItemEditURL,
-		"sales.line_item.remove":   r.LineItemRemoveURL,
-		"sales.line_item.discount": r.LineItemDiscountURL,
+		"revenue.line_item.table":    r.LineItemTableURL,
+		"revenue.line_item.add":      r.LineItemAddURL,
+		"revenue.line_item.edit":     r.LineItemEditURL,
+		"revenue.line_item.remove":   r.LineItemRemoveURL,
+		"revenue.line_item.discount": r.LineItemDiscountURL,
 
-		"sales.payment.table":  r.PaymentTableURL,
-		"sales.payment.add":    r.PaymentAddURL,
-		"sales.payment.edit":   r.PaymentEditURL,
-		"sales.payment.remove": r.PaymentRemoveURL,
+		"revenue.payment.table":  r.PaymentTableURL,
+		"revenue.payment.add":    r.PaymentAddURL,
+		"revenue.payment.edit":   r.PaymentEditURL,
+		"revenue.payment.remove": r.PaymentRemoveURL,
 
-		"sales.sales_summary":             r.RevenueSummaryURL,
-		"sales.invoice_download":          r.InvoiceDownloadURL,
-		"sales.send_email":                r.SendEmailURL,
-		"sales.settings.templates":        r.SettingsTemplatesURL,
-		"sales.settings.template_upload":  r.SettingsTemplateUploadURL,
-		"sales.settings.template_delete":  r.SettingsTemplateDeleteURL,
-		"sales.settings.template_default": r.SettingsTemplateDefaultURL,
-		"sales.search_client":        r.SearchClientURL,
-		"sales.search.subscriptions": r.SearchSubscriptionURL,
-		"sales.search.locations":     r.SearchLocationURL,
-		"sales.search.products":      r.SearchProductURL,
-		"sales.price_lookup":         r.PriceLookupURL,
+		"revenue.summary":                 r.RevenueSummaryURL,
+		"revenue.invoice_download":        r.InvoiceDownloadURL,
+		"revenue.send_email":              r.SendEmailURL,
+		"revenue.settings.templates":        r.SettingsTemplatesURL,
+		"revenue.settings.template_upload":  r.SettingsTemplateUploadURL,
+		"revenue.settings.template_delete":  r.SettingsTemplateDeleteURL,
+		"revenue.settings.template_default": r.SettingsTemplateDefaultURL,
+		"revenue.search_client":        r.SearchClientURL,
+		"revenue.search.subscriptions": r.SearchSubscriptionURL,
+		"revenue.search.locations":     r.SearchLocationURL,
+		"revenue.search.products":      r.SearchProductURL,
+		"revenue.price_lookup":         r.PriceLookupURL,
 	}
 }
 

@@ -116,13 +116,13 @@ func NewView(deps *DetailViewDeps) view.View {
 				CacheVersion:   viewCtx.CacheVersion,
 				Title:          headerTitle,
 				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      "sale",
+				ActiveNav:      "revenue",
 				HeaderTitle:    headerTitle,
 				HeaderSubtitle: l.Detail.PageTitle,
 				HeaderIcon:     "icon-shopping-bag",
 				CommonLabels:   deps.CommonLabels,
 			},
-			ContentTemplate:    "sales-detail-content",
+			ContentTemplate:    "revenue-detail-content",
 			Revenue:            revenue,
 			Labels:             l,
 			ActiveTab:          activeTab,
@@ -219,14 +219,14 @@ func NewView(deps *DetailViewDeps) view.View {
 		// KB help content
 		if viewCtx.Translations != nil {
 			if provider, ok := viewCtx.Translations.(*lynguaV1.TranslationProvider); ok {
-				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "sale-detail"); kb != nil {
+				if kb, _ := provider.LoadKBIfExists(viewCtx.Lang, viewCtx.BusinessType, "revenue-detail"); kb != nil {
 					pageData.HasHelp = true
 					pageData.HelpContent = kb.Body
 				}
 			}
 		}
 
-		return view.OK("sales-detail", pageData)
+		return view.OK("revenue-detail", pageData)
 	})
 }
 
@@ -362,7 +362,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
 		}
 
-		templateName := "sales-tab-" + tab
+		templateName := "revenue-tab-" + tab
 		if tab == "attachments" {
 			templateName = "attachment-tab"
 		}

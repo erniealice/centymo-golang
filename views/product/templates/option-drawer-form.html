@@ -4,7 +4,7 @@ Used by both Add (create) and Edit actions.
 Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .ProductID, .FormAction, .IsEdit, .CommonLabels, .Labels, .DataTypeOptions
 */}}
 {{define "option-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="product_id" value="{{.ProductID}}">
 
@@ -34,7 +34,7 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
         <div class="form-row single">
             <div class="form-group">
                 <label class="form-label" for="data_type">{{.Labels.DataType}}</label>
-                <select id="data_type" name="data_type" class="form-control" required>
+                <select id="data_type" name="data_type" class="form-select" required>
                     {{range .DataTypeOptions}}
                     <option value="{{.Value}}" {{if eq $.DataType .Value}}selected{{end}}>{{.Label}}</option>
                     {{end}}
