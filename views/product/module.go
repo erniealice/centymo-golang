@@ -125,6 +125,7 @@ type ModuleDeps struct {
 type Module struct {
 	routes        centymo.ProductRoutes
 	List          view.View
+	Table         view.View
 	Detail        view.View
 	TabAction     view.View
 	Add           view.View
@@ -178,6 +179,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		UpdateProduct:            deps.UpdateProduct,
 		DeleteProduct:            deps.DeleteProduct,
 		SetProductActive:         deps.SetProductActive,
+		ListLines:                deps.ListLines,
 		DefaultFulfillmentMethod: deps.DefaultFulfillmentMethod,
 	}
 	detailDeps := &productdetail.DetailViewDeps{
@@ -268,16 +270,20 @@ func NewModule(deps *ModuleDeps) *Module {
 		DeleteProductAttribute: deps.DeleteProductAttribute,
 	}
 
+	listDeps := &productlist.ListViewDeps{
+		Routes:       deps.Routes,
+		ListProducts: deps.ListProducts,
+		ListLines:    deps.ListLines,
+		GetInUseIDs:  deps.GetInUseIDs,
+		Labels:       deps.Labels,
+		CommonLabels: deps.CommonLabels,
+		TableLabels:  deps.TableLabels,
+	}
+
 	return &Module{
 		routes: deps.Routes,
-		List: productlist.NewView(&productlist.ListViewDeps{
-			Routes:       deps.Routes,
-			ListProducts: deps.ListProducts,
-			GetInUseIDs:  deps.GetInUseIDs,
-			Labels:       deps.Labels,
-			CommonLabels: deps.CommonLabels,
-			TableLabels:  deps.TableLabels,
-		}),
+		List:   productlist.NewView(listDeps),
+		Table:  productlist.NewTableView(listDeps),
 		Detail:                       productdetail.NewView(detailDeps),
 		TabAction:                    productdetail.NewTabAction(detailDeps),
 		Add:                          productaction.NewAddAction(actionDeps),
@@ -319,6 +325,7 @@ func NewModule(deps *ModuleDeps) *Module {
 
 func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	r.GET(m.routes.ListURL, m.List)
+	r.GET(m.routes.TableURL, m.Table)
 	r.GET(m.routes.DetailURL, m.Detail)
 	r.GET(m.routes.TabActionURL, m.TabAction)
 	r.GET(m.routes.AddURL, m.Add)

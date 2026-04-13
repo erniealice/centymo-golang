@@ -14,6 +14,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	linepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -24,6 +25,7 @@ import (
 type ListViewDeps struct {
 	Routes       centymo.ProductRoutes
 	ListProducts func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListLines    func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
 	GetInUseIDs  func(ctx context.Context, ids []string) (map[string]bool, error)
 	Labels       centymo.ProductLabels
 	CommonLabels pyeza.CommonLabels
@@ -169,9 +171,24 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
 	}
 
+	// Build line name lookup map for the line column.
+	lineNameByID := map[string]string{}
+	if deps.ListLines != nil {
+		lineResp, lerr := deps.ListLines(ctx, &linepb.ListLinesRequest{})
+		if lerr != nil {
+			log.Printf("Failed to list lines for product table: %v", lerr)
+		} else {
+			for _, line := range lineResp.GetData() {
+				if line != nil {
+					lineNameByID[line.GetId()] = line.GetName()
+				}
+			}
+		}
+	}
+
 	l := deps.Labels
 	columns := productColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms, lineNameByID)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -266,13 +283,14 @@ func productColumns(l centymo.ProductLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
 		{Key: "description", Label: l.Columns.Description, Sortable: false},
+		{Key: "line", Label: l.Columns.Line, Sortable: false},
 		{Key: "price", Label: l.Columns.Price, Sortable: true, WidthClass: "col-4xl"},
 		{Key: "date_created", Label: "Date Created", Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl", Filterable: false},
 	}
 }
 
-func buildTableRows(products []*productpb.Product, status string, l centymo.ProductLabels, routes centymo.ProductRoutes, inUseIDs map[string]bool, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(products []*productpb.Product, status string, l centymo.ProductLabels, routes centymo.ProductRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, lineNameByID map[string]string) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, p := range products {
 		active := p.GetActive()
@@ -286,6 +304,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 		description := p.GetDescription()
 		price := formatPrice(p.GetCurrency(), float64(p.GetPrice())/100.0)
 		isInUse := inUseIDs[id]
+		lineName := lineNameByID[p.GetLineId()]
 
 		deleteAction := types.TableAction{
 			Type:     "delete",
@@ -308,6 +327,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
 				{Type: "text", Value: description},
+				{Type: "text", Value: lineName},
 				{Type: "text", Value: price},
 				{Type: "text", Value: p.GetDateCreatedString()},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},

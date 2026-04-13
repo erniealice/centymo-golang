@@ -23,11 +23,12 @@ type ModuleDeps struct {
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
-	CreateLine func(ctx context.Context, req *linepb.CreateLineRequest) (*linepb.CreateLineResponse, error)
-	ReadLine   func(ctx context.Context, req *linepb.ReadLineRequest) (*linepb.ReadLineResponse, error)
-	UpdateLine func(ctx context.Context, req *linepb.UpdateLineRequest) (*linepb.UpdateLineResponse, error)
-	DeleteLine func(ctx context.Context, req *linepb.DeleteLineRequest) (*linepb.DeleteLineResponse, error)
-	ListLines  func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
+	CreateLine  func(ctx context.Context, req *linepb.CreateLineRequest) (*linepb.CreateLineResponse, error)
+	ReadLine    func(ctx context.Context, req *linepb.ReadLineRequest) (*linepb.ReadLineResponse, error)
+	UpdateLine  func(ctx context.Context, req *linepb.UpdateLineRequest) (*linepb.UpdateLineResponse, error)
+	DeleteLine  func(ctx context.Context, req *linepb.DeleteLineRequest) (*linepb.DeleteLineResponse, error)
+	ListLines   func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
+	GetInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
 	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
@@ -41,6 +42,7 @@ type Module struct {
 	routes           centymo.ProductLineRoutes
 	Dashboard        view.View
 	List             view.View
+	Table            view.View
 	Detail           view.View
 	TabAction        view.View
 	Add              view.View
@@ -77,18 +79,22 @@ func NewModule(deps *ModuleDeps) *Module {
 	detailDeps.DeleteAttachment = deps.DeleteAttachment
 	detailDeps.NewAttachmentID = deps.NewID
 
-	listView := linelist.NewView(&linelist.ListViewDeps{
+	listDeps := &linelist.ListViewDeps{
 		Routes:       deps.Routes,
 		ListLines:    deps.ListLines,
+		GetInUseIDs:  deps.GetInUseIDs,
 		Labels:       deps.Labels,
 		CommonLabels: deps.CommonLabels,
 		TableLabels:  deps.TableLabels,
-	})
+	}
+	listView := linelist.NewView(listDeps)
+	tableView := linelist.NewTableView(listDeps)
 
 	return &Module{
 		routes:           deps.Routes,
 		Dashboard:        listView,
 		List:             listView,
+		Table:            tableView,
 		Detail:           linedetail.NewView(detailDeps),
 		TabAction:        linedetail.NewTabAction(detailDeps),
 		Add:              lineaction.NewAddAction(actionDeps),
@@ -106,6 +112,7 @@ func NewModule(deps *ModuleDeps) *Module {
 func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	r.GET(m.routes.DashboardURL, m.Dashboard)
 	r.GET(m.routes.ListURL, m.List)
+	r.GET(m.routes.TableURL, m.Table)
 	r.GET(m.routes.DetailURL, m.Detail)
 	r.GET(m.routes.TabActionURL, m.TabAction)
 	r.GET(m.routes.AddURL, m.Add)

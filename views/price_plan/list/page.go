@@ -14,12 +14,16 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 )
 
 type ListViewDeps struct {
 	Routes         centymo.PricePlanRoutes
 	ListPricePlans func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListLocations  func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	ListPlans      func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	Labels         centymo.PricePlanLabels
 	CommonLabels   pyeza.CommonLabels
 	TableLabels    types.TableLabels
@@ -114,9 +118,35 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		return nil, fmt.Errorf("failed to load price plans: %w", err)
 	}
 
+	// Build plan name lookup map
+	planNames := map[string]string{}
+	if deps.ListPlans != nil {
+		planResp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
+		if err != nil {
+			log.Printf("Failed to list plans for price plan table: %v", err)
+		} else {
+			for _, p := range planResp.GetData() {
+				planNames[p.GetId()] = p.GetName()
+			}
+		}
+	}
+
+	// Build location name lookup map
+	locationNames := map[string]string{}
+	if deps.ListLocations != nil {
+		locResp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
+		if err != nil {
+			log.Printf("Failed to list locations for price plan table: %v", err)
+		} else {
+			for _, loc := range locResp.GetData() {
+				locationNames[loc.GetId()] = loc.GetName()
+			}
+		}
+	}
+
 	l := deps.Labels
 	columns := pricePlanColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms, planNames, locationNames)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -178,7 +208,7 @@ func pricePlanColumns(l centymo.PricePlanLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centymo.PricePlanLabels, routes centymo.PricePlanRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centymo.PricePlanLabels, routes centymo.PricePlanRoutes, perms *types.UserPermissions, planNames, locationNames map[string]string) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, pp := range pricePlans {
 		recordStatus := "active"
@@ -190,21 +220,23 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 		name := pp.GetName()
 
 		amountDisplay := strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64)
-		if pp.GetCurrency() != "" {
-			amountDisplay = pp.GetCurrency() + " " + amountDisplay
-		}
+		currency := pp.GetCurrency()
 
 		durationDisplay := ""
 		if pp.GetDurationValue() > 0 {
 			durationDisplay = strconv.FormatInt(int64(pp.GetDurationValue()), 10) + " " + pp.GetDurationUnit()
 		}
 
-		planName := ""
-		if plan := pp.GetPlan(); plan != nil {
-			planName = plan.GetName()
-		}
+		planName := planNames[pp.GetPlanId()]
 
-		locationID := pp.GetLocationId()
+		locationName := "—"
+		if locID := pp.GetLocationId(); locID != "" {
+			if n, ok := locationNames[locID]; ok && n != "" {
+				locationName = n
+			} else {
+				locationName = locID
+			}
+		}
 
 		deleteAction := types.TableAction{
 			Type:     "delete",
@@ -222,10 +254,10 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
-				{Type: "text", Value: amountDisplay},
+				{Type: "money", Value: amountDisplay, Currency: currency},
 				{Type: "text", Value: durationDisplay},
 				{Type: "text", Value: planName},
-				{Type: "text", Value: locationID},
+				{Type: "text", Value: locationName},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{

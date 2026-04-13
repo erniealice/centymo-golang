@@ -10,6 +10,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 )
@@ -54,6 +55,7 @@ type ProductPlanDeps struct {
 	UpdateProductPlan func(ctx context.Context, req *productplanpb.UpdateProductPlanRequest) (*productplanpb.UpdateProductPlanResponse, error)
 	DeleteProductPlan func(ctx context.Context, req *productplanpb.DeleteProductPlanRequest) (*productplanpb.DeleteProductPlanResponse, error)
 	ListProducts      func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductPlans  func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 }
 
 // productPlanFormLabels converts centymo.ProductPlanFormLabels into the local type.
@@ -88,16 +90,53 @@ func loadProductOptions(ctx context.Context, deps *ProductPlanDeps) []*ProductOp
 }
 
 // buildProductAutoCompleteOptions converts []*ProductOption to the auto-complete compatible format.
-func buildProductAutoCompleteOptions(products []*ProductOption, selectedID string) []map[string]any {
+// disabledIDs is a set of product IDs that should be shown as disabled (already added to the plan).
+func buildProductAutoCompleteOptions(products []*ProductOption, selectedID string, disabledIDs map[string]bool) []map[string]any {
 	opts := make([]map[string]any, 0, len(products))
 	for _, p := range products {
-		opts = append(opts, map[string]any{
+		opt := map[string]any{
 			"Value":    p.Id,
 			"Label":    p.Name,
 			"Selected": p.Id == selectedID,
-		})
+		}
+		if disabledIDs[p.Id] {
+			opt["Disabled"] = true
+		}
+		opts = append(opts, opt)
 	}
 	return opts
+}
+
+// loadExistingProductIDs returns a set of product IDs already added to the given plan.
+func loadExistingProductIDs(ctx context.Context, deps *ProductPlanDeps, planID string) map[string]bool {
+	if deps.ListProductPlans == nil {
+		return nil
+	}
+	resp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
+		Filters: &commonpb.FilterRequest{
+			Logic: commonpb.FilterLogic_AND,
+			Filters: []*commonpb.TypedFilter{
+				{
+					Field: "plan_id",
+					FilterType: &commonpb.TypedFilter_StringFilter{
+						StringFilter: &commonpb.StringFilter{
+							Value:    planID,
+							Operator: commonpb.StringOperator_STRING_EQUALS,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("Failed to load existing product plans for plan %s: %v", planID, err)
+		return nil
+	}
+	ids := make(map[string]bool)
+	for _, pp := range resp.GetData() {
+		ids[pp.GetProductId()] = true
+	}
+	return ids
 }
 
 // findProductLabel returns the name of the product with the given ID, or empty string.
@@ -123,6 +162,7 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			products := loadProductOptions(ctx, deps)
+			disabledIDs := loadExistingProductIDs(ctx, deps, planID)
 			return view.OK("product-plan-drawer-form", &ProductPlanFormData{
 				FormAction:     route.ResolveURL(deps.Routes.ProductPlanAddURL, "id", planID),
 				PlanID:         planID,
@@ -130,7 +170,7 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 				Mode:           "service",
 				Active:         true,
 				Products:       products,
-				ProductOptions: buildProductAutoCompleteOptions(products, ""),
+				ProductOptions: buildProductAutoCompleteOptions(products, "", disabledIDs),
 				Labels:         productPlanFormLabels(deps.Labels.ProductPlanForm),
 				CommonLabels:   nil, // injected by ViewAdapter
 			})
@@ -144,16 +184,21 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 
-		// Use product name as the product plan name (required field, min 3 chars enforced by usecase)
+		productID := r.FormValue("product_id")
+
 		name := r.FormValue("name")
 		if name == "" {
 			name = r.FormValue("product_name")
+		}
+		if name == "" && productID != "" {
+			products := loadProductOptions(ctx, deps)
+			name = findProductLabel(products, productID)
 		}
 
 		// No price/currency at creation — pricing is set via price plans
 		pp := &productplanpb.ProductPlan{
 			PlanId:    planID,
-			ProductId: r.FormValue("product_id"),
+			ProductId: productID,
 			Name:      name,
 			Active:    active,
 		}
@@ -209,7 +254,7 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 				SelectedProductLabel: findProductLabel(products, selectedProductID),
 				Active:               pp.GetActive(),
 				Products:             products,
-				ProductOptions:       buildProductAutoCompleteOptions(products, selectedProductID),
+				ProductOptions:       buildProductAutoCompleteOptions(products, selectedProductID, nil),
 				Labels:               productPlanFormLabels(deps.Labels.ProductPlanForm),
 				CommonLabels:         nil, // injected by ViewAdapter
 			})
@@ -222,16 +267,21 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
+		productID := r.FormValue("product_id")
 
 		name := r.FormValue("name")
 		if name == "" {
 			name = r.FormValue("product_name")
 		}
+		if name == "" && productID != "" {
+			products := loadProductOptions(ctx, deps)
+			name = findProductLabel(products, productID)
+		}
 
 		pp := &productplanpb.ProductPlan{
 			Id:        ppID,
 			PlanId:    planID,
-			ProductId: r.FormValue("product_id"),
+			ProductId: productID,
 			Name:      name,
 			Active:    active,
 		}

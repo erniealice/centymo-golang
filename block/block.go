@@ -595,7 +595,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if cfg.wantProductLine() {
 			if useCases.Product != nil && useCases.Product.Line != nil {
 				uc := useCases.Product.Line
-				productlinemod.NewModule(&productlinemod.ModuleDeps{
+				modDeps := &productlinemod.ModuleDeps{
 					Routes:       productLineRoutes,
 					Labels:       productLineLabels,
 					CommonLabels: ctx.Common,
@@ -605,7 +605,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					CreateLine:   uc.CreateLine.Execute,
 					UpdateLine:   uc.UpdateLine.Execute,
 					DeleteLine:   uc.DeleteLine.Execute,
-				}).RegisterRoutes(ctx.Routes)
+				}
+				if refChecker != nil {
+					modDeps.GetInUseIDs = refChecker.GetLineInUseIDs
+				}
+				productlinemod.NewModule(modDeps).RegisterRoutes(ctx.Routes)
 			}
 		}
 
@@ -703,7 +707,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
 				planListDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
 			}
+			if refChecker != nil {
+				planListDeps.GetInUseIDs = refChecker.GetPlanInUseIDs
+			}
 			ctx.Routes.GET(planRoutes.ListURL, planlist.NewView(planListDeps))
+			ctx.Routes.GET(planRoutes.TableURL, planlist.NewTableView(planListDeps))
 
 			// Plan CRUD actions
 			if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.CreatePlan != nil {
@@ -793,6 +801,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					}
 					if useCases.Product.Product != nil {
 						productPlanActionDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+					}
+					if useCases.Product.ProductPlan.ListProductPlans != nil {
+						productPlanActionDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
 					}
 					ctx.Routes.GET(planRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(productPlanActionDeps))
 					ctx.Routes.POST(planRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(productPlanActionDeps))

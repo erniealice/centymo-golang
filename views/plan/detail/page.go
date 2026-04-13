@@ -345,8 +345,11 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 
 	types.ApplyColumnStyles(columns, rows)
 
+	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", planID, "tab", "") + "products"
+
 	tableConfig := &types.TableConfig{
 		ID:                   "plan-products-table",
+		RefreshURL:           refreshURL,
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,

@@ -68,6 +68,7 @@ type PageData struct {
 	ProductCurrency     string
 	ProductStatus       string
 	StatusVariant       string
+	LineName            string // resolved name of the product's primary line (from product.line_id)
 	VariantsTable       *types.TableConfig
 	OptionsTable        *types.TableConfig
 	LinesTable          *types.TableConfig
@@ -201,6 +202,19 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		StatusVariant = "warning"
 	}
 
+	// Resolve the product's primary line name from product.line_id.
+	productLineName := ""
+	if lineID := product.GetLineId(); lineID != "" && deps.ListLines != nil {
+		if lineResp, lerr := deps.ListLines(ctx, &linepb.ListLinesRequest{}); lerr == nil {
+			for _, line := range lineResp.GetData() {
+				if line != nil && line.GetId() == lineID {
+					productLineName = line.GetName()
+					break
+				}
+			}
+		}
+	}
+
 	// Get counts for tab badges
 	variantCount := 0
 	if deps.ListProductVariants != nil {
@@ -244,6 +258,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ProductCurrency: currency,
 		ProductStatus:   productStatus,
 		StatusVariant:   StatusVariant,
+		LineName:        productLineName,
 	}
 
 	// Load tab-specific data

@@ -597,6 +597,7 @@ type ProductButtonLabels struct {
 type ProductColumnLabels struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Line        string `json:"line"`
 	Price       string `json:"price"`
 	Status      string `json:"status"`
 }
@@ -615,6 +616,8 @@ type ProductFormLabels struct {
 	Price           string `json:"price"`
 	Currency        string `json:"currency"`
 	Active          string `json:"active"`
+	Line            string `json:"line"`
+	LinePlaceholder string `json:"linePlaceholder"`
 
 	// Variant / option / attribute form labels
 	PricePlaceholder         string `json:"pricePlaceholder"`
@@ -1152,6 +1155,7 @@ type ProductLineErrorLabels struct {
 	IDRequired       string `json:"idRequired"`
 	NoIDsProvided    string `json:"noIDsProvided"`
 	InvalidStatus    string `json:"invalidStatus"`
+	CannotDelete     string `json:"cannotDelete"`
 }
 
 // DefaultProductLineLabels returns ProductLineLabels with sensible English defaults.
@@ -1296,6 +1300,7 @@ func DefaultProductLineLabels() ProductLineLabels {
 			IDRequired:       "Product line ID is required",
 			NoIDsProvided:    "No product line IDs provided",
 			InvalidStatus:    "Invalid status",
+			CannotDelete:     "This product line cannot be deleted because it is in use",
 		},
 	}
 }
@@ -2615,6 +2620,7 @@ type PlanErrorLabels struct {
 	NoIDsProvided    string `json:"noIDsProvided"`
 	InvalidStatus    string `json:"invalidStatus"`
 	NoPermission     string `json:"noPermission"`
+	CannotDelete     string `json:"cannotDelete"`
 }
 
 // ---------------------------------------------------------------------------
@@ -2904,6 +2910,7 @@ func DefaultPlanLabels() PlanLabels {
 			NoIDsProvided:    "No plan IDs provided",
 			InvalidStatus:    "Invalid status",
 			NoPermission:     "No permission",
+			CannotDelete:     "This plan cannot be deleted because it has products or rate cards assigned",
 		},
 		PricePlanForm: PricePlanFormLabels{
 			Name:                "Price Plan Name",

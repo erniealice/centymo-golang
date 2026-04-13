@@ -77,21 +77,17 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListPlans:       deps.ListPlans,
 	}
 
-	listView := priceplanlist.NewView(&priceplanlist.ListViewDeps{
+	listDeps := &priceplanlist.ListViewDeps{
 		Routes:         deps.Routes,
 		ListPricePlans: deps.ListPricePlans,
+		ListLocations:  deps.ListLocations,
+		ListPlans:      deps.ListPlans,
 		Labels:         deps.Labels,
 		CommonLabels:   deps.CommonLabels,
 		TableLabels:    deps.TableLabels,
-	})
-
-	tableView := priceplanlist.NewTableView(&priceplanlist.ListViewDeps{
-		Routes:         deps.Routes,
-		ListPricePlans: deps.ListPricePlans,
-		Labels:         deps.Labels,
-		CommonLabels:   deps.CommonLabels,
-		TableLabels:    deps.TableLabels,
-	})
+	}
+	listView := priceplanlist.NewView(listDeps)
+	tableView := priceplanlist.NewTableView(listDeps)
 
 	detailDeps := &priceplandetail.DetailViewDeps{
 		Routes:                 deps.Routes,

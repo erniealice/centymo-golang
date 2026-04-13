@@ -44,6 +44,10 @@
             <span class="detail-info-value">{{if .ProductDesc}}{{.ProductDesc}}{{else}}—{{end}}</span>
         </div>
         <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Line}}</span>
+            <span class="detail-info-value">{{if .LineName}}{{.LineName}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Price}}</span>
             <span class="detail-info-value">{{.ProductPrice}}</span>
         </div>

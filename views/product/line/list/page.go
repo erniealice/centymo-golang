@@ -21,6 +21,7 @@ import (
 type ListViewDeps struct {
 	Routes       centymo.ProductLineRoutes
 	ListLines    func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
+	GetInUseIDs  func(ctx context.Context, ids []string) (map[string]bool, error)
 	Labels       centymo.ProductLineLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
@@ -56,7 +57,7 @@ func NewView(deps *ListViewDeps) view.View {
 				Title:          statusPageTitle(deps.Labels, status),
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      deps.Routes.ActiveNav,
-				ActiveSubNav:   statusSubNav(deps.Routes.ActiveSubNav, status),
+				ActiveSubNav:   deps.Routes.ActiveSubNav,
 				HeaderTitle:    statusPageTitle(deps.Labels, status),
 				HeaderSubtitle: statusPageCaption(deps.Labels, status),
 				HeaderIcon:     "icon-layers",
@@ -124,9 +125,18 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		return nil, fmt.Errorf("failed to load lines: %w", err)
 	}
 
+	var inUseIDs map[string]bool
+	if deps.GetInUseIDs != nil {
+		var itemIDs []string
+		for _, item := range resp.GetData() {
+			itemIDs = append(itemIDs, item.GetId())
+		}
+		inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+	}
+
 	l := deps.Labels
 	columns := productLineColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -186,7 +196,7 @@ func productLineColumns(l centymo.ProductLineLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(lines []*linepb.Line, status string, l centymo.ProductLineLabels, routes centymo.ProductLineRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(lines []*linepb.Line, status string, l centymo.ProductLineLabels, routes centymo.ProductLineRoutes, inUseIDs map[string]bool, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, line := range lines {
 		recordStatus := "active"
@@ -200,6 +210,7 @@ func buildTableRows(lines []*linepb.Line, status string, l centymo.ProductLineLa
 			description = "—"
 		}
 		dateCreated := line.GetDateCreatedString()
+		isInUse := inUseIDs[id]
 
 		deleteAction := types.TableAction{
 			Type:     "delete",
@@ -207,6 +218,10 @@ func buildTableRows(lines []*linepb.Line, status string, l centymo.ProductLineLa
 			Action:   "delete",
 			URL:      routes.DeleteURL,
 			ItemName: name,
+		}
+		if isInUse {
+			deleteAction.Disabled = true
+			deleteAction.DisabledTooltip = l.Errors.CannotDelete
 		}
 		if !perms.Can("line", "delete") {
 			deleteAction.Disabled = true
@@ -224,7 +239,7 @@ func buildTableRows(lines []*linepb.Line, status string, l centymo.ProductLineLa
 			DataAttrs: map[string]string{
 				"name":      name,
 				"status":    recordStatus,
-				"deletable": strconv.FormatBool(true),
+				"deletable": strconv.FormatBool(!isInUse),
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
@@ -289,11 +304,4 @@ func statusVariant(status string) string {
 	default:
 		return "default"
 	}
-}
-
-func statusSubNav(base, status string) string {
-	if base == "" {
-		return status
-	}
-	return base + "-" + status
 }

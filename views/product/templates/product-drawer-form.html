@@ -28,6 +28,17 @@ Data: .Name, .Description, .Price, .Currency, .Active, .ID, .FormAction, .IsEdit
             )}}
         </div>
 
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "line_id"
+                "Label" .Labels.Line
+                "Value" .LineID
+                "Placeholder" .Labels.LinePlaceholder
+                "Options" .LineOptions
+            )}}
+        </div>
+
         <div class="form-row">
             {{template "form-group" (dict
                 "Type" "number"

@@ -21,6 +21,7 @@ import (
 type ListViewDeps struct {
 	Routes       centymo.PlanRoutes
 	ListPlans    func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	GetInUseIDs  func(ctx context.Context, ids []string) (map[string]bool, error)
 	Labels       centymo.PlanLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
@@ -127,9 +128,18 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		return nil, fmt.Errorf("failed to load plans: %w", err)
 	}
 
+	var inUseIDs map[string]bool
+	if deps.GetInUseIDs != nil {
+		var itemIDs []string
+		for _, item := range resp.GetData() {
+			itemIDs = append(itemIDs, item.GetId())
+		}
+		inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+	}
+
 	l := deps.Labels
 	columns := planColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -208,7 +218,7 @@ func planColumns(l centymo.PlanLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, routes centymo.PlanRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, routes centymo.PlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, p := range plans {
 		active := p.GetActive()
@@ -256,15 +266,22 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, r
 			})
 		}
 
-		actions = append(actions, types.TableAction{
-			Type:            "delete",
-			Label:           l.Actions.Delete,
-			Action:          "delete",
-			URL:             routes.DeleteURL,
-			ItemName:        name,
-			Disabled:        !perms.Can("plan", "delete"),
-			DisabledTooltip: l.Errors.NoPermission,
-		})
+		deleteAction := types.TableAction{
+			Type:     "delete",
+			Label:    l.Actions.Delete,
+			Action:   "delete",
+			URL:      routes.DeleteURL,
+			ItemName: name,
+		}
+		if inUseIDs[id] {
+			deleteAction.Disabled = true
+			deleteAction.DisabledTooltip = l.Errors.CannotDelete
+		}
+		if !perms.Can("plan", "delete") {
+			deleteAction.Disabled = true
+			deleteAction.DisabledTooltip = l.Errors.NoPermission
+		}
+		actions = append(actions, deleteAction)
 
 		rows = append(rows, types.TableRow{
 			ID: id,

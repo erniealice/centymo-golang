@@ -9,8 +9,10 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/pyeza-golang/route"
+	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	linepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 )
 
@@ -24,6 +26,8 @@ type FormData struct {
 	Price        string
 	Currency     string
 	Active       bool
+	LineID       string
+	LineOptions  []types.SelectOption
 	Labels       centymo.ProductFormLabels
 	CommonLabels any
 }
@@ -37,6 +41,7 @@ type Deps struct {
 	UpdateProduct    func(ctx context.Context, req *productpb.UpdateProductRequest) (*productpb.UpdateProductResponse, error)
 	DeleteProduct    func(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.DeleteProductResponse, error)
 	SetProductActive func(ctx context.Context, id string, active bool) error
+	ListLines        func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
 	// DefaultFulfillmentMethod is applied when the form does not supply a
 	// fulfillment_method value. Set to "service" for professional business types
 	// so new products created through the services UI are immediately visible in
@@ -46,6 +51,34 @@ type Deps struct {
 
 func formLabels(l centymo.ProductLabels) centymo.ProductFormLabels {
 	return l.Form
+}
+
+// loadLineOptions fetches all active lines and returns them as SelectOption slice.
+// selectedID marks the option that should be pre-selected (for edit mode).
+func loadLineOptions(ctx context.Context, deps *Deps, selectedID string) []types.SelectOption {
+	if deps.ListLines == nil {
+		return nil
+	}
+	resp, err := deps.ListLines(ctx, &linepb.ListLinesRequest{})
+	if err != nil {
+		log.Printf("Failed to load lines for product form: %v", err)
+		return nil
+	}
+	options := make([]types.SelectOption, 0, len(resp.GetData()))
+	for _, line := range resp.GetData() {
+		if line == nil {
+			continue
+		}
+		if !line.GetActive() && line.GetId() != selectedID {
+			continue
+		}
+		options = append(options, types.SelectOption{
+			Value:    line.GetId(),
+			Label:    line.GetName(),
+			Selected: line.GetId() == selectedID,
+		})
+	}
+	return options
 }
 
 // NewAddAction creates the product add action (GET = form, POST = create).
@@ -61,6 +94,7 @@ func NewAddAction(deps *Deps) view.View {
 				FormAction:   deps.Routes.AddURL,
 				Active:       true,
 				Currency:     "PHP",
+				LineOptions:  loadLineOptions(ctx, deps, ""),
 				Labels:       formLabels(deps.Labels),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
@@ -82,15 +116,20 @@ func NewAddAction(deps *Deps) view.View {
 			fulfillmentMethod = deps.DefaultFulfillmentMethod
 		}
 
+		productData := &productpb.Product{
+			Name:              r.FormValue("name"),
+			Description:       &desc,
+			Price:             price,
+			Currency:          r.FormValue("currency"),
+			Active:            active,
+			FulfillmentMethod: fulfillmentMethod,
+		}
+		if lineID := r.FormValue("line_id"); lineID != "" {
+			productData.LineId = &lineID
+		}
+
 		_, err := deps.CreateProduct(ctx, &productpb.CreateProductRequest{
-			Data: &productpb.Product{
-				Name:              r.FormValue("name"),
-				Description:       &desc,
-				Price:             price,
-				Currency:          r.FormValue("currency"),
-				Active:            active,
-				FulfillmentMethod: fulfillmentMethod,
-			},
+			Data: productData,
 		})
 		if err != nil {
 			log.Printf("Failed to create product: %v", err)
@@ -126,6 +165,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			p := data[0]
 
+			currentLineID := p.GetLineId()
 			return view.OK("product-drawer-form", &FormData{
 				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:       true,
@@ -135,6 +175,8 @@ func NewEditAction(deps *Deps) view.View {
 				Price:        strconv.FormatFloat(float64(p.GetPrice())/100.0, 'f', 2, 64),
 				Currency:     p.GetCurrency(),
 				Active:       p.GetActive(),
+				LineID:       currentLineID,
+				LineOptions:  loadLineOptions(ctx, deps, currentLineID),
 				Labels:       formLabels(deps.Labels),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
@@ -151,15 +193,20 @@ func NewEditAction(deps *Deps) view.View {
 		price := int64(math.Round(priceF * 100))
 		desc := r.FormValue("description")
 
+		updatedProduct := &productpb.Product{
+			Id:          id,
+			Name:        r.FormValue("name"),
+			Description: &desc,
+			Price:       price,
+			Currency:    r.FormValue("currency"),
+			Active:      active,
+		}
+		if lineID := r.FormValue("line_id"); lineID != "" {
+			updatedProduct.LineId = &lineID
+		}
+
 		_, err := deps.UpdateProduct(ctx, &productpb.UpdateProductRequest{
-			Data: &productpb.Product{
-				Id:          id,
-				Name:        r.FormValue("name"),
-				Description: &desc,
-				Price:       price,
-				Currency:    r.FormValue("currency"),
-				Active:      active,
-			},
+			Data: updatedProduct,
 		})
 		if err != nil {
 			log.Printf("Failed to update product %s: %v", id, err)
