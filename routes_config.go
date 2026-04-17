@@ -1,5 +1,7 @@
 package centymo
 
+import "strings"
+
 // Three-level routing system for centymo views:
 //
 // Level 1: Generic defaults from Go consts (this file).
@@ -153,6 +155,69 @@ func DefaultProductRoutes() ProductRoutes {
 	}
 }
 
+// DefaultProductInventoryRoutes returns a ProductRoutes with every URL
+// namespace-shifted from the service/product surface onto the inventory
+// surface. Used for the inventory-flavoured Product list mount — keeps
+// both mounts on distinct URLs so the stdlib ServeMux does not panic on
+// duplicate registrations when both modules register against the same mux.
+//
+// Shift rules:
+//   - "/app/products/*"  → "/app/inventory/products/*"
+//   - "/action/product/*" → "/action/inventory-product/*"
+//
+// Lyngua `product_inventory` route blocks can still override individual
+// URLs on top of this baseline.
+func DefaultProductInventoryRoutes() ProductRoutes {
+	r := DefaultProductRoutes()
+	r.ActiveNav = "inventory"
+	r.ActiveSubNav = "masterlist"
+	shift := func(s string) string {
+		s = strings.Replace(s, "/app/products/", "/app/inventory/products/", 1)
+		s = strings.Replace(s, "/action/product/", "/action/inventory-product/", 1)
+		return s
+	}
+	r.ListURL = shift(r.ListURL)
+	r.TableURL = shift(r.TableURL)
+	r.DetailURL = shift(r.DetailURL)
+	r.AddURL = shift(r.AddURL)
+	r.EditURL = shift(r.EditURL)
+	r.DeleteURL = shift(r.DeleteURL)
+	r.BulkDeleteURL = shift(r.BulkDeleteURL)
+	r.SetStatusURL = shift(r.SetStatusURL)
+	r.BulkSetStatusURL = shift(r.BulkSetStatusURL)
+	r.TabActionURL = shift(r.TabActionURL)
+	r.AttachmentUploadURL = shift(r.AttachmentUploadURL)
+	r.AttachmentDeleteURL = shift(r.AttachmentDeleteURL)
+	r.VariantTableURL = shift(r.VariantTableURL)
+	r.VariantAssignURL = shift(r.VariantAssignURL)
+	r.VariantEditURL = shift(r.VariantEditURL)
+	r.VariantRemoveURL = shift(r.VariantRemoveURL)
+	r.VariantDetailURL = shift(r.VariantDetailURL)
+	r.VariantTabActionURL = shift(r.VariantTabActionURL)
+	r.VariantImageUploadURL = shift(r.VariantImageUploadURL)
+	r.VariantImageDeleteURL = shift(r.VariantImageDeleteURL)
+	r.VariantAttachmentUploadURL = shift(r.VariantAttachmentUploadURL)
+	r.VariantAttachmentDeleteURL = shift(r.VariantAttachmentDeleteURL)
+	r.VariantStockDetailURL = shift(r.VariantStockDetailURL)
+	r.VariantStockTabActionURL = shift(r.VariantStockTabActionURL)
+	r.VariantStockAttachmentUploadURL = shift(r.VariantStockAttachmentUploadURL)
+	r.VariantStockAttachmentDeleteURL = shift(r.VariantStockAttachmentDeleteURL)
+	r.VariantSerialDetailURL = shift(r.VariantSerialDetailURL)
+	r.AttributeTableURL = shift(r.AttributeTableURL)
+	r.AttributeAssignURL = shift(r.AttributeAssignURL)
+	r.AttributeRemoveURL = shift(r.AttributeRemoveURL)
+	r.OptionTableURL = shift(r.OptionTableURL)
+	r.OptionAddURL = shift(r.OptionAddURL)
+	r.OptionEditURL = shift(r.OptionEditURL)
+	r.OptionDeleteURL = shift(r.OptionDeleteURL)
+	r.OptionDetailURL = shift(r.OptionDetailURL)
+	r.OptionValueTableURL = shift(r.OptionValueTableURL)
+	r.OptionValueAddURL = shift(r.OptionValueAddURL)
+	r.OptionValueEditURL = shift(r.OptionValueEditURL)
+	r.OptionValueDeleteURL = shift(r.OptionValueDeleteURL)
+	return r
+}
+
 // RouteMap returns a map of dot-notation keys to route paths for all
 // product routes.
 func (r ProductRoutes) RouteMap() map[string]string {
@@ -257,6 +322,40 @@ func DefaultProductLineRoutes() ProductLineRoutes {
 		AttachmentUploadURL: ProductLineAttachmentUploadURL,
 		AttachmentDeleteURL: ProductLineAttachmentDeleteURL,
 	}
+}
+
+// DefaultProductLineInventoryRoutes returns a ProductLineRoutes with every URL
+// namespace-shifted from the service surface onto the inventory accordion
+// namespace. Inventory-mount variant of ProductLine routes — namespaces every
+// URL under /app/inventory/product-lines/ so both accordions can carry
+// ProductLine without collision.
+//
+// Shift rules:
+//   - "/app/product-lines/"   → "/app/inventory/product-lines/"
+//   - "/action/product-line/" → "/action/inventory-product-line/"
+func DefaultProductLineInventoryRoutes() ProductLineRoutes {
+	r := DefaultProductLineRoutes()
+	r.ActiveNav = "inventory"
+	r.ActiveSubNav = "product-lines-active"
+	shift := func(s string) string {
+		s = strings.Replace(s, "/app/product-lines/", "/app/inventory/product-lines/", 1)
+		s = strings.Replace(s, "/action/product-line/", "/action/inventory-product-line/", 1)
+		return s
+	}
+	r.DashboardURL = shift(r.DashboardURL)
+	r.ListURL = shift(r.ListURL)
+	r.TableURL = shift(r.TableURL)
+	r.DetailURL = shift(r.DetailURL)
+	r.AddURL = shift(r.AddURL)
+	r.EditURL = shift(r.EditURL)
+	r.DeleteURL = shift(r.DeleteURL)
+	r.BulkDeleteURL = shift(r.BulkDeleteURL)
+	r.SetStatusURL = shift(r.SetStatusURL)
+	r.BulkSetStatusURL = shift(r.BulkSetStatusURL)
+	r.TabActionURL = shift(r.TabActionURL)
+	r.AttachmentUploadURL = shift(r.AttachmentUploadURL)
+	r.AttachmentDeleteURL = shift(r.AttachmentDeleteURL)
+	return r
 }
 
 // RouteMap returns a map of dot-notation keys to route paths for all
@@ -813,6 +912,50 @@ func DefaultPlanRoutes() PlanRoutes {
 	}
 }
 
+// DefaultPlanBundleRoutes returns a PlanRoutes with every URL namespace-shifted
+// from the services namespace onto the inventory accordion namespace. Used as
+// the route base for the Plan inventory-mount registration in block.go; a lyngua
+// `plan_bundle` override can layer additional tweaks on top.
+//
+// Bundle-mount variant of Plan routes — shifts every page + action URL from the
+// services namespace (/app/plans/*) onto the inventory accordion namespace
+// (/app/inventory/bundles/*). Used as the route base for the Plan
+// inventory-mount registration in block.go; a lyngua `plan_bundle` override can
+// layer additional tweaks on top.
+//
+// Shift rules:
+//   - "/app/plans/"   → "/app/inventory/bundles/"
+//   - "/action/plan/" → "/action/inventory-bundle/"
+func DefaultPlanBundleRoutes() PlanRoutes {
+	r := DefaultPlanRoutes()
+	r.ActiveNav = "inventory"
+	r.ActiveSubNav = "bundles-active"
+	shift := func(s string) string {
+		s = strings.Replace(s, "/app/plans/", "/app/inventory/bundles/", 1)
+		s = strings.Replace(s, "/action/plan/", "/action/inventory-bundle/", 1)
+		return s
+	}
+	r.ListURL = shift(r.ListURL)
+	r.TableURL = shift(r.TableURL)
+	r.DetailURL = shift(r.DetailURL)
+	r.AddURL = shift(r.AddURL)
+	r.EditURL = shift(r.EditURL)
+	r.DeleteURL = shift(r.DeleteURL)
+	r.BulkDeleteURL = shift(r.BulkDeleteURL)
+	r.SetStatusURL = shift(r.SetStatusURL)
+	r.BulkSetStatusURL = shift(r.BulkSetStatusURL)
+	r.TabActionURL = shift(r.TabActionURL)
+	r.AttachmentUploadURL = shift(r.AttachmentUploadURL)
+	r.AttachmentDeleteURL = shift(r.AttachmentDeleteURL)
+	r.PricePlanAddURL = shift(r.PricePlanAddURL)
+	r.PricePlanEditURL = shift(r.PricePlanEditURL)
+	r.PricePlanDeleteURL = shift(r.PricePlanDeleteURL)
+	r.ProductPlanAddURL = shift(r.ProductPlanAddURL)
+	r.ProductPlanEditURL = shift(r.ProductPlanEditURL)
+	r.ProductPlanDeleteURL = shift(r.ProductPlanDeleteURL)
+	return r
+}
+
 // RouteMap returns a map of dot-notation keys to route paths for all
 // plan routes.
 func (r PlanRoutes) RouteMap() map[string]string {
@@ -910,6 +1053,135 @@ func (r PricePlanRoutes) RouteMap() map[string]string {
 		"price_plan.product_price.add":       r.ProductPriceAddURL,
 		"price_plan.product_price.edit":      r.ProductPriceEditURL,
 		"price_plan.product_price.delete":    r.ProductPriceDeleteURL,
+	}
+}
+
+// PriceScheduleRoutes holds all route paths for price schedule views and actions.
+type PriceScheduleRoutes struct {
+	ActiveNav        string `json:"active_nav"`
+	ActiveSubNav     string `json:"active_sub_nav"`
+	DashboardURL     string `json:"dashboard_url"`
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL               string `json:"set_status_url"`
+	BulkSetStatusURL           string `json:"bulk_set_status_url"`
+	TabActionURL               string `json:"tab_action_url"`
+	PlanAddURL                 string `json:"plan_add_url"`
+	PlanDetailURL              string `json:"plan_detail_url"`
+	PlanTabActionURL           string `json:"plan_tab_action_url"`
+	PlanEditURL                string `json:"plan_edit_url"`
+	PlanDeleteURL              string `json:"plan_delete_url"`
+	PlanProductPriceAddURL     string `json:"plan_product_price_add_url"`
+	PlanProductPriceEditURL    string `json:"plan_product_price_edit_url"`
+	PlanProductPriceDeleteURL  string `json:"plan_product_price_delete_url"`
+}
+
+// DefaultPriceScheduleRoutes returns a PriceScheduleRoutes populated from the package-level
+// route constants defined in routes.go.
+func DefaultPriceScheduleRoutes() PriceScheduleRoutes {
+	return PriceScheduleRoutes{
+		ActiveNav:        "service",
+		ActiveSubNav:     "price-schedules",
+		DashboardURL:     PriceScheduleDashboardURL,
+		ListURL:          PriceScheduleListURL,
+		TableURL:         PriceScheduleTableURL,
+		DetailURL:        PriceScheduleDetailURL,
+		AddURL:           PriceScheduleAddURL,
+		EditURL:          PriceScheduleEditURL,
+		DeleteURL:        PriceScheduleDeleteURL,
+		BulkDeleteURL:    PriceScheduleBulkDeleteURL,
+		SetStatusURL:              PriceScheduleSetStatusURL,
+		BulkSetStatusURL:          PriceScheduleBulkSetStatusURL,
+		TabActionURL:              PriceScheduleTabActionURL,
+		PlanAddURL:                PriceSchedulePlanAddURL,
+		PlanDetailURL:             PriceSchedulePlanDetailURL,
+		PlanTabActionURL:          PriceSchedulePlanTabActionURL,
+		PlanEditURL:               PriceSchedulePlanEditURL,
+		PlanDeleteURL:             PriceSchedulePlanDeleteURL,
+		PlanProductPriceAddURL:    PriceSchedulePlanProductPriceAddURL,
+		PlanProductPriceEditURL:   PriceSchedulePlanProductPriceEditURL,
+		PlanProductPriceDeleteURL: PriceSchedulePlanProductPriceDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// price schedule routes.
+func (r PriceScheduleRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"price_schedule.dashboard":       r.DashboardURL,
+		"price_schedule.list":            r.ListURL,
+		"price_schedule.table":           r.TableURL,
+		"price_schedule.detail":          r.DetailURL,
+		"price_schedule.add":             r.AddURL,
+		"price_schedule.edit":            r.EditURL,
+		"price_schedule.delete":          r.DeleteURL,
+		"price_schedule.bulk_delete":     r.BulkDeleteURL,
+		"price_schedule.set_status":      r.SetStatusURL,
+		"price_schedule.bulk_set_status":                r.BulkSetStatusURL,
+		"price_schedule.tab_action":                     r.TabActionURL,
+		"price_schedule.plan.add":                       r.PlanAddURL,
+		"price_schedule.plan.detail":                    r.PlanDetailURL,
+		"price_schedule.plan.tab_action":                r.PlanTabActionURL,
+		"price_schedule.plan.edit":                      r.PlanEditURL,
+		"price_schedule.plan.delete":                    r.PlanDeleteURL,
+		"price_schedule.plan.product_price.add":         r.PlanProductPriceAddURL,
+		"price_schedule.plan.product_price.edit":        r.PlanProductPriceEditURL,
+		"price_schedule.plan.product_price.delete":      r.PlanProductPriceDeleteURL,
+	}
+}
+
+// ResourceRoutes holds all route paths for resource views and actions.
+// A resource links a person or equipment to a Product for billing purposes.
+type ResourceRoutes struct {
+	ActiveNav        string `json:"active_nav"`
+	ActiveSubNav     string `json:"active_sub_nav"`
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+}
+
+// DefaultResourceRoutes returns a ResourceRoutes populated from the package-level
+// route constants defined in routes.go.
+func DefaultResourceRoutes() ResourceRoutes {
+	return ResourceRoutes{
+		ActiveNav:        "service",
+		ActiveSubNav:     "resources-active",
+		ListURL:          ResourceListURL,
+		TableURL:         ResourceTableURL,
+		DetailURL:        ResourceDetailURL,
+		AddURL:           ResourceAddURL,
+		EditURL:          ResourceEditURL,
+		DeleteURL:        ResourceDeleteURL,
+		BulkDeleteURL:    ResourceBulkDeleteURL,
+		SetStatusURL:     ResourceSetStatusURL,
+		BulkSetStatusURL: ResourceBulkSetStatusURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// resource routes.
+func (r ResourceRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"resource.list":            r.ListURL,
+		"resource.table":           r.TableURL,
+		"resource.detail":          r.DetailURL,
+		"resource.add":             r.AddURL,
+		"resource.edit":            r.EditURL,
+		"resource.delete":          r.DeleteURL,
+		"resource.bulk_delete":     r.BulkDeleteURL,
+		"resource.set_status":      r.SetStatusURL,
+		"resource.bulk_set_status": r.BulkSetStatusURL,
 	}
 }
 

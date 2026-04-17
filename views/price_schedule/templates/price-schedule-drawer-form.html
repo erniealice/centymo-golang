@@ -1,0 +1,52 @@
+{{define "price-schedule-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* ================================================================ */}}
+        {{/* Section: Schedule Details                                        */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" "Schedule Details")}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder)}}
+        </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section: Date Range                                              */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" "Date Range")}}
+
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "date" "Name" "date_start" "Label" .Labels.DateStart "Value" .DateStart "Required" true)}}
+            {{template "form-group" (dict "Type" "date" "Name" "date_end" "Label" .Labels.DateEnd "Value" .DateEnd)}}
+        </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section: Location                                                */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" "Location")}}
+
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "location-select"
+                "Name" "location_id"
+                "Label" .Labels.Location
+                "Placeholder" .Labels.LocationPlaceholder
+                "SearchPlaceholder" "Filter..."
+                "Options" .LocationOptions
+                "Value" .SelectedLocationID
+                "SelectedLabel" .SelectedLocationLabel
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "toggle" (dict "Name" "active" "Label" .Labels.Active "Checked" .Active "Value" "true")}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

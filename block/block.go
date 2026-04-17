@@ -46,6 +46,8 @@ import (
 	productmod "github.com/erniealice/centymo-golang/views/product"
 	productlinemod "github.com/erniealice/centymo-golang/views/product/line"
 	priceplanmod "github.com/erniealice/centymo-golang/views/price_plan"
+	priceschedulemod "github.com/erniealice/centymo-golang/views/price_schedule"
+	resourcemod "github.com/erniealice/centymo-golang/views/resource"
 	revenuemod "github.com/erniealice/centymo-golang/views/revenue"
 	subscriptionaction "github.com/erniealice/centymo-golang/views/subscription/action"
 	subscriptiondetail "github.com/erniealice/centymo-golang/views/subscription/detail"
@@ -92,38 +94,44 @@ type blockConfig struct {
 	revenue      bool
 	product      bool
 	productLine  bool
-	pricePlan    bool
-	priceList    bool
+	pricePlan     bool
+	priceSchedule bool
+	priceList     bool
 	plan         bool
 	subscription bool
 	collection   bool
 	disbursement bool
 	expenditure  bool
+	resource     bool
 }
 
 func WithInventory() BlockOption    { return func(c *blockConfig) { c.inventory = true } }
 func WithRevenue() BlockOption      { return func(c *blockConfig) { c.revenue = true } }
 func WithProduct() BlockOption      { return func(c *blockConfig) { c.product = true } }
 func WithProductLine() BlockOption  { return func(c *blockConfig) { c.productLine = true } }
-func WithPricePlan() BlockOption    { return func(c *blockConfig) { c.pricePlan = true } }
-func WithPriceList() BlockOption    { return func(c *blockConfig) { c.priceList = true } }
+func WithPricePlan() BlockOption     { return func(c *blockConfig) { c.pricePlan = true } }
+func WithPriceSchedule() BlockOption { return func(c *blockConfig) { c.priceSchedule = true } }
+func WithPriceList() BlockOption     { return func(c *blockConfig) { c.priceList = true } }
 func WithPlan() BlockOption         { return func(c *blockConfig) { c.plan = true } }
 func WithSubscription() BlockOption { return func(c *blockConfig) { c.subscription = true } }
 func WithCollection() BlockOption   { return func(c *blockConfig) { c.collection = true } }
 func WithDisbursement() BlockOption { return func(c *blockConfig) { c.disbursement = true } }
 func WithExpenditure() BlockOption  { return func(c *blockConfig) { c.expenditure = true } }
+func WithResource() BlockOption     { return func(c *blockConfig) { c.resource = true } }
 
 func (c *blockConfig) wantInventory() bool    { return c.enableAll || c.inventory }
 func (c *blockConfig) wantRevenue() bool      { return c.enableAll || c.revenue }
 func (c *blockConfig) wantProduct() bool      { return c.enableAll || c.product }
 func (c *blockConfig) wantProductLine() bool  { return c.enableAll || c.productLine }
-func (c *blockConfig) wantPricePlan() bool    { return c.enableAll || c.pricePlan }
-func (c *blockConfig) wantPriceList() bool    { return c.enableAll || c.priceList }
+func (c *blockConfig) wantPricePlan() bool     { return c.enableAll || c.pricePlan }
+func (c *blockConfig) wantPriceSchedule() bool { return c.enableAll || c.priceSchedule }
+func (c *blockConfig) wantPriceList() bool     { return c.enableAll || c.priceList }
 func (c *blockConfig) wantPlan() bool         { return c.enableAll || c.plan }
 func (c *blockConfig) wantSubscription() bool { return c.enableAll || c.subscription }
 func (c *blockConfig) wantCollection() bool   { return c.enableAll || c.collection }
 func (c *blockConfig) wantDisbursement() bool { return c.enableAll || c.disbursement }
 func (c *blockConfig) wantExpenditure() bool  { return c.enableAll || c.expenditure }
+func (c *blockConfig) wantResource() bool     { return c.enableAll || c.resource }
 
 // ---------------------------------------------------------------------------
 // Block — the main Lego entry point
@@ -194,17 +202,40 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		productRoutes := centymo.DefaultProductRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product", &productRoutes)
 
+		// Inventory-flavoured product list route overrides. Starts from the
+		// namespace-shifted inventory defaults (every URL rewritten from
+		// /app/products/* → /app/inventory/products/* and /action/product/*
+		// → /action/inventory-product/*) so both mounts can coexist on the
+		// same ServeMux without duplicate route registrations. Lyngua
+		// product_inventory block layers on top as tweaks; the dual-mount is
+		// activated purely by the presence of that block.
+		productInventoryRoutes := centymo.DefaultProductInventoryRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_inventory", &productInventoryRoutes)
+
 		productLineRoutes := centymo.DefaultProductLineRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_line", &productLineRoutes)
 
 		pricePlanRoutes := centymo.DefaultPricePlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_plan", &pricePlanRoutes)
 
+		priceScheduleRoutes := centymo.DefaultPriceScheduleRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_schedule", &priceScheduleRoutes)
+
 		priceListRoutes := centymo.DefaultPriceListRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_list", &priceListRoutes)
 
 		planRoutes := centymo.DefaultPlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "plan", &planRoutes)
+
+		// Bundle-mount Plan routes — namespace-shifted onto /app/inventory/bundles/*.
+		// Lyngua plan_bundle block can layer additional tweaks on top.
+		planBundleRoutes := centymo.DefaultPlanBundleRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "plan_bundle", &planBundleRoutes)
+
+		// Inventory-mount ProductLine routes — namespace-shifted onto /app/inventory/product-lines/*.
+		// Lyngua product_line_inventory block can layer additional tweaks on top.
+		productLineInventoryRoutes := centymo.DefaultProductLineInventoryRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_line_inventory", &productLineInventoryRoutes)
 
 		subscriptionRoutes := centymo.DefaultSubscriptionRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "subscription", &subscriptionRoutes)
@@ -234,11 +265,23 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			log.Printf("centymo.Block: warning loading product labels: %v", err)
 		}
 
+		// Inventory-flavoured product labels. Starts from the already-loaded
+		// service product labels (centymo.ProductLabels has no exported
+		// DefaultProductLabels() factory — the service product.json is the
+		// de-facto baseline) and sparse-overlays product_inventory.json so the
+		// inventory mount can use distinct headings/buttons (e.g. "Add Product")
+		// without duplicating every key in the service product.json.
+		productInventoryLabels := productLabels
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_inventory.json", "product_inventory", &productInventoryLabels)
+
 		productLineLabels := centymo.DefaultProductLineLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_line.json", "product_line", &productLineLabels)
 
 		pricePlanLabels := centymo.DefaultPricePlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_plan.json", "price_plan", &pricePlanLabels)
+
+		priceScheduleLabels := centymo.DefaultPriceScheduleLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_schedule.json", "priceSchedule", &priceScheduleLabels)
 
 		var priceListLabels centymo.PriceListLabels
 		if err := translations.LoadPath("en", ctx.BusinessType, "pricelist.json", "pricelist", &priceListLabels); err != nil {
@@ -261,6 +304,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		subscriptionLabels := centymo.DefaultSubscriptionLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "subscription.json", "subscription", &subscriptionLabels)
+
+		resourceRoutes := centymo.DefaultResourceRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "resource", &resourceRoutes)
+
+		resourceLabels := centymo.DefaultResourceLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "resource.json", "resource", &resourceLabels)
 
 		// =====================================================================
 		// Inventory module
@@ -463,6 +512,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				revDeps.ListPriceProducts = useCases.Product.PriceProduct.ListPriceProducts.Execute
 			}
 
+			// Job activity lookup for "from_activities" revenue type
+			if useCases.Operation != nil && useCases.Operation.JobActivity != nil && useCases.Operation.JobActivity.ReadJobActivity != nil {
+				revDeps.ReadJobActivity = useCases.Operation.JobActivity.ReadJobActivity.Execute
+			}
+
 			revenueMod := revenuemod.NewModule(revDeps)
 			revenueMod.RegisterRoutes(ctx.Routes)
 			// Invoice download is http.HandlerFunc (bypasses view/template layer)
@@ -487,22 +541,29 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			}
 
 			// For professional business types the product list is branded as
-			// "services" and filters fulfillment_method IN ('service','digital').
+			// "services" and filters product_kind = 'service'.
 			// Default new products created through this UI to 'service' so they
 			// appear in the list immediately without extra steps.
-			defaultFulfillmentMethod := ""
+			defaultProductKind := ""
+			defaultDeliveryMode := ""
+			defaultTrackingMode := ""
 			if ctx.BusinessType == "professional" {
-				defaultFulfillmentMethod = "service"
+				defaultProductKind = "service"
+				defaultDeliveryMode = "scheduled"
+				defaultTrackingMode = "none"
 			}
 
 			productDeps := &productmod.ModuleDeps{
-				Routes:                   productRoutes,
-				DB:                       db,
-				Labels:                   productLabels,
-				CommonLabels:             ctx.Common,
-				TableLabels:              centymoTableLabels,
-				GetInUseIDs:              getProductInUseIDs,
-				DefaultFulfillmentMethod: defaultFulfillmentMethod,
+				Routes:              productRoutes,
+				Mode:                "service",
+				DB:                  db,
+				Labels:              productLabels,
+				CommonLabels:        ctx.Common,
+				TableLabels:         centymoTableLabels,
+				GetInUseIDs:         getProductInUseIDs,
+				DefaultProductKind:  defaultProductKind,
+				DefaultDeliveryMode: defaultDeliveryMode,
+				DefaultTrackingMode: defaultTrackingMode,
 				// SetProductActive uses raw DB update (proto3 omits false booleans)
 				SetProductActive: func(fctx context.Context, id string, active bool) error {
 					_, err := db.Update(fctx, "product", id, map[string]any{"active": active})
@@ -586,6 +647,29 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 			}
 			productmod.NewModule(productDeps).RegisterRoutes(ctx.Routes)
+
+			// Inventory-flavoured product mount. Reuses the same product module
+			// (single view module, Option B from the dual-mount plan) but with
+			// Mode="inventory" so the list page filters product_kind
+			// IN ('stocked_good','non_stocked_good','consumable'), distinct routes
+			// (e.g. /app/inventory/products/list/{status}) and distinct labels
+			// sourced from product_inventory.json.
+			//
+			// Register the inventory-flavoured Product mount on distinct URLs
+			// produced by DefaultProductInventoryRoutes. The gate is a
+			// defensive check: if a lyngua product_inventory override ever
+			// collapses ListURL back onto the service mount, skip the second
+			// registration to avoid a ServeMux duplicate-route panic.
+			if productInventoryRoutes.ListURL != productRoutes.ListURL {
+				productInventoryDeps := *productDeps
+				productInventoryDeps.Routes = productInventoryRoutes
+				productInventoryDeps.Mode = "inventory"
+				productInventoryDeps.Labels = productInventoryLabels
+				productInventoryDeps.DefaultProductKind = "stocked_good"
+				productInventoryDeps.DefaultDeliveryMode = "shipped"
+				productInventoryDeps.DefaultTrackingMode = "bulk"
+				productmod.NewModule(&productInventoryDeps).RegisterRoutes(ctx.Routes)
+			}
 		}
 
 		// =====================================================================
@@ -610,6 +694,28 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					modDeps.GetInUseIDs = refChecker.GetLineInUseIDs
 				}
 				productlinemod.NewModule(modDeps).RegisterRoutes(ctx.Routes)
+
+				// Inventory-mount ProductLine second registration on distinct URLs.
+				// Gate: if a lyngua product_line_inventory override ever collapses
+				// ListURL back onto the services mount, skip to avoid a ServeMux
+				// duplicate-route panic.
+				if productLineInventoryRoutes.ListURL != productLineRoutes.ListURL {
+					productLineInventoryDeps := &productlinemod.ModuleDeps{
+						Routes:       productLineInventoryRoutes,
+						Labels:       productLineLabels,
+						CommonLabels: ctx.Common,
+						TableLabels:  centymoTableLabels,
+						ListLines:    uc.ListLines.Execute,
+						ReadLine:     uc.ReadLine.Execute,
+						CreateLine:   uc.CreateLine.Execute,
+						UpdateLine:   uc.UpdateLine.Execute,
+						DeleteLine:   uc.DeleteLine.Execute,
+					}
+					if refChecker != nil {
+						productLineInventoryDeps.GetInUseIDs = refChecker.GetLineInUseIDs
+					}
+					productlinemod.NewModule(productLineInventoryDeps).RegisterRoutes(ctx.Routes)
+				}
 			}
 		}
 
@@ -620,20 +726,25 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if cfg.wantPricePlan() {
 			if useCases.Subscription != nil && useCases.Subscription.PricePlan != nil {
 				uc := useCases.Subscription.PricePlan
-				pricePlanDeps := &priceplanmod.ModuleDeps{
-					Routes:          pricePlanRoutes,
-					Labels:          pricePlanLabels,
-					CommonLabels:    ctx.Common,
-					TableLabels:     centymoTableLabels,
-					ListPricePlans:  uc.ListPricePlans.Execute,
-					ReadPricePlan:   uc.ReadPricePlan.Execute,
-					CreatePricePlan: uc.CreatePricePlan.Execute,
-					UpdatePricePlan: uc.UpdatePricePlan.Execute,
-					DeletePricePlan: uc.DeletePricePlan.Execute,
+				var getPricePlanInUseIDs func(context.Context, []string) (map[string]bool, error)
+				if refChecker != nil {
+					getPricePlanInUseIDs = refChecker.GetPricePlanInUseIDs
 				}
-				// Add location listing if available
-				if useCases.Entity != nil && useCases.Entity.Location != nil {
-					pricePlanDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+				pricePlanDeps := &priceplanmod.ModuleDeps{
+					Routes:               pricePlanRoutes,
+					Labels:               pricePlanLabels,
+					CommonLabels:         ctx.Common,
+					TableLabels:          centymoTableLabels,
+					ListPricePlans:       uc.ListPricePlans.Execute,
+					ReadPricePlan:        uc.ReadPricePlan.Execute,
+					CreatePricePlan:      uc.CreatePricePlan.Execute,
+					UpdatePricePlan:      uc.UpdatePricePlan.Execute,
+					DeletePricePlan:      uc.DeletePricePlan.Execute,
+					GetPricePlanInUseIDs: getPricePlanInUseIDs,
+				}
+				// Price schedule listing — parent container (owns location + date range)
+				if useCases.Subscription.PriceSchedule != nil {
+					pricePlanDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
 				}
 				// Add plan listing if available
 				if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
@@ -656,6 +767,62 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					pricePlanDeps.DeleteProductPricePlan = ppp.DeleteProductPricePlan.Execute
 				}
 				priceplanmod.NewModule(pricePlanDeps).RegisterRoutes(ctx.Routes)
+			}
+		}
+
+		// =====================================================================
+		// Price Schedule module
+		// =====================================================================
+
+		if cfg.wantPriceSchedule() {
+			if useCases.Subscription != nil && useCases.Subscription.PriceSchedule != nil {
+				uc := useCases.Subscription.PriceSchedule
+				var getPriceScheduleInUseIDs func(context.Context, []string) (map[string]bool, error)
+				if refChecker != nil {
+					getPriceScheduleInUseIDs = refChecker.GetPriceScheduleInUseIDs
+				}
+				priceScheduleDeps := &priceschedulemod.ModuleDeps{
+					Routes:                   priceScheduleRoutes,
+					Labels:                   priceScheduleLabels,
+					CommonLabels:             ctx.Common,
+					TableLabels:              centymoTableLabels,
+					ListPriceSchedules:       uc.ListPriceSchedules.Execute,
+					ReadPriceSchedule:        uc.ReadPriceSchedule.Execute,
+					CreatePriceSchedule:      uc.CreatePriceSchedule.Execute,
+					UpdatePriceSchedule:      uc.UpdatePriceSchedule.Execute,
+					DeletePriceSchedule:      uc.DeletePriceSchedule.Execute,
+					GetPriceScheduleInUseIDs: getPriceScheduleInUseIDs,
+				}
+				// Add location listing if available
+				if useCases.Entity != nil && useCases.Entity.Location != nil {
+					priceScheduleDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+				}
+				// Plans tab on the detail page lists price_plans filtered by price_schedule_id FK.
+				if useCases.Subscription.PricePlan != nil {
+					priceScheduleDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
+					priceScheduleDeps.CreatePricePlan = useCases.Subscription.PricePlan.CreatePricePlan.Execute
+					priceScheduleDeps.ReadPricePlan = useCases.Subscription.PricePlan.ReadPricePlan.Execute
+					priceScheduleDeps.UpdatePricePlan = useCases.Subscription.PricePlan.UpdatePricePlan.Execute
+					priceScheduleDeps.DeletePricePlan = useCases.Subscription.PricePlan.DeletePricePlan.Execute
+				}
+				if useCases.Subscription.Plan != nil {
+					priceScheduleDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+				}
+				// Schedule-scoped plan detail (info + product-prices tabs) needs product lookups + ProductPricePlan CRUD
+				if useCases.Product != nil && useCases.Product.Product != nil {
+					priceScheduleDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+				}
+				if useCases.Product != nil && useCases.Product.ProductPlan != nil {
+					priceScheduleDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+				}
+				if useCases.Subscription.ProductPricePlan != nil {
+					ppp := useCases.Subscription.ProductPricePlan
+					priceScheduleDeps.ListProductPricePlans = ppp.ListProductPricePlans.Execute
+					priceScheduleDeps.CreateProductPricePlan = ppp.CreateProductPricePlan.Execute
+					priceScheduleDeps.UpdateProductPricePlan = ppp.UpdateProductPricePlan.Execute
+					priceScheduleDeps.DeleteProductPricePlan = ppp.DeleteProductPricePlan.Execute
+				}
+				priceschedulemod.NewModule(priceScheduleDeps).RegisterRoutes(ctx.Routes)
 			}
 		}
 
@@ -755,6 +922,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if useCases.Entity != nil && useCases.Entity.Location != nil {
 					planDetailDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
 				}
+				if useCases.Subscription.PriceSchedule != nil {
+					planDetailDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+				}
 				ctx.Routes.GET(planRoutes.DetailURL, plandetail.NewView(planDetailDeps))
 				ctx.Routes.GET(planRoutes.TabActionURL, plandetail.NewTabAction(planDetailDeps))
 				// Plan attachments
@@ -773,8 +943,8 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,
 						DeletePricePlan: useCases.Subscription.PricePlan.DeletePricePlan.Execute,
 					}
-					if useCases.Entity != nil && useCases.Entity.Location != nil {
-						ppActionDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+					if useCases.Subscription.PriceSchedule != nil {
+						ppActionDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
 					}
 					if useCases.Product != nil && useCases.Product.ProductPlan != nil {
 						ppActionDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
@@ -810,6 +980,127 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ctx.Routes.GET(planRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(productPlanActionDeps))
 					ctx.Routes.POST(planRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(productPlanActionDeps))
 					ctx.Routes.POST(planRoutes.ProductPlanDeleteURL, planaction.NewProductPlanDeleteAction(productPlanActionDeps))
+				}
+			}
+
+			// =====================================================================
+			// Plan bundle inventory-mount (second registration on distinct URLs)
+			// =====================================================================
+			// Reuses the same plan views but on /app/inventory/bundles/* URLs.
+			// Gate: if a lyngua plan_bundle override ever collapses ListURL back
+			// onto the services mount, skip to avoid a ServeMux duplicate-route panic.
+			if cfg.wantPlan() && planBundleRoutes.ListURL != planRoutes.ListURL {
+				planBundleListDeps := &planlist.ListViewDeps{
+					Routes:       planBundleRoutes,
+					Labels:       planLabels,
+					CommonLabels: ctx.Common,
+					TableLabels:  centymoTableLabels,
+				}
+				if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
+					planBundleListDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+				}
+				if refChecker != nil {
+					planBundleListDeps.GetInUseIDs = refChecker.GetPlanInUseIDs
+				}
+				ctx.Routes.GET(planBundleRoutes.ListURL, planlist.NewView(planBundleListDeps))
+				ctx.Routes.GET(planBundleRoutes.TableURL, planlist.NewTableView(planBundleListDeps))
+
+				if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.CreatePlan != nil {
+					planBundleActionDeps := &planaction.Deps{
+						Routes:     planBundleRoutes,
+						Labels:     planLabels,
+						CreatePlan: useCases.Subscription.Plan.CreatePlan.Execute,
+						ReadPlan:   useCases.Subscription.Plan.ReadPlan.Execute,
+						UpdatePlan: useCases.Subscription.Plan.UpdatePlan.Execute,
+						DeletePlan: useCases.Subscription.Plan.DeletePlan.Execute,
+					}
+					ctx.Routes.GET(planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
+					ctx.Routes.POST(planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
+					ctx.Routes.GET(planBundleRoutes.EditURL, planaction.NewEditAction(planBundleActionDeps))
+					ctx.Routes.POST(planBundleRoutes.EditURL, planaction.NewEditAction(planBundleActionDeps))
+					ctx.Routes.POST(planBundleRoutes.DeleteURL, planaction.NewDeleteAction(planBundleActionDeps))
+				}
+
+				if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
+					planBundleDetailDeps := &plandetail.DetailViewDeps{
+						Routes:       planBundleRoutes,
+						ReadPlan:     useCases.Subscription.Plan.ReadPlan.Execute,
+						Labels:       planLabels,
+						CommonLabels: ctx.Common,
+						TableLabels:  centymoTableLabels,
+						AttachmentOps: attachment.AttachmentOps{
+							UploadFile:       uploadFile,
+							ListAttachments:  listAttachments,
+							CreateAttachment: createAttachment,
+							DeleteAttachment: deleteAttachment,
+							NewAttachmentID:  newAttachmentID,
+						},
+					}
+					if useCases.Product != nil && useCases.Product.ProductPlan != nil {
+						planBundleDetailDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+					}
+					if useCases.Subscription.PricePlan != nil {
+						planBundleDetailDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
+					}
+					if useCases.Entity != nil && useCases.Entity.Location != nil {
+						planBundleDetailDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+					}
+					if useCases.Subscription.PriceSchedule != nil {
+						planBundleDetailDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+					}
+					ctx.Routes.GET(planBundleRoutes.DetailURL, plandetail.NewView(planBundleDetailDeps))
+					ctx.Routes.GET(planBundleRoutes.TabActionURL, plandetail.NewTabAction(planBundleDetailDeps))
+					if uploadFile != nil {
+						ctx.Routes.GET(planBundleRoutes.AttachmentUploadURL, plandetail.NewAttachmentUploadAction(planBundleDetailDeps))
+						ctx.Routes.POST(planBundleRoutes.AttachmentUploadURL, plandetail.NewAttachmentUploadAction(planBundleDetailDeps))
+						ctx.Routes.POST(planBundleRoutes.AttachmentDeleteURL, plandetail.NewAttachmentDeleteAction(planBundleDetailDeps))
+					}
+					if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.CreatePricePlan != nil {
+						ppBundleDeps := &planaction.PricePlanDeps{
+							Routes:          planBundleRoutes,
+							Labels:          planLabels,
+							CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
+							ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
+							UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,
+							DeletePricePlan: useCases.Subscription.PricePlan.DeletePricePlan.Execute,
+						}
+						if useCases.Subscription.PriceSchedule != nil {
+							ppBundleDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+						}
+						if useCases.Product != nil && useCases.Product.ProductPlan != nil {
+							ppBundleDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+						}
+						if useCases.Subscription.ProductPricePlan != nil {
+							ppBundleDeps.CreateProductPricePlan = useCases.Subscription.ProductPricePlan.CreateProductPricePlan.Execute
+							ppBundleDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
+						}
+						ctx.Routes.GET(planBundleRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppBundleDeps))
+						ctx.Routes.POST(planBundleRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppBundleDeps))
+						ctx.Routes.GET(planBundleRoutes.PricePlanEditURL, planaction.NewPricePlanEditAction(ppBundleDeps))
+						ctx.Routes.POST(planBundleRoutes.PricePlanEditURL, planaction.NewPricePlanEditAction(ppBundleDeps))
+						ctx.Routes.POST(planBundleRoutes.PricePlanDeleteURL, planaction.NewPricePlanDeleteAction(ppBundleDeps))
+					}
+					if useCases.Product != nil && useCases.Product.ProductPlan != nil && useCases.Product.ProductPlan.CreateProductPlan != nil {
+						ppBundleProductPlanDeps := &planaction.ProductPlanDeps{
+							Routes:            planBundleRoutes,
+							Labels:            planLabels,
+							CreateProductPlan: useCases.Product.ProductPlan.CreateProductPlan.Execute,
+							ReadProductPlan:   useCases.Product.ProductPlan.ReadProductPlan.Execute,
+							UpdateProductPlan: useCases.Product.ProductPlan.UpdateProductPlan.Execute,
+							DeleteProductPlan: useCases.Product.ProductPlan.DeleteProductPlan.Execute,
+						}
+						if useCases.Product.Product != nil {
+							ppBundleProductPlanDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+						}
+						if useCases.Product.ProductPlan.ListProductPlans != nil {
+							ppBundleProductPlanDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+						}
+						ctx.Routes.GET(planBundleRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(ppBundleProductPlanDeps))
+						ctx.Routes.POST(planBundleRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(ppBundleProductPlanDeps))
+						ctx.Routes.GET(planBundleRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(ppBundleProductPlanDeps))
+						ctx.Routes.POST(planBundleRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(ppBundleProductPlanDeps))
+						ctx.Routes.POST(planBundleRoutes.ProductPlanDeleteURL, planaction.NewProductPlanDeleteAction(ppBundleProductPlanDeps))
+					}
 				}
 			}
 		}
@@ -1027,6 +1318,38 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				expDeps.CreateDisbursement = useCases.Treasury.Disbursement.CreateDisbursement.Execute
 			}
 			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// Resource module
+		// =====================================================================
+
+		if cfg.wantResource() {
+			resourceDeps := &resourcemod.ModuleDeps{
+				Routes:       resourceRoutes,
+				Labels:       resourceLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+			}
+			if useCases.Product != nil && useCases.Product.Resource != nil {
+				uc := useCases.Product.Resource
+				if uc.ListResources != nil {
+					resourceDeps.ListResources = uc.ListResources.Execute
+				}
+				if uc.ReadResource != nil {
+					resourceDeps.ReadResource = uc.ReadResource.Execute
+				}
+				if uc.CreateResource != nil {
+					resourceDeps.CreateResource = uc.CreateResource.Execute
+				}
+				if uc.UpdateResource != nil {
+					resourceDeps.UpdateResource = uc.UpdateResource.Execute
+				}
+				if uc.DeleteResource != nil {
+					resourceDeps.DeleteResource = uc.DeleteResource.Execute
+				}
+			}
+			resourcemod.NewModule(resourceDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		log.Println("  centymo commerce domain initialized")

@@ -23,13 +23,27 @@ import (
 
 // ListViewDeps holds view dependencies.
 type ListViewDeps struct {
-	Routes       centymo.ProductRoutes
+	Routes centymo.ProductRoutes
+	// Mode selects the product_kind filter set for the list query.
+	// "service" (default/empty) or "inventory" — selects product_kind filter set.
+	// Zero-value ("") maps to the service behaviour (product_kind = 'service').
+	Mode         string
 	ListProducts func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	ListLines    func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
 	GetInUseIDs  func(ctx context.Context, ids []string) (map[string]bool, error)
 	Labels       centymo.ProductLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+}
+
+// modeProductKinds maps a ListViewDeps.Mode value to the set of
+// product_kind strings that should be included in the list filter.
+// Zero-value ("") maps to the service behaviour so that callers which
+// do not set Mode continue to see service products.
+var modeProductKinds = map[string][]string{
+	"":          {"service"},                                    // zero-value = service behaviour
+	"service":   {"service"},                                    // explicit service mount
+	"inventory": {"stocked_good", "non_stocked_good", "consumable"}, // inventory-flavoured mount
 }
 
 // PageData holds the data for the product list page.
@@ -134,13 +148,19 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		},
 	}
 
-	// Inject fulfillment_method IN ('service', 'digital') filter so the services list shows
-	// only non-inventory products. fulfillment_method = "physical" or "make_to_order" → inventory items.
-	fulfillmentFilter := &commonpb.TypedFilter{
-		Field: "fulfillment_method",
+	// Inject product_kind IN (...) filter so the list shows only products
+	// that belong to this mount's surface. The filter values are selected by
+	// deps.Mode — "service" → service, "inventory" → stocked_good/non_stocked_good/consumable.
+	// Zero-value / unknown Mode falls back to the service behaviour.
+	values, ok := modeProductKinds[deps.Mode]
+	if !ok || len(values) == 0 {
+		values = []string{"service"}
+	}
+	productKindFilter := &commonpb.TypedFilter{
+		Field: "product_kind",
 		FilterType: &commonpb.TypedFilter_ListFilter{
 			ListFilter: &commonpb.ListFilter{
-				Values:   []string{"service", "digital"},
+				Values:   values,
 				Operator: commonpb.ListOperator_LIST_IN,
 			},
 		},
@@ -149,7 +169,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	if filters == nil {
 		filters = &commonpb.FilterRequest{}
 	}
-	filters.Filters = append(filters.Filters, activeFilter, fulfillmentFilter)
+	filters.Filters = append(filters.Filters, activeFilter, productKindFilter)
 
 	resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{
 		Search:     listParams.Search,
@@ -302,7 +322,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 		id := p.GetId()
 		name := p.GetName()
 		description := p.GetDescription()
-		price := formatPrice(p.GetCurrency(), float64(p.GetPrice())/100.0)
+		currency := p.GetCurrency()
 		isInUse := inUseIDs[id]
 		lineName := lineNameByID[p.GetLineId()]
 
@@ -328,13 +348,13 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 				{Type: "text", Value: name},
 				{Type: "text", Value: description},
 				{Type: "text", Value: lineName},
-				{Type: "text", Value: price},
-				{Type: "text", Value: p.GetDateCreatedString()},
+				types.MoneyCell(float64(p.GetPrice()), currency, true),
+				types.DateTimeCell(p.GetDateCreatedString(), types.DateReadable),
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"name":      name,
-				"price":     price,
+				"price":     fmt.Sprintf("%d", p.GetPrice()),
 				"status":    recordStatus,
 				"deletable": strconv.FormatBool(!isInUse),
 			},
@@ -346,40 +366,6 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 		})
 	}
 	return rows
-}
-
-func formatPrice(currency string, price float64) string {
-	if currency == "" {
-		currency = "PHP"
-	}
-	// Format with 2 decimal places, then insert commas for thousands
-	raw := fmt.Sprintf("%.2f", price)
-	parts := splitDecimal(raw)
-	intPart := parts[0]
-	decPart := parts[1]
-
-	// Insert commas
-	n := len(intPart)
-	if n <= 3 {
-		return currency + " " + intPart + "." + decPart
-	}
-	var result []byte
-	for i, c := range intPart {
-		if i > 0 && (n-i)%3 == 0 {
-			result = append(result, ',')
-		}
-		result = append(result, byte(c))
-	}
-	return currency + " " + string(result) + "." + decPart
-}
-
-func splitDecimal(s string) [2]string {
-	for i, c := range s {
-		if c == '.' {
-			return [2]string{s[:i], s[i+1:]}
-		}
-	}
-	return [2]string{s, "00"}
 }
 
 func statusPageTitle(l centymo.ProductLabels, status string) string {

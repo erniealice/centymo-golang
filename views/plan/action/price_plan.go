@@ -14,14 +14,14 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
-	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 )
 
-// LocationOption is a minimal struct for rendering location options in the price plan form.
-type LocationOption struct {
+// ScheduleOption is a minimal struct for rendering schedule options in the price plan form.
+type ScheduleOption struct {
 	Id   string
 	Name string
 }
@@ -45,32 +45,31 @@ type PricePlanFormLabels struct {
 	CurrencyPlaceholder string
 	DurationValue       string
 	DurationUnit        string
-	Location            string
-	LocationPlaceholder string
-	SelectLocation      string
+	Schedule            string
+	SchedulePlaceholder string
 	Active              string
 }
 
 // PricePlanFormData is the template data for the price plan drawer form.
 type PricePlanFormData struct {
-	FormAction           string
-	IsEdit               bool
-	ID                   string
-	PlanID               string
-	Name                 string
-	Description          string
-	Amount               string
-	Currency             string
-	DurationValue        string
-	DurationUnit         string
-	Active               bool
-	Locations            []*LocationOption
-	SelectedLocationID   string
-	SelectedLocationLabel string
-	LocationOptions      []map[string]any
-	ProductPlans         []ProductPlanPriceRow
-	Labels               PricePlanFormLabels
-	CommonLabels         any
+	FormAction            string
+	IsEdit                bool
+	ID                    string
+	PlanID                string
+	Name                  string
+	Description           string
+	Amount                string
+	Currency              string
+	DurationValue         string
+	DurationUnit          string
+	Active                bool
+	Schedules             []*ScheduleOption
+	SelectedScheduleID    string
+	SelectedScheduleLabel string
+	ScheduleOptions       []map[string]any
+	ProductPlans          []ProductPlanPriceRow
+	Labels                PricePlanFormLabels
+	CommonLabels          any
 }
 
 // PricePlanDeps holds dependencies for price plan action handlers.
@@ -81,7 +80,7 @@ type PricePlanDeps struct {
 	ReadPricePlan         func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	UpdatePricePlan       func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
 	DeletePricePlan       func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
-	ListLocations         func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	ListPriceSchedules    func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 	ListProductPlans      func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	ListProductPricePlans  func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
@@ -100,52 +99,54 @@ func pricePlanFormLabels(l centymo.PricePlanFormLabels) PricePlanFormLabels {
 		CurrencyPlaceholder: l.CurrencyPlaceholder,
 		DurationValue:       l.DurationValue,
 		DurationUnit:        l.DurationUnit,
-		Location:            l.Location,
-		LocationPlaceholder: l.LocationPlaceholder,
-		SelectLocation:      l.SelectLocation,
+		Schedule:            l.Schedule,
+		SchedulePlaceholder: l.SchedulePlaceholder,
 		Active:              l.Active,
 	}
 }
 
-// loadLocationOptions fetches the location list and converts to options.
+// loadScheduleOptions fetches the active price schedule list and converts to options.
 // Returns nil slice on error (graceful degradation).
-func loadLocationOptions(ctx context.Context, deps *PricePlanDeps) []*LocationOption {
-	if deps.ListLocations == nil {
+func loadScheduleOptions(ctx context.Context, deps *PricePlanDeps) []*ScheduleOption {
+	if deps.ListPriceSchedules == nil {
 		return nil
 	}
-	resp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
+	resp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
 	if err != nil {
-		log.Printf("Failed to load locations for price plan form: %v", err)
+		log.Printf("Failed to load price schedules for price plan form: %v", err)
 		return nil
 	}
-	var options []*LocationOption
-	for _, loc := range resp.GetData() {
-		options = append(options, &LocationOption{
-			Id:   loc.GetId(),
-			Name: loc.GetName(),
+	var options []*ScheduleOption
+	for _, s := range resp.GetData() {
+		if !s.GetActive() {
+			continue
+		}
+		options = append(options, &ScheduleOption{
+			Id:   s.GetId(),
+			Name: s.GetName(),
 		})
 	}
 	return options
 }
 
-// buildLocationAutoCompleteOptions converts []*LocationOption to the auto-complete format.
-func buildLocationAutoCompleteOptions(locations []*LocationOption, selectedID string) []map[string]any {
-	opts := make([]map[string]any, 0, len(locations))
-	for _, loc := range locations {
+// buildScheduleAutoCompleteOptions converts []*ScheduleOption to the auto-complete format.
+func buildScheduleAutoCompleteOptions(schedules []*ScheduleOption, selectedID string) []map[string]any {
+	opts := make([]map[string]any, 0, len(schedules))
+	for _, s := range schedules {
 		opts = append(opts, map[string]any{
-			"Value":    loc.Id,
-			"Label":    loc.Name,
-			"Selected": loc.Id == selectedID,
+			"Value":    s.Id,
+			"Label":    s.Name,
+			"Selected": s.Id == selectedID,
 		})
 	}
 	return opts
 }
 
-// findLocationLabel returns the name of the location with the given ID, or empty string.
-func findLocationLabel(locations []*LocationOption, id string) string {
-	for _, loc := range locations {
-		if loc.Id == id {
-			return loc.Name
+// findScheduleLabel returns the name of the schedule with the given ID, or empty string.
+func findScheduleLabel(schedules []*ScheduleOption, id string) string {
+	for _, s := range schedules {
+		if s.Id == id {
+			return s.Name
 		}
 	}
 	return ""
@@ -232,15 +233,15 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 		planID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			locations := loadLocationOptions(ctx, deps)
+			schedules := loadScheduleOptions(ctx, deps)
 			return view.OK("price-plan-drawer-form", &PricePlanFormData{
 				FormAction:      route.ResolveURL(deps.Routes.PricePlanAddURL, "id", planID),
 				PlanID:          planID,
 				Active:          true,
 				Currency:        "PHP",
 				DurationUnit:    "months",
-				Locations:       locations,
-				LocationOptions: buildLocationAutoCompleteOptions(locations, ""),
+				Schedules:       schedules,
+				ScheduleOptions: buildScheduleAutoCompleteOptions(schedules, ""),
 				ProductPlans:    loadProductPlansForPlan(ctx, deps, planID, ""),
 				Labels:          pricePlanFormLabels(deps.Labels.PricePlanForm),
 				CommonLabels:    nil, // injected by ViewAdapter
@@ -277,8 +278,8 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 			DurationUnit:  r.FormValue("duration_unit"),
 			Active:        active,
 		}
-		if locID := r.FormValue("location_id"); locID != "" {
-			pp.LocationId = &locID
+		if schedID := r.FormValue("price_schedule_id"); schedID != "" {
+			pp.PriceScheduleId = &schedID
 		}
 
 		createResp, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{
@@ -397,8 +398,8 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 
 			amountStr := strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64)
 			durationStr := strconv.FormatInt(int64(pp.GetDurationValue()), 10)
-			selectedLocationID := pp.GetLocationId()
-			locations := loadLocationOptions(ctx, deps)
+			selectedScheduleID := pp.GetPriceScheduleId()
+			schedules := loadScheduleOptions(ctx, deps)
 
 			return view.OK("price-plan-drawer-form", &PricePlanFormData{
 				FormAction:            route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
@@ -412,10 +413,10 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				DurationValue:         durationStr,
 				DurationUnit:          pp.GetDurationUnit(),
 				Active:                pp.GetActive(),
-				Locations:             locations,
-				SelectedLocationID:    selectedLocationID,
-				SelectedLocationLabel: findLocationLabel(locations, selectedLocationID),
-				LocationOptions:       buildLocationAutoCompleteOptions(locations, selectedLocationID),
+				Schedules:             schedules,
+				SelectedScheduleID:    selectedScheduleID,
+				SelectedScheduleLabel: findScheduleLabel(schedules, selectedScheduleID),
+				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
 				ProductPlans:          loadProductPlansForPlan(ctx, deps, planID, ppID),
 				Labels:                pricePlanFormLabels(deps.Labels.PricePlanForm),
 				CommonLabels:          nil, // injected by ViewAdapter
@@ -453,8 +454,8 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			DurationUnit:  r.FormValue("duration_unit"),
 			Active:        active,
 		}
-		if locID := r.FormValue("location_id"); locID != "" {
-			pp.LocationId = &locID
+		if schedID := r.FormValue("price_schedule_id"); schedID != "" {
+			pp.PriceScheduleId = &schedID
 		}
 
 		_, err := deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{

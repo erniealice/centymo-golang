@@ -160,7 +160,7 @@ func NewDashboardAlertsAction(deps *Deps) view.View {
 					"quantity_on_hand":  onHand,
 					"quantity_reserved": reserved,
 					"reorder_level":     reorderLvl,
-					"item_type":         item.GetProduct().GetItemType(),
+					"tracking_mode":     item.GetProduct().GetTrackingMode(),
 					"location_id":       item.GetLocationId(),
 				})
 			}
@@ -202,11 +202,11 @@ func buildDashboardWidgets(ctx context.Context, deps *Deps, l centymo.InventoryL
 			lowStockCount++
 		}
 
-		itemType := item.GetProduct().GetItemType()
-		if itemType == "" {
-			itemType = "non_serialized"
+		trackingMode := item.GetProduct().GetTrackingMode()
+		if trackingMode == "" {
+			trackingMode = "bulk"
 		}
-		categoryCount[itemType]++
+		categoryCount[trackingMode]++
 	}
 
 	// Load serials for status distribution

@@ -54,7 +54,7 @@ func collectionToMap(c *collectionpb.Collection) map[string]any {
 		"id":                   c.GetId(),
 		"name":                 c.GetName(),
 		"reference_number":     c.GetReferenceNumber(),
-		"amount":               centymo.FormatWithCommas(float64(c.GetAmount()) / 100.0),
+		"amount":               types.MoneyCell(float64(c.GetAmount()), c.GetCurrency(), true),
 		"currency":             c.GetCurrency(),
 		"status":               c.GetStatus(),
 		"collection_method_id": c.GetCollectionMethodId(),

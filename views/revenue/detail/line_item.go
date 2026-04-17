@@ -101,7 +101,7 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 		}
 		currency := rData[0].GetCurrency()
 
-		lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, revenueID)
+		lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, revenueID, currency)
 		perms := view.GetUserPermissions(ctx)
 		table := buildLineItemTableWithActions(lineItems, deps.Labels, deps.TableLabels, currency, revenueID, deps.Routes, perms)
 		return view.OK("table-card", table)

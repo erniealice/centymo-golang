@@ -17,6 +17,7 @@ import (
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
+	jobactivitypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_activity"
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -68,6 +69,9 @@ type FormLabels struct {
 	RevenueType               string
 	RevenueTypeOneTime        string
 	RevenueTypeFromEngagement string
+	RevenueTypeFromActivities string
+	ActivityIDs               string
+	ActivityIDsPlaceholder    string
 	Form                      FormInner
 }
 
@@ -95,6 +99,7 @@ type FormData struct {
 	SelectedPaymentTermID string
 	DueDateString         string
 	RevenueType           string
+	ActivityIDs           string
 	Labels                FormLabels
 	CommonLabels          any
 }
@@ -132,6 +137,9 @@ type Deps struct {
 	CreateRevenueLineItem func(ctx context.Context, req *revenuelineitempb.CreateRevenueLineItemRequest) (*revenuelineitempb.CreateRevenueLineItemResponse, error)
 	ListRevenueLineItems  func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
 
+	// Job activity lookup for "from_activities" revenue type (optional — gracefully degrades when nil)
+	ReadJobActivity func(ctx context.Context, req *jobactivitypb.ReadJobActivityRequest) (*jobactivitypb.ReadJobActivityResponse, error)
+
 	// Typed inventory operations
 	ReadInventoryItem            func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	UpdateInventoryItem          func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
@@ -163,6 +171,9 @@ func formLabels(t func(string) string) FormLabels {
 		RevenueType:               t("revenue.form.revenueType"),
 		RevenueTypeOneTime:        t("revenue.form.revenueTypeOneTime"),
 		RevenueTypeFromEngagement: t("revenue.form.revenueTypeFromEngagement"),
+		RevenueTypeFromActivities: t("revenue.form.revenueTypeFromActivities"),
+		ActivityIDs:               t("revenue.form.activityIDs"),
+		ActivityIDsPlaceholder:    t("revenue.form.activityIDsPlaceholder"),
 		Form: FormInner{
 			SectionInfo:               t("revenue.form.sectionInfo"),
 			CurrencyPlaceholder:       t("revenue.form.currencyPlaceholder"),
@@ -303,6 +314,9 @@ func NewAddAction(deps *Deps) view.View {
 		// Read subscription_id from form (optional)
 		subscriptionID := r.FormValue("subscription_id")
 
+		// Read activity_ids from form (optional — newline-separated, for "from_activities" type)
+		activityIDs := r.FormValue("activity_ids")
+
 		revenueData := &revenuepb.Revenue{
 			Name:            customerName,
 			ClientId:        clientID,
@@ -340,6 +354,14 @@ func NewAddAction(deps *Deps) view.View {
 		// Auto-populate line items from subscription's price plan (optional — gracefully degrades)
 		if subscriptionID != "" && newID != "" {
 			autoPopulateLineItems(r.Context(), deps, newID, subscriptionID)
+		}
+
+		// Auto-populate line items from selected activities (optional — gracefully degrades)
+		if activityIDs != "" && newID != "" {
+			ids := parseActivityIDs(activityIDs)
+			if len(ids) > 0 {
+				autoPopulateFromActivities(r.Context(), deps, newID, ids)
+			}
 		}
 
 		if newID != "" {

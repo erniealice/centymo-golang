@@ -12,17 +12,17 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
-	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 )
 
-type LocationOption struct {
+type PlanOption struct {
 	Id   string
 	Name string
 }
 
-type PlanOption struct {
+type ScheduleOption struct {
 	Id   string
 	Name string
 }
@@ -39,42 +39,27 @@ type FormData struct {
 	DurationUnit          string
 	Active                bool
 	PlanID                string
-	Locations             []*LocationOption
-	SelectedLocationID    string
-	SelectedLocationLabel string
-	LocationOptions       []map[string]any
-	Plans                 []*PlanOption
 	SelectedPlanID        string
 	SelectedPlanLabel     string
+	Plans                 []*PlanOption
 	PlanOptions           []map[string]any
+	SelectedScheduleID    string
+	SelectedScheduleLabel string
+	Schedules             []*ScheduleOption
+	ScheduleOptions       []map[string]any
 	Labels                centymo.PricePlanFormLabels
 	CommonLabels          any
 }
 
 type Deps struct {
-	Routes          centymo.PricePlanRoutes
-	Labels          centymo.PricePlanLabels
-	CreatePricePlan func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
-	ReadPricePlan   func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
-	UpdatePricePlan func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
-	DeletePricePlan func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
-	ListLocations   func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
-	ListPlans       func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
-}
-
-func loadLocations(ctx context.Context, deps *Deps) []*LocationOption {
-	if deps.ListLocations == nil {
-		return nil
-	}
-	resp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
-	if err != nil {
-		return nil
-	}
-	opts := make([]*LocationOption, 0, len(resp.GetData()))
-	for _, loc := range resp.GetData() {
-		opts = append(opts, &LocationOption{Id: loc.GetId(), Name: loc.GetName()})
-	}
-	return opts
+	Routes             centymo.PricePlanRoutes
+	Labels             centymo.PricePlanLabels
+	CreatePricePlan    func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
+	ReadPricePlan      func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	UpdatePricePlan    func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
+	DeletePricePlan    func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
+	ListPlans          func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 }
 
 func loadPlans(ctx context.Context, deps *Deps) []*PlanOption {
@@ -88,6 +73,24 @@ func loadPlans(ctx context.Context, deps *Deps) []*PlanOption {
 	opts := make([]*PlanOption, 0, len(resp.GetData()))
 	for _, p := range resp.GetData() {
 		opts = append(opts, &PlanOption{Id: p.GetId(), Name: p.GetName()})
+	}
+	return opts
+}
+
+func loadSchedules(ctx context.Context, deps *Deps) []*ScheduleOption {
+	if deps.ListPriceSchedules == nil {
+		return nil
+	}
+	resp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
+	if err != nil {
+		return nil
+	}
+	opts := make([]*ScheduleOption, 0, len(resp.GetData()))
+	for _, s := range resp.GetData() {
+		if !s.GetActive() {
+			continue
+		}
+		opts = append(opts, &ScheduleOption{Id: s.GetId(), Name: s.GetName()})
 	}
 	return opts
 }
@@ -113,22 +116,22 @@ func findPlanLabel(plans []*PlanOption, id string) string {
 	return ""
 }
 
-func buildLocationAutoCompleteOptions(locations []*LocationOption, selectedID string) []map[string]any {
-	opts := make([]map[string]any, 0, len(locations))
-	for _, loc := range locations {
+func buildScheduleAutoCompleteOptions(schedules []*ScheduleOption, selectedID string) []map[string]any {
+	opts := make([]map[string]any, 0, len(schedules))
+	for _, s := range schedules {
 		opts = append(opts, map[string]any{
-			"Value":    loc.Id,
-			"Label":    loc.Name,
-			"Selected": loc.Id == selectedID,
+			"Value":    s.Id,
+			"Label":    s.Name,
+			"Selected": s.Id == selectedID,
 		})
 	}
 	return opts
 }
 
-func findLocationLabel(locations []*LocationOption, id string) string {
-	for _, loc := range locations {
-		if loc.Id == id {
-			return loc.Name
+func findScheduleLabel(schedules []*ScheduleOption, id string) string {
+	for _, s := range schedules {
+		if s.Id == id {
+			return s.Name
 		}
 	}
 	return ""
@@ -153,16 +156,16 @@ func NewAddAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if viewCtx.Request.Method == http.MethodGet {
-			locations := loadLocations(ctx, deps)
 			plans := loadPlans(ctx, deps)
+			schedules := loadSchedules(ctx, deps)
 			return view.OK("price-plan-drawer-form", &FormData{
 				FormAction:      deps.Routes.AddURL,
 				Active:          true,
 				Currency:        "PHP",
-				Locations:       locations,
-				LocationOptions: buildLocationAutoCompleteOptions(locations, ""),
 				Plans:           plans,
 				PlanOptions:     buildPlanAutoCompleteOptions(plans, ""),
+				Schedules:       schedules,
+				ScheduleOptions: buildScheduleAutoCompleteOptions(schedules, ""),
 				Labels:          deps.Labels.Form,
 			})
 		}
@@ -172,7 +175,7 @@ func NewAddAction(deps *Deps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
-		locationID := r.FormValue("location_id")
+		scheduleID := r.FormValue("price_schedule_id")
 		req := &priceplanpb.CreatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				PlanId:        r.FormValue("plan_id"),
@@ -185,8 +188,8 @@ func NewAddAction(deps *Deps) view.View {
 				Active:        active,
 			},
 		}
-		if locationID != "" {
-			req.Data.LocationId = &locationID
+		if scheduleID != "" {
+			req.Data.PriceScheduleId = &scheduleID
 		}
 		if _, err := deps.CreatePricePlan(ctx, req); err != nil {
 			log.Printf("Failed to create price plan: %v", err)
@@ -209,10 +212,10 @@ func NewEditAction(deps *Deps) view.View {
 				return centymo.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := resp.GetData()[0]
-			locations := loadLocations(ctx, deps)
 			plans := loadPlans(ctx, deps)
+			schedules := loadSchedules(ctx, deps)
 			selectedPlanID := record.GetPlanId()
-			selectedLocationID := record.GetLocationId()
+			selectedScheduleID := record.GetPriceScheduleId()
 			return view.OK("price-plan-drawer-form", &FormData{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
@@ -227,12 +230,12 @@ func NewEditAction(deps *Deps) view.View {
 				PlanID:                selectedPlanID,
 				SelectedPlanID:        selectedPlanID,
 				SelectedPlanLabel:     findPlanLabel(plans, selectedPlanID),
-				SelectedLocationID:    selectedLocationID,
-				SelectedLocationLabel: findLocationLabel(locations, selectedLocationID),
-				Locations:             locations,
-				LocationOptions:       buildLocationAutoCompleteOptions(locations, selectedLocationID),
 				Plans:                 plans,
 				PlanOptions:           buildPlanAutoCompleteOptions(plans, selectedPlanID),
+				SelectedScheduleID:    selectedScheduleID,
+				SelectedScheduleLabel: findScheduleLabel(schedules, selectedScheduleID),
+				Schedules:             schedules,
+				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
 				Labels:                deps.Labels.Form,
 			})
 		}
@@ -242,7 +245,7 @@ func NewEditAction(deps *Deps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
-		locationID := r.FormValue("location_id")
+		scheduleID := r.FormValue("price_schedule_id")
 		req := &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				Id:            id,
@@ -256,8 +259,8 @@ func NewEditAction(deps *Deps) view.View {
 				Active:        active,
 			},
 		}
-		if locationID != "" {
-			req.Data.LocationId = &locationID
+		if scheduleID != "" {
+			req.Data.PriceScheduleId = &scheduleID
 		}
 		if _, err := deps.UpdatePricePlan(ctx, req); err != nil {
 			return centymo.HTMXError(err.Error())
@@ -329,7 +332,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				Description: record.GetDescription(), Amount: record.GetAmount(),
 				Currency: record.GetCurrency(), DurationValue: record.GetDurationValue(),
 				DurationUnit: record.GetDurationUnit(), Active: status == "active",
-				LocationId: record.LocationId,
+				PriceScheduleId: record.PriceScheduleId,
 			},
 		})
 		if err != nil {
@@ -363,7 +366,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 					Description: record.GetDescription(), Amount: record.GetAmount(),
 					Currency: record.GetCurrency(), DurationValue: record.GetDurationValue(),
 					DurationUnit: record.GetDurationUnit(), Active: status == "active",
-					LocationId: record.LocationId,
+					PriceScheduleId: record.PriceScheduleId,
 				},
 			})
 		}

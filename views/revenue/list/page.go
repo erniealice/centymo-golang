@@ -235,7 +235,7 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 		refNumber := r.GetReferenceNumber()
 		name := r.GetName()
 		revenueDate := r.GetRevenueDate()
-		amount := centymo.FormatCentavoAmount(r.GetTotalAmount(), r.GetCurrency())
+		currency := r.GetCurrency()
 		dueDate := r.GetDueDate()
 		paymentTermName := ""
 		if pt := r.GetPaymentTerm(); pt != nil {
@@ -292,7 +292,7 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: name},
 				types.DateTimeCell(revenueDate, types.DateReadable),
-				{Type: "text", Value: amount},
+				types.MoneyCell(float64(r.GetTotalAmount()), currency, true),
 				types.DateTimeCell(dueDate, types.DateReadable),
 				{Type: "text", Value: paymentTermName},
 			},
@@ -300,7 +300,7 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 				"reference": refNumber,
 				"customer":  name,
 				"date":      revenueDate,
-				"amount":    amount,
+				"amount":    fmt.Sprintf("%d", r.GetTotalAmount()),
 				"undoable":  func() string { if r.GetFulfillmentStatus() == "has_collection" { return "false" }; return "true" }(),
 			},
 			Actions: actions,

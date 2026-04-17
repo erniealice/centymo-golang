@@ -87,11 +87,11 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 		}
 
 		l := deps.Labels
-		itemType := item.GetProduct().GetItemType()
-		if itemType == "" {
-			itemType = "non_serialized"
+		trackingMode := item.GetProduct().GetTrackingMode()
+		if trackingMode == "" {
+			trackingMode = "bulk"
 		}
-		isSerialized := itemType == "serialized"
+		isSerialized := trackingMode == "serialized"
 
 		// 3 tabs only: Info, Depreciation, Audit
 		base := route.ResolveURL(deps.InventoryRoutes.ProductDetailURL, "pid", productID, "iid", itemID)
@@ -123,17 +123,17 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 					HeaderIcon:     "icon-package",
 					CommonLabels:   deps.CommonLabels,
 				},
-				ContentTemplate: "inventory-product-detail-content",
-				Item:            itemMap,
-				Labels:          l,
-				ActiveTab:       activeTab,
-				TabItems:        tabItems,
-				IsSerialized:    isSerialized,
-				ItemType:        itemType,
-				ItemTypeLabel:   itemTypeDisplayLabel(itemType, l),
-				ItemTypeVariant: itemTypeDisplayVariant(itemType),
-				LocationName:    locationName,
-				AvailableQty:    available,
+				ContentTemplate:     "inventory-product-detail-content",
+				Item:                itemMap,
+				Labels:              l,
+				ActiveTab:           activeTab,
+				TabItems:            tabItems,
+				IsSerialized:        isSerialized,
+				TrackingMode:        trackingMode,
+				TrackingModeLabel:   trackingModeDisplayLabel(trackingMode, l),
+				TrackingModeVariant: trackingModeDisplayVariant(trackingMode),
+				LocationName:        locationName,
+				AvailableQty:        available,
 			},
 			ProductID:   productID,
 			ProductName: productName,
@@ -201,25 +201,25 @@ func NewProductDetailTabAction(deps *ProductDetailDeps) view.View {
 		}
 
 		l := deps.Labels
-		itemType := item.GetProduct().GetItemType()
-		if itemType == "" {
-			itemType = "non_serialized"
+		trackingMode := item.GetProduct().GetTrackingMode()
+		if trackingMode == "" {
+			trackingMode = "bulk"
 		}
-		isSerialized := itemType == "serialized"
+		isSerialized := trackingMode == "serialized"
 		name := item.GetName()
 		itemMap := inventoryItemToMap(item)
 
 		pageData := &ProductDetailPageData{
 			PageData: PageData{
-				Item:            itemMap,
-				Labels:          l,
-				ActiveTab:       tab,
-				IsSerialized:    isSerialized,
-				ItemType:        itemType,
-				ItemTypeLabel:   itemTypeDisplayLabel(itemType, l),
-				ItemTypeVariant: itemTypeDisplayVariant(itemType),
-				LocationName:    centymo.LocationDisplayName(item.GetLocationId()),
-				AvailableQty:    computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved()),
+				Item:                itemMap,
+				Labels:              l,
+				ActiveTab:           tab,
+				IsSerialized:        isSerialized,
+				TrackingMode:        trackingMode,
+				TrackingModeLabel:   trackingModeDisplayLabel(trackingMode, l),
+				TrackingModeVariant: trackingModeDisplayVariant(trackingMode),
+				LocationName:        centymo.LocationDisplayName(item.GetLocationId()),
+				AvailableQty:        computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved()),
 			},
 			ProductID:   productID,
 			ProductName: productName,

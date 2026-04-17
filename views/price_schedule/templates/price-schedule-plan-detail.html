@@ -1,0 +1,163 @@
+{{/* Full page */}}
+{{define "price-schedule-plan-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial */}}
+{{define "price-schedule-plan-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Name}}">
+    <div class="detail-back-link">
+        <a href="{{.ScheduleBackURL}}" class="btn btn-ghost btn-sm">
+            {{template "icon-chevron-left" .}}
+            Back to {{.ScheduleName}}
+        </a>
+    </div>
+
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "price-schedule-plan-detail-tabs")}}
+    </div>
+
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+            {{template "price-schedule-plan-tab-info" .}}
+        {{else if eq .ActiveTab "product-prices"}}
+            {{template "price-schedule-plan-tab-product-prices" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* TAB: Info */}}
+{{define "price-schedule-plan-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">Plan Info</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">Name</span>
+            <span class="detail-info-value">{{.Name}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Description</span>
+            <span class="detail-info-value">{{if .Description}}{{.Description}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Amount</span>
+            <span class="detail-info-value">{{template "table-cell-money" .Amount}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Currency</span>
+            <span class="detail-info-value">{{.Currency}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Duration</span>
+            <span class="detail-info-value">{{if .Duration}}{{.Duration}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Schedule</span>
+            <span class="detail-info-value">
+                <a href="{{.ScheduleBackURL}}">{{.ScheduleName}}</a>
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Status</span>
+            <span>
+                <span class="badge badge--{{.StatusVariant}}">{{.Status}}</span>
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Date Created</span>
+            <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">Date Modified</span>
+            <span class="detail-info-value">{{if .ModifiedDate}}{{.ModifiedDate}}{{else}}—{{end}}</span>
+        </div>
+    </div>
+
+    <div class="detail-actions detail-actions--spaced">
+        <a class="btn btn-ghost btn-sm"
+           hx-get="{{.EditURL}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           onclick="if(window.lf && lf.Sheet) lf.Sheet.open('Edit Plan')">
+            Edit
+        </a>
+    </div>
+</div>
+{{end}}
+
+{{/* TAB: Product Prices (or Service Prices, per business-type override) */}}
+{{define "price-schedule-plan-tab-product-prices"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .ProductPricesTable}}
+        {{template "table-card" .ProductPricesTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">{{.ProductPriceEmptyTitle}}</div>
+            <p class="coming-soon-text">{{.ProductPriceEmptyMsg}}</p>
+        </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Edit drawer — embedded in the tab-info Edit button */}}
+{{define "price-schedule-plan-edit-drawer"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    <input type="hidden" name="id" value="{{.ID}}">
+    <div class="sheet-body">
+        {{template "form-section" (dict "Title" "Schedule")}}
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "_schedule_display" "Label" "Price Schedule" "Value" .ScheduleName "Disabled" true)}}
+        </div>
+
+        {{template "form-section" (dict "Title" "Plan")}}
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "plan-select-edit"
+                "Name" "plan_id"
+                "Label" "Plan"
+                "Placeholder" "Select a plan..."
+                "SearchPlaceholder" "Filter..."
+                "Options" .PlanOptions
+                "Value" .PlanID
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" "Plan Name" "Value" .Name "Required" true "Placeholder" "Enter plan name")}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" "Description" "Value" .Description "Placeholder" "Enter description...")}}
+        </div>
+
+        {{template "form-section" (dict "Title" "Pricing")}}
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "number" "Name" "amount" "Label" "Amount" "Value" .Amount "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0")}}
+            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" .Currency "Required" true)}}
+        </div>
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" "Duration" "Value" .DurationValue "Required" true "Min" "1")}}
+            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" "Unit" "Value" .DurationUnit "Options" (list (dict "Value" "days" "Label" "Days") (dict "Value" "weeks" "Label" "Weeks") (dict "Value" "months" "Label" "Months") (dict "Value" "years" "Label" "Years")))}}
+        </div>
+    </div>
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" true)}}
+</form>
+{{end}}
+
+{{/* Product Price add/edit drawer — titles + field labels come from PriceScheduleDetailLabels */}}
+{{/* so the professional tier renders them as "Service Price" / "Service". */}}
+{{define "price-schedule-plan-product-price-drawer"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <div class="sheet-body">
+        {{template "form-section" (dict "Title" .SectionTitle)}}
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "select" "Name" "product_id" "Label" .ProductFieldLabel "Required" true "Value" .ProductID "Options" .ProductOptions)}}
+        </div>
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" "Price" "Value" .Price "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0")}}
+            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" .Currency "Required" true)}}
+        </div>
+    </div>
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

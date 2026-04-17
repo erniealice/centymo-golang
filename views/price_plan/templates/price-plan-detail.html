@@ -39,7 +39,7 @@
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Columns.Amount}}</span>
-            <span class="detail-info-value">{{.PricePlanAmount}}</span>
+            <span class="detail-info-value">{{template "table-cell-money" .PricePlanAmount}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Columns.Currency}}</span>

@@ -131,7 +131,6 @@ func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l centymo.Expenditu
 		poNumber := po.GetPoNumber()
 		currency := po.GetCurrency()
 		recordStatus := po.GetStatus()
-		totalAmount := centymo.FormatCentavoAmount(po.GetTotalAmount(), currency)
 		orderDate := po.GetOrderDateString()
 		expectedDelivery := po.GetExpectedDeliveryDateString()
 
@@ -149,15 +148,15 @@ func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l centymo.Expenditu
 				{Type: "text", Value: poNumber},
 				{Type: "text", Value: supplierName},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
-				{Type: "text", Value: totalAmount},
-				{Type: "text", Value: orderDate},
-				{Type: "text", Value: expectedDelivery},
+				types.MoneyCell(float64(po.GetTotalAmount()), currency, true),
+				types.DateTimeCell(orderDate, types.DateReadable),
+				types.DateTimeCell(expectedDelivery, types.DateReadable),
 			},
 			DataAttrs: map[string]string{
 				"po_number":         poNumber,
 				"supplier":          supplierName,
 				"status":            recordStatus,
-				"total_amount":      totalAmount,
+				"total_amount":      fmt.Sprintf("%d", po.GetTotalAmount()),
 				"order_date":        orderDate,
 				"expected_delivery": expectedDelivery,
 			},

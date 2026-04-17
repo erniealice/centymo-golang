@@ -39,7 +39,7 @@
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Amount}}</span>
-            <span class="detail-info-value mono">{{index .Collection "currency"}} {{index .Collection "amount"}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Collection "amount")}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Currency}}</span>

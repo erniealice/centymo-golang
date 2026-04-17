@@ -44,7 +44,7 @@
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Amount}}</span>
-            <span class="detail-info-value mono">{{index .Expense "currency"}} {{index .Expense "total_amount"}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Expense "total_amount")}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
@@ -59,21 +59,21 @@
             <span class="detail-info-value">{{index .Expense "date_created_string"}}</span>
         </div>
     </div>
-    {{if .PaidAmount}}
+    {{if .PaidAmount.Value}}
     <div class="transaction-section-spacer">
         <h3 class="detail-section-title">{{.Labels.Detail.PaymentSummary}}</h3>
         <div class="detail-info-grid">
             <div class="detail-info-item">
                 <span class="detail-info-label">{{.Labels.Detail.TotalAmount}}</span>
-                <span class="detail-info-value mono">{{index .Expense "currency"}} {{index .Expense "total_amount"}}</span>
+                <span class="detail-info-value mono">{{template "table-cell-money" (index .Expense "total_amount")}}</span>
             </div>
             <div class="detail-info-item">
                 <span class="detail-info-label">{{.Labels.Detail.Paid}}</span>
-                <span class="detail-info-value mono">{{index .Expense "currency"}} {{.PaidAmount}}</span>
+                <span class="detail-info-value mono">{{template "table-cell-money" .PaidAmount}}</span>
             </div>
             <div class="detail-info-item">
                 <span class="detail-info-label">{{.Labels.Detail.Outstanding}}</span>
-                <span class="detail-info-value mono">{{index .Expense "currency"}} {{.OutstandingAmount}}</span>
+                <span class="detail-info-value mono">{{template "table-cell-money" .OutstandingAmount}}</span>
             </div>
             <div class="detail-info-item">
                 <span class="detail-info-label">{{.Labels.Detail.PaymentStatus}}</span>
@@ -173,15 +173,15 @@
     <div class="transaction-items-toolbar">
         <div class="transaction-summary-item">
             <span class="transaction-summary-label">{{.Labels.Schedule.Scheduled}}</span>
-            <span class="transaction-summary-value mono">{{.PaymentsSchedule.TotalScheduled}}</span>
+            <span class="transaction-summary-value mono">{{template "table-cell-money" .PaymentsSchedule.TotalScheduled}}</span>
         </div>
         <div class="transaction-summary-item">
             <span class="transaction-summary-label">{{.Labels.Schedule.Paid}}</span>
-            <span class="transaction-summary-value mono text-success">{{.PaymentsSchedule.TotalPaid}}</span>
+            <span class="transaction-summary-value mono text-success">{{template "table-cell-money" .PaymentsSchedule.TotalPaid}}</span>
         </div>
         <div class="transaction-summary-item">
             <span class="transaction-summary-label">{{.Labels.Schedule.Remaining}}</span>
-            <span class="transaction-summary-value mono text-warning">{{.PaymentsSchedule.TotalRemaining}}</span>
+            <span class="transaction-summary-value mono text-warning">{{template "table-cell-money" .PaymentsSchedule.TotalRemaining}}</span>
         </div>
     </div>
 
@@ -203,11 +203,11 @@
             <tr class="data-table__row" data-testid="payment-row-{{.Sequence}}">
                 <td class="data-table__cell">{{.Sequence}}</td>
                 <td class="data-table__cell mono">{{.DueDate}}</td>
-                <td class="data-table__cell mono">{{.Amount}}</td>
+                <td class="data-table__cell mono">{{template "table-cell-money" .Amount}}</td>
                 <td class="data-table__cell">
                     {{template "status-badge" (dict "Status" .StatusClass "Label" .Status)}}
                 </td>
-                <td class="data-table__cell mono">{{if .PaidAmount}}{{.PaidAmount}}{{else}}&mdash;{{end}}</td>
+                <td class="data-table__cell mono">{{if .PaidAmount.Value}}{{template "table-cell-money" .PaidAmount}}{{else}}&mdash;{{end}}</td>
                 <td class="data-table__cell mono">{{if .PaidDate}}{{.PaidDate}}{{else}}&mdash;{{end}}</td>
                 <td class="data-table__cell mono">{{if .DisbursementID}}<span class="text-truncate">{{.DisbursementID}}</span>{{else}}&mdash;{{end}}</td>
             </tr>

@@ -41,17 +41,17 @@ type StockDetailPageData struct {
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
 	// Item info fields
-	ItemName          string
-	ItemSKU           string
-	ItemType          string
-	ItemTypeLabel     string
-	ItemTypeVariant   string
-	LocationName      string
-	QuantityOnHand    string
-	QuantityReserved  string
-	AvailableQty      string
-	ItemStatus        string
-	ItemStatusVariant string
+	ItemName            string
+	ItemSKU             string
+	TrackingMode        string
+	TrackingModeLabel   string
+	TrackingModeVariant string
+	LocationName        string
+	QuantityOnHand      string
+	QuantityReserved    string
+	AvailableQty        string
+	ItemStatus          string
+	ItemStatusVariant   string
 	// Serial data
 	SerialTable   *types.TableConfig
 	SerialSummary *SerialSummary
@@ -102,9 +102,9 @@ func NewPageView(deps *variant.DetailViewDeps) view.View {
 		locationName := centymo.LocationDisplayName(locationID)
 		headerTitle := name + " \u2014 " + locationName
 
-		itemType := product.GetItemType()
-		if itemType == "" {
-			itemType = "non_serialized"
+		trackingMode := product.GetTrackingMode()
+		if trackingMode == "" {
+			trackingMode = "bulk"
 		}
 
 		active := item.GetActive()
@@ -143,25 +143,25 @@ func NewPageView(deps *variant.DetailViewDeps) view.View {
 				HeaderIcon:     "icon-package",
 				CommonLabels:   deps.CommonLabels,
 			},
-			ContentTemplate:   "variant-stock-detail-content",
-			Breadcrumbs:       breadcrumbs,
-			ProductID:         productID,
-			VariantID:         variantID,
-			InventoryItemID:   itemID,
-			ActiveTab:         activeTab,
-			TabItems:          tabItems,
-			ItemName:          name,
-			ItemSKU:           item.GetSku(),
-			ItemType:          itemType,
-			ItemTypeLabel:     ItemTypeDisplayLabel(itemType),
-			ItemTypeVariant:   ItemTypeDisplayVariant(itemType),
-			LocationName:      locationName,
-			QuantityOnHand:    fmt.Sprintf("%v", item.GetQuantityOnHand()),
-			QuantityReserved:  fmt.Sprintf("%v", item.GetQuantityReserved()),
-			AvailableQty:      available,
-			ItemStatus:        itemStatus,
-			ItemStatusVariant: detail.StatusVariant(itemStatus),
-			Labels:            l,
+			ContentTemplate:     "variant-stock-detail-content",
+			Breadcrumbs:         breadcrumbs,
+			ProductID:           productID,
+			VariantID:           variantID,
+			InventoryItemID:     itemID,
+			ActiveTab:           activeTab,
+			TabItems:            tabItems,
+			ItemName:            name,
+			ItemSKU:             item.GetSku(),
+			TrackingMode:        trackingMode,
+			TrackingModeLabel:   TrackingModeDisplayLabel(trackingMode),
+			TrackingModeVariant: TrackingModeDisplayVariant(trackingMode),
+			LocationName:        locationName,
+			QuantityOnHand:      fmt.Sprintf("%v", item.GetQuantityOnHand()),
+			QuantityReserved:    fmt.Sprintf("%v", item.GetQuantityReserved()),
+			AvailableQty:        available,
+			ItemStatus:          itemStatus,
+			ItemStatusVariant:   detail.StatusVariant(itemStatus),
+			Labels:              l,
 		}
 
 		// Load tab-specific data
@@ -202,7 +202,7 @@ func NewTabAction(deps *variant.DetailViewDeps) view.View {
 			tab = "info"
 		}
 
-		// Load product for item type
+		// Load product for tracking mode
 		prodResp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{
 			Data: &productpb.Product{Id: productID},
 		})
@@ -212,9 +212,9 @@ func NewTabAction(deps *variant.DetailViewDeps) view.View {
 		}
 		product := prodResp.GetData()[0]
 
-		itemType := product.GetItemType()
-		if itemType == "" {
-			itemType = "non_serialized"
+		trackingMode := product.GetTrackingMode()
+		if trackingMode == "" {
+			trackingMode = "bulk"
 		}
 
 		// Load inventory item
@@ -238,22 +238,22 @@ func NewTabAction(deps *variant.DetailViewDeps) view.View {
 		l := deps.Labels
 
 		pageData := &StockDetailPageData{
-			ProductID:         productID,
-			VariantID:         variantID,
-			InventoryItemID:   itemID,
-			ActiveTab:         tab,
-			ItemName:          name,
-			ItemSKU:           item.GetSku(),
-			ItemType:          itemType,
-			ItemTypeLabel:     ItemTypeDisplayLabel(itemType),
-			ItemTypeVariant:   ItemTypeDisplayVariant(itemType),
-			LocationName:      locationName,
-			QuantityOnHand:    fmt.Sprintf("%v", item.GetQuantityOnHand()),
-			QuantityReserved:  fmt.Sprintf("%v", item.GetQuantityReserved()),
-			AvailableQty:      available,
-			ItemStatus:        itemStatus,
-			ItemStatusVariant: detail.StatusVariant(itemStatus),
-			Labels:            l,
+			ProductID:           productID,
+			VariantID:           variantID,
+			InventoryItemID:     itemID,
+			ActiveTab:           tab,
+			ItemName:            name,
+			ItemSKU:             item.GetSku(),
+			TrackingMode:        trackingMode,
+			TrackingModeLabel:   TrackingModeDisplayLabel(trackingMode),
+			TrackingModeVariant: TrackingModeDisplayVariant(trackingMode),
+			LocationName:        locationName,
+			QuantityOnHand:      fmt.Sprintf("%v", item.GetQuantityOnHand()),
+			QuantityReserved:    fmt.Sprintf("%v", item.GetQuantityReserved()),
+			AvailableQty:        available,
+			ItemStatus:          itemStatus,
+			ItemStatusVariant:   detail.StatusVariant(itemStatus),
+			Labels:              l,
 		}
 
 		// Load tab-specific data
@@ -458,28 +458,28 @@ func ComputeAvailable(onHand, reserved float64) string {
 	return fmt.Sprintf("%.2f", avail)
 }
 
-// ItemTypeDisplayLabel returns a human-readable label for the item type.
-func ItemTypeDisplayLabel(itemType string) string {
-	switch itemType {
+// TrackingModeDisplayLabel returns a human-readable label for the tracking mode.
+func TrackingModeDisplayLabel(trackingMode string) string {
+	switch trackingMode {
+	case "none":
+		return "None"
+	case "bulk":
+		return "Bulk"
 	case "serialized":
 		return "Serialized"
-	case "non_serialized":
-		return "Non-Serialized"
-	case "consumable":
-		return "Consumable"
 	default:
-		return itemType
+		return trackingMode
 	}
 }
 
-// ItemTypeDisplayVariant returns the badge variant for the item type.
-func ItemTypeDisplayVariant(itemType string) string {
-	switch itemType {
-	case "serialized":
+// TrackingModeDisplayVariant returns the badge variant for the tracking mode.
+func TrackingModeDisplayVariant(trackingMode string) string {
+	switch trackingMode {
+	case "none":
+		return "neutral"
+	case "bulk":
 		return "info"
-	case "non_serialized":
-		return "default"
-	case "consumable":
+	case "serialized":
 		return "success"
 	default:
 		return "default"

@@ -67,6 +67,7 @@ func purchaseOrderToMap(po *purchaseorderpb.PurchaseOrder) map[string]any {
 		locationName = location.GetName()
 	}
 
+	currency := po.GetCurrency()
 	return map[string]any{
 		"id":                            po.GetId(),
 		"po_number":                     po.GetPoNumber(),
@@ -78,10 +79,10 @@ func purchaseOrderToMap(po *purchaseorderpb.PurchaseOrder) map[string]any {
 		"location_name":                 locationName,
 		"order_date_string":             po.GetOrderDateString(),
 		"expected_delivery_date_string": po.GetExpectedDeliveryDateString(),
-		"currency":                      po.GetCurrency(),
-		"subtotal":                      centymo.FormatWithCommas(float64(po.GetSubtotal()) / 100.0),
-		"tax_amount":                    centymo.FormatWithCommas(float64(po.GetTaxAmount()) / 100.0),
-		"total_amount":                  centymo.FormatWithCommas(float64(po.GetTotalAmount()) / 100.0),
+		"currency":                      currency,
+		"subtotal":                      types.MoneyCell(float64(po.GetSubtotal()), currency, true),
+		"tax_amount":                    types.MoneyCell(float64(po.GetTaxAmount()), currency, true),
+		"total_amount":                  types.MoneyCell(float64(po.GetTotalAmount()), currency, true),
 		"payment_terms":                 po.GetPaymentTerms(),
 		"shipping_terms":                po.GetShippingTerms(),
 		"approved_by":                   po.GetApprovedBy(),
@@ -136,8 +137,8 @@ func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, c
 		qtyOrdered, _ := item["quantity_ordered"].(string)
 		qtyReceived, _ := item["quantity_received"].(string)
 		qtyBilled, _ := item["quantity_billed"].(string)
-		unitPrice, _ := item["unit_price"].(string)
-		total, _ := item["total"].(string)
+		unitPriceCell, _ := item["unit_price"].(types.TableCell)
+		totalCell, _ := item["total"].(types.TableCell)
 
 		var actions []types.TableAction
 		if isDraft {
@@ -172,8 +173,8 @@ func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, c
 				{Type: "text", Value: qtyOrdered},
 				{Type: "text", Value: qtyReceived},
 				{Type: "text", Value: qtyBilled},
-				{Type: "text", Value: currency + " " + unitPrice},
-				{Type: "text", Value: currency + " " + total},
+				unitPriceCell,
+				totalCell,
 			},
 			Actions: actions,
 		})
@@ -194,7 +195,7 @@ func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, c
 }
 
 // listLineItemMaps lists line items for a purchase order and returns as maps.
-func listLineItemMaps(ctx context.Context, listFn func(context.Context, *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error), purchaseOrderID string) []map[string]any {
+func listLineItemMaps(ctx context.Context, listFn func(context.Context, *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error), purchaseOrderID string, currency string) []map[string]any {
 	resp, err := listFn(ctx, &purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest{
 		PurchaseOrderId: &purchaseOrderID,
 	})
@@ -214,8 +215,8 @@ func listLineItemMaps(ctx context.Context, listFn func(context.Context, *purchas
 				"quantity_ordered":  fmt.Sprintf("%.0f", item.GetQuantityOrdered()),
 				"quantity_received": fmt.Sprintf("%.0f", item.GetQuantityReceived()),
 				"quantity_billed":   fmt.Sprintf("%.0f", item.GetQuantityBilled()),
-				"unit_price":        centymo.FormatWithCommas(float64(item.GetUnitPrice()) / 100.0),
-				"total":             centymo.FormatWithCommas(float64(item.GetTotalPrice()) / 100.0),
+				"unit_price":        types.MoneyCell(float64(item.GetUnitPrice()), currency, true),
+				"total":             types.MoneyCell(float64(item.GetTotalPrice()), currency, true),
 				"notes":             item.GetNotes(),
 			})
 		}
@@ -288,16 +289,17 @@ func NewView(deps *DetailViewDeps) view.View {
 		case "items":
 			if deps.ListPurchaseOrderLineItems != nil {
 				perms := view.GetUserPermissions(ctx)
-				lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, id)
 				currency, _ := po["currency"].(string)
 				status, _ := po["status"].(string)
 				isDraft := status == "draft"
+				lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, id, currency)
 				pageData.LineItemTable = buildLineItemTable(lineItems, deps.TableLabels, currency, id, deps.Routes, isDraft, perms)
 				if isDraft {
 					pageData.LineItemAddURL = route.ResolveURL(deps.Routes.PurchaseOrderLineItemAddURL, "id", id)
 				}
-				totalAmount, _ := po["total_amount"].(string)
-				pageData.TotalAmount = currency + " " + totalAmount
+				if cell, ok := po["total_amount"].(types.TableCell); ok {
+					pageData.TotalAmount = cell.Currency + " " + cell.Value
+				}
 			}
 		}
 
@@ -352,16 +354,17 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		case "items":
 			if deps.ListPurchaseOrderLineItems != nil {
 				perms := view.GetUserPermissions(ctx)
-				lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, id)
 				currency, _ := po["currency"].(string)
 				status, _ := po["status"].(string)
 				isDraft := status == "draft"
+				lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, id, currency)
 				pageData.LineItemTable = buildLineItemTable(lineItems, deps.TableLabels, currency, id, deps.Routes, isDraft, perms)
 				if isDraft {
 					pageData.LineItemAddURL = route.ResolveURL(deps.Routes.PurchaseOrderLineItemAddURL, "id", id)
 				}
-				totalAmount, _ := po["total_amount"].(string)
-				pageData.TotalAmount = currency + " " + totalAmount
+				if cell, ok := po["total_amount"].(types.TableCell); ok {
+					pageData.TotalAmount = cell.Currency + " " + cell.Value
+				}
 			}
 		}
 
@@ -389,7 +392,7 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 			}
 		}
 
-		lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, purchaseOrderID)
+		lineItems := listLineItemMaps(ctx, deps.ListPurchaseOrderLineItems, purchaseOrderID, currency)
 		perms := view.GetUserPermissions(ctx)
 		table := buildLineItemTable(lineItems, deps.TableLabels, currency, purchaseOrderID, deps.Routes, isDraft, perms)
 		return view.OK("table-card", table)

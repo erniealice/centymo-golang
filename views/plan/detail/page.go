@@ -19,18 +19,20 @@ import (
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 )
 
 // DetailViewDeps holds view dependencies.
 type DetailViewDeps struct {
-	Routes           centymo.PlanRoutes
-	ReadPlan         func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
-	Labels           centymo.PlanLabels
-	CommonLabels     pyeza.CommonLabels
-	TableLabels      types.TableLabels
-	ListProductPlans func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
-	ListPricePlans   func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
-	ListLocations    func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	Routes             centymo.PlanRoutes
+	ReadPlan           func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+	Labels             centymo.PlanLabels
+	CommonLabels       pyeza.CommonLabels
+	TableLabels        types.TableLabels
+	ListProductPlans   func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListPricePlans     func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListLocations      func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -392,19 +394,19 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 		{Key: "name", Label: l.Columns.PricePlan, Sortable: true},
 		{Key: "amount", Label: l.Detail.Price, Sortable: true, WidthClass: "col-4xl"},
 		{Key: "duration", Label: l.Columns.Duration, Sortable: true, WidthClass: "col-4xl"},
-		{Key: "location", Label: l.Columns.Location, Sortable: true, WidthClass: "col-6xl"},
+		{Key: "schedule", Label: "Schedule", Sortable: true, WidthClass: "col-6xl"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 
-	// Build a location ID → name map for display.
-	locationNames := map[string]string{}
-	if deps.ListLocations != nil {
-		locResp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
+	// Build a schedule ID → name map for display.
+	scheduleNames := map[string]string{}
+	if deps.ListPriceSchedules != nil {
+		schedResp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
 		if err != nil {
-			log.Printf("Failed to list locations for pricelists table: %v", err)
+			log.Printf("Failed to list price schedules for pricelists table: %v", err)
 		} else {
-			for _, loc := range locResp.GetData() {
-				locationNames[loc.GetId()] = loc.GetName()
+			for _, s := range schedResp.GetData() {
+				scheduleNames[s.GetId()] = s.GetName()
 			}
 		}
 	}
@@ -423,15 +425,19 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 
 				ppID := pp.GetId()
 				name := pp.GetName()
-				amount := fmt.Sprintf("%.2f", float64(pp.GetAmount())/100.0)
+				ppCurrency := pp.GetCurrency()
+				if ppCurrency == "" {
+					ppCurrency = "PHP"
+				}
+				amountCell := types.MoneyCell(float64(pp.GetAmount()), ppCurrency, true)
 				duration := fmt.Sprintf("%d %s", pp.GetDurationValue(), pp.GetDurationUnit())
 
-				locationName := "—"
-				if locID := pp.GetLocationId(); locID != "" {
-					if n, ok := locationNames[locID]; ok && n != "" {
-						locationName = n
+				scheduleName := "—"
+				if schedID := pp.GetPriceScheduleId(); schedID != "" {
+					if n, ok := scheduleNames[schedID]; ok && n != "" {
+						scheduleName = n
 					} else {
-						locationName = locID
+						scheduleName = schedID
 					}
 				}
 
@@ -462,9 +468,9 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 					ID: ppID,
 					Cells: []types.TableCell{
 						{Type: "text", Value: name},
-						{Type: "text", Value: amount},
+						amountCell,
 						{Type: "text", Value: duration},
-						{Type: "text", Value: locationName},
+						{Type: "text", Value: scheduleName},
 						{Type: "badge", Value: status, Variant: statusVariant(status)},
 					},
 					Actions: rowActions,

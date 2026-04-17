@@ -161,8 +161,6 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l cen
 		method := c.GetCollectionMethodId()
 		date := c.GetDateCreatedString()
 
-		amountDisplay := centymo.FormatCentavoAmount(c.GetAmount(), currency)
-
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
@@ -217,7 +215,7 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l cen
 			Cells: []types.TableCell{
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: customer},
-				{Type: "text", Value: amountDisplay},
+				types.MoneyCell(float64(c.GetAmount()), currency, true),
 				{Type: "text", Value: method},
 				types.DateTimeCell(date, types.DateReadable),
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
@@ -225,7 +223,7 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l cen
 			DataAttrs: map[string]string{
 				"reference": refNumber,
 				"customer":  customer,
-				"amount":    amountDisplay,
+				"amount":    fmt.Sprintf("%d", c.GetAmount()),
 				"method":    method,
 				"date":      date,
 				"status":    recordStatus,

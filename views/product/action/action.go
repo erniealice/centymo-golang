@@ -42,11 +42,13 @@ type Deps struct {
 	DeleteProduct    func(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.DeleteProductResponse, error)
 	SetProductActive func(ctx context.Context, id string, active bool) error
 	ListLines        func(ctx context.Context, req *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)
-	// DefaultFulfillmentMethod is applied when the form does not supply a
-	// fulfillment_method value. Set to "service" for professional business types
-	// so new products created through the services UI are immediately visible in
-	// the services list (which filters fulfillment_method IN ('service','digital')).
-	DefaultFulfillmentMethod string
+	// DefaultProductKind is applied when the form does not supply a product_kind value.
+	// Set to "service" for the service UI mount so new products appear in the services list.
+	DefaultProductKind string
+	// DefaultDeliveryMode is applied when the form does not supply a delivery_mode value.
+	DefaultDeliveryMode string
+	// DefaultTrackingMode is applied when the form does not supply a tracking_mode value.
+	DefaultTrackingMode string
 }
 
 func formLabels(l centymo.ProductLabels) centymo.ProductFormLabels {
@@ -111,18 +113,28 @@ func NewAddAction(deps *Deps) view.View {
 		price := int64(math.Round(priceF * 100))
 		desc := r.FormValue("description")
 
-		fulfillmentMethod := r.FormValue("fulfillment_method")
-		if fulfillmentMethod == "" {
-			fulfillmentMethod = deps.DefaultFulfillmentMethod
+		productKind := r.FormValue("product_kind")
+		if productKind == "" {
+			productKind = deps.DefaultProductKind
+		}
+		deliveryMode := r.FormValue("delivery_mode")
+		if deliveryMode == "" {
+			deliveryMode = deps.DefaultDeliveryMode
+		}
+		trackingMode := r.FormValue("tracking_mode")
+		if trackingMode == "" {
+			trackingMode = deps.DefaultTrackingMode
 		}
 
 		productData := &productpb.Product{
-			Name:              r.FormValue("name"),
-			Description:       &desc,
-			Price:             price,
-			Currency:          r.FormValue("currency"),
-			Active:            active,
-			FulfillmentMethod: fulfillmentMethod,
+			Name:         r.FormValue("name"),
+			Description:  &desc,
+			Price:        price,
+			Currency:     r.FormValue("currency"),
+			Active:       active,
+			ProductKind:  productKind,
+			DeliveryMode: deliveryMode,
+			TrackingMode: trackingMode,
 		}
 		if lineID := r.FormValue("line_id"); lineID != "" {
 			productData.LineId = &lineID

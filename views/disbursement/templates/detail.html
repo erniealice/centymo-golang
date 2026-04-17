@@ -33,7 +33,7 @@
             <span class="badge badge--{{.StatusVariant}}">{{.StatusLabel}}</span>
         </div>
         <div class="disbursement-amount">
-            {{.Currency}} {{.Amount}}
+            {{template "table-cell-money" .Amount}}
         </div>
     </div>
     <h4 class="detail-section-title disbursement-section">{{.Labels.Detail.PaymentInfo}}</h4>
@@ -48,7 +48,7 @@
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Amount}}</span>
-            <span class="detail-info-value mono">{{index .Disbursement "currency"}} {{index .Disbursement "amount"}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Disbursement "amount")}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Method}}</span>

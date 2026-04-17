@@ -14,9 +14,9 @@ import (
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
-	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 )
 
@@ -33,8 +33,10 @@ type ModuleDeps struct {
 	UpdatePricePlan func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
 	DeletePricePlan func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
 
-	ListLocations func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
-	ListPlans     func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListPlans          func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+
+	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 
 	// Detail page — ProductPricePlan CRUD
 	ListProductPlans         func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
@@ -67,24 +69,25 @@ type Module struct {
 // NewModule creates the price_plan module with all views wired.
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &priceplanaction.Deps{
-		Routes:          deps.Routes,
-		Labels:          deps.Labels,
-		CreatePricePlan: deps.CreatePricePlan,
-		ReadPricePlan:   deps.ReadPricePlan,
-		UpdatePricePlan: deps.UpdatePricePlan,
-		DeletePricePlan: deps.DeletePricePlan,
-		ListLocations:   deps.ListLocations,
-		ListPlans:       deps.ListPlans,
+		Routes:             deps.Routes,
+		Labels:             deps.Labels,
+		CreatePricePlan:    deps.CreatePricePlan,
+		ReadPricePlan:      deps.ReadPricePlan,
+		UpdatePricePlan:    deps.UpdatePricePlan,
+		DeletePricePlan:    deps.DeletePricePlan,
+		ListPlans:          deps.ListPlans,
+		ListPriceSchedules: deps.ListPriceSchedules,
 	}
 
 	listDeps := &priceplanlist.ListViewDeps{
-		Routes:         deps.Routes,
-		ListPricePlans: deps.ListPricePlans,
-		ListLocations:  deps.ListLocations,
-		ListPlans:      deps.ListPlans,
-		Labels:         deps.Labels,
-		CommonLabels:   deps.CommonLabels,
-		TableLabels:    deps.TableLabels,
+		Routes:               deps.Routes,
+		ListPricePlans:       deps.ListPricePlans,
+		ListPlans:            deps.ListPlans,
+		ListPriceSchedules:   deps.ListPriceSchedules,
+		Labels:               deps.Labels,
+		CommonLabels:         deps.CommonLabels,
+		TableLabels:          deps.TableLabels,
+		GetPricePlanInUseIDs: deps.GetPricePlanInUseIDs,
 	}
 	listView := priceplanlist.NewView(listDeps)
 	tableView := priceplanlist.NewTableView(listDeps)

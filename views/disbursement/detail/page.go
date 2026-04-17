@@ -43,7 +43,7 @@ type PageData struct {
 	Reference     string
 	StatusLabel   string
 	StatusVariant string
-	Amount        string
+	Amount        types.TableCell
 	Currency      string
 
 	AuditTable          *types.TableConfig
@@ -62,7 +62,7 @@ func disbursementToMap(d *disbursementpb.Disbursement) map[string]any {
 		"id":                     d.GetId(),
 		"name":                   d.GetName(),
 		"reference_number":       d.GetReferenceNumber(),
-		"amount":                 centymo.FormatWithCommas(float64(d.GetAmount()) / 100.0),
+		"amount":                 types.MoneyCell(float64(d.GetAmount()), d.GetCurrency(), true),
 		"currency":               d.GetCurrency(),
 		"status":                 d.GetStatus(),
 		"disbursement_method_id": d.GetDisbursementMethodId(),
@@ -98,7 +98,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		refNumber := record.GetReferenceNumber()
 		status := record.GetStatus()
 		currency := record.GetCurrency()
-		amount := centymo.FormatWithCommas(float64(record.GetAmount()) / 100.0)
+		amount := types.MoneyCell(float64(record.GetAmount()), record.GetCurrency(), true)
 
 		l := deps.Labels
 		headerTitle := l.Detail.TitlePrefix + refNumber
@@ -214,7 +214,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 
 		status := record.GetStatus()
 		currency := record.GetCurrency()
-		amount := centymo.FormatWithCommas(float64(record.GetAmount()) / 100.0)
+		amount := types.MoneyCell(float64(record.GetAmount()), record.GetCurrency(), true)
 		refNumber := record.GetReferenceNumber()
 
 		l := deps.Labels

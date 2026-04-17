@@ -1,0 +1,96 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "price-schedule-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "price-schedule-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.Title}}">
+    {{/* --- Tab Buttons --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "price-schedule-detail-tabs")}}
+    </div>
+
+    {{/* --- Tab Content Area --- */}}
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+            {{template "price-schedule-tab-info" .}}
+        {{else if eq .ActiveTab "plans"}}
+            {{template "price-schedule-tab-plans" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "price-schedule-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">{{.Labels.Tabs.Info}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Name}}</span>
+            <span class="detail-info-value">{{.Name}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.Description}}</span>
+            <span class="detail-info-value">{{if .Description}}{{.Description}}{{else}}{{.Labels.Detail.NoDescription}}{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.DateStart}}</span>
+            <span class="detail-info-value">{{if .DateStart}}{{.DateStart}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.DateEnd}}</span>
+            <span class="detail-info-value">{{if .DateEnd}}{{.DateEnd}}{{else}}{{.Labels.Detail.NoDateEnd}}{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Location}}</span>
+            <span class="detail-info-value">{{.LocationName}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span>
+                <span class="badge badge--{{.StatusVariant}}">
+                    {{.Status}}
+                </span>
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.DateCreated}}</span>
+            <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.DateModified}}</span>
+            <span class="detail-info-value">{{if .ModifiedDate}}{{.ModifiedDate}}{{else}}—{{end}}</span>
+        </div>
+    </div>
+
+    <div class="detail-actions detail-actions--spaced">
+        <a class="btn btn-ghost btn-sm"
+           hx-get="{{routeWith "price_schedule.edit" "id" .ID}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           onclick="if(window.lf && lf.Sheet) lf.Sheet.open('{{.Labels.Buttons.Edit}}')">
+            {{.Labels.Buttons.Edit}}
+        </a>
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Plans
+     ============================================= */}}
+{{define "price-schedule-tab-plans"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .PlansTable}}
+        {{template "table-card" .PlansTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">{{.Labels.Detail.PlansEmptyTitle}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.PlansEmptyMsg}}</p>
+        </div>
+    {{end}}
+</div>
+{{end}}

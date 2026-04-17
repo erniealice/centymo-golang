@@ -72,10 +72,10 @@ type LineItemFormData struct {
 type PaymentScheduleRow struct {
 	Sequence       int32
 	DueDate        string
-	Amount         string
+	Amount         types.TableCell
 	Status         string
 	StatusClass    string
-	PaidAmount     string
+	PaidAmount     types.TableCell
 	PaidDate       string
 	DisbursementID string
 }
@@ -83,9 +83,9 @@ type PaymentScheduleRow struct {
 // PaymentsScheduleData holds the payments tab content.
 type PaymentsScheduleData struct {
 	Rows           []PaymentScheduleRow
-	TotalScheduled string
-	TotalPaid      string
-	TotalRemaining string
+	TotalScheduled types.TableCell
+	TotalPaid      types.TableCell
+	TotalRemaining types.TableCell
 	Currency       string
 }
 
@@ -101,8 +101,8 @@ type PageData struct {
 	LineItemAddURL    string
 	TotalAmount       string
 	SetStatusURL      string
-	PaidAmount        string
-	OutstandingAmount string
+	PaidAmount        types.TableCell
+	OutstandingAmount types.TableCell
 	PaymentStatus     string
 	PayURL            string
 	PaymentsSchedule  *PaymentsScheduleData
@@ -110,13 +110,14 @@ type PageData struct {
 
 // expenditureToMap converts an Expenditure proto to a map for template use.
 func expenditureToMap(e *expenditurepb.Expenditure) map[string]any {
+	currency := e.GetCurrency()
 	return map[string]any{
 		"id":                   e.GetId(),
 		"name":                 e.GetName(),
 		"reference_number":     e.GetReferenceNumber(),
 		"expenditure_type":     e.GetExpenditureType(),
-		"total_amount":         centymo.FormatWithCommas(float64(e.GetTotalAmount()) / 100.0),
-		"currency":             e.GetCurrency(),
+		"total_amount":         types.MoneyCell(float64(e.GetTotalAmount()), currency, true),
+		"currency":             currency,
 		"status":               e.GetStatus(),
 		"notes":                e.GetNotes(),
 		"active":               e.GetActive(),
@@ -182,12 +183,13 @@ func NewView(deps *DetailViewDeps) view.View {
 		case "items":
 			if deps.ListExpenditureLineItems != nil {
 				perms := view.GetUserPermissions(ctx)
-				lineItems := listLineItemMaps(ctx, deps.ListExpenditureLineItems, id)
 				currency, _ := expense["currency"].(string)
+				lineItems := listLineItemMaps(ctx, deps.ListExpenditureLineItems, id, currency)
 				pageData.LineItemTable = buildLineItemTable(lineItems, deps.Labels, deps.TableLabels, currency, id, deps.Routes, perms)
 				pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
-				totalAmount, _ := expense["total_amount"].(string)
-				pageData.TotalAmount = currency + " " + totalAmount
+				if cell, ok := expense["total_amount"].(types.TableCell); ok {
+					pageData.TotalAmount = cell.Currency + " " + cell.Value
+				}
 			}
 		case "payments":
 			currency, _ := expense["currency"].(string)
@@ -239,12 +241,13 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		case "items":
 			if deps.ListExpenditureLineItems != nil {
 				perms := view.GetUserPermissions(ctx)
-				lineItems := listLineItemMaps(ctx, deps.ListExpenditureLineItems, id)
 				currency, _ := expense["currency"].(string)
+				lineItems := listLineItemMaps(ctx, deps.ListExpenditureLineItems, id, currency)
 				pageData.LineItemTable = buildLineItemTable(lineItems, deps.Labels, deps.TableLabels, currency, id, deps.Routes, perms)
 				pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
-				totalAmount, _ := expense["total_amount"].(string)
-				pageData.TotalAmount = currency + " " + totalAmount
+				if cell, ok := expense["total_amount"].(types.TableCell); ok {
+					pageData.TotalAmount = cell.Currency + " " + cell.Value
+				}
 			}
 		case "payments":
 			currency, _ := expense["currency"].(string)
@@ -261,7 +264,7 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		expenditureID := viewCtx.Request.PathValue("id")
 
-		lineItems := listLineItemMaps(ctx, deps.ListExpenditureLineItems, expenditureID)
+		lineItems := listLineItemMaps(ctx, deps.ListExpenditureLineItems, expenditureID, "")
 		perms := view.GetUserPermissions(ctx)
 		table := buildLineItemTable(lineItems, deps.Labels, deps.TableLabels, "", expenditureID, deps.Routes, perms)
 		return view.OK("table-card", table)
@@ -448,8 +451,9 @@ func populateBalance(ctx context.Context, deps *DetailViewDeps, expenditureID st
 		outstandingRaw = 0
 	}
 
-	pageData.PaidAmount = centymo.FormatWithCommas(float64(paidRaw) / 100.0)
-	pageData.OutstandingAmount = centymo.FormatWithCommas(float64(outstandingRaw) / 100.0)
+	currency, _ := pageData.Expense["currency"].(string)
+	pageData.PaidAmount = types.MoneyCell(float64(paidRaw), currency, true)
+	pageData.OutstandingAmount = types.MoneyCell(float64(outstandingRaw), currency, true)
 
 	switch {
 	case paidRaw <= 0:
@@ -479,9 +483,9 @@ func scheduleStatusVariant(status string) string {
 func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditureID, currency string) *PaymentsScheduleData {
 	empty := &PaymentsScheduleData{
 		Rows:           []PaymentScheduleRow{},
-		TotalScheduled: currency + " 0.00",
-		TotalPaid:      currency + " 0.00",
-		TotalRemaining: currency + " 0.00",
+		TotalScheduled: types.MoneyCell(0, currency, false),
+		TotalPaid:      types.MoneyCell(0, currency, false),
+		TotalRemaining: types.MoneyCell(0, currency, false),
 		Currency:       currency,
 	}
 
@@ -499,9 +503,9 @@ func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditur
 	rows := make([]PaymentScheduleRow, 0, len(schedules))
 
 	for _, s := range schedules {
-		paidAmt := ""
+		var paidAmtCell types.TableCell
 		if s.PaidAmount != nil {
-			paidAmt = currency + " " + centymo.FormatWithCommas(float64(*s.PaidAmount)/100.0)
+			paidAmtCell = types.MoneyCell(float64(*s.PaidAmount), currency, true)
 			totalPaid += *s.PaidAmount
 		}
 
@@ -520,10 +524,10 @@ func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditur
 		rows = append(rows, PaymentScheduleRow{
 			Sequence:       s.GetSequence(),
 			DueDate:        s.GetDueDate(),
-			Amount:         currency + " " + centymo.FormatWithCommas(float64(s.GetAmount())/100.0),
+			Amount:         types.MoneyCell(float64(s.GetAmount()), currency, true),
 			Status:         s.GetStatus(),
 			StatusClass:    scheduleStatusVariant(s.GetStatus()),
-			PaidAmount:     paidAmt,
+			PaidAmount:     paidAmtCell,
 			PaidDate:       paidDate,
 			DisbursementID: disbID,
 		})
@@ -536,9 +540,9 @@ func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditur
 
 	return &PaymentsScheduleData{
 		Rows:           rows,
-		TotalScheduled: currency + " " + centymo.FormatWithCommas(float64(totalScheduled)/100.0),
-		TotalPaid:      currency + " " + centymo.FormatWithCommas(float64(totalPaid)/100.0),
-		TotalRemaining: currency + " " + centymo.FormatWithCommas(float64(remaining)/100.0),
+		TotalScheduled: types.MoneyCell(float64(totalScheduled), currency, true),
+		TotalPaid:      types.MoneyCell(float64(totalPaid), currency, true),
+		TotalRemaining: types.MoneyCell(float64(remaining), currency, true),
 		Currency:       currency,
 	}
 }
@@ -580,8 +584,8 @@ func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tab
 		id, _ := item["id"].(string)
 		description, _ := item["description"].(string)
 		quantity, _ := item["quantity"].(string)
-		unitPrice, _ := item["unit_price"].(string)
-		total, _ := item["total"].(string)
+		unitPriceCell, _ := item["unit_price"].(types.TableCell)
+		totalCell, _ := item["total"].(types.TableCell)
 
 		actions := []types.TableAction{
 			{
@@ -609,8 +613,8 @@ func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tab
 			Cells: []types.TableCell{
 				{Type: "text", Value: description},
 				{Type: "text", Value: quantity},
-				{Type: "text", Value: currency + " " + unitPrice},
-				{Type: "text", Value: currency + " " + total},
+				unitPriceCell,
+				totalCell,
 			},
 			Actions: actions,
 		})
@@ -631,7 +635,7 @@ func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tab
 }
 
 // listLineItemMaps lists line items for an expenditure and returns as maps.
-func listLineItemMaps(ctx context.Context, listFn func(context.Context, *expenditurelineitempb.ListExpenditureLineItemsRequest) (*expenditurelineitempb.ListExpenditureLineItemsResponse, error), expenditureID string) []map[string]any {
+func listLineItemMaps(ctx context.Context, listFn func(context.Context, *expenditurelineitempb.ListExpenditureLineItemsRequest) (*expenditurelineitempb.ListExpenditureLineItemsResponse, error), expenditureID string, currency string) []map[string]any {
 	resp, err := listFn(ctx, &expenditurelineitempb.ListExpenditureLineItemsRequest{
 		ExpenditureId: &expenditureID,
 	})
@@ -647,8 +651,8 @@ func listLineItemMaps(ctx context.Context, listFn func(context.Context, *expendi
 				"expenditure_id": item.GetExpenditureId(),
 				"description":    item.GetDescription(),
 				"quantity":       fmt.Sprintf("%.0f", item.GetQuantity()),
-				"unit_price":     centymo.FormatWithCommas(float64(item.GetUnitPrice()) / 100.0),
-				"total":          centymo.FormatWithCommas(float64(item.GetTotalPrice()) / 100.0),
+				"unit_price":     types.MoneyCell(float64(item.GetUnitPrice()), currency, true),
+				"total":          types.MoneyCell(float64(item.GetTotalPrice()), currency, true),
 				"notes":          item.GetNotes(),
 			})
 		}

@@ -20,7 +20,7 @@ type InventoryLabels struct {
 	Bulk         InventoryBulkLabels         `json:"bulkActions"`
 	Detail       InventoryDetailLabels       `json:"detail"`
 	Tabs         InventoryTabLabels          `json:"tabs"`
-	ItemType     InventoryItemTypeLabels     `json:"itemType"`
+	TrackingMode TrackingModeLabels          `json:"trackingMode"`
 	Status       InventoryStatusLabels       `json:"status"`
 	Serial       InventorySerialLabels       `json:"serial"`
 	Transaction  InventoryTransactionLabels  `json:"transaction"`
@@ -165,10 +165,10 @@ type InventoryTabLabels struct {
 	Attachments  string `json:"attachments"`
 }
 
-type InventoryItemTypeLabels struct {
-	Serialized    string `json:"serialized"`
-	NonSerialized string `json:"nonSerialized"`
-	Consumable    string `json:"consumable"`
+type TrackingModeLabels struct {
+	None       string `json:"none"`
+	Bulk       string `json:"bulk"`
+	Serialized string `json:"serialized"`
 }
 
 type InventoryStatusLabels struct {
@@ -2553,6 +2553,8 @@ type PricePlanFormLabels struct {
 	CurrencyPlaceholder string `json:"currencyPlaceholder"`
 	DurationValue       string `json:"durationValue"`
 	DurationUnit        string `json:"durationUnit"`
+	Schedule            string `json:"schedule"`
+	SchedulePlaceholder string `json:"schedulePlaceholder"`
 	Location            string `json:"location"`
 	LocationPlaceholder string `json:"locationPlaceholder"`
 	SelectLocation      string `json:"selectLocation"`
@@ -2923,6 +2925,8 @@ func DefaultPlanLabels() PlanLabels {
 			CurrencyPlaceholder: "e.g. PHP",
 			DurationValue:       "Duration",
 			DurationUnit:        "Unit",
+			Schedule:            "Price Schedule",
+			SchedulePlaceholder: "Select a schedule...",
 			Location:            "Location",
 			LocationPlaceholder: "Select a location...",
 			SelectLocation:      "— No location (all locations) —",
@@ -2980,6 +2984,7 @@ type PricePlanColumnLabels2 struct {
 	Currency    string `json:"currency"`
 	Duration    string `json:"duration"`
 	Location    string `json:"location"`
+	Schedule    string `json:"schedule"`
 	Plan        string `json:"plan"`
 	Status      string `json:"status"`
 	DateCreated string `json:"dateCreated"`
@@ -3065,6 +3070,7 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			Currency:    "Currency",
 			Duration:    "Duration",
 			Location:    "Location",
+			Schedule:    "Schedule",
 			Plan:        "Plan",
 			Status:      "Status",
 			DateCreated: "Date Created",
@@ -3087,6 +3093,8 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			CurrencyPlaceholder: "e.g. PHP",
 			DurationValue:       "Duration",
 			DurationUnit:        "Unit",
+			Schedule:            "Price Schedule",
+			SchedulePlaceholder: "Select a schedule...",
 			Location:            "Location",
 			LocationPlaceholder: "Select a location...",
 			SelectLocation:      "— No location (all locations) —",
@@ -3132,6 +3140,219 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			CreateFailed: "Failed to create rate card.",
 			UpdateFailed: "Failed to update rate card.",
 			DeleteFailed: "Failed to delete rate card.",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Price Schedule labels
+// ---------------------------------------------------------------------------
+
+// PriceScheduleLabels holds all labels for the price schedule module.
+type PriceScheduleLabels struct {
+	Page    PriceSchedulePageLabels    `json:"page"`
+	Buttons PriceScheduleButtonLabels  `json:"buttons"`
+	Columns PriceScheduleColumnLabels  `json:"columns"`
+	Empty   PriceScheduleEmptyLabels   `json:"empty"`
+	Form    PriceScheduleFormLabels    `json:"form"`
+	Bulk    PriceScheduleBulkLabels    `json:"bulk"`
+	Confirm PriceScheduleConfirmLabels `json:"confirm"`
+	Tabs    PriceScheduleTabLabels     `json:"tabs"`
+	Detail  PriceScheduleDetailLabels  `json:"detail"`
+	Errors  PriceScheduleErrorLabels   `json:"errors"`
+}
+
+type PriceSchedulePageLabels struct {
+	Title         string `json:"title"`
+	Subtitle      string `json:"subtitle"`
+	ActiveTitle   string `json:"activeTitle"`
+	InactiveTitle string `json:"inactiveTitle"`
+}
+
+type PriceScheduleButtonLabels struct {
+	View       string `json:"view"`
+	Add        string `json:"add"`
+	Edit       string `json:"edit"`
+	Delete     string `json:"delete"`
+	BulkDelete string `json:"bulkDelete"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type PriceScheduleColumnLabels struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	DateStart   string `json:"dateStart"`
+	DateEnd     string `json:"dateEnd"`
+	Location    string `json:"location"`
+	Status      string `json:"status"`
+	DateCreated string `json:"dateCreated"`
+	Actions     string `json:"actions"`
+}
+
+type PriceScheduleEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type PriceScheduleFormLabels struct {
+	Name                string `json:"name"`
+	NamePlaceholder     string `json:"namePlaceholder"`
+	Description         string `json:"description"`
+	DescPlaceholder     string `json:"descPlaceholder"`
+	DateStart           string `json:"dateStart"`
+	DateEnd             string `json:"dateEnd"`
+	Location            string `json:"location"`
+	LocationPlaceholder string `json:"locationPlaceholder"`
+	SelectLocation      string `json:"selectLocation"`
+	Active              string `json:"active"`
+}
+
+type PriceScheduleBulkLabels struct {
+	DeleteTitle       string `json:"deleteTitle"`
+	DeleteMessage     string `json:"deleteMessage"`
+	ActivateTitle     string `json:"activateTitle"`
+	ActivateMessage   string `json:"activateMessage"`
+	DeactivateTitle   string `json:"deactivateTitle"`
+	DeactivateMessage string `json:"deactivateMessage"`
+}
+
+type PriceScheduleConfirmLabels struct {
+	DeleteTitle       string `json:"deleteTitle"`
+	DeleteMessage     string `json:"deleteMessage"`
+	ActivateTitle     string `json:"activateTitle"`
+	ActivateMessage   string `json:"activateMessage"`
+	DeactivateTitle   string `json:"deactivateTitle"`
+	DeactivateMessage string `json:"deactivateMessage"`
+}
+
+type PriceScheduleTabLabels struct {
+	Info          string `json:"info"`
+	Plans         string `json:"plans"`
+	ProductPrices string `json:"productPrices"`
+}
+
+type PriceScheduleDetailLabels struct {
+	Title           string `json:"title"`
+	DateCreated     string `json:"dateCreated"`
+	DateModified    string `json:"dateModified"`
+	NoLocation      string `json:"noLocation"`
+	NoDateEnd       string `json:"noDateEnd"`
+	NoDescription   string `json:"noDescription"`
+	PlansEmptyTitle string `json:"plansEmptyTitle"`
+	PlansEmptyMsg   string `json:"plansEmptyMsg"`
+
+	// Product price (per-product breakdown, shown on the schedule-scoped plan detail).
+	// Professional tier renames these to "Service Price" via lyngua.
+	ProductPriceAdd           string `json:"productPriceAdd"`
+	ProductPriceEdit          string `json:"productPriceEdit"`
+	ProductPriceDelete        string `json:"productPriceDelete"`
+	ProductPriceDeleteConfirm string `json:"productPriceDeleteConfirm"`
+	ProductPriceEmptyTitle    string `json:"productPriceEmptyTitle"`
+	ProductPriceEmptyMsg      string `json:"productPriceEmptyMsg"`
+	ProductPriceSection       string `json:"productPriceSection"` // drawer section title ("Product Price" / "Service Price")
+	ProductField              string `json:"productField"`        // drawer product select label ("Product" / "Service")
+}
+
+type PriceScheduleErrorLabels struct {
+	NotFound     string `json:"notFound"`
+	LoadFailed   string `json:"loadFailed"`
+	Unauthorized string `json:"unauthorized"`
+	CreateFailed string `json:"createFailed"`
+	UpdateFailed string `json:"updateFailed"`
+	DeleteFailed string `json:"deleteFailed"`
+}
+
+// DefaultPriceScheduleLabels returns PriceScheduleLabels with sensible English defaults.
+func DefaultPriceScheduleLabels() PriceScheduleLabels {
+	return PriceScheduleLabels{
+		Page: PriceSchedulePageLabels{
+			Title:         "Price Schedules",
+			Subtitle:      "Manage your price schedules",
+			ActiveTitle:   "Active Price Schedules",
+			InactiveTitle: "Inactive Price Schedules",
+		},
+		Buttons: PriceScheduleButtonLabels{
+			View:       "View",
+			Add:        "Add Price Schedule",
+			Edit:       "Edit Price Schedule",
+			Delete:     "Delete Price Schedule",
+			BulkDelete: "Delete Price Schedules",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Columns: PriceScheduleColumnLabels{
+			Name:        "Name",
+			Description: "Description",
+			DateStart:   "Start Date",
+			DateEnd:     "End Date",
+			Location:    "Location",
+			Status:      "Status",
+			DateCreated: "Date Created",
+			Actions:     "Actions",
+		},
+		Empty: PriceScheduleEmptyLabels{
+			Title:   "No Price Schedules",
+			Message: "No price schedules to display.",
+		},
+		Form: PriceScheduleFormLabels{
+			Name:                "Name",
+			NamePlaceholder:     "Enter price schedule name",
+			Description:         "Description",
+			DescPlaceholder:     "Enter description...",
+			DateStart:           "Start Date",
+			DateEnd:             "End Date",
+			Location:            "Location",
+			LocationPlaceholder: "Select a location...",
+			SelectLocation:      "— No location (all locations) —",
+			Active:              "Active",
+		},
+		Bulk: PriceScheduleBulkLabels{
+			DeleteTitle:       "Delete Price Schedules",
+			DeleteMessage:     "Permanently delete the selected price schedules? This cannot be undone.",
+			ActivateTitle:     "Activate Price Schedules",
+			ActivateMessage:   "Activate the selected price schedules?",
+			DeactivateTitle:   "Deactivate Price Schedules",
+			DeactivateMessage: "Deactivate the selected price schedules?",
+		},
+		Confirm: PriceScheduleConfirmLabels{
+			DeleteTitle:       "Delete Price Schedule",
+			DeleteMessage:     "Permanently delete this price schedule? This cannot be undone.",
+			ActivateTitle:     "Activate Price Schedule",
+			ActivateMessage:   "Activate {{name}}?",
+			DeactivateTitle:   "Deactivate Price Schedule",
+			DeactivateMessage: "Deactivate {{name}}?",
+		},
+		Tabs: PriceScheduleTabLabels{
+			Info:          "Info",
+			Plans:         "Plans",
+			ProductPrices: "Product Prices",
+		},
+		Detail: PriceScheduleDetailLabels{
+			Title:                     "Price Schedule",
+			DateCreated:               "Date Created",
+			DateModified:              "Date Modified",
+			NoLocation:                "All locations",
+			NoDateEnd:                 "No end date",
+			NoDescription:             "—",
+			PlansEmptyTitle:           "No Plans",
+			PlansEmptyMsg:             "No price plans are linked to this schedule yet.",
+			ProductPriceAdd:           "Add Product Price",
+			ProductPriceEdit:          "Edit Product Price",
+			ProductPriceDelete:        "Delete Product Price",
+			ProductPriceDeleteConfirm: "Remove %s from this plan?",
+			ProductPriceEmptyTitle:    "No Product Prices",
+			ProductPriceEmptyMsg:      "No product prices have been configured for this plan yet.",
+			ProductPriceSection:       "Product Price",
+			ProductField:              "Product",
+		},
+		Errors: PriceScheduleErrorLabels{
+			NotFound:     "Price schedule not found",
+			LoadFailed:   "Failed to load price schedule",
+			Unauthorized: "You are not authorized to perform this action",
+			CreateFailed: "Failed to create price schedule",
+			UpdateFailed: "Failed to update price schedule",
+			DeleteFailed: "Failed to delete price schedule",
 		},
 	}
 }
@@ -3210,6 +3431,166 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			NotFound:         "Subscription not found",
 			IDRequired:       "Subscription ID is required",
 			NoPermission:     "No permission",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Resource labels
+// ---------------------------------------------------------------------------
+
+// ResourceLabels holds all translatable strings for the resource module.
+type ResourceLabels struct {
+	Page    ResourcePageLabels    `json:"page"`
+	Buttons ResourceButtonLabels  `json:"buttons"`
+	Columns ResourceColumnLabels  `json:"columns"`
+	Empty   ResourceEmptyLabels   `json:"empty"`
+	Form    ResourceFormLabels    `json:"form"`
+	Actions ResourceActionLabels  `json:"actions"`
+	Bulk    ResourceBulkLabels    `json:"bulkActions"`
+	Status  ResourceStatusLabels  `json:"status"`
+	Confirm ResourceConfirmLabels `json:"confirm"`
+	Errors  ResourceErrorLabels   `json:"errors"`
+}
+
+type ResourcePageLabels struct {
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+}
+
+type ResourceButtonLabels struct {
+	Add string `json:"add"`
+}
+
+type ResourceColumnLabels struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Product     string `json:"product"`
+	Status      string `json:"status"`
+}
+
+type ResourceEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type ResourceFormLabels struct {
+	Name            string `json:"name"`
+	NamePlaceholder string `json:"namePlaceholder"`
+	Description     string `json:"description"`
+	DescPlaceholder string `json:"descriptionPlaceholder"`
+	ProductId       string `json:"productId"`
+	UserId          string `json:"userId"`
+}
+
+type ResourceActionLabels struct {
+	View       string `json:"view"`
+	Edit       string `json:"edit"`
+	Delete     string `json:"delete"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type ResourceBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type ResourceStatusLabels struct {
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type ResourceConfirmLabels struct {
+	Delete              string `json:"delete"`
+	DeleteMessage       string `json:"deleteMessage"`
+	Activate            string `json:"activate"`
+	ActivateMessage     string `json:"activateMessage"`
+	Deactivate          string `json:"deactivate"`
+	DeactivateMessage   string `json:"deactivateMessage"`
+	BulkDelete          string `json:"bulkDelete"`
+	BulkDeleteMessage   string `json:"bulkDeleteMessage"`
+	BulkActivate        string `json:"bulkActivate"`
+	BulkActivateMessage string `json:"bulkActivateMessage"`
+}
+
+type ResourceErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+	CannotDelete     string `json:"cannotDelete"`
+}
+
+// DefaultResourceLabels returns ResourceLabels with sensible English defaults.
+func DefaultResourceLabels() ResourceLabels {
+	return ResourceLabels{
+		Page: ResourcePageLabels{
+			Heading:         "Resources",
+			HeadingActive:   "Active Resources",
+			HeadingInactive: "Inactive Resources",
+			Caption:         "Manage resources linked to products.",
+			CaptionActive:   "Showing active resources.",
+			CaptionInactive: "Showing inactive resources.",
+		},
+		Buttons: ResourceButtonLabels{
+			Add: "Add Resource",
+		},
+		Columns: ResourceColumnLabels{
+			Name:        "Name",
+			Description: "Description",
+			Product:     "Product",
+			Status:      "Status",
+		},
+		Empty: ResourceEmptyLabels{
+			Title:   "No resources found",
+			Message: "Add a resource to get started.",
+		},
+		Form: ResourceFormLabels{
+			Name:            "Name",
+			NamePlaceholder: "Enter resource name",
+			Description:     "Description",
+			DescPlaceholder: "Enter description (optional)",
+			ProductId:       "Product ID",
+			UserId:          "User ID",
+		},
+		Actions: ResourceActionLabels{
+			View:       "View",
+			Edit:       "Edit",
+			Delete:     "Delete",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Bulk: ResourceBulkLabels{
+			Delete: "Delete Selected",
+		},
+		Status: ResourceStatusLabels{
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Confirm: ResourceConfirmLabels{
+			Delete:              "Delete Resource",
+			DeleteMessage:       "Are you sure you want to delete this resource?",
+			Activate:            "Activate Resource",
+			ActivateMessage:     "Activate resource \"%s\"?",
+			Deactivate:          "Deactivate Resource",
+			DeactivateMessage:   "Deactivate resource \"%s\"?",
+			BulkDelete:          "Delete Selected",
+			BulkDeleteMessage:   "Are you sure you want to delete the selected resources?",
+			BulkActivate:        "Activate Selected",
+			BulkActivateMessage: "Activate the selected resources?",
+		},
+		Errors: ResourceErrorLabels{
+			PermissionDenied: "You do not have permission to perform this action",
+			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
+			NotFound:         "Resource not found",
+			IDRequired:       "Resource ID is required",
+			NoPermission:     "No permission",
+			CannotDelete:     "This resource cannot be deleted because it is in use",
 		},
 	}
 }

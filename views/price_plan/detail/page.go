@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -47,7 +46,7 @@ type PageData struct {
 	ID                   string
 	PricePlanName        string
 	PricePlanDesc        string
-	PricePlanAmount      string
+	PricePlanAmount      types.TableCell
 	PricePlanCurrency    string
 	PricePlanLocation    string
 	PricePlanDuration    string
@@ -309,7 +308,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	if currency == "" {
 		currency = "PHP"
 	}
-	amountFormatted := formatAmount(currency, float64(pp.GetAmount())/100.0)
+	amountFormatted := types.MoneyCell(float64(pp.GetAmount()), currency, true)
 
 	duration := ""
 	if dv := pp.GetDurationValue(); dv > 0 {
@@ -364,7 +363,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		PricePlanDesc:     description,
 		PricePlanAmount:   amountFormatted,
 		PricePlanCurrency: currency,
-		PricePlanLocation: pp.GetLocationId(),
+		PricePlanLocation: pp.GetPriceScheduleId(),
 		PricePlanDuration: duration,
 		PricePlanStatus:   status,
 		StatusVariant:     statusVariant,
@@ -402,7 +401,6 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 	columns := []types.TableColumn{
 		{Key: "product", Label: "Product", Sortable: true},
 		{Key: "price", Label: "Price", Sortable: true, WidthClass: "col-4xl"},
-		{Key: "currency", Label: "Currency", Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	// Build product ID → name map for display
@@ -435,18 +433,17 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 				if productName == "" {
 					productName = productID
 				}
-				priceStr := fmt.Sprintf("%.2f", float64(item.GetPrice())/100.0)
-				currency := item.GetCurrency()
-				if currency == "" {
-					currency = "PHP"
+				itemCurrency := item.GetCurrency()
+				if itemCurrency == "" {
+					itemCurrency = "PHP"
 				}
+				priceCell := types.MoneyCell(float64(item.GetPrice()), itemCurrency, true)
 
 				rows = append(rows, types.TableRow{
 					ID: itemID,
 					Cells: []types.TableCell{
 						{Type: "text", Value: productName},
-						{Type: "text", Value: priceStr},
-						{Type: "text", Value: currency},
+						priceCell,
 					},
 					Actions: []types.TableAction{
 						{
@@ -613,27 +610,3 @@ func loadProductOptions(ctx context.Context, deps *DetailViewDeps, planID, selec
 	return options
 }
 
-func formatAmount(currency string, amount float64) string {
-	if currency == "" {
-		currency = "PHP"
-	}
-	raw := fmt.Sprintf("%.2f", amount)
-	parts := strings.SplitN(raw, ".", 2)
-	intPart := parts[0]
-	decPart := "00"
-	if len(parts) > 1 {
-		decPart = parts[1]
-	}
-	n := len(intPart)
-	if n <= 3 {
-		return currency + " " + intPart + "." + decPart
-	}
-	var result []byte
-	for i, c := range intPart {
-		if i > 0 && (n-i)%3 == 0 {
-			result = append(result, ',')
-		}
-		result = append(result, byte(c))
-	}
-	return currency + " " + string(result) + "." + decPart
-}

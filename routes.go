@@ -46,6 +46,30 @@ const (
 	PricePlanProductPriceEditURL   = "/action/price-plan/{id}/product-prices/edit/{ppid}"
 	PricePlanProductPriceDeleteURL = "/action/price-plan/{id}/product-prices/delete"
 
+	// PriceSchedule routes (date-bounded pricing container for plans)
+	PriceScheduleDashboardURL        = "/app/price-schedules/dashboard"
+	PriceScheduleListURL             = "/app/price-schedules/list/{status}"
+	PriceScheduleTableURL            = "/action/price-schedule/table/{status}"
+	PriceScheduleDetailURL           = "/app/price-schedules/detail/{id}"
+	PriceScheduleAddURL              = "/action/price-schedule/add"
+	PriceScheduleEditURL             = "/action/price-schedule/edit/{id}"
+	PriceScheduleDeleteURL           = "/action/price-schedule/delete"
+	PriceScheduleBulkDeleteURL       = "/action/price-schedule/bulk-delete"
+	PriceScheduleSetStatusURL        = "/action/price-schedule/set-status"
+	PriceScheduleBulkSetStatusURL    = "/action/price-schedule/bulk-set-status"
+	PriceScheduleTabActionURL        = "/action/price-schedule/{id}/tab/{tab}"
+	PriceSchedulePlanAddURL          = "/action/price-schedule/{id}/plan/add"
+	// Schedule-scoped price_plan detail. Mirrors /app/price-plans/detail/{id} but nests
+	// under the schedule so sidebar context stays on price-schedules (price_plan is no
+	// longer a top-level sidebar entry).
+	PriceSchedulePlanDetailURL             = "/app/price-schedules/detail/{id}/plan/{ppid}"
+	PriceSchedulePlanTabActionURL          = "/action/price-schedule/{id}/plan/{ppid}/tab/{tab}"
+	PriceSchedulePlanEditURL               = "/action/price-schedule/{id}/plan/{ppid}/edit"
+	PriceSchedulePlanDeleteURL             = "/action/price-schedule/{id}/plan/{ppid}/delete"
+	PriceSchedulePlanProductPriceAddURL    = "/action/price-schedule/{id}/plan/{ppid}/product-prices/add"
+	PriceSchedulePlanProductPriceEditURL   = "/action/price-schedule/{id}/plan/{ppid}/product-prices/edit/{pppid}"
+	PriceSchedulePlanProductPriceDeleteURL = "/action/price-schedule/{id}/plan/{ppid}/product-prices/delete"
+
 	SubscriptionListURL             = "/app/subscriptions/list/{status}"
 	SubscriptionDetailURL           = "/app/subscriptions/detail/{id}"
 	SubscriptionAddURL              = "/action/subscription/add"
@@ -329,20 +353,31 @@ const (
 	ExpenditureExpenseCategoryDeleteURL = "/action/expense/categories/delete"
 	ExpenditureExpenseCategoryTableURL  = "/action/expense/categories/table"
 
-	// Price List routes
-	PriceListListURL       = "/app/price-lists/list/{status}"
-	PriceListTableURL      = "/action/price-list/table/{status}"
-	PriceListDetailURL     = "/app/price-lists/detail/{id}"
-	PriceListAddURL        = "/action/price-list/add"
-	PriceListEditURL       = "/action/price-list/edit/{id}"
-	PriceListDeleteURL     = "/action/price-list/delete"
-	PriceListBulkDeleteURL = "/action/price-list/bulk-delete"
+	// Resource routes (person or equipment linked to a Product for billing)
+	ResourceListURL          = "/app/resources/list/{status}"
+	ResourceTableURL         = "/action/resource/table/{status}"
+	ResourceDetailURL        = "/app/resources/detail/{id}"
+	ResourceAddURL           = "/action/resource/add"
+	ResourceEditURL          = "/action/resource/edit/{id}"
+	ResourceDeleteURL        = "/action/resource/delete"
+	ResourceBulkDeleteURL    = "/action/resource/bulk-delete"
+	ResourceSetStatusURL     = "/action/resource/set-status"
+	ResourceBulkSetStatusURL = "/action/resource/bulk-set-status"
 
-	PriceListTabActionURL        = "/action/price-list/{id}/tab/{tab}"
-	PriceListAttachmentUploadURL = "/action/price-list/{id}/attachments/upload"
-	PriceListAttachmentDeleteURL = "/action/price-list/{id}/attachments/delete"
+	// Price List routes — canonical home is the inventory accordion (/app/inventory/price-lists/*)
+	PriceListListURL       = "/app/inventory/price-lists/list/{status}"
+	PriceListTableURL      = "/action/inventory-price-list/table/{status}"
+	PriceListDetailURL     = "/app/inventory/price-lists/detail/{id}"
+	PriceListAddURL        = "/action/inventory-price-list/add"
+	PriceListEditURL       = "/action/inventory-price-list/edit/{id}"
+	PriceListDeleteURL     = "/action/inventory-price-list/delete"
+	PriceListBulkDeleteURL = "/action/inventory-price-list/bulk-delete"
+
+	PriceListTabActionURL        = "/action/inventory-price-list/{id}/tab/{tab}"
+	PriceListAttachmentUploadURL = "/action/inventory-price-list/{id}/attachments/upload"
+	PriceListAttachmentDeleteURL = "/action/inventory-price-list/{id}/attachments/delete"
 
 	// Price Product routes (within price list detail)
-	PriceProductAddURL    = "/action/price-list/{id}/products/add"
-	PriceProductDeleteURL = "/action/price-list/{id}/products/delete"
+	PriceProductAddURL    = "/action/inventory-price-list/{id}/products/add"
+	PriceProductDeleteURL = "/action/inventory-price-list/{id}/products/delete"
 )

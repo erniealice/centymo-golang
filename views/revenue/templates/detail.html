@@ -81,7 +81,7 @@ lf.downloadInvoice = function(btn, url) {
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Amount}}</span>
-            <span class="detail-info-value mono">{{index .Revenue "currency"}} {{index .Revenue "total_amount"}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Revenue "total_amount")}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Currency}}</span>
@@ -123,7 +123,7 @@ lf.downloadInvoice = function(btn, url) {
 <div class="transaction-items-toolbar">
     <div class="transaction-summary-item">
         <span class="transaction-summary-label">{{.Labels.Detail.GrandTotal}}</span>
-        <span class="transaction-summary-value">{{.TotalAmount}}</span>
+        <span class="transaction-summary-value">{{template "table-cell-money" .TotalAmount}}</span>
     </div>
     <div class="transaction-items-actions">
         <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-line-discount-btn"

@@ -163,8 +163,6 @@ func buildTableRows(expenditures []*expenditurepb.Expenditure, l centymo.Expendi
 		date := e.GetExpenditureDateString()
 		currency := e.GetCurrency()
 		recordStatus := e.GetStatus()
-		amount := centymo.FormatCentavoAmount(e.GetTotalAmount(), currency)
-
 		// Second column is vendor name or expenditure name depending on type
 		secondCol := e.GetName()
 		if expenditureType != "expense" {
@@ -183,14 +181,14 @@ func buildTableRows(expenditures []*expenditurepb.Expenditure, l centymo.Expendi
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: secondCol},
 				types.DateTimeCell(date, types.DateReadable),
-				{Type: "text", Value: amount},
+				types.MoneyCell(float64(e.GetTotalAmount()), currency, true),
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"reference": refNumber,
 				"vendor":    secondCol,
 				"date":      date,
-				"amount":    amount,
+				"amount":    fmt.Sprintf("%d", e.GetTotalAmount()),
 				"status":    recordStatus,
 			},
 		})

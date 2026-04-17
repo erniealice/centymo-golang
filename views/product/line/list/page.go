@@ -233,7 +233,7 @@ func buildTableRows(lines []*linepb.Line, status string, l centymo.ProductLineLa
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
 				{Type: "text", Value: description},
-				{Type: "text", Value: dateCreated},
+				types.DateTimeCell(dateCreated, types.DateReadable),
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{

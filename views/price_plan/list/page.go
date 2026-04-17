@@ -14,19 +14,20 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
-	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 )
 
 type ListViewDeps struct {
-	Routes         centymo.PricePlanRoutes
-	ListPricePlans func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
-	ListLocations  func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
-	ListPlans      func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
-	Labels         centymo.PricePlanLabels
-	CommonLabels   pyeza.CommonLabels
-	TableLabels    types.TableLabels
+	Routes               centymo.PricePlanRoutes
+	ListPricePlans       func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListPlans            func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListPriceSchedules   func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	Labels               centymo.PricePlanLabels
+	CommonLabels         pyeza.CommonLabels
+	TableLabels          types.TableLabels
+	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
 type PageData struct {
@@ -118,6 +119,15 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		return nil, fmt.Errorf("failed to load price plans: %w", err)
 	}
 
+	var inUseIDs map[string]bool
+	if deps.GetPricePlanInUseIDs != nil {
+		var itemIDs []string
+		for _, item := range resp.GetData() {
+			itemIDs = append(itemIDs, item.GetId())
+		}
+		inUseIDs, _ = deps.GetPricePlanInUseIDs(ctx, itemIDs)
+	}
+
 	// Build plan name lookup map
 	planNames := map[string]string{}
 	if deps.ListPlans != nil {
@@ -131,22 +141,22 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		}
 	}
 
-	// Build location name lookup map
-	locationNames := map[string]string{}
-	if deps.ListLocations != nil {
-		locResp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
+	// Build schedule name lookup map
+	scheduleNames := map[string]string{}
+	if deps.ListPriceSchedules != nil {
+		schedResp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
 		if err != nil {
-			log.Printf("Failed to list locations for price plan table: %v", err)
+			log.Printf("Failed to list price schedules for price plan table: %v", err)
 		} else {
-			for _, loc := range locResp.GetData() {
-				locationNames[loc.GetId()] = loc.GetName()
+			for _, s := range schedResp.GetData() {
+				scheduleNames[s.GetId()] = s.GetName()
 			}
 		}
 	}
 
 	l := deps.Labels
 	columns := pricePlanColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms, planNames, locationNames)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms, planNames, scheduleNames)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -203,12 +213,12 @@ func pricePlanColumns(l centymo.PricePlanLabels) []types.TableColumn {
 		{Key: "amount", Label: l.Columns.Amount, Sortable: true, WidthClass: "col-2xl"},
 		{Key: "duration", Label: l.Columns.Duration, Sortable: false, WidthClass: "col-2xl"},
 		{Key: "plan", Label: l.Columns.Plan, Sortable: false},
-		{Key: "location", Label: l.Columns.Location, Sortable: false},
+		{Key: "schedule", Label: l.Columns.Schedule, Sortable: false},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, WidthClass: "col-2xl"},
 	}
 }
 
-func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centymo.PricePlanLabels, routes centymo.PricePlanRoutes, perms *types.UserPermissions, planNames, locationNames map[string]string) []types.TableRow {
+func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centymo.PricePlanLabels, routes centymo.PricePlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, planNames, scheduleNames map[string]string) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, pp := range pricePlans {
 		recordStatus := "active"
@@ -219,7 +229,6 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 		id := pp.GetId()
 		name := pp.GetName()
 
-		amountDisplay := strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64)
 		currency := pp.GetCurrency()
 
 		durationDisplay := ""
@@ -229,14 +238,16 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 
 		planName := planNames[pp.GetPlanId()]
 
-		locationName := "—"
-		if locID := pp.GetLocationId(); locID != "" {
-			if n, ok := locationNames[locID]; ok && n != "" {
-				locationName = n
+		scheduleName := "—"
+		if schedID := pp.GetPriceScheduleId(); schedID != "" {
+			if n, ok := scheduleNames[schedID]; ok && n != "" {
+				scheduleName = n
 			} else {
-				locationName = locID
+				scheduleName = schedID
 			}
 		}
+
+		isInUse := inUseIDs[id]
 
 		deleteAction := types.TableAction{
 			Type:     "delete",
@@ -244,6 +255,10 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 			Action:   "delete",
 			URL:      routes.DeleteURL,
 			ItemName: name,
+		}
+		if isInUse {
+			deleteAction.Disabled = true
+			deleteAction.DisabledTooltip = "This rate card cannot be deleted because it is in use"
 		}
 		if !perms.Can("price_plan", "delete") {
 			deleteAction.Disabled = true
@@ -254,16 +269,16 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
-				{Type: "money", Value: amountDisplay, Currency: currency},
+				types.MoneyCell(float64(pp.GetAmount()), currency, true),
 				{Type: "text", Value: durationDisplay},
 				{Type: "text", Value: planName},
-				{Type: "text", Value: locationName},
+				{Type: "text", Value: scheduleName},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"name":      name,
 				"status":    recordStatus,
-				"deletable": strconv.FormatBool(true),
+				"deletable": strconv.FormatBool(!isInUse),
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Buttons.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},

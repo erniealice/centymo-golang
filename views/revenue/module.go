@@ -20,6 +20,7 @@ import (
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
+	jobactivitypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_activity"
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -112,6 +113,9 @@ type ModuleDeps struct {
 	// Price lookup for line item (optional — gracefully degrades when nil)
 	FindApplicablePriceList func(ctx context.Context, req *pricelistpb.FindApplicablePriceListRequest) (*pricelistpb.FindApplicablePriceListResponse, error)
 	ListPriceProducts       func(ctx context.Context, req *priceproductpb.ListPriceProductsRequest) (*priceproductpb.ListPriceProductsResponse, error)
+
+	// Job activity lookup for "from_activities" revenue type (optional — gracefully degrades when nil)
+	ReadJobActivity func(ctx context.Context, req *jobactivitypb.ReadJobActivityRequest) (*jobactivitypb.ReadJobActivityResponse, error)
 }
 
 // Module holds all constructed revenue views.
@@ -179,6 +183,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		CreateInventorySerialHistory: deps.CreateInventorySerialHistory,
 		FindApplicablePriceList:      deps.FindApplicablePriceList,
 		ListPriceProducts:            deps.ListPriceProducts,
+		ReadJobActivity:              deps.ReadJobActivity,
 	}
 	paymentDeps := &revenueaction.PaymentDeps{Routes: deps.Routes, DB: deps.DB, Labels: deps.Labels}
 	detailDeps := &revenuedetail.DetailViewDeps{

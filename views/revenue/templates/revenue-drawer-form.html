@@ -45,12 +45,16 @@ Used by both Add and Edit actions.
                 <legend class="form-label">{{.Labels.RevenueType}}</legend>
                 <div class="radio-group" data-testid="revenue-type-radio">
                     <label class="radio-option">
-                        <input type="radio" name="revenue_type" value="one_time" {{if ne .RevenueType "from_engagement"}}checked{{end}}>
+                        <input type="radio" name="revenue_type" value="one_time" {{if and (ne .RevenueType "from_engagement") (ne .RevenueType "from_activities")}}checked{{end}}>
                         <span>{{.Labels.RevenueTypeOneTime}}</span>
                     </label>
                     <label class="radio-option">
                         <input type="radio" name="revenue_type" value="from_engagement" {{if eq .RevenueType "from_engagement"}}checked{{end}}>
                         <span>{{.Labels.RevenueTypeFromEngagement}}</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="revenue_type" value="from_activities" {{if eq .RevenueType "from_activities"}}checked{{end}}>
+                        <span>{{.Labels.RevenueTypeFromActivities}}</span>
                     </label>
                 </div>
             </fieldset>
@@ -159,19 +163,44 @@ Used by both Add and Edit actions.
         </script>
         {{end}}
 
+        <div class="form-row single" id="activities-row" style="display:none">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "activity_ids"
+                "Label" .Labels.ActivityIDs
+                "Value" .ActivityIDs
+                "Placeholder" .Labels.ActivityIDsPlaceholder
+            )}}
+        </div>
+
         <script>
         (function() {
             var radios = document.querySelectorAll('[name="revenue_type"]');
             var locationRow = document.getElementById('location-row');
             var subscriptionRow = document.getElementById('subscription-row');
+            var activitiesRow = document.getElementById('activities-row');
 
             function applyRevenueType(value) {
                 if (value === 'from_engagement') {
                     if (locationRow) locationRow.style.display = 'none';
                     if (subscriptionRow) subscriptionRow.style.display = '';
+                    if (activitiesRow) activitiesRow.style.display = 'none';
+                } else if (value === 'from_activities') {
+                    if (locationRow) locationRow.style.display = '';
+                    if (activitiesRow) activitiesRow.style.display = '';
+                    if (subscriptionRow) subscriptionRow.style.display = 'none';
+                    if (subscriptionRow) {
+                        var sub = subscriptionRow.querySelector('.auto-complete-input');
+                        var disp = subscriptionRow.querySelector('.auto-complete-display');
+                        var clr = subscriptionRow.querySelector('.auto-complete-clear');
+                        if (sub) { sub.value = ''; sub.setAttribute('value', ''); }
+                        if (disp) disp.innerHTML = '<span class="auto-complete-placeholder"></span>';
+                        if (clr) clr.style.display = 'none';
+                    }
                 } else {
                     if (locationRow) locationRow.style.display = '';
                     if (subscriptionRow) subscriptionRow.style.display = 'none';
+                    if (activitiesRow) activitiesRow.style.display = 'none';
                     if (subscriptionRow) {
                         var sub = subscriptionRow.querySelector('.auto-complete-input');
                         var disp = subscriptionRow.querySelector('.auto-complete-display');

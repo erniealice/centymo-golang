@@ -62,7 +62,7 @@ type PageData struct {
 	LineItemTable       *types.TableConfig
 	LineItemAddURL      string
 	LineItemDiscountURL string
-	TotalAmount         string
+	TotalAmount         types.TableCell
 	Payment             *PaymentInfo
 	PaymentTable        *types.TableConfig
 	PaymentAddURL       string
@@ -136,13 +136,13 @@ func NewView(deps *DetailViewDeps) view.View {
 			// No extra data needed — revenue map has everything
 		case "items":
 			perms := view.GetUserPermissions(ctx)
-			lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, id)
 			currency, _ := revenue["currency"].(string)
+			lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, id, currency)
 			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
 			pageData.LineItemDiscountURL = route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", id)
-			totalAmount, _ := revenue["total_amount"].(string)
-			pageData.TotalAmount = currency + " " + totalAmount
+			totalAmountCell, _ := revenue["total_amount"].(types.TableCell)
+			pageData.TotalAmount = totalAmountCell
 
 		case "payment":
 			allPayments, err := deps.DB.ListSimple(ctx, "revenue_payment")
@@ -157,9 +157,9 @@ func NewView(deps *DetailViewDeps) view.View {
 			pageData.PaymentAddURL = route.ResolveURL(deps.Routes.PaymentAddURL, "id", id)
 
 			// Calculate totals
-			totalAmount, _ := revenue["total_amount"].(string)
+			totalAmountCell, _ := revenue["total_amount"].(types.TableCell)
 			totalPaid := sumPayments(payments)
-			totalAmountFloat := parseAmount(totalAmount)
+			totalAmountFloat := parseAmount(totalAmountCell.Value)
 			remaining := totalAmountFloat - totalPaid
 
 			pageData.TotalPaid = currency + " " + formatAmount(totalPaid)
@@ -284,13 +284,13 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			// revenue map has everything
 		case "items":
 			perms := view.GetUserPermissions(ctx)
-			lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, id)
 			currency, _ := revenue["currency"].(string)
+			lineItems := listLineItemMaps(ctx, deps.ListRevenueLineItems, id, currency)
 			pageData.LineItemTable = buildLineItemTableWithActions(lineItems, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.LineItemAddURL = route.ResolveURL(deps.Routes.LineItemAddURL, "id", id)
 			pageData.LineItemDiscountURL = route.ResolveURL(deps.Routes.LineItemDiscountURL, "id", id)
-			totalAmount, _ := revenue["total_amount"].(string)
-			pageData.TotalAmount = currency + " " + totalAmount
+			totalAmountCell, _ := revenue["total_amount"].(types.TableCell)
+			pageData.TotalAmount = totalAmountCell
 
 		case "payment":
 			allPayments, err := deps.DB.ListSimple(ctx, "revenue_payment")
@@ -304,9 +304,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.PaymentAddURL = route.ResolveURL(deps.Routes.PaymentAddURL, "id", id)
 
-			totalAmount, _ := revenue["total_amount"].(string)
+			totalAmountCell, _ := revenue["total_amount"].(types.TableCell)
 			totalPaid := sumPayments(payments)
-			totalAmountFloat := parseAmount(totalAmount)
+			totalAmountFloat := parseAmount(totalAmountCell.Value)
 			remaining := totalAmountFloat - totalPaid
 
 			pageData.TotalPaid = currency + " " + formatAmount(totalPaid)
@@ -549,7 +549,7 @@ func parseAmount(s string) float64 {
 
 // formatAmount formats a float64 as a comma-separated 2-decimal string.
 func formatAmount(f float64) string {
-	return centymo.FormatWithCommas(f)
+	return types.MoneyCell(f*100, "", true).Value
 }
 
 // ---------------------------------------------------------------------------
@@ -563,7 +563,7 @@ func revenueToMap(r *revenuepb.Revenue) map[string]any {
 		"name":                 r.GetName(),
 		"client_id":            r.GetClientId(),
 		"revenue_date_string":  r.GetRevenueDate(),
-		"total_amount":         centymo.FormatWithCommas(float64(r.GetTotalAmount()) / 100.0),
+		"total_amount":         types.MoneyCell(float64(r.GetTotalAmount()), r.GetCurrency(), true),
 		"currency":             r.GetCurrency(),
 		"status":               r.GetStatus(),
 		"reference_number":     r.GetReferenceNumber(),
@@ -585,16 +585,16 @@ func revenueToMap(r *revenuepb.Revenue) map[string]any {
 }
 
 // lineItemToMap converts a RevenueLineItem protobuf to a map[string]any for template use.
-func lineItemToMap(item *revenuelineitempb.RevenueLineItem) map[string]any {
+func lineItemToMap(item *revenuelineitempb.RevenueLineItem, currency string) map[string]any {
 	return map[string]any{
 		"id":                  item.GetId(),
 		"revenue_id":          item.GetRevenueId(),
 		"description":         item.GetDescription(),
 		"quantity":            fmt.Sprintf("%.0f", item.GetQuantity()),
-		"unit_price":          centymo.FormatWithCommas(float64(item.GetUnitPrice()) / 100.0),
-		"cost_price":          centymo.FormatWithCommas(float64(item.GetCostPrice()) / 100.0),
+		"unit_price":          types.MoneyCell(float64(item.GetUnitPrice()), currency, true),
+		"cost_price":          types.MoneyCell(float64(item.GetCostPrice()), currency, true),
 		"discount":            "0",
-		"total":               centymo.FormatWithCommas(float64(item.GetTotalPrice()) / 100.0),
+		"total":               types.MoneyCell(float64(item.GetTotalPrice()), currency, true),
 		"line_item_type":      item.GetLineItemType(),
 		"inventory_item_id":   item.GetInventoryItemId(),
 		"inventory_serial_id": item.GetInventorySerialId(),
@@ -603,7 +603,7 @@ func lineItemToMap(item *revenuelineitempb.RevenueLineItem) map[string]any {
 }
 
 // listLineItemMaps lists line items for a revenue via the typed use case and returns maps.
-func listLineItemMaps(ctx context.Context, listFn func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error), revenueID string) []map[string]any {
+func listLineItemMaps(ctx context.Context, listFn func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error), revenueID string, currency string) []map[string]any {
 	resp, err := listFn(ctx, &revenuelineitempb.ListRevenueLineItemsRequest{
 		RevenueId: &revenueID,
 	})
@@ -614,7 +614,7 @@ func listLineItemMaps(ctx context.Context, listFn func(ctx context.Context, req 
 	items := []map[string]any{}
 	for _, item := range resp.GetData() {
 		if item.GetRevenueId() == revenueID {
-			items = append(items, lineItemToMap(item))
+			items = append(items, lineItemToMap(item, currency))
 		}
 	}
 	return items
@@ -649,10 +649,10 @@ func findPayment(payments []map[string]any, revenueID string, revenue map[string
 	}
 
 	// Fallback: no dedicated payment record — use revenue-level data
-	totalAmount, _ := revenue["total_amount"].(string)
+	totalAmountCell, _ := revenue["total_amount"].(types.TableCell)
 	return &PaymentInfo{
 		Method:     "—",
-		AmountPaid: currency + " " + totalAmount,
+		AmountPaid: currency + " " + totalAmountCell.Value,
 		Currency:   currency,
 	}
 }

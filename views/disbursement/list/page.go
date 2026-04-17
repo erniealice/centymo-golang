@@ -137,8 +137,6 @@ func buildTableRows(disbursements []*disbursementpb.Disbursement, l centymo.Disb
 		method := d.GetDisbursementMethodId()
 		recordStatus := d.GetStatus()
 
-		amountDisplay := centymo.FormatCentavoAmount(d.GetAmount(), currency)
-
 		detailURL := route.ResolveURL(routes.DetailURL, "id", id)
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
@@ -152,7 +150,7 @@ func buildTableRows(disbursements []*disbursementpb.Disbursement, l centymo.Disb
 			Cells: []types.TableCell{
 				{Type: "text", Value: refNumber},
 				{Type: "text", Value: payee},
-				{Type: "text", Value: amountDisplay},
+				types.MoneyCell(float64(d.GetAmount()), currency, true),
 				{Type: "text", Value: method},
 				types.DateTimeCell(date, types.DateReadable),
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
@@ -160,7 +158,7 @@ func buildTableRows(disbursements []*disbursementpb.Disbursement, l centymo.Disb
 			DataAttrs: map[string]string{
 				"reference": refNumber,
 				"payee":     payee,
-				"amount":    amountDisplay,
+				"amount":    fmt.Sprintf("%d", d.GetAmount()),
 				"method":    method,
 				"date":      date,
 				"status":    recordStatus,

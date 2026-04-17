@@ -78,9 +78,9 @@ type PageData struct {
 	ActiveTab           string
 	TabItems            []pyeza.TabItem
 	IsSerialized        bool
-	ItemType            string
-	ItemTypeLabel       string
-	ItemTypeVariant     string
+	TrackingMode        string
+	TrackingModeLabel   string
+	TrackingModeVariant string
 	LocationName        string
 	AvailableQty        string
 	Attributes          []AttributeEntry
@@ -127,11 +127,11 @@ func NewView(deps *DetailViewDeps) view.View {
 		}
 
 		l := deps.Labels
-		itemType := item.GetProduct().GetItemType()
-		if itemType == "" {
-			itemType = "non_serialized"
+		trackingMode := item.GetProduct().GetTrackingMode()
+		if trackingMode == "" {
+			trackingMode = "bulk"
 		}
-		isSerialized := itemType == "serialized"
+		isSerialized := trackingMode == "serialized"
 		tabItems := buildTabItems(l, id, isSerialized, deps.Routes)
 
 		available := computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
@@ -150,17 +150,17 @@ func NewView(deps *DetailViewDeps) view.View {
 				HeaderIcon:     "icon-package",
 				CommonLabels:   deps.CommonLabels,
 			},
-			ContentTemplate: "inventory-detail-content",
-			Item:            itemMap,
-			Labels:          l,
-			ActiveTab:       activeTab,
-			TabItems:        tabItems,
-			IsSerialized:    isSerialized,
-			ItemType:        itemType,
-			ItemTypeLabel:   itemTypeDisplayLabel(itemType, l),
-			ItemTypeVariant: itemTypeDisplayVariant(itemType),
-			LocationName:    locationName,
-			AvailableQty:    available,
+			ContentTemplate:   "inventory-detail-content",
+			Item:              itemMap,
+			Labels:            l,
+			ActiveTab:         activeTab,
+			TabItems:          tabItems,
+			IsSerialized:      isSerialized,
+			TrackingMode:      trackingMode,
+			TrackingModeLabel: trackingModeDisplayLabel(trackingMode, l),
+			TrackingModeVariant: trackingModeDisplayVariant(trackingMode),
+			LocationName:      locationName,
+			AvailableQty:      available,
 		}
 
 		// KB help content
@@ -257,24 +257,24 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		item := items[0]
 
 		l := deps.Labels
-		itemType := item.GetProduct().GetItemType()
-		if itemType == "" {
-			itemType = "non_serialized"
+		trackingMode := item.GetProduct().GetTrackingMode()
+		if trackingMode == "" {
+			trackingMode = "bulk"
 		}
 
 		available := computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
 		itemMap := inventoryItemToMap(item)
 
 		pageData := &PageData{
-			Item:            itemMap,
-			Labels:          l,
-			ActiveTab:       tab,
-			IsSerialized:    itemType == "serialized",
-			ItemType:        itemType,
-			ItemTypeLabel:   itemTypeDisplayLabel(itemType, l),
-			ItemTypeVariant: itemTypeDisplayVariant(itemType),
-			LocationName:    centymo.LocationDisplayName(item.GetLocationId()),
-			AvailableQty:    available,
+			Item:                itemMap,
+			Labels:              l,
+			ActiveTab:           tab,
+			IsSerialized:        trackingMode == "serialized",
+			TrackingMode:        trackingMode,
+			TrackingModeLabel:   trackingModeDisplayLabel(trackingMode, l),
+			TrackingModeVariant: trackingModeDisplayVariant(trackingMode),
+			LocationName:        centymo.LocationDisplayName(item.GetLocationId()),
+			AvailableQty:        available,
 		}
 
 		switch tab {
@@ -355,7 +355,7 @@ func inventoryItemToMap(item *inventoryitempb.InventoryItem) map[string]any {
 		"reorder_level":      item.GetReorderLevel(),
 		"unit_of_measure":    item.GetUnitOfMeasure(),
 		"notes":              item.GetNotes(),
-		"item_type":          item.GetProduct().GetItemType(),
+		"tracking_mode":      item.GetProduct().GetTrackingMode(),
 		"location_id":        item.GetLocationId(),
 		"product_id":         item.GetProductId(),
 		"product_variant_id": item.GetProductVariantId(),
@@ -383,26 +383,26 @@ func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool, rout
 	return tabs
 }
 
-func itemTypeDisplayLabel(itemType string, l centymo.InventoryLabels) string {
-	switch itemType {
+func trackingModeDisplayLabel(trackingMode string, l centymo.InventoryLabels) string {
+	switch trackingMode {
+	case "none":
+		return l.TrackingMode.None
+	case "bulk":
+		return l.TrackingMode.Bulk
 	case "serialized":
-		return l.ItemType.Serialized
-	case "non_serialized":
-		return l.ItemType.NonSerialized
-	case "consumable":
-		return l.ItemType.Consumable
+		return l.TrackingMode.Serialized
 	default:
-		return itemType
+		return trackingMode
 	}
 }
 
-func itemTypeDisplayVariant(itemType string) string {
-	switch itemType {
-	case "serialized":
+func trackingModeDisplayVariant(trackingMode string) string {
+	switch trackingMode {
+	case "none":
+		return "neutral"
+	case "bulk":
 		return "info"
-	case "non_serialized":
-		return "default"
-	case "consumable":
+	case "serialized":
 		return "success"
 	default:
 		return "default"

@@ -275,8 +275,8 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l centym
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
-				{Type: "text", Value: dateStart},
-				{Type: "text", Value: dateEnd},
+				types.DateTimeCell(dateStart, types.DateReadable),
+				types.DateTimeCell(dateEnd, types.DateReadable),
 				{Type: "text", Value: ""},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},

@@ -205,7 +205,7 @@ func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string,
 			Cells: []types.TableCell{
 				{Type: "text", Value: customer},
 				{Type: "text", Value: planName},
-				{Type: "text", Value: startDate},
+				types.DateTimeCell(startDate, types.DateReadable),
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{

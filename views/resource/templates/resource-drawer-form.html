@@ -1,0 +1,20 @@
+{{define "resource-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "product_id" "Label" .Labels.ProductId "Value" .ProductId "Required" true "Placeholder" "Product ID")}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "user_id" "Label" .Labels.UserId "Value" .UserId "Placeholder" "User ID (optional)")}}
+        </div>
+    </div>
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

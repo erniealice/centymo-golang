@@ -58,7 +58,7 @@
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.PurchaseOrder.Detail.TotalAmount}}</span>
-            <span class="detail-info-value mono">{{index .PurchaseOrder "currency"}} {{index .PurchaseOrder "total_amount"}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .PurchaseOrder "total_amount")}}</span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.PurchaseOrder.Detail.PaymentTerms}}</span>

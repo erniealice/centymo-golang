@@ -225,7 +225,7 @@ func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "product_name", Label: l.Columns.ProductName, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
 		{Key: "sku", Label: l.Columns.SKU, Sortable: false, Filterable: false, WidthClass: "col-4xl"},
-		{Key: "item_type", Label: l.Columns.Type, Sortable: false, Filterable: false, WidthClass: "col-3xl"},
+		{Key: "tracking_mode", Label: l.Columns.Type, Sortable: false, Filterable: false, WidthClass: "col-3xl"},
 		{Key: "quantity", Label: l.Columns.OnHand, Sortable: true, Filterable: true, FilterType: types.FilterTypeNumeric, WidthClass: "col-2xl"},
 		{Key: "available", Label: l.Columns.Available, Sortable: false, Filterable: false, WidthClass: "col-2xl"},
 		{Key: "reorder_level", Label: l.Columns.ReorderLvl, Sortable: false, Filterable: false, WidthClass: "col-3xl"},
@@ -243,9 +243,9 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 		onHand := item.GetQuantityOnHand()
 		reserved := item.GetQuantityReserved()
 		reorderLvl := item.GetReorderLevel()
-		itemType := item.GetProduct().GetItemType()
+		itemType := item.GetProduct().GetTrackingMode()
 		if itemType == "" {
-			itemType = "non_serialized"
+			itemType = "bulk"
 		}
 
 		avail := onHand - reserved
@@ -281,13 +281,13 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 				{Type: "text", Value: onHandStr},
 				{Type: "text", Value: available},
 				{Type: "text", Value: reorderDisplay},
-				{Type: "text", Value: dateCreated},
+				types.DateTimeCell(dateCreated, types.DateReadable),
 				{Type: "badge", Value: status, Variant: statusVariant(status)},
 			},
 			DataAttrs: map[string]string{
 				"name":        name,
 				"sku":         sku,
-				"item_type":   itemType,
+				"tracking_mode": itemType,
 				"on_hand":     onHandStr,
 				"reserved":    reservedStr,
 				"available":   available,
@@ -306,12 +306,12 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 
 func itemTypeLabel(itemType string, l centymo.InventoryLabels) string {
 	switch itemType {
+	case "none":
+		return l.TrackingMode.None
+	case "bulk":
+		return l.TrackingMode.Bulk
 	case "serialized":
-		return l.ItemType.Serialized
-	case "non_serialized":
-		return l.ItemType.NonSerialized
-	case "consumable":
-		return l.ItemType.Consumable
+		return l.TrackingMode.Serialized
 	default:
 		return itemType
 	}
@@ -319,11 +319,11 @@ func itemTypeLabel(itemType string, l centymo.InventoryLabels) string {
 
 func itemTypeVariant(itemType string) string {
 	switch itemType {
-	case "serialized":
+	case "none":
+		return "neutral"
+	case "bulk":
 		return "info"
-	case "non_serialized":
-		return "default"
-	case "consumable":
+	case "serialized":
 		return "success"
 	default:
 		return "default"

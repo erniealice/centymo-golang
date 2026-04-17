@@ -70,6 +70,10 @@ func productPlanFormLabels(l centymo.ProductPlanFormLabels) ProductPlanFormLabel
 
 // loadProductOptions fetches the product list and converts to options.
 // Returns nil slice on error (graceful degradation).
+//
+// Currently UNFILTERED — shows all products regardless of product_kind.
+// The bundle/package drawer kind-selector design is in research:
+// docs/plan/20260417-product-taxonomy-refactor/{claude,codex}-research.md
 func loadProductOptions(ctx context.Context, deps *ProductPlanDeps) []*ProductOption {
 	if deps.ListProducts == nil {
 		return nil

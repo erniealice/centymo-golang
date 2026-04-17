@@ -48,14 +48,14 @@
         </div>
         <div class="form-row single">
             {{template "auto-complete" (dict
-                "ID" "location-select"
-                "Name" "location_id"
-                "Label" .Labels.Location
-                "Placeholder" .Labels.LocationPlaceholder
+                "ID" "price-schedule-select"
+                "Name" "price_schedule_id"
+                "Label" .Labels.Schedule
+                "Placeholder" .Labels.SchedulePlaceholder
                 "SearchPlaceholder" "Filter..."
-                "Options" .LocationOptions
-                "Value" .SelectedLocationID
-                "SelectedLabel" .SelectedLocationLabel
+                "Options" .ScheduleOptions
+                "Value" .SelectedScheduleID
+                "SelectedLabel" .SelectedScheduleLabel
             )}}
         </div>
         <div class="form-row single">

@@ -42,11 +42,21 @@ type ModuleDeps struct {
 	// Deletable state
 	GetInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 
-	// DefaultFulfillmentMethod is applied when the product create form does not
-	// include a fulfillment_method value. Set to "service" for professional
-	// business types so new products created through the services UI appear in
-	// the services list (which filters fulfillment_method IN ('service','digital')).
-	DefaultFulfillmentMethod string
+	// DefaultProductKind is applied when the product create form does not include
+	// a product_kind value. Set to "service" for the services UI mount so new
+	// products appear in the services list (product_kind = 'service').
+	DefaultProductKind string
+	// DefaultDeliveryMode is applied when the form does not supply a delivery_mode value.
+	DefaultDeliveryMode string
+	// DefaultTrackingMode is applied when the form does not supply a tracking_mode value.
+	DefaultTrackingMode string
+
+	// Mode selects the product_kind filter set for the product list view.
+	// "service" (default/empty) filters product_kind = 'service'.
+	// "inventory" filters product_kind IN ('stocked_good','non_stocked_good','consumable').
+	// The block may instantiate this module twice with different Mode values to
+	// render both a service-flavoured mount and an inventory-flavoured mount.
+	Mode string
 
 	// Product CRUD
 	ListProducts     func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
@@ -172,15 +182,17 @@ type Module struct {
 
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &productaction.Deps{
-		Routes:                   deps.Routes,
-		Labels:                   deps.Labels,
-		CreateProduct:            deps.CreateProduct,
-		ReadProduct:              deps.ReadProduct,
-		UpdateProduct:            deps.UpdateProduct,
-		DeleteProduct:            deps.DeleteProduct,
-		SetProductActive:         deps.SetProductActive,
-		ListLines:                deps.ListLines,
-		DefaultFulfillmentMethod: deps.DefaultFulfillmentMethod,
+		Routes:              deps.Routes,
+		Labels:              deps.Labels,
+		CreateProduct:       deps.CreateProduct,
+		ReadProduct:         deps.ReadProduct,
+		UpdateProduct:       deps.UpdateProduct,
+		DeleteProduct:       deps.DeleteProduct,
+		SetProductActive:    deps.SetProductActive,
+		ListLines:           deps.ListLines,
+		DefaultProductKind:  deps.DefaultProductKind,
+		DefaultDeliveryMode: deps.DefaultDeliveryMode,
+		DefaultTrackingMode: deps.DefaultTrackingMode,
 	}
 	detailDeps := &productdetail.DetailViewDeps{
 		ReadProduct:               deps.ReadProduct,
@@ -272,6 +284,7 @@ func NewModule(deps *ModuleDeps) *Module {
 
 	listDeps := &productlist.ListViewDeps{
 		Routes:       deps.Routes,
+		Mode:         deps.Mode,
 		ListProducts: deps.ListProducts,
 		ListLines:    deps.ListLines,
 		GetInUseIDs:  deps.GetInUseIDs,
