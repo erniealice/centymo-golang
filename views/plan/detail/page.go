@@ -16,6 +16,7 @@ import (
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
@@ -30,6 +31,7 @@ type DetailViewDeps struct {
 	CommonLabels       pyeza.CommonLabels
 	TableLabels        types.TableLabels
 	ListProductPlans   func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProducts       func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	ListPricePlans     func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
 	ListLocations      func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
 	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
@@ -69,7 +71,7 @@ func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
-		activeTab := viewCtx.Request.URL.Query().Get("tab")
+		activeTab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.URL.Query().Get("tab"))
 		if activeTab == "" {
 			activeTab = "info"
 		}
@@ -88,7 +90,7 @@ func NewView(deps *DetailViewDeps) view.View {
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
-		tab := viewCtx.Request.PathValue("tab")
+		tab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.PathValue("tab"))
 		if tab == "" {
 			tab = "info"
 		}
@@ -255,9 +257,10 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 func buildTabItems(id string, l centymo.PlanLabels, productCount, priceListCount int, routes centymo.PlanRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
+	productsSlug := l.Tabs.ResolveTabSlug("products")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
-		{Key: "products", Label: l.Tabs.Products, Href: base + "?tab=products", HxGet: action + "products", Icon: "icon-package", Count: productCount, Disabled: false},
+		{Key: "products", Label: l.Tabs.Products, Href: base + "?tab=" + productsSlug, HxGet: action + productsSlug, Icon: "icon-package", Count: productCount, Disabled: false},
 		{Key: "pricelists", Label: l.Tabs.PriceLists, Href: base + "?tab=pricelists", HxGet: action + "pricelists", Icon: "icon-tag", Count: priceListCount, Disabled: false},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock", Count: 0, Disabled: false},
@@ -275,7 +278,21 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 
 	columns := []types.TableColumn{
 		{Key: "name", Label: l.Columns.Product, Sortable: true},
+		{Key: "item_type", Label: l.Columns.ItemType, Sortable: true, WidthClass: "col-3xl"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+	}
+
+	// Build product_id → product_kind map for the Item Type column.
+	productKinds := map[string]string{}
+	if deps.ListProducts != nil {
+		prodResp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+		if err == nil {
+			for _, p := range prodResp.GetData() {
+				if p != nil {
+					productKinds[p.GetId()] = p.GetProductKind()
+				}
+			}
+		}
 	}
 
 	rows := []types.TableRow{}
@@ -310,6 +327,9 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 					status = "inactive"
 				}
 
+				kind := productKinds[pp.GetProductId()]
+				kindLabel := l.ProductPlanForm.ProductKind.Label(kind)
+
 				rowActions := []types.TableAction{
 					{
 						Type:        "edit",
@@ -331,6 +351,7 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 					ID: ppID,
 					Cells: []types.TableCell{
 						{Type: "text", Value: name},
+						{Type: "text", Value: kindLabel},
 						{Type: "badge", Value: status, Variant: statusVariant(status)},
 					},
 					Actions: rowActions,
@@ -341,7 +362,7 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 
 	types.ApplyColumnStyles(columns, rows)
 
-	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", planID, "tab", "") + "products"
+	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", planID, "tab", "") + l.Tabs.ResolveTabSlug("products")
 
 	tableConfig := &types.TableConfig{
 		ID:                   "plan-products-table",
@@ -424,7 +445,7 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 					ppCurrency = "PHP"
 				}
 				amountCell := types.MoneyCell(float64(pp.GetAmount()), ppCurrency, true)
-				duration := fmt.Sprintf("%d %s", pp.GetDurationValue(), pp.GetDurationUnit())
+				duration := pyeza.FormatDuration(pp.GetDurationValue(), pp.GetDurationUnit(), deps.CommonLabels.DurationUnit)
 
 				scheduleName := "—"
 				if schedID := pp.GetPriceScheduleId(); schedID != "" {

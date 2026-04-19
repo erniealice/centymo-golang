@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -98,6 +99,7 @@ type EditFormData struct {
 	DurationValue string
 	DurationUnit  string
 	CommonLabels  pyeza.CommonLabels
+	Labels        centymo.PriceScheduleLabels
 
 	// PricingLocked is true when the price_plan is referenced by active subscriptions.
 	// The Pricing section fields (Amount, Currency, Duration, DurationUnit) are rendered
@@ -106,22 +108,32 @@ type EditFormData struct {
 	PricingLockedReason string
 }
 
-// ProductPriceFormData is the drawer form for adding/editing a ProductPricePlan.
-// SectionTitle + ProductFieldLabel pull from PriceScheduleDetailLabels so the
-// drawer reads "Service Price" / "Service" in the professional tier.
+// ProductPriceFormData is the drawer form for editing a ProductPricePlan.
+// Plan + Product sections are display-only context; only Price + Currency are editable.
+// Rows are auto-seeded from product_plan assignments on PricePlan create, so the
+// product selection is fixed per row.
 type ProductPriceFormData struct {
-	FormAction        string
-	IsEdit            bool
-	ID                string
-	ScheduleID        string
-	PricePlanID       string
-	ProductID         string
-	Price             string
-	Currency          string
-	ProductOptions    []types.SelectOption
-	SectionTitle      string
-	ProductFieldLabel string
-	CommonLabels      pyeza.CommonLabels
+	FormAction   string
+	IsEdit       bool
+	ID           string
+	ScheduleID   string
+	PricePlanID  string
+	ProductID    string
+	Price        string
+	Currency     string
+	CommonLabels pyeza.CommonLabels
+
+	// Display-only context (read-only).
+	PlanName           string
+	PlanDescription    string
+	ProductName        string
+	ProductDescription string
+
+	// PricingLocked is true when the parent PricePlan is referenced by an active
+	// subscription — editing the per-item price would shift revenue allocation
+	// on live engagements. Mirrors the PricePlan edit drawer's lock rule.
+	PricingLocked       bool
+	PricingLockedReason string
 }
 
 // NewView renders the full detail page at /app/price-schedules/detail/{id}/plan/{ppid}.
@@ -130,7 +142,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		sid := viewCtx.Request.PathValue("id")
 		ppid := viewCtx.Request.PathValue("ppid")
 
-		activeTab := viewCtx.Request.URL.Query().Get("tab")
+		activeTab := deps.ScheduleLabels.Tabs.CanonicalizeTab(viewCtx.Request.URL.Query().Get("tab"))
 		if activeTab == "" {
 			activeTab = "info"
 		}
@@ -149,7 +161,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		sid := viewCtx.Request.PathValue("id")
 		ppid := viewCtx.Request.PathValue("ppid")
-		tab := viewCtx.Request.PathValue("tab")
+		tab := deps.ScheduleLabels.Tabs.CanonicalizeTab(viewCtx.Request.PathValue("tab"))
 		if tab == "" {
 			tab = "info"
 		}
@@ -209,6 +221,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				DurationValue:       fmt.Sprintf("%d", pp.GetDurationValue()),
 				DurationUnit:        pp.GetDurationUnit(),
 				CommonLabels:        deps.CommonLabels,
+				Labels:              deps.ScheduleLabels,
 				PricingLocked:       pricingLocked,
 				PricingLockedReason: pricingLockedReason,
 			})
@@ -311,16 +324,15 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		ppid := viewCtx.Request.PathValue("ppid")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			planID := loadPricePlanPlanID(ctx, deps, ppid)
+			planName, planDesc := lookupPackageNameDesc(ctx, deps, ppid)
 			return view.OK("price-schedule-plan-product-price-drawer", &ProductPriceFormData{
-				FormAction:        route.ResolveURL(deps.Routes.PlanProductPriceAddURL, "id", sid, "ppid", ppid),
-				ScheduleID:        sid,
-				PricePlanID:       ppid,
-				Currency:          loadPricePlanCurrency(ctx, deps, ppid),
-				ProductOptions:    loadProductOptions(ctx, deps, planID, ""),
-				SectionTitle:      deps.ScheduleLabels.Detail.ProductPriceSection,
-				ProductFieldLabel: deps.ScheduleLabels.Detail.ProductField,
-				CommonLabels:      deps.CommonLabels,
+				FormAction:      route.ResolveURL(deps.Routes.PlanProductPriceAddURL, "id", sid, "ppid", ppid),
+				ScheduleID:      sid,
+				PricePlanID:     ppid,
+				Currency:        loadPricePlanCurrency(ctx, deps, ppid),
+				CommonLabels:    deps.CommonLabels,
+				PlanName:        planName,
+				PlanDescription: planDesc,
 			})
 		}
 
@@ -374,34 +386,54 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			planID := loadPricePlanPlanID(ctx, deps, ppid)
 			currency := existing.GetCurrency()
 			if currency == "" {
 				currency = "PHP"
 			}
+			planName, planDesc := lookupPackageNameDesc(ctx, deps, ppid)
+			prodName, prodDesc := lookupProductNameDesc(ctx, deps, existing.GetProductId())
+
+			pricingLocked := false
+			pricingLockedReason := ""
+			if deps.GetPricePlanInUseIDs != nil {
+				if inUse, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid}); inUse[ppid] {
+					pricingLocked = true
+					// TODO: lyngua — pull from deps.ScheduleLabels.Detail.ItemPricingLockedReason if added
+					pricingLockedReason = "This package is in use by active engagements. Item price and currency are locked to keep billing consistent."
+				}
+			}
+
 			return view.OK("price-schedule-plan-product-price-drawer", &ProductPriceFormData{
-				FormAction:        route.ResolveURL(deps.Routes.PlanProductPriceEditURL, "id", sid, "ppid", ppid, "pppid", pppid),
-				IsEdit:            true,
-				ID:                pppid,
-				ScheduleID:        sid,
-				PricePlanID:       ppid,
-				ProductID:         existing.GetProductId(),
-				Price:             fmt.Sprintf("%.2f", float64(existing.GetPrice())/100.0),
-				Currency:          currency,
-				ProductOptions:    loadProductOptions(ctx, deps, planID, existing.GetProductId()),
-				SectionTitle:      deps.ScheduleLabels.Detail.ProductPriceSection,
-				ProductFieldLabel: deps.ScheduleLabels.Detail.ProductField,
-				CommonLabels:      deps.CommonLabels,
+				FormAction:          route.ResolveURL(deps.Routes.PlanProductPriceEditURL, "id", sid, "ppid", ppid, "pppid", pppid),
+				IsEdit:              true,
+				ID:                  pppid,
+				ScheduleID:          sid,
+				PricePlanID:         ppid,
+				ProductID:           existing.GetProductId(),
+				Price:               fmt.Sprintf("%.2f", float64(existing.GetPrice())/100.0),
+				Currency:            currency,
+				CommonLabels:        deps.CommonLabels,
+				PlanName:            planName,
+				PlanDescription:     planDesc,
+				ProductName:         prodName,
+				ProductDescription:  prodDesc,
+				PricingLocked:       pricingLocked,
+				PricingLockedReason: pricingLockedReason,
 			})
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
 			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
-		productID := viewCtx.Request.FormValue("product_id")
-		if productID == "" {
-			return centymo.HTMXError("Product is required")
+		// Server-side lock enforcement: if the parent PricePlan is in use by an
+		// active subscription, reject price/currency changes (client may have
+		// bypassed the disabled inputs).
+		if deps.GetPricePlanInUseIDs != nil {
+			if inUse, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid}); inUse[ppid] {
+				return centymo.HTMXError("This package is in use by active engagements. Item price and currency are locked.")
+			}
 		}
+		// Product is display-only in the drawer — preserve the existing assignment.
 		priceCentavos, ok := parsePriceCentavos(viewCtx.Request.FormValue("price"))
 		if !ok {
 			return centymo.HTMXError("Invalid price value")
@@ -413,7 +445,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		updated := &productpriceplanpb.ProductPricePlan{
 			Id:          pppid,
 			PricePlanId: ppid,
-			ProductId:   productID,
+			ProductId:   existing.GetProductId(),
 			Price:       priceCentavos,
 			Currency:    currency,
 			Active:      existing.GetActive(),
@@ -480,7 +512,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 
 	duration := ""
 	if dv := pp.GetDurationValue(); dv > 0 {
-		duration = fmt.Sprintf("%d %s", dv, pp.GetDurationUnit())
+		duration = pyeza.FormatDuration(dv, pp.GetDurationUnit(), deps.CommonLabels.DurationUnit)
 	}
 
 	status := "active"
@@ -491,7 +523,19 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 	}
 
 	scheduleName := lookupScheduleName(ctx, deps, sid)
-	scheduleBack := route.ResolveURL(deps.Routes.DetailURL, "id", sid) + "?tab=plans"
+	scheduleBack := route.ResolveURL(deps.Routes.DetailURL, "id", sid) + "?tab=" + deps.ScheduleLabels.Tabs.ResolveTabSlug("plans")
+
+	// Fallback to linked Plan's name/description when price_plan values are blank —
+	// mirrors the rate-card packages-tab table convention.
+	planName, planDesc := lookupPlanNameDesc(ctx, deps, pp.GetPlanId())
+	effectiveName := strings.TrimSpace(pp.GetName())
+	if effectiveName == "" {
+		effectiveName = planName
+	}
+	effectiveDesc := strings.TrimSpace(pp.GetDescription())
+	if effectiveDesc == "" {
+		effectiveDesc = planDesc
+	}
 
 	// Product price count for tab badge
 	count := 0
@@ -508,22 +552,30 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 
 	base := route.ResolveURL(deps.Routes.PlanDetailURL, "id", sid, "ppid", ppid)
 	action := route.ResolveURL(deps.Routes.PlanTabActionURL, "id", sid, "ppid", ppid, "tab", "")
+	productPricesSlug := deps.ScheduleLabels.Tabs.ResolveTabSlug("product-prices")
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: deps.ScheduleLabels.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
-		{Key: "product-prices", Label: deps.ScheduleLabels.Tabs.ProductPrices, Href: base + "?tab=product-prices", HxGet: action + "product-prices", Icon: "icon-package", Count: count},
+		{Key: "product-prices", Label: deps.ScheduleLabels.Tabs.ProductPrices, Href: base + "?tab=" + productPricesSlug, HxGet: action + productPricesSlug, Icon: "icon-package", Count: count},
+	}
+
+	headerSubtitle := effectiveDesc
+	if headerSubtitle == "" {
+		headerSubtitle = deps.ScheduleLabels.Detail.NoDescriptionSubtitle
 	}
 
 	pageData := &PageData{
 		PageData: types.PageData{
-			CacheVersion:   viewCtx.CacheVersion,
-			Title:          pp.GetName(),
-			CurrentPath:    viewCtx.CurrentPath,
-			ActiveNav:      deps.Routes.ActiveNav,
-			ActiveSubNav:   deps.Routes.ActiveSubNav,
-			HeaderTitle:    pp.GetName(),
-			HeaderSubtitle: fmt.Sprintf("under %s", scheduleName),
-			HeaderIcon:     "icon-tag",
-			CommonLabels:   deps.CommonLabels,
+			CacheVersion:        viewCtx.CacheVersion,
+			Title:               effectiveName,
+			CurrentPath:         viewCtx.CurrentPath,
+			ActiveNav:           deps.Routes.ActiveNav,
+			ActiveSubNav:        deps.Routes.ActiveSubNav,
+			HeaderTitle:         effectiveName,
+			HeaderSubtitle:      headerSubtitle,
+			HeaderBreadcrumb:    scheduleName,
+			HeaderBreadcrumbURL: scheduleBack,
+			HeaderIcon:          "icon-tag",
+			CommonLabels:        deps.CommonLabels,
 		},
 		ContentTemplate:        "price-schedule-plan-detail-content",
 		ScheduleID:             sid,
@@ -534,8 +586,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 		ActiveTab:              activeTab,
 		TabItems:               tabItems,
 		ID:                     ppid,
-		Name:                   pp.GetName(),
-		Description:            pp.GetDescription(),
+		Name:                   effectiveName,
+		Description:            effectiveDesc,
 		Amount:                 amountCell,
 		Currency:               currency,
 		Duration:               duration,
@@ -575,7 +627,7 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 		}
 	}
 
-	refreshURL := route.ResolveURL(deps.Routes.PlanTabActionURL, "id", sid, "ppid", ppid, "tab", "product-prices")
+	refreshURL := route.ResolveURL(deps.Routes.PlanTabActionURL, "id", sid, "ppid", ppid, "tab", deps.ScheduleLabels.Tabs.ResolveTabSlug("product-prices"))
 	rows := []types.TableRow{}
 	if deps.ListProductPricePlans != nil {
 		pppResp, err := deps.ListProductPricePlans(ctx, &productpriceplanpb.ListProductPricePlansRequest{})
@@ -603,6 +655,10 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 						{Type: "text", Value: productName},
 						priceCell,
 					},
+					// No delete action: rows are auto-seeded from product_plan assignments,
+					// so deletion here would desync the two tables. Use the plan's
+					// Products tab to remove the product_plan link, which in turn
+					// should remove its product_price_plan rows.
 					Actions: []types.TableAction{
 						{
 							Type:            "edit",
@@ -611,17 +667,6 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 							URL:             route.ResolveURL(deps.Routes.PlanProductPriceEditURL, "id", sid, "ppid", ppid, "pppid", itemID),
 							DrawerTitle:     deps.ScheduleLabels.Detail.ProductPriceEdit,
 							Disabled:        !perms.Can("product_price_plan", "update"),
-							DisabledTooltip: l.Errors.Unauthorized,
-						},
-						{
-							Type:            "delete",
-							Label:           deps.ScheduleLabels.Detail.ProductPriceDelete,
-							Action:          "delete",
-							URL:             deps.Routes.PlanProductPriceDeleteURL,
-							ItemName:        productName,
-							ConfirmTitle:    deps.ScheduleLabels.Detail.ProductPriceDelete,
-							ConfirmMessage:  fmt.Sprintf(deps.ScheduleLabels.Detail.ProductPriceDeleteConfirm, productName),
-							Disabled:        !perms.Can("product_price_plan", "delete"),
 							DisabledTooltip: l.Errors.Unauthorized,
 						},
 					},
@@ -649,13 +694,9 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 			Title:   deps.ScheduleLabels.Detail.ProductPriceEmptyTitle,
 			Message: deps.ScheduleLabels.Detail.ProductPriceEmptyMsg,
 		},
-		PrimaryAction: &types.PrimaryAction{
-			Label:           deps.ScheduleLabels.Detail.ProductPriceAdd,
-			ActionURL:       route.ResolveURL(deps.Routes.PlanProductPriceAddURL, "id", sid, "ppid", ppid),
-			Icon:            "icon-plus",
-			Disabled:        !perms.Can("product_price_plan", "create"),
-			DisabledTooltip: l.Errors.Unauthorized,
-		},
+		// No PrimaryAction: product_price_plan rows are auto-seeded from product_plan
+		// assignments when the parent PricePlan is created, so manual Add is disabled here —
+		// users Edit existing rows instead.
 	}
 	types.ApplyTableSettings(cfg)
 	return cfg
@@ -793,6 +834,72 @@ func lookupScheduleName(ctx context.Context, deps *DetailViewDeps, scheduleID st
 		return n
 	}
 	return scheduleID
+}
+
+// lookupPlanNameDesc returns the linked Plan's name and description (trimmed).
+// Used as fallback when price_plan.Name / price_plan.Description are blank.
+func lookupPlanNameDesc(ctx context.Context, deps *DetailViewDeps, planID string) (string, string) {
+	if planID == "" || deps.ListPlans == nil {
+		return "", ""
+	}
+	resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
+	if err != nil {
+		return "", ""
+	}
+	for _, p := range resp.GetData() {
+		if p == nil || p.GetId() != planID {
+			continue
+		}
+		return strings.TrimSpace(p.GetName()), strings.TrimSpace(p.GetDescription())
+	}
+	return "", ""
+}
+
+// lookupProductNameDesc reads the Product and returns its trimmed name + description.
+func lookupProductNameDesc(ctx context.Context, deps *DetailViewDeps, productID string) (string, string) {
+	if productID == "" || deps.ListProducts == nil {
+		return "", ""
+	}
+	resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+	if err != nil {
+		return "", ""
+	}
+	for _, p := range resp.GetData() {
+		if p == nil || p.GetId() != productID {
+			continue
+		}
+		return strings.TrimSpace(p.GetName()), strings.TrimSpace(p.GetDescription())
+	}
+	return "", ""
+}
+
+// lookupPackageNameDesc resolves the display name + description for a price_plan,
+// falling back to the linked Plan's values when the price_plan fields are blank.
+// Used to populate the read-only Package section on the product-price drawer.
+func lookupPackageNameDesc(ctx context.Context, deps *DetailViewDeps, pricePlanID string) (string, string) {
+	if pricePlanID == "" || deps.ReadPricePlan == nil {
+		return "", ""
+	}
+	resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
+		Data: &priceplanpb.PricePlan{Id: pricePlanID},
+	})
+	if err != nil || len(resp.GetData()) == 0 {
+		return "", ""
+	}
+	pp := resp.GetData()[0]
+	name := strings.TrimSpace(pp.GetName())
+	desc := strings.TrimSpace(pp.GetDescription())
+	if name != "" && desc != "" {
+		return name, desc
+	}
+	planName, planDesc := lookupPlanNameDesc(ctx, deps, pp.GetPlanId())
+	if name == "" {
+		name = planName
+	}
+	if desc == "" {
+		desc = planDesc
+	}
+	return name, desc
 }
 
 func parsePriceCentavos(s string) (int64, bool) {

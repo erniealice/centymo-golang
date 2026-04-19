@@ -25,6 +25,7 @@ const (
 	PlanProductPlanAddURL    = "/action/plan/{id}/products/add"
 	PlanProductPlanEditURL   = "/action/plan/{id}/products/edit/{ppid}"
 	PlanProductPlanDeleteURL = "/action/plan/{id}/products/delete"
+	PlanProductPlanPickerURL = "/action/plan/{id}/products/picker"
 
 	// PricePlan standalone routes (rate cards as independent entity)
 	PricePlanDashboardURL        = "/app/price-plans/dashboard"

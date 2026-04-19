@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -14,10 +15,14 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
+	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 )
 
 // DetailViewDeps holds view dependencies for the price schedule detail page.
@@ -32,6 +37,14 @@ type DetailViewDeps struct {
 	ListPricePlans    func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
 	ListPlans         func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	CreatePricePlan   func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
+
+	// Auto-seed product_price_plan rows on PricePlan create. When a package is added
+	// under a rate-card, one ProductPricePlan row is created per linked product_plan,
+	// copying price/currency from the Product record so the newly-created PricePlan's
+	// "product-prices" tab is pre-populated.
+	ListProductPlans       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProducts           func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 
 	// Reference checker: returns a map of price_plan_id → true for plans in use by active subscriptions.
 	// Delete is disabled for in-use plans; Edit remains enabled (Pricing fields lock inside the drawer).
@@ -76,7 +89,7 @@ func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 
-		activeTab := viewCtx.Request.URL.Query().Get("tab")
+		activeTab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.URL.Query().Get("tab"))
 		if activeTab == "" {
 			activeTab = "info"
 		}
@@ -95,7 +108,7 @@ func NewView(deps *DetailViewDeps) view.View {
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
-		tab := viewCtx.Request.PathValue("tab")
+		tab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.PathValue("tab"))
 		if tab == "" {
 			tab = "info"
 		}
@@ -170,12 +183,109 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		}
 		pp.PriceScheduleId = &scheduleID
 
-		if _, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{Data: pp}); err != nil {
+		createResp, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{Data: pp})
+		if err != nil {
 			log.Printf("Failed to create price plan from schedule %s: %v", scheduleID, err)
 			return centymo.HTMXError(err.Error())
 		}
+
+		// Auto-seed product_price_plan rows: one per product_plan linked to this plan_id,
+		// copying price/currency from the Product record. Failures here are non-fatal —
+		// the main PricePlan create already succeeded.
+		autoSeedProductPricePlans(ctx, deps, createResp, planID)
+
 		return centymo.HTMXSuccess("price-schedule-plans-table")
 	})
+}
+
+// autoSeedProductPricePlans creates one ProductPricePlan row per product_plan linked
+// to planID, copying price/currency from the underlying Product record. This runs after
+// a successful CreatePricePlan so the newly-created PricePlan's "product-prices" tab is
+// pre-populated. All failures are logged and non-fatal.
+func autoSeedProductPricePlans(ctx context.Context, deps *DetailViewDeps, createResp *priceplanpb.CreatePricePlanResponse, planID string) {
+	if deps.ListProductPlans == nil || deps.ListProducts == nil || deps.CreateProductPricePlan == nil {
+		return
+	}
+	if createResp == nil || len(createResp.GetData()) == 0 {
+		log.Printf("auto-seed product_price_plan skipped: CreatePricePlan response had no data")
+		return
+	}
+	createdID := createResp.GetData()[0].GetId()
+	if createdID == "" {
+		log.Printf("auto-seed product_price_plan skipped: created PricePlan has no ID")
+		return
+	}
+
+	// Load product_plans for this plan_id (same filter pattern as
+	// views/plan/action/product_plan.go loadExistingProductIDs).
+	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
+		Filters: &commonpb.FilterRequest{
+			Logic: commonpb.FilterLogic_AND,
+			Filters: []*commonpb.TypedFilter{
+				{
+					Field: "plan_id",
+					FilterType: &commonpb.TypedFilter_StringFilter{
+						StringFilter: &commonpb.StringFilter{
+							Value:    planID,
+							Operator: commonpb.StringOperator_STRING_EQUALS,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("auto-seed product_price_plan: failed to list product_plans for plan %s: %v", planID, err)
+		return
+	}
+	if ppResp == nil || len(ppResp.GetData()) == 0 {
+		return
+	}
+
+	// Build product_id → Product map for price/currency lookup.
+	prodResp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+	if err != nil {
+		log.Printf("auto-seed product_price_plan: failed to list products: %v", err)
+		return
+	}
+	products := map[string]*productpb.Product{}
+	for _, p := range prodResp.GetData() {
+		if p != nil {
+			products[p.GetId()] = p
+		}
+	}
+
+	for _, pp := range ppResp.GetData() {
+		if pp == nil {
+			continue
+		}
+		productID := pp.GetProductId()
+		if productID == "" {
+			continue
+		}
+		// Seed a row regardless of whether the Product can be resolved — zero
+		// price + default currency when missing, so the nested "package-item-prices"
+		// tab is always pre-populated and the user can edit values from there.
+		var price int64
+		currency := "PHP"
+		if prod := products[productID]; prod != nil {
+			price = prod.GetPrice()
+			if c := prod.GetCurrency(); c != "" {
+				currency = c
+			}
+		}
+		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{
+			Data: &productpriceplanpb.ProductPricePlan{
+				PricePlanId: createdID,
+				ProductId:   productID,
+				Price:       price,
+				Currency:    currency,
+				Active:      true,
+			},
+		}); err != nil {
+			log.Printf("auto-seed product_price_plan failed for %s/%s: %v", createdID, productID, err)
+		}
+	}
 }
 
 func lookupScheduleName(ctx context.Context, deps *DetailViewDeps, scheduleID string) string {
@@ -251,6 +361,11 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	planCount := countPlansForSchedule(ctx, deps, ps)
 	tabItems := buildTabItems(id, l, planCount, deps.Routes)
 
+	headerSubtitle := strings.TrimSpace(ps.GetDescription())
+	if headerSubtitle == "" {
+		headerSubtitle = l.Detail.NoDescriptionSubtitle
+	}
+
 	pageData := &PageData{
 		PageData: types.PageData{
 			CacheVersion:   viewCtx.CacheVersion,
@@ -259,7 +374,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 			ActiveNav:      deps.Routes.ActiveNav,
 			ActiveSubNav:   deps.Routes.ActiveSubNav,
 			HeaderTitle:    ps.GetName(),
-			HeaderSubtitle: ps.GetDescription(),
+			HeaderSubtitle: headerSubtitle,
 			HeaderIcon:     "icon-calendar",
 			CommonLabels:   deps.CommonLabels,
 		},
@@ -290,9 +405,10 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 func buildTabItems(id string, l centymo.PriceScheduleLabels, planCount int, routes centymo.PriceScheduleRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
+	plansSlug := l.Tabs.ResolveTabSlug("plans")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
-		{Key: "plans", Label: l.Tabs.Plans, Href: base + "?tab=plans", HxGet: action + "plans", Icon: "icon-layers", Count: planCount},
+		{Key: "plans", Label: l.Tabs.Plans, Href: base + "?tab=" + plansSlug, HxGet: action + plansSlug, Icon: "icon-layers", Count: planCount},
 	}
 }
 
@@ -346,19 +462,35 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 				inUseIDs, _ = deps.GetPricePlanInUseIDs(ctx, ppIDs)
 			}
 
+			// Build plan ID → name map for fallback display when price_plan.Name is blank.
+			planNames := map[string]string{}
+			if deps.ListPlans != nil {
+				planResp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
+				if err == nil {
+					for _, p := range planResp.GetData() {
+						if p != nil {
+							planNames[p.GetId()] = p.GetName()
+						}
+					}
+				}
+			}
+
 			for _, pp := range resp.GetData() {
 				if pp == nil || pp.GetPriceScheduleId() != schedID {
 					continue
 				}
 				ppID := pp.GetId()
-				name := pp.GetName()
+				name := strings.TrimSpace(pp.GetName())
+				if name == "" {
+					name = planNames[pp.GetPlanId()]
+				}
 				currency := pp.GetCurrency()
 				if currency == "" {
 					currency = "PHP"
 				}
 				duration := ""
 				if dv := pp.GetDurationValue(); dv > 0 {
-					duration = fmt.Sprintf("%d %s", dv, pp.GetDurationUnit())
+					duration = pyeza.FormatDuration(dv, pp.GetDurationUnit(), deps.CommonLabels.DurationUnit)
 				}
 				planStatus := "active"
 				planVariant := "success"
@@ -418,7 +550,7 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 	types.ApplyColumnStyles(columns, rows)
 
 
-	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", ps.GetId(), "tab", "plans")
+	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", ps.GetId(), "tab", l.Tabs.ResolveTabSlug("plans"))
 	tableConfig := &types.TableConfig{
 		ID:                   "price-schedule-plans-table",
 		RefreshURL:           refreshURL,

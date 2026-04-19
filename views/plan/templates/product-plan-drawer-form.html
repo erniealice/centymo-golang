@@ -2,28 +2,53 @@
 Product Plan drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit product plan actions within a plan detail.
 Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
-      .FormAction, .IsEdit, .ProductOptions, .CommonLabels, .Labels
+      .FormAction, .PickerURL, .IsEdit, .ProductOptions, .SelectedKind,
+      .KindOptions, .KindLabel, .ProductLabel, .ProductPlaceholder,
+      .CommonLabels, .Labels
 */}}
 {{define "product-plan-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="if (event.detail.elt === this) lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="plan_id" value="{{.PlanID}}">
 
     <div class="sheet-body">
-        {{/* --- Product selector --- */}}
+        {{/* --- Item-type (product_kind) selector — HTMX-swaps the picker below --- */}}
         <div class="form-row single">
-            {{template "auto-complete" (dict
-                "ID" "product-select"
-                "Name" "product_id"
-                "Label" .Labels.Product
-                "Placeholder" .Labels.ProductPlaceholder
-                "SearchPlaceholder" "Filter..."
-                "Options" .ProductOptions
-                "Value" .SelectedProductID
-                "SelectedLabel" .SelectedProductLabel
-            )}}
-            {{/* Hidden name field — populated on form submit via product name */}}
-            <input type="hidden" name="name" value="{{.Name}}">
+            <div class="form-group">
+                <label class="form-label" for="product-kind-select">{{.KindLabel}}</label>
+                <select
+                    id="product-kind-select"
+                    class="form-select"
+                    name="product_kind"
+                    hx-get="{{.PickerURL}}"
+                    hx-trigger="change"
+                    hx-target="#product-picker-wrapper"
+                    hx-swap="innerHTML"
+                    hx-include="this"
+                >
+                    {{range .KindOptions}}
+                    <option value="{{.Value}}" {{if eq .Value $.SelectedKind}}selected{{end}}>{{.Label}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+
+        {{/* --- Product selector (swapped by kind change) --- */}}
+        <div class="form-row single">
+            <div id="product-picker-wrapper">
+                {{template "auto-complete" (dict
+                    "ID" "product-select"
+                    "Name" "product_id"
+                    "Label" .ProductLabel
+                    "Placeholder" .ProductPlaceholder
+                    "SearchPlaceholder" "Filter..."
+                    "Options" .ProductOptions
+                    "Value" .SelectedProductID
+                    "SelectedLabel" .SelectedProductLabel
+                )}}
+                {{/* Hidden name field — populated on form submit via product name */}}
+                <input type="hidden" name="name" value="{{.Name}}">
+            </div>
         </div>
 
         {{/* --- Active toggle --- */}}

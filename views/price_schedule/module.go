@@ -24,10 +24,11 @@ import (
 
 // ModuleDeps holds all dependencies for the price_schedule module.
 type ModuleDeps struct {
-	Routes       centymo.PriceScheduleRoutes
-	Labels       centymo.PriceScheduleLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes          centymo.PriceScheduleRoutes
+	Labels          centymo.PriceScheduleLabels
+	PricePlanLabels centymo.PricePlanLabels // used by the schedule-scoped price_plan detail page
+	CommonLabels    pyeza.CommonLabels
+	TableLabels     types.TableLabels
 
 	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 	ReadPriceSchedule   func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
@@ -105,16 +106,19 @@ func NewModule(deps *ModuleDeps) *Module {
 	tableView := priceschedulelist.NewTableView(listDeps)
 
 	detailDeps := &pricescheduledetail.DetailViewDeps{
-		Routes:               deps.Routes,
-		Labels:               deps.Labels,
-		CommonLabels:         deps.CommonLabels,
-		TableLabels:          deps.TableLabels,
-		ReadPriceSchedule:    deps.ReadPriceSchedule,
-		ListLocations:        deps.ListLocations,
-		ListPricePlans:       deps.ListPricePlans,
-		ListPlans:            deps.ListPlans,
-		CreatePricePlan:      deps.CreatePricePlan,
-		GetPricePlanInUseIDs: deps.GetPricePlanInUseIDs,
+		Routes:                 deps.Routes,
+		Labels:                 deps.Labels,
+		CommonLabels:           deps.CommonLabels,
+		TableLabels:            deps.TableLabels,
+		ReadPriceSchedule:      deps.ReadPriceSchedule,
+		ListLocations:          deps.ListLocations,
+		ListPricePlans:         deps.ListPricePlans,
+		ListPlans:              deps.ListPlans,
+		CreatePricePlan:        deps.CreatePricePlan,
+		ListProductPlans:       deps.ListProductPlans,
+		ListProducts:           deps.ListProducts,
+		CreateProductPricePlan: deps.CreateProductPricePlan,
+		GetPricePlanInUseIDs:   deps.GetPricePlanInUseIDs,
 	}
 
 	planDetailDeps := &priceschedulePlan.DetailViewDeps{
@@ -162,20 +166,23 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 }
 
-// pricePlanLabelsFromDeps provides a fallback PricePlanLabels for the schedule-scoped
-// plan detail. The module intentionally does not force callers to pass a full PricePlanLabels —
-// only error strings are referenced.
+// pricePlanLabelsFromDeps returns the caller-supplied PricePlanLabels when set;
+// otherwise falls back to DefaultPricePlanLabels with error strings copied from
+// the parent schedule so HTMX error rendering stays tier-consistent.
 func pricePlanLabelsFromDeps(deps *ModuleDeps) centymo.PricePlanLabels {
-	return centymo.PricePlanLabels{
-		Errors: centymo.PricePlanErrorLabels{
-			NotFound:     deps.Labels.Errors.NotFound,
-			LoadFailed:   deps.Labels.Errors.LoadFailed,
-			Unauthorized: deps.Labels.Errors.Unauthorized,
-			CreateFailed: deps.Labels.Errors.CreateFailed,
-			UpdateFailed: deps.Labels.Errors.UpdateFailed,
-			DeleteFailed: deps.Labels.Errors.DeleteFailed,
-		},
+	if deps.PricePlanLabels.Detail.Heading != "" || deps.PricePlanLabels.Tabs.Info != "" {
+		return deps.PricePlanLabels
 	}
+	l := centymo.DefaultPricePlanLabels()
+	l.Errors = centymo.PricePlanErrorLabels{
+		NotFound:     deps.Labels.Errors.NotFound,
+		LoadFailed:   deps.Labels.Errors.LoadFailed,
+		Unauthorized: deps.Labels.Errors.Unauthorized,
+		CreateFailed: deps.Labels.Errors.CreateFailed,
+		UpdateFailed: deps.Labels.Errors.UpdateFailed,
+		DeleteFailed: deps.Labels.Errors.DeleteFailed,
+	}
+	return l
 }
 
 // RegisterRoutes registers all price_schedule routes.

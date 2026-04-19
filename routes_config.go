@@ -879,6 +879,7 @@ type PlanRoutes struct {
 	ProductPlanAddURL    string `json:"product_plan_add_url"`
 	ProductPlanEditURL   string `json:"product_plan_edit_url"`
 	ProductPlanDeleteURL string `json:"product_plan_delete_url"`
+	ProductPlanPickerURL string `json:"product_plan_picker_url"`
 }
 
 // DefaultPlanRoutes returns a PlanRoutes populated from the package-level
@@ -909,6 +910,7 @@ func DefaultPlanRoutes() PlanRoutes {
 		ProductPlanAddURL:    PlanProductPlanAddURL,
 		ProductPlanEditURL:   PlanProductPlanEditURL,
 		ProductPlanDeleteURL: PlanProductPlanDeleteURL,
+		ProductPlanPickerURL: PlanProductPlanPickerURL,
 	}
 }
 
@@ -953,6 +955,7 @@ func DefaultPlanBundleRoutes() PlanRoutes {
 	r.ProductPlanAddURL = shift(r.ProductPlanAddURL)
 	r.ProductPlanEditURL = shift(r.ProductPlanEditURL)
 	r.ProductPlanDeleteURL = shift(r.ProductPlanDeleteURL)
+	r.ProductPlanPickerURL = shift(r.ProductPlanPickerURL)
 	return r
 }
 
@@ -981,6 +984,7 @@ func (r PlanRoutes) RouteMap() map[string]string {
 		"plan.product_plan.add":    r.ProductPlanAddURL,
 		"plan.product_plan.edit":   r.ProductPlanEditURL,
 		"plan.product_plan.delete": r.ProductPlanDeleteURL,
+		"plan.product_plan.picker": r.ProductPlanPickerURL,
 	}
 }
 

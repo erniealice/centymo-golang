@@ -156,7 +156,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 	l := deps.Labels
 	columns := pricePlanColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms, planNames, scheduleNames)
+	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms, planNames, scheduleNames, deps.CommonLabels.DurationUnit)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -218,7 +218,7 @@ func pricePlanColumns(l centymo.PricePlanLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centymo.PricePlanLabels, routes centymo.PricePlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, planNames, scheduleNames map[string]string) []types.TableRow {
+func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centymo.PricePlanLabels, routes centymo.PricePlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, planNames, scheduleNames map[string]string, durationLabels pyeza.DurationUnitLabels) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, pp := range pricePlans {
 		recordStatus := "active"
@@ -233,7 +233,7 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 
 		durationDisplay := ""
 		if pp.GetDurationValue() > 0 {
-			durationDisplay = strconv.FormatInt(int64(pp.GetDurationValue()), 10) + " " + pp.GetDurationUnit()
+			durationDisplay = pyeza.FormatDuration(pp.GetDurationValue(), pp.GetDurationUnit(), durationLabels)
 		}
 
 		planName := planNames[pp.GetPlanId()]

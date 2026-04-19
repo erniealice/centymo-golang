@@ -1,6 +1,8 @@
 package centymo
 
 import (
+	"strings"
+
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 )
@@ -2535,10 +2537,39 @@ type PlanLabels struct {
 
 // ProductPlanFormLabels holds translatable labels for the ProductPlan add/edit form within a plan.
 type ProductPlanFormLabels struct {
-	Product            string `json:"product"`
-	ProductPlaceholder string `json:"productPlaceholder"`
-	SelectProduct      string `json:"selectProduct"`
-	Active             string `json:"active"`
+	Product            string                 `json:"product"`
+	ProductPlaceholder string                 `json:"productPlaceholder"`
+	SelectProduct      string                 `json:"selectProduct"`
+	Active             string                 `json:"active"`
+	ProductKindLabel   string                 `json:"productKindLabel"`
+	ProductKind        ProductKindOptionLabels `json:"productKind"`
+}
+
+// ProductKindOptionLabels provides translated labels for each product_kind
+// enum value, used to build the kind selector on the add/edit drawer AND
+// to map product_kind values to display labels in table cells.
+type ProductKindOptionLabels struct {
+	Service        string `json:"service"`
+	StockedGood    string `json:"stockedGood"`
+	NonStockedGood string `json:"nonStockedGood"`
+	Consumable     string `json:"consumable"`
+}
+
+// Label returns the translated label for a product_kind value
+// ("service" | "stocked_good" | "non_stocked_good" | "consumable").
+// Unknown values round-trip through as-is so callers always get a string.
+func (k ProductKindOptionLabels) Label(kind string) string {
+	switch kind {
+	case "service":
+		return k.Service
+	case "stocked_good":
+		return k.StockedGood
+	case "non_stocked_good":
+		return k.NonStockedGood
+	case "consumable":
+		return k.Consumable
+	}
+	return kind
 }
 
 // PricePlanFormLabels holds translatable labels for the PricePlan add/edit form.
@@ -2586,6 +2617,7 @@ type PlanColumnLabels struct {
 	PricePlan   string `json:"pricePlan"`
 	Duration    string `json:"duration"`
 	Location    string `json:"location"`
+	ItemType    string `json:"itemType"`
 }
 
 type PlanEmptyLabels struct {
@@ -2672,11 +2704,36 @@ type PlanDetailLabels struct {
 }
 
 type PlanTabLabels struct {
-	Info        string `json:"info"`
-	Products    string `json:"products"`
-	PriceLists  string `json:"priceLists"`
-	Attachments string `json:"attachments"`
-	AuditTrail  string `json:"auditTrail"`
+	Info          string `json:"info"`
+	Products      string `json:"products"`
+	ProductsSlug  string `json:"productsSlug"`
+	PriceLists    string `json:"priceLists"`
+	Attachments   string `json:"attachments"`
+	AuditTrail    string `json:"auditTrail"`
+}
+
+// ResolveTabSlug returns the URL slug for a canonical tab key. Today only the
+// "products" tab is re-slugged (e.g., professional tier ships "items"); other
+// tabs round-trip through as-is.
+func (t PlanTabLabels) ResolveTabSlug(canonical string) string {
+	if canonical == "products" {
+		if s := strings.TrimSpace(t.ProductsSlug); s != "" {
+			return s
+		}
+	}
+	return canonical
+}
+
+// CanonicalizeTab maps an incoming URL tab slug back to its canonical key so
+// internal template lookups and equality checks stay tier-agnostic.
+func (t PlanTabLabels) CanonicalizeTab(slug string) string {
+	if slug == "" {
+		return ""
+	}
+	if s := strings.TrimSpace(t.ProductsSlug); s != "" && slug == s {
+		return "products"
+	}
+	return slug
 }
 
 type PlanConfirmLabels struct {
@@ -2824,6 +2881,7 @@ func DefaultPlanLabels() PlanLabels {
 			PricePlan:   "Price Plan",
 			Duration:    "Duration",
 			Location:    "Location",
+			ItemType:    "Item Type",
 		},
 		Empty: PlanEmptyLabels{
 			Title:           "No plans found",
@@ -2934,9 +2992,16 @@ func DefaultPlanLabels() PlanLabels {
 		},
 		ProductPlanForm: ProductPlanFormLabels{
 			Product:            "Product",
-			ProductPlaceholder: "Select a product...",
+			ProductPlaceholder: "Select an item...",
 			SelectProduct:      "— Select a product —",
 			Active:             "Active",
+			ProductKindLabel:   "Item Type",
+			ProductKind: ProductKindOptionLabels{
+				Service:        "Service",
+				StockedGood:    "Stocked Good",
+				NonStockedGood: "Non-Stocked Good",
+				Consumable:     "Consumable",
+			},
 		},
 	}
 }
@@ -3276,9 +3341,44 @@ type PriceScheduleConfirmLabels struct {
 }
 
 type PriceScheduleTabLabels struct {
-	Info          string `json:"info"`
-	Plans         string `json:"plans"`
-	ProductPrices string `json:"productPrices"`
+	Info              string `json:"info"`
+	Plans             string `json:"plans"`
+	PlansSlug         string `json:"plansSlug"`
+	ProductPrices     string `json:"productPrices"`
+	ProductPricesSlug string `json:"productPricesSlug"`
+}
+
+// ResolveTabSlug returns the URL slug for a canonical tab key. Today only the
+// "plans" tab on the parent detail and "product-prices" on the nested plan
+// detail are re-slugged (e.g., professional tier ships "packages" /
+// "package-item-prices"); other tabs round-trip through as-is.
+func (t PriceScheduleTabLabels) ResolveTabSlug(canonical string) string {
+	switch canonical {
+	case "plans":
+		if s := strings.TrimSpace(t.PlansSlug); s != "" {
+			return s
+		}
+	case "product-prices":
+		if s := strings.TrimSpace(t.ProductPricesSlug); s != "" {
+			return s
+		}
+	}
+	return canonical
+}
+
+// CanonicalizeTab maps an incoming URL tab slug back to its canonical key so
+// internal template lookups and equality checks stay tier-agnostic.
+func (t PriceScheduleTabLabels) CanonicalizeTab(slug string) string {
+	if slug == "" {
+		return ""
+	}
+	if s := strings.TrimSpace(t.PlansSlug); s != "" && slug == s {
+		return "plans"
+	}
+	if s := strings.TrimSpace(t.ProductPricesSlug); s != "" && slug == s {
+		return "product-prices"
+	}
+	return slug
 }
 
 type PriceScheduleDetailLabels struct {
@@ -3288,8 +3388,9 @@ type PriceScheduleDetailLabels struct {
 	NoLocation      string `json:"noLocation"`
 	NoDateEnd       string `json:"noDateEnd"`
 	NoDescription   string `json:"noDescription"`
-	PlansEmptyTitle string `json:"plansEmptyTitle"`
-	PlansEmptyMsg   string `json:"plansEmptyMsg"`
+	PlansEmptyTitle      string `json:"plansEmptyTitle"`
+	PlansEmptyMsg        string `json:"plansEmptyMsg"`
+	NoDescriptionSubtitle string `json:"noDescriptionSubtitle"`
 
 	// Product price (per-product breakdown, shown on the schedule-scoped plan detail).
 	// Professional tier renames these to "Service Price" via lyngua.
@@ -3409,6 +3510,7 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			NoDescription:             "—",
 			PlansEmptyTitle:           "No Plans",
 			PlansEmptyMsg:             "No price plans are linked to this schedule yet.",
+			NoDescriptionSubtitle:     "No description provided",
 			ProductPriceAdd:           "Add Product Price",
 			ProductPriceEdit:          "Edit Product Price",
 			ProductPriceDelete:        "Delete Product Price",

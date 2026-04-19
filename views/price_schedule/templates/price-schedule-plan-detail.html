@@ -6,13 +6,6 @@
 {{/* Content-only partial */}}
 {{define "price-schedule-plan-detail-content"}}
 <div class="page-content detail-layout" data-page-title="{{.Name}}">
-    <div class="detail-back-link">
-        <a href="{{.ScheduleBackURL}}" class="btn btn-ghost btn-sm">
-            {{template "icon-chevron-left" .}}
-            Back to {{.ScheduleName}}
-        </a>
-    </div>
-
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "price-schedule-plan-detail-tabs")}}
     </div>
@@ -75,7 +68,7 @@
     </div>
 
     <div class="detail-actions detail-actions--spaced">
-        <a class="btn btn-ghost btn-sm"
+        <a class="btn btn-primary"
            hx-get="{{.EditURL}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
@@ -105,63 +98,71 @@
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     <input type="hidden" name="id" value="{{.ID}}">
     <div class="sheet-body">
-        {{template "form-section" (dict "Title" "Schedule")}}
+        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionSchedule)}}
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "_schedule_display" "Label" "Price Schedule" "Value" .ScheduleName "Disabled" true)}}
+            {{template "form-group" (dict "Type" "text" "Name" "_schedule_display" "Label" .Labels.PlanForm.PriceScheduleField "Value" .ScheduleName "Disabled" true)}}
         </div>
 
-        {{template "form-section" (dict "Title" "Plan")}}
+        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionPackage)}}
         <div class="form-row single">
             {{template "auto-complete" (dict
                 "ID" "plan-select-edit"
                 "Name" "plan_id"
-                "Label" "Plan"
-                "Placeholder" "Select a plan..."
-                "SearchPlaceholder" "Filter..."
+                "Label" .Labels.PlanForm.PackageLabel
+                "Placeholder" .Labels.PlanForm.PackagePlaceholder
+                "SearchPlaceholder" .Labels.PlanForm.PackageSearch
                 "Options" .PlanOptions
                 "Value" .PlanID
                 "SelectedLabel" .PlanLabel
             )}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" "Plan Name" "Value" .Name "Placeholder" "Enter plan name")}}
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.PlanForm.NameLabel "Value" .Name "Placeholder" .Labels.PlanForm.NamePlaceholder)}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" "Description" "Value" .Description "Placeholder" "Enter description..." "MaxLength" 500)}}
+            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.PlanForm.DescriptionLabel "Value" .Description "Placeholder" .Labels.PlanForm.DescriptionPlaceholder "MaxLength" 500)}}
         </div>
 
-        {{template "form-section" (dict "Title" "Pricing")}}
+        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionPricing)}}
         {{if .PricingLockedReason}}
         <div class="form-row single">
             {{template "alert" (dict "State" "info" "Message" .PricingLockedReason)}}
         </div>
         {{end}}
         <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "amount" "Label" "Amount" "Value" .Amount "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0" "Disabled" .PricingLocked)}}
-            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" .Currency "Required" true "Disabled" .PricingLocked)}}
+            {{template "form-group" (dict "Type" "number" "Name" "amount" "Label" .Labels.PlanForm.AmountLabel "Value" .Amount "Required" true "Placeholder" .Labels.PlanForm.AmountPlaceholder "Step" "0.01" "Min" "0" "Disabled" .PricingLocked)}}
+            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" .Labels.PlanForm.CurrencyLabel "Value" .Currency "Required" true "Disabled" .PricingLocked)}}
         </div>
         <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" "Duration" "Value" .DurationValue "Required" true "Min" "1" "Disabled" .PricingLocked)}}
-            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" "Unit" "Value" .DurationUnit "Disabled" .PricingLocked "Options" (list (dict "Value" "days" "Label" .CommonLabels.DurationUnit.DayPlural) (dict "Value" "weeks" "Label" .CommonLabels.DurationUnit.WeekPlural) (dict "Value" "months" "Label" .CommonLabels.DurationUnit.MonthPlural) (dict "Value" "years" "Label" .CommonLabels.DurationUnit.YearPlural)))}}
+            {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" .Labels.PlanForm.DurationLabel "Value" .DurationValue "Required" true "Min" "1" "Disabled" .PricingLocked)}}
+            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" .Labels.PlanForm.UnitLabel "Value" .DurationUnit "Disabled" .PricingLocked "Options" (list (dict "Value" "days" "Label" .CommonLabels.DurationUnit.DaySelect) (dict "Value" "weeks" "Label" .CommonLabels.DurationUnit.WeekSelect) (dict "Value" "months" "Label" .CommonLabels.DurationUnit.MonthSelect) (dict "Value" "years" "Label" .CommonLabels.DurationUnit.YearSelect)))}}
         </div>
     </div>
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" true)}}
 </form>
 {{end}}
 
-{{/* Product Price add/edit drawer — titles + field labels come from PriceScheduleDetailLabels */}}
-{{/* so the professional tier renders them as "Service Price" / "Service". */}}
+{{/* Product Price edit drawer — Plan + Product are display-only context;
+     only Price + Currency are editable. Rows are auto-seeded on PricePlan create.
+     Pricing locks when the parent PricePlan has an active subscription. */}}
 {{define "price-schedule-plan-product-price-drawer"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <div class="sheet-body">
-        {{template "form-section" (dict "Title" .SectionTitle)}}
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "select" "Name" "product_id" "Label" .ProductFieldLabel "Required" true "Value" .ProductID "Options" .ProductOptions)}}
+            {{template "form-group" (dict "Type" "text" "Name" "_plan_display" "Label" "Package" "Value" .PlanName "Disabled" true "Hint" .PlanDescription)}}
         </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "_product_display" "Label" "Item" "Value" .ProductName "Disabled" true "Hint" .ProductDescription)}}
+        </div>
+        {{if .PricingLockedReason}}
+        <div class="form-row single">
+            {{template "alert" (dict "State" "info" "Message" .PricingLockedReason)}}
+        </div>
+        {{end}}
         <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" "Price" "Value" .Price "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0")}}
-            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" .Currency "Required" true)}}
+            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" "Price" "Value" .Price "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0" "Disabled" .PricingLocked)}}
+            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" .Currency "Required" true "Disabled" .PricingLocked)}}
         </div>
     </div>
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

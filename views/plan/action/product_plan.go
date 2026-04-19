@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -29,14 +31,27 @@ type ProductPlanFormLabels struct {
 	Active             string
 }
 
+// KindOption is a value/label pair for the product_kind selector on the
+// product plan drawer form.
+type KindOption struct {
+	Value string
+	Label string
+}
+
 // ProductPlanFormData is the template data for the product plan drawer form.
 type ProductPlanFormData struct {
 	FormAction           string
+	PickerURL            string
 	IsEdit               bool
 	ID                   string
 	PlanID               string
 	Name                 string
 	Mode                 string
+	SelectedKind         string
+	KindOptions          []KindOption
+	KindLabel            string
+	ProductLabel         string
+	ProductPlaceholder   string
 	SelectedProductID    string
 	SelectedProductLabel string
 	Active               bool
@@ -68,13 +83,31 @@ func productPlanFormLabels(l centymo.ProductPlanFormLabels) ProductPlanFormLabel
 	}
 }
 
+// buildKindOptions returns the ordered list of product_kind selector options,
+// with labels sourced from the caller's lyngua-driven ProductKind labels.
+func buildKindOptions(l centymo.ProductKindOptionLabels) []KindOption {
+	return []KindOption{
+		{Value: "service", Label: fallbackLabel(l.Service, "Service")},
+		{Value: "stocked_good", Label: fallbackLabel(l.StockedGood, "Stocked Good")},
+		{Value: "non_stocked_good", Label: fallbackLabel(l.NonStockedGood, "Non-Stocked Good")},
+		{Value: "consumable", Label: fallbackLabel(l.Consumable, "Consumable")},
+	}
+}
+
+func fallbackLabel(primary, fallback string) string {
+	if primary == "" {
+		return fallback
+	}
+	return primary
+}
+
 // loadProductOptions fetches the product list and converts to options.
 // Returns nil slice on error (graceful degradation).
 //
-// Currently UNFILTERED — shows all products regardless of product_kind.
-// The bundle/package drawer kind-selector design is in research:
-// docs/plan/20260417-product-taxonomy-refactor/{claude,codex}-research.md
-func loadProductOptions(ctx context.Context, deps *ProductPlanDeps) []*ProductOption {
+// When kind is non-empty, results are filtered to products whose
+// product_kind matches exactly (e.g., "service", "stocked_good",
+// "non_stocked_good", "consumable"). Empty kind = no filter.
+func loadProductOptions(ctx context.Context, deps *ProductPlanDeps, kind string) []*ProductOption {
 	if deps.ListProducts == nil {
 		return nil
 	}
@@ -85,11 +118,17 @@ func loadProductOptions(ctx context.Context, deps *ProductPlanDeps) []*ProductOp
 	}
 	var options []*ProductOption
 	for _, p := range resp.GetData() {
+		if kind != "" && p.GetProductKind() != kind {
+			continue
+		}
 		options = append(options, &ProductOption{
 			Id:   p.GetId(),
 			Name: p.GetName(),
 		})
 	}
+	sort.SliceStable(options, func(i, j int) bool {
+		return strings.ToLower(options[i].Name) < strings.ToLower(options[j].Name)
+	})
 	return options
 }
 
@@ -153,6 +192,26 @@ func findProductLabel(products []*ProductOption, id string) string {
 	return ""
 }
 
+// lookupProductKind resolves a product's product_kind by scanning the unfiltered
+// product list. Returns empty string if the product is missing or ListProducts
+// is unavailable, so callers can fall back to a sensible default.
+func lookupProductKind(ctx context.Context, deps *ProductPlanDeps, productID string) string {
+	if productID == "" || deps.ListProducts == nil {
+		return ""
+	}
+	resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+	if err != nil {
+		log.Printf("Failed to look up product kind for %s: %v", productID, err)
+		return ""
+	}
+	for _, p := range resp.GetData() {
+		if p.GetId() == productID {
+			return p.GetProductKind()
+		}
+	}
+	return ""
+}
+
 // NewProductPlanAddAction creates the product plan add action (GET = form, POST = create).
 // URL: /action/plans/{id}/products/add
 func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
@@ -165,18 +224,26 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 		planID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			products := loadProductOptions(ctx, deps)
+			selectedKind := "service"
+			products := loadProductOptions(ctx, deps, selectedKind)
 			disabledIDs := loadExistingProductIDs(ctx, deps, planID)
+			formLabels := deps.Labels.ProductPlanForm
 			return view.OK("product-plan-drawer-form", &ProductPlanFormData{
-				FormAction:     route.ResolveURL(deps.Routes.ProductPlanAddURL, "id", planID),
-				PlanID:         planID,
-				Name:           "",
-				Mode:           "service",
-				Active:         true,
-				Products:       products,
-				ProductOptions: buildProductAutoCompleteOptions(products, "", disabledIDs),
-				Labels:         productPlanFormLabels(deps.Labels.ProductPlanForm),
-				CommonLabels:   nil, // injected by ViewAdapter
+				FormAction:         route.ResolveURL(deps.Routes.ProductPlanAddURL, "id", planID),
+				PickerURL:          route.ResolveURL(deps.Routes.ProductPlanPickerURL, "id", planID),
+				PlanID:             planID,
+				Name:               "",
+				Mode:               "service",
+				SelectedKind:       selectedKind,
+				KindOptions:        buildKindOptions(formLabels.ProductKind),
+				KindLabel:          fallbackLabel(formLabels.ProductKindLabel, "Item Type"),
+				ProductLabel:       formLabels.Product,
+				ProductPlaceholder: formLabels.ProductPlaceholder,
+				Active:             true,
+				Products:           products,
+				ProductOptions:     buildProductAutoCompleteOptions(products, "", disabledIDs),
+				Labels:             productPlanFormLabels(formLabels),
+				CommonLabels:       nil, // injected by ViewAdapter
 			})
 		}
 
@@ -195,7 +262,7 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 			name = r.FormValue("product_name")
 		}
 		if name == "" && productID != "" {
-			products := loadProductOptions(ctx, deps)
+			products := loadProductOptions(ctx, deps, "")
 			name = findProductLabel(products, productID)
 		}
 
@@ -245,21 +312,36 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 			}
 			pp := data[0]
 
-			products := loadProductOptions(ctx, deps)
 			selectedProductID := pp.GetProductId()
+			// Derive kind from the saved product's kind. Fall back to "service"
+			// when the product can't be located (legacy data) so the picker
+			// still has a sensible default to filter by.
+			selectedKind := "service"
+			allProducts := loadProductOptions(ctx, deps, "")
+			if kind := lookupProductKind(ctx, deps, selectedProductID); kind != "" {
+				selectedKind = kind
+			}
+			products := loadProductOptions(ctx, deps, selectedKind)
+			formLabels := deps.Labels.ProductPlanForm
 			return view.OK("product-plan-drawer-form", &ProductPlanFormData{
 				FormAction:           route.ResolveURL(deps.Routes.ProductPlanEditURL, "id", planID, "ppid", ppID),
+				PickerURL:            route.ResolveURL(deps.Routes.ProductPlanPickerURL, "id", planID),
 				IsEdit:               true,
 				ID:                   ppID,
 				PlanID:               planID,
 				Name:                 pp.GetName(),
 				Mode:                 "service",
+				SelectedKind:         selectedKind,
+				KindOptions:          buildKindOptions(formLabels.ProductKind),
+				KindLabel:            fallbackLabel(formLabels.ProductKindLabel, "Item Type"),
+				ProductLabel:         formLabels.Product,
+				ProductPlaceholder:   formLabels.ProductPlaceholder,
 				SelectedProductID:    selectedProductID,
-				SelectedProductLabel: findProductLabel(products, selectedProductID),
+				SelectedProductLabel: findProductLabel(allProducts, selectedProductID),
 				Active:               pp.GetActive(),
 				Products:             products,
 				ProductOptions:       buildProductAutoCompleteOptions(products, selectedProductID, nil),
-				Labels:               productPlanFormLabels(deps.Labels.ProductPlanForm),
+				Labels:               productPlanFormLabels(formLabels),
 				CommonLabels:         nil, // injected by ViewAdapter
 			})
 		}
@@ -278,7 +360,7 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 			name = r.FormValue("product_name")
 		}
 		if name == "" && productID != "" {
-			products := loadProductOptions(ctx, deps)
+			products := loadProductOptions(ctx, deps, "")
 			name = findProductLabel(products, productID)
 		}
 
@@ -299,6 +381,50 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 		}
 
 		return centymo.HTMXSuccess("plan-products-table")
+	})
+}
+
+// PickerPartialData is the template data for the product-picker-partial template.
+// Rendered by NewProductPlanPickerAction when the kind selector changes.
+type PickerPartialData struct {
+	PlanID               string
+	Name                 string
+	SelectedKind         string
+	SelectedProductID    string
+	SelectedProductLabel string
+	ProductLabel         string
+	ProductPlaceholder   string
+	ProductOptions       []map[string]any
+}
+
+// NewProductPlanPickerAction handles GET /action/plan/{id}/products/picker?product_kind=...
+// Returns only the product-picker-partial template, filtered by the requested kind.
+// Swapped into #product-picker-wrapper on the drawer form via HTMX.
+func NewProductPlanPickerAction(deps *ProductPlanDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product_plan", "create") && !perms.Can("product_plan", "update") {
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+		}
+
+		planID := viewCtx.Request.PathValue("id")
+		kind := viewCtx.Request.URL.Query().Get("product_kind")
+		if kind == "" {
+			kind = "service"
+		}
+
+		products := loadProductOptions(ctx, deps, kind)
+		disabledIDs := loadExistingProductIDs(ctx, deps, planID)
+		formLabels := deps.Labels.ProductPlanForm
+		return view.OK("product-picker-partial", &PickerPartialData{
+			PlanID:             planID,
+			Name:               "",
+			SelectedKind:       kind,
+			SelectedProductID:  "",
+			ProductLabel:       formLabels.Product,
+			ProductPlaceholder: formLabels.ProductPlaceholder,
+			ProductOptions:     buildProductAutoCompleteOptions(products, "", disabledIDs),
+		})
 	})
 }
 

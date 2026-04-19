@@ -784,6 +784,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				priceScheduleDeps := &priceschedulemod.ModuleDeps{
 					Routes:                   priceScheduleRoutes,
 					Labels:                   priceScheduleLabels,
+					PricePlanLabels:          pricePlanLabels,
 					CommonLabels:             ctx.Common,
 					TableLabels:              centymoTableLabels,
 					ListPriceSchedules:       uc.ListPriceSchedules.Execute,
@@ -921,6 +922,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if useCases.Product != nil && useCases.Product.ProductPlan != nil {
 					planDetailDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
 				}
+				if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
+					planDetailDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+				}
 				if useCases.Subscription.PricePlan != nil {
 					planDetailDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
 				}
@@ -986,6 +990,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ctx.Routes.GET(planRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(productPlanActionDeps))
 					ctx.Routes.POST(planRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(productPlanActionDeps))
 					ctx.Routes.POST(planRoutes.ProductPlanDeleteURL, planaction.NewProductPlanDeleteAction(productPlanActionDeps))
+					ctx.Routes.GET(planRoutes.ProductPlanPickerURL, planaction.NewProductPlanPickerAction(productPlanActionDeps))
 				}
 			}
 
@@ -1044,6 +1049,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					}
 					if useCases.Product != nil && useCases.Product.ProductPlan != nil {
 						planBundleDetailDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+					}
+					if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
+						planBundleDetailDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
 					}
 					if useCases.Subscription.PricePlan != nil {
 						planBundleDetailDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
@@ -1107,6 +1115,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						ctx.Routes.GET(planBundleRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(ppBundleProductPlanDeps))
 						ctx.Routes.POST(planBundleRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(ppBundleProductPlanDeps))
 						ctx.Routes.POST(planBundleRoutes.ProductPlanDeleteURL, planaction.NewProductPlanDeleteAction(ppBundleProductPlanDeps))
+						ctx.Routes.GET(planBundleRoutes.ProductPlanPickerURL, planaction.NewProductPlanPickerAction(ppBundleProductPlanDeps))
 					}
 				}
 			}

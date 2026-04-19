@@ -312,7 +312,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	duration := ""
 	if dv := pp.GetDurationValue(); dv > 0 {
-		duration = fmt.Sprintf("%d %s", dv, pp.GetDurationUnit())
+		duration = pyeza.FormatDuration(dv, pp.GetDurationUnit(), deps.CommonLabels.DurationUnit)
 	}
 
 	status := "active"
