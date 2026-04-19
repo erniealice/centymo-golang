@@ -46,6 +46,10 @@ type DetailViewDeps struct {
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
 	DeleteProductPricePlan func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
+
+	// Reference checker: returns a map of price_plan_id → true for plans in use by active subscriptions.
+	// When a plan is in use, Pricing fields in the Edit drawer are read-only.
+	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
 // PageData is the template data for the schedule-scoped plan detail page.
@@ -53,24 +57,24 @@ type PageData struct {
 	types.PageData
 	ContentTemplate string
 
-	ScheduleID       string
-	ScheduleName     string
-	ScheduleBackURL  string
-	PricePlan        *priceplanpb.PricePlan
-	Labels           centymo.PricePlanLabels
-	ActiveTab        string
-	TabItems         []pyeza.TabItem
+	ScheduleID      string
+	ScheduleName    string
+	ScheduleBackURL string
+	PricePlan       *priceplanpb.PricePlan
+	Labels          centymo.PricePlanLabels
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
 
-	ID             string
-	Name           string
-	Description    string
-	Amount         types.TableCell
-	Currency       string
-	Duration       string
-	Status         string
-	StatusVariant  string
-	CreatedDate    string
-	ModifiedDate   string
+	ID            string
+	Name          string
+	Description   string
+	Amount        types.TableCell
+	Currency      string
+	Duration      string
+	Status        string
+	StatusVariant string
+	CreatedDate   string
+	ModifiedDate  string
 
 	EditURL                string
 	ProductPricesTable     *types.TableConfig
@@ -85,6 +89,7 @@ type EditFormData struct {
 	ScheduleName  string
 	ID            string
 	PlanID        string
+	PlanLabel     string // display label for the currently-selected plan (for SelectedLabel on auto-complete)
 	PlanOptions   []map[string]any
 	Name          string
 	Description   string
@@ -93,6 +98,12 @@ type EditFormData struct {
 	DurationValue string
 	DurationUnit  string
 	CommonLabels  pyeza.CommonLabels
+
+	// PricingLocked is true when the price_plan is referenced by active subscriptions.
+	// The Pricing section fields (Amount, Currency, Duration, DurationUnit) are rendered
+	// as read-only in the drawer, but all other fields remain editable.
+	PricingLocked       bool
+	PricingLockedReason string
 }
 
 // ProductPriceFormData is the drawer form for adding/editing a ProductPricePlan.
@@ -168,20 +179,38 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				return centymo.HTMXError(deps.PlanLabels.Errors.NotFound)
 			}
 			pp := resp.GetData()[0]
+
+			// Check whether this plan is referenced by active subscriptions.
+			// When true, the Pricing section is rendered read-only in the drawer.
+			pricingLocked := false
+			pricingLockedReason := ""
+			if deps.GetPricePlanInUseIDs != nil {
+				inUseMap, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid})
+				if inUseMap[ppid] {
+					pricingLocked = true
+					// TODO: lyngua — pull from deps.ScheduleLabels.Detail.PricingLockedReason if added
+					pricingLockedReason = "This plan is in use by active subscriptions. Pricing changes are disabled. You can still rename or reassign the package."
+				}
+			}
+
+			planOpts := buildPlanOptions(ctx, deps, pp.GetPlanId())
 			return view.OK("price-schedule-plan-edit-drawer", &EditFormData{
-				FormAction:    route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
-				ScheduleID:    sid,
-				ScheduleName:  lookupScheduleName(ctx, deps, sid),
-				ID:            ppid,
-				PlanID:        pp.GetPlanId(),
-				PlanOptions:   buildPlanOptions(ctx, deps, pp.GetPlanId()),
-				Name:          pp.GetName(),
-				Description:   pp.GetDescription(),
-				Amount:        strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64),
-				Currency:      pp.GetCurrency(),
-				DurationValue: fmt.Sprintf("%d", pp.GetDurationValue()),
-				DurationUnit:  pp.GetDurationUnit(),
-				CommonLabels:  deps.CommonLabels,
+				FormAction:          route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
+				ScheduleID:          sid,
+				ScheduleName:        lookupScheduleName(ctx, deps, sid),
+				ID:                  ppid,
+				PlanID:              pp.GetPlanId(),
+				PlanLabel:           labelFromOptions(planOpts, pp.GetPlanId()),
+				PlanOptions:         planOpts,
+				Name:                pp.GetName(),
+				Description:         pp.GetDescription(),
+				Amount:              strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64),
+				Currency:            pp.GetCurrency(),
+				DurationValue:       fmt.Sprintf("%d", pp.GetDurationValue()),
+				DurationUnit:        pp.GetDurationUnit(),
+				CommonLabels:        deps.CommonLabels,
+				PricingLocked:       pricingLocked,
+				PricingLockedReason: pricingLockedReason,
 			})
 		}
 
@@ -198,22 +227,41 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 		if currency == "" {
 			currency = "PHP"
 		}
-		// Read existing to preserve active state (not in form)
+		// Read existing to preserve active state (not in form) and to enforce
+		// pricing-field immutability when the plan is in use by active subscriptions.
 		existing, _ := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{Data: &priceplanpb.PricePlan{Id: ppid}})
 		active := true
 		if existing != nil && len(existing.GetData()) > 0 {
 			active = existing.GetData()[0].GetActive()
 		}
+
+		// Server-side guard: if this plan is referenced by active subscriptions,
+		// overwrite the four pricing fields with the existing DB values so a client
+		// cannot bypass the read-only drawer by editing the HTML.
+		durationUnit := r.FormValue("duration_unit")
+		if deps.GetPricePlanInUseIDs != nil && existing != nil && len(existing.GetData()) > 0 {
+			inUseMap, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid})
+			if inUseMap[ppid] {
+				ex := existing.GetData()[0]
+				amount = ex.GetAmount()
+				currency = ex.GetCurrency()
+				dv = int64(ex.GetDurationValue())
+				durationUnit = ex.GetDurationUnit()
+			}
+		}
+
+		planPageName := r.FormValue("name")
+		planPageDesc := r.FormValue("description")
 		req := &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				Id:            ppid,
 				PlanId:        r.FormValue("plan_id"),
-				Name:          r.FormValue("name"),
-				Description:   r.FormValue("description"),
+				Name:          &planPageName,
+				Description:   &planPageDesc,
 				Amount:        amount,
 				Currency:      currency,
 				DurationValue: int32(dv),
-				DurationUnit:  r.FormValue("duration_unit"),
+				DurationUnit:  durationUnit,
 				Active:        active,
 			},
 		}
@@ -477,24 +525,24 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 			HeaderIcon:     "icon-tag",
 			CommonLabels:   deps.CommonLabels,
 		},
-		ContentTemplate: "price-schedule-plan-detail-content",
-		ScheduleID:      sid,
-		ScheduleName:    scheduleName,
-		ScheduleBackURL: scheduleBack,
-		PricePlan:       pp,
-		Labels:          deps.PlanLabels,
-		ActiveTab:       activeTab,
-		TabItems:        tabItems,
-		ID:              ppid,
-		Name:            pp.GetName(),
-		Description:     pp.GetDescription(),
-		Amount:          amountCell,
-		Currency:        currency,
-		Duration:        duration,
-		Status:          status,
-		StatusVariant:   statusVariant,
-		CreatedDate:     pp.GetDateCreatedString(),
-		ModifiedDate:    pp.GetDateModifiedString(),
+		ContentTemplate:        "price-schedule-plan-detail-content",
+		ScheduleID:             sid,
+		ScheduleName:           scheduleName,
+		ScheduleBackURL:        scheduleBack,
+		PricePlan:              pp,
+		Labels:                 deps.PlanLabels,
+		ActiveTab:              activeTab,
+		TabItems:               tabItems,
+		ID:                     ppid,
+		Name:                   pp.GetName(),
+		Description:            pp.GetDescription(),
+		Amount:                 amountCell,
+		Currency:               currency,
+		Duration:               duration,
+		Status:                 status,
+		StatusVariant:          statusVariant,
+		CreatedDate:            pp.GetDateCreatedString(),
+		ModifiedDate:           pp.GetDateModifiedString(),
 		EditURL:                route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
 		ProductPriceEmptyTitle: deps.ScheduleLabels.Detail.ProductPriceEmptyTitle,
 		ProductPriceEmptyMsg:   deps.ScheduleLabels.Detail.ProductPriceEmptyMsg,
@@ -511,8 +559,8 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 	l := deps.PlanLabels
 
 	columns := []types.TableColumn{
-		{Key: "product", Label: "Product", Sortable: true},
-		{Key: "price", Label: "Price", Sortable: true, WidthClass: "col-4xl"},
+		{Key: "product", Label: deps.ScheduleLabels.Detail.ProductPriceColumnProduct, Sortable: true},
+		{Key: "price", Label: deps.ScheduleLabels.Detail.ProductPriceColumnPrice, Sortable: true, WidthClass: "col-4xl"},
 	}
 
 	productNames := map[string]string{}
@@ -722,9 +770,10 @@ func buildPlanOptions(ctx context.Context, deps *DetailViewDeps, selectedID stri
 			continue
 		}
 		opts = append(opts, map[string]any{
-			"Value":    p.GetId(),
-			"Label":    p.GetName(),
-			"Selected": p.GetId() == selectedID,
+			"Value":       p.GetId(),
+			"Label":       p.GetName(),
+			"Description": p.GetDescription(),
+			"Selected":    p.GetId() == selectedID,
 		})
 	}
 	return opts
@@ -752,4 +801,17 @@ func parsePriceCentavos(s string) (int64, bool) {
 		return 0, false
 	}
 	return int64(math.Round(f * 100)), true
+}
+
+// labelFromOptions returns the Label string for the option whose Value matches id.
+// Used to populate SelectedLabel on the edit-drawer auto-complete.
+func labelFromOptions(opts []map[string]any, id string) string {
+	for _, opt := range opts {
+		if v, ok := opt["Value"].(string); ok && v == id {
+			if label, ok := opt["Label"].(string); ok {
+				return label
+			}
+		}
+	}
+	return ""
 }

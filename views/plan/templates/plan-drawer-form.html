@@ -1,7 +1,7 @@
 {{/*
 Plan drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .Name, .Description, .FulfillmentType, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
+Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "plan-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
@@ -30,20 +30,6 @@ Data: .Name, .Description, .FulfillmentType, .ID, .FormAction, .IsEdit, .CommonL
             )}}
         </div>
 
-        <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "select"
-                "Name" "fulfillment_type"
-                "Label" .Labels.FulfillmentType
-                "Value" .FulfillmentType
-                "Options" (list
-                    (dict "Value" "schedule" "Label" .Labels.TypeSchedule)
-                    (dict "Value" "license" "Label" .Labels.TypeLicense)
-                    (dict "Value" "content" "Label" .Labels.TypeContent)
-                    (dict "Value" "physical" "Label" .Labels.TypePhysical)
-                )
-            )}}
-        </div>
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

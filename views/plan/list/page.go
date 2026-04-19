@@ -212,7 +212,6 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 func planColumns(l centymo.PlanLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "interval", Label: l.Columns.Interval, Sortable: true, WidthClass: "col-4xl"},
 		{Key: "price", Label: l.Columns.Price, Sortable: true, WidthClass: "col-2xl"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
@@ -229,10 +228,6 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, r
 
 		id := p.GetId()
 		name := p.GetName()
-		fulfillmentType := p.GetFulfillmentType()
-		if fulfillmentType == "" {
-			fulfillmentType = "schedule"
-		}
 		description := p.GetDescription()
 
 		actions := []types.TableAction{
@@ -287,15 +282,13 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, r
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
-				{Type: "badge", Value: fulfillmentType, Variant: intervalVariant(fulfillmentType)},
 				{Type: "text", Value: description},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
-				"name":     name,
-				"interval": fulfillmentType,
-				"price":    description,
-				"status":   recordStatus,
+				"name":   name,
+				"price":  description,
+				"status": recordStatus,
 			},
 			Actions: actions,
 		})

@@ -3,43 +3,43 @@
     <input type="hidden" name="price_schedule_id" value="{{.ScheduleID}}">
 
     <div class="sheet-body">
-        {{template "form-section" (dict "Title" "Schedule")}}
+        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionSchedule)}}
         <div class="form-row single">
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "_schedule_display"
-                "Label" "Price Schedule"
+                "Label" .Labels.PlanForm.PriceScheduleField
                 "Value" .ScheduleName
                 "Disabled" true
             )}}
         </div>
 
-        {{template "form-section" (dict "Title" "Plan")}}
+        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionPackage)}}
         <div class="form-row single">
             {{template "auto-complete" (dict
                 "ID" "plan-select"
                 "Name" "plan_id"
-                "Label" "Plan"
-                "Placeholder" "Select a plan..."
-                "SearchPlaceholder" "Filter..."
+                "Label" .Labels.PlanForm.PackageLabel
+                "Placeholder" .Labels.PlanForm.PackagePlaceholder
+                "SearchPlaceholder" .Labels.PlanForm.PackageSearch
                 "Options" .PlanOptions
             )}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" "Plan Name" "Required" true "Placeholder" "Enter plan name")}}
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.PlanForm.NameLabel "Placeholder" .Labels.PlanForm.NamePlaceholder)}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" "Description" "Placeholder" "Enter description...")}}
+            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.PlanForm.DescriptionLabel "Placeholder" .Labels.PlanForm.DescriptionPlaceholder "MaxLength" 500)}}
         </div>
 
-        {{template "form-section" (dict "Title" "Pricing")}}
+        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionPricing)}}
         <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "amount" "Label" "Amount" "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0")}}
-            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" "PHP" "Required" true "Placeholder" "PHP")}}
+            {{template "form-group" (dict "Type" "number" "Name" "amount" "Label" .Labels.PlanForm.AmountLabel "Required" true "Placeholder" .Labels.PlanForm.AmountPlaceholder "Step" "0.01" "Min" "0")}}
+            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" .Labels.PlanForm.CurrencyLabel "Value" "PHP" "Required" true "Placeholder" .Labels.PlanForm.CurrencyPlaceholder)}}
         </div>
         <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" "Duration" "Required" true "Value" "1" "Min" "1")}}
-            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" "Unit" "Value" "months" "Options" (list (dict "Value" "days" "Label" "Days") (dict "Value" "weeks" "Label" "Weeks") (dict "Value" "months" "Label" "Months") (dict "Value" "years" "Label" "Years")))}}
+            {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" .Labels.PlanForm.DurationLabel "Required" true "Value" "1" "Min" "1")}}
+            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" .Labels.PlanForm.UnitLabel "Value" "months" "Options" (list (dict "Value" "days" "Label" .CommonLabels.DurationUnit.DayPlural) (dict "Value" "weeks" "Label" .CommonLabels.DurationUnit.WeekPlural) (dict "Value" "months" "Label" .CommonLabels.DurationUnit.MonthPlural) (dict "Value" "years" "Label" .CommonLabels.DurationUnit.YearPlural)))}}
         </div>
     </div>
 

@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	centymo "github.com/erniealice/centymo-golang"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -48,12 +49,13 @@ type FormData struct {
 	Schedules             []*ScheduleOption
 	ScheduleOptions       []map[string]any
 	Labels                centymo.PricePlanFormLabels
-	CommonLabels          any
+	CommonLabels          pyeza.CommonLabels
 }
 
 type Deps struct {
 	Routes             centymo.PricePlanRoutes
 	Labels             centymo.PricePlanLabels
+	CommonLabels       pyeza.CommonLabels
 	CreatePricePlan    func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
 	ReadPricePlan      func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	UpdatePricePlan    func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
@@ -167,6 +169,7 @@ func NewAddAction(deps *Deps) view.View {
 				Schedules:       schedules,
 				ScheduleOptions: buildScheduleAutoCompleteOptions(schedules, ""),
 				Labels:          deps.Labels.Form,
+				CommonLabels:    deps.CommonLabels,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -176,11 +179,13 @@ func NewAddAction(deps *Deps) view.View {
 		active := r.FormValue("active") == "true"
 		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
 		scheduleID := r.FormValue("price_schedule_id")
+		createName := r.FormValue("name")
+		createDescription := r.FormValue("description")
 		req := &priceplanpb.CreatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				PlanId:        r.FormValue("plan_id"),
-				Name:          r.FormValue("name"),
-				Description:   r.FormValue("description"),
+				Name:          &createName,
+				Description:   &createDescription,
 				Amount:        parseAmount(r.FormValue("amount")),
 				Currency:      r.FormValue("currency"),
 				DurationValue: int32(dv),
@@ -237,6 +242,7 @@ func NewEditAction(deps *Deps) view.View {
 				Schedules:             schedules,
 				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
 				Labels:                deps.Labels.Form,
+				CommonLabels:          deps.CommonLabels,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -246,12 +252,14 @@ func NewEditAction(deps *Deps) view.View {
 		active := r.FormValue("active") == "true"
 		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
 		scheduleID := r.FormValue("price_schedule_id")
+		editName := r.FormValue("name")
+		editDescription := r.FormValue("description")
 		req := &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				Id:            id,
 				PlanId:        r.FormValue("plan_id"),
-				Name:          r.FormValue("name"),
-				Description:   r.FormValue("description"),
+				Name:          &editName,
+				Description:   &editDescription,
 				Amount:        parseAmount(r.FormValue("amount")),
 				Currency:      r.FormValue("currency"),
 				DurationValue: int32(dv),
@@ -326,10 +334,12 @@ func NewSetStatusAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		record := readResp.GetData()[0]
+		statusName := record.GetName()
+		statusDescription := record.GetDescription()
 		_, err = deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
-				Id: id, PlanId: record.GetPlanId(), Name: record.GetName(),
-				Description: record.GetDescription(), Amount: record.GetAmount(),
+				Id: id, PlanId: record.GetPlanId(), Name: &statusName,
+				Description: &statusDescription, Amount: record.GetAmount(),
 				Currency: record.GetCurrency(), DurationValue: record.GetDurationValue(),
 				DurationUnit: record.GetDurationUnit(), Active: status == "active",
 				PriceScheduleId: record.PriceScheduleId,
@@ -360,10 +370,12 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				continue
 			}
 			record := readResp.GetData()[0]
+			bulkName := record.GetName()
+			bulkDescription := record.GetDescription()
 			_, _ = deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{
 				Data: &priceplanpb.PricePlan{
-					Id: id, PlanId: record.GetPlanId(), Name: record.GetName(),
-					Description: record.GetDescription(), Amount: record.GetAmount(),
+					Id: id, PlanId: record.GetPlanId(), Name: &bulkName,
+					Description: &bulkDescription, Amount: record.GetAmount(),
 					Currency: record.GetCurrency(), DurationValue: record.GetDurationValue(),
 					DurationUnit: record.GetDurationUnit(), Active: status == "active",
 					PriceScheduleId: record.PriceScheduleId,

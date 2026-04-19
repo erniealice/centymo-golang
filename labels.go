@@ -3020,6 +3020,20 @@ type PricePlanDetailLabels2 struct {
 	AttachmentsTab string `json:"attachmentsTab"`
 	AuditTab       string `json:"auditTab"`
 	ProductsTab    string `json:"productsTab"`
+
+	// Info-tab field labels (price-schedule-plan-tab-info).
+	Heading       string `json:"heading"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	Amount        string `json:"amount"`
+	Currency      string `json:"currency"`
+	Duration      string `json:"duration"`
+	ScheduleLabel string `json:"scheduleLabel"`
+	Status        string `json:"status"`
+	DateCreated   string `json:"dateCreated"`
+	DateModified  string `json:"dateModified"`
+	Edit          string `json:"edit"`
+	EditTitle     string `json:"editTitle"`
 }
 
 type PricePlanTabLabels2 struct {
@@ -3120,6 +3134,18 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			AttachmentsTab: "Attachments",
 			AuditTab:       "Audit Trail",
 			ProductsTab:    "Products",
+			Heading:        "Plan Info",
+			Name:           "Name",
+			Description:    "Description",
+			Amount:         "Amount",
+			Currency:       "Currency",
+			Duration:       "Duration",
+			ScheduleLabel:  "Schedule",
+			Status:         "Status",
+			DateCreated:    "Date Created",
+			DateModified:   "Date Modified",
+			Edit:           "Edit",
+			EditTitle:      "Edit Plan",
 		},
 		Tabs: PricePlanTabLabels2{
 			Info:        "Information",
@@ -3150,16 +3176,39 @@ func DefaultPricePlanLabels() PricePlanLabels {
 
 // PriceScheduleLabels holds all labels for the price schedule module.
 type PriceScheduleLabels struct {
-	Page    PriceSchedulePageLabels    `json:"page"`
-	Buttons PriceScheduleButtonLabels  `json:"buttons"`
-	Columns PriceScheduleColumnLabels  `json:"columns"`
-	Empty   PriceScheduleEmptyLabels   `json:"empty"`
-	Form    PriceScheduleFormLabels    `json:"form"`
-	Bulk    PriceScheduleBulkLabels    `json:"bulk"`
-	Confirm PriceScheduleConfirmLabels `json:"confirm"`
-	Tabs    PriceScheduleTabLabels     `json:"tabs"`
-	Detail  PriceScheduleDetailLabels  `json:"detail"`
-	Errors  PriceScheduleErrorLabels   `json:"errors"`
+	Page     PriceSchedulePageLabels      `json:"page"`
+	Buttons  PriceScheduleButtonLabels    `json:"buttons"`
+	Columns  PriceScheduleColumnLabels    `json:"columns"`
+	Empty    PriceScheduleEmptyLabels     `json:"empty"`
+	Form     PriceScheduleFormLabels      `json:"form"`
+	PlanForm PriceSchedulePlanFormLabels  `json:"planForm"`
+	Bulk     PriceScheduleBulkLabels      `json:"bulk"`
+	Confirm  PriceScheduleConfirmLabels   `json:"confirm"`
+	Tabs     PriceScheduleTabLabels       `json:"tabs"`
+	Detail   PriceScheduleDetailLabels    `json:"detail"`
+	Errors   PriceScheduleErrorLabels     `json:"errors"`
+}
+
+// PriceSchedulePlanFormLabels holds labels for the "Add Plan" (price_plan) drawer form
+// within a price schedule. Professional tier overrides field names (e.g., "Package").
+type PriceSchedulePlanFormLabels struct {
+	SectionSchedule        string `json:"sectionSchedule"`
+	SectionPackage         string `json:"sectionPackage"`
+	SectionPricing         string `json:"sectionPricing"`
+	PriceScheduleField     string `json:"priceScheduleField"`
+	PackageLabel           string `json:"packageLabel"`
+	PackagePlaceholder     string `json:"packagePlaceholder"`
+	PackageSearch          string `json:"packageSearch"`
+	NameLabel              string `json:"nameLabel"`
+	NamePlaceholder        string `json:"namePlaceholder"`
+	DescriptionLabel       string `json:"descriptionLabel"`
+	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
+	AmountLabel            string `json:"amountLabel"`
+	AmountPlaceholder      string `json:"amountPlaceholder"`
+	CurrencyLabel          string `json:"currencyLabel"`
+	CurrencyPlaceholder    string `json:"currencyPlaceholder"`
+	DurationLabel          string `json:"durationLabel"`
+	UnitLabel              string `json:"unitLabel"`
 }
 
 type PriceSchedulePageLabels struct {
@@ -3252,6 +3301,29 @@ type PriceScheduleDetailLabels struct {
 	ProductPriceEmptyMsg      string `json:"productPriceEmptyMsg"`
 	ProductPriceSection       string `json:"productPriceSection"` // drawer section title ("Product Price" / "Service Price")
 	ProductField              string `json:"productField"`        // drawer product select label ("Product" / "Service")
+
+	// Plans table columns (price-schedule-detail plans tab).
+	PlanColumnPlan     string `json:"planColumnPlan"`
+	PlanColumnAmount   string `json:"planColumnAmount"`
+	PlanColumnDuration string `json:"planColumnDuration"`
+	PlanColumnStatus   string `json:"planColumnStatus"`
+
+	// Plans table row actions + confirms.
+	PlanView            string `json:"planView"`
+	PlanEdit            string `json:"planEdit"`
+	PlanEditDrawerTitle string `json:"planEditDrawerTitle"`
+	PlanDelete          string `json:"planDelete"`
+	PlanDeleteTitle     string `json:"planDeleteTitle"`
+	PlanDeleteMsg       string `json:"planDeleteMsg"`
+	PlanInUseTooltip    string `json:"planInUseTooltip"`
+
+	// Plans table primary action + inline error messages.
+	PlanAdd          string `json:"planAdd"`
+	PlanRequired     string `json:"planRequired"`
+
+	// Product prices table columns.
+	ProductPriceColumnProduct string `json:"productPriceColumnProduct"`
+	ProductPriceColumnPrice   string `json:"productPriceColumnPrice"`
 }
 
 type PriceScheduleErrorLabels struct {
@@ -3345,6 +3417,44 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			ProductPriceEmptyMsg:      "No product prices have been configured for this plan yet.",
 			ProductPriceSection:       "Product Price",
 			ProductField:              "Product",
+
+			PlanColumnPlan:     "Plan",
+			PlanColumnAmount:   "Amount",
+			PlanColumnDuration: "Duration",
+			PlanColumnStatus:   "Status",
+
+			PlanView:            "View",
+			PlanEdit:            "Edit",
+			PlanEditDrawerTitle: "Edit Plan",
+			PlanDelete:          "Delete",
+			PlanDeleteTitle:     "Delete Plan",
+			PlanDeleteMsg:       "Permanently delete %s? This cannot be undone.",
+			PlanInUseTooltip:    "In use by active subscriptions",
+
+			PlanAdd:      "Add Plan",
+			PlanRequired: "Plan is required",
+
+			ProductPriceColumnProduct: "Product",
+			ProductPriceColumnPrice:   "Price",
+		},
+		PlanForm: PriceSchedulePlanFormLabels{
+			SectionSchedule:        "Schedule",
+			SectionPackage:         "Plan",
+			SectionPricing:         "Pricing",
+			PriceScheduleField:     "Price Schedule",
+			PackageLabel:           "Plan",
+			PackagePlaceholder:     "Select a plan...",
+			PackageSearch:          "Filter...",
+			NameLabel:              "Plan Name",
+			NamePlaceholder:        "Enter plan name",
+			DescriptionLabel:       "Description",
+			DescriptionPlaceholder: "Optional notes for this package",
+			AmountLabel:            "Amount",
+			AmountPlaceholder:      "0.00",
+			CurrencyLabel:          "Currency",
+			CurrencyPlaceholder:    "PHP",
+			DurationLabel:          "Duration",
+			UnitLabel:              "Unit",
 		},
 		Errors: PriceScheduleErrorLabels{
 			NotFound:     "Price schedule not found",

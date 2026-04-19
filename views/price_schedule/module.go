@@ -52,6 +52,7 @@ type ModuleDeps struct {
 	DeleteProductPricePlan func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
 
 	GetPriceScheduleInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+	GetPricePlanInUseIDs     func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
 // Module holds all constructed price_schedule views.
@@ -104,15 +105,16 @@ func NewModule(deps *ModuleDeps) *Module {
 	tableView := priceschedulelist.NewTableView(listDeps)
 
 	detailDeps := &pricescheduledetail.DetailViewDeps{
-		Routes:            deps.Routes,
-		Labels:            deps.Labels,
-		CommonLabels:      deps.CommonLabels,
-		TableLabels:       deps.TableLabels,
-		ReadPriceSchedule: deps.ReadPriceSchedule,
-		ListLocations:     deps.ListLocations,
-		ListPricePlans:    deps.ListPricePlans,
-		ListPlans:         deps.ListPlans,
-		CreatePricePlan:   deps.CreatePricePlan,
+		Routes:               deps.Routes,
+		Labels:               deps.Labels,
+		CommonLabels:         deps.CommonLabels,
+		TableLabels:          deps.TableLabels,
+		ReadPriceSchedule:    deps.ReadPriceSchedule,
+		ListLocations:        deps.ListLocations,
+		ListPricePlans:       deps.ListPricePlans,
+		ListPlans:            deps.ListPlans,
+		CreatePricePlan:      deps.CreatePricePlan,
+		GetPricePlanInUseIDs: deps.GetPricePlanInUseIDs,
 	}
 
 	planDetailDeps := &priceschedulePlan.DetailViewDeps{
@@ -132,6 +134,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		CreateProductPricePlan: deps.CreateProductPricePlan,
 		UpdateProductPricePlan: deps.UpdateProductPricePlan,
 		DeleteProductPricePlan: deps.DeleteProductPricePlan,
+		GetPricePlanInUseIDs:   deps.GetPricePlanInUseIDs,
 	}
 
 	return &Module{

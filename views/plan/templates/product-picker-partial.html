@@ -1,0 +1,20 @@
+{{/*
+Product picker partial — returned by NewProductPlanPickerAction via HTMX swap.
+Renders only the auto-complete + hidden name input for the #product-picker-wrapper div.
+Swapping this partial resets product_id and product_name to empty (fresh selection).
+Data: .ProductOptions, .SelectedKind, .PlanID, .Name, .SelectedProductID, .SelectedProductLabel
+*/}}
+{{define "product-picker-partial"}}
+{{template "auto-complete" (dict
+    "ID" "product-select"
+    "Name" "product_id"
+    "Label" .ProductLabel
+    "Placeholder" .ProductPlaceholder
+    "SearchPlaceholder" "Filter..."
+    "Options" .ProductOptions
+    "Value" .SelectedProductID
+    "SelectedLabel" .SelectedProductLabel
+)}}
+{{/* Hidden name field — reset to empty on kind-switch so a fresh item must be picked */}}
+<input type="hidden" name="name" value="">
+{{end}}

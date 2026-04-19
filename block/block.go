@@ -805,6 +805,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					priceScheduleDeps.UpdatePricePlan = useCases.Subscription.PricePlan.UpdatePricePlan.Execute
 					priceScheduleDeps.DeletePricePlan = useCases.Subscription.PricePlan.DeletePricePlan.Execute
 				}
+				// Reference checker for in-use guard (disables row Delete + locks pricing fields
+				// on the edit drawer when a price_plan is referenced by active subscriptions).
+				if refChecker != nil {
+					priceScheduleDeps.GetPricePlanInUseIDs = refChecker.GetPricePlanInUseIDs
+				}
 				if useCases.Subscription.Plan != nil {
 					priceScheduleDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
 				}
@@ -938,6 +943,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ppActionDeps := &planaction.PricePlanDeps{
 						Routes:          planRoutes,
 						Labels:          planLabels,
+						CommonLabels:    ctx.Common,
 						CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
 						ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
 						UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,
@@ -1059,6 +1065,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						ppBundleDeps := &planaction.PricePlanDeps{
 							Routes:          planBundleRoutes,
 							Labels:          planLabels,
+							CommonLabels:    ctx.Common,
 							CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
 							ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
 							UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,

@@ -19,23 +19,17 @@ type FormLabels struct {
 	NamePlaceholder string
 	Description     string
 	DescPlaceholder string
-	FulfillmentType string
-	TypeSchedule    string
-	TypeLicense     string
-	TypeContent     string
-	TypePhysical    string
 }
 
 // FormData is the template data for the plan drawer form.
 type FormData struct {
-	FormAction      string
-	IsEdit          bool
-	ID              string
-	Name            string
-	Description     string
-	FulfillmentType string
-	Labels          FormLabels
-	CommonLabels    any
+	FormAction   string
+	IsEdit       bool
+	ID           string
+	Name         string
+	Description  string
+	Labels       FormLabels
+	CommonLabels any
 }
 
 // Deps holds dependencies for plan action handlers.
@@ -57,11 +51,6 @@ func formLabels(l centymo.PlanLabels) FormLabels {
 		NamePlaceholder: l.Form.NamePlaceholder,
 		Description:     l.Form.Description,
 		DescPlaceholder: l.Form.DescPlaceholder,
-		FulfillmentType: l.Form.FulfillmentType,
-		TypeSchedule:    l.Form.TypeSchedule,
-		TypeLicense:     l.Form.TypeLicense,
-		TypeContent:     l.Form.TypeContent,
-		TypePhysical:    l.Form.TypePhysical,
 	}
 }
 
@@ -75,10 +64,9 @@ func NewAddAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("plan-drawer-form", &FormData{
-				FormAction:      deps.Routes.AddURL,
-				FulfillmentType: "schedule",
-				Labels:          formLabels(deps.Labels),
-				CommonLabels:    nil, // injected by ViewAdapter
+				FormAction:   deps.Routes.AddURL,
+				Labels:       formLabels(deps.Labels),
+				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}
 
@@ -89,14 +77,11 @@ func NewAddAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		fulfillmentType := r.FormValue("fulfillment_type")
-
 		resp, err := deps.CreatePlan(ctx, &planpb.CreatePlanRequest{
 			Data: &planpb.Plan{
-				Name:            r.FormValue("name"),
-				Description:     strPtr(r.FormValue("description")),
-				FulfillmentType: strPtr(fulfillmentType),
-				Active:          true,
+				Name:        r.FormValue("name"),
+				Description: strPtr(r.FormValue("description")),
+				Active:      true,
 			},
 		})
 		if err != nil {
@@ -148,14 +133,13 @@ func NewEditAction(deps *Deps) view.View {
 			record := readData[0]
 
 			return view.OK("plan-drawer-form", &FormData{
-				FormAction:      route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:          true,
-				ID:              id,
-				Name:            record.GetName(),
-				Description:     record.GetDescription(),
-				FulfillmentType: record.GetFulfillmentType(),
-				Labels:          formLabels(deps.Labels),
-				CommonLabels:    nil, // injected by ViewAdapter
+				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
+				IsEdit:       true,
+				ID:           id,
+				Name:         record.GetName(),
+				Description:  record.GetDescription(),
+				Labels:       formLabels(deps.Labels),
+				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}
 
@@ -166,14 +150,11 @@ func NewEditAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		fulfillmentType := r.FormValue("fulfillment_type")
-
 		_, err := deps.UpdatePlan(ctx, &planpb.UpdatePlanRequest{
 			Data: &planpb.Plan{
-				Id:              &id,
-				Name:            r.FormValue("name"),
-				Description:     strPtr(r.FormValue("description")),
-				FulfillmentType: strPtr(fulfillmentType),
+				Id:          &id,
+				Name:        r.FormValue("name"),
+				Description: strPtr(r.FormValue("description")),
 			},
 		})
 		if err != nil {

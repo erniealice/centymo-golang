@@ -44,7 +44,7 @@
 
         <div class="form-row">
             {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" .Labels.DurationValue "Value" .DurationValue "Required" true "Placeholder" "1" "Min" "0")}}
-            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" .Labels.DurationUnit "Value" .DurationUnit "Options" (list (dict "Value" "days" "Label" "Days") (dict "Value" "weeks" "Label" "Weeks") (dict "Value" "months" "Label" "Months") (dict "Value" "years" "Label" "Years")))}}
+            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" .Labels.DurationUnit "Value" .DurationUnit "Options" (list (dict "Value" "days" "Label" .CommonLabels.DurationUnit.DayPlural) (dict "Value" "weeks" "Label" .CommonLabels.DurationUnit.WeekPlural) (dict "Value" "months" "Label" .CommonLabels.DurationUnit.MonthPlural) (dict "Value" "years" "Label" .CommonLabels.DurationUnit.YearPlural)))}}
         </div>
         <div class="form-row single">
             {{template "auto-complete" (dict

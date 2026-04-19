@@ -49,7 +49,6 @@ type PageData struct {
 	ID                  string
 	PlanName            string
 	PlanDesc            string
-	FulfillmentType     string
 	PlanStatus          string
 	StatusVariant       string
 	CreatedDate         string
@@ -129,10 +128,6 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	name := plan.GetName()
 	description := plan.GetDescription()
-	fulfillmentType := plan.GetFulfillmentType()
-	if fulfillmentType == "" {
-		fulfillmentType = "—"
-	}
 
 	planStatus := "active"
 	if !plan.GetActive() {
@@ -205,7 +200,6 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ID:              id,
 		PlanName:        name,
 		PlanDesc:        description,
-		FulfillmentType: fulfillmentType,
 		PlanStatus:      planStatus,
 		StatusVariant:   statusVariant,
 		CreatedDate:     createdDate,

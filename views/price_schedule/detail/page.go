@@ -32,6 +32,10 @@ type DetailViewDeps struct {
 	ListPricePlans    func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
 	ListPlans         func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	CreatePricePlan   func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
+
+	// Reference checker: returns a map of price_plan_id → true for plans in use by active subscriptions.
+	// Delete is disabled for in-use plans; Edit remains enabled (Pricing fields lock inside the drawer).
+	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
 // PlanFormData is rendered as the drawer form for adding a PricePlan under this schedule.
@@ -140,7 +144,7 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		r := viewCtx.Request
 		planID := r.FormValue("plan_id")
 		if planID == "" {
-			return centymo.HTMXError("Plan is required")
+			return centymo.HTMXError(deps.Labels.Detail.PlanRequired)
 		}
 		amount := int64(0)
 		if v, err := strconv.ParseFloat(r.FormValue("amount"), 64); err == nil {
@@ -152,10 +156,12 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 			currency = "PHP"
 		}
 
+		ppName := r.FormValue("name")
+		ppDesc := r.FormValue("description")
 		pp := &priceplanpb.PricePlan{
 			PlanId:        planID,
-			Name:          r.FormValue("name"),
-			Description:   r.FormValue("description"),
+			Name:          &ppName,
+			Description:   &ppDesc,
 			Amount:        amount,
 			Currency:      currency,
 			DurationValue: int32(dv),
@@ -202,8 +208,9 @@ func buildPlanOptions(ctx context.Context, deps *DetailViewDeps) []map[string]an
 			continue
 		}
 		opts = append(opts, map[string]any{
-			"Value": p.GetId(),
-			"Label": p.GetName(),
+			"Value":       p.GetId(),
+			"Label":       p.GetName(),
+			"Description": p.GetDescription(),
 		})
 	}
 	return opts
@@ -312,10 +319,10 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 	l := deps.Labels
 
 	columns := []types.TableColumn{
-		{Key: "name", Label: "Plan", Sortable: true},
-		{Key: "amount", Label: "Amount", Sortable: true, WidthClass: "col-4xl", Align: "right"},
-		{Key: "duration", Label: "Duration", Sortable: false, WidthClass: "col-3xl"},
-		{Key: "status", Label: "Status", Sortable: false, WidthClass: "col-2xl"},
+		{Key: "name", Label: l.Detail.PlanColumnPlan, Sortable: true},
+		{Key: "amount", Label: l.Detail.PlanColumnAmount, Sortable: true, WidthClass: "col-4xl", Align: "right"},
+		{Key: "duration", Label: l.Detail.PlanColumnDuration, Sortable: false, WidthClass: "col-3xl"},
+		{Key: "status", Label: l.Detail.PlanColumnStatus, Sortable: false, WidthClass: "col-2xl"},
 	}
 
 	perms := view.GetUserPermissions(ctx)
@@ -326,6 +333,19 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 			log.Printf("Failed to list price plans for schedule %s: %v", ps.GetId(), err)
 		} else {
 			schedID := ps.GetId()
+
+			// Collect IDs for the reference checker (one batch call for the whole table).
+			var ppIDs []string
+			for _, pp := range resp.GetData() {
+				if pp != nil && pp.GetPriceScheduleId() == schedID {
+					ppIDs = append(ppIDs, pp.GetId())
+				}
+			}
+			inUseIDs := map[string]bool{}
+			if deps.GetPricePlanInUseIDs != nil && len(ppIDs) > 0 {
+				inUseIDs, _ = deps.GetPricePlanInUseIDs(ctx, ppIDs)
+			}
+
 			for _, pp := range resp.GetData() {
 				if pp == nil || pp.GetPriceScheduleId() != schedID {
 					continue
@@ -346,6 +366,14 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 					planStatus = "inactive"
 					planVariant = "warning"
 				}
+
+				inUse := inUseIDs[ppID]
+				deleteDisabled := !perms.Can("price_plan", "delete") || inUse
+				deleteTooltip := l.Errors.Unauthorized
+				if inUse {
+					deleteTooltip = l.Detail.PlanInUseTooltip
+				}
+
 				rows = append(rows, types.TableRow{
 					ID: ppID,
 					Cells: []types.TableCell{
@@ -357,29 +385,29 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 					Actions: []types.TableAction{
 						{
 							Type:   "view",
-							Label:  "View",
+							Label:  l.Detail.PlanView,
 							Action: "view",
 							Href:   route.ResolveURL(deps.Routes.PlanDetailURL, "id", schedID, "ppid", ppID),
 						},
 						{
 							Type:            "edit",
-							Label:           "Edit",
+							Label:           l.Detail.PlanEdit,
 							Action:          "edit",
 							URL:             route.ResolveURL(deps.Routes.PlanEditURL, "id", schedID, "ppid", ppID),
-							DrawerTitle:     "Edit Plan",
+							DrawerTitle:     l.Detail.PlanEditDrawerTitle,
 							Disabled:        !perms.Can("price_plan", "update"),
 							DisabledTooltip: l.Errors.Unauthorized,
 						},
 						{
 							Type:            "delete",
-							Label:           "Delete",
+							Label:           l.Detail.PlanDelete,
 							Action:          "delete",
 							URL:             route.ResolveURL(deps.Routes.PlanDeleteURL, "id", schedID, "ppid", ppID),
 							ItemName:        name,
-							ConfirmTitle:    "Delete Plan",
-							ConfirmMessage:  fmt.Sprintf("Permanently delete %s? This cannot be undone.", name),
-							Disabled:        !perms.Can("price_plan", "delete"),
-							DisabledTooltip: l.Errors.Unauthorized,
+							ConfirmTitle:    l.Detail.PlanDeleteTitle,
+							ConfirmMessage:  fmt.Sprintf(l.Detail.PlanDeleteMsg, name),
+							Disabled:        deleteDisabled,
+							DisabledTooltip: deleteTooltip,
 						},
 					},
 				})
@@ -409,7 +437,7 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 			Message: l.Detail.PlansEmptyMsg,
 		},
 		PrimaryAction: &types.PrimaryAction{
-			Label:           "Add Plan",
+			Label:           l.Detail.PlanAdd,
 			ActionURL:       route.ResolveURL(deps.Routes.PlanAddURL, "id", ps.GetId()),
 			Icon:            "icon-plus",
 			Disabled:        !perms.Can("price_plan", "create"),

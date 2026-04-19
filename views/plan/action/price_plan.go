@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
+	centymo "github.com/erniealice/centymo-golang"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
-
-	centymo "github.com/erniealice/centymo-golang"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
@@ -69,13 +69,14 @@ type PricePlanFormData struct {
 	ScheduleOptions       []map[string]any
 	ProductPlans          []ProductPlanPriceRow
 	Labels                PricePlanFormLabels
-	CommonLabels          any
+	CommonLabels          pyeza.CommonLabels
 }
 
 // PricePlanDeps holds dependencies for price plan action handlers.
 type PricePlanDeps struct {
 	Routes                centymo.PlanRoutes
 	Labels                centymo.PlanLabels
+	CommonLabels          pyeza.CommonLabels
 	CreatePricePlan       func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
 	ReadPricePlan         func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	UpdatePricePlan       func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
@@ -244,7 +245,7 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 				ScheduleOptions: buildScheduleAutoCompleteOptions(schedules, ""),
 				ProductPlans:    loadProductPlansForPlan(ctx, deps, planID, ""),
 				Labels:          pricePlanFormLabels(deps.Labels.PricePlanForm),
-				CommonLabels:    nil, // injected by ViewAdapter
+				CommonLabels:    deps.CommonLabels,
 			})
 		}
 
@@ -268,10 +269,12 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 
 		currency := r.FormValue("currency")
 
+		ppName := r.FormValue("name")
+		ppDescription := r.FormValue("description")
 		pp := &priceplanpb.PricePlan{
 			PlanId:        planID,
-			Name:          r.FormValue("name"),
-			Description:   r.FormValue("description"),
+			Name:          &ppName,
+			Description:   &ppDescription,
 			Amount:        amount,
 			Currency:      currency,
 			DurationValue: durationValue,
@@ -419,7 +422,7 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
 				ProductPlans:          loadProductPlansForPlan(ctx, deps, planID, ppID),
 				Labels:                pricePlanFormLabels(deps.Labels.PricePlanForm),
-				CommonLabels:          nil, // injected by ViewAdapter
+				CommonLabels:          deps.CommonLabels,
 			})
 		}
 
@@ -443,11 +446,13 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 
 		currency := r.FormValue("currency")
 
+		editPPName := r.FormValue("name")
+		editPPDescription := r.FormValue("description")
 		pp := &priceplanpb.PricePlan{
 			Id:            ppID,
 			PlanId:        planID,
-			Name:          r.FormValue("name"),
-			Description:   r.FormValue("description"),
+			Name:          &editPPName,
+			Description:   &editPPDescription,
 			Amount:        amount,
 			Currency:      currency,
 			DurationValue: durationValue,

@@ -71,6 +71,7 @@ func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &priceplanaction.Deps{
 		Routes:             deps.Routes,
 		Labels:             deps.Labels,
+		CommonLabels:       deps.CommonLabels,
 		CreatePricePlan:    deps.CreatePricePlan,
 		ReadPricePlan:      deps.ReadPricePlan,
 		UpdatePricePlan:    deps.UpdatePricePlan,
