@@ -145,33 +145,36 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = []types.BulkAction{
 		{
-			Key:             "activate",
-			Label:           l.Status.Activate,
-			Icon:            "icon-check-circle",
-			Variant:         "success",
-			Endpoint:        deps.Routes.BulkSetStatusURL,
-			ExtraParamsJSON: `{"target_status":"active"}`,
-			ConfirmTitle:    l.Confirm.BulkActivate,
-			ConfirmMessage:  l.Confirm.BulkActivateMessage,
+			Key:              "activate",
+			Label:            l.Status.Activate,
+			Icon:             "icon-check-circle",
+			Variant:          "success",
+			Endpoint:         deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON:  `{"target_status":"active"}`,
+			ConfirmTitle:     l.Confirm.BulkActivate,
+			ConfirmMessage:   l.Confirm.BulkActivateMessage,
+			RequiresDataAttr: "activatable",
 		},
 		{
-			Key:             "deactivate",
-			Label:           l.Status.Deactivate,
-			Icon:            "icon-x-circle",
-			Variant:         "warning",
-			Endpoint:        deps.Routes.BulkSetStatusURL,
-			ExtraParamsJSON: `{"target_status":"inactive"}`,
-			ConfirmTitle:    l.Confirm.BulkDeactivate,
-			ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
+			Key:              "deactivate",
+			Label:            l.Status.Deactivate,
+			Icon:             "icon-x-circle",
+			Variant:          "warning",
+			Endpoint:         deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON:  `{"target_status":"inactive"}`,
+			ConfirmTitle:     l.Confirm.BulkDeactivate,
+			ConfirmMessage:   l.Confirm.BulkDeactivateMessage,
+			RequiresDataAttr: "deactivatable",
 		},
 		{
-			Key:            "delete",
-			Label:          l.Bulk.Delete,
-			Icon:           "icon-trash-2",
-			Variant:        "danger",
-			Endpoint:       deps.Routes.BulkDeleteURL,
-			ConfirmTitle:   l.Confirm.BulkDelete,
-			ConfirmMessage: l.Confirm.BulkDeleteMessage,
+			Key:              "delete",
+			Label:            l.Bulk.Delete,
+			Icon:             "icon-trash-2",
+			Variant:          "danger",
+			Endpoint:         deps.Routes.BulkDeleteURL,
+			ConfirmTitle:     l.Confirm.BulkDelete,
+			ConfirmMessage:   l.Confirm.BulkDeleteMessage,
+			RequiresDataAttr: "deletable",
 		},
 	}
 
@@ -212,8 +215,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 func planColumns(l centymo.PlanLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "price", Label: l.Columns.Price, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "price", Label: l.Columns.Price, Sortable: true, WidthClass: "col-9xl"},
 	}
 }
 
@@ -283,12 +285,14 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, r
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
 				{Type: "text", Value: description},
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
-				"name":   name,
-				"price":  description,
-				"status": recordStatus,
+				"name":           name,
+				"price":          description,
+				"status":         recordStatus,
+				"deletable":      boolAttr(!inUseIDs[id]),
+				"activatable":    boolAttr(recordStatus == "inactive"),
+				"deactivatable":  boolAttr(recordStatus == "active"),
 			},
 			Actions: actions,
 		})
@@ -316,6 +320,13 @@ func statusSubtitle(l centymo.PlanLabels, status string) string {
 	default:
 		return l.Page.Caption
 	}
+}
+
+func boolAttr(v bool) string {
+	if v {
+		return "true"
+	}
+	return "false"
 }
 
 func statusVariant(status string) string {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/erniealice/pyeza-golang/route"
+	pyeza "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -28,7 +29,7 @@ type TransactionFormLabels struct {
 type TransactionFormData struct {
 	FormAction   string
 	Labels       TransactionFormLabels
-	TypeOptions  []SelectOption
+	TypeOptions  []pyeza.SelectOption
 	Today        string
 	CommonLabels any
 }
@@ -42,8 +43,8 @@ func transactionFormLabels(t func(string) string) TransactionFormLabels {
 	}
 }
 
-func transactionTypeOptions(t func(string) string) []SelectOption {
-	return []SelectOption{
+func transactionTypeOptions(t func(string) string) []pyeza.SelectOption {
+	return []pyeza.SelectOption{
 		{Value: "received", Label: t("inventory.transaction.typeReceived")},
 		{Value: "sold", Label: t("inventory.transaction.typeSold")},
 		{Value: "adjusted", Label: t("inventory.transaction.typeAdjusted")},

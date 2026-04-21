@@ -258,7 +258,7 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 		}
 		if isInUse {
 			deleteAction.Disabled = true
-			deleteAction.DisabledTooltip = "This rate card cannot be deleted because it is in use"
+			deleteAction.DisabledTooltip = l.Errors.InUse
 		}
 		if !perms.Can("price_plan", "delete") {
 			deleteAction.Disabled = true

@@ -1401,6 +1401,7 @@ type ExpenditureErrorLabels struct {
 	IDRequired       string `json:"idRequired"`
 	NoIDsProvided    string `json:"noIDsProvided"`
 	InvalidStatus    string `json:"invalidStatus"`
+	NoPermission     string `json:"noPermission"`
 }
 
 type ExpenditureLabelNames struct {
@@ -1653,6 +1654,11 @@ type ExpenditureDisbursementFormLabels struct {
 // Purchase Order labels
 // ---------------------------------------------------------------------------
 
+// PurchaseOrderErrorLabels holds error messages for the purchase order action handlers.
+type PurchaseOrderErrorLabels struct {
+	NoPermission string `json:"noPermission"`
+}
+
 // PurchaseOrderLabels holds all translatable strings for the purchase order module.
 type PurchaseOrderLabels struct {
 	Labels      PurchaseOrderLabelNames      `json:"labels"`
@@ -1669,6 +1675,7 @@ type PurchaseOrderLabels struct {
 	Detail      PurchaseOrderDetailLabels    `json:"detail"`
 	LineItems   PurchaseOrderLineItemLabels  `json:"lineItems"`
 	Receipt     PurchaseOrderReceiptLabels   `json:"receipt"`
+	Errors      PurchaseOrderErrorLabels     `json:"errors"`
 }
 
 type PurchaseOrderLabelNames struct {
@@ -2614,8 +2621,9 @@ type PlanColumnLabels struct {
 	Price       string `json:"price"`
 	Status      string `json:"status"`
 	Product     string `json:"product"`
-	PricePlan   string `json:"pricePlan"`
-	Duration    string `json:"duration"`
+	PricePlan     string `json:"pricePlan"`
+	PriceSchedule string `json:"priceSchedule"`
+	Duration      string `json:"duration"`
 	Location    string `json:"location"`
 	ItemType    string `json:"itemType"`
 }
@@ -2707,17 +2715,23 @@ type PlanTabLabels struct {
 	Info          string `json:"info"`
 	Products      string `json:"products"`
 	ProductsSlug  string `json:"productsSlug"`
-	PriceLists    string `json:"priceLists"`
+	PricePlan     string `json:"pricePlan"`
+	PricePlanSlug string `json:"pricePlanSlug"`
 	Attachments   string `json:"attachments"`
 	AuditTrail    string `json:"auditTrail"`
 }
 
-// ResolveTabSlug returns the URL slug for a canonical tab key. Today only the
-// "products" tab is re-slugged (e.g., professional tier ships "items"); other
-// tabs round-trip through as-is.
+// ResolveTabSlug returns the URL slug for a canonical tab key. The "products"
+// and "pricePlan" tabs can be re-slugged per tier (e.g. professional ships
+// "items" and "package-prices"); other tabs round-trip through as-is.
 func (t PlanTabLabels) ResolveTabSlug(canonical string) string {
-	if canonical == "products" {
+	switch canonical {
+	case "products":
 		if s := strings.TrimSpace(t.ProductsSlug); s != "" {
+			return s
+		}
+	case "pricePlan":
+		if s := strings.TrimSpace(t.PricePlanSlug); s != "" {
 			return s
 		}
 	}
@@ -2732,6 +2746,9 @@ func (t PlanTabLabels) CanonicalizeTab(slug string) string {
 	}
 	if s := strings.TrimSpace(t.ProductsSlug); s != "" && slug == s {
 		return "products"
+	}
+	if s := strings.TrimSpace(t.PricePlanSlug); s != "" && slug == s {
+		return "pricePlan"
 	}
 	return slug
 }
@@ -2878,8 +2895,9 @@ func DefaultPlanLabels() PlanLabels {
 			Price:       "Price",
 			Status:      "Status",
 			Product:     "Product",
-			PricePlan:   "Price Plan",
-			Duration:    "Duration",
+			PricePlan:     "Price Plan",
+			PriceSchedule: "Price Schedule",
+			Duration:      "Duration",
 			Location:    "Location",
 			ItemType:    "Item Type",
 		},
@@ -2942,11 +2960,12 @@ func DefaultPlanLabels() PlanLabels {
 			AuditTrailComingSoon:  "Audit trail coming soon.",
 		},
 		Tabs: PlanTabLabels{
-			Info:        "Information",
-			Products:    "Products",
-			PriceLists:  "Price Lists",
-			Attachments: "Attachments",
-			AuditTrail:  "Audit Trail",
+			Info:          "Information",
+			Products:      "Products",
+			PricePlan:     "Rate Cards",
+			PricePlanSlug: "",
+			Attachments:   "Attachments",
+			AuditTrail:    "Audit Trail",
 		},
 		Confirm: PlanConfirmLabels{
 			Delete:                "Delete Plan",
@@ -3122,6 +3141,7 @@ type PricePlanErrorLabels struct {
 	CreateFailed string `json:"createFailed"`
 	UpdateFailed string `json:"updateFailed"`
 	DeleteFailed string `json:"deleteFailed"`
+	InUse        string `json:"inUse"`
 }
 
 // DefaultPricePlanLabels returns PricePlanLabels with sensible English defaults.
@@ -3231,6 +3251,7 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			CreateFailed: "Failed to create rate card.",
 			UpdateFailed: "Failed to update rate card.",
 			DeleteFailed: "Failed to delete rate card.",
+			InUse:        "This price plan is in use by active subscriptions and cannot be deleted.",
 		},
 	}
 }
@@ -3342,20 +3363,20 @@ type PriceScheduleConfirmLabels struct {
 
 type PriceScheduleTabLabels struct {
 	Info              string `json:"info"`
-	Plans             string `json:"plans"`
-	PlansSlug         string `json:"plansSlug"`
+	PricePlan         string `json:"pricePlan"`
+	PricePlanSlug     string `json:"pricePlanSlug"`
 	ProductPrices     string `json:"productPrices"`
 	ProductPricesSlug string `json:"productPricesSlug"`
 }
 
 // ResolveTabSlug returns the URL slug for a canonical tab key. Today only the
-// "plans" tab on the parent detail and "product-prices" on the nested plan
-// detail are re-slugged (e.g., professional tier ships "packages" /
+// "pricePlan" tab on the parent detail and "product-prices" on the nested plan
+// detail are re-slugged (e.g., professional tier ships "package-prices" /
 // "package-item-prices"); other tabs round-trip through as-is.
 func (t PriceScheduleTabLabels) ResolveTabSlug(canonical string) string {
 	switch canonical {
-	case "plans":
-		if s := strings.TrimSpace(t.PlansSlug); s != "" {
+	case "pricePlan":
+		if s := strings.TrimSpace(t.PricePlanSlug); s != "" {
 			return s
 		}
 	case "product-prices":
@@ -3372,8 +3393,8 @@ func (t PriceScheduleTabLabels) CanonicalizeTab(slug string) string {
 	if slug == "" {
 		return ""
 	}
-	if s := strings.TrimSpace(t.PlansSlug); s != "" && slug == s {
-		return "plans"
+	if s := strings.TrimSpace(t.PricePlanSlug); s != "" && slug == s {
+		return "pricePlan"
 	}
 	if s := strings.TrimSpace(t.ProductPricesSlug); s != "" && slug == s {
 		return "product-prices"
@@ -3434,6 +3455,7 @@ type PriceScheduleErrorLabels struct {
 	CreateFailed string `json:"createFailed"`
 	UpdateFailed string `json:"updateFailed"`
 	DeleteFailed string `json:"deleteFailed"`
+	InUse        string `json:"inUse"`
 }
 
 // DefaultPriceScheduleLabels returns PriceScheduleLabels with sensible English defaults.
@@ -3498,7 +3520,8 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 		},
 		Tabs: PriceScheduleTabLabels{
 			Info:          "Info",
-			Plans:         "Plans",
+			PricePlan:     "Plans",
+			PricePlanSlug: "",
 			ProductPrices: "Product Prices",
 		},
 		Detail: PriceScheduleDetailLabels{
@@ -3565,6 +3588,7 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			CreateFailed: "Failed to create price schedule",
 			UpdateFailed: "Failed to update price schedule",
 			DeleteFailed: "Failed to delete price schedule",
+			InUse:        "This price schedule is in use by active subscriptions and cannot be deleted.",
 		},
 	}
 }

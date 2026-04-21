@@ -56,7 +56,7 @@ type PageData struct {
 	CreatedDate         string
 	ModifiedDate        string
 	ProductsTable       *types.TableConfig
-	PriceListsTable     *types.TableConfig
+	PricePlansTable     *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
 	// Audit history tab
@@ -213,9 +213,9 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	case "products":
 		tableConfig := buildProductsTable(ctx, deps, id)
 		pageData.ProductsTable = tableConfig
-	case "pricelists":
-		tableConfig := buildPriceListsTable(ctx, deps, id)
-		pageData.PriceListsTable = tableConfig
+	case "pricePlan":
+		tableConfig := buildPricePlansTable(ctx, deps, id, name)
+		pageData.PricePlansTable = tableConfig
 	case "attachments":
 		if deps.ListAttachments != nil {
 			cfg := attachmentConfig(deps)
@@ -258,10 +258,11 @@ func buildTabItems(id string, l centymo.PlanLabels, productCount, priceListCount
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	productsSlug := l.Tabs.ResolveTabSlug("products")
+	pricePlanSlug := l.Tabs.ResolveTabSlug("pricePlan")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
 		{Key: "products", Label: l.Tabs.Products, Href: base + "?tab=" + productsSlug, HxGet: action + productsSlug, Icon: "icon-package", Count: productCount, Disabled: false},
-		{Key: "pricelists", Label: l.Tabs.PriceLists, Href: base + "?tab=pricelists", HxGet: action + "pricelists", Icon: "icon-tag", Count: priceListCount, Disabled: false},
+		{Key: "pricePlan", Label: l.Tabs.PricePlan, Href: base + "?tab=" + pricePlanSlug, HxGet: action + pricePlanSlug, Icon: "icon-tag", Count: priceListCount, Disabled: false},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock", Count: 0, Disabled: false},
 		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
@@ -401,7 +402,7 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 // Price Lists tab table
 // ---------------------------------------------------------------------------
 
-func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID string) *types.TableConfig {
+func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, planName string) *types.TableConfig {
 	l := deps.Labels
 	perms := view.GetUserPermissions(ctx)
 
@@ -409,7 +410,7 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 		{Key: "name", Label: l.Columns.PricePlan, Sortable: true},
 		{Key: "amount", Label: l.Detail.Price, Sortable: true, WidthClass: "col-4xl"},
 		{Key: "duration", Label: l.Columns.Duration, Sortable: true, WidthClass: "col-4xl"},
-		{Key: "schedule", Label: "Schedule", Sortable: true, WidthClass: "col-6xl"},
+		{Key: "schedule", Label: l.Columns.PriceSchedule, Sortable: true, WidthClass: "col-6xl"},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
 	}
 
@@ -440,6 +441,9 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 
 				ppID := pp.GetId()
 				name := pp.GetName()
+				if name == "" {
+					name = planName
+				}
 				ppCurrency := pp.GetCurrency()
 				if ppCurrency == "" {
 					ppCurrency = "PHP"
@@ -497,7 +501,7 @@ func buildPriceListsTable(ctx context.Context, deps *DetailViewDeps, planID stri
 	types.ApplyColumnStyles(columns, rows)
 
 	tableConfig := &types.TableConfig{
-		ID:                   "plan-pricelists-table",
+		ID:                   "plan-price-plans-table",
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,

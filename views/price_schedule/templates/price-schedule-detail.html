@@ -15,8 +15,8 @@
     <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
             {{template "price-schedule-tab-info" .}}
-        {{else if eq .ActiveTab "plans"}}
-            {{template "price-schedule-tab-plans" .}}
+        {{else if eq .ActiveTab "pricePlan"}}
+            {{template "price-schedule-tab-pricePlan" .}}
         {{end}}
     </div>
 </div>
@@ -67,8 +67,8 @@
         </div>
     </div>
 
-    <div class="detail-actions detail-actions--spaced">
-        <a class="btn btn-ghost btn-sm"
+    <div class="detail-actions detail-actions--spaced" style="margin-top: var(--spacing-xl);">
+        <a class="btn btn-primary"
            hx-get="{{routeWith "price_schedule.edit" "id" .ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
@@ -82,7 +82,7 @@
 {{/* =============================================
      TAB PARTIAL: Plans
      ============================================= */}}
-{{define "price-schedule-tab-plans"}}
+{{define "price-schedule-tab-pricePlan"}}
 <div class="tab-scroll tab-scroll--table">
     {{if .PlansTable}}
         {{template "table-card" .PlansTable}}

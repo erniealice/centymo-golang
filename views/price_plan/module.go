@@ -69,15 +69,16 @@ type Module struct {
 // NewModule creates the price_plan module with all views wired.
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &priceplanaction.Deps{
-		Routes:             deps.Routes,
-		Labels:             deps.Labels,
-		CommonLabels:       deps.CommonLabels,
-		CreatePricePlan:    deps.CreatePricePlan,
-		ReadPricePlan:      deps.ReadPricePlan,
-		UpdatePricePlan:    deps.UpdatePricePlan,
-		DeletePricePlan:    deps.DeletePricePlan,
-		ListPlans:          deps.ListPlans,
-		ListPriceSchedules: deps.ListPriceSchedules,
+		Routes:               deps.Routes,
+		Labels:               deps.Labels,
+		CommonLabels:         deps.CommonLabels,
+		CreatePricePlan:      deps.CreatePricePlan,
+		ReadPricePlan:        deps.ReadPricePlan,
+		UpdatePricePlan:      deps.UpdatePricePlan,
+		DeletePricePlan:      deps.DeletePricePlan,
+		ListPlans:            deps.ListPlans,
+		ListPriceSchedules:   deps.ListPriceSchedules,
+		GetPricePlanInUseIDs: deps.GetPricePlanInUseIDs,
 	}
 
 	listDeps := &priceplanlist.ListViewDeps{

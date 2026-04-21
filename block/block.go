@@ -895,12 +895,20 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ReadPlan:   useCases.Subscription.Plan.ReadPlan.Execute,
 					UpdatePlan: useCases.Subscription.Plan.UpdatePlan.Execute,
 					DeletePlan: useCases.Subscription.Plan.DeletePlan.Execute,
+					// SetPlanActive uses raw DB update (proto3 omits false booleans)
+					SetPlanActive: func(fctx context.Context, id string, active bool) error {
+						_, err := db.Update(fctx, "plan", id, map[string]any{"active": active})
+						return err
+					},
 				}
 				ctx.Routes.GET(planRoutes.AddURL, planaction.NewAddAction(planActionDeps))
 				ctx.Routes.POST(planRoutes.AddURL, planaction.NewAddAction(planActionDeps))
 				ctx.Routes.GET(planRoutes.EditURL, planaction.NewEditAction(planActionDeps))
 				ctx.Routes.POST(planRoutes.EditURL, planaction.NewEditAction(planActionDeps))
 				ctx.Routes.POST(planRoutes.DeleteURL, planaction.NewDeleteAction(planActionDeps))
+				ctx.Routes.POST(planRoutes.BulkDeleteURL, planaction.NewBulkDeleteAction(planActionDeps))
+				ctx.Routes.POST(planRoutes.SetStatusURL, planaction.NewSetStatusAction(planActionDeps))
+				ctx.Routes.POST(planRoutes.BulkSetStatusURL, planaction.NewBulkSetStatusAction(planActionDeps))
 			}
 
 			// Plan detail page + tab action
@@ -955,6 +963,18 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					}
 					if useCases.Subscription.PriceSchedule != nil {
 						ppActionDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+					}
+					if useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
+						ppActionDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+					}
+					if useCases.Entity != nil && useCases.Entity.Location != nil && useCases.Entity.Location.ListLocations != nil {
+						ppActionDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+					}
+					if refChecker != nil {
+						ppActionDeps.GetPricePlanInUseIDs = refChecker.GetPricePlanInUseIDs
+					}
+					if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
+						ppActionDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
 					}
 					if useCases.Product != nil && useCases.Product.ProductPlan != nil {
 						ppActionDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
@@ -1024,12 +1044,20 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						ReadPlan:   useCases.Subscription.Plan.ReadPlan.Execute,
 						UpdatePlan: useCases.Subscription.Plan.UpdatePlan.Execute,
 						DeletePlan: useCases.Subscription.Plan.DeletePlan.Execute,
+						// SetPlanActive uses raw DB update (proto3 omits false booleans)
+						SetPlanActive: func(fctx context.Context, id string, active bool) error {
+							_, err := db.Update(fctx, "plan", id, map[string]any{"active": active})
+							return err
+						},
 					}
 					ctx.Routes.GET(planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
 					ctx.Routes.POST(planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
 					ctx.Routes.GET(planBundleRoutes.EditURL, planaction.NewEditAction(planBundleActionDeps))
 					ctx.Routes.POST(planBundleRoutes.EditURL, planaction.NewEditAction(planBundleActionDeps))
 					ctx.Routes.POST(planBundleRoutes.DeleteURL, planaction.NewDeleteAction(planBundleActionDeps))
+					ctx.Routes.POST(planBundleRoutes.BulkDeleteURL, planaction.NewBulkDeleteAction(planBundleActionDeps))
+					ctx.Routes.POST(planBundleRoutes.SetStatusURL, planaction.NewSetStatusAction(planBundleActionDeps))
+					ctx.Routes.POST(planBundleRoutes.BulkSetStatusURL, planaction.NewBulkSetStatusAction(planBundleActionDeps))
 				}
 
 				if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
@@ -1081,6 +1109,18 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						}
 						if useCases.Subscription.PriceSchedule != nil {
 							ppBundleDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+						}
+						if useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
+							ppBundleDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+						}
+						if useCases.Entity != nil && useCases.Entity.Location != nil && useCases.Entity.Location.ListLocations != nil {
+							ppBundleDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+						}
+						if refChecker != nil {
+							ppBundleDeps.GetPricePlanInUseIDs = refChecker.GetPricePlanInUseIDs
+						}
+						if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
+							ppBundleDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
 						}
 						if useCases.Product != nil && useCases.Product.ProductPlan != nil {
 							ppBundleDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute

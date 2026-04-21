@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/centymo-golang/views/price_plan/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -53,15 +54,16 @@ type FormData struct {
 }
 
 type Deps struct {
-	Routes             centymo.PricePlanRoutes
-	Labels             centymo.PricePlanLabels
-	CommonLabels       pyeza.CommonLabels
-	CreatePricePlan    func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
-	ReadPricePlan      func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
-	UpdatePricePlan    func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
-	DeletePricePlan    func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
-	ListPlans          func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
-	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	Routes                 centymo.PricePlanRoutes
+	Labels                 centymo.PricePlanLabels
+	CommonLabels           pyeza.CommonLabels
+	CreatePricePlan        func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
+	ReadPricePlan          func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	UpdatePricePlan        func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
+	DeletePricePlan        func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
+	ListPlans              func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListPriceSchedules     func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	GetPricePlanInUseIDs   func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
 func loadPlans(ctx context.Context, deps *Deps) []*PlanOption {
@@ -160,15 +162,15 @@ func NewAddAction(deps *Deps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			plans := loadPlans(ctx, deps)
 			schedules := loadSchedules(ctx, deps)
-			return view.OK("price-plan-drawer-form", &FormData{
+			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:      deps.Routes.AddURL,
+				Context:         form.ContextStandalone,
 				Active:          true,
 				Currency:        "PHP",
-				Plans:           plans,
+				DurationUnit:    "months",
 				PlanOptions:     buildPlanAutoCompleteOptions(plans, ""),
-				Schedules:       schedules,
 				ScheduleOptions: buildScheduleAutoCompleteOptions(schedules, ""),
-				Labels:          deps.Labels.Form,
+				Labels:          form.LabelsFromPricePlan(deps.Labels.Form),
 				CommonLabels:    deps.CommonLabels,
 			})
 		}
@@ -221,10 +223,21 @@ func NewEditAction(deps *Deps) view.View {
 			schedules := loadSchedules(ctx, deps)
 			selectedPlanID := record.GetPlanId()
 			selectedScheduleID := record.GetPriceScheduleId()
-			return view.OK("price-plan-drawer-form", &FormData{
+			inUse := false
+			lockMsg := ""
+			if deps.GetPricePlanInUseIDs != nil {
+				if m, _ := deps.GetPricePlanInUseIDs(ctx, []string{id}); m[id] {
+					inUse = true
+					lockMsg = "This price plan is in use by active subscriptions. Pricing changes are disabled."
+				}
+			}
+			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
+				Context:               form.ContextStandalone,
 				ID:                    id,
+				PlanID:                selectedPlanID,
+				ScheduleID:            selectedScheduleID,
 				Name:                  record.GetName(),
 				Description:           record.GetDescription(),
 				Amount:                formatAmount(record.GetAmount()),
@@ -232,16 +245,15 @@ func NewEditAction(deps *Deps) view.View {
 				DurationValue:         fmt.Sprintf("%d", record.GetDurationValue()),
 				DurationUnit:          record.GetDurationUnit(),
 				Active:                record.GetActive(),
-				PlanID:                selectedPlanID,
+				PlanOptions:           buildPlanAutoCompleteOptions(plans, selectedPlanID),
+				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
 				SelectedPlanID:        selectedPlanID,
 				SelectedPlanLabel:     findPlanLabel(plans, selectedPlanID),
-				Plans:                 plans,
-				PlanOptions:           buildPlanAutoCompleteOptions(plans, selectedPlanID),
 				SelectedScheduleID:    selectedScheduleID,
 				SelectedScheduleLabel: findScheduleLabel(schedules, selectedScheduleID),
-				Schedules:             schedules,
-				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
-				Labels:                deps.Labels.Form,
+				InUse:                 inUse,
+				LockMessage:           lockMsg,
+				Labels:                form.LabelsFromPricePlan(deps.Labels.Form),
 				CommonLabels:          deps.CommonLabels,
 			})
 		}
@@ -290,6 +302,11 @@ func NewDeleteAction(deps *Deps) view.View {
 		}
 		if id == "" {
 			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+		}
+		if deps.GetPricePlanInUseIDs != nil {
+			if inUse, _ := deps.GetPricePlanInUseIDs(ctx, []string{id}); inUse[id] {
+				return centymo.HTMXError(deps.Labels.Errors.InUse)
+			}
 		}
 		if _, err := deps.DeletePricePlan(ctx, &priceplanpb.DeletePricePlanRequest{Data: &priceplanpb.PricePlan{Id: id}}); err != nil {
 			return centymo.HTMXError(err.Error())

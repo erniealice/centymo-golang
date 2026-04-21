@@ -1,65 +1,198 @@
+{{/*
+Price Plan drawer form — canonical template for all PricePlan add/edit contexts.
+Loaded into #sheetContent via HTMX.
+
+Context modes (set via .Context):
+  "Plan"       — form is opened from a Plan detail; plan_id is locked (hidden), user picks a rate card (price_schedule).
+  "Schedule"   — form is opened from a PriceSchedule detail; price_schedule_id is locked (hidden), user picks a package (plan).
+  "Standalone" — form is opened from a standalone PricePlan list; both auto-completes are shown.
+
+Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
+*/}}
 {{define "price-plan-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
+    {{/* Hidden context-locked IDs — only emitted when the field is NOT shown as an auto-complete */}}
+    {{if eq .Context "Plan"}}
+        <input type="hidden" name="plan_id" value="{{.PlanID}}">
+    {{end}}
+    {{if eq .Context "Schedule"}}
+        <input type="hidden" name="price_schedule_id" value="{{.ScheduleID}}">
+    {{end}}
+
     <div class="sheet-body">
         {{/* ================================================================ */}}
-        {{/* Section: Plan Details                                            */}}
+        {{/* Section 1: Basic / Context                                        */}}
         {{/* ================================================================ */}}
-        {{template "form-section" (dict "Title" "Plan Details")}}
+        {{template "form-section" (dict "Title" .Labels.SectionBasic)}}
 
+        {{if eq .Context "Plan"}}
+            {{/* Plan is locked — show as read-only display, then pick a rate card */}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "_plan_display"
+                    "Label" .Labels.PlanLabel
+                    "Value" .PlanName
+                    "Disabled" true
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "auto-complete" (dict
+                    "ID" "price-schedule-select"
+                    "Name" "price_schedule_id"
+                    "Label" .Labels.ScheduleLabel
+                    "Placeholder" .Labels.SchedulePlaceholder
+                    "SearchPlaceholder" .Labels.ScheduleSearch
+                    "Options" .ScheduleOptions
+                    "Value" .SelectedScheduleID
+                    "SelectedLabel" .SelectedScheduleLabel
+                )}}
+            </div>
+        {{end}}
+
+        {{if eq .Context "Schedule"}}
+            {{/* Schedule is locked — show as read-only display, then pick a package */}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "_schedule_display"
+                    "Label" .Labels.ScheduleLabel
+                    "Value" .ScheduleName
+                    "Disabled" true
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "auto-complete" (dict
+                    "ID" "plan-select"
+                    "Name" "plan_id"
+                    "Label" .Labels.PlanLabel
+                    "Placeholder" .Labels.PlanPlaceholder
+                    "SearchPlaceholder" .Labels.PlanSearch
+                    "Options" .PlanOptions
+                    "Value" .SelectedPlanID
+                    "SelectedLabel" .SelectedPlanLabel
+                )}}
+            </div>
+        {{end}}
+
+        {{if eq .Context "Standalone"}}
+            {{/* Both auto-completes are shown */}}
+            <div class="form-row single">
+                {{template "auto-complete" (dict
+                    "ID" "plan-select"
+                    "Name" "plan_id"
+                    "Label" .Labels.PlanLabel
+                    "Placeholder" .Labels.PlanPlaceholder
+                    "SearchPlaceholder" .Labels.PlanSearch
+                    "Options" .PlanOptions
+                    "Value" .SelectedPlanID
+                    "SelectedLabel" .SelectedPlanLabel
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "auto-complete" (dict
+                    "ID" "price-schedule-select"
+                    "Name" "price_schedule_id"
+                    "Label" .Labels.ScheduleLabel
+                    "Placeholder" .Labels.SchedulePlaceholder
+                    "SearchPlaceholder" .Labels.ScheduleSearch
+                    "Options" .ScheduleOptions
+                    "Value" .SelectedScheduleID
+                    "SelectedLabel" .SelectedScheduleLabel
+                )}}
+            </div>
+        {{end}}
+
+        {{/* Name and Description — optional, no required */}}
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder)}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.NameLabel
+                "Value" .Name
+                "Placeholder" .Labels.NamePlaceholder
+            )}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder)}}
-        </div>
-        <div class="form-row single">
-            {{template "auto-complete" (dict
-                "ID" "plan-select"
-                "Name" "plan_id"
-                "Label" "Plan"
-                "Placeholder" "Select a plan..."
-                "SearchPlaceholder" "Filter..."
-                "Options" .PlanOptions
-                "Value" .SelectedPlanID
-                "SelectedLabel" .SelectedPlanLabel
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "description"
+                "Label" .Labels.DescriptionLabel
+                "Value" .Description
+                "Placeholder" .Labels.DescriptionPlaceholder
+                "MaxLength" 500
             )}}
         </div>
 
         {{/* ================================================================ */}}
-        {{/* Section: Pricing                                                  */}}
+        {{/* Section 2: Pricing                                                */}}
         {{/* ================================================================ */}}
-        {{template "form-section" (dict "Title" "Pricing")}}
+        {{template "form-section" (dict "Title" .Labels.SectionPricing)}}
 
-        <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "amount" "Label" .Labels.Amount "Value" .Amount "Required" true "Placeholder" .Labels.AmountPlaceholder "Step" "0.01" "Min" "0")}}
-            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" .Labels.Currency "Value" .Currency "Required" true "Placeholder" .Labels.CurrencyPlaceholder)}}
-        </div>
-
-        {{/* ================================================================ */}}
-        {{/* Section: Duration & Location                                      */}}
-        {{/* ================================================================ */}}
-        {{template "form-section" (dict "Title" "Duration & Location")}}
-
-        <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" .Labels.DurationValue "Value" .DurationValue "Required" true "Placeholder" "1" "Min" "0")}}
-            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" .Labels.DurationUnit "Value" .DurationUnit "Options" (list (dict "Value" "days" "Label" .CommonLabels.DurationUnit.DaySelect) (dict "Value" "weeks" "Label" .CommonLabels.DurationUnit.WeekSelect) (dict "Value" "months" "Label" .CommonLabels.DurationUnit.MonthSelect) (dict "Value" "years" "Label" .CommonLabels.DurationUnit.YearSelect)))}}
-        </div>
+        {{/* Pricing-lock alert — rendered before inputs when plan is in use */}}
+        {{if and .IsEdit .InUse}}
         <div class="form-row single">
-            {{template "auto-complete" (dict
-                "ID" "price-schedule-select"
-                "Name" "price_schedule_id"
-                "Label" .Labels.Schedule
-                "Placeholder" .Labels.SchedulePlaceholder
-                "SearchPlaceholder" "Filter..."
-                "Options" .ScheduleOptions
-                "Value" .SelectedScheduleID
-                "SelectedLabel" .SelectedScheduleLabel
+            {{template "alert" (dict "State" "warning" "Message" .LockMessage)}}
+        </div>
+        {{end}}
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "amount"
+                "Label" .Labels.AmountLabel
+                "Value" .Amount
+                "Required" true
+                "Placeholder" .Labels.AmountPlaceholder
+                "Step" "0.01"
+                "Min" "0"
+                "Disabled" (and .IsEdit .InUse)
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "currency"
+                "Label" .Labels.CurrencyLabel
+                "Value" .Currency
+                "Required" true
+                "Placeholder" .Labels.CurrencyPlaceholder
+                "Disabled" (and .IsEdit .InUse)
             )}}
         </div>
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "duration_value"
+                "Label" .Labels.DurationLabel
+                "Value" .DurationValue
+                "Required" true
+                "Min" "1"
+                "Disabled" (and .IsEdit .InUse)
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "duration_unit"
+                "Label" .Labels.DurationUnitLabel
+                "Value" .DurationUnit
+                "Disabled" (and .IsEdit .InUse)
+                "Options" (list
+                    (dict "Value" "days"   "Label" .CommonLabels.DurationUnit.DaySelect)
+                    (dict "Value" "weeks"  "Label" .CommonLabels.DurationUnit.WeekSelect)
+                    (dict "Value" "months" "Label" .CommonLabels.DurationUnit.MonthSelect)
+                    (dict "Value" "years"  "Label" .CommonLabels.DurationUnit.YearSelect)
+                )
+            )}}
+        </div>
+
+        {{/* Active toggle */}}
         <div class="form-row single">
-            {{template "toggle" (dict "Name" "active" "Label" .Labels.Active "Checked" .Active "Value" "true")}}
+            {{template "toggle" (dict
+                "Name" "active"
+                "Label" .Labels.ActiveLabel
+                "Checked" .Active
+                "Value" "true"
+            )}}
         </div>
     </div>
 

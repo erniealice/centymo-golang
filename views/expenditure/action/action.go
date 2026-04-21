@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/erniealice/pyeza-golang/route"
+	pyeza "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -17,20 +18,6 @@ import (
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 )
-
-// CategoryOption represents a selectable category in the form dropdown.
-type CategoryOption struct {
-	Value    string
-	Label    string
-	Selected bool
-}
-
-// SupplierOption represents a selectable supplier in the form dropdown.
-type SupplierOption struct {
-	Value    string
-	Label    string
-	Selected bool
-}
 
 // PaymentTermOption is a minimal struct for rendering payment term options in the form.
 type PaymentTermOption struct {
@@ -88,8 +75,8 @@ type FormData struct {
 	Status                string
 	ReferenceNumber       string
 	Notes                 string
-	Categories            []CategoryOption
-	Suppliers             []SupplierOption
+	Categories            []pyeza.SelectOption
+	Suppliers             []pyeza.SelectOption
 	PaymentTerms          []*PaymentTermOption
 	SelectedPaymentTermID string
 	PurchaseOrders        []*PurchaseOrderOption
@@ -169,7 +156,7 @@ func loadCategoryOptions(
 	ctx context.Context,
 	listFn func(ctx context.Context, req *expenditurecategorypb.ListExpenditureCategoriesRequest) (*expenditurecategorypb.ListExpenditureCategoriesResponse, error),
 	selectedID string,
-) []CategoryOption {
+) []pyeza.SelectOption {
 	if listFn == nil {
 		return nil
 	}
@@ -178,12 +165,12 @@ func loadCategoryOptions(
 		log.Printf("Failed to list expenditure categories: %v", err)
 		return nil
 	}
-	var opts []CategoryOption
+	var opts []pyeza.SelectOption
 	for _, cat := range resp.GetData() {
 		if !cat.GetActive() {
 			continue
 		}
-		opts = append(opts, CategoryOption{
+		opts = append(opts, pyeza.SelectOption{
 			Value:    cat.GetId(),
 			Label:    cat.GetName(),
 			Selected: cat.GetId() == selectedID,
@@ -197,7 +184,7 @@ func loadSupplierOptions(
 	ctx context.Context,
 	listFn func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error),
 	selectedID string,
-) []SupplierOption {
+) []pyeza.SelectOption {
 	if listFn == nil {
 		return nil
 	}
@@ -206,7 +193,7 @@ func loadSupplierOptions(
 		log.Printf("Failed to list suppliers: %v", err)
 		return nil
 	}
-	var opts []SupplierOption
+	var opts []pyeza.SelectOption
 	for _, s := range resp.GetData() {
 		if !s.GetActive() {
 			continue
@@ -215,7 +202,7 @@ func loadSupplierOptions(
 		if label == "" {
 			label = s.GetId()
 		}
-		opts = append(opts, SupplierOption{
+		opts = append(opts, pyeza.SelectOption{
 			Value:    s.GetId(),
 			Label:    label,
 			Selected: s.GetId() == selectedID,

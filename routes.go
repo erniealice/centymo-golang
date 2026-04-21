@@ -17,9 +17,9 @@ const (
 	PlanAttachmentDeleteURL = "/action/plan/detail/{id}/attachments/delete"
 
 	// PricePlan CRUD routes (within plan context)
-	PricePlanAddURL    = "/action/plan/{id}/pricelists/add"
-	PricePlanEditURL   = "/action/plan/{id}/pricelists/edit/{ppid}"
-	PricePlanDeleteURL = "/action/plan/{id}/pricelists/delete"
+	PricePlanAddURL    = "/action/plan/{id}/price-plans/add"
+	PricePlanEditURL   = "/action/plan/{id}/price-plans/edit/{ppid}"
+	PricePlanDeleteURL = "/action/plan/{id}/price-plans/delete"
 
 	// ProductPlan CRUD routes (within plan context)
 	PlanProductPlanAddURL    = "/action/plan/{id}/products/add"

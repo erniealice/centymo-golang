@@ -6,109 +6,59 @@ import (
 	"math"
 	"net/http"
 	"strconv"
-	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/centymo-golang/views/price_plan/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 )
 
-// ScheduleOption is a minimal struct for rendering schedule options in the price plan form.
-type ScheduleOption struct {
-	Id   string
-	Name string
-}
-
-// ProductPlanPriceRow represents a product-plan entry with an optional price for the product pricing section.
-type ProductPlanPriceRow struct {
-	ProductPlanID string
-	ProductName   string
-	Price         string // display value (centavos ÷100), empty on add
-}
-
-// PricePlanFormLabels holds i18n labels for the price plan drawer form template.
-type PricePlanFormLabels struct {
-	Name                string
-	NamePlaceholder     string
-	Description         string
-	DescPlaceholder     string
-	Amount              string
-	AmountPlaceholder   string
-	Currency            string
-	CurrencyPlaceholder string
-	DurationValue       string
-	DurationUnit        string
-	Schedule            string
-	SchedulePlaceholder string
-	Active              string
-}
-
-// PricePlanFormData is the template data for the price plan drawer form.
-type PricePlanFormData struct {
-	FormAction            string
-	IsEdit                bool
-	ID                    string
-	PlanID                string
-	Name                  string
-	Description           string
-	Amount                string
-	Currency              string
-	DurationValue         string
-	DurationUnit          string
-	Active                bool
-	Schedules             []*ScheduleOption
-	SelectedScheduleID    string
-	SelectedScheduleLabel string
-	ScheduleOptions       []map[string]any
-	ProductPlans          []ProductPlanPriceRow
-	Labels                PricePlanFormLabels
-	CommonLabels          pyeza.CommonLabels
-}
-
 // PricePlanDeps holds dependencies for price plan action handlers.
 type PricePlanDeps struct {
-	Routes                centymo.PlanRoutes
-	Labels                centymo.PlanLabels
-	CommonLabels          pyeza.CommonLabels
-	CreatePricePlan       func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
-	ReadPricePlan         func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
-	UpdatePricePlan       func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
-	DeletePricePlan       func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
-	ListPriceSchedules    func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
-	ListProductPlans      func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	Routes             centymo.PlanRoutes
+	Labels             centymo.PlanLabels
+	CommonLabels       pyeza.CommonLabels
+	CreatePricePlan    func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
+	ReadPricePlan      func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	UpdatePricePlan    func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
+	DeletePricePlan    func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
+	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+
+	// ReadPlan resolves the parent plan's name for display in the locked
+	// "Package" field on the drawer.
+	ReadPlan func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+
+	// ListLocations resolves price_schedule.location_id → location.name for
+	// the form-hint below the rate-card auto-complete.
+	ListLocations func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+
+	// Reference checker: PricePlans in use by active subscriptions render
+	// the drawer's Pricing section as read-only via InUse + LockMessage.
+	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// Auto-seed ProductPricePlan rows on create (mirror of the
+	// PriceSchedule-side behavior). All optional — when nil, auto-seed skips.
+	ListProducts           func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductPlans       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	ListProductPricePlans  func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 }
 
-// pricePlanFormLabels converts centymo.PricePlanFormLabels into the local type.
-func pricePlanFormLabels(l centymo.PricePlanFormLabels) PricePlanFormLabels {
-	return PricePlanFormLabels{
-		Name:                l.Name,
-		NamePlaceholder:     l.NamePlaceholder,
-		Description:         l.Description,
-		DescPlaceholder:     l.DescPlaceholder,
-		Amount:              l.Amount,
-		AmountPlaceholder:   l.AmountPlaceholder,
-		Currency:            l.Currency,
-		CurrencyPlaceholder: l.CurrencyPlaceholder,
-		DurationValue:       l.DurationValue,
-		DurationUnit:        l.DurationUnit,
-		Schedule:            l.Schedule,
-		SchedulePlaceholder: l.SchedulePlaceholder,
-		Active:              l.Active,
-	}
-}
-
-// loadScheduleOptions fetches the active price schedule list and converts to options.
-// Returns nil slice on error (graceful degradation).
-func loadScheduleOptions(ctx context.Context, deps *PricePlanDeps) []*ScheduleOption {
+// loadScheduleOptions fetches active price schedules as form.Option entries.
+// Each option's Description carries the resolved location name so the
+// drawer's rate-card auto-complete can render a location hint right below
+// the field — dynamically updating as the user switches selection.
+func loadScheduleOptions(ctx context.Context, deps *PricePlanDeps, hintPrefix string) []form.Option {
 	if deps.ListPriceSchedules == nil {
 		return nil
 	}
@@ -117,113 +67,135 @@ func loadScheduleOptions(ctx context.Context, deps *PricePlanDeps) []*ScheduleOp
 		log.Printf("Failed to load price schedules for price plan form: %v", err)
 		return nil
 	}
-	var options []*ScheduleOption
+
+	locationNames := map[string]string{}
+	if deps.ListLocations != nil {
+		locResp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
+		if err == nil {
+			for _, l := range locResp.GetData() {
+				locationNames[l.GetId()] = l.GetName()
+			}
+		}
+	}
+
+	var options []form.Option
 	for _, s := range resp.GetData() {
 		if !s.GetActive() {
 			continue
 		}
-		options = append(options, &ScheduleOption{
-			Id:   s.GetId(),
-			Name: s.GetName(),
+		description := ""
+		if locID := s.GetLocationId(); locID != "" {
+			if n := locationNames[locID]; n != "" {
+				description = hintPrefix + n
+			}
+		}
+		options = append(options, form.Option{
+			ID:          s.GetId(),
+			Name:        s.GetName(),
+			Description: description,
 		})
 	}
 	return options
 }
 
-// buildScheduleAutoCompleteOptions converts []*ScheduleOption to the auto-complete format.
-func buildScheduleAutoCompleteOptions(schedules []*ScheduleOption, selectedID string) []map[string]any {
-	opts := make([]map[string]any, 0, len(schedules))
-	for _, s := range schedules {
-		opts = append(opts, map[string]any{
-			"Value":    s.Id,
-			"Label":    s.Name,
-			"Selected": s.Id == selectedID,
-		})
+// scheduleLocationHintPrefix is the literal prefix used when rendering the
+// location hint under the rate-card auto-complete. Kept in sync with
+// form.Labels.LocationHintPrefix so the hint reads e.g. "Location: Manila".
+const scheduleLocationHintPrefix = "Location: "
+
+// lookupPlanName reads the parent plan and returns its name for the locked
+// Package display. Falls back to the planID on any error.
+func lookupPlanName(ctx context.Context, deps *PricePlanDeps, planID string) string {
+	if deps.ReadPlan == nil {
+		return planID
 	}
-	return opts
+	resp, err := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{Data: &planpb.Plan{Id: &planID}})
+	if err != nil || len(resp.GetData()) == 0 {
+		return planID
+	}
+	if name := resp.GetData()[0].GetName(); name != "" {
+		return name
+	}
+	return planID
 }
 
-// findScheduleLabel returns the name of the schedule with the given ID, or empty string.
-func findScheduleLabel(schedules []*ScheduleOption, id string) string {
-	for _, s := range schedules {
-		if s.Id == id {
-			return s.Name
-		}
+// autoSeedProductPricePlans creates one ProductPricePlan row per product_plan
+// linked to planID, copying price/currency from the underlying Product record.
+// Mirrors price_schedule/detail/page.go's behavior so both contexts auto-seed
+// the newly-created PricePlan's product-prices tab. Non-fatal on failure.
+func autoSeedProductPricePlans(ctx context.Context, deps *PricePlanDeps, pricePlanID, planID, currency string) {
+	if pricePlanID == "" || planID == "" {
+		return
 	}
-	return ""
-}
-
-// loadProductPlansForPlan loads all product_plan records for a given plan and returns price rows.
-// If pricePlanID is non-empty, also loads existing product_price_plan records to pre-fill prices.
-func loadProductPlansForPlan(ctx context.Context, deps *PricePlanDeps, planID string, pricePlanID string) []ProductPlanPriceRow {
-	if deps.ListProductPlans == nil {
-		return nil
+	if deps.ListProductPlans == nil || deps.ListProducts == nil || deps.CreateProductPricePlan == nil {
+		return
 	}
-	resp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
+	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
 		Filters: &commonpb.FilterRequest{
 			Logic: commonpb.FilterLogic_AND,
-			Filters: []*commonpb.TypedFilter{
-				{
-					Field: "plan_id",
-					FilterType: &commonpb.TypedFilter_StringFilter{
-						StringFilter: &commonpb.StringFilter{
-							Value:    planID,
-							Operator: commonpb.StringOperator_STRING_EQUALS,
-						},
+			Filters: []*commonpb.TypedFilter{{
+				Field: "plan_id",
+				FilterType: &commonpb.TypedFilter_StringFilter{
+					StringFilter: &commonpb.StringFilter{
+						Value: planID, Operator: commonpb.StringOperator_STRING_EQUALS,
 					},
 				},
-			},
+			}},
 		},
 	})
-	if err != nil {
-		log.Printf("Failed to load product plans for plan %s: %v", planID, err)
-		return nil
+	if err != nil || ppResp == nil {
+		return
 	}
-
-	// Build a map of product_plan_id → existing price (centavos) when editing
-	existingPrices := map[string]int64{}
-	if pricePlanID != "" && deps.ListProductPricePlans != nil {
-		ppResp, err := deps.ListProductPricePlans(ctx, &productpriceplanpb.ListProductPricePlansRequest{
-			Filters: &commonpb.FilterRequest{
-				Logic: commonpb.FilterLogic_AND,
-				Filters: []*commonpb.TypedFilter{
-					{
-						Field: "price_plan_id",
-						FilterType: &commonpb.TypedFilter_StringFilter{
-							StringFilter: &commonpb.StringFilter{
-								Value:    pricePlanID,
-								Operator: commonpb.StringOperator_STRING_EQUALS,
-							},
-						},
-					},
-				},
-			},
-		})
-		if err == nil {
-			for _, ppp := range ppResp.GetData() {
-				// Key by product_id — map to price
-				existingPrices[ppp.GetProductId()] = ppp.GetPrice()
+	prodResp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+	if err != nil {
+		return
+	}
+	products := map[string]*productpb.Product{}
+	for _, p := range prodResp.GetData() {
+		if p != nil {
+			products[p.GetId()] = p
+		}
+	}
+	for _, pp := range ppResp.GetData() {
+		if pp == nil {
+			continue
+		}
+		productID := pp.GetProductId()
+		if productID == "" {
+			continue
+		}
+		var price int64
+		rowCurrency := currency
+		if rowCurrency == "" {
+			rowCurrency = "PHP"
+		}
+		if prod := products[productID]; prod != nil {
+			price = prod.GetPrice()
+			if c := prod.GetCurrency(); c != "" {
+				rowCurrency = c
 			}
 		}
-	}
-
-	rows := make([]ProductPlanPriceRow, 0, len(resp.GetData()))
-	for _, pp := range resp.GetData() {
-		priceStr := ""
-		if price, ok := existingPrices[pp.GetProductId()]; ok && price > 0 {
-			priceStr = strconv.FormatFloat(float64(price)/100.0, 'f', 2, 64)
+		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{
+			Data: &productpriceplanpb.ProductPricePlan{
+				PricePlanId: pricePlanID,
+				ProductId:   productID,
+				Price:       price,
+				Currency:    rowCurrency,
+				Active:      true,
+			},
+		}); err != nil {
+			log.Printf("auto-seed product_price_plan failed for %s/%s: %v", pricePlanID, productID, err)
 		}
-		rows = append(rows, ProductPlanPriceRow{
-			ProductPlanID: pp.GetId(),
-			ProductName:   pp.GetName(),
-			Price:         priceStr,
-		})
 	}
-	return rows
 }
 
+// removed: buildScheduleAutoCompleteOptions / findScheduleLabel (replaced by
+// form.BuildOptions + form.FindLabel), loadProductPlansForPlan (no longer
+// rendered in the drawer — per-product prices are seeded automatically on
+// create and edited from the PricePlan detail page).
+
 // NewPricePlanAddAction creates the price plan add action (GET = form, POST = create).
-// URL: /action/plans/{id}/pricelists/add
+// URL: /action/plan/{id}/price-plans/add
 func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
@@ -234,17 +206,17 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 		planID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			schedules := loadScheduleOptions(ctx, deps)
-			return view.OK("price-plan-drawer-form", &PricePlanFormData{
+			schedules := loadScheduleOptions(ctx, deps, scheduleLocationHintPrefix)
+			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:      route.ResolveURL(deps.Routes.PricePlanAddURL, "id", planID),
+				Context:         form.ContextPlan,
 				PlanID:          planID,
+				PlanName:        lookupPlanName(ctx, deps, planID),
 				Active:          true,
 				Currency:        "PHP",
 				DurationUnit:    "months",
-				Schedules:       schedules,
-				ScheduleOptions: buildScheduleAutoCompleteOptions(schedules, ""),
-				ProductPlans:    loadProductPlansForPlan(ctx, deps, planID, ""),
-				Labels:          pricePlanFormLabels(deps.Labels.PricePlanForm),
+				ScheduleOptions: form.BuildOptions(schedules, ""),
+				Labels:          form.LabelsFromPricePlan(deps.Labels.PricePlanForm),
 				CommonLabels:    deps.CommonLabels,
 			})
 		}
@@ -293,88 +265,18 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
-		// Get the new price_plan_id from the response
-		newPricePlanID := ""
+		// Auto-seed ProductPricePlan rows for the new PricePlan — mirrors the
+		// schedule-side behavior so the drawer doesn't need to collect prices.
 		if createResp != nil && len(createResp.GetData()) > 0 {
-			newPricePlanID = createResp.GetData()[0].GetId()
+			autoSeedProductPricePlans(ctx, deps, createResp.GetData()[0].GetId(), planID, currency)
 		}
 
-		// Create product_price_plan records for each product_prices[xxx] form value
-		if newPricePlanID != "" && deps.CreateProductPricePlan != nil {
-			productPlans := loadProductPlansForPlan(ctx, deps, planID, "")
-			// Build a map of product_plan_id → product_id for lookup
-			ppIDToProductID := map[string]string{}
-			for _, row := range productPlans {
-				// We need the product_id, not just the name — re-load product plans to get it
-				_ = row
-			}
-			// Re-load to get product_id per product_plan_id
-			if deps.ListProductPlans != nil {
-				ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
-					Filters: &commonpb.FilterRequest{
-						Logic: commonpb.FilterLogic_AND,
-						Filters: []*commonpb.TypedFilter{
-							{
-								Field: "plan_id",
-								FilterType: &commonpb.TypedFilter_StringFilter{
-									StringFilter: &commonpb.StringFilter{
-										Value:    planID,
-										Operator: commonpb.StringOperator_STRING_EQUALS,
-									},
-								},
-							},
-						},
-					},
-				})
-				if err == nil {
-					for _, pp := range ppResp.GetData() {
-						ppIDToProductID[pp.GetId()] = pp.GetProductId()
-					}
-				}
-			}
-
-			for key, values := range r.Form {
-				if !strings.HasPrefix(key, "product_prices[") {
-					continue
-				}
-				if len(values) == 0 || values[0] == "" {
-					continue
-				}
-				// Extract product_plan_id from key: product_prices[{id}]
-				trimmed := strings.TrimPrefix(key, "product_prices[")
-				trimmed = strings.TrimSuffix(trimmed, "]")
-				productPlanID := trimmed
-
-				productID, ok := ppIDToProductID[productPlanID]
-				if !ok || productID == "" {
-					continue
-				}
-
-				priceVal := int64(0)
-				if v, err := strconv.ParseFloat(values[0], 64); err == nil {
-					priceVal = int64(math.Round(v * 100))
-				}
-
-				_, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{
-					Data: &productpriceplanpb.ProductPricePlan{
-						PricePlanId: newPricePlanID,
-						ProductId:   productID,
-						Price:       priceVal,
-						Currency:    currency,
-					},
-				})
-				if err != nil {
-					log.Printf("Failed to create product_price_plan for product_plan %s: %v", productPlanID, err)
-				}
-			}
-		}
-
-		return centymo.HTMXSuccess("plan-pricelists-table")
+		return centymo.HTMXSuccess("plan-price-plans-table")
 	})
 }
 
 // NewPricePlanEditAction creates the price plan edit action (GET = form, POST = update).
-// URL: /action/plans/{id}/pricelists/edit/{ppid}
+// URL: /action/plan/{id}/price-plans/edit/{ppid}
 func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
@@ -402,13 +304,25 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			amountStr := strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64)
 			durationStr := strconv.FormatInt(int64(pp.GetDurationValue()), 10)
 			selectedScheduleID := pp.GetPriceScheduleId()
-			schedules := loadScheduleOptions(ctx, deps)
+			schedules := loadScheduleOptions(ctx, deps, scheduleLocationHintPrefix)
 
-			return view.OK("price-plan-drawer-form", &PricePlanFormData{
+			inUse := false
+			lockMsg := ""
+			if deps.GetPricePlanInUseIDs != nil {
+				if m, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppID}); m[ppID] {
+					inUse = true
+					lockMsg = "This price plan is in use by active subscriptions. Pricing changes are disabled."
+				}
+			}
+
+			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
 				IsEdit:                true,
+				Context:               form.ContextPlan,
 				ID:                    ppID,
 				PlanID:                planID,
+				PlanName:              lookupPlanName(ctx, deps, planID),
+				ScheduleID:            selectedScheduleID,
 				Name:                  pp.GetName(),
 				Description:           pp.GetDescription(),
 				Amount:                amountStr,
@@ -416,12 +330,12 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				DurationValue:         durationStr,
 				DurationUnit:          pp.GetDurationUnit(),
 				Active:                pp.GetActive(),
-				Schedules:             schedules,
+				ScheduleOptions:       form.BuildOptions(schedules, selectedScheduleID),
 				SelectedScheduleID:    selectedScheduleID,
-				SelectedScheduleLabel: findScheduleLabel(schedules, selectedScheduleID),
-				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
-				ProductPlans:          loadProductPlansForPlan(ctx, deps, planID, ppID),
-				Labels:                pricePlanFormLabels(deps.Labels.PricePlanForm),
+				SelectedScheduleLabel: form.FindLabel(schedules, selectedScheduleID),
+				InUse:                 inUse,
+				LockMessage:           lockMsg,
+				Labels:                form.LabelsFromPricePlan(deps.Labels.PricePlanForm),
 				CommonLabels:          deps.CommonLabels,
 			})
 		}
@@ -463,83 +377,16 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			pp.PriceScheduleId = &schedID
 		}
 
-		_, err := deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{
-			Data: pp,
-		})
-		if err != nil {
+		if _, err := deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{Data: pp}); err != nil {
 			log.Printf("Failed to update price plan %s: %v", ppID, err)
 			return centymo.HTMXError(err.Error())
 		}
-
-		// Update product_price_plan records: delete+recreate pattern
-		if deps.CreateProductPricePlan != nil {
-			// Build product_plan_id → product_id lookup
-			ppIDToProductID := map[string]string{}
-			if deps.ListProductPlans != nil {
-				ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
-					Filters: &commonpb.FilterRequest{
-						Logic: commonpb.FilterLogic_AND,
-						Filters: []*commonpb.TypedFilter{
-							{
-								Field: "plan_id",
-								FilterType: &commonpb.TypedFilter_StringFilter{
-									StringFilter: &commonpb.StringFilter{
-										Value:    planID,
-										Operator: commonpb.StringOperator_STRING_EQUALS,
-									},
-								},
-							},
-						},
-					},
-				})
-				if err == nil {
-					for _, pp := range ppResp.GetData() {
-						ppIDToProductID[pp.GetId()] = pp.GetProductId()
-					}
-				}
-			}
-
-			for key, values := range r.Form {
-				if !strings.HasPrefix(key, "product_prices[") {
-					continue
-				}
-				if len(values) == 0 || values[0] == "" {
-					continue
-				}
-				trimmed := strings.TrimPrefix(key, "product_prices[")
-				trimmed = strings.TrimSuffix(trimmed, "]")
-				productPlanID := trimmed
-
-				productID, ok := ppIDToProductID[productPlanID]
-				if !ok || productID == "" {
-					continue
-				}
-
-				priceVal := int64(0)
-				if v, err := strconv.ParseFloat(values[0], 64); err == nil {
-					priceVal = int64(math.Round(v * 100))
-				}
-
-				_, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{
-					Data: &productpriceplanpb.ProductPricePlan{
-						PricePlanId: ppID,
-						ProductId:   productID,
-						Price:       priceVal,
-						Currency:    currency,
-					},
-				})
-				if err != nil {
-					log.Printf("Failed to upsert product_price_plan for product_plan %s: %v", productPlanID, err)
-				}
-			}
-		}
-
-		return centymo.HTMXSuccess("plan-pricelists-table")
+		return centymo.HTMXSuccess("plan-price-plans-table")
 	})
 }
 
 // NewPricePlanDeleteAction creates the price plan delete action (POST only).
-// URL: /action/plans/{id}/pricelists/delete  (id=price_plan_id via query param)
+// URL: /action/plan/{id}/price-plans/delete  (id=price_plan_id via query param)
 func NewPricePlanDeleteAction(deps *PricePlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
@@ -564,6 +411,6 @@ func NewPricePlanDeleteAction(deps *PricePlanDeps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("plan-pricelists-table")
+		return centymo.HTMXSuccess("plan-price-plans-table")
 	})
 }

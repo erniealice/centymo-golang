@@ -214,24 +214,26 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = []types.BulkAction{
 		{
-			Key:             "activate",
-			Label:           l.Status.Activate,
-			Icon:            "icon-check-circle",
-			Variant:         "success",
-			Endpoint:        deps.Routes.BulkSetStatusURL,
-			ExtraParamsJSON: `{"target_status":"active"}`,
-			ConfirmTitle:    l.Status.Activate,
-			ConfirmMessage:  l.Confirm.BulkActivateMessage,
+			Key:              "activate",
+			Label:            l.Status.Activate,
+			Icon:             "icon-check-circle",
+			Variant:          "success",
+			Endpoint:         deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON:  `{"target_status":"active"}`,
+			ConfirmTitle:     l.Status.Activate,
+			ConfirmMessage:   l.Confirm.BulkActivateMessage,
+			RequiresDataAttr: "activatable",
 		},
 		{
-			Key:             "deactivate",
-			Label:           l.Status.Deactivate,
-			Icon:            "icon-x-circle",
-			Variant:         "warning",
-			Endpoint:        deps.Routes.BulkSetStatusURL,
-			ExtraParamsJSON: `{"target_status":"inactive"}`,
-			ConfirmTitle:    l.Status.Deactivate,
-			ConfirmMessage:  l.Confirm.BulkDeactivateMessage,
+			Key:              "deactivate",
+			Label:            l.Status.Deactivate,
+			Icon:             "icon-x-circle",
+			Variant:          "warning",
+			Endpoint:         deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON:  `{"target_status":"inactive"}`,
+			ConfirmTitle:     l.Status.Deactivate,
+			ConfirmMessage:   l.Confirm.BulkDeactivateMessage,
+			RequiresDataAttr: "deactivatable",
 		},
 		{
 			Key:              "delete",
@@ -306,7 +308,6 @@ func productColumns(l centymo.ProductLabels) []types.TableColumn {
 		{Key: "line", Label: l.Columns.Line, Sortable: false},
 		{Key: "price", Label: l.Columns.Price, Sortable: true, WidthClass: "col-4xl"},
 		{Key: "date_created", Label: "Date Created", Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl", Filterable: false},
 	}
 }
 
@@ -342,6 +343,37 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 			deleteAction.DisabledTooltip = l.Errors.PermissionDenied
 		}
 
+		actions := []types.TableAction{
+			{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("product", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+		}
+		if recordStatus == "active" {
+			actions = append(actions, types.TableAction{
+				Type:            "deactivate",
+				Label:           l.Status.Deactivate,
+				Action:          "deactivate",
+				URL:             routes.SetStatusURL + "?status=inactive",
+				ItemName:        name,
+				ConfirmTitle:    l.Status.Deactivate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.DeactivateMessage, name),
+				Disabled:        !perms.Can("product", "update"),
+				DisabledTooltip: l.Errors.PermissionDenied,
+			})
+		} else {
+			actions = append(actions, types.TableAction{
+				Type:            "activate",
+				Label:           l.Status.Activate,
+				Action:          "activate",
+				URL:             routes.SetStatusURL + "?status=active",
+				ItemName:        name,
+				ConfirmTitle:    l.Status.Activate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.ActivateMessage, name),
+				Disabled:        !perms.Can("product", "update"),
+				DisabledTooltip: l.Errors.PermissionDenied,
+			})
+		}
+		actions = append(actions, deleteAction)
+
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
@@ -350,19 +382,16 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 				{Type: "text", Value: lineName},
 				types.MoneyCell(float64(p.GetPrice()), currency, true),
 				types.DateTimeCell(p.GetDateCreatedString(), types.DateReadable),
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
-				"name":      name,
-				"price":     fmt.Sprintf("%d", p.GetPrice()),
-				"status":    recordStatus,
-				"deletable": strconv.FormatBool(!isInUse),
+				"name":          name,
+				"price":         fmt.Sprintf("%d", p.GetPrice()),
+				"status":        recordStatus,
+				"deletable":     strconv.FormatBool(!isInUse),
+				"activatable":   strconv.FormatBool(recordStatus == "inactive"),
+				"deactivatable": strconv.FormatBool(recordStatus == "active"),
 			},
-			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("product", "update"), DisabledTooltip: l.Errors.PermissionDenied},
-				deleteAction,
-			},
+			Actions: actions,
 		})
 	}
 	return rows

@@ -17,8 +17,8 @@
             {{template "plan-tab-info" .}}
         {{else if eq .ActiveTab "products"}}
             {{template "plan-tab-products" .}}
-        {{else if eq .ActiveTab "pricelists"}}
-            {{template "plan-tab-pricelists" .}}
+        {{else if eq .ActiveTab "pricePlan"}}
+            {{template "plan-tab-pricePlan" .}}
         {{else if eq .ActiveTab "audit"}}
             {{template "plan-tab-audit" .}}
         {{else if eq .ActiveTab "attachments"}}
@@ -61,8 +61,8 @@
         </div>
     </div>
 
-    <div class="detail-actions detail-actions--spaced">
-        <a class="btn btn-ghost btn-sm"
+    <div class="detail-actions detail-actions--spaced" style="margin-top: var(--spacing-xl);">
+        <a class="btn btn-primary"
            hx-get="{{routeWith "plan.edit" "id" .ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
@@ -92,10 +92,10 @@
 {{/* =============================================
      TAB PARTIAL: Price Lists
      ============================================= */}}
-{{define "plan-tab-pricelists"}}
+{{define "plan-tab-pricePlan"}}
 <div class="tab-scroll tab-scroll--table">
-    {{if .PriceListsTable}}
-        {{template "table-card" .PriceListsTable}}
+    {{if .PricePlansTable}}
+        {{template "table-card" .PricePlansTable}}
     {{else}}
         <div class="coming-soon-panel">
             <div class="coming-soon-title">{{.Labels.Detail.NoPricePlans}}</div>

@@ -6,17 +6,11 @@ import (
 	"net/http"
 
 	"github.com/erniealice/pyeza-golang/route"
+	pyeza "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
 )
-
-// PaymentMethodOption represents a selectable payment/collection method.
-type PaymentMethodOption struct {
-	Value    string
-	Label    string
-	Selected bool
-}
 
 // PaymentFormData is the template data for the payment drawer form.
 type PaymentFormData struct {
@@ -31,7 +25,7 @@ type PaymentFormData struct {
 	Notes              string
 	ReceivedBy         string
 	ReceivedRole       string
-	PaymentMethods     []PaymentMethodOption
+	PaymentMethods     []pyeza.SelectOption
 	CommonLabels       any
 	Labels             centymo.RevenueLabels
 }
@@ -45,14 +39,14 @@ type PaymentDeps struct {
 
 // loadCollectionMethods loads collection methods from the DB and returns them
 // as select options.
-func loadCollectionMethods(ctx context.Context, db centymo.DataSource) []PaymentMethodOption {
+func loadCollectionMethods(ctx context.Context, db centymo.DataSource) []pyeza.SelectOption {
 	methods, err := db.ListSimple(ctx, "collection_method")
 	if err != nil {
 		log.Printf("Failed to list collection methods: %v", err)
-		return []PaymentMethodOption{}
+		return []pyeza.SelectOption{}
 	}
 
-	options := make([]PaymentMethodOption, 0, len(methods))
+	options := make([]pyeza.SelectOption, 0, len(methods))
 	for _, m := range methods {
 		id, _ := m["id"].(string)
 		name, _ := m["name"].(string)
@@ -62,7 +56,7 @@ func loadCollectionMethods(ctx context.Context, db centymo.DataSource) []Payment
 		if name == "" {
 			name = id
 		}
-		options = append(options, PaymentMethodOption{Value: id, Label: name})
+		options = append(options, pyeza.SelectOption{Value: id, Label: name})
 	}
 	return options
 }

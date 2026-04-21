@@ -38,18 +38,8 @@
             <span class="detail-info-value">{{template "table-cell-money" .Amount}}</span>
         </div>
         <div class="detail-info-item">
-            <span class="detail-info-label">{{.Labels.Detail.Currency}}</span>
-            <span class="detail-info-value">{{.Currency}}</span>
-        </div>
-        <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Duration}}</span>
             <span class="detail-info-value">{{if .Duration}}{{.Duration}}{{else}}—{{end}}</span>
-        </div>
-        <div class="detail-info-item">
-            <span class="detail-info-label">{{.Labels.Detail.ScheduleLabel}}</span>
-            <span class="detail-info-value">
-                <a href="{{.ScheduleBackURL}}">{{.ScheduleName}}</a>
-            </span>
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
@@ -67,7 +57,7 @@
         </div>
     </div>
 
-    <div class="detail-actions detail-actions--spaced">
+    <div class="detail-actions detail-actions--spaced" style="margin-top: var(--spacing-xl);">
         <a class="btn btn-primary"
            hx-get="{{.EditURL}}"
            hx-target="#sheetContent"
@@ -93,54 +83,9 @@
 </div>
 {{end}}
 
-{{/* Edit drawer — embedded in the tab-info Edit button */}}
-{{define "price-schedule-plan-edit-drawer"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
-    <input type="hidden" name="id" value="{{.ID}}">
-    <div class="sheet-body">
-        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionSchedule)}}
-        <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "_schedule_display" "Label" .Labels.PlanForm.PriceScheduleField "Value" .ScheduleName "Disabled" true)}}
-        </div>
-
-        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionPackage)}}
-        <div class="form-row single">
-            {{template "auto-complete" (dict
-                "ID" "plan-select-edit"
-                "Name" "plan_id"
-                "Label" .Labels.PlanForm.PackageLabel
-                "Placeholder" .Labels.PlanForm.PackagePlaceholder
-                "SearchPlaceholder" .Labels.PlanForm.PackageSearch
-                "Options" .PlanOptions
-                "Value" .PlanID
-                "SelectedLabel" .PlanLabel
-            )}}
-        </div>
-        <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.PlanForm.NameLabel "Value" .Name "Placeholder" .Labels.PlanForm.NamePlaceholder)}}
-        </div>
-        <div class="form-row single">
-            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.PlanForm.DescriptionLabel "Value" .Description "Placeholder" .Labels.PlanForm.DescriptionPlaceholder "MaxLength" 500)}}
-        </div>
-
-        {{template "form-section" (dict "Title" .Labels.PlanForm.SectionPricing)}}
-        {{if .PricingLockedReason}}
-        <div class="form-row single">
-            {{template "alert" (dict "State" "info" "Message" .PricingLockedReason)}}
-        </div>
-        {{end}}
-        <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "amount" "Label" .Labels.PlanForm.AmountLabel "Value" .Amount "Required" true "Placeholder" .Labels.PlanForm.AmountPlaceholder "Step" "0.01" "Min" "0" "Disabled" .PricingLocked)}}
-            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" .Labels.PlanForm.CurrencyLabel "Value" .Currency "Required" true "Disabled" .PricingLocked)}}
-        </div>
-        <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "duration_value" "Label" .Labels.PlanForm.DurationLabel "Value" .DurationValue "Required" true "Min" "1" "Disabled" .PricingLocked)}}
-            {{template "form-group" (dict "Type" "select" "Name" "duration_unit" "Label" .Labels.PlanForm.UnitLabel "Value" .DurationUnit "Disabled" .PricingLocked "Options" (list (dict "Value" "days" "Label" .CommonLabels.DurationUnit.DaySelect) (dict "Value" "weeks" "Label" .CommonLabels.DurationUnit.WeekSelect) (dict "Value" "months" "Label" .CommonLabels.DurationUnit.MonthSelect) (dict "Value" "years" "Label" .CommonLabels.DurationUnit.YearSelect)))}}
-        </div>
-    </div>
-    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" true)}}
-</form>
-{{end}}
+{{/* The schedule-scoped plan edit drawer is now the canonical
+     price-plan-drawer-form.html in views/price_plan/templates/, rendered with
+     form.Data{Context: form.ContextSchedule, IsEdit: true}. */}}
 
 {{/* Product Price edit drawer — Plan + Product are display-only context;
      only Price + Currency are editable. Rows are auto-seeded on PricePlan create.

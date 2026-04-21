@@ -36,13 +36,14 @@ type FormData struct {
 }
 
 type Deps struct {
-	Routes              centymo.PriceScheduleRoutes
-	Labels              centymo.PriceScheduleLabels
-	CreatePriceSchedule func(ctx context.Context, req *priceschedulepb.CreatePriceScheduleRequest) (*priceschedulepb.CreatePriceScheduleResponse, error)
-	ReadPriceSchedule   func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
-	UpdatePriceSchedule func(ctx context.Context, req *priceschedulepb.UpdatePriceScheduleRequest) (*priceschedulepb.UpdatePriceScheduleResponse, error)
-	DeletePriceSchedule func(ctx context.Context, req *priceschedulepb.DeletePriceScheduleRequest) (*priceschedulepb.DeletePriceScheduleResponse, error)
-	ListLocations       func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	Routes                   centymo.PriceScheduleRoutes
+	Labels                   centymo.PriceScheduleLabels
+	CreatePriceSchedule      func(ctx context.Context, req *priceschedulepb.CreatePriceScheduleRequest) (*priceschedulepb.CreatePriceScheduleResponse, error)
+	ReadPriceSchedule        func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
+	UpdatePriceSchedule      func(ctx context.Context, req *priceschedulepb.UpdatePriceScheduleRequest) (*priceschedulepb.UpdatePriceScheduleResponse, error)
+	DeletePriceSchedule      func(ctx context.Context, req *priceschedulepb.DeletePriceScheduleRequest) (*priceschedulepb.DeletePriceScheduleResponse, error)
+	ListLocations            func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	GetPriceScheduleInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
 func loadLocations(ctx context.Context, deps *Deps) []*LocationOption {
@@ -206,6 +207,11 @@ func NewDeleteAction(deps *Deps) view.View {
 		if id == "" {
 			return centymo.HTMXError(deps.Labels.Errors.NotFound)
 		}
+		if deps.GetPriceScheduleInUseIDs != nil {
+			if inUse, _ := deps.GetPriceScheduleInUseIDs(ctx, []string{id}); inUse[id] {
+				return centymo.HTMXError(deps.Labels.Errors.InUse)
+			}
+		}
 		if _, err := deps.DeletePriceSchedule(ctx, &priceschedulepb.DeletePriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}}); err != nil {
 			return centymo.HTMXError(err.Error())
 		}
@@ -222,10 +228,16 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 		if err := viewCtx.Request.ParseForm(); err != nil {
 			return centymo.HTMXError(deps.Labels.Errors.DeleteFailed)
 		}
-		for _, id := range viewCtx.Request.Form["id"] {
-			if id != "" {
-				_, _ = deps.DeletePriceSchedule(ctx, &priceschedulepb.DeletePriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}})
+		ids := viewCtx.Request.Form["id"]
+		var inUse map[string]bool
+		if deps.GetPriceScheduleInUseIDs != nil && len(ids) > 0 {
+			inUse, _ = deps.GetPriceScheduleInUseIDs(ctx, ids)
+		}
+		for _, id := range ids {
+			if id == "" || inUse[id] {
+				continue
 			}
+			_, _ = deps.DeletePriceSchedule(ctx, &priceschedulepb.DeletePriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}})
 		}
 		return centymo.HTMXSuccess("price-schedules-table")
 	})

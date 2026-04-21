@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/erniealice/pyeza-golang/route"
+	pyeza "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -24,12 +25,6 @@ type SerialFormLabels struct {
 	SoldReference string
 }
 
-// SelectOption represents a select dropdown option.
-type SelectOption struct {
-	Value string
-	Label string
-}
-
 // SerialFormData is the template data for the serial drawer form.
 type SerialFormData struct {
 	FormAction    string
@@ -43,7 +38,7 @@ type SerialFormData struct {
 	PurchaseOrder string
 	SoldReference string
 	Labels        SerialFormLabels
-	StatusOptions []SelectOption
+	StatusOptions []pyeza.SelectOption
 	CommonLabels  any
 }
 
@@ -59,8 +54,8 @@ func serialFormLabels(t func(string) string) SerialFormLabels {
 	}
 }
 
-func serialStatusOptions(t func(string) string) []SelectOption {
-	return []SelectOption{
+func serialStatusOptions(t func(string) string) []pyeza.SelectOption {
+	return []pyeza.SelectOption{
 		{Value: "available", Label: t("inventory.serial.statusAvailable")},
 		{Value: "sold", Label: t("inventory.serial.statusSold")},
 		{Value: "reserved", Label: t("inventory.serial.statusReserved")},

@@ -30,6 +30,10 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
             )}}
         </div>
 
+        <div class="form-row single">
+            {{template "toggle" (dict "Name" "active" "Label" .Labels.Active "Checked" .Active "Value" "true")}}
+        </div>
+
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

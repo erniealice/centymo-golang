@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/erniealice/pyeza-golang/route"
+	pyeza "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -36,7 +37,7 @@ type DepreciationFormData struct {
 	UsefulLife    string
 	StartDate     string
 	Labels        DepreciationFormLabels
-	MethodOptions []SelectOption
+	MethodOptions []pyeza.SelectOption
 	CommonLabels  any
 }
 
@@ -50,8 +51,8 @@ func depreciationFormLabels(t func(string) string) DepreciationFormLabels {
 	}
 }
 
-func depreciationMethodOptions(t func(string) string) []SelectOption {
-	return []SelectOption{
+func depreciationMethodOptions(t func(string) string) []pyeza.SelectOption {
+	return []pyeza.SelectOption{
 		{Value: "straight_line", Label: t("inventory.depreciation.methodStraightLine")},
 		{Value: "declining_balance", Label: t("inventory.depreciation.methodDecliningBalance")},
 		{Value: "sum_of_years", Label: t("inventory.depreciation.methodSumOfYears")},

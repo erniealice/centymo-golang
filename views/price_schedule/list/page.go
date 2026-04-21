@@ -274,7 +274,7 @@ func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceSched
 	}
 	if isInUse {
 		deleteAction.Disabled = true
-		deleteAction.DisabledTooltip = "This price schedule cannot be deleted because it is in use"
+		deleteAction.DisabledTooltip = l.Errors.InUse
 	} else if !perms.Can("price_schedule", "delete") {
 		deleteAction.Disabled = true
 		deleteAction.DisabledTooltip = l.Errors.Unauthorized

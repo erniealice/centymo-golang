@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/centymo-golang/views/price_plan/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -49,16 +50,6 @@ type DetailViewDeps struct {
 	// Reference checker: returns a map of price_plan_id → true for plans in use by active subscriptions.
 	// Delete is disabled for in-use plans; Edit remains enabled (Pricing fields lock inside the drawer).
 	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
-}
-
-// PlanFormData is rendered as the drawer form for adding a PricePlan under this schedule.
-type PlanFormData struct {
-	FormAction   string
-	ScheduleID   string
-	ScheduleName string
-	PlanOptions  []map[string]any
-	CommonLabels pyeza.CommonLabels
-	Labels       centymo.PriceScheduleLabels
 }
 
 // PageData holds the data for the price schedule detail page.
@@ -141,13 +132,17 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			scheduleName := lookupScheduleName(ctx, deps, scheduleID)
 			planOptions := buildPlanOptions(ctx, deps)
-			return view.OK("price-schedule-plan-drawer-form", &PlanFormData{
+			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:   route.ResolveURL(deps.Routes.PlanAddURL, "id", scheduleID),
+				Context:      form.ContextSchedule,
 				ScheduleID:   scheduleID,
 				ScheduleName: scheduleName,
+				Active:       true,
+				Currency:     "PHP",
+				DurationUnit: "months",
 				PlanOptions:  planOptions,
+				Labels:       form.LabelsFromPriceSchedule(deps.Labels.PlanForm),
 				CommonLabels: deps.CommonLabels,
-				Labels:       deps.Labels,
 			})
 		}
 
@@ -395,7 +390,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ModifiedDate:    ps.GetDateModifiedString(),
 	}
 
-	if activeTab == "plans" {
+	if activeTab == "pricePlan" {
 		pageData.PlansTable = buildPlansTable(ctx, deps, ps)
 	}
 
@@ -405,10 +400,10 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 func buildTabItems(id string, l centymo.PriceScheduleLabels, planCount int, routes centymo.PriceScheduleRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
-	plansSlug := l.Tabs.ResolveTabSlug("plans")
+	pricePlanSlug := l.Tabs.ResolveTabSlug("pricePlan")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
-		{Key: "plans", Label: l.Tabs.Plans, Href: base + "?tab=" + plansSlug, HxGet: action + plansSlug, Icon: "icon-layers", Count: planCount},
+		{Key: "pricePlan", Label: l.Tabs.PricePlan, Href: base + "?tab=" + pricePlanSlug, HxGet: action + pricePlanSlug, Icon: "icon-layers", Count: planCount},
 	}
 }
 
@@ -550,7 +545,7 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 	types.ApplyColumnStyles(columns, rows)
 
 
-	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", ps.GetId(), "tab", l.Tabs.ResolveTabSlug("plans"))
+	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", ps.GetId(), "tab", l.Tabs.ResolveTabSlug("pricePlan"))
 	tableConfig := &types.TableConfig{
 		ID:                   "price-schedule-plans-table",
 		RefreshURL:           refreshURL,

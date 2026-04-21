@@ -84,13 +84,14 @@ type Module struct {
 // NewModule creates the price_schedule module with all views wired.
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &pricescheduleaction.Deps{
-		Routes:              deps.Routes,
-		Labels:              deps.Labels,
-		CreatePriceSchedule: deps.CreatePriceSchedule,
-		ReadPriceSchedule:   deps.ReadPriceSchedule,
-		UpdatePriceSchedule: deps.UpdatePriceSchedule,
-		DeletePriceSchedule: deps.DeletePriceSchedule,
-		ListLocations:       deps.ListLocations,
+		Routes:                   deps.Routes,
+		Labels:                   deps.Labels,
+		CreatePriceSchedule:      deps.CreatePriceSchedule,
+		ReadPriceSchedule:        deps.ReadPriceSchedule,
+		UpdatePriceSchedule:      deps.UpdatePriceSchedule,
+		DeletePriceSchedule:      deps.DeletePriceSchedule,
+		ListLocations:            deps.ListLocations,
+		GetPriceScheduleInUseIDs: deps.GetPriceScheduleInUseIDs,
 	}
 
 	listDeps := &priceschedulelist.ListViewDeps{

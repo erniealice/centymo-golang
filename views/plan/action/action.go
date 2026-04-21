@@ -19,6 +19,7 @@ type FormLabels struct {
 	NamePlaceholder string
 	Description     string
 	DescPlaceholder string
+	Active          string
 }
 
 // FormData is the template data for the plan drawer form.
@@ -28,6 +29,7 @@ type FormData struct {
 	ID           string
 	Name         string
 	Description  string
+	Active       bool
 	Labels       FormLabels
 	CommonLabels any
 }
@@ -51,6 +53,7 @@ func formLabels(l centymo.PlanLabels) FormLabels {
 		NamePlaceholder: l.Form.NamePlaceholder,
 		Description:     l.Form.Description,
 		DescPlaceholder: l.Form.DescPlaceholder,
+		Active:          l.Form.Active,
 	}
 }
 
@@ -65,6 +68,7 @@ func NewAddAction(deps *Deps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("plan-drawer-form", &FormData{
 				FormAction:   deps.Routes.AddURL,
+				Active:       true,
 				Labels:       formLabels(deps.Labels),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
@@ -76,12 +80,13 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		r := viewCtx.Request
+		active := r.FormValue("active") == "true"
 
 		resp, err := deps.CreatePlan(ctx, &planpb.CreatePlanRequest{
 			Data: &planpb.Plan{
 				Name:        r.FormValue("name"),
 				Description: strPtr(r.FormValue("description")),
-				Active:      true,
+				Active:      active,
 			},
 		})
 		if err != nil {
@@ -93,6 +98,12 @@ func NewAddAction(deps *Deps) view.View {
 		newID := ""
 		if respData := resp.GetData(); len(respData) > 0 {
 			newID = respData[0].GetId()
+		}
+		// Proto3 omits active=false on Create; force-sync via raw update when unchecked.
+		if !active && newID != "" && deps.SetPlanActive != nil {
+			if err := deps.SetPlanActive(ctx, newID, false); err != nil {
+				log.Printf("Failed to set plan inactive after create %s: %v", newID, err)
+			}
 		}
 		if newID != "" {
 			return view.ViewResult{
@@ -138,6 +149,7 @@ func NewEditAction(deps *Deps) view.View {
 				ID:           id,
 				Name:         record.GetName(),
 				Description:  record.GetDescription(),
+				Active:       record.GetActive(),
 				Labels:       formLabels(deps.Labels),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
@@ -149,6 +161,7 @@ func NewEditAction(deps *Deps) view.View {
 		}
 
 		r := viewCtx.Request
+		active := r.FormValue("active") == "true"
 
 		_, err := deps.UpdatePlan(ctx, &planpb.UpdatePlanRequest{
 			Data: &planpb.Plan{
@@ -160,6 +173,14 @@ func NewEditAction(deps *Deps) view.View {
 		if err != nil {
 			log.Printf("Failed to update plan %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
+		}
+
+		// Proto3 omits active=false; sync the active state via raw update so the
+		// toggle in the drawer actually persists deactivation.
+		if deps.SetPlanActive != nil {
+			if err := deps.SetPlanActive(ctx, id, active); err != nil {
+				log.Printf("Failed to set plan active state %s: %v", id, err)
+			}
 		}
 
 		// Redirect to detail page
@@ -197,6 +218,34 @@ func NewDeleteAction(deps *Deps) view.View {
 		if err != nil {
 			log.Printf("Failed to delete plan %s: %v", id, err)
 			return centymo.HTMXError(err.Error())
+		}
+
+		return centymo.HTMXSuccess("plans-table")
+	})
+}
+
+// NewBulkDeleteAction creates the plan bulk delete action (POST only).
+// Selected IDs come as multiple "id" form fields.
+func NewBulkDeleteAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("plan", "delete") {
+			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+		}
+
+		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
+
+		ids := viewCtx.Request.Form["id"]
+		if len(ids) == 0 {
+			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+		}
+
+		for _, id := range ids {
+			if _, err := deps.DeletePlan(ctx, &planpb.DeletePlanRequest{
+				Data: &planpb.Plan{Id: &id},
+			}); err != nil {
+				log.Printf("Failed to delete plan %s: %v", id, err)
+			}
 		}
 
 		return centymo.HTMXSuccess("plans-table")

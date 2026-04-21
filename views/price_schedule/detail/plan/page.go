@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/centymo-golang/views/price_plan/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -206,24 +207,28 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 			}
 
 			planOpts := buildPlanOptions(ctx, deps, pp.GetPlanId())
-			return view.OK("price-schedule-plan-edit-drawer", &EditFormData{
-				FormAction:          route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
-				ScheduleID:          sid,
-				ScheduleName:        lookupScheduleName(ctx, deps, sid),
-				ID:                  ppid,
-				PlanID:              pp.GetPlanId(),
-				PlanLabel:           labelFromOptions(planOpts, pp.GetPlanId()),
-				PlanOptions:         planOpts,
-				Name:                pp.GetName(),
-				Description:         pp.GetDescription(),
-				Amount:              strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64),
-				Currency:            pp.GetCurrency(),
-				DurationValue:       fmt.Sprintf("%d", pp.GetDurationValue()),
-				DurationUnit:        pp.GetDurationUnit(),
-				CommonLabels:        deps.CommonLabels,
-				Labels:              deps.ScheduleLabels,
-				PricingLocked:       pricingLocked,
-				PricingLockedReason: pricingLockedReason,
+			return view.OK("price-plan-drawer-form", &form.Data{
+				FormAction:            route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
+				IsEdit:                true,
+				Context:               form.ContextSchedule,
+				ID:                    ppid,
+				PlanID:                pp.GetPlanId(),
+				ScheduleID:            sid,
+				ScheduleName:          lookupScheduleName(ctx, deps, sid),
+				Name:                  pp.GetName(),
+				Description:           pp.GetDescription(),
+				Amount:                strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64),
+				Currency:              pp.GetCurrency(),
+				DurationValue:         fmt.Sprintf("%d", pp.GetDurationValue()),
+				DurationUnit:          pp.GetDurationUnit(),
+				Active:                pp.GetActive(),
+				PlanOptions:           planOpts,
+				SelectedPlanID:        pp.GetPlanId(),
+				SelectedPlanLabel:     labelFromOptions(planOpts, pp.GetPlanId()),
+				InUse:                 pricingLocked,
+				LockMessage:           pricingLockedReason,
+				Labels:                form.LabelsFromPriceSchedule(deps.ScheduleLabels.PlanForm),
+				CommonLabels:          deps.CommonLabels,
 			})
 		}
 
@@ -523,7 +528,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 	}
 
 	scheduleName := lookupScheduleName(ctx, deps, sid)
-	scheduleBack := route.ResolveURL(deps.Routes.DetailURL, "id", sid) + "?tab=" + deps.ScheduleLabels.Tabs.ResolveTabSlug("plans")
+	scheduleBack := route.ResolveURL(deps.Routes.DetailURL, "id", sid) + "?tab=" + deps.ScheduleLabels.Tabs.ResolveTabSlug("pricePlan")
 
 	// Fallback to linked Plan's name/description when price_plan values are blank —
 	// mirrors the rate-card packages-tab table convention.

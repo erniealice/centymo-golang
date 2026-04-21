@@ -595,7 +595,7 @@ func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tab
 				URL:             route.ResolveURL(routes.LineItemEditURL, "id", expenditureID, "itemId", id),
 				DrawerTitle:     "Edit Line Item",
 				Disabled:        !perms.Can("expense", "update"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.NoPermission,
 			},
 			{
 				Type:            "delete",
@@ -604,7 +604,7 @@ func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tab
 				URL:             route.ResolveURL(routes.LineItemRemoveURL, "id", expenditureID) + "?itemId=" + id,
 				ItemName:        description,
 				Disabled:        !perms.Can("expense", "update"),
-				DisabledTooltip: "No permission",
+				DisabledTooltip: l.Errors.NoPermission,
 			},
 		}
 
