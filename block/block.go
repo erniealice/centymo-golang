@@ -280,6 +280,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		pricePlanLabels := centymo.DefaultPricePlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_plan.json", "price_plan", &pricePlanLabels)
 
+		productPricePlanLabels := centymo.DefaultProductPricePlanLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_price_plan.json", "product_price_plan", &productPricePlanLabels)
+
 		priceScheduleLabels := centymo.DefaultPriceScheduleLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_schedule.json", "priceSchedule", &priceScheduleLabels)
 
@@ -731,16 +734,17 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					getPricePlanInUseIDs = refChecker.GetPricePlanInUseIDs
 				}
 				pricePlanDeps := &priceplanmod.ModuleDeps{
-					Routes:               pricePlanRoutes,
-					Labels:               pricePlanLabels,
-					CommonLabels:         ctx.Common,
-					TableLabels:          centymoTableLabels,
-					ListPricePlans:       uc.ListPricePlans.Execute,
-					ReadPricePlan:        uc.ReadPricePlan.Execute,
-					CreatePricePlan:      uc.CreatePricePlan.Execute,
-					UpdatePricePlan:      uc.UpdatePricePlan.Execute,
-					DeletePricePlan:      uc.DeletePricePlan.Execute,
-					GetPricePlanInUseIDs: getPricePlanInUseIDs,
+					Routes:                 pricePlanRoutes,
+					Labels:                 pricePlanLabels,
+					ProductPricePlanLabels: productPricePlanLabels,
+					CommonLabels:           ctx.Common,
+					TableLabels:            centymoTableLabels,
+					ListPricePlans:         uc.ListPricePlans.Execute,
+					ReadPricePlan:          uc.ReadPricePlan.Execute,
+					CreatePricePlan:        uc.CreatePricePlan.Execute,
+					UpdatePricePlan:        uc.UpdatePricePlan.Execute,
+					DeletePricePlan:        uc.DeletePricePlan.Execute,
+					GetPricePlanInUseIDs:   getPricePlanInUseIDs,
 				}
 				// Price schedule listing — parent container (owns location + date range)
 				if useCases.Subscription.PriceSchedule != nil {
@@ -785,6 +789,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					Routes:                   priceScheduleRoutes,
 					Labels:                   priceScheduleLabels,
 					PricePlanLabels:          pricePlanLabels,
+					ProductPricePlanLabels:   productPricePlanLabels,
 					CommonLabels:             ctx.Common,
 					TableLabels:              centymoTableLabels,
 					ListPriceSchedules:       uc.ListPriceSchedules.Execute,

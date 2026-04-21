@@ -22,10 +22,11 @@ import (
 
 // ModuleDeps holds all dependencies for the price_plan module.
 type ModuleDeps struct {
-	Routes       centymo.PricePlanRoutes
-	Labels       centymo.PricePlanLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes                 centymo.PricePlanRoutes
+	Labels                 centymo.PricePlanLabels
+	ProductPricePlanLabels centymo.ProductPricePlanLabels
+	CommonLabels           pyeza.CommonLabels
+	TableLabels            types.TableLabels
 
 	ListPricePlans  func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
 	ReadPricePlan   func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
@@ -97,6 +98,7 @@ func NewModule(deps *ModuleDeps) *Module {
 	detailDeps := &priceplandetail.DetailViewDeps{
 		Routes:                 deps.Routes,
 		Labels:                 deps.Labels,
+		ProductPricePlanLabels: deps.ProductPricePlanLabels,
 		CommonLabels:           deps.CommonLabels,
 		TableLabels:            deps.TableLabels,
 		ReadPricePlan:          deps.ReadPricePlan,

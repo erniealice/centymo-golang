@@ -24,11 +24,12 @@ import (
 
 // ModuleDeps holds all dependencies for the price_schedule module.
 type ModuleDeps struct {
-	Routes          centymo.PriceScheduleRoutes
-	Labels          centymo.PriceScheduleLabels
-	PricePlanLabels centymo.PricePlanLabels // used by the schedule-scoped price_plan detail page
-	CommonLabels    pyeza.CommonLabels
-	TableLabels     types.TableLabels
+	Routes                 centymo.PriceScheduleRoutes
+	Labels                 centymo.PriceScheduleLabels
+	PricePlanLabels        centymo.PricePlanLabels        // used by the schedule-scoped price_plan detail page
+	ProductPricePlanLabels centymo.ProductPricePlanLabels // used by the schedule-scoped plan detail product-prices tab
+	CommonLabels           pyeza.CommonLabels
+	TableLabels            types.TableLabels
 
 	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 	ReadPriceSchedule   func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
@@ -126,6 +127,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		Routes:                 deps.Routes,
 		ScheduleLabels:         deps.Labels,
 		PlanLabels:             pricePlanLabelsFromDeps(deps),
+		ProductPricePlanLabels: deps.ProductPricePlanLabels,
 		CommonLabels:           deps.CommonLabels,
 		TableLabels:            deps.TableLabels,
 		ReadPriceSchedule:      deps.ReadPriceSchedule,
