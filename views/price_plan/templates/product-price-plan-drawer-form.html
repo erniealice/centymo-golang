@@ -20,7 +20,7 @@
         </div>
         <div class="form-row">
             {{template "form-group" (dict "Type" "number" "Name" "price" "Label" .Labels.PriceLabel "Value" .Price "Required" true "Placeholder" .Labels.PricePlaceholder "Step" "0.01" "Min" "0")}}
-            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" .Labels.CurrencyLabel "Value" .Currency "Required" true "Placeholder" .Labels.CurrencyPlaceholder)}}
+            {{template "form-group" (dict "Type" "select" "Name" "currency" "Label" .Labels.CurrencyLabel "Value" .Currency "Required" true "Options" (list (dict "Value" "PHP" "Label" .Labels.CurrencyPHP) (dict "Value" "USD" "Label" .Labels.CurrencyUSD)))}}
         </div>
         <div class="form-row single">
             {{template "form-group" (dict

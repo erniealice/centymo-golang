@@ -106,8 +106,8 @@
         </div>
         {{end}}
         <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" "Price" "Value" .Price "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0" "Disabled" .PricingLocked)}}
-            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" .Currency "Required" true "Disabled" .PricingLocked)}}
+            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" .ProductPricePlanLabels.PriceLabel "Value" .Price "Required" true "Placeholder" .ProductPricePlanLabels.PricePlaceholder "Step" "0.01" "Min" "0" "Disabled" .PricingLocked)}}
+            {{template "form-group" (dict "Type" "select" "Name" "currency" "Label" .ProductPricePlanLabels.CurrencyLabel "Value" .Currency "Required" true "Disabled" .PricingLocked "Options" (list (dict "Value" "PHP" "Label" .ProductPricePlanLabels.CurrencyPHP) (dict "Value" "USD" "Label" .ProductPricePlanLabels.CurrencyUSD)))}}
         </div>
     </div>
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

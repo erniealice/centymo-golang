@@ -97,6 +97,8 @@ type Labels struct {
 	AmountPlaceholder      string
 	CurrencyLabel          string
 	CurrencyPlaceholder    string
+	CurrencyPHP            string
+	CurrencyUSD            string
 	DurationLabel          string
 	DurationUnitLabel      string
 	ActiveLabel            string
@@ -133,16 +135,18 @@ func LabelsFromPriceSchedule(pf centymo.PriceSchedulePlanFormLabels) Labels {
 		AmountPlaceholder:      pf.AmountPlaceholder,
 		CurrencyLabel:          pf.CurrencyLabel,
 		CurrencyPlaceholder:    pf.CurrencyPlaceholder,
+		CurrencyPHP:            pf.CurrencyPHP,
+		CurrencyUSD:            pf.CurrencyUSD,
 		DurationLabel:          pf.DurationLabel,
 		DurationUnitLabel:      pf.UnitLabel,
-		ActiveLabel:            "Active",
+		ActiveLabel:            pf.ActiveLabel,
 		PlanLabel:              pf.PackageLabel,
 		PlanPlaceholder:        pf.PackagePlaceholder,
 		PlanSearch:             pf.PackageSearch,
 		ScheduleLabel:          pf.PriceScheduleField,
-		SchedulePlaceholder:    "Select a rate card...",
-		ScheduleSearch:         "Filter...",
-		LocationHintPrefix:     "Location: ",
+		SchedulePlaceholder:    pf.SchedulePlaceholder,
+		ScheduleSearch:         pf.ScheduleSearch,
+		LocationHintPrefix:     pf.LocationHintPrefix,
 		// Wave 2: billing labels not yet on PriceSchedulePlanFormLabels —
 		// leave empty here; PricePlanFormLabels path provides them when
 		// the standalone action builds the form.
@@ -151,20 +155,13 @@ func LabelsFromPriceSchedule(pf centymo.PriceSchedulePlanFormLabels) Labels {
 
 // LabelsFromPricePlan maps centymo.PricePlanFormLabels (the tier-aware
 // struct populated by lyngua) into the flat template-facing Labels shape.
-// Fields that don't exist in the source fall back to English defaults so
-// the drawer is always complete even when lyngua coverage is partial.
+// Fields are sourced entirely from the struct; no hardcoded English fallbacks.
+// Lyngua is the single source of truth — if a key is missing, the field renders
+// empty and the missing key should be fixed in the JSON, not here.
 func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
-	sectionBasic := pp.SectionBasic
-	if sectionBasic == "" {
-		sectionBasic = "Basic Information"
-	}
-	sectionPricing := pp.SectionPricing
-	if sectionPricing == "" {
-		sectionPricing = "Pricing"
-	}
 	return Labels{
-		SectionBasic:           sectionBasic,
-		SectionPricing:         sectionPricing,
+		SectionBasic:           pp.SectionBasic,
+		SectionPricing:         pp.SectionPricing,
 		NameLabel:              pp.Name,
 		NamePlaceholder:        pp.NamePlaceholder,
 		DescriptionLabel:       pp.Description,
@@ -173,16 +170,18 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		AmountPlaceholder:      pp.AmountPlaceholder,
 		CurrencyLabel:          pp.Currency,
 		CurrencyPlaceholder:    pp.CurrencyPlaceholder,
+		CurrencyPHP:            pp.CurrencyPHP,
+		CurrencyUSD:            pp.CurrencyUSD,
 		DurationLabel:          pp.DurationValue,
 		DurationUnitLabel:      pp.DurationUnit,
 		ActiveLabel:            pp.Active,
-		PlanLabel:              "Package",
-		PlanPlaceholder:        "Select a package...",
-		PlanSearch:             "Filter...",
+		PlanLabel:              pp.PlanLabel,
+		PlanPlaceholder:        pp.PlanPlaceholder,
+		PlanSearch:             pp.PlanSearch,
 		ScheduleLabel:          pp.Schedule,
 		SchedulePlaceholder:    pp.SchedulePlaceholder,
-		ScheduleSearch:         "Filter...",
-		LocationHintPrefix:     "Location: ",
+		ScheduleSearch:         pp.ScheduleSearch,
+		LocationHintPrefix:     pp.LocationHintPrefix,
 		// Wave 2 new fields
 		BillingKindLabel:         pp.BillingKindLabel,
 		AmountBasisLabel:         pp.AmountBasisLabel,

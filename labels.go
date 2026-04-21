@@ -2589,14 +2589,21 @@ type PricePlanFormLabels struct {
 	AmountPlaceholder   string `json:"amountPlaceholder"`
 	Currency            string `json:"currency"`
 	CurrencyPlaceholder string `json:"currencyPlaceholder"`
+	CurrencyPHP         string `json:"currencyPHP"`
+	CurrencyUSD         string `json:"currencyUSD"`
 	DurationValue       string `json:"durationValue"`
 	DurationUnit        string `json:"durationUnit"`
 	Schedule            string `json:"schedule"`
 	SchedulePlaceholder string `json:"schedulePlaceholder"`
+	ScheduleSearch      string `json:"scheduleSearch"`
 	Location            string `json:"location"`
 	LocationPlaceholder string `json:"locationPlaceholder"`
+	LocationHintPrefix  string `json:"locationHintPrefix"`
 	SelectLocation      string `json:"selectLocation"`
 	Active              string `json:"active"`
+	PlanLabel           string `json:"planLabel"`
+	PlanPlaceholder     string `json:"planPlaceholder"`
+	PlanSearch          string `json:"planSearch"`
 
 	// Wave 2 — new billing semantics fields (from lyngua price_plan.json → price_plan.form)
 	SectionBasic               string `json:"sectionBasic"`
@@ -2642,6 +2649,8 @@ type ProductPricePlanFormLabels struct {
 	PricePlaceholder                   string `json:"pricePlaceholder"`
 	CurrencyLabel                      string `json:"currencyLabel"`
 	CurrencyPlaceholder                string `json:"currencyPlaceholder"`
+	CurrencyPHP                        string `json:"currencyPHP"`
+	CurrencyUSD                        string `json:"currencyUSD"`
 	DateStartLabel                     string `json:"dateStartLabel"`
 	DateEndLabel                       string `json:"dateEndLabel"`
 }
@@ -2663,6 +2672,8 @@ func DefaultProductPricePlanLabels() ProductPricePlanLabels {
 			PricePlaceholder:                   "0.00",
 			CurrencyLabel:                      "Currency",
 			CurrencyPlaceholder:                "e.g. PHP",
+			CurrencyPHP:                        "PHP (₱)",
+			CurrencyUSD:                        "USD ($)",
 			DateStartLabel:                     "Effective from",
 			DateEndLabel:                       "Effective until",
 		},
@@ -3101,17 +3112,41 @@ func DefaultPlanLabels() PlanLabels {
 
 // PricePlanLabels holds all labels for the standalone price plan (rate card) module.
 type PricePlanLabels struct {
-	Page    PricePlanPageLabels    `json:"page"`
-	Buttons PricePlanButtonLabels  `json:"buttons"`
-	Columns PricePlanColumnLabels2 `json:"columns"`
-	Empty   PricePlanEmptyLabels   `json:"empty"`
-	Form    PricePlanFormLabels    `json:"form"`
-	Actions PricePlanActionLabels  `json:"actions"`
-	Bulk    PricePlanBulkLabels    `json:"bulk"`
-	Detail  PricePlanDetailLabels2 `json:"detail"`
-	Tabs    PricePlanTabLabels2    `json:"tabs"`
-	Confirm PricePlanConfirmLabels `json:"confirm"`
-	Errors  PricePlanErrorLabels   `json:"errors"`
+	Page         PricePlanPageLabels         `json:"page"`
+	Buttons      PricePlanButtonLabels       `json:"buttons"`
+	Columns      PricePlanColumnLabels2      `json:"columns"`
+	Empty        PricePlanEmptyLabels        `json:"empty"`
+	Form         PricePlanFormLabels         `json:"form"`
+	Actions      PricePlanActionLabels       `json:"actions"`
+	Bulk         PricePlanBulkLabels         `json:"bulk"`
+	Detail       PricePlanDetailLabels2      `json:"detail"`
+	Tabs         PricePlanTabLabels2         `json:"tabs"`
+	Confirm      PricePlanConfirmLabels      `json:"confirm"`
+	Errors       PricePlanErrorLabels        `json:"errors"`
+	ProductPrice PricePlanProductPriceLabels `json:"productPrice"`
+	Messages     PricePlanMessageLabels      `json:"messages"`
+}
+
+// PricePlanProductPriceLabels holds labels for product-price sub-table actions and empty state.
+type PricePlanProductPriceLabels struct {
+	EditTitle   string `json:"editTitle"`
+	DeleteTitle string `json:"deleteTitle"`
+	EmptyTitle  string `json:"emptyTitle"`
+	EmptyMsg    string `json:"emptyMsg"`
+}
+
+// PricePlanMessageLabels holds translatable message strings used in the price plan
+// and price schedule plan views (pricing-lock notices, validation errors).
+type PricePlanMessageLabels struct {
+	PricingLockedReason     string `json:"pricingLockedReason"`
+	ItemPricingLockedReason string `json:"itemPricingLockedReason"`
+	CreateNotAvailable      string `json:"createNotAvailable"`
+	UpdateNotAvailable      string `json:"updateNotAvailable"`
+	ProductRequired         string `json:"productRequired"`
+	InvalidPrice            string `json:"invalidPrice"`
+	InUseCannotModify       string `json:"inUseCannotModify"`
+	IDRequired              string `json:"idRequired"`
+	DeleteNotAvailable      string `json:"deleteNotAvailable"`
 }
 
 type PricePlanPageLabels struct {
@@ -3260,14 +3295,21 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			AmountPlaceholder:   "0.00",
 			Currency:            "Currency",
 			CurrencyPlaceholder: "e.g. PHP",
+			CurrencyPHP:         "PHP (₱)",
+			CurrencyUSD:         "USD ($)",
 			DurationValue:       "Duration",
 			DurationUnit:        "Unit",
 			Schedule:            "Price Schedule",
 			SchedulePlaceholder: "Select a schedule...",
+			ScheduleSearch:      "Filter...",
 			Location:            "Location",
 			LocationPlaceholder: "Select a location...",
+			LocationHintPrefix:  "Location: ",
 			SelectLocation:      "— No location (all locations) —",
 			Active:              "Active",
+			PlanLabel:           "Package",
+			PlanPlaceholder:     "Select a package...",
+			PlanSearch:          "Filter...",
 			// Wave 2 new fields
 			SectionBasic:                "Basic info",
 			SectionPricing:              "Pricing",
@@ -3339,6 +3381,23 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			DeleteFailed: "Failed to delete rate card.",
 			InUse:        "This price plan is in use by active subscriptions and cannot be deleted.",
 		},
+		ProductPrice: PricePlanProductPriceLabels{
+			EditTitle:   "Edit Product Price",
+			DeleteTitle: "Delete Product Price",
+			EmptyTitle:  "No Product Prices",
+			EmptyMsg:    "No product prices have been configured for this rate card yet.",
+		},
+		Messages: PricePlanMessageLabels{
+			PricingLockedReason:     "This plan is in use by active subscriptions. Pricing changes are disabled. You can still rename or reassign the package.",
+			ItemPricingLockedReason: "This package is in use by active engagements. Item price and currency are locked to keep billing consistent.",
+			CreateNotAvailable:      "Product price plan create is not available.",
+			UpdateNotAvailable:      "Product price plan update is not available.",
+			ProductRequired:         "Product is required.",
+			InvalidPrice:            "Invalid price value.",
+			InUseCannotModify:       "This package is in use by active engagements. Item price and currency are locked.",
+			IDRequired:              "ID is required.",
+			DeleteNotAvailable:      "Product price plan delete is not available.",
+		},
 	}
 }
 
@@ -3379,8 +3438,14 @@ type PriceSchedulePlanFormLabels struct {
 	AmountPlaceholder      string `json:"amountPlaceholder"`
 	CurrencyLabel          string `json:"currencyLabel"`
 	CurrencyPlaceholder    string `json:"currencyPlaceholder"`
+	CurrencyPHP            string `json:"currencyPHP"`
+	CurrencyUSD            string `json:"currencyUSD"`
 	DurationLabel          string `json:"durationLabel"`
 	UnitLabel              string `json:"unitLabel"`
+	ActiveLabel            string `json:"activeLabel"`
+	SchedulePlaceholder    string `json:"schedulePlaceholder"`
+	ScheduleSearch         string `json:"scheduleSearch"`
+	LocationHintPrefix     string `json:"locationHintPrefix"`
 }
 
 type PriceSchedulePageLabels struct {
@@ -3672,9 +3737,15 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			AmountLabel:            "Amount",
 			AmountPlaceholder:      "0.00",
 			CurrencyLabel:          "Currency",
-			CurrencyPlaceholder:    "PHP",
+			CurrencyPlaceholder:    "e.g. PHP",
+			CurrencyPHP:            "PHP (₱)",
+			CurrencyUSD:            "USD ($)",
 			DurationLabel:          "Duration",
 			UnitLabel:              "Unit",
+			ActiveLabel:            "Active",
+			SchedulePlaceholder:    "Select a rate card...",
+			ScheduleSearch:         "Filter...",
+			LocationHintPrefix:     "Location: ",
 		},
 		Errors: PriceScheduleErrorLabels{
 			NotFound:     "Price schedule not found",

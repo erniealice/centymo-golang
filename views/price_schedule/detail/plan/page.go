@@ -222,8 +222,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				inUseMap, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid})
 				if inUseMap[ppid] {
 					pricingLocked = true
-					// TODO: lyngua — pull from deps.ScheduleLabels.Detail.PricingLockedReason if added
-					pricingLockedReason = "This plan is in use by active subscriptions. Pricing changes are disabled. You can still rename or reassign the package."
+					pricingLockedReason = deps.PlanLabels.Messages.PricingLockedReason
 				}
 			}
 
@@ -400,7 +399,7 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		if deps.CreateProductPricePlan == nil {
-			return centymo.HTMXError("Product price plan create is not available")
+			return centymo.HTMXError(deps.PlanLabels.Messages.CreateNotAvailable)
 		}
 		sid := viewCtx.Request.PathValue("id")
 		ppid := viewCtx.Request.PathValue("ppid")
@@ -426,11 +425,11 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		}
 		productID := viewCtx.Request.FormValue("product_id")
 		if productID == "" {
-			return centymo.HTMXError("Product is required")
+			return centymo.HTMXError(deps.PlanLabels.Messages.ProductRequired)
 		}
 		priceCentavos, ok := parsePriceCentavos(viewCtx.Request.FormValue("price"))
 		if !ok {
-			return centymo.HTMXError("Invalid price value")
+			return centymo.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
 		}
 		currency := viewCtx.Request.FormValue("currency")
 		if currency == "" {
@@ -473,7 +472,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		if deps.UpdateProductPricePlan == nil {
-			return centymo.HTMXError("Product price plan update is not available")
+			return centymo.HTMXError(deps.PlanLabels.Messages.UpdateNotAvailable)
 		}
 		sid := viewCtx.Request.PathValue("id")
 		ppid := viewCtx.Request.PathValue("ppid")
@@ -498,8 +497,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			if deps.GetPricePlanInUseIDs != nil {
 				if inUse, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid}); inUse[ppid] {
 					pricingLocked = true
-					// TODO: lyngua — pull from deps.ScheduleLabels.Detail.ItemPricingLockedReason if added
-					pricingLockedReason = "This package is in use by active engagements. Item price and currency are locked to keep billing consistent."
+					pricingLockedReason = deps.PlanLabels.Messages.ItemPricingLockedReason
 				}
 			}
 
@@ -536,13 +534,13 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		// bypassed the disabled inputs).
 		if deps.GetPricePlanInUseIDs != nil {
 			if inUse, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid}); inUse[ppid] {
-				return centymo.HTMXError("This package is in use by active engagements. Item price and currency are locked.")
+				return centymo.HTMXError(deps.PlanLabels.Messages.InUseCannotModify)
 			}
 		}
 		// Product is display-only in the drawer — preserve the existing assignment.
 		priceCentavos, ok := parsePriceCentavos(viewCtx.Request.FormValue("price"))
 		if !ok {
-			return centymo.HTMXError("Invalid price value")
+			return centymo.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
 		}
 		currency := viewCtx.Request.FormValue("currency")
 		if currency == "" {
@@ -586,7 +584,7 @@ func NewProductPriceDeleteAction(deps *DetailViewDeps) view.View {
 			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		if deps.DeleteProductPricePlan == nil {
-			return centymo.HTMXError("Product price plan delete is not available")
+			return centymo.HTMXError(deps.PlanLabels.Messages.DeleteNotAvailable)
 		}
 		_ = viewCtx.Request.ParseForm()
 		pppid := viewCtx.Request.FormValue("id")
@@ -594,7 +592,7 @@ func NewProductPriceDeleteAction(deps *DetailViewDeps) view.View {
 			pppid = viewCtx.Request.URL.Query().Get("id")
 		}
 		if pppid == "" {
-			return centymo.HTMXError("ID is required")
+			return centymo.HTMXError(deps.PlanLabels.Messages.IDRequired)
 		}
 		if _, err := deps.DeleteProductPricePlan(ctx, &productpriceplanpb.DeleteProductPricePlanRequest{
 			Data: &productpriceplanpb.ProductPricePlan{Id: pppid},

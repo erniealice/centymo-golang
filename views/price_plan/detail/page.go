@@ -501,7 +501,7 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 							Label:           "Edit",
 							Action:          "edit",
 							URL:             route.ResolveURL(deps.Routes.ProductPriceEditURL, "id", pricePlanID, "ppid", itemID),
-							DrawerTitle:     "Edit Product Price",
+							DrawerTitle:     l.ProductPrice.EditTitle,
 							Disabled:        !perms.Can("product_price_plan", "update"),
 							DisabledTooltip: l.Errors.Unauthorized,
 						},
@@ -511,7 +511,7 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 							Action:          "delete",
 							URL:             deps.Routes.ProductPriceDeleteURL,
 							ItemName:        productName,
-							ConfirmTitle:    "Delete Product Price",
+							ConfirmTitle:    l.ProductPrice.DeleteTitle,
 							ConfirmMessage:  fmt.Sprintf("Remove %s from this rate card?", productName),
 							Disabled:        !perms.Can("product_price_plan", "delete"),
 							DisabledTooltip: l.Errors.Unauthorized,
@@ -537,8 +537,8 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 		DefaultSortDirection: "asc",
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
-			Title:   "No Product Prices",
-			Message: "No product prices have been configured for this rate card yet.",
+			Title:   l.ProductPrice.EmptyTitle,
+			Message: l.ProductPrice.EmptyMsg,
 		},
 		PrimaryAction: &types.PrimaryAction{
 			Label:           "Add Product Price",

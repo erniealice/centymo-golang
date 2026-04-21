@@ -173,13 +173,16 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Disabled" (and .IsEdit .InUse)
             )}}
             {{template "form-group" (dict
-                "Type" "text"
+                "Type" "select"
                 "Name" "currency"
                 "Label" .Labels.CurrencyLabel
                 "Value" .Currency
                 "Required" true
-                "Placeholder" .Labels.CurrencyPlaceholder
                 "Disabled" (and .IsEdit .InUse)
+                "Options" (list
+                    (dict "Value" "PHP" "Label" .Labels.CurrencyPHP)
+                    (dict "Value" "USD" "Label" .Labels.CurrencyUSD)
+                )
             )}}
         </div>
 

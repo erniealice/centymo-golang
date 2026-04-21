@@ -20,6 +20,11 @@ import (
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 )
 
+// DefaultCurrency is the workspace-level default currency pre-selected on new
+// price plan add forms. Singly-sourced here so a future migration to a
+// workspace-settings lookup only needs one change.
+const DefaultCurrency = "PHP"
+
 type PlanOption struct {
 	Id   string
 	Name string
@@ -168,7 +173,7 @@ func NewAddAction(deps *Deps) view.View {
 				FormAction:          deps.Routes.AddURL,
 				Context:             form.ContextStandalone,
 				Active:              true,
-				Currency:            "PHP",
+				Currency:            DefaultCurrency,
 				DurationUnit:        "months",
 				PlanOptions:         buildPlanAutoCompleteOptions(plans, ""),
 				ScheduleOptions:     buildScheduleAutoCompleteOptions(schedules, ""),
