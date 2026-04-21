@@ -8,6 +8,7 @@ package form
 import (
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/types"
 )
 
 // Context identifies which URL context the drawer was opened from. The
@@ -49,9 +50,20 @@ type Data struct {
 	Description   string
 	Amount        string // decimal display, e.g. "1500.00"
 	Currency      string
-	DurationValue string
-	DurationUnit  string
+	DurationValue string // DEPRECATED: Phase 1 dual-write; keep for read-back
+	DurationUnit  string // DEPRECATED: Phase 1 dual-write; keep for read-back
 	Active        bool
+
+	// Wave 2: new billing semantics fields (Phase 1 dual-write alongside DurationValue/Unit).
+	BillingKind        string
+	BillingKindOptions []types.SelectOption
+	AmountBasis        string
+	AmountBasisOptions []types.SelectOption
+	BillingCycleValue  string // int32 as string for form field
+	BillingCycleUnit   string
+	DefaultTermValue   string // int32 as string for form field
+	DefaultTermUnit    string
+	DurationUnitOptions []types.SelectOption // reused for both billing_cycle_unit and default_term_unit
 
 	// Auto-complete option lists. Each entry is {Value, Label, Selected?}.
 	// PlanOptions is consumed in Schedule + Standalone contexts;
@@ -95,6 +107,15 @@ type Labels struct {
 	SchedulePlaceholder    string
 	ScheduleSearch         string
 	LocationHintPrefix     string
+
+	// Wave 2: new billing semantics labels.
+	BillingKindLabel            string
+	AmountBasisLabel            string
+	BillingCycleLabel           string
+	BillingCyclePlaceholder     string
+	DefaultTermLabel            string
+	DefaultTermPlaceholder      string
+	DefaultTermOpenEndedHelp    string
 }
 
 // LabelsFromPriceSchedule maps the price-schedule-side PlanForm labels into
@@ -122,6 +143,9 @@ func LabelsFromPriceSchedule(pf centymo.PriceSchedulePlanFormLabels) Labels {
 		SchedulePlaceholder:    "Select a rate card...",
 		ScheduleSearch:         "Filter...",
 		LocationHintPrefix:     "Location: ",
+		// Wave 2: billing labels not yet on PriceSchedulePlanFormLabels —
+		// leave empty here; PricePlanFormLabels path provides them when
+		// the standalone action builds the form.
 	}
 }
 
@@ -130,9 +154,17 @@ func LabelsFromPriceSchedule(pf centymo.PriceSchedulePlanFormLabels) Labels {
 // Fields that don't exist in the source fall back to English defaults so
 // the drawer is always complete even when lyngua coverage is partial.
 func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
+	sectionBasic := pp.SectionBasic
+	if sectionBasic == "" {
+		sectionBasic = "Basic Information"
+	}
+	sectionPricing := pp.SectionPricing
+	if sectionPricing == "" {
+		sectionPricing = "Pricing"
+	}
 	return Labels{
-		SectionBasic:           "Basic Information",
-		SectionPricing:         "Pricing",
+		SectionBasic:           sectionBasic,
+		SectionPricing:         sectionPricing,
 		NameLabel:              pp.Name,
 		NamePlaceholder:        pp.NamePlaceholder,
 		DescriptionLabel:       pp.Description,
@@ -151,6 +183,14 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		SchedulePlaceholder:    pp.SchedulePlaceholder,
 		ScheduleSearch:         "Filter...",
 		LocationHintPrefix:     "Location: ",
+		// Wave 2 new fields
+		BillingKindLabel:         pp.BillingKindLabel,
+		AmountBasisLabel:         pp.AmountBasisLabel,
+		BillingCycleLabel:        pp.BillingCycleLabel,
+		BillingCyclePlaceholder:  pp.BillingCyclePlaceholder,
+		DefaultTermLabel:         pp.DefaultTermLabel,
+		DefaultTermPlaceholder:   pp.DefaultTermPlaceholder,
+		DefaultTermOpenEndedHelp: pp.DefaultTermOpenEndedHelp,
 	}
 }
 

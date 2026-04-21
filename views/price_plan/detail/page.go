@@ -21,10 +21,11 @@ import (
 
 // DetailViewDeps holds view dependencies for the price plan detail page.
 type DetailViewDeps struct {
-	Routes       centymo.PricePlanRoutes
-	Labels       centymo.PricePlanLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes                  centymo.PricePlanRoutes
+	Labels                  centymo.PricePlanLabels
+	ProductPricePlanLabels  centymo.ProductPricePlanLabels
+	CommonLabels            pyeza.CommonLabels
+	TableLabels             types.TableLabels
 
 	ReadPricePlan            func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	ListProductPlans         func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
@@ -68,6 +69,15 @@ type ProductPricePlanFormData struct {
 	Currency       string
 	ProductOptions []types.SelectOption
 	CommonLabels   pyeza.CommonLabels
+
+	// Wave 2: billing treatment + effective date fields.
+	BillingTreatment        string
+	BillingTreatmentOptions []types.SelectOption
+	DateStart               string // ISO 8601 (YYYY-MM-DD) or empty
+	DateEnd                 string // ISO 8601 (YYYY-MM-DD) or empty
+
+	// Wave 2: labels for the new fields (populated from ProductPricePlanLabels).
+	Labels centymo.ProductPricePlanFormLabels
 }
 
 // NewView creates the price plan detail view (full page).
@@ -127,12 +137,15 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 			planID := loadPricePlanPlanID(ctx, deps, id)
 			productOptions := loadProductOptions(ctx, deps, planID, "")
 			currency := loadPricePlanCurrency(ctx, deps, id)
+			pplLabels := deps.ProductPricePlanLabels.Form
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
-				FormAction:     route.ResolveURL(deps.Routes.ProductPriceAddURL, "id", id),
-				PricePlanID:    id,
-				Currency:       currency,
-				ProductOptions: productOptions,
-				CommonLabels:   deps.CommonLabels,
+				FormAction:              route.ResolveURL(deps.Routes.ProductPriceAddURL, "id", id),
+				PricePlanID:             id,
+				Currency:                currency,
+				ProductOptions:          productOptions,
+				CommonLabels:            deps.CommonLabels,
+				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
+				Labels:                  pplLabels,
 			})
 		}
 
@@ -156,12 +169,27 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		}
 		priceCentavos := int64(priceFloat * 100)
 
+		dateStart := viewCtx.Request.FormValue("date_start")
+		dateEnd := viewCtx.Request.FormValue("date_end")
+		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
+
 		record := &productpriceplanpb.ProductPricePlan{
 			PricePlanId: id,
 			ProductId:   productID,
 			Price:       priceCentavos,
 			Currency:    currency,
 			Active:      true,
+		}
+		if billingTreatment != "" {
+			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
+				record.BillingTreatment = productpriceplanpb.BillingTreatment(bt)
+			}
+		}
+		if dateStart != "" {
+			record.DateStart = &dateStart
+		}
+		if dateEnd != "" {
+			record.DateEnd = &dateEnd
 		}
 
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{Data: record}); err != nil {
@@ -192,6 +220,8 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
+		pplLabels := deps.ProductPricePlanLabels.Form
+
 		if viewCtx.Request.Method == http.MethodGet {
 			planID := loadPricePlanPlanID(ctx, deps, id)
 			productOptions := loadProductOptions(ctx, deps, planID, existing.GetProductId())
@@ -200,15 +230,20 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				currency = "PHP"
 			}
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
-				FormAction:     route.ResolveURL(deps.Routes.ProductPriceEditURL, "id", id, "ppid", ppid),
-				IsEdit:         true,
-				ID:             ppid,
-				PricePlanID:    id,
-				ProductID:      existing.GetProductId(),
-				Price:          fmt.Sprintf("%.2f", float64(existing.GetPrice())/100.0),
-				Currency:       currency,
-				ProductOptions: productOptions,
-				CommonLabels:   deps.CommonLabels,
+				FormAction:              route.ResolveURL(deps.Routes.ProductPriceEditURL, "id", id, "ppid", ppid),
+				IsEdit:                  true,
+				ID:                      ppid,
+				PricePlanID:             id,
+				ProductID:               existing.GetProductId(),
+				Price:                   fmt.Sprintf("%.2f", float64(existing.GetPrice())/100.0),
+				Currency:                currency,
+				ProductOptions:          productOptions,
+				CommonLabels:            deps.CommonLabels,
+				BillingTreatment:        existing.GetBillingTreatment().String(),
+				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
+				DateStart:               existing.GetDateStart(),
+				DateEnd:                 existing.GetDateEnd(),
+				Labels:                  pplLabels,
 			})
 		}
 
@@ -232,6 +267,10 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		}
 		priceCentavos := int64(priceFloat * 100)
 
+		dateStart := viewCtx.Request.FormValue("date_start")
+		dateEnd := viewCtx.Request.FormValue("date_end")
+		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
+
 		updated := &productpriceplanpb.ProductPricePlan{
 			Id:          ppid,
 			PricePlanId: id,
@@ -239,6 +278,17 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			Price:       priceCentavos,
 			Currency:    currency,
 			Active:      existing.GetActive(),
+		}
+		if billingTreatment != "" {
+			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
+				updated.BillingTreatment = productpriceplanpb.BillingTreatment(bt)
+			}
+		}
+		if dateStart != "" {
+			updated.DateStart = &dateStart
+		}
+		if dateEnd != "" {
+			updated.DateEnd = &dateEnd
 		}
 
 		if _, err := deps.UpdateProductPricePlan(ctx, &productpriceplanpb.UpdateProductPricePlanRequest{Data: updated}); err != nil {
@@ -608,5 +658,15 @@ func loadProductOptions(ctx context.Context, deps *DetailViewDeps, planID, selec
 		})
 	}
 	return options
+}
+
+// buildBillingTreatmentOptions builds the select options for the BillingTreatment
+// enum using lyngua-provided labels. Values are proto enum string names.
+func buildBillingTreatmentOptions(labels centymo.ProductPricePlanFormLabels) []types.SelectOption {
+	return []types.SelectOption{
+		{Value: "BILLING_TREATMENT_RECURRING", Label: labels.BillingTreatmentRecurring},
+		{Value: "BILLING_TREATMENT_ONE_TIME_INITIAL", Label: labels.BillingTreatmentOneTimeInitial},
+		{Value: "BILLING_TREATMENT_USAGE_BASED", Label: labels.BillingTreatmentUsageBased},
+	}
 }
 

@@ -6,7 +6,7 @@
         {{/* ================================================================ */}}
         {{/* Section: Schedule Details                                        */}}
         {{/* ================================================================ */}}
-        {{template "form-section" (dict "Title" "Schedule Details")}}
+        {{template "form-section" (dict "Title" .Labels.SectionScheduleDetails)}}
 
         <div class="form-row single">
             {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder)}}
@@ -18,7 +18,7 @@
         {{/* ================================================================ */}}
         {{/* Section: Date Range                                              */}}
         {{/* ================================================================ */}}
-        {{template "form-section" (dict "Title" "Date Range")}}
+        {{template "form-section" (dict "Title" .Labels.SectionDateRange)}}
 
         <div class="form-row">
             {{template "form-group" (dict "Type" "date" "Name" "date_start" "Label" .Labels.DateStart "Value" .DateStart "Required" true)}}
@@ -28,7 +28,7 @@
         {{/* ================================================================ */}}
         {{/* Section: Location                                                */}}
         {{/* ================================================================ */}}
-        {{template "form-section" (dict "Title" "Location")}}
+        {{template "form-section" (dict "Title" .Labels.SectionLocation)}}
 
         <div class="form-row single">
             {{template "auto-complete" (dict

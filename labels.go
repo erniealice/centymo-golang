@@ -2597,6 +2597,76 @@ type PricePlanFormLabels struct {
 	LocationPlaceholder string `json:"locationPlaceholder"`
 	SelectLocation      string `json:"selectLocation"`
 	Active              string `json:"active"`
+
+	// Wave 2 — new billing semantics fields (from lyngua price_plan.json → price_plan.form)
+	SectionBasic               string `json:"sectionBasic"`
+	SectionPricing             string `json:"sectionPricing"`
+	BillingKindLabel           string `json:"billingKindLabel"`
+	BillingKindOneTime         string `json:"billingKindOneTime"`
+	BillingKindRecurring       string `json:"billingKindRecurring"`
+	BillingKindContract        string `json:"billingKindContract"`
+	AmountBasisLabel           string `json:"amountBasisLabel"`
+	AmountBasisPerCycle        string `json:"amountBasisPerCycle"`
+	AmountBasisTotalPackage    string `json:"amountBasisTotalPackage"`
+	AmountBasisDerivedFromLines string `json:"amountBasisDerivedFromLines"`
+	BillingCycleLabel          string `json:"billingCycleLabel"`
+	BillingCyclePlaceholder    string `json:"billingCyclePlaceholder"`
+	DefaultTermLabel           string `json:"defaultTermLabel"`
+	DefaultTermPlaceholder     string `json:"defaultTermPlaceholder"`
+	DefaultTermOpenEndedHelp   string `json:"defaultTermOpenEndedHelp"`
+}
+
+// ---------------------------------------------------------------------------
+// ProductPricePlan labels
+// ---------------------------------------------------------------------------
+
+// ProductPricePlanLabels holds all labels for the ProductPricePlan drawer form.
+// Wave 2 addition: billing treatment + product/price/currency/date fields.
+type ProductPricePlanLabels struct {
+	Form ProductPricePlanFormLabels `json:"form"`
+}
+
+// ProductPricePlanFormLabels holds translatable labels for the ProductPricePlan
+// add/edit drawer form. Keys match lyngua product_price_plan.json → product_price_plan.form.
+type ProductPricePlanFormLabels struct {
+	BillingTreatmentLabel              string `json:"billingTreatmentLabel"`
+	BillingTreatmentRecurring          string `json:"billingTreatmentRecurring"`
+	BillingTreatmentRecurringHelp      string `json:"billingTreatmentRecurringHelp"`
+	BillingTreatmentOneTimeInitial     string `json:"billingTreatmentOneTimeInitial"`
+	BillingTreatmentOneTimeInitialHelp string `json:"billingTreatmentOneTimeInitialHelp"`
+	BillingTreatmentUsageBased         string `json:"billingTreatmentUsageBased"`
+	BillingTreatmentUsageBasedHelp     string `json:"billingTreatmentUsageBasedHelp"`
+	ProductLabel                       string `json:"productLabel"`
+	ProductPlaceholder                 string `json:"productPlaceholder"`
+	PriceLabel                         string `json:"priceLabel"`
+	PricePlaceholder                   string `json:"pricePlaceholder"`
+	CurrencyLabel                      string `json:"currencyLabel"`
+	CurrencyPlaceholder                string `json:"currencyPlaceholder"`
+	DateStartLabel                     string `json:"dateStartLabel"`
+	DateEndLabel                       string `json:"dateEndLabel"`
+}
+
+// DefaultProductPricePlanLabels returns ProductPricePlanLabels with sensible English defaults.
+func DefaultProductPricePlanLabels() ProductPricePlanLabels {
+	return ProductPricePlanLabels{
+		Form: ProductPricePlanFormLabels{
+			BillingTreatmentLabel:              "Billing treatment",
+			BillingTreatmentRecurring:          "Every cycle",
+			BillingTreatmentRecurringHelp:      "Charge this line every billing cycle",
+			BillingTreatmentOneTimeInitial:     "First cycle only",
+			BillingTreatmentOneTimeInitialHelp: "Charge once on the first invoice (setup fees, welcome gifts)",
+			BillingTreatmentUsageBased:         "On use",
+			BillingTreatmentUsageBasedHelp:     "Charge when consumed or performed",
+			ProductLabel:                       "Product",
+			ProductPlaceholder:                 "Select a product",
+			PriceLabel:                         "Price",
+			PricePlaceholder:                   "0.00",
+			CurrencyLabel:                      "Currency",
+			CurrencyPlaceholder:                "e.g. PHP",
+			DateStartLabel:                     "Effective from",
+			DateEndLabel:                       "Effective until",
+		},
+	}
 }
 
 type PlanPageLabels struct {
@@ -3198,6 +3268,22 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			LocationPlaceholder: "Select a location...",
 			SelectLocation:      "— No location (all locations) —",
 			Active:              "Active",
+			// Wave 2 new fields
+			SectionBasic:                "Basic info",
+			SectionPricing:              "Pricing",
+			BillingKindLabel:            "Billing model",
+			BillingKindOneTime:          "One-time",
+			BillingKindRecurring:        "Recurring retainer",
+			BillingKindContract:         "Fixed-term engagement",
+			AmountBasisLabel:            "Amount basis",
+			AmountBasisPerCycle:         "Per cycle",
+			AmountBasisTotalPackage:     "Total package",
+			AmountBasisDerivedFromLines: "Sum of items",
+			BillingCycleLabel:           "Billing cycle",
+			BillingCyclePlaceholder:     "e.g. every 1 month",
+			DefaultTermLabel:            "Default term",
+			DefaultTermPlaceholder:      "e.g. 12 months",
+			DefaultTermOpenEndedHelp:    "Leave empty for open-ended / no expiration",
 		},
 		Actions: PricePlanActionLabels{
 			CreateSuccess: "Rate card created successfully.",
@@ -3341,6 +3427,11 @@ type PriceScheduleFormLabels struct {
 	LocationPlaceholder string `json:"locationPlaceholder"`
 	SelectLocation      string `json:"selectLocation"`
 	Active              string `json:"active"`
+
+	// Wave 2 — section headers (from lyngua price_schedule.json → priceSchedule.form)
+	SectionScheduleDetails string `json:"sectionScheduleDetails"`
+	SectionDateRange       string `json:"sectionDateRange"`
+	SectionLocation        string `json:"sectionLocation"`
 }
 
 type PriceScheduleBulkLabels struct {
@@ -3501,6 +3592,10 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			LocationPlaceholder: "Select a location...",
 			SelectLocation:      "— No location (all locations) —",
 			Active:              "Active",
+			// Wave 2 new section headers
+			SectionScheduleDetails: "Schedule details",
+			SectionDateRange:       "Date range",
+			SectionLocation:        "Location",
 		},
 		Bulk: PriceScheduleBulkLabels{
 			DeleteTitle:       "Delete Price Schedules",

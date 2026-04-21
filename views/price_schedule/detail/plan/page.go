@@ -29,11 +29,12 @@ import (
 
 // DetailViewDeps holds all dependencies for the schedule-scoped price_plan detail page.
 type DetailViewDeps struct {
-	Routes         centymo.PriceScheduleRoutes
-	ScheduleLabels centymo.PriceScheduleLabels
-	PlanLabels     centymo.PricePlanLabels
-	CommonLabels   pyeza.CommonLabels
-	TableLabels    types.TableLabels
+	Routes                 centymo.PriceScheduleRoutes
+	ScheduleLabels         centymo.PriceScheduleLabels
+	PlanLabels             centymo.PricePlanLabels
+	ProductPricePlanLabels centymo.ProductPricePlanLabels
+	CommonLabels           pyeza.CommonLabels
+	TableLabels            types.TableLabels
 
 	ReadPriceSchedule func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
 	ReadPricePlan     func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
@@ -97,10 +98,21 @@ type EditFormData struct {
 	Description   string
 	Amount        string
 	Currency      string
-	DurationValue string
-	DurationUnit  string
+	DurationValue string // Phase 1 legacy dual-write
+	DurationUnit  string // Phase 1 legacy dual-write
 	CommonLabels  pyeza.CommonLabels
 	Labels        centymo.PriceScheduleLabels
+
+	// Wave 2: new billing semantics fields.
+	BillingKind         string
+	BillingKindOptions  []types.SelectOption
+	AmountBasis         string
+	AmountBasisOptions  []types.SelectOption
+	BillingCycleValue   string
+	BillingCycleUnit    string
+	DefaultTermValue    string
+	DefaultTermUnit     string
+	DurationUnitOptions []types.SelectOption
 
 	// PricingLocked is true when the price_plan is referenced by active subscriptions.
 	// The Pricing section fields (Amount, Currency, Duration, DurationUnit) are rendered
@@ -129,6 +141,15 @@ type ProductPriceFormData struct {
 	PlanDescription    string
 	ProductName        string
 	ProductDescription string
+
+	// Wave 2: billing treatment + effective date fields.
+	BillingTreatment        string
+	BillingTreatmentOptions []types.SelectOption
+	DateStart               string // ISO 8601 (YYYY-MM-DD) or empty
+	DateEnd                 string // ISO 8601 (YYYY-MM-DD) or empty
+
+	// Wave 2: labels for the new fields.
+	ProductPricePlanLabels centymo.ProductPricePlanFormLabels
 
 	// PricingLocked is true when the parent PricePlan is referenced by an active
 	// subscription — editing the per-item price would shift revenue allocation
@@ -206,6 +227,16 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				}
 			}
 
+			// Populate new billing fields from existing record.
+			billingCycleValue := ""
+			if v := pp.GetBillingCycleValue(); v > 0 {
+				billingCycleValue = fmt.Sprintf("%d", v)
+			}
+			defaultTermValue := ""
+			if v := pp.GetDefaultTermValue(); v > 0 {
+				defaultTermValue = fmt.Sprintf("%d", v)
+			}
+			formLabels := deps.PlanLabels.Form
 			planOpts := buildPlanOptions(ctx, deps, pp.GetPlanId())
 			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
@@ -222,6 +253,16 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				DurationValue:         fmt.Sprintf("%d", pp.GetDurationValue()),
 				DurationUnit:          pp.GetDurationUnit(),
 				Active:                pp.GetActive(),
+				// Wave 2: populate new billing fields.
+				BillingKind:         pp.GetBillingKind().String(),
+				BillingKindOptions:  buildBillingKindOptions(formLabels),
+				AmountBasis:         pp.GetAmountBasis().String(),
+				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
+				BillingCycleValue:   billingCycleValue,
+				BillingCycleUnit:    pp.GetBillingCycleUnit(),
+				DefaultTermValue:    defaultTermValue,
+				DefaultTermUnit:     pp.GetDefaultTermUnit(),
+				DurationUnitOptions: buildDurationUnitOptions(deps.CommonLabels),
 				PlanOptions:           planOpts,
 				SelectedPlanID:        pp.GetPlanId(),
 				SelectedPlanLabel:     labelFromOptions(planOpts, pp.GetPlanId()),
@@ -268,6 +309,16 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 			}
 		}
 
+		// Wave 2: new billing semantics fields.
+		bcvStr := r.FormValue("billing_cycle_value")
+		bcv, _ := strconv.ParseInt(bcvStr, 10, 32)
+		bcu := r.FormValue("billing_cycle_unit")
+		dtvStr := r.FormValue("default_term_value")
+		dtv, _ := strconv.ParseInt(dtvStr, 10, 32)
+		dtu := r.FormValue("default_term_unit")
+		billingKindStr := r.FormValue("billing_kind")
+		amountBasisStr := r.FormValue("amount_basis")
+
 		planPageName := r.FormValue("name")
 		planPageDesc := r.FormValue("description")
 		req := &priceplanpb.UpdatePricePlanRequest{
@@ -278,12 +329,38 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				Description:   &planPageDesc,
 				Amount:        amount,
 				Currency:      currency,
-				DurationValue: int32(dv),
-				DurationUnit:  durationUnit,
+				DurationValue: int32(dv),    // Phase 1 legacy dual-write
+				DurationUnit:  durationUnit, // Phase 1 legacy dual-write
 				Active:        active,
 			},
 		}
 		req.Data.PriceScheduleId = &sid
+		// Set new enum fields.
+		if billingKindStr != "" {
+			if bk, ok := priceplanpb.BillingKind_value[billingKindStr]; ok {
+				req.Data.BillingKind = priceplanpb.BillingKind(bk)
+			}
+		}
+		if amountBasisStr != "" {
+			if ab, ok := priceplanpb.AmountBasis_value[amountBasisStr]; ok {
+				req.Data.AmountBasis = priceplanpb.AmountBasis(ab)
+			}
+		}
+		// Set new optional duration fields.
+		if bcvStr != "" {
+			bcv32 := int32(bcv)
+			req.Data.BillingCycleValue = &bcv32
+		}
+		if bcu != "" {
+			req.Data.BillingCycleUnit = &bcu
+		}
+		if dtvStr != "" {
+			dtv32 := int32(dtv)
+			req.Data.DefaultTermValue = &dtv32
+		}
+		if dtu != "" {
+			req.Data.DefaultTermUnit = &dtu
+		}
 		if _, err := deps.UpdatePricePlan(ctx, req); err != nil {
 			log.Printf("Failed to update price plan %s under schedule %s: %v", ppid, sid, err)
 			return centymo.HTMXError(err.Error())
@@ -328,16 +405,19 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		sid := viewCtx.Request.PathValue("id")
 		ppid := viewCtx.Request.PathValue("ppid")
 
+		pplLabels := deps.ProductPricePlanLabels.Form
 		if viewCtx.Request.Method == http.MethodGet {
 			planName, planDesc := lookupPackageNameDesc(ctx, deps, ppid)
 			return view.OK("price-schedule-plan-product-price-drawer", &ProductPriceFormData{
-				FormAction:      route.ResolveURL(deps.Routes.PlanProductPriceAddURL, "id", sid, "ppid", ppid),
-				ScheduleID:      sid,
-				PricePlanID:     ppid,
-				Currency:        loadPricePlanCurrency(ctx, deps, ppid),
-				CommonLabels:    deps.CommonLabels,
-				PlanName:        planName,
-				PlanDescription: planDesc,
+				FormAction:              route.ResolveURL(deps.Routes.PlanProductPriceAddURL, "id", sid, "ppid", ppid),
+				ScheduleID:              sid,
+				PricePlanID:             ppid,
+				Currency:                loadPricePlanCurrency(ctx, deps, ppid),
+				CommonLabels:            deps.CommonLabels,
+				PlanName:                planName,
+				PlanDescription:         planDesc,
+				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
+				ProductPricePlanLabels:  pplLabels,
 			})
 		}
 
@@ -356,12 +436,26 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		if currency == "" {
 			currency = "PHP"
 		}
+		dateStart := viewCtx.Request.FormValue("date_start")
+		dateEnd := viewCtx.Request.FormValue("date_end")
+		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
 		record := &productpriceplanpb.ProductPricePlan{
 			PricePlanId: ppid,
 			ProductId:   productID,
 			Price:       priceCentavos,
 			Currency:    currency,
 			Active:      true,
+		}
+		if billingTreatment != "" {
+			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
+				record.BillingTreatment = productpriceplanpb.BillingTreatment(bt)
+			}
+		}
+		if dateStart != "" {
+			record.DateStart = &dateStart
+		}
+		if dateEnd != "" {
+			record.DateEnd = &dateEnd
 		}
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{Data: record}); err != nil {
 			log.Printf("Failed to create product price plan for plan %s (schedule %s): %v", ppid, sid, err)
@@ -390,6 +484,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
+		pplLabels := deps.ProductPricePlanLabels.Form
 		if viewCtx.Request.Method == http.MethodGet {
 			currency := existing.GetCurrency()
 			if currency == "" {
@@ -409,21 +504,27 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			}
 
 			return view.OK("price-schedule-plan-product-price-drawer", &ProductPriceFormData{
-				FormAction:          route.ResolveURL(deps.Routes.PlanProductPriceEditURL, "id", sid, "ppid", ppid, "pppid", pppid),
-				IsEdit:              true,
-				ID:                  pppid,
-				ScheduleID:          sid,
-				PricePlanID:         ppid,
-				ProductID:           existing.GetProductId(),
-				Price:               fmt.Sprintf("%.2f", float64(existing.GetPrice())/100.0),
-				Currency:            currency,
-				CommonLabels:        deps.CommonLabels,
-				PlanName:            planName,
-				PlanDescription:     planDesc,
-				ProductName:         prodName,
-				ProductDescription:  prodDesc,
-				PricingLocked:       pricingLocked,
-				PricingLockedReason: pricingLockedReason,
+				FormAction:              route.ResolveURL(deps.Routes.PlanProductPriceEditURL, "id", sid, "ppid", ppid, "pppid", pppid),
+				IsEdit:                  true,
+				ID:                      pppid,
+				ScheduleID:              sid,
+				PricePlanID:             ppid,
+				ProductID:               existing.GetProductId(),
+				Price:                   fmt.Sprintf("%.2f", float64(existing.GetPrice())/100.0),
+				Currency:                currency,
+				CommonLabels:            deps.CommonLabels,
+				PlanName:                planName,
+				PlanDescription:         planDesc,
+				ProductName:             prodName,
+				ProductDescription:      prodDesc,
+				PricingLocked:           pricingLocked,
+				PricingLockedReason:     pricingLockedReason,
+				// Wave 2: populate billing treatment and dates from existing record.
+				BillingTreatment:        existing.GetBillingTreatment().String(),
+				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
+				DateStart:               existing.GetDateStart(),
+				DateEnd:                 existing.GetDateEnd(),
+				ProductPricePlanLabels:  pplLabels,
 			})
 		}
 
@@ -447,6 +548,9 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		if currency == "" {
 			currency = "PHP"
 		}
+		dateStart := viewCtx.Request.FormValue("date_start")
+		dateEnd := viewCtx.Request.FormValue("date_end")
+		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
 		updated := &productpriceplanpb.ProductPricePlan{
 			Id:          pppid,
 			PricePlanId: ppid,
@@ -454,6 +558,17 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			Price:       priceCentavos,
 			Currency:    currency,
 			Active:      existing.GetActive(),
+		}
+		if billingTreatment != "" {
+			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
+				updated.BillingTreatment = productpriceplanpb.BillingTreatment(bt)
+			}
+		}
+		if dateStart != "" {
+			updated.DateStart = &dateStart
+		}
+		if dateEnd != "" {
+			updated.DateEnd = &dateEnd
 		}
 		if _, err := deps.UpdateProductPricePlan(ctx, &productpriceplanpb.UpdateProductPricePlanRequest{Data: updated}); err != nil {
 			log.Printf("Failed to update product price plan %s: %v", pppid, err)
@@ -926,4 +1041,50 @@ func labelFromOptions(opts []map[string]any, id string) string {
 		}
 	}
 	return ""
+}
+
+// ---------------------------------------------------------------------------
+// Wave 2 option builder helpers (lyngua-fed, no hardcoded English strings)
+// ---------------------------------------------------------------------------
+
+// buildBillingKindOptions builds select options for the BillingKind enum.
+// Values match proto BillingKind.String() — e.g. "BILLING_KIND_ONE_TIME".
+func buildBillingKindOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
+	return []types.SelectOption{
+		{Value: "BILLING_KIND_ONE_TIME", Label: labels.BillingKindOneTime},
+		{Value: "BILLING_KIND_RECURRING", Label: labels.BillingKindRecurring},
+		{Value: "BILLING_KIND_CONTRACT", Label: labels.BillingKindContract},
+	}
+}
+
+// buildAmountBasisOptions builds select options for the AmountBasis enum.
+// Values match proto AmountBasis.String() — e.g. "AMOUNT_BASIS_PER_CYCLE".
+func buildAmountBasisOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
+	return []types.SelectOption{
+		{Value: "AMOUNT_BASIS_PER_CYCLE", Label: labels.AmountBasisPerCycle},
+		{Value: "AMOUNT_BASIS_TOTAL_PACKAGE", Label: labels.AmountBasisTotalPackage},
+		{Value: "AMOUNT_BASIS_DERIVED_FROM_LINES", Label: labels.AmountBasisDerivedFromLines},
+	}
+}
+
+// buildBillingTreatmentOptions builds select options for the BillingTreatment enum.
+// Values match proto BillingTreatment.String() — e.g. "BILLING_TREATMENT_RECURRING".
+func buildBillingTreatmentOptions(labels centymo.ProductPricePlanFormLabels) []types.SelectOption {
+	return []types.SelectOption{
+		{Value: "BILLING_TREATMENT_RECURRING", Label: labels.BillingTreatmentRecurring},
+		{Value: "BILLING_TREATMENT_ONE_TIME_INITIAL", Label: labels.BillingTreatmentOneTimeInitial},
+		{Value: "BILLING_TREATMENT_USAGE_BASED", Label: labels.BillingTreatmentUsageBased},
+	}
+}
+
+// buildDurationUnitOptions builds select options for billing_cycle_unit / default_term_unit
+// reusing the existing DurationUnit labels from CommonLabels.
+func buildDurationUnitOptions(cl pyeza.CommonLabels) []types.SelectOption {
+	du := cl.DurationUnit
+	return []types.SelectOption{
+		{Value: "day", Label: du.DaySelect},
+		{Value: "week", Label: du.WeekSelect},
+		{Value: "month", Label: du.MonthSelect},
+		{Value: "year", Label: du.YearSelect},
+	}
 }

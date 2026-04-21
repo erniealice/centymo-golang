@@ -138,6 +138,28 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
         </div>
         {{end}}
 
+        {{/* Billing kind + amount basis selects */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "billing_kind"
+                "Label" .Labels.BillingKindLabel
+                "Value" .BillingKind
+                "Required" true
+                "Disabled" (and .IsEdit .InUse)
+                "Options" .BillingKindOptions
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "amount_basis"
+                "Label" .Labels.AmountBasisLabel
+                "Value" .AmountBasis
+                "Required" true
+                "Disabled" (and .IsEdit .InUse)
+                "Options" .AmountBasisOptions
+            )}}
+        </div>
+
         <div class="form-row">
             {{template "form-group" (dict
                 "Type" "number"
@@ -160,30 +182,67 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Disabled" (and .IsEdit .InUse)
             )}}
         </div>
-        <div class="form-row">
+
+        {{/* Billing cycle (for RECURRING / CONTRACT with periodic billing) */}}
+        <div class="form-row" id="billing-cycle-row">
             {{template "form-group" (dict
                 "Type" "number"
-                "Name" "duration_value"
-                "Label" .Labels.DurationLabel
-                "Value" .DurationValue
-                "Required" true
+                "Name" "billing_cycle_value"
+                "Label" .Labels.BillingCycleLabel
+                "Value" .BillingCycleValue
                 "Min" "1"
+                "Placeholder" .Labels.BillingCyclePlaceholder
                 "Disabled" (and .IsEdit .InUse)
             )}}
-            {{template "form-group" (dict
-                "Type" "select"
-                "Name" "duration_unit"
-                "Label" .Labels.DurationUnitLabel
-                "Value" .DurationUnit
-                "Disabled" (and .IsEdit .InUse)
-                "Options" (list
-                    (dict "Value" "days"   "Label" .CommonLabels.DurationUnit.DaySelect)
-                    (dict "Value" "weeks"  "Label" .CommonLabels.DurationUnit.WeekSelect)
-                    (dict "Value" "months" "Label" .CommonLabels.DurationUnit.MonthSelect)
-                    (dict "Value" "years"  "Label" .CommonLabels.DurationUnit.YearSelect)
-                )
-            )}}
+            <div class="form-group">
+                <select
+                    id="billing_cycle_unit"
+                    name="billing_cycle_unit"
+                    class="form-select"
+                    aria-label="Billing cycle unit"
+                    data-testid="billing-cycle-unit-select"
+                    {{if and .IsEdit .InUse}}disabled{{end}}
+                >
+                    <option value="day"   {{if eq .BillingCycleUnit "day"}}selected{{end}}>{{.CommonLabels.DurationUnit.DaySelect}}</option>
+                    <option value="week"  {{if eq .BillingCycleUnit "week"}}selected{{end}}>{{.CommonLabels.DurationUnit.WeekSelect}}</option>
+                    <option value="month" {{if eq .BillingCycleUnit "month"}}selected{{end}}>{{.CommonLabels.DurationUnit.MonthSelect}}</option>
+                    <option value="year"  {{if eq .BillingCycleUnit "year"}}selected{{end}}>{{.CommonLabels.DurationUnit.YearSelect}}</option>
+                </select>
+            </div>
         </div>
+
+        {{/* Default term (catalog default validity; null = open-ended) */}}
+        <div class="form-row" id="default-term-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "default_term_value"
+                "Label" .Labels.DefaultTermLabel
+                "Value" .DefaultTermValue
+                "Min" "0"
+                "Placeholder" .Labels.DefaultTermPlaceholder
+                "HelpText" .Labels.DefaultTermOpenEndedHelp
+                "Disabled" (and .IsEdit .InUse)
+            )}}
+            <div class="form-group">
+                <select
+                    id="default_term_unit"
+                    name="default_term_unit"
+                    class="form-select"
+                    aria-label="Default term unit"
+                    data-testid="default-term-unit-select"
+                    {{if and .IsEdit .InUse}}disabled{{end}}
+                >
+                    <option value="day"   {{if eq .DefaultTermUnit "day"}}selected{{end}}>{{.CommonLabels.DurationUnit.DaySelect}}</option>
+                    <option value="week"  {{if eq .DefaultTermUnit "week"}}selected{{end}}>{{.CommonLabels.DurationUnit.WeekSelect}}</option>
+                    <option value="month" {{if eq .DefaultTermUnit "month"}}selected{{end}}>{{.CommonLabels.DurationUnit.MonthSelect}}</option>
+                    <option value="year"  {{if eq .DefaultTermUnit "year"}}selected{{end}}>{{.CommonLabels.DurationUnit.YearSelect}}</option>
+                </select>
+            </div>
+        </div>
+
+        {{/* Legacy dual-write (Phase 1) — derived from billing_cycle, hidden from user */}}
+        <input type="hidden" name="duration_value" value="{{.BillingCycleValue}}">
+        <input type="hidden" name="duration_unit" value="{{.BillingCycleUnit}}">
 
         {{/* Active toggle */}}
         <div class="form-row single">
@@ -198,4 +257,30 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
+
+<script>
+(function() {
+    var kindSel = document.querySelector('select[name="billing_kind"]');
+    var basisSel = document.querySelector('select[name="amount_basis"]');
+    var cycleRow = document.getElementById('billing-cycle-row');
+    var termRow = document.getElementById('default-term-row');
+    var amountInput = document.querySelector('input[name="amount"]');
+
+    function apply() {
+        var kind = kindSel ? kindSel.value : '';
+        var basis = basisSel ? basisSel.value : '';
+        // billing_cycle is meaningful for RECURRING and CONTRACT
+        if (cycleRow) cycleRow.style.display = (kind === 'BILLING_KIND_ONE_TIME') ? 'none' : '';
+        // default_term is meaningful for ONE_TIME (validity) and CONTRACT (fixed term); less so for open-ended RECURRING
+        if (termRow) termRow.style.display = (kind === 'BILLING_KIND_RECURRING') ? 'none' : '';
+        // amount_basis=DERIVED_FROM_LINES hides the amount input (it's ignored)
+        if (amountInput) amountInput.closest('.form-group').style.display =
+            (basis === 'AMOUNT_BASIS_DERIVED_FROM_LINES') ? 'none' : '';
+    }
+
+    if (kindSel) kindSel.addEventListener('change', apply);
+    if (basisSel) basisSel.addEventListener('change', apply);
+    apply();
+})();
+</script>
 {{end}}

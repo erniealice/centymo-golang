@@ -6,9 +6,9 @@
     <div class="sheet-body">
         <div class="form-row single">
             <div class="form-group">
-                <label class="form-label" for="price-plan-product">Product <span class="required">*</span></label>
-                <select name="product_id" id="price-plan-product" class="form-select" required {{if .IsEdit}}disabled{{end}}>
-                    <option value="">Select a product</option>
+                <label class="form-label" for="price-plan-product">{{.Labels.ProductLabel}} <span class="required">*</span></label>
+                <select name="product_id" id="price-plan-product" class="form-select" data-testid="product-select" required {{if .IsEdit}}disabled{{end}}>
+                    <option value="">{{.Labels.ProductPlaceholder}}</option>
                     {{range .ProductOptions}}
                     <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
                     {{end}}
@@ -19,8 +19,32 @@
             </div>
         </div>
         <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" "Price" "Value" .Price "Required" true "Placeholder" "0.00" "Step" "0.01" "Min" "0")}}
-            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" "Currency" "Value" .Currency "Required" true "Placeholder" "e.g. PHP")}}
+            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" .Labels.PriceLabel "Value" .Price "Required" true "Placeholder" .Labels.PricePlaceholder "Step" "0.01" "Min" "0")}}
+            {{template "form-group" (dict "Type" "text" "Name" "currency" "Label" .Labels.CurrencyLabel "Value" .Currency "Required" true "Placeholder" .Labels.CurrencyPlaceholder)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "billing_treatment"
+                "Label" .Labels.BillingTreatmentLabel
+                "Value" .BillingTreatment
+                "Required" true
+                "Options" .BillingTreatmentOptions
+            )}}
+        </div>
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "date_start"
+                "Label" .Labels.DateStartLabel
+                "Value" .DateStart
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "date_end"
+                "Label" .Labels.DateEndLabel
+                "Value" .DateEnd
+            )}}
         </div>
     </div>
 

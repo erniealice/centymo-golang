@@ -12,6 +12,7 @@ import (
 	"github.com/erniealice/centymo-golang/views/price_plan/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
+	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
@@ -162,16 +163,20 @@ func NewAddAction(deps *Deps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			plans := loadPlans(ctx, deps)
 			schedules := loadSchedules(ctx, deps)
+			formLabels := deps.Labels.Form
 			return view.OK("price-plan-drawer-form", &form.Data{
-				FormAction:      deps.Routes.AddURL,
-				Context:         form.ContextStandalone,
-				Active:          true,
-				Currency:        "PHP",
-				DurationUnit:    "months",
-				PlanOptions:     buildPlanAutoCompleteOptions(plans, ""),
-				ScheduleOptions: buildScheduleAutoCompleteOptions(schedules, ""),
-				Labels:          form.LabelsFromPricePlan(deps.Labels.Form),
-				CommonLabels:    deps.CommonLabels,
+				FormAction:          deps.Routes.AddURL,
+				Context:             form.ContextStandalone,
+				Active:              true,
+				Currency:            "PHP",
+				DurationUnit:        "months",
+				PlanOptions:         buildPlanAutoCompleteOptions(plans, ""),
+				ScheduleOptions:     buildScheduleAutoCompleteOptions(schedules, ""),
+				BillingKindOptions:  buildBillingKindOptions(formLabels),
+				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
+				DurationUnitOptions: buildDurationUnitOptions(deps.CommonLabels),
+				Labels:              form.LabelsFromPricePlan(formLabels),
+				CommonLabels:        deps.CommonLabels,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -179,10 +184,22 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
+		// Legacy dual-write: duration_value/unit (Phase 1).
 		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
 		scheduleID := r.FormValue("price_schedule_id")
 		createName := r.FormValue("name")
 		createDescription := r.FormValue("description")
+
+		// Wave 2: new billing semantics fields.
+		bcvStr := r.FormValue("billing_cycle_value")
+		bcv, _ := strconv.ParseInt(bcvStr, 10, 32)
+		bcu := r.FormValue("billing_cycle_unit")
+		dtvStr := r.FormValue("default_term_value")
+		dtv, _ := strconv.ParseInt(dtvStr, 10, 32)
+		dtu := r.FormValue("default_term_unit")
+		billingKindStr := r.FormValue("billing_kind")
+		amountBasisStr := r.FormValue("amount_basis")
+
 		req := &priceplanpb.CreatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				PlanId:        r.FormValue("plan_id"),
@@ -190,13 +207,39 @@ func NewAddAction(deps *Deps) view.View {
 				Description:   &createDescription,
 				Amount:        parseAmount(r.FormValue("amount")),
 				Currency:      r.FormValue("currency"),
-				DurationValue: int32(dv),
-				DurationUnit:  r.FormValue("duration_unit"),
+				DurationValue: int32(dv),                    // Phase 1 legacy dual-write
+				DurationUnit:  r.FormValue("duration_unit"), // Phase 1 legacy dual-write
 				Active:        active,
 			},
 		}
 		if scheduleID != "" {
 			req.Data.PriceScheduleId = &scheduleID
+		}
+		// Set new enum fields.
+		if billingKindStr != "" {
+			if bk, ok := priceplanpb.BillingKind_value[billingKindStr]; ok {
+				req.Data.BillingKind = priceplanpb.BillingKind(bk)
+			}
+		}
+		if amountBasisStr != "" {
+			if ab, ok := priceplanpb.AmountBasis_value[amountBasisStr]; ok {
+				req.Data.AmountBasis = priceplanpb.AmountBasis(ab)
+			}
+		}
+		// Set new optional duration fields.
+		if bcvStr != "" {
+			bcv32 := int32(bcv)
+			req.Data.BillingCycleValue = &bcv32
+		}
+		if bcu != "" {
+			req.Data.BillingCycleUnit = &bcu
+		}
+		if dtvStr != "" {
+			dtv32 := int32(dtv)
+			req.Data.DefaultTermValue = &dtv32
+		}
+		if dtu != "" {
+			req.Data.DefaultTermUnit = &dtu
 		}
 		if _, err := deps.CreatePricePlan(ctx, req); err != nil {
 			log.Printf("Failed to create price plan: %v", err)
@@ -231,6 +274,16 @@ func NewEditAction(deps *Deps) view.View {
 					lockMsg = "This price plan is in use by active subscriptions. Pricing changes are disabled."
 				}
 			}
+			// Populate new fields from the existing record.
+			billingCycleValue := ""
+			if v := record.GetBillingCycleValue(); v > 0 {
+				billingCycleValue = fmt.Sprintf("%d", v)
+			}
+			defaultTermValue := ""
+			if v := record.GetDefaultTermValue(); v > 0 {
+				defaultTermValue = fmt.Sprintf("%d", v)
+			}
+			formLabels := deps.Labels.Form
 			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
@@ -245,6 +298,16 @@ func NewEditAction(deps *Deps) view.View {
 				DurationValue:         fmt.Sprintf("%d", record.GetDurationValue()),
 				DurationUnit:          record.GetDurationUnit(),
 				Active:                record.GetActive(),
+				// Wave 2: populate new billing fields from existing record.
+				BillingKind:         record.GetBillingKind().String(),
+				BillingKindOptions:  buildBillingKindOptions(formLabels),
+				AmountBasis:         record.GetAmountBasis().String(),
+				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
+				BillingCycleValue:   billingCycleValue,
+				BillingCycleUnit:    record.GetBillingCycleUnit(),
+				DefaultTermValue:    defaultTermValue,
+				DefaultTermUnit:     record.GetDefaultTermUnit(),
+				DurationUnitOptions: buildDurationUnitOptions(deps.CommonLabels),
 				PlanOptions:           buildPlanAutoCompleteOptions(plans, selectedPlanID),
 				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
 				SelectedPlanID:        selectedPlanID,
@@ -253,7 +316,7 @@ func NewEditAction(deps *Deps) view.View {
 				SelectedScheduleLabel: findScheduleLabel(schedules, selectedScheduleID),
 				InUse:                 inUse,
 				LockMessage:           lockMsg,
-				Labels:                form.LabelsFromPricePlan(deps.Labels.Form),
+				Labels:                form.LabelsFromPricePlan(formLabels),
 				CommonLabels:          deps.CommonLabels,
 			})
 		}
@@ -262,10 +325,22 @@ func NewEditAction(deps *Deps) view.View {
 		}
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
+		// Legacy dual-write: duration_value/unit (Phase 1).
 		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
 		scheduleID := r.FormValue("price_schedule_id")
 		editName := r.FormValue("name")
 		editDescription := r.FormValue("description")
+
+		// Wave 2: new billing semantics fields.
+		bcvStr := r.FormValue("billing_cycle_value")
+		bcv, _ := strconv.ParseInt(bcvStr, 10, 32)
+		bcu := r.FormValue("billing_cycle_unit")
+		dtvStr := r.FormValue("default_term_value")
+		dtv, _ := strconv.ParseInt(dtvStr, 10, 32)
+		dtu := r.FormValue("default_term_unit")
+		billingKindStr := r.FormValue("billing_kind")
+		amountBasisStr := r.FormValue("amount_basis")
+
 		req := &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				Id:            id,
@@ -274,13 +349,39 @@ func NewEditAction(deps *Deps) view.View {
 				Description:   &editDescription,
 				Amount:        parseAmount(r.FormValue("amount")),
 				Currency:      r.FormValue("currency"),
-				DurationValue: int32(dv),
-				DurationUnit:  r.FormValue("duration_unit"),
+				DurationValue: int32(dv),                    // Phase 1 legacy dual-write
+				DurationUnit:  r.FormValue("duration_unit"), // Phase 1 legacy dual-write
 				Active:        active,
 			},
 		}
 		if scheduleID != "" {
 			req.Data.PriceScheduleId = &scheduleID
+		}
+		// Set new enum fields.
+		if billingKindStr != "" {
+			if bk, ok := priceplanpb.BillingKind_value[billingKindStr]; ok {
+				req.Data.BillingKind = priceplanpb.BillingKind(bk)
+			}
+		}
+		if amountBasisStr != "" {
+			if ab, ok := priceplanpb.AmountBasis_value[amountBasisStr]; ok {
+				req.Data.AmountBasis = priceplanpb.AmountBasis(ab)
+			}
+		}
+		// Set new optional duration fields.
+		if bcvStr != "" {
+			bcv32 := int32(bcv)
+			req.Data.BillingCycleValue = &bcv32
+		}
+		if bcu != "" {
+			req.Data.BillingCycleUnit = &bcu
+		}
+		if dtvStr != "" {
+			dtv32 := int32(dtv)
+			req.Data.DefaultTermValue = &dtv32
+		}
+		if dtu != "" {
+			req.Data.DefaultTermUnit = &dtu
 		}
 		if _, err := deps.UpdatePricePlan(ctx, req); err != nil {
 			return centymo.HTMXError(err.Error())
@@ -401,4 +502,40 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		}
 		return centymo.HTMXSuccess("price-plans-table")
 	})
+}
+
+// ---------------------------------------------------------------------------
+// Wave 2 option builder helpers (lyngua-fed, no hardcoded English strings)
+// ---------------------------------------------------------------------------
+
+// buildBillingKindOptions builds select options for the BillingKind enum.
+// Values match proto BillingKind.String() — e.g. "BILLING_KIND_ONE_TIME".
+func buildBillingKindOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
+	return []types.SelectOption{
+		{Value: "BILLING_KIND_ONE_TIME", Label: labels.BillingKindOneTime},
+		{Value: "BILLING_KIND_RECURRING", Label: labels.BillingKindRecurring},
+		{Value: "BILLING_KIND_CONTRACT", Label: labels.BillingKindContract},
+	}
+}
+
+// buildAmountBasisOptions builds select options for the AmountBasis enum.
+// Values match proto AmountBasis.String() — e.g. "AMOUNT_BASIS_PER_CYCLE".
+func buildAmountBasisOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
+	return []types.SelectOption{
+		{Value: "AMOUNT_BASIS_PER_CYCLE", Label: labels.AmountBasisPerCycle},
+		{Value: "AMOUNT_BASIS_TOTAL_PACKAGE", Label: labels.AmountBasisTotalPackage},
+		{Value: "AMOUNT_BASIS_DERIVED_FROM_LINES", Label: labels.AmountBasisDerivedFromLines},
+	}
+}
+
+// buildDurationUnitOptions builds select options for billing_cycle_unit / default_term_unit
+// reusing the existing DurationUnit labels from CommonLabels.
+func buildDurationUnitOptions(cl pyeza.CommonLabels) []types.SelectOption {
+	du := cl.DurationUnit
+	return []types.SelectOption{
+		{Value: "day", Label: du.DaySelect},
+		{Value: "week", Label: du.WeekSelect},
+		{Value: "month", Label: du.MonthSelect},
+		{Value: "year", Label: du.YearSelect},
+	}
 }
