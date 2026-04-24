@@ -21,6 +21,13 @@ type FormLabels struct {
 	DateStart       string
 	DateEnd         string
 	Active          string
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string
+	DescriptionInfo string
+	DateStartInfo   string
+	DateEndInfo     string
+	ActiveInfo      string
 }
 
 // FormData is the template data for the price list drawer form.
@@ -47,7 +54,7 @@ type Deps struct {
 	DeletePriceList func(ctx context.Context, req *pricelistpb.DeletePriceListRequest) (*pricelistpb.DeletePriceListResponse, error)
 }
 
-func formLabels(t func(string) string) FormLabels {
+func formLabels(t func(string) string, f centymo.PriceListFormLabels) FormLabels {
 	return FormLabels{
 		Name:            t("pricelist.form.name"),
 		Description:     t("pricelist.form.description"),
@@ -55,6 +62,12 @@ func formLabels(t func(string) string) FormLabels {
 		DateStart:       t("pricelist.form.dateStart"),
 		DateEnd:         t("pricelist.form.dateEnd"),
 		Active:          t("pricelist.form.active"),
+		// Info fields sourced from centymo.PriceListFormLabels (populated from lyngua JSON + defaults).
+		NameInfo:        f.NameInfo,
+		DescriptionInfo: f.DescriptionInfo,
+		DateStartInfo:   f.DateStartInfo,
+		DateEndInfo:     f.DateEndInfo,
+		ActiveInfo:      f.ActiveInfo,
 	}
 }
 
@@ -70,7 +83,7 @@ func NewAddAction(deps *Deps) view.View {
 			return view.OK("pricelist-drawer-form", &FormData{
 				FormAction:   deps.Routes.AddURL,
 				Active:       true,
-				Labels:       formLabels(viewCtx.T),
+				Labels:       formLabels(viewCtx.T, deps.Labels.Form),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}
@@ -141,7 +154,7 @@ func NewEditAction(deps *Deps) view.View {
 				DateStart:    pl.GetDateStart(),
 				DateEnd:      pl.GetDateEnd(),
 				Active:       pl.GetActive(),
-				Labels:       formLabels(viewCtx.T),
+				Labels:       formLabels(viewCtx.T, deps.Labels.Form),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}

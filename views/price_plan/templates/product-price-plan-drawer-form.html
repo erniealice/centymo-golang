@@ -1,3 +1,10 @@
+{{/*
+Product Price Plan drawer form — loaded into #sheetContent via HTMX.
+Model D: the picker now references a ProductPlan (catalog line) rather than a
+bare Product. This automatically scopes the picker to products already in the
+parent Plan, and surfaces the variant label when the line carries one.
+Data: ProductPricePlanFormData — see views/price_plan/detail/page.go
+*/}}
 {{define "product-price-plan-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
@@ -6,21 +13,49 @@
     <div class="sheet-body">
         <div class="form-row single">
             <div class="form-group">
-                <label class="form-label" for="price-plan-product">{{.Labels.ProductLabel}} <span class="required">*</span></label>
-                <select name="product_id" id="price-plan-product" class="form-select" data-testid="product-select" required {{if .IsEdit}}disabled{{end}}>
-                    <option value="">{{.Labels.ProductPlaceholder}}</option>
-                    {{range .ProductOptions}}
+                <label class="form-label" for="price-plan-product-plan">
+                    {{.Labels.CatalogLineLabel}} <span class="required">*</span>
+                    {{if .Labels.CatalogLineInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.CatalogLineInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                <select name="product_plan_id" id="price-plan-product-plan" class="form-select" data-testid="product-plan-select" required {{if .IsEdit}}disabled{{end}}>
+                    <option value="">{{.Labels.CatalogLinePlaceholder}}</option>
+                    {{range .ProductPlanOptions}}
                     <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
                     {{end}}
                 </select>
                 {{if .IsEdit}}
-                <input type="hidden" name="product_id" value="{{.ProductID}}">
+                {{/* Preserve the FK when the select is disabled — browsers skip disabled selects on submit. */}}
+                <input type="hidden" name="product_plan_id" value="{{.ProductPlanID}}">
                 {{end}}
             </div>
         </div>
+
+        {{/* Read-only selected-line context, shown on edit so users know which
+             product/variant they are pricing. */}}
+        {{if and .IsEdit .SelectedProductName}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.ProductLabel}}</label>
+                <div class="form-readonly-text" data-testid="selected-product-display">
+                    {{.SelectedProductName}}{{if .SelectedVariantName}} ({{.SelectedVariantName}}){{end}}
+                </div>
+            </div>
+        </div>
+        {{end}}
+
         <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" .Labels.PriceLabel "Value" .Price "Required" true "Placeholder" .Labels.PricePlaceholder "Step" "0.01" "Min" "0")}}
-            {{template "form-group" (dict "Type" "select" "Name" "currency" "Label" .Labels.CurrencyLabel "Value" .Currency "Required" true "Options" (list (dict "Value" "PHP" "Label" .Labels.CurrencyPHP) (dict "Value" "USD" "Label" .Labels.CurrencyUSD)))}}
+            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" .Labels.PriceLabel "Value" .Price "Required" true "Placeholder" .Labels.PricePlaceholder "Step" "0.01" "Min" "0" "Info" .Labels.PriceInfo)}}
+            {{template "form-group" (dict "Type" "select" "Name" "currency" "Label" .Labels.CurrencyLabel "Value" .Currency "Required" true "Options" (list (dict "Value" "PHP" "Label" .Labels.CurrencyPHP) (dict "Value" "USD" "Label" .Labels.CurrencyUSD)) "Info" .Labels.CurrencyInfo)}}
         </div>
         <div class="form-row single">
             {{template "form-group" (dict
@@ -30,6 +65,7 @@
                 "Value" .BillingTreatment
                 "Required" true
                 "Options" .BillingTreatmentOptions
+                "Info" .Labels.BillingTreatmentInfo
             )}}
         </div>
         <div class="form-row">
@@ -38,12 +74,14 @@
                 "Name" "date_start"
                 "Label" .Labels.DateStartLabel
                 "Value" .DateStart
+                "Info" .Labels.DateStartInfo
             )}}
             {{template "form-group" (dict
                 "Type" "date"
                 "Name" "date_end"
                 "Label" .Labels.DateEndLabel
                 "Value" .DateEnd
+                "Info" .Labels.DateEndInfo
             )}}
         </div>
     </div>

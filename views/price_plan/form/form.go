@@ -118,6 +118,20 @@ type Labels struct {
 	DefaultTermLabel            string
 	DefaultTermPlaceholder      string
 	DefaultTermOpenEndedHelp    string
+
+	// Field-level info text surfaced via an info button beside each label.
+	// Hover/click opens a popover explaining what the field means.
+	PlanInfo         string
+	ScheduleInfo     string
+	NameInfo         string
+	DescriptionInfo  string
+	BillingKindInfo  string
+	AmountBasisInfo  string
+	AmountInfo       string
+	CurrencyInfo     string
+	BillingCycleInfo string
+	DefaultTermInfo  string
+	ActiveInfo       string
 }
 
 // LabelsFromPriceSchedule maps the price-schedule-side PlanForm labels into
@@ -190,6 +204,18 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		DefaultTermLabel:         pp.DefaultTermLabel,
 		DefaultTermPlaceholder:   pp.DefaultTermPlaceholder,
 		DefaultTermOpenEndedHelp: pp.DefaultTermOpenEndedHelp,
+		// Field-level info popovers
+		PlanInfo:         pp.PlanInfo,
+		ScheduleInfo:     pp.ScheduleInfo,
+		NameInfo:         pp.NameInfo,
+		DescriptionInfo:  pp.DescriptionInfo,
+		BillingKindInfo:  pp.BillingKindInfo,
+		AmountBasisInfo:  pp.AmountBasisInfo,
+		AmountInfo:       pp.AmountInfo,
+		CurrencyInfo:     pp.CurrencyInfo,
+		BillingCycleInfo: pp.BillingCycleInfo,
+		DefaultTermInfo:  pp.DefaultTermInfo,
+		ActiveInfo:       pp.ActiveInfo,
 	}
 }
 

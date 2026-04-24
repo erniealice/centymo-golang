@@ -141,13 +141,25 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 	l := deps.Labels
 	columns := priceScheduleColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms, locationNames)
+	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, locationNames)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = buildBulkActions(l, deps.CommonLabels, status, deps.Routes)
 
 	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
+
+	var primaryAction *types.PrimaryAction
+	if status == "active" {
+		primaryAction = &types.PrimaryAction{
+			Label:           l.Buttons.Add,
+			ActionURL:       deps.Routes.AddURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("price_schedule", "create"),
+			DisabledTooltip: l.Errors.Unauthorized,
+		}
+	}
+
 	tableConfig := &types.TableConfig{
 		ID:                   "price-schedules-table",
 		RefreshURL:           refreshURL,
@@ -168,14 +180,8 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 			Title:   statusEmptyTitle(l, status),
 			Message: statusEmptyMessage(l, status),
 		},
-		PrimaryAction: &types.PrimaryAction{
-			Label:           l.Buttons.Add,
-			ActionURL:       deps.Routes.AddURL,
-			Icon:            "icon-plus",
-			Disabled:        !perms.Can("price_schedule", "create"),
-			DisabledTooltip: l.Errors.Unauthorized,
-		},
-		BulkActions: &bulkCfg,
+		PrimaryAction: primaryAction,
+		BulkActions:   &bulkCfg,
 	}
 	types.ApplyTableSettings(tableConfig)
 	return tableConfig, nil
@@ -192,7 +198,7 @@ func priceScheduleColumns(l centymo.PriceScheduleLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(priceSchedules []*priceschedulepb.PriceSchedule, status string, l centymo.PriceScheduleLabels, routes centymo.PriceScheduleRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, locationNames map[string]string) []types.TableRow {
+func buildTableRows(priceSchedules []*priceschedulepb.PriceSchedule, status string, l centymo.PriceScheduleLabels, cl pyeza.CommonLabels, routes centymo.PriceScheduleRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, locationNames map[string]string) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, ps := range priceSchedules {
 		recordStatus := "active"
@@ -232,13 +238,13 @@ func buildTableRows(priceSchedules []*priceschedulepb.PriceSchedule, status stri
 				"status":    recordStatus,
 				"deletable": strconv.FormatBool(!isInUse),
 			},
-			Actions: buildRowActions(id, name, ps.GetActive(), isInUse, l, routes, perms),
+			Actions: buildRowActions(id, name, ps.GetActive(), isInUse, l, cl, routes, perms),
 		})
 	}
 	return rows
 }
 
-func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceScheduleLabels, routes centymo.PriceScheduleRoutes, perms *types.UserPermissions) []types.TableAction {
+func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceScheduleLabels, cl pyeza.CommonLabels, routes centymo.PriceScheduleRoutes, perms *types.UserPermissions) []types.TableAction {
 	actions := []types.TableAction{
 		{Type: "view", Label: l.Buttons.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
 		{Type: "edit", Label: l.Buttons.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Buttons.Edit,
@@ -246,6 +252,15 @@ func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceSched
 	}
 
 	if active {
+		actions = append(actions, types.TableAction{
+			Type:            "clone",
+			Label:           cl.Actions.Clone,
+			Action:          "clone",
+			URL:             route.ResolveURL(routes.EditURL, "id", id),
+			DrawerTitle:     cl.Actions.Clone,
+			Disabled:        !perms.Can("price_schedule", "create"),
+			DisabledTooltip: l.Errors.Unauthorized,
+		})
 		actions = append(actions, types.TableAction{
 			Type: "deactivate", Label: l.Buttons.Deactivate, Action: "deactivate",
 			URL: routes.SetStatusURL + "?status=inactive", ItemName: name,

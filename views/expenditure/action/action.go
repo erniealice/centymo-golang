@@ -58,6 +58,17 @@ type FormLabels struct {
 	SelectPaymentTerm    string
 	DueDate              string
 	LinkToPurchaseOrder  string
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo            string
+	ExpenditureTypeInfo string
+	CategoryInfo        string
+	DateInfo            string
+	AmountInfo          string
+	CurrencyInfo        string
+	ReferenceNumberInfo string
+	SupplierInfo        string
+	NotesInfo           string
 }
 
 // FormData is the template data for the expense drawer form.
@@ -135,6 +146,15 @@ func formLabels(l centymo.ExpenditureLabels) FormLabels {
 		SelectPaymentTerm:   "Select payment term",
 		DueDate:             "Due Date",
 		LinkToPurchaseOrder: "Link to Purchase Order",
+		NameInfo:            l.Form.NameInfo,
+		ExpenditureTypeInfo: l.Form.ExpenditureTypeInfo,
+		CategoryInfo:        l.Form.CategoryInfo,
+		DateInfo:            l.Form.DateInfo,
+		AmountInfo:          l.Form.AmountInfo,
+		CurrencyInfo:        l.Form.CurrencyInfo,
+		ReferenceNumberInfo: l.Form.ReferenceNumberInfo,
+		SupplierInfo:        l.Form.SupplierInfo,
+		NotesInfo:           l.Form.NotesInfo,
 	}
 }
 

@@ -15,6 +15,7 @@ Data: .FormAction, .IsEdit, .ID, .Method, .CostBasis, .SalvageValue, .UsefulLife
                 "Value" .Method
                 "Options" .MethodOptions
                 "Required" true
+                "Info" .Labels.MethodInfo
             )}}
         </div>
 
@@ -25,6 +26,7 @@ Data: .FormAction, .IsEdit, .ID, .Method, .CostBasis, .SalvageValue, .UsefulLife
                 "Label" .Labels.CostBasis
                 "Value" .CostBasis
                 "Required" true
+                "Info" .Labels.CostBasisInfo
             )}}
             {{template "form-group" (dict
                 "Type" "number"
@@ -32,6 +34,7 @@ Data: .FormAction, .IsEdit, .ID, .Method, .CostBasis, .SalvageValue, .UsefulLife
                 "Label" .Labels.SalvageValue
                 "Value" .SalvageValue
                 "Required" true
+                "Info" .Labels.SalvageValueInfo
             )}}
         </div>
 
@@ -42,6 +45,7 @@ Data: .FormAction, .IsEdit, .ID, .Method, .CostBasis, .SalvageValue, .UsefulLife
                 "Label" .Labels.UsefulLife
                 "Value" .UsefulLife
                 "Required" true
+                "Info" .Labels.UsefulLifeInfo
             )}}
             {{template "form-group" (dict
                 "Type" "date"
@@ -49,6 +53,7 @@ Data: .FormAction, .IsEdit, .ID, .Method, .CostBasis, .SalvageValue, .UsefulLife
                 "Label" .Labels.StartDate
                 "Value" .StartDate
                 "Required" true
+                "Info" .Labels.StartDateInfo
             )}}
         </div>
     </div>

@@ -17,6 +17,7 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
                 "Value" .Name
                 "Placeholder" .Labels.NamePlaceholder
                 "Required" true
+                "Info" .Labels.NameInfo
             )}}
         </div>
 
@@ -28,18 +29,20 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
                 "Value" .Code
                 "Placeholder" .Labels.CodePlaceholder
                 "Required" true
+                "Info" .Labels.CodeInfo
             )}}
         </div>
 
         <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label" for="data_type">{{.Labels.DataType}}</label>
-                <select id="data_type" name="data_type" class="form-select" required>
-                    {{range .DataTypeOptions}}
-                    <option value="{{.Value}}" {{if eq $.DataType .Value}}selected{{end}}>{{.Label}}</option>
-                    {{end}}
-                </select>
-            </div>
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "data_type"
+                "Label" .Labels.DataType
+                "Value" .DataType
+                "Required" true
+                "Options" .DataTypeOptions
+                "Info" .Labels.DataTypeInfo
+            )}}
         </div>
 
         <div class="form-row two-col">
@@ -48,12 +51,14 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
                 "Name" "min_value"
                 "Label" .Labels.MinValue
                 "Value" .MinValue
+                "Info" .Labels.MinValueInfo
             )}}
             {{template "form-group" (dict
                 "Type" "number"
                 "Name" "max_value"
                 "Label" .Labels.MaxValue
                 "Value" .MaxValue
+                "Info" .Labels.MaxValueInfo
             )}}
         </div>
 
@@ -63,6 +68,7 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
                 "Name" "sort_order"
                 "Label" .Labels.SortOrder
                 "Value" .SortOrder
+                "Info" .Labels.SortOrderInfo
             )}}
         </div>
 
@@ -79,21 +85,34 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
         {{end}}
 
         <div class="form-row single">
-            {{template "toggle" (dict
-                "Name" "required"
-                "Label" .Labels.Form.Required
-                "Checked" .Required
-                "Value" "true"
-            )}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="required">{{.Labels.Form.Required}}</label>
+                {{template "toggle" (dict "Name" "required" "Checked" .Required "Value" "true")}}
+            </div>
         </div>
 
         <div class="form-row single">
-            {{template "toggle" (dict
-                "Name" "active"
-                "Label" .Labels.Active
-                "Checked" .Active
-                "Value" "true"
-            )}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict
+                    "Name" "active"
+                    "Checked" .Active
+                    "Value" "true"
+                )}}
+            </div>
         </div>
     </div>
 

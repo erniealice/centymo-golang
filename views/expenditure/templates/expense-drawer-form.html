@@ -23,6 +23,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Value" .Name
                 "Required" true
                 "Placeholder" .Labels.NamePlaceholder
+                "Info" .Labels.NameInfo
             )}}
         </div>
 
@@ -37,6 +38,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                     (dict "Value" "expense" "Label" .Labels.TypeExpense)
                     (dict "Value" "purchase" "Label" .Labels.TypePurchase)
                 )
+                "Info" .Labels.ExpenditureTypeInfo
             )}}
             {{template "form-group" (dict
                 "Type" "select"
@@ -44,6 +46,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Label" .Labels.Category
                 "Value" .ExpenditureCategoryID
                 "Options" .Categories
+                "Info" .Labels.CategoryInfo
             )}}
         </div>
 
@@ -55,6 +58,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Label" .Labels.Date
                 "Value" .Date
                 "Required" true
+                "Info" .Labels.DateInfo
             )}}
             {{template "form-group" (dict
                 "Type" "number"
@@ -62,6 +66,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Label" .Labels.Amount
                 "Value" .TotalAmount
                 "Required" true
+                "Info" .Labels.AmountInfo
             )}}
         </div>
 
@@ -73,6 +78,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Label" .Labels.Currency
                 "Value" .Currency
                 "Placeholder" .Labels.CurrencyPlaceholder
+                "Info" .Labels.CurrencyInfo
             )}}
             {{template "form-group" (dict
                 "Type" "select"
@@ -95,6 +101,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Name" "reference_number"
                 "Label" .Labels.ReferenceNumber
                 "Value" .ReferenceNumber
+                "Info" .Labels.ReferenceNumberInfo
             )}}
         </div>
 
@@ -107,6 +114,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Label" .Labels.Supplier
                 "Value" .SupplierID
                 "Options" .Suppliers
+                "Info" .Labels.SupplierInfo
             )}}
         </div>
         {{end}}
@@ -175,6 +183,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
+                "Info" .Labels.NotesInfo
             )}}
         </div>
     </div>

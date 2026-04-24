@@ -51,12 +51,36 @@ type ModuleDeps struct {
 	// DefaultTrackingMode is applied when the form does not supply a tracking_mode value.
 	DefaultTrackingMode string
 
+	// AllowedProductKinds / AllowedDeliveryModes / AllowedTrackingModes narrow
+	// the drawer-form classifier selects per-mount. Empty/nil means "all
+	// values". The services mount passes ["service"], supplies ["consumable"],
+	// inventory ["stocked_good","non_stocked_good"]. When a single value is
+	// allowed the drawer renders the select disabled + hidden-input so the
+	// value still submits.
+	AllowedProductKinds  []string
+	AllowedDeliveryModes []string
+	AllowedTrackingModes []string
+
 	// Mode selects the product_kind filter set for the product list view.
 	// "service" (default/empty) filters product_kind = 'service'.
 	// "inventory" filters product_kind IN ('stocked_good','non_stocked_good','consumable').
 	// The block may instantiate this module twice with different Mode values to
 	// render both a service-flavoured mount and an inventory-flavoured mount.
 	Mode string
+
+	// PermissionEntity is the first argument passed to perms.Can(entity, action)
+	// for every operation-level RBAC check inside the product module — Add,
+	// Edit, Delete, BulkDelete, SetStatus, table-action button disabled state,
+	// detail-page action buttons, variant CRUD. Default "product" when empty.
+	// The block wires:
+	//   - services mount   → "service"
+	//   - inventory mount  → "product"
+	//   - supplies mount   → "supplies"
+	// so a role can be granted CRUD on any one surface without implicit grant
+	// on the others. Sub-entities (product_line, product_variant, product_option,
+	// product_attribute) retain their own permission codes regardless of mount —
+	// they're considered the same underlying concept across all three mounts.
+	PermissionEntity string
 
 	// Product CRUD
 	ListProducts     func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
@@ -190,9 +214,15 @@ func NewModule(deps *ModuleDeps) *Module {
 		DeleteProduct:       deps.DeleteProduct,
 		SetProductActive:    deps.SetProductActive,
 		ListLines:           deps.ListLines,
-		DefaultProductKind:  deps.DefaultProductKind,
-		DefaultDeliveryMode: deps.DefaultDeliveryMode,
-		DefaultTrackingMode: deps.DefaultTrackingMode,
+		ListProductOptions:  deps.ListProductOptions,
+		ListProductVariants: deps.ListProductVariants,
+		DefaultProductKind:   deps.DefaultProductKind,
+		DefaultDeliveryMode:  deps.DefaultDeliveryMode,
+		DefaultTrackingMode:  deps.DefaultTrackingMode,
+		AllowedProductKinds:  deps.AllowedProductKinds,
+		AllowedDeliveryModes: deps.AllowedDeliveryModes,
+		AllowedTrackingModes: deps.AllowedTrackingModes,
+		PermissionEntity:     deps.PermissionEntity,
 	}
 	detailDeps := &productdetail.DetailViewDeps{
 		ReadProduct:               deps.ReadProduct,
@@ -209,6 +239,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		UpdateProductLine:         deps.UpdateProductLine,
 		DeleteProductLine:         deps.DeleteProductLine,
 		ListProductVariantOptions: deps.ListProductVariantOptions,
+		PermissionEntity:          deps.PermissionEntity,
 		AttachmentOps: attachment.AttachmentOps{
 			UploadFile:       deps.UploadFile,
 			ListAttachments:  deps.ListAttachments,
@@ -242,6 +273,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		CreateProductVariantImage:  deps.CreateProductVariantImage,
 		DeleteProductVariantImage:  deps.DeleteProductVariantImage,
 		UploadImage:                deps.UploadImage,
+		PermissionEntity:           deps.PermissionEntity,
 		AttachmentOps: attachment.AttachmentOps{
 			UploadFile:       deps.UploadFile,
 			ListAttachments:  deps.ListAttachments,
@@ -283,14 +315,15 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	listDeps := &productlist.ListViewDeps{
-		Routes:       deps.Routes,
-		Mode:         deps.Mode,
-		ListProducts: deps.ListProducts,
-		ListLines:    deps.ListLines,
-		GetInUseIDs:  deps.GetInUseIDs,
-		Labels:       deps.Labels,
-		CommonLabels: deps.CommonLabels,
-		TableLabels:  deps.TableLabels,
+		Routes:           deps.Routes,
+		Mode:             deps.Mode,
+		ListProducts:     deps.ListProducts,
+		ListLines:        deps.ListLines,
+		GetInUseIDs:      deps.GetInUseIDs,
+		Labels:           deps.Labels,
+		CommonLabels:     deps.CommonLabels,
+		TableLabels:      deps.TableLabels,
+		PermissionEntity: deps.PermissionEntity,
 	}
 
 	return &Module{

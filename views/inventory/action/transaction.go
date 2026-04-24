@@ -23,6 +23,12 @@ type TransactionFormLabels struct {
 	Quantity  string
 	Date      string
 	Reference string
+
+	// Field-level info text surfaced via an info button beside each label.
+	TypeInfo      string
+	QuantityInfo  string
+	DateInfo      string
+	ReferenceInfo string
 }
 
 // TransactionFormData is the template data for the transaction drawer form.
@@ -34,12 +40,17 @@ type TransactionFormData struct {
 	CommonLabels any
 }
 
-func transactionFormLabels(t func(string) string) TransactionFormLabels {
+func transactionFormLabels(t func(string) string, tx centymo.InventoryTransactionLabels) TransactionFormLabels {
 	return TransactionFormLabels{
 		Type:      t("inventory.transaction.type"),
 		Quantity:  t("inventory.transaction.quantity"),
 		Date:      t("inventory.transaction.date"),
 		Reference: t("inventory.transaction.reference"),
+		// Info fields sourced from centymo.InventoryTransactionLabels (populated from lyngua JSON + defaults).
+		TypeInfo:      tx.TypeInfo,
+		QuantityInfo:  tx.QuantityInfo,
+		DateInfo:      tx.DateInfo,
+		ReferenceInfo: tx.ReferenceInfo,
 	}
 }
 
@@ -67,7 +78,7 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("transaction-drawer-form", &TransactionFormData{
 				FormAction:   route.ResolveURL(deps.Routes.TransactionAssignURL, "id", inventoryItemID),
-				Labels:       transactionFormLabels(viewCtx.T),
+				Labels:       transactionFormLabels(viewCtx.T, deps.Labels.Transaction),
 				TypeOptions:  transactionTypeOptions(viewCtx.T),
 				Today:        time.Now().Format("2006-01-02"),
 				CommonLabels: nil,

@@ -218,6 +218,69 @@ func DefaultProductInventoryRoutes() ProductRoutes {
 	return r
 }
 
+// DefaultProductSuppliesRoutes returns a ProductRoutes namespace-shifted onto
+// the "Supplies" surface — the third Product module mount, scoped to
+// product_kind = 'consumable'. Kept distinct from the inventory mount so the
+// sidebar can surface "Products" (resold goods) and "Supplies" (used-in-
+// service-delivery consumables) as separate entries without a ServeMux
+// duplicate-registration panic.
+//
+// Shift rules:
+//   - "/app/products/*"  → "/app/inventory/supplies/*"
+//   - "/action/product/*" → "/action/inventory-supplies/*"
+//
+// Lyngua `product_supplies` route blocks can still override individual URLs.
+func DefaultProductSuppliesRoutes() ProductRoutes {
+	r := DefaultProductRoutes()
+	r.ActiveNav = "inventory"
+	r.ActiveSubNav = "supplies"
+	shift := func(s string) string {
+		s = strings.Replace(s, "/app/products/", "/app/inventory/supplies/", 1)
+		s = strings.Replace(s, "/action/product/", "/action/inventory-supplies/", 1)
+		return s
+	}
+	r.ListURL = shift(r.ListURL)
+	r.TableURL = shift(r.TableURL)
+	r.DetailURL = shift(r.DetailURL)
+	r.AddURL = shift(r.AddURL)
+	r.EditURL = shift(r.EditURL)
+	r.DeleteURL = shift(r.DeleteURL)
+	r.BulkDeleteURL = shift(r.BulkDeleteURL)
+	r.SetStatusURL = shift(r.SetStatusURL)
+	r.BulkSetStatusURL = shift(r.BulkSetStatusURL)
+	r.TabActionURL = shift(r.TabActionURL)
+	r.AttachmentUploadURL = shift(r.AttachmentUploadURL)
+	r.AttachmentDeleteURL = shift(r.AttachmentDeleteURL)
+	r.VariantTableURL = shift(r.VariantTableURL)
+	r.VariantAssignURL = shift(r.VariantAssignURL)
+	r.VariantEditURL = shift(r.VariantEditURL)
+	r.VariantRemoveURL = shift(r.VariantRemoveURL)
+	r.VariantDetailURL = shift(r.VariantDetailURL)
+	r.VariantTabActionURL = shift(r.VariantTabActionURL)
+	r.VariantImageUploadURL = shift(r.VariantImageUploadURL)
+	r.VariantImageDeleteURL = shift(r.VariantImageDeleteURL)
+	r.VariantAttachmentUploadURL = shift(r.VariantAttachmentUploadURL)
+	r.VariantAttachmentDeleteURL = shift(r.VariantAttachmentDeleteURL)
+	r.VariantStockDetailURL = shift(r.VariantStockDetailURL)
+	r.VariantStockTabActionURL = shift(r.VariantStockTabActionURL)
+	r.VariantStockAttachmentUploadURL = shift(r.VariantStockAttachmentUploadURL)
+	r.VariantStockAttachmentDeleteURL = shift(r.VariantStockAttachmentDeleteURL)
+	r.VariantSerialDetailURL = shift(r.VariantSerialDetailURL)
+	r.AttributeTableURL = shift(r.AttributeTableURL)
+	r.AttributeAssignURL = shift(r.AttributeAssignURL)
+	r.AttributeRemoveURL = shift(r.AttributeRemoveURL)
+	r.OptionTableURL = shift(r.OptionTableURL)
+	r.OptionAddURL = shift(r.OptionAddURL)
+	r.OptionEditURL = shift(r.OptionEditURL)
+	r.OptionDeleteURL = shift(r.OptionDeleteURL)
+	r.OptionDetailURL = shift(r.OptionDetailURL)
+	r.OptionValueTableURL = shift(r.OptionValueTableURL)
+	r.OptionValueAddURL = shift(r.OptionValueAddURL)
+	r.OptionValueEditURL = shift(r.OptionValueEditURL)
+	r.OptionValueDeleteURL = shift(r.OptionValueDeleteURL)
+	return r
+}
+
 // RouteMap returns a map of dot-notation keys to route paths for all
 // product routes.
 func (r ProductRoutes) RouteMap() map[string]string {
@@ -1111,6 +1174,46 @@ func DefaultPriceScheduleRoutes() PriceScheduleRoutes {
 		PlanProductPriceEditURL:   PriceSchedulePlanProductPriceEditURL,
 		PlanProductPriceDeleteURL: PriceSchedulePlanProductPriceDeleteURL,
 	}
+}
+
+// DefaultPriceScheduleInventoryRoutes returns a PriceScheduleRoutes with every
+// URL namespace-shifted from the services namespace onto the inventory accordion
+// namespace. Used as the route base for the PriceSchedule inventory-mount
+// registration in block.go; a lyngua `price_schedule_inventory` override can
+// layer additional tweaks on top.
+//
+// Shift rules:
+//   - "/app/price-schedules/"   → "/app/inventory/price-schedules/"
+//   - "/action/price-schedule/" → "/action/inventory-price-schedule/"
+func DefaultPriceScheduleInventoryRoutes() PriceScheduleRoutes {
+	r := DefaultPriceScheduleRoutes()
+	r.ActiveNav = "inventory"
+	r.ActiveSubNav = "inventory-price-schedules-active"
+	shift := func(s string) string {
+		s = strings.Replace(s, "/app/price-schedules/", "/app/inventory/price-schedules/", 1)
+		s = strings.Replace(s, "/action/price-schedule/", "/action/inventory-price-schedule/", 1)
+		return s
+	}
+	r.DashboardURL = shift(r.DashboardURL)
+	r.ListURL = shift(r.ListURL)
+	r.TableURL = shift(r.TableURL)
+	r.DetailURL = shift(r.DetailURL)
+	r.AddURL = shift(r.AddURL)
+	r.EditURL = shift(r.EditURL)
+	r.DeleteURL = shift(r.DeleteURL)
+	r.BulkDeleteURL = shift(r.BulkDeleteURL)
+	r.SetStatusURL = shift(r.SetStatusURL)
+	r.BulkSetStatusURL = shift(r.BulkSetStatusURL)
+	r.TabActionURL = shift(r.TabActionURL)
+	r.PlanAddURL = shift(r.PlanAddURL)
+	r.PlanDetailURL = shift(r.PlanDetailURL)
+	r.PlanTabActionURL = shift(r.PlanTabActionURL)
+	r.PlanEditURL = shift(r.PlanEditURL)
+	r.PlanDeleteURL = shift(r.PlanDeleteURL)
+	r.PlanProductPriceAddURL = shift(r.PlanProductPriceAddURL)
+	r.PlanProductPriceEditURL = shift(r.PlanProductPriceEditURL)
+	r.PlanProductPriceDeleteURL = shift(r.PlanProductPriceDeleteURL)
+	return r
 }
 
 // RouteMap returns a map of dot-notation keys to route paths for all

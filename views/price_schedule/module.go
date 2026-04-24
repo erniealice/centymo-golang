@@ -15,6 +15,7 @@ import (
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
@@ -46,9 +47,10 @@ type ModuleDeps struct {
 	DeletePricePlan func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
 
 	// Plan detail page (schedule-scoped) — ProductPricePlan CRUD + supporting lists
-	ListProducts           func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	ListProductPlans       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
-	ListProductPricePlans  func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	ListProducts            func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductPlans        func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProductVariants     func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ListProductPricePlans   func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
 	DeleteProductPricePlan func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
@@ -110,6 +112,7 @@ func NewModule(deps *ModuleDeps) *Module {
 	detailDeps := &pricescheduledetail.DetailViewDeps{
 		Routes:                 deps.Routes,
 		Labels:                 deps.Labels,
+		PricePlanLabels:        pricePlanLabelsFromDeps(deps),
 		CommonLabels:           deps.CommonLabels,
 		TableLabels:            deps.TableLabels,
 		ReadPriceSchedule:      deps.ReadPriceSchedule,
@@ -137,6 +140,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListPlans:              deps.ListPlans,
 		ListProducts:           deps.ListProducts,
 		ListProductPlans:       deps.ListProductPlans,
+		ListProductVariants:    deps.ListProductVariants,
 		ListProductPricePlans:  deps.ListProductPricePlans,
 		CreateProductPricePlan: deps.CreateProductPricePlan,
 		UpdateProductPricePlan: deps.UpdateProductPricePlan,

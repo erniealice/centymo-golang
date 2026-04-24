@@ -9,17 +9,25 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 )
 
 // searchOption is the JSON shape returned by the search handlers.
 type searchOption struct {
 	Value string `json:"value"`
 	Label string `json:"label"`
+}
+
+// groupedSearchResult is the grouped JSON shape for the price plan auto-complete.
+type groupedSearchResult struct {
+	Group   string         `json:"group"`
+	Options []searchOption `json:"options"`
 }
 
 const searchResultLimit = 20
@@ -125,17 +133,23 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 }
 
 // NewSearchPlansAction returns an http.HandlerFunc that searches price plans
-// and returns JSON results for the auto-complete component.
-// Returns price_plan.id as value with label showing name + formatted amount + currency.
+// and returns grouped JSON results for the auto-complete component.
+// Response shape: [{"group":"Schedule Name","options":[{"value":"id","label":"..."}]}]
+// Falls back to flat [{"value","label"}] via searchPlansLegacy when ListPricePlans is nil.
 func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		query := strings.TrimSpace(r.URL.Query().Get("q"))
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
+		dateStart := strings.TrimSpace(r.URL.Query().Get("date_start"))
+		dateEnd := strings.TrimSpace(r.URL.Query().Get("date_end"))
+		// billing_currency filters results to PricePlans matching the client's
+		// billing currency. Empty = no filter (show all currencies).
+		billingCurrency := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("billing_currency")))
 
 		if deps.ListPricePlans == nil {
 			// Fallback to plan search if ListPricePlans not wired
 			if deps.ListPlans != nil {
-				searchPlansLegacy(ctx, w, query, deps)
+				searchPlansLegacy(ctx, w, q, deps)
 			} else {
 				writeJSON(w, []searchOption{})
 			}
@@ -145,40 +159,180 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 		resp, err := deps.ListPricePlans(ctx, &priceplanpb.ListPricePlansRequest{})
 		if err != nil {
 			log.Printf("search price plans: failed to list price plans: %v", err)
-			writeJSON(w, []searchOption{})
+			writeJSON(w, []groupedSearchResult{})
 			return
 		}
 
-		queryLower := strings.ToLower(query)
-		var results []searchOption
+		// Build schedule lookup map when ListPriceSchedules is wired.
+		scheduleByID := map[string]*priceschedulepb.PriceSchedule{}
+		if deps.ListPriceSchedules != nil {
+			schedResp, schedErr := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
+			if schedErr != nil {
+				log.Printf("search price plans: failed to list price schedules: %v", schedErr)
+			} else {
+				for _, s := range schedResp.GetData() {
+					scheduleByID[s.GetId()] = s
+				}
+			}
+		}
+
+		// Normalise date filter: treat a one-sided filter as a point range.
+		hasDateFilter := dateStart != "" || dateEnd != ""
+		reqStart := dateStart
+		reqEnd := dateEnd
+		if hasDateFilter {
+			if reqStart == "" {
+				reqStart = reqEnd
+			}
+			if reqEnd == "" {
+				reqEnd = reqStart
+			}
+		}
+
+		queryLower := strings.ToLower(q)
+
+		// group key → options (use insertion-stable order via a slice of keys)
+		type groupEntry struct {
+			schedID   string // empty = unscheduled
+			schedName string // display label for the group header
+			dateStart string // for sorting
+			options   []searchOption
+		}
+		groupMap := map[string]*groupEntry{}
+		var groupOrder []string // tracks insertion order of group keys
+
+		totalOptions := 0
+
 		for _, pp := range resp.GetData() {
 			if !pp.GetActive() {
 				continue
 			}
+			if totalOptions >= searchResultLimit {
+				break
+			}
 
-			name := pp.GetName()
-			if queryLower != "" && !strings.Contains(strings.ToLower(name), queryLower) {
+			// Resolve display name: prefer pp.GetName(), fall back to embedded plan name.
+			displayName := pp.GetName()
+			if displayName == "" {
+				if pl := pp.GetPlan(); pl != nil {
+					displayName = pl.GetName()
+				}
+			}
+
+			// Apply query filter.
+			if queryLower != "" && !strings.Contains(strings.ToLower(displayName), queryLower) {
 				continue
 			}
 
-			// Format: "Plan Name — 15,000.00 PHP"
-			amount := float64(pp.GetAmount()) / 100.0
-			currency := pp.GetCurrency()
-			label := fmt.Sprintf("%s — %s %s", name, formatAmount(amount), currency)
+			// Apply billing currency filter (when the drawer passes a client's billing_currency).
+			if billingCurrency != "" && strings.ToUpper(pp.GetBillingCurrency()) != billingCurrency {
+				continue
+			}
 
-			results = append(results, searchOption{
+			schedID := pp.GetPriceScheduleId()
+			var sched *priceschedulepb.PriceSchedule
+			if schedID != "" {
+				sched = scheduleByID[schedID]
+			}
+
+			// Apply date filter.
+			if hasDateFilter {
+				if schedID == "" {
+					// Unscheduled plans are excluded when any date filter is set.
+					continue
+				}
+				if sched != nil {
+					schedStart := sched.GetDateStart()
+					schedEnd := sched.GetDateEnd()
+					// Schedule must cover the requested range:
+					// sched.DateStart <= reqStart AND (sched.DateEnd == "" || reqEnd <= sched.DateEnd)
+					startOK := schedStart <= reqStart
+					endOK := schedEnd == "" || reqEnd <= schedEnd
+					if !startOK || !endOK {
+						continue
+					}
+				}
+				// If sched is nil but schedID is set (unknown schedule), skip.
+				if sched == nil {
+					continue
+				}
+			}
+
+			// Determine group key and label.
+			groupKey := schedID
+			if groupKey == "" {
+				groupKey = "__unscheduled__"
+			}
+
+			if _, exists := groupMap[groupKey]; !exists {
+				entry := &groupEntry{schedID: schedID}
+				if sched != nil {
+					entry.dateStart = sched.GetDateStart()
+					name := sched.GetName()
+					if name == "" {
+						name = sched.GetDateStart()
+						if sched.GetDateEnd() != "" {
+							name += " → " + sched.GetDateEnd()
+						}
+					}
+					entry.schedName = name
+				} else {
+					entry.schedName = "Unscheduled"
+				}
+				groupMap[groupKey] = entry
+				groupOrder = append(groupOrder, groupKey)
+			}
+
+			// Build option label: "Name · ₱15,000.00 PHP"
+			amount := float64(pp.GetBillingAmount()) / 100.0
+			currency := pp.GetBillingCurrency()
+			var label string
+			if currency != "" {
+				label = fmt.Sprintf("%s · ₱%s %s", displayName, formatAmount(amount), currency)
+			} else {
+				label = fmt.Sprintf("%s · ₱%s", displayName, formatAmount(amount))
+			}
+
+			groupMap[groupKey].options = append(groupMap[groupKey].options, searchOption{
 				Value: pp.GetId(),
 				Label: label,
 			})
+			totalOptions++
+		}
 
-			if len(results) >= searchResultLimit {
-				break
+		// Sort groups: by dateStart ascending then schedName; unscheduled last.
+		sort.SliceStable(groupOrder, func(i, j int) bool {
+			a := groupMap[groupOrder[i]]
+			b := groupMap[groupOrder[j]]
+			if a.schedID == "" && b.schedID != "" {
+				return false // unscheduled always last
 			}
+			if a.schedID != "" && b.schedID == "" {
+				return true
+			}
+			if a.dateStart != b.dateStart {
+				return a.dateStart < b.dateStart
+			}
+			return a.schedName < b.schedName
+		})
+
+		// Sort options within each group by display name ascending.
+		for _, entry := range groupMap {
+			sort.SliceStable(entry.options, func(i, j int) bool {
+				return entry.options[i].Label < entry.options[j].Label
+			})
 		}
 
-		if results == nil {
-			results = []searchOption{}
+		// Build result slice.
+		results := make([]groupedSearchResult, 0, len(groupOrder))
+		for _, key := range groupOrder {
+			entry := groupMap[key]
+			results = append(results, groupedSearchResult{
+				Group:   entry.schedName,
+				Options: entry.options,
+			})
 		}
+
 		writeJSON(w, results)
 	}
 }

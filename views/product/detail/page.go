@@ -49,8 +49,21 @@ type DetailViewDeps struct {
 	DeleteProductLine         func(ctx context.Context, req *productlinepb.DeleteProductLineRequest) (*productlinepb.DeleteProductLineResponse, error)
 	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 
+	// PermissionEntity is the first argument to perms.Can(entity, action) for
+	// the detail-page action buttons (edit, delete, variant assign). Defaults
+	// to "product". See centymo-golang/views/product/module.go ModuleDeps.
+	PermissionEntity string
+
 	attachment.AttachmentOps
 	auditlog.AuditOps
+}
+
+// permEntity returns the configured PermissionEntity with a safe default.
+func (d *DetailViewDeps) permEntity() string {
+	if d == nil || d.PermissionEntity == "" {
+		return "product"
+	}
+	return d.PermissionEntity
 }
 
 // PageData holds the data for the product detail page.
@@ -69,6 +82,14 @@ type PageData struct {
 	ProductStatus       string
 	StatusVariant       string
 	LineName            string // resolved name of the product's primary line (from product.line_id)
+	// Model D — display-formatted unit of measure and variant mode for the Info tab.
+	ProductUnit        string
+	ProductVariantMode string
+	// Label fallbacks surfaced to the template when lyngua doesn't supply
+	// Detail.Unit / Detail.VariantMode. Kept on PageData so the template can
+	// render a consistent label without sprinkling fallback strings in HTML.
+	UnitRowLabel        string
+	VariantModeRowLabel string
 	VariantsTable       *types.TableConfig
 	OptionsTable        *types.TableConfig
 	LinesTable          *types.TableConfig
@@ -191,7 +212,22 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	if currency == "" {
 		currency = "PHP"
 	}
-	priceFormatted := FormatPrice(currency, float64(product.GetPrice())/100.0)
+	// Model D — Product.price is optional. When variant_mode = "configurable",
+	// per-SKU pricing lives on ProductVariant.price_override and the detail
+	// card surfaces a localized "Varies" string instead of a number.
+	// Phase D will add the VariantPriceVaries label; the key is referenced
+	// here with a sensible English fallback for now.
+	var priceFormatted string
+	if product.GetVariantMode() == "configurable" {
+		priceFormatted = deps.Labels.Form.VariantPriceVaries
+		if priceFormatted == "" {
+			priceFormatted = "Varies"
+		}
+	} else if product.Price != nil {
+		priceFormatted = FormatPrice(currency, float64(product.GetPrice())/100.0)
+	} else {
+		priceFormatted = ""
+	}
 
 	productStatus := "active"
 	if !product.GetActive() {
@@ -231,8 +267,50 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	optionCount := getOptionCountTyped(ctx, deps, id)
 	lineCount, linesTable := buildLinesTable(ctx, deps, id)
 
+	// Model D — Info tab display strings for unit + variant mode.
+	// Falls back to English when lyngua hasn't overlaid the keys yet.
+	productUnit := product.GetUnit()
+	unitRowLabel := deps.Labels.Detail.Unit
+	if unitRowLabel == "" {
+		// Form.UnitLabel is already loaded from lyngua (see Phase D) — reuse as
+		// a working fallback until Detail.Unit translations land.
+		unitRowLabel = deps.Labels.Form.UnitLabel
+	}
+	if unitRowLabel == "" {
+		unitRowLabel = "Unit of measure"
+	}
+	variantModeRowLabel := deps.Labels.Detail.VariantMode
+	if variantModeRowLabel == "" {
+		variantModeRowLabel = deps.Labels.Form.VariantModeLabel
+	}
+	if variantModeRowLabel == "" {
+		variantModeRowLabel = "Variant Mode"
+	}
+	var productVariantModeDisplay string
+	switch product.GetVariantMode() {
+	case "configurable":
+		productVariantModeDisplay = deps.Labels.Form.VariantModeConfigurable
+		if productVariantModeDisplay == "" {
+			productVariantModeDisplay = "Configurable"
+		}
+	default:
+		productVariantModeDisplay = deps.Labels.Form.VariantModeNone
+		if productVariantModeDisplay == "" {
+			productVariantModeDisplay = "Simple"
+		}
+	}
+
 	l := deps.Labels
-	tabItems := buildTabItems(id, l, variantCount, optionCount, lineCount, deps.Routes)
+	// Model D — gate the Options and Variants tabs on Product.variant_mode.
+	// Simple products omit them entirely so the detail page stays clean.
+	//
+	// Bug 1 safeguard: Phase A's migration backfilled every pre-existing row
+	// with variant_mode="none" regardless of whether the product already had
+	// product_option / product_variant rows. Legacy / mis-migrated products
+	// would otherwise lose access to their existing configuration. Show the
+	// tabs when the product is configurable OR has any existing options/variants.
+	showVariantTabs := product.GetVariantMode() == "configurable" || optionCount > 0 || variantCount > 0
+	tabItems := buildTabItems(id, l, variantCount, optionCount, lineCount, deps.Routes, showVariantTabs)
 
 	pageData := &PageData{
 		PageData: types.PageData{
@@ -256,9 +334,13 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ProductDesc:     description,
 		ProductPrice:    priceFormatted,
 		ProductCurrency: currency,
-		ProductStatus:   productStatus,
-		StatusVariant:   StatusVariant,
-		LineName:        productLineName,
+		ProductStatus:       productStatus,
+		StatusVariant:       StatusVariant,
+		LineName:            productLineName,
+		ProductUnit:         productUnit,
+		ProductVariantMode:  productVariantModeDisplay,
+		UnitRowLabel:        unitRowLabel,
+		VariantModeRowLabel: variantModeRowLabel,
 	}
 
 	// Load tab-specific data
@@ -310,17 +392,27 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	return pageData, nil
 }
 
-func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount, lineCount int, routes centymo.ProductRoutes) []pyeza.TabItem {
+func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount, lineCount int, routes centymo.ProductRoutes, showVariantTabs bool) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
-	return []pyeza.TabItem{
+	items := []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info", Count: 0, Disabled: false},
-		{Key: "options", Label: l.Tabs.Options, Href: base + "?tab=options", HxGet: action + "options", Icon: "icon-settings", Count: optionCount, Disabled: false},
-		{Key: "variants", Label: l.Tabs.Variants, Href: base + "?tab=variants", HxGet: action + "variants", Icon: "icon-layers", Count: variantCount, Disabled: false},
-		{Key: "lines", Label: "Lines", Href: base + "?tab=lines", HxGet: action + "lines", Icon: "icon-layers", Count: lineCount, Disabled: false},
-		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
-		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
+	// Options + Variants tabs render when the product is variant-configurable
+	// OR has any existing option/variant rows (defensive for legacy rows whose
+	// variant_mode was not inferred during the Phase A migration backfill).
+	if showVariantTabs {
+		items = append(items,
+			pyeza.TabItem{Key: "options", Label: l.Tabs.Options, Href: base + "?tab=options", HxGet: action + "options", Icon: "icon-settings", Count: optionCount, Disabled: false},
+			pyeza.TabItem{Key: "variants", Label: l.Tabs.Variants, Href: base + "?tab=variants", HxGet: action + "variants", Icon: "icon-layers", Count: variantCount, Disabled: false},
+		)
+	}
+	items = append(items,
+		pyeza.TabItem{Key: "lines", Label: "Lines", Href: base + "?tab=lines", HxGet: action + "lines", Icon: "icon-layers", Count: lineCount, Disabled: false},
+		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
+		pyeza.TabItem{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+	)
+	return items
 }
 
 func buildLinesTable(ctx context.Context, deps *DetailViewDeps, productID string) (int, *types.TableConfig) {
@@ -709,7 +801,7 @@ func BuildVariantsTable(ctx context.Context, deps *DetailViewDeps, productID str
 						Type: "edit", Label: l.Variant.Edit, Action: "edit",
 						URL:             route.ResolveURL(deps.Routes.VariantEditURL, "id", productID, "vid", vid),
 						DrawerTitle:     l.Variant.Edit,
-						Disabled:        !perms.Can("product", "update"),
+						Disabled:        !perms.Can(deps.permEntity(), "update"),
 						DisabledTooltip: l.Errors.PermissionDenied,
 					},
 					{
@@ -718,7 +810,7 @@ func BuildVariantsTable(ctx context.Context, deps *DetailViewDeps, productID str
 						ItemName:        sku,
 						ConfirmTitle:    l.Variant.Remove,
 						ConfirmMessage:  fmt.Sprintf(l.Confirm.DeactivateMessage, sku),
-						Disabled:        !perms.Can("product", "delete"),
+						Disabled:        !perms.Can(deps.permEntity(), "delete"),
 						DisabledTooltip: l.Errors.PermissionDenied,
 					},
 				}
@@ -767,7 +859,7 @@ func BuildVariantsTable(ctx context.Context, deps *DetailViewDeps, productID str
 			Label:           l.Variant.Assign,
 			ActionURL:       route.ResolveURL(deps.Routes.VariantAssignURL, "id", productID),
 			Icon:            "icon-plus",
-			Disabled:        !perms.Can("product", "create"),
+			Disabled:        !perms.Can(deps.permEntity(), "create"),
 			DisabledTooltip: l.Errors.PermissionDenied,
 		},
 	}

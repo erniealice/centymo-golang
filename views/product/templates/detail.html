@@ -56,6 +56,14 @@
             <span class="detail-info-value">{{.ProductCurrency}}</span>
         </div>
         <div class="detail-info-item">
+            <span class="detail-info-label">{{.UnitRowLabel}}</span>
+            <span class="detail-info-value">{{if .ProductUnit}}{{.ProductUnit}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.VariantModeRowLabel}}</span>
+            <span class="detail-info-value">{{.ProductVariantMode}}</span>
+        </div>
+        <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
             <span>
                 <span class="badge badge--{{.StatusVariant}}">

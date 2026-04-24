@@ -36,6 +36,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     "Label" .Labels.PlanLabel
                     "Value" .PlanName
                     "Disabled" true
+                    "Info" .Labels.PlanInfo
                 )}}
             </div>
             <div class="form-row single">
@@ -61,6 +62,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     "Label" .Labels.ScheduleLabel
                     "Value" .ScheduleName
                     "Disabled" true
+                    "Info" .Labels.ScheduleInfo
                 )}}
             </div>
             <div class="form-row single">
@@ -113,6 +115,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Label" .Labels.NameLabel
                 "Value" .Name
                 "Placeholder" .Labels.NamePlaceholder
+                "Info" .Labels.NameInfo
             )}}
         </div>
         <div class="form-row single">
@@ -123,6 +126,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Value" .Description
                 "Placeholder" .Labels.DescriptionPlaceholder
                 "MaxLength" 500
+                "Info" .Labels.DescriptionInfo
             )}}
         </div>
 
@@ -148,6 +152,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Required" true
                 "Disabled" (and .IsEdit .InUse)
                 "Options" .BillingKindOptions
+                "Info" .Labels.BillingKindInfo
             )}}
             {{template "form-group" (dict
                 "Type" "select"
@@ -157,6 +162,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Required" true
                 "Disabled" (and .IsEdit .InUse)
                 "Options" .AmountBasisOptions
+                "Info" .Labels.AmountBasisInfo
             )}}
         </div>
 
@@ -171,6 +177,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Step" "0.01"
                 "Min" "0"
                 "Disabled" (and .IsEdit .InUse)
+                "Info" .Labels.AmountInfo
             )}}
             {{template "form-group" (dict
                 "Type" "select"
@@ -183,6 +190,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     (dict "Value" "PHP" "Label" .Labels.CurrencyPHP)
                     (dict "Value" "USD" "Label" .Labels.CurrencyUSD)
                 )
+                "Info" .Labels.CurrencyInfo
             )}}
         </div>
 
@@ -196,22 +204,16 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Min" "1"
                 "Placeholder" .Labels.BillingCyclePlaceholder
                 "Disabled" (and .IsEdit .InUse)
+                "Info" .Labels.BillingCycleInfo
             )}}
-            <div class="form-group">
-                <select
-                    id="billing_cycle_unit"
-                    name="billing_cycle_unit"
-                    class="form-select"
-                    aria-label="Billing cycle unit"
-                    data-testid="billing-cycle-unit-select"
-                    {{if and .IsEdit .InUse}}disabled{{end}}
-                >
-                    <option value="day"   {{if eq .BillingCycleUnit "day"}}selected{{end}}>{{.CommonLabels.DurationUnit.DaySelect}}</option>
-                    <option value="week"  {{if eq .BillingCycleUnit "week"}}selected{{end}}>{{.CommonLabels.DurationUnit.WeekSelect}}</option>
-                    <option value="month" {{if eq .BillingCycleUnit "month"}}selected{{end}}>{{.CommonLabels.DurationUnit.MonthSelect}}</option>
-                    <option value="year"  {{if eq .BillingCycleUnit "year"}}selected{{end}}>{{.CommonLabels.DurationUnit.YearSelect}}</option>
-                </select>
-            </div>
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "billing_cycle_unit"
+                "Label" .Labels.DurationUnitLabel
+                "Value" .BillingCycleUnit
+                "Options" .DurationUnitOptions
+                "Disabled" (and .IsEdit .InUse)
+            )}}
         </div>
 
         {{/* Default term (catalog default validity; null = open-ended) */}}
@@ -223,38 +225,46 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Value" .DefaultTermValue
                 "Min" "0"
                 "Placeholder" .Labels.DefaultTermPlaceholder
-                "HelpText" .Labels.DefaultTermOpenEndedHelp
+                "Info" .Labels.DefaultTermInfo
                 "Disabled" (and .IsEdit .InUse)
             )}}
-            <div class="form-group">
-                <select
-                    id="default_term_unit"
-                    name="default_term_unit"
-                    class="form-select"
-                    aria-label="Default term unit"
-                    data-testid="default-term-unit-select"
-                    {{if and .IsEdit .InUse}}disabled{{end}}
-                >
-                    <option value="day"   {{if eq .DefaultTermUnit "day"}}selected{{end}}>{{.CommonLabels.DurationUnit.DaySelect}}</option>
-                    <option value="week"  {{if eq .DefaultTermUnit "week"}}selected{{end}}>{{.CommonLabels.DurationUnit.WeekSelect}}</option>
-                    <option value="month" {{if eq .DefaultTermUnit "month"}}selected{{end}}>{{.CommonLabels.DurationUnit.MonthSelect}}</option>
-                    <option value="year"  {{if eq .DefaultTermUnit "year"}}selected{{end}}>{{.CommonLabels.DurationUnit.YearSelect}}</option>
-                </select>
-            </div>
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "default_term_unit"
+                "Label" .Labels.DurationUnitLabel
+                "Value" .DefaultTermUnit
+                "Options" .DurationUnitOptions
+                "Disabled" (and .IsEdit .InUse)
+            )}}
         </div>
 
         {{/* Legacy dual-write (Phase 1) — derived from billing_cycle, hidden from user */}}
         <input type="hidden" name="duration_value" value="{{.BillingCycleValue}}">
         <input type="hidden" name="duration_unit" value="{{.BillingCycleUnit}}">
 
-        {{/* Active toggle */}}
+        {{/* Active toggle — label (with info) above, switch below */}}
         <div class="form-row single">
-            {{template "toggle" (dict
-                "Name" "active"
-                "Label" .Labels.ActiveLabel
-                "Checked" .Active
-                "Value" "true"
-            )}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.ActiveLabel}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict
+                    "Name" "active"
+                    "Checked" .Active
+                    "Value" "true"
+                )}}
+            </div>
         </div>
     </div>
 

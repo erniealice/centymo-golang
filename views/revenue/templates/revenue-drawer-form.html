@@ -20,6 +20,7 @@ Used by both Add and Edit actions.
                 "Value" .ReferenceNumber
                 "Required" true
                 "Placeholder" .Labels.ReferencePlaceholder
+                "Info" .Labels.ReferenceInfo
             )}}
         </div>
 
@@ -30,6 +31,7 @@ Used by both Add and Edit actions.
                 "Label" .Labels.Date
                 "Value" .Date
                 "Required" true
+                "Info" .Labels.DateInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
@@ -37,6 +39,7 @@ Used by both Add and Edit actions.
                 "Label" .Labels.Currency
                 "Value" .Currency
                 "Placeholder" .Labels.Form.CurrencyPlaceholder
+                "Info" .Labels.CurrencyInfo
             )}}
         </div>
 
@@ -75,6 +78,7 @@ Used by both Add and Edit actions.
                 "SelectedLabel" .ClientLabel
                 "Required" true
                 "NoResults" .Labels.Form.CustomerNoResults
+                "Info" .Labels.CustomerInfo
             )}}
         </div>
 
@@ -91,6 +95,7 @@ Used by both Add and Edit actions.
                 "SelectedLabel" .LocationLabel
                 "Required" true
                 "NoResults" .Labels.Form.LocationNoResults
+                "Info" .Labels.LocationInfo
             )}}
         </div>
         </div>
@@ -106,6 +111,7 @@ Used by both Add and Edit actions.
                 "SelectedLabel" .SubscriptionLabel
                 "Required" false
                 "NoResults" .Labels.SubscriptionNoResults
+                "Info" .Labels.SubscriptionInfo
             )}}
         </div>
         <script>
@@ -277,6 +283,7 @@ Used by both Add and Edit actions.
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
+                "Info" .Labels.NotesInfo
             )}}
         </div>
     </div>

@@ -207,14 +207,14 @@ func NewAddAction(deps *Deps) view.View {
 
 		req := &priceplanpb.CreatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
-				PlanId:        r.FormValue("plan_id"),
-				Name:          &createName,
-				Description:   &createDescription,
-				Amount:        parseAmount(r.FormValue("amount")),
-				Currency:      r.FormValue("currency"),
-				DurationValue: int32(dv),                    // Phase 1 legacy dual-write
-				DurationUnit:  r.FormValue("duration_unit"), // Phase 1 legacy dual-write
-				Active:        active,
+				PlanId:          r.FormValue("plan_id"),
+				Name:            &createName,
+				Description:     &createDescription,
+				BillingAmount:   parseAmount(r.FormValue("amount")),
+				BillingCurrency: r.FormValue("currency"),
+				DurationValue:   int32(dv),                    // Phase 1 legacy dual-write
+				DurationUnit:    r.FormValue("duration_unit"), // Phase 1 legacy dual-write
+				Active:          active,
 			},
 		}
 		if scheduleID != "" {
@@ -298,8 +298,8 @@ func NewEditAction(deps *Deps) view.View {
 				ScheduleID:            selectedScheduleID,
 				Name:                  record.GetName(),
 				Description:           record.GetDescription(),
-				Amount:                formatAmount(record.GetAmount()),
-				Currency:              record.GetCurrency(),
+				Amount:                formatAmount(record.GetBillingAmount()),
+				Currency:              record.GetBillingCurrency(),
 				DurationValue:         fmt.Sprintf("%d", record.GetDurationValue()),
 				DurationUnit:          record.GetDurationUnit(),
 				Active:                record.GetActive(),
@@ -348,15 +348,15 @@ func NewEditAction(deps *Deps) view.View {
 
 		req := &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
-				Id:            id,
-				PlanId:        r.FormValue("plan_id"),
-				Name:          &editName,
-				Description:   &editDescription,
-				Amount:        parseAmount(r.FormValue("amount")),
-				Currency:      r.FormValue("currency"),
-				DurationValue: int32(dv),                    // Phase 1 legacy dual-write
-				DurationUnit:  r.FormValue("duration_unit"), // Phase 1 legacy dual-write
-				Active:        active,
+				Id:              id,
+				PlanId:          r.FormValue("plan_id"),
+				Name:            &editName,
+				Description:     &editDescription,
+				BillingAmount:   parseAmount(r.FormValue("amount")),
+				BillingCurrency: r.FormValue("currency"),
+				DurationValue:   int32(dv),                    // Phase 1 legacy dual-write
+				DurationUnit:    r.FormValue("duration_unit"), // Phase 1 legacy dual-write
+				Active:          active,
 			},
 		}
 		if scheduleID != "" {
@@ -462,8 +462,8 @@ func NewSetStatusAction(deps *Deps) view.View {
 		_, err = deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				Id: id, PlanId: record.GetPlanId(), Name: &statusName,
-				Description: &statusDescription, Amount: record.GetAmount(),
-				Currency: record.GetCurrency(), DurationValue: record.GetDurationValue(),
+				Description: &statusDescription, BillingAmount: record.GetBillingAmount(),
+				BillingCurrency: record.GetBillingCurrency(), DurationValue: record.GetDurationValue(),
 				DurationUnit: record.GetDurationUnit(), Active: status == "active",
 				PriceScheduleId: record.PriceScheduleId,
 			},
@@ -498,8 +498,8 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			_, _ = deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{
 				Data: &priceplanpb.PricePlan{
 					Id: id, PlanId: record.GetPlanId(), Name: &bulkName,
-					Description: &bulkDescription, Amount: record.GetAmount(),
-					Currency: record.GetCurrency(), DurationValue: record.GetDurationValue(),
+					Description: &bulkDescription, BillingAmount: record.GetBillingAmount(),
+					BillingCurrency: record.GetBillingCurrency(), DurationValue: record.GetDurationValue(),
 					DurationUnit: record.GetDurationUnit(), Active: status == "active",
 					PriceScheduleId: record.PriceScheduleId,
 				},

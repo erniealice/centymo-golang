@@ -1,7 +1,8 @@
 {{/*
 Product drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .Name, .Description, .Price, .Currency, .Active, .ID, .FormAction, .IsEdit, .CommonLabels
+Data: .Name, .Description, .Price, .Currency, .Active, .Unit, .VariantMode,
+      .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "product-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
@@ -15,6 +16,7 @@ Data: .Name, .Description, .Price, .Currency, .Active, .ID, .FormAction, .IsEdit
                 "Label" .Labels.Name
                 "Value" .Name
                 "Required" true
+                "Info" .Labels.NameInfo
             )}}
         </div>
 
@@ -25,6 +27,7 @@ Data: .Name, .Description, .Price, .Currency, .Active, .ID, .FormAction, .IsEdit
                 "Label" .Labels.Description
                 "Value" .Description
                 "Placeholder" .Labels.DescPlaceholder
+                "Info" .Labels.DescriptionInfo
             )}}
         </div>
 
@@ -36,35 +39,196 @@ Data: .Name, .Description, .Price, .Currency, .Active, .ID, .FormAction, .IsEdit
                 "Value" .LineID
                 "Placeholder" .Labels.LinePlaceholder
                 "Options" .LineOptions
+                "Info" .Labels.LineInfo
             )}}
         </div>
 
-        <div class="form-row">
+        {{/* --- Four-axis taxonomy selects --- */}}
+        {{/* Each axis is rendered disabled when its mount narrows the choice
+             set to a single value (services mount → product_kind="service",
+             supplies mount → "consumable"). A hidden input carries the value
+             because browsers drop disabled selects from the form submission. */}}
+        <div class="form-row single">
+            {{if eq (len .ProductKindOptions) 1}}
+            <input type="hidden" name="product_kind" value="{{.ProductKind}}">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "product_kind_display"
+                "Label" .Labels.ProductKindLabel
+                "Value" .ProductKind
+                "Options" .ProductKindOptions
+                "Disabled" true
+                "Info" .Labels.ProductKindInfo
+            )}}
+            {{else}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "product_kind"
+                "Label" .Labels.ProductKindLabel
+                "Value" .ProductKind
+                "Options" .ProductKindOptions
+                "Info" .Labels.ProductKindInfo
+            )}}
+            {{end}}
+        </div>
+
+        <div class="form-row single">
+            {{if eq (len .DeliveryModeOptions) 1}}
+            <input type="hidden" name="delivery_mode" value="{{.DeliveryMode}}">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "delivery_mode_display"
+                "Label" .Labels.DeliveryModeLabel
+                "Value" .DeliveryMode
+                "Options" .DeliveryModeOptions
+                "Disabled" true
+                "Info" .Labels.DeliveryModeInfo
+            )}}
+            {{else}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "delivery_mode"
+                "Label" .Labels.DeliveryModeLabel
+                "Value" .DeliveryMode
+                "Options" .DeliveryModeOptions
+                "Info" .Labels.DeliveryModeInfo
+            )}}
+            {{end}}
+        </div>
+
+        <div class="form-row single">
+            {{if eq (len .TrackingModeOptions) 1}}
+            <input type="hidden" name="tracking_mode" value="{{.TrackingMode}}">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "tracking_mode_display"
+                "Label" .Labels.TrackingModeLabel
+                "Value" .TrackingMode
+                "Options" .TrackingModeOptions
+                "Disabled" true
+                "Info" .Labels.TrackingModeInfo
+            )}}
+            {{else}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "tracking_mode"
+                "Label" .Labels.TrackingModeLabel
+                "Value" .TrackingMode
+                "Options" .TrackingModeOptions
+                "Info" .Labels.TrackingModeInfo
+            )}}
+            {{end}}
+        </div>
+
+        {{/* --- Variant Configurable toggle (canonical label+info+toggle pattern) --- */}}
+        <div class="form-row single">
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="variant_mode_toggle">
+                    {{.Labels.VariantModeLabel}}
+                    {{if .Labels.VariantModeInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.VariantModeInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{/* Hidden fallback. When the toggle is enabled, hidden posts
+                     "none" so last-wins picks "configurable" only when the
+                     toggle is checked. When the toggle is LOCKED, disabled
+                     checkboxes are excluded from submission, so hidden carries
+                     the stored value to prevent the UPDATE from clobbering. */}}
+                {{if not .CanToggleVariantMode}}
+                <input type="hidden" name="variant_mode" value="{{.VariantMode}}">
+                {{else}}
+                <input type="hidden" name="variant_mode" value="none">
+                {{end}}
+                {{template "toggle" (dict
+                    "Name" "variant_mode"
+                    "ID" "variant_mode_toggle"
+                    "Checked" (eq .VariantMode "configurable")
+                    "Value" "configurable"
+                    "Disabled" (not .CanToggleVariantMode)
+                )}}
+            </div>
+            {{if not .CanToggleVariantMode}}
+            <p class="form-hint">
+                {{if .Labels.VariantModeLockedHelp}}{{.Labels.VariantModeLockedHelp}}{{else}}Delete all variants and options first to change this setting.{{end}}
+            </p>
+            {{end}}
+        </div>
+
+        {{/* --- Unit of measure (free text, shown in both modes) --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "unit"
+                "Label" .Labels.UnitLabel
+                "Value" .Unit
+                "Placeholder" .Labels.UnitPlaceholder
+                "Info" .Labels.UnitInfo
+            )}}
+        </div>
+
+        {{/* --- Price row: hidden when variant_mode = "configurable" --- */}}
+        <div class="form-row" id="product-price-row" data-variant-mode="{{.VariantMode}}">
             {{template "form-group" (dict
                 "Type" "number"
                 "Name" "price"
                 "Label" .Labels.Price
                 "Value" .Price
-                "Required" true
+                "Info" .Labels.PriceInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
+                "Info" .Labels.CurrencyInfo
             )}}
         </div>
 
         <div class="form-row single">
-            {{template "toggle" (dict
-                "Name" "active"
-                "Label" .Labels.Active
-                "Checked" .Active
-                "Value" "true"
-            )}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
         </div>
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
+
+<script>
+(function() {
+    var toggle = document.getElementById('variant_mode_toggle');
+    var priceRow = document.getElementById('product-price-row');
+    if (!toggle || !priceRow) return;
+
+    function apply() {
+        // Toggle checked => variant_mode = "configurable" => hide price row.
+        priceRow.style.display = toggle.checked ? 'none' : '';
+    }
+
+    toggle.addEventListener('change', apply);
+    apply();
+})();
+</script>
 {{end}}

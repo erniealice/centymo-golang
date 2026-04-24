@@ -20,6 +20,12 @@ type FormLabels struct {
 	DescPlaceholder string
 	ProductId       string
 	UserId          string
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string
+	DescriptionInfo string
+	ProductIdInfo   string
+	UserIdInfo      string
 }
 
 // FormData is the template data for the resource drawer form.
@@ -53,6 +59,11 @@ func formLabels(l centymo.ResourceLabels) FormLabels {
 		DescPlaceholder: l.Form.DescPlaceholder,
 		ProductId:       l.Form.ProductId,
 		UserId:          l.Form.UserId,
+		// Info fields sourced from centymo.ResourceFormLabels (populated from lyngua JSON + defaults).
+		NameInfo:        l.Form.NameInfo,
+		DescriptionInfo: l.Form.DescriptionInfo,
+		ProductIdInfo:   l.Form.ProductIdInfo,
+		UserIdInfo:      l.Form.UserIdInfo,
 	}
 }
 

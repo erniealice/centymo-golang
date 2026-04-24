@@ -32,12 +32,10 @@ Data: .ProductID, .LineID, .SortOrder, .Active, .LineOptions, .ID, .FormAction,
 
         {{if .IsEdit}}
         <div class="form-row single">
-            {{template "toggle" (dict
-                "Name" "active"
-                "Label" .Labels.Active
-                "Checked" .Active
-                "Value" "true"
-            )}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">{{.Labels.Active}}</label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
         </div>
         {{end}}
     </div>

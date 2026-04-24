@@ -97,8 +97,21 @@ type DetailViewDeps struct {
 	// Storage uploader (for file content → object storage)
 	UploadImage func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
 
+	// PermissionEntity is the first argument to perms.Can(entity, action) for
+	// variant-assign / variant-edit / variant-remove actions. Defaults to
+	// "product". See centymo-golang/views/product/module.go ModuleDeps.
+	PermissionEntity string
+
 	attachment.AttachmentOps
 	auditlog.AuditOps
+}
+
+// permEntity returns the configured PermissionEntity with a safe default.
+func (d *DetailViewDeps) permEntity() string {
+	if d == nil || d.PermissionEntity == "" {
+		return "product"
+	}
+	return d.PermissionEntity
 }
 
 // loadOptionSelections loads all active product options with their values for the variant form dropdowns.

@@ -139,7 +139,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 	l := deps.Labels
 	columns := planColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
+	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -180,6 +180,17 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
 
+	var primaryAction *types.PrimaryAction
+	if status == "active" {
+		primaryAction = &types.PrimaryAction{
+			Label:           l.Buttons.AddPlan,
+			ActionURL:       deps.Routes.AddURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("plan", "create"),
+			DisabledTooltip: l.Errors.NoPermission,
+		}
+	}
+
 	tableConfig := &types.TableConfig{
 		ID:                   "plans-table",
 		RefreshURL:           refreshURL,
@@ -198,14 +209,8 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 			Title:   l.Empty.Title,
 			Message: l.Empty.Message,
 		},
-		PrimaryAction: &types.PrimaryAction{
-			Label:           l.Buttons.AddPlan,
-			ActionURL:       deps.Routes.AddURL,
-			Icon:            "icon-plus",
-			Disabled:        !perms.Can("plan", "create"),
-			DisabledTooltip: l.Errors.NoPermission,
-		},
-		BulkActions: &bulkCfg,
+		PrimaryAction: primaryAction,
+		BulkActions:   &bulkCfg,
 	}
 	types.ApplyTableSettings(tableConfig)
 
@@ -219,7 +224,7 @@ func planColumns(l centymo.PlanLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, routes centymo.PlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, cl pyeza.CommonLabels, routes centymo.PlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, p := range plans {
 		active := p.GetActive()
@@ -238,6 +243,15 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, r
 		}
 
 		if recordStatus == "active" {
+			actions = append(actions, types.TableAction{
+				Type:            "clone",
+				Label:           cl.Actions.Clone,
+				Action:          "clone",
+				URL:             route.ResolveURL(routes.EditURL, "id", id),
+				DrawerTitle:     cl.Actions.Clone,
+				Disabled:        !perms.Can("plan", "create"),
+				DisabledTooltip: l.Errors.NoPermission,
+			})
 			actions = append(actions, types.TableAction{
 				Type:            "deactivate",
 				Label:           l.Actions.Deactivate,

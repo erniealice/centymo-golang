@@ -18,6 +18,7 @@ import (
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
@@ -30,11 +31,12 @@ type DetailViewDeps struct {
 	Labels             centymo.PlanLabels
 	CommonLabels       pyeza.CommonLabels
 	TableLabels        types.TableLabels
-	ListProductPlans   func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
-	ListProducts       func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	ListPricePlans     func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
-	ListLocations      func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
-	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	ListProductPlans    func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProducts        func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ListPricePlans      func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListLocations       func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -296,6 +298,26 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 		}
 	}
 
+	// Model D — build variant_id → display label map so ProductPlan rows that
+	// carry a variant_id surface "Product Name (SKU)" instead of just the
+	// product name. Falls back to variant ID when SKU is missing.
+	variantLabels := map[string]string{}
+	if deps.ListProductVariants != nil {
+		vResp, err := deps.ListProductVariants(ctx, &productvariantpb.ListProductVariantsRequest{})
+		if err == nil {
+			for _, v := range vResp.GetData() {
+				if v == nil {
+					continue
+				}
+				label := v.GetSku()
+				if label == "" {
+					label = v.GetId()
+				}
+				variantLabels[v.GetId()] = label
+			}
+		}
+	}
+
 	rows := []types.TableRow{}
 
 	if deps.ListProductPlans != nil {
@@ -321,6 +343,15 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 			for _, pp := range ppResp.GetData() {
 				ppID := pp.GetId()
 				name := pp.GetName()
+
+				// Model D — append the variant label when the ProductPlan row
+				// carries a product_variant_id. Empty id = simple product; no
+				// suffix added.
+				if variantID := pp.GetProductVariantId(); variantID != "" {
+					if label := variantLabels[variantID]; label != "" {
+						name = fmt.Sprintf("%s (%s)", name, label)
+					}
+				}
 
 				active := pp.GetActive()
 				status := "active"
@@ -444,11 +475,11 @@ func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, pla
 				if name == "" {
 					name = planName
 				}
-				ppCurrency := pp.GetCurrency()
+				ppCurrency := pp.GetBillingCurrency()
 				if ppCurrency == "" {
 					ppCurrency = "PHP"
 				}
-				amountCell := types.MoneyCell(float64(pp.GetAmount()), ppCurrency, true)
+				amountCell := types.MoneyCell(float64(pp.GetBillingAmount()), ppCurrency, true)
 				duration := pyeza.FormatDuration(pp.GetDurationValue(), pp.GetDurationUnit(), deps.CommonLabels.DurationUnit)
 
 				scheduleName := "—"

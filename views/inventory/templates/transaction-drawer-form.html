@@ -13,6 +13,7 @@ Data: .FormAction, .Labels, .TypeOptions, .CommonLabels
                 "Value" ""
                 "Options" .TypeOptions
                 "Required" true
+                "Info" .Labels.TypeInfo
             )}}
         </div>
 
@@ -23,12 +24,14 @@ Data: .FormAction, .Labels, .TypeOptions, .CommonLabels
                 "Label" .Labels.Quantity
                 "Value" ""
                 "Required" true
+                "Info" .Labels.QuantityInfo
             )}}
             {{template "form-group" (dict
                 "Type" "date"
                 "Name" "transaction_date"
                 "Label" .Labels.Date
                 "Value" .Today
+                "Info" .Labels.DateInfo
             )}}
         </div>
 
@@ -38,6 +41,7 @@ Data: .FormAction, .Labels, .TypeOptions, .CommonLabels
                 "Name" "reference"
                 "Label" .Labels.Reference
                 "Value" ""
+                "Info" .Labels.ReferenceInfo
             )}}
         </div>
 

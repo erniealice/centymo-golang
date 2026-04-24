@@ -21,6 +21,7 @@ import (
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
+	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
@@ -73,6 +74,15 @@ type FormLabels struct {
 	ActivityIDs               string
 	ActivityIDsPlaceholder    string
 	Form                      FormInner
+
+	// Field-level info text surfaced via an info button beside each label.
+	ReferenceInfo    string
+	DateInfo         string
+	CustomerInfo     string
+	LocationInfo     string
+	SubscriptionInfo string
+	CurrencyInfo     string
+	NotesInfo        string
 }
 
 // FormData is the template data for the sales drawer form.
@@ -121,11 +131,15 @@ type Deps struct {
 	ListSubscriptions func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
 
 	// Subscription auto-populate (optional — gracefully degrades when nil)
-	ReadSubscription     func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
-	ReadPricePlan        func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	ReadSubscription      func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
+	ReadPricePlan         func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
-	ReadProduct          func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
-	ListProducts         func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	// Model D — ProductPricePlan references ProductPlan (catalog line), not a
+	// bare Product. To resolve the line item's product we list ProductPlans
+	// and look up via product_plan_id. Optional — degrades to no enrichment.
+	ListProductPlans func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ReadProduct      func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
+	ListProducts     func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 
 	// Typed revenue operations
 	CreateRevenue func(ctx context.Context, req *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error)
@@ -187,6 +201,13 @@ func formLabels(t func(string) string) FormLabels {
 			LocationSearchPlaceholder: t("revenue.form.locationSearchPlaceholder"),
 			LocationNoResults:         t("revenue.form.locationNoResults"),
 		},
+		ReferenceInfo:    t("revenue.form.referenceInfo"),
+		DateInfo:         t("revenue.form.dateInfo"),
+		CustomerInfo:     t("revenue.form.customerInfo"),
+		LocationInfo:     t("revenue.form.locationInfo"),
+		SubscriptionInfo: t("revenue.form.subscriptionInfo"),
+		CurrencyInfo:     t("revenue.form.currencyInfo"),
+		NotesInfo:        t("revenue.form.notesInfo"),
 	}
 }
 
@@ -417,12 +438,36 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 	}
 
 	if len(items) > 0 && deps.CreateRevenueLineItem != nil {
+		// Model D — ProductPricePlan → ProductPlan → Product. Build a
+		// product_plan_id → product_id map once so we can resolve line item
+		// products without N+1 ReadProductPlan calls.
+		productPlanToProduct := map[string]string{}
+		if deps.ListProductPlans != nil {
+			if ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{}); err == nil {
+				for _, pp := range ppResp.GetData() {
+					if pp != nil {
+						productPlanToProduct[pp.GetId()] = pp.GetProductId()
+					}
+				}
+			}
+		}
+
 		// Itemized mode — one line item per ProductPricePlan
 		for _, ppp := range items {
+			// Prefer the embedded ProductPlan (when the adapter populates it);
+			// fall back to the lookup map resolved above.
+			productID := ""
+			if embed := ppp.GetProductPlan(); embed != nil {
+				productID = embed.GetProductId()
+			}
+			if productID == "" {
+				productID = productPlanToProduct[ppp.GetProductPlanId()]
+			}
+
 			desc := "Subscription item"
-			if deps.ReadProduct != nil {
+			if productID != "" && deps.ReadProduct != nil {
 				prodResp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{
-					Data: &productpb.Product{Id: ppp.GetProductId()},
+					Data: &productpb.Product{Id: productID},
 				})
 				if err == nil && prodResp.GetData() != nil && len(prodResp.GetData()) > 0 {
 					if name := prodResp.GetData()[0].GetName(); name != "" {
@@ -431,8 +476,7 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 				}
 			}
 
-			price := ppp.GetPrice()
-			productID := ppp.GetProductId()
+			price := ppp.GetBillingAmount()
 			pppID := ppp.GetId()
 
 			_, err := deps.CreateRevenueLineItem(ctx, &revenuelineitempb.CreateRevenueLineItemRequest{
@@ -461,7 +505,7 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 			return
 		}
 		pp := ppResp.GetData()[0]
-		amount := pp.GetAmount()
+		amount := pp.GetBillingAmount()
 		name := pp.GetName()
 		if name == "" {
 			name = "Subscription"

@@ -34,6 +34,19 @@ type ListViewDeps struct {
 	Labels       centymo.ProductLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+	// PermissionEntity is the first argument to perms.Can(entity, action) on
+	// the list view's primary/row/bulk action buttons. Defaults to "product".
+	// See centymo-golang/views/product/module.go ModuleDeps.PermissionEntity.
+	PermissionEntity string
+}
+
+// permEntity returns the configured PermissionEntity with a safe default so
+// the disabled-state logic never nil-guards.
+func (d *ListViewDeps) permEntity() string {
+	if d == nil || d.PermissionEntity == "" {
+		return "product"
+	}
+	return d.PermissionEntity
 }
 
 // modeProductKinds maps a ListViewDeps.Mode value to the set of
@@ -41,9 +54,10 @@ type ListViewDeps struct {
 // Zero-value ("") maps to the service behaviour so that callers which
 // do not set Mode continue to see service products.
 var modeProductKinds = map[string][]string{
-	"":          {"service"},                                    // zero-value = service behaviour
-	"service":   {"service"},                                    // explicit service mount
-	"inventory": {"stocked_good", "non_stocked_good", "consumable"}, // inventory-flavoured mount
+	"":          {"service"},                         // zero-value = service behaviour
+	"service":   {"service"},                         // explicit service mount
+	"inventory": {"stocked_good", "non_stocked_good"}, // resold goods only
+	"supplies":  {"consumable"},                      // consumables used in service delivery
 }
 
 // PageData holds the data for the product list page.
@@ -208,7 +222,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 	l := deps.Labels
 	columns := productColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms, lineNameByID)
+	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, deps.permEntity(), lineNameByID)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -266,6 +280,17 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 	sp.BuildDisplay()
 
+	var primaryAction *types.PrimaryAction
+	if status == "active" {
+		primaryAction = &types.PrimaryAction{
+			Label:           l.Buttons.AddProduct,
+			ActionURL:       deps.Routes.AddURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can(deps.permEntity(), "create"),
+			DisabledTooltip: l.Errors.PermissionDenied,
+		}
+	}
+
 	tableConfig := &types.TableConfig{
 		ID:                   "products-table",
 		RefreshURL:           refreshURL,
@@ -286,13 +311,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 			Title:   statusEmptyTitle(l, status),
 			Message: statusEmptyMessage(l, status),
 		},
-		PrimaryAction: &types.PrimaryAction{
-			Label:           l.Buttons.AddProduct,
-			ActionURL:       deps.Routes.AddURL,
-			Icon:            "icon-plus",
-			Disabled:        !perms.Can("product", "create"),
-			DisabledTooltip: l.Errors.PermissionDenied,
-		},
+		PrimaryAction:    primaryAction,
 		BulkActions:      &bulkCfg,
 		ServerPagination: sp,
 	}
@@ -311,7 +330,7 @@ func productColumns(l centymo.ProductLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(products []*productpb.Product, status string, l centymo.ProductLabels, routes centymo.ProductRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, lineNameByID map[string]string) []types.TableRow {
+func buildTableRows(products []*productpb.Product, status string, l centymo.ProductLabels, cl pyeza.CommonLabels, routes centymo.ProductRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, permEntity string, lineNameByID map[string]string) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, p := range products {
 		active := p.GetActive()
@@ -338,16 +357,25 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 			deleteAction.Disabled = true
 			deleteAction.DisabledTooltip = l.Errors.CannotDelete
 		}
-		if !perms.Can("product", "delete") {
+		if !perms.Can(permEntity, "delete") {
 			deleteAction.Disabled = true
 			deleteAction.DisabledTooltip = l.Errors.PermissionDenied
 		}
 
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("product", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can(permEntity, "update"), DisabledTooltip: l.Errors.PermissionDenied},
 		}
 		if recordStatus == "active" {
+			actions = append(actions, types.TableAction{
+				Type:            "clone",
+				Label:           cl.Actions.Clone,
+				Action:          "clone",
+				URL:             route.ResolveURL(routes.EditURL, "id", id),
+				DrawerTitle:     cl.Actions.Clone,
+				Disabled:        !perms.Can(permEntity, "create"),
+				DisabledTooltip: l.Errors.PermissionDenied,
+			})
 			actions = append(actions, types.TableAction{
 				Type:            "deactivate",
 				Label:           l.Status.Deactivate,
@@ -356,7 +384,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 				ItemName:        name,
 				ConfirmTitle:    l.Status.Deactivate,
 				ConfirmMessage:  fmt.Sprintf(l.Confirm.DeactivateMessage, name),
-				Disabled:        !perms.Can("product", "update"),
+				Disabled:        !perms.Can(permEntity, "update"),
 				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 		} else {
@@ -368,7 +396,7 @@ func buildTableRows(products []*productpb.Product, status string, l centymo.Prod
 				ItemName:        name,
 				ConfirmTitle:    l.Status.Activate,
 				ConfirmMessage:  fmt.Sprintf(l.Confirm.ActivateMessage, name),
-				Disabled:        !perms.Can("product", "update"),
+				Disabled:        !perms.Can(permEntity, "update"),
 				DisabledTooltip: l.Errors.PermissionDenied,
 			})
 		}

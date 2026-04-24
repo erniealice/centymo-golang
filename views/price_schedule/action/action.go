@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -130,13 +131,24 @@ func NewAddAction(deps *Deps) view.View {
 	})
 }
 
+// NewEditAction creates the price-schedule edit action (GET = form, POST = update).
+// When the GET request includes ?clone=1, the handler returns the drawer form
+// pre-populated from the source record but wired to AddURL (submission creates
+// a new price schedule) with " (Copy)" appended to the name.
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("price_schedule", "update") {
+		id := viewCtx.Request.PathValue("id")
+		isClone := viewCtx.Request.Method == http.MethodGet && viewCtx.Request.URL.Query().Get("clone") == "1"
+
+		requiredAction := "update"
+		if isClone {
+			requiredAction = "create"
+		}
+		if !perms.Can("price_schedule", requiredAction) {
 			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
-		id := viewCtx.Request.PathValue("id")
+
 		if viewCtx.Request.Method == http.MethodGet {
 			resp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}})
 			if err != nil || len(resp.GetData()) == 0 {
@@ -145,11 +157,20 @@ func NewEditAction(deps *Deps) view.View {
 			record := resp.GetData()[0]
 			locations := loadLocations(ctx, deps)
 			selectedLocationID := record.GetLocationId()
+
+			name := record.GetName()
+			formAction := route.ResolveURL(deps.Routes.EditURL, "id", id)
+			formID := id
+			if isClone {
+				name = strings.TrimSpace(name) + viewCtx.T("actions.copySuffix")
+				formAction = deps.Routes.AddURL
+				formID = ""
+			}
 			return view.OK("price-schedule-drawer-form", &FormData{
-				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:                true,
-				ID:                    id,
-				Name:                  record.GetName(),
+				FormAction:            formAction,
+				IsEdit:                !isClone,
+				ID:                    formID,
+				Name:                  name,
 				Description:           record.GetDescription(),
 				DateStart:             record.GetDateStart(),
 				DateEnd:               record.GetDateEnd(),

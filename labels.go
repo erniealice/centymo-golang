@@ -70,6 +70,16 @@ type InventoryFormLabels struct {
 	Notes            string `json:"notes"`
 	NotesPlaceholder string `json:"notesPlaceholder"`
 	Active           string `json:"active"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	ProductInfo       string `json:"productInfo"`
+	SKUInfo           string `json:"skuInfo"`
+	OnHandInfo        string `json:"onHandInfo"`
+	ReservedInfo      string `json:"reservedInfo"`
+	ReorderLevelInfo  string `json:"reorderLevelInfo"`
+	UnitOfMeasureInfo string `json:"unitOfMeasureInfo"`
+	NotesInfo         string `json:"notesInfo"`
+	ActiveInfo        string `json:"activeInfo"`
 }
 
 type InventoryActionLabels struct {
@@ -173,6 +183,27 @@ type TrackingModeLabels struct {
 	Serialized string `json:"serialized"`
 }
 
+// ProductKindLabels holds the translated labels for each product_kind enum
+// value. Sourced from lyngua product.json "productKind" block. Wired onto
+// ProductLabels so the drawer-form select can render the per-value labels
+// using the exact tier-cascaded strings that appear elsewhere in the UI.
+type ProductKindLabels struct {
+	Service        string `json:"service"`
+	StockedGood    string `json:"stockedGood"`
+	NonStockedGood string `json:"nonStockedGood"`
+	Consumable     string `json:"consumable"`
+}
+
+// DeliveryModeLabels mirrors ProductKindLabels for the delivery_mode axis.
+type DeliveryModeLabels struct {
+	Instant      string `json:"instant"`
+	Scheduled    string `json:"scheduled"`
+	Shipped      string `json:"shipped"`
+	Digital      string `json:"digital"`
+	Project      string `json:"project"`
+	Subscription string `json:"subscription"`
+}
+
 type InventoryStatusLabels struct {
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
@@ -196,6 +227,15 @@ type InventorySerialLabels struct {
 	StatusReserved  string `json:"statusReserved"`
 	StatusDefective string `json:"statusDefective"`
 	StatusReturned  string `json:"statusReturned"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	SerialNumberInfo  string `json:"serialNumberInfo"`
+	IMEIInfo          string `json:"imeiInfo"`
+	StatusInfo        string `json:"statusInfo"`
+	WarrantyStartInfo string `json:"warrantyStartInfo"`
+	WarrantyEndInfo   string `json:"warrantyEndInfo"`
+	PurchaseOrderInfo string `json:"purchaseOrderInfo"`
+	SoldReferenceInfo string `json:"soldReferenceInfo"`
 }
 
 type InventoryTransactionLabels struct {
@@ -213,6 +253,12 @@ type InventoryTransactionLabels struct {
 	TypeTransferred string `json:"typeTransferred"`
 	TypeReturned    string `json:"typeReturned"`
 	TypeWriteOff    string `json:"typeWriteOff"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	TypeInfo      string `json:"typeInfo"`
+	QuantityInfo  string `json:"quantityInfo"`
+	DateInfo      string `json:"dateInfo"`
+	ReferenceInfo string `json:"referenceInfo"`
 }
 
 type InventoryDepreciationLabels struct {
@@ -231,6 +277,13 @@ type InventoryDepreciationLabels struct {
 	MethodDecliningBalance string `json:"methodDecliningBalance"`
 	MethodSumOfYears       string `json:"methodSumOfYears"`
 	MonthsUnit             string `json:"monthsUnit"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	MethodInfo       string `json:"methodInfo"`
+	CostBasisInfo    string `json:"costBasisInfo"`
+	SalvageValueInfo string `json:"salvageValueInfo"`
+	UsefulLifeInfo   string `json:"usefulLifeInfo"`
+	StartDateInfo    string `json:"startDateInfo"`
 }
 
 type InventoryDashboardLabels struct {
@@ -390,6 +443,15 @@ type RevenueFormLabels struct {
 	SelectInventoryItem            string `json:"selectInventoryItem"`
 	ItemDescriptionPlaceholder     string `json:"itemDescriptionPlaceholder"`
 	DiscountDescriptionPlaceholder string `json:"discountDescriptionPlaceholder"`
+
+	// Field-level info text for the payment drawer form.
+	PaymentMethodInfo   string `json:"paymentMethodInfo"`
+	AmountInfo          string `json:"amountInfo"`
+	CurrencyInfo        string `json:"currencyInfo"`
+	ReferenceNumberInfo string `json:"referenceNumberInfo"`
+	ReceivedByInfo      string `json:"receivedByInfo"`
+	RoleInfo            string `json:"roleInfo"`
+	NotesInfo           string `json:"notesInfo"`
 }
 
 type RevenueActionLabels struct {
@@ -482,6 +544,15 @@ type RevenueDetailLabels struct {
 	ItemEmptyTitle             string `json:"itemEmptyTitle"`
 	ItemEmptyMessage           string `json:"itemEmptyMessage"`
 
+	// Field-level info text for the line-item drawer form.
+	ProductInfo     string `json:"productInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
+	QuantityInfo    string `json:"quantityInfo"`
+	UnitPriceInfo   string `json:"unitPriceInfo"`
+	CostPriceInfo   string `json:"costPriceInfo"`
+	DiscountInfo    string `json:"discountInfo"`
+	NotesInfo       string `json:"notesInfo"`
+
 	// Payment tab
 	TotalPaid                  string `json:"totalPaid"`
 	Remaining                  string `json:"remaining"`
@@ -565,22 +636,29 @@ type RevenueSettingsLabels struct {
 
 // ProductLabels holds all translatable strings for the product module.
 type ProductLabels struct {
-	Page       ProductPageLabels       `json:"page"`
-	Buttons    ProductButtonLabels     `json:"buttons"`
-	Columns    ProductColumnLabels     `json:"columns"`
-	Empty      ProductEmptyLabels      `json:"empty"`
-	Form       ProductFormLabels       `json:"form"`
-	Actions    ProductActionLabels     `json:"actions"`
-	Bulk       ProductBulkLabels       `json:"bulkActions"`
-	Tabs       ProductTabLabels        `json:"tabs"`
-	Detail     ProductDetailLabels     `json:"detail"`
-	Status     ProductStatusLabels     `json:"status"`
-	Variant    ProductVariantLabels    `json:"variant"`
-	Attribute  ProductAttributeLabels  `json:"attribute"`
-	Options    ProductOptionLabels     `json:"options"`
-	Confirm    ProductConfirmLabels    `json:"confirm"`
-	Errors     ProductErrorLabels      `json:"errors"`
-	Breadcrumb ProductBreadcrumbLabels `json:"breadcrumb"`
+	Page         ProductPageLabels       `json:"page"`
+	Buttons      ProductButtonLabels     `json:"buttons"`
+	Columns      ProductColumnLabels     `json:"columns"`
+	Empty        ProductEmptyLabels      `json:"empty"`
+	Form         ProductFormLabels       `json:"form"`
+	Actions      ProductActionLabels     `json:"actions"`
+	Bulk         ProductBulkLabels       `json:"bulkActions"`
+	Tabs         ProductTabLabels        `json:"tabs"`
+	Detail       ProductDetailLabels     `json:"detail"`
+	Status       ProductStatusLabels     `json:"status"`
+	Variant      ProductVariantLabels    `json:"variant"`
+	Attribute    ProductAttributeLabels  `json:"attribute"`
+	Options      ProductOptionLabels     `json:"options"`
+	Confirm      ProductConfirmLabels    `json:"confirm"`
+	Errors       ProductErrorLabels      `json:"errors"`
+	Breadcrumb   ProductBreadcrumbLabels `json:"breadcrumb"`
+	// Four-axis product taxonomy enum labels — loaded from lyngua
+	// product.json "productKind"/"deliveryMode"/"trackingMode" blocks.
+	// Wired here so the drawer-form select uses the exact tier-cascaded
+	// display string for each enum value without hardcoding in Go.
+	ProductKind  ProductKindLabels  `json:"productKind"`
+	DeliveryMode DeliveryModeLabels `json:"deliveryMode"`
+	TrackingMode TrackingModeLabels `json:"trackingMode"`
 }
 
 type ProductPageLabels struct {
@@ -630,6 +708,45 @@ type ProductFormLabels struct {
 	Option                   string `json:"option"`
 	SelectAttribute          string `json:"selectAttribute"`
 	AllAttributesAssigned    string `json:"allAttributesAssigned"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string `json:"nameInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
+	LineInfo        string `json:"lineInfo"`
+	PriceInfo       string `json:"priceInfo"`
+	CurrencyInfo    string `json:"currencyInfo"`
+	ActiveInfo      string `json:"activeInfo"`
+
+	// Model D — variant_mode toggle + unit field
+	VariantModeLabel        string `json:"variantModeLabel"`
+	VariantModeInfo         string `json:"variantModeInfo"`
+	VariantModeNone         string `json:"variantModeNone"`
+	VariantModeConfigurable string `json:"variantModeConfigurable"`
+	UnitLabel               string `json:"unitLabel"`
+	UnitInfo                string `json:"unitInfo"`
+	UnitPlaceholder         string `json:"unitPlaceholder"`
+	VariantPriceVaries      string `json:"variantPriceVaries"`
+	// Shown as help text beneath the variant toggle when the product already
+	// has option or variant rows, to explain why the toggle is disabled.
+	VariantModeLockedHelp string `json:"variantModeLockedHelp"`
+	// Error surfaced by the Create/Update handlers when a caller tries to
+	// flip variant_mode on a product that still has options/variants.
+	VariantModeLockedError string `json:"variantModeLockedError"`
+
+	// Four-axis product taxonomy — rendered as selects on the drawer form.
+	// Each axis carries its own Label + Info popover text plus per-enum-value
+	// Info (XxxValueInfo map) keyed by enum string. When the mount restricts
+	// the axis to one allowed value the select is rendered disabled so the
+	// user still sees the classification without being able to change it.
+	ProductKindLabel      string            `json:"productKindLabel"`
+	ProductKindInfo       string            `json:"productKindInfo"`
+	ProductKindValueInfo  map[string]string `json:"productKindValueInfo,omitempty"`
+	DeliveryModeLabel     string            `json:"deliveryModeLabel"`
+	DeliveryModeInfo      string            `json:"deliveryModeInfo"`
+	DeliveryModeValueInfo map[string]string `json:"deliveryModeValueInfo,omitempty"`
+	TrackingModeLabel     string            `json:"trackingModeLabel"`
+	TrackingModeInfo      string            `json:"trackingModeInfo"`
+	TrackingModeValueInfo map[string]string `json:"trackingModeValueInfo,omitempty"`
 }
 
 type ProductActionLabels struct {
@@ -665,6 +782,10 @@ type ProductDetailLabels struct {
 	Status               string `json:"status"`
 	OptionsLabel         string `json:"optionsLabel"`
 	EmptyVariantsMessage string `json:"emptyVariantsMessage"`
+	// Model D — detail-page rows for unit of measure + variant mode.
+	// Falls back to English defaults when lyngua doesn't overlay the key.
+	Unit        string `json:"unit"`
+	VariantMode string `json:"variantMode"`
 	// Serial table columns
 	SerialNumber       string `json:"serialNumber"`
 	IMEI               string `json:"imei"`
@@ -815,6 +936,15 @@ type ProductOptionFormLabels struct {
 	InitialValuesPlaceholder string `json:"initialValuesPlaceholder"`
 	Required                string `json:"required"`
 	Form                    ProductOptionFormInnerLabels `json:"form"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo      string `json:"nameInfo"`
+	CodeInfo      string `json:"codeInfo"`
+	DataTypeInfo  string `json:"dataTypeInfo"`
+	MinValueInfo  string `json:"minValueInfo"`
+	MaxValueInfo  string `json:"maxValueInfo"`
+	SortOrderInfo string `json:"sortOrderInfo"`
+	ActiveInfo    string `json:"activeInfo"`
 }
 
 // ProductOptionFormInnerLabels holds nested form labels referenced by the template as .Labels.Form.*
@@ -855,6 +985,13 @@ type ProductOptionValueFormLabels struct {
 	ColorHex            string `json:"colorHex"`
 	ColorHexPlaceholder string `json:"colorHexPlaceholder"`
 	Active              string `json:"active"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	LabelInfo     string `json:"labelInfo"`
+	ValueInfo     string `json:"valueInfo"`
+	SortOrderInfo string `json:"sortOrderInfo"`
+	ColorHexInfo  string `json:"colorHexInfo"`
+	ActiveInfo    string `json:"activeInfo"`
 }
 
 type ProductOptionActionLabels struct {
@@ -935,6 +1072,16 @@ type PriceListFormLabels struct {
 	SelectProduct   string `json:"selectProduct"`
 	Amount          string `json:"amount"`
 	Currency        string `json:"currency"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string `json:"nameInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
+	DateStartInfo   string `json:"dateStartInfo"`
+	DateEndInfo     string `json:"dateEndInfo"`
+	ActiveInfo      string `json:"activeInfo"`
+	// Price-product sub-drawer info fields.
+	AmountInfo   string `json:"amountInfo"`
+	CurrencyInfo string `json:"currencyInfo"`
 }
 
 type PriceListActionLabels struct {
@@ -1023,7 +1170,9 @@ type ProductLinePageLabels struct {
 }
 
 type ProductLineButtonLabels struct {
-	AddProductLine string `json:"addProductLine"`
+	AddProductLine    string `json:"addProductLine"`
+	EditProductLine   string `json:"editProductLine"`
+	DeleteProductLine string `json:"deleteProductLine"`
 }
 
 type ProductLineColumnLabels struct {
@@ -1080,6 +1229,11 @@ type ProductLineFormLabels struct {
 	StatusPending           string `json:"statusPending"`
 	StatusCompleted         string `json:"statusCompleted"`
 	StatusFailed            string `json:"statusFailed"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string `json:"nameInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
+	ActiveInfo      string `json:"activeInfo"`
 }
 
 type ProductLineActionLabels struct {
@@ -1178,7 +1332,9 @@ func DefaultProductLineLabels() ProductLineLabels {
 			CaptionFailed:    "Failed product lines",
 		},
 		Buttons: ProductLineButtonLabels{
-			AddProductLine: "Add Product Line",
+			AddProductLine:    "Add Product Line",
+			EditProductLine:   "Edit Product Line",
+			DeleteProductLine: "Delete Product Line",
 		},
 		Columns: ProductLineColumnLabels{
 			Name:        "Name",
@@ -1232,6 +1388,10 @@ func DefaultProductLineLabels() ProductLineLabels {
 			StatusPending:           "Pending",
 			StatusCompleted:         "Completed",
 			StatusFailed:            "Failed",
+			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
+			NameInfo:        "Display name for this product line.",
+			DescriptionInfo: "Optional notes about this product line.",
+			ActiveInfo:      "Inactive product lines are hidden from new assignments.",
 		},
 		Actions: ProductLineActionLabels{
 			View:         "View",
@@ -1373,6 +1533,11 @@ type ExpenditureCategoryFormLabels struct {
 	Code        string `json:"code"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	CodeInfo        string `json:"codeInfo"`
+	NameInfo        string `json:"nameInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
 }
 
 type ExpenditureCategoryActionLabels struct {
@@ -1501,6 +1666,17 @@ type ExpenditureFormLabels struct {
 	SectionVendor              string `json:"sectionVendor"`
 	SectionPayment             string `json:"sectionPayment"`
 	SectionNotes               string `json:"sectionNotes"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo            string `json:"nameInfo"`
+	ExpenditureTypeInfo string `json:"expenditureTypeInfo"`
+	CategoryInfo        string `json:"categoryInfo"`
+	DateInfo            string `json:"dateInfo"`
+	AmountInfo          string `json:"amountInfo"`
+	CurrencyInfo        string `json:"currencyInfo"`
+	ReferenceNumberInfo string `json:"referenceNumberInfo"`
+	SupplierInfo        string `json:"supplierInfo"`
+	NotesInfo           string `json:"notesInfo"`
 }
 
 type ExpenditureStatusLabels struct {
@@ -1768,6 +1944,18 @@ type PurchaseOrderFormLabels struct {
 	SectionSupplier          string `json:"sectionSupplier"`
 	SectionFinancials        string `json:"sectionFinancials"`
 	SectionNotes             string `json:"sectionNotes"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	PONumberInfo          string `json:"poNumberInfo"`
+	POTypeInfo            string `json:"poTypeInfo"`
+	SupplierInfo          string `json:"supplierInfo"`
+	OrderDateInfo         string `json:"orderDateInfo"`
+	ExpectedDeliveryInfo  string `json:"expectedDeliveryInfo"`
+	CurrencyInfo          string `json:"currencyInfo"`
+	PaymentTermsInfo      string `json:"paymentTermsInfo"`
+	ShippingTermsInfo     string `json:"shippingTermsInfo"`
+	ReferenceNumberInfo   string `json:"referenceNumberInfo"`
+	NotesInfo             string `json:"notesInfo"`
 }
 
 type PurchaseOrderStatusLabels struct {
@@ -1993,6 +2181,16 @@ type CollectionFormLabels struct {
 	StatusPending           string `json:"statusPending"`
 	StatusCompleted         string `json:"statusCompleted"`
 	StatusFailed            string `json:"statusFailed"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	ReferenceInfo    string `json:"referenceInfo"`
+	CustomerInfo     string `json:"customerInfo"`
+	AmountInfo       string `json:"amountInfo"`
+	CurrencyInfo     string `json:"currencyInfo"`
+	PaymentMethodInfo string `json:"paymentMethodInfo"`
+	DateInfo         string `json:"dateInfo"`
+	StatusInfo       string `json:"statusInfo"`
+	NotesInfo        string `json:"notesInfo"`
 }
 
 type CollectionActionLabels struct {
@@ -2117,6 +2315,15 @@ func DefaultCollectionLabels() CollectionLabels {
 			StatusPending:           "Pending",
 			StatusCompleted:         "Completed",
 			StatusFailed:            "Failed",
+			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
+			ReferenceInfo:     "Unique reference number for this collection record.",
+			CustomerInfo:      "Name of the customer or payer.",
+			AmountInfo:        "Total amount collected (in centavos; displayed as amount ÷ 100).",
+			CurrencyInfo:      "Currency of the collected amount.",
+			PaymentMethodInfo: "How the payment was received.",
+			DateInfo:          "Date the payment was collected.",
+			StatusInfo:        "Current state of this collection record.",
+			NotesInfo:         "Internal remarks — not shown on customer-facing documents.",
 		},
 		Actions: CollectionActionLabels{
 			View:         "View",
@@ -2275,6 +2482,18 @@ type DisbursementFormLabels struct {
 	TypeOther               string `json:"typeOther"`
 	ApproverNamePlaceholder string `json:"approverNamePlaceholder"`
 	LinkToBill              string `json:"linkToBill"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	ReferenceInfo    string `json:"referenceInfo"`
+	DateInfo         string `json:"dateInfo"`
+	PayeeInfo        string `json:"payeeInfo"`
+	AmountInfo       string `json:"amountInfo"`
+	CurrencyInfo     string `json:"currencyInfo"`
+	PaymentMethodInfo string `json:"paymentMethodInfo"`
+	StatusInfo       string `json:"statusInfo"`
+	CategoryInfo     string `json:"categoryInfo"`
+	ApprovedByInfo   string `json:"approvedByInfo"`
+	NotesInfo        string `json:"notesInfo"`
 }
 
 type DisbursementActionLabels struct {
@@ -2437,6 +2656,17 @@ func DefaultDisbursementLabels() DisbursementLabels {
 			TypeOther:               "Other",
 			ApproverNamePlaceholder: "Approver name",
 			LinkToBill:              "Link to Bill",
+			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
+			ReferenceInfo:     "Unique reference number for this disbursement.",
+			DateInfo:          "Date the disbursement was issued.",
+			PayeeInfo:         "Name of the recipient (supplier, payroll, etc.).",
+			AmountInfo:        "Total amount disbursed (in centavos; displayed as amount ÷ 100).",
+			CurrencyInfo:      "Currency of the disbursed amount.",
+			PaymentMethodInfo: "How the payment was made.",
+			StatusInfo:        "Current state of this disbursement.",
+			CategoryInfo:      "Type of disbursement for categorisation and reporting.",
+			ApprovedByInfo:    "Name of the person who authorised this disbursement.",
+			NotesInfo:         "Internal remarks — not shown on supplier-facing documents.",
 		},
 		Actions: DisbursementActionLabels{
 			View:       "View",
@@ -2544,12 +2774,17 @@ type PlanLabels struct {
 
 // ProductPlanFormLabels holds translatable labels for the ProductPlan add/edit form within a plan.
 type ProductPlanFormLabels struct {
-	Product            string                 `json:"product"`
-	ProductPlaceholder string                 `json:"productPlaceholder"`
-	SelectProduct      string                 `json:"selectProduct"`
-	Active             string                 `json:"active"`
-	ProductKindLabel   string                 `json:"productKindLabel"`
+	Product            string                  `json:"product"`
+	ProductPlaceholder string                  `json:"productPlaceholder"`
+	SelectProduct      string                  `json:"selectProduct"`
+	Active             string                  `json:"active"`
+	ProductKindLabel   string                  `json:"productKindLabel"`
 	ProductKind        ProductKindOptionLabels `json:"productKind"`
+
+	// Model D — variant picker on the ProductPlan drawer form
+	VariantSelectLabel       string `json:"variantSelectLabel"`
+	VariantSelectPlaceholder string `json:"variantSelectPlaceholder"`
+	VariantSelectInfo        string `json:"variantSelectInfo"`
 }
 
 // ProductKindOptionLabels provides translated labels for each product_kind
@@ -2621,6 +2856,19 @@ type PricePlanFormLabels struct {
 	DefaultTermLabel           string `json:"defaultTermLabel"`
 	DefaultTermPlaceholder     string `json:"defaultTermPlaceholder"`
 	DefaultTermOpenEndedHelp   string `json:"defaultTermOpenEndedHelp"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	PlanInfo         string `json:"planInfo"`
+	ScheduleInfo     string `json:"scheduleInfo"`
+	NameInfo         string `json:"nameInfo"`
+	DescriptionInfo  string `json:"descriptionInfo"`
+	BillingKindInfo  string `json:"billingKindInfo"`
+	AmountBasisInfo  string `json:"amountBasisInfo"`
+	AmountInfo       string `json:"amountInfo"`
+	CurrencyInfo     string `json:"currencyInfo"`
+	BillingCycleInfo string `json:"billingCycleInfo"`
+	DefaultTermInfo  string `json:"defaultTermInfo"`
+	ActiveInfo       string `json:"activeInfo"`
 }
 
 // ---------------------------------------------------------------------------
@@ -2653,6 +2901,19 @@ type ProductPricePlanFormLabels struct {
 	CurrencyUSD                        string `json:"currencyUSD"`
 	DateStartLabel                     string `json:"dateStartLabel"`
 	DateEndLabel                       string `json:"dateEndLabel"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	ProductInfo          string `json:"productInfo"`
+	PriceInfo            string `json:"priceInfo"`
+	CurrencyInfo         string `json:"currencyInfo"`
+	BillingTreatmentInfo string `json:"billingTreatmentInfo"`
+	DateStartInfo        string `json:"dateStartInfo"`
+	DateEndInfo          string `json:"dateEndInfo"`
+
+	// Model D — catalog line picker (replaces product_id with product_plan_id)
+	CatalogLineLabel       string `json:"catalogLineLabel"`
+	CatalogLinePlaceholder string `json:"catalogLinePlaceholder"`
+	CatalogLineInfo        string `json:"catalogLineInfo"`
 }
 
 // DefaultProductPricePlanLabels returns ProductPricePlanLabels with sensible English defaults.
@@ -2676,6 +2937,17 @@ func DefaultProductPricePlanLabels() ProductPricePlanLabels {
 			CurrencyUSD:                        "USD ($)",
 			DateStartLabel:                     "Effective from",
 			DateEndLabel:                       "Effective until",
+			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
+			ProductInfo:          "The product this price applies to.",
+			PriceInfo:            "Price in centavos. Displayed as amount ÷ 100.",
+			CurrencyInfo:         "Currency applied to this product price.",
+			BillingTreatmentInfo: "Every cycle = charged each billing cycle. First cycle only = setup fee. On use = charged when consumed.",
+			DateStartInfo:        "Date from which this product price is effective.",
+			DateEndInfo:          "Last date this product price is effective. Leave empty for no end date.",
+			// Model D — catalog line picker defaults
+			CatalogLineLabel:       "Catalog line",
+			CatalogLinePlaceholder: "Select a line from the plan's catalog",
+			CatalogLineInfo:        "Prices the chosen catalog line from the parent plan. If the line has a variant, that variant is priced.",
 		},
 	}
 }
@@ -2772,6 +3044,11 @@ type PlanFormLabels struct {
 	TypeLicense  string `json:"typeLicense"`
 	TypeContent  string `json:"typeContent"`
 	TypePhysical string `json:"typePhysical"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string `json:"nameInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
+	ActiveInfo      string `json:"activeInfo"`
 }
 
 type PlanDetailLabels struct {
@@ -2926,6 +3203,14 @@ type SubscriptionFormLabels struct {
 	PlanNoResults             string `json:"planNoResults"`
 	Code                      string `json:"code"`
 	CodePlaceholder           string `json:"codePlaceholder"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	CustomerInfo  string `json:"customerInfo"`
+	PlanInfo      string `json:"planInfo"`
+	CodeInfo      string `json:"codeInfo"`
+	StartDateInfo string `json:"startDateInfo"`
+	EndDateInfo   string `json:"endDateInfo"`
+	NotesInfo     string `json:"notesInfo"`
 }
 
 type SubscriptionDetailLabels struct {
@@ -3008,6 +3293,10 @@ func DefaultPlanLabels() PlanLabels {
 				Basic:    "Basic Information",
 				Services: "Assigned Products",
 			},
+			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
+			NameInfo:        "Display name for this plan. Shown in subscription lists and invoices.",
+			DescriptionInfo: "Optional notes about this plan. Visible on detail pages.",
+			ActiveInfo:      "Inactive plans are hidden from new subscriptions.",
 		},
 		Actions: PlanActionLabels{
 			View:       "View Plan",
@@ -3102,6 +3391,10 @@ func DefaultPlanLabels() PlanLabels {
 				NonStockedGood: "Non-Stocked Good",
 				Consumable:     "Consumable",
 			},
+			// Model D — variant picker defaults
+			VariantSelectLabel:       "Variant",
+			VariantSelectPlaceholder: "Select a variant",
+			VariantSelectInfo:        "Required when the parent product has variants enabled.",
 		},
 	}
 }
@@ -3326,6 +3619,19 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			DefaultTermLabel:            "Default term",
 			DefaultTermPlaceholder:      "e.g. 12 months",
 			DefaultTermOpenEndedHelp:    "Leave empty for open-ended / no expiration",
+			// Field-level info popovers — use proto-generic wording; business-type
+			// tiers override via lyngua (e.g. "plan" → "package" / "rate card").
+			PlanInfo:         "The plan this price plan belongs to. Locked from the parent page.",
+			ScheduleInfo:     "The price schedule (date range + location) this price plan belongs to.",
+			NameInfo:         "Optional — defaults to the plan name when left blank.",
+			DescriptionInfo:  "Optional notes shown alongside the price plan in detail views.",
+			BillingKindInfo:  "One-time = charged once. Recurring = billed every cycle. Fixed-term = recurring with an end date.",
+			AmountBasisInfo:  "Per cycle = amount charged each billing cycle. Total package = amount charged across the full term. Sum of items = derived from the per-item breakdown.",
+			AmountInfo:       "Price in the selected currency. For Sum of items, this is computed automatically.",
+			CurrencyInfo:     "Currency applied to this price plan and any auto-seeded product price plans.",
+			BillingCycleInfo: "How often the recurring charge is issued (e.g. every 1 month).",
+			DefaultTermInfo:  "Catalog default subscription length. Leave empty for open-ended / no expiration.",
+			ActiveInfo:       "Inactive price plans stay on record but are hidden from new subscriptions.",
 		},
 		Actions: PricePlanActionLabels{
 			CreateSuccess: "Rate card created successfully.",
@@ -3497,6 +3803,14 @@ type PriceScheduleFormLabels struct {
 	SectionScheduleDetails string `json:"sectionScheduleDetails"`
 	SectionDateRange       string `json:"sectionDateRange"`
 	SectionLocation        string `json:"sectionLocation"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string `json:"nameInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
+	DateStartInfo   string `json:"dateStartInfo"`
+	DateEndInfo     string `json:"dateEndInfo"`
+	LocationInfo    string `json:"locationInfo"`
+	ActiveInfo      string `json:"activeInfo"`
 }
 
 type PriceScheduleBulkLabels struct {
@@ -3661,6 +3975,13 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			SectionScheduleDetails: "Schedule details",
 			SectionDateRange:       "Date range",
 			SectionLocation:        "Location",
+			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
+			NameInfo:        "A short display name for this price schedule.",
+			DescriptionInfo: "Optional notes or context for this price schedule.",
+			DateStartInfo:   "First date this price schedule becomes effective.",
+			DateEndInfo:     "Last date this price schedule is effective. Leave empty for no end date.",
+			LocationInfo:    "Restrict this price schedule to a specific location, or leave empty to apply to all locations.",
+			ActiveInfo:      "Inactive price schedules are hidden from new subscriptions.",
 		},
 		Bulk: PriceScheduleBulkLabels{
 			DeleteTitle:       "Delete Price Schedules",
@@ -3799,6 +4120,13 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			PlanNoResults:             "No plans found",
 			Code:                      "Code",
 			CodePlaceholder:           "e.g. A3K7PXR",
+			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
+			CustomerInfo:  "The client this subscription is billed to.",
+			PlanInfo:      "The price plan this subscription follows. Determines amount, billing cycle, and any per-product prices.",
+			CodeInfo:      "Short reference used on invoices and receipts. Leave blank to auto-generate.",
+			StartDateInfo: "First day the subscription is active. Billing cycles are counted from this date.",
+			EndDateInfo:   "Last day the subscription is active. Leave blank for open-ended.",
+			NotesInfo:     "Internal remarks — shown on detail pages but not on customer-facing documents.",
 		},
 		Actions: SubscriptionActionLabels{
 			View:   "View Subscription",
@@ -3887,6 +4215,12 @@ type ResourceFormLabels struct {
 	DescPlaceholder string `json:"descriptionPlaceholder"`
 	ProductId       string `json:"productId"`
 	UserId          string `json:"userId"`
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string `json:"nameInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
+	ProductIdInfo   string `json:"productIdInfo"`
+	UserIdInfo      string `json:"userIdInfo"`
 }
 
 type ResourceActionLabels struct {
@@ -3959,6 +4293,11 @@ func DefaultResourceLabels() ResourceLabels {
 			DescPlaceholder: "Enter description (optional)",
 			ProductId:       "Product ID",
 			UserId:          "User ID",
+			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
+			NameInfo:        "Display name for this resource.",
+			DescriptionInfo: "Optional notes about this resource.",
+			ProductIdInfo:   "The product this resource is linked to (used for activity billing).",
+			UserIdInfo:      "Optional — restrict this resource to a specific user.",
 		},
 		Actions: ResourceActionLabels{
 			View:       "View",

@@ -21,6 +21,7 @@ import (
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
@@ -41,9 +42,10 @@ type DetailViewDeps struct {
 	UpdatePricePlan   func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
 	DeletePricePlan   func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
 
-	ListPlans        func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
-	ListProducts     func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	ListProductPlans func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListPlans           func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListProducts        func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductPlans    func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
 
 	ListProductPricePlans  func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
@@ -124,23 +126,24 @@ type EditFormData struct {
 // ProductPriceFormData is the drawer form for editing a ProductPricePlan.
 // Plan + Product sections are display-only context; only Price + Currency are editable.
 // Rows are auto-seeded from product_plan assignments on PricePlan create, so the
-// product selection is fixed per row.
+// Model D catalog-line selection is fixed per row.
 type ProductPriceFormData struct {
-	FormAction   string
-	IsEdit       bool
-	ID           string
-	ScheduleID   string
-	PricePlanID  string
-	ProductID    string
-	Price        string
-	Currency     string
-	CommonLabels pyeza.CommonLabels
+	FormAction    string
+	IsEdit        bool
+	ID            string
+	ScheduleID    string
+	PricePlanID   string
+	ProductPlanID string
+	Price         string
+	Currency      string
+	CommonLabels  pyeza.CommonLabels
 
 	// Display-only context (read-only).
 	PlanName           string
 	PlanDescription    string
 	ProductName        string
 	ProductDescription string
+	VariantName        string // SKU of the catalog line's variant, when any
 
 	// Wave 2: billing treatment + effective date fields.
 	BillingTreatment        string
@@ -247,8 +250,8 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				ScheduleName:          lookupScheduleName(ctx, deps, sid),
 				Name:                  pp.GetName(),
 				Description:           pp.GetDescription(),
-				Amount:                strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64),
-				Currency:              pp.GetCurrency(),
+				Amount:                strconv.FormatFloat(float64(pp.GetBillingAmount())/100.0, 'f', 2, 64),
+				Currency:              pp.GetBillingCurrency(),
 				DurationValue:         fmt.Sprintf("%d", pp.GetDurationValue()),
 				DurationUnit:          pp.GetDurationUnit(),
 				Active:                pp.GetActive(),
@@ -267,7 +270,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				SelectedPlanLabel:     labelFromOptions(planOpts, pp.GetPlanId()),
 				InUse:                 pricingLocked,
 				LockMessage:           pricingLockedReason,
-				Labels:                form.LabelsFromPriceSchedule(deps.ScheduleLabels.PlanForm),
+				Labels:                form.LabelsFromPricePlan(formLabels),
 				CommonLabels:          deps.CommonLabels,
 			})
 		}
@@ -301,8 +304,8 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 			inUseMap, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid})
 			if inUseMap[ppid] {
 				ex := existing.GetData()[0]
-				amount = ex.GetAmount()
-				currency = ex.GetCurrency()
+				amount = ex.GetBillingAmount()
+				currency = ex.GetBillingCurrency()
 				dv = int64(ex.GetDurationValue())
 				durationUnit = ex.GetDurationUnit()
 			}
@@ -322,15 +325,15 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 		planPageDesc := r.FormValue("description")
 		req := &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
-				Id:            ppid,
-				PlanId:        r.FormValue("plan_id"),
-				Name:          &planPageName,
-				Description:   &planPageDesc,
-				Amount:        amount,
-				Currency:      currency,
-				DurationValue: int32(dv),    // Phase 1 legacy dual-write
-				DurationUnit:  durationUnit, // Phase 1 legacy dual-write
-				Active:        active,
+				Id:              ppid,
+				PlanId:          r.FormValue("plan_id"),
+				Name:            &planPageName,
+				Description:     &planPageDesc,
+				BillingAmount:   amount,
+				BillingCurrency: currency,
+				DurationValue:   int32(dv),    // Phase 1 legacy dual-write
+				DurationUnit:    durationUnit, // Phase 1 legacy dual-write
+				Active:          active,
 			},
 		}
 		req.Data.PriceScheduleId = &sid
@@ -423,8 +426,15 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		if err := viewCtx.Request.ParseForm(); err != nil {
 			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
-		productID := viewCtx.Request.FormValue("product_id")
-		if productID == "" {
+		productPlanID := viewCtx.Request.FormValue("product_plan_id")
+		if productPlanID == "" {
+			// Backward-compatible: old form posts may still send product_id;
+			// resolve to a product_plan_id on this plan when possible.
+			if legacyProductID := viewCtx.Request.FormValue("product_id"); legacyProductID != "" {
+				productPlanID = resolveProductPlanIDForProduct(ctx, deps, ppid, legacyProductID)
+			}
+		}
+		if productPlanID == "" {
 			return centymo.HTMXError(deps.PlanLabels.Messages.ProductRequired)
 		}
 		priceCentavos, ok := parsePriceCentavos(viewCtx.Request.FormValue("price"))
@@ -439,11 +449,11 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		dateEnd := viewCtx.Request.FormValue("date_end")
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
 		record := &productpriceplanpb.ProductPricePlan{
-			PricePlanId: ppid,
-			ProductId:   productID,
-			Price:       priceCentavos,
-			Currency:    currency,
-			Active:      true,
+			PricePlanId:     ppid,
+			ProductPlanId:   productPlanID,
+			BillingAmount:   priceCentavos,
+			BillingCurrency: currency,
+			Active:          true,
 		}
 		if billingTreatment != "" {
 			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
@@ -485,12 +495,14 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 
 		pplLabels := deps.ProductPricePlanLabels.Form
 		if viewCtx.Request.Method == http.MethodGet {
-			currency := existing.GetCurrency()
+			currency := existing.GetBillingCurrency()
 			if currency == "" {
 				currency = "PHP"
 			}
 			planName, planDesc := lookupPackageNameDesc(ctx, deps, ppid)
-			prodName, prodDesc := lookupProductNameDesc(ctx, deps, existing.GetProductId())
+			// Model D — resolve product + variant via the referenced ProductPlan row.
+			existingProductPlanID := existing.GetProductPlanId()
+			prodName, prodDesc, variantName := lookupProductPlanDisplay(ctx, deps, existingProductPlanID)
 
 			pricingLocked := false
 			pricingLockedReason := ""
@@ -507,14 +519,15 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				ID:                      pppid,
 				ScheduleID:              sid,
 				PricePlanID:             ppid,
-				ProductID:               existing.GetProductId(),
-				Price:                   fmt.Sprintf("%.2f", float64(existing.GetPrice())/100.0),
+				ProductPlanID:           existingProductPlanID,
+				Price:                   fmt.Sprintf("%.2f", float64(existing.GetBillingAmount())/100.0),
 				Currency:                currency,
 				CommonLabels:            deps.CommonLabels,
 				PlanName:                planName,
 				PlanDescription:         planDesc,
 				ProductName:             prodName,
 				ProductDescription:      prodDesc,
+				VariantName:             variantName,
 				PricingLocked:           pricingLocked,
 				PricingLockedReason:     pricingLockedReason,
 				// Wave 2: populate billing treatment and dates from existing record.
@@ -537,7 +550,8 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				return centymo.HTMXError(deps.PlanLabels.Messages.InUseCannotModify)
 			}
 		}
-		// Product is display-only in the drawer — preserve the existing assignment.
+		// The catalog-line assignment is display-only in the drawer — preserve
+		// the existing product_plan_id.
 		priceCentavos, ok := parsePriceCentavos(viewCtx.Request.FormValue("price"))
 		if !ok {
 			return centymo.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
@@ -550,12 +564,12 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		dateEnd := viewCtx.Request.FormValue("date_end")
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
 		updated := &productpriceplanpb.ProductPricePlan{
-			Id:          pppid,
-			PricePlanId: ppid,
-			ProductId:   existing.GetProductId(),
-			Price:       priceCentavos,
-			Currency:    currency,
-			Active:      existing.GetActive(),
+			Id:              pppid,
+			PricePlanId:     ppid,
+			ProductPlanId:   existing.GetProductPlanId(),
+			BillingAmount:   priceCentavos,
+			BillingCurrency: currency,
+			Active:          existing.GetActive(),
 		}
 		if billingTreatment != "" {
 			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
@@ -622,11 +636,11 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 	}
 	pp := data[0]
 
-	currency := pp.GetCurrency()
+	currency := pp.GetBillingCurrency()
 	if currency == "" {
 		currency = "PHP"
 	}
-	amountCell := types.MoneyCell(float64(pp.GetAmount()), currency, true)
+	amountCell := types.MoneyCell(float64(pp.GetBillingAmount()), currency, true)
 
 	duration := ""
 	if dv := pp.GetDurationValue(); dv > 0 {
@@ -745,6 +759,28 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 		}
 	}
 
+	// Model D — build product_plan_id → (product_id, variant_id) map so we
+	// resolve row display via the catalog line's FK.
+	type productPlanRef struct {
+		productID string
+		variantID string
+	}
+	productPlans := map[string]productPlanRef{}
+	if deps.ListProductPlans != nil {
+		ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+		if err == nil {
+			for _, pp := range ppResp.GetData() {
+				if pp == nil {
+					continue
+				}
+				productPlans[pp.GetId()] = productPlanRef{
+					productID: pp.GetProductId(),
+					variantID: pp.GetProductVariantId(),
+				}
+			}
+		}
+	}
+
 	refreshURL := route.ResolveURL(deps.Routes.PlanTabActionURL, "id", sid, "ppid", ppid, "tab", deps.ScheduleLabels.Tabs.ResolveTabSlug("product-prices"))
 	rows := []types.TableRow{}
 	if deps.ListProductPricePlans != nil {
@@ -757,16 +793,27 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 					continue
 				}
 				itemID := item.GetId()
-				productID := item.GetProductId()
-				productName := productNames[productID]
-				if productName == "" {
-					productName = productID
+				ref := productPlans[item.GetProductPlanId()]
+				if embed := item.GetProductPlan(); embed != nil {
+					if pid := embed.GetProductId(); pid != "" {
+						ref.productID = pid
+					}
+					if vid := embed.GetProductVariantId(); vid != "" {
+						ref.variantID = vid
+					}
 				}
-				itemCurrency := item.GetCurrency()
+				productName := productNames[ref.productID]
+				if productName == "" {
+					productName = ref.productID
+				}
+				if ref.variantID != "" {
+					productName = fmt.Sprintf("%s (%s)", productName, ref.variantID)
+				}
+				itemCurrency := item.GetBillingCurrency()
 				if itemCurrency == "" {
 					itemCurrency = "PHP"
 				}
-				priceCell := types.MoneyCell(float64(item.GetPrice()), itemCurrency, true)
+				priceCell := types.MoneyCell(float64(item.GetBillingAmount()), itemCurrency, true)
 				rows = append(rows, types.TableRow{
 					ID: itemID,
 					Cells: []types.TableCell{
@@ -859,7 +906,7 @@ func loadPricePlanCurrency(ctx context.Context, deps *DetailViewDeps, pricePlanI
 	if err != nil || len(resp.GetData()) == 0 {
 		return "PHP"
 	}
-	c := resp.GetData()[0].GetCurrency()
+	c := resp.GetData()[0].GetBillingCurrency()
 	if c == "" {
 		return "PHP"
 	}
@@ -989,6 +1036,57 @@ func lookupProductNameDesc(ctx context.Context, deps *DetailViewDeps, productID 
 		return strings.TrimSpace(p.GetName()), strings.TrimSpace(p.GetDescription())
 	}
 	return "", ""
+}
+
+// lookupProductPlanDisplay resolves product name, description, and (optional)
+// variant SKU for a ProductPlan.id — used to render the read-only context
+// rows on the schedule-nested product-price drawer under Model D.
+func lookupProductPlanDisplay(ctx context.Context, deps *DetailViewDeps, productPlanID string) (name, desc, variant string) {
+	if productPlanID == "" || deps.ListProductPlans == nil {
+		return "", "", ""
+	}
+	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+	if err != nil {
+		return "", "", ""
+	}
+	var (
+		productID string
+		variantID string
+	)
+	for _, pp := range ppResp.GetData() {
+		if pp != nil && pp.GetId() == productPlanID {
+			productID = pp.GetProductId()
+			variantID = pp.GetProductVariantId()
+			break
+		}
+	}
+	name, desc = lookupProductNameDesc(ctx, deps, productID)
+	variant = variantID // caller may translate via SKU lookup if needed
+	return name, desc, variant
+}
+
+// resolveProductPlanIDForProduct finds the ProductPlan row in the parent
+// Plan of the given PricePlan that references the supplied product_id. Used
+// as a transitional fallback so old form posts (which send product_id) still
+// work while Model D rolls out.
+func resolveProductPlanIDForProduct(ctx context.Context, deps *DetailViewDeps, pricePlanID, productID string) string {
+	if productID == "" || deps.ListProductPlans == nil {
+		return ""
+	}
+	planID := loadPricePlanPlanID(ctx, deps, pricePlanID)
+	if planID == "" {
+		return ""
+	}
+	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+	if err != nil {
+		return ""
+	}
+	for _, pp := range ppResp.GetData() {
+		if pp != nil && pp.GetPlanId() == planID && pp.GetProductId() == productID {
+			return pp.GetId()
+		}
+	}
+	return ""
 }
 
 // lookupPackageNameDesc resolves the display name + description for a price_plan,

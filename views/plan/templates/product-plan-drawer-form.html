@@ -2,9 +2,10 @@
 Product Plan drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit product plan actions within a plan detail.
 Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
-      .FormAction, .PickerURL, .IsEdit, .ProductOptions, .SelectedKind,
-      .KindOptions, .KindLabel, .ProductLabel, .ProductPlaceholder,
-      .CommonLabels, .Labels
+      .FormAction, .PickerURL, .VariantPickerURL, .IsEdit, .ProductOptions,
+      .SelectedKind, .KindOptions, .KindLabel, .ProductLabel,
+      .ProductPlaceholder, .VariantConfigurable, .SelectedVariantID,
+      .VariantOptions, .CommonLabels, .Labels
 */}}
 {{define "product-plan-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="if (event.detail.elt === this) lf.Sheet.handleResponse(event)">
@@ -33,7 +34,7 @@ Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
             </div>
         </div>
 
-        {{/* --- Product selector (swapped by kind change) --- */}}
+        {{/* --- Product + Variant picker (swapped by kind change or product change) --- */}}
         <div class="form-row single">
             <div id="product-picker-wrapper">
                 {{template "auto-complete" (dict
@@ -48,20 +49,79 @@ Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
                 )}}
                 {{/* Hidden name field — populated on form submit via product name */}}
                 <input type="hidden" name="name" value="{{.Name}}">
+
+                {{/* Variant sub-picker — rendered only when the selected product
+                     is variant-configurable. Hidden entirely otherwise. */}}
+                {{if .VariantConfigurable}}
+                <div class="form-row single" id="product-variant-picker-row">
+                    <div class="form-group">
+                        <label class="form-label" for="product-variant-select">
+                            {{.Labels.VariantSelectLabel}}
+                            {{if .Labels.VariantSelectInfo}}
+                            <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                                <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                                    {{template "icon-info"}}
+                                </button>
+                                <div class="popover-panel form-label-info-panel" role="tooltip">
+                                    <div class="popover-arrow"></div>
+                                    {{.Labels.VariantSelectInfo}}
+                                </div>
+                            </span>
+                            {{end}}
+                        </label>
+                        <select
+                            id="product-variant-select"
+                            class="form-select"
+                            name="product_variant_id"
+                            required
+                        >
+                            <option value="">{{.Labels.VariantSelectPlaceholder}}</option>
+                            {{range .VariantOptions}}
+                            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                </div>
+                {{end}}
             </div>
         </div>
 
         {{/* --- Active toggle --- */}}
         <div class="form-row single">
-            {{template "toggle" (dict
-                "Name" "active"
-                "Label" .Labels.Active
-                "Checked" .Active
-                "Value" "true"
-            )}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">{{.Labels.Active}}</label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
         </div>
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
+
+<script>
+(function() {
+    // When the product select changes, re-fetch the picker partial with the
+    // new product_id so the variant sub-picker can appear or disappear based
+    // on the product's variant_mode. We watch the hidden product_id input
+    // because the auto-complete widget posts to it.
+    var wrapper = document.getElementById('product-picker-wrapper');
+    if (!wrapper) return;
+    var pickerURL = {{.VariantPickerURL}};
+    var kindSel = document.getElementById('product-kind-select');
+
+    function fetchForProduct(productID) {
+        if (!productID || typeof htmx === 'undefined') return;
+        var kind = kindSel ? kindSel.value : '';
+        var url = pickerURL + '?product_id=' + encodeURIComponent(productID);
+        if (kind) url += '&product_kind=' + encodeURIComponent(kind);
+        htmx.ajax('GET', url, { target: '#product-picker-wrapper', swap: 'innerHTML' });
+    }
+
+    // Delegate-style listener so it survives HTMX re-renders of the wrapper.
+    wrapper.addEventListener('change', function(ev) {
+        var input = ev.target.closest('input[name="product_id"]');
+        if (input) fetchForProduct(input.value);
+    });
+})();
+</script>
 {{end}}

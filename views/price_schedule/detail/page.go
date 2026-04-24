@@ -28,10 +28,14 @@ import (
 
 // DetailViewDeps holds view dependencies for the price schedule detail page.
 type DetailViewDeps struct {
-	Routes       centymo.PriceScheduleRoutes
-	Labels       centymo.PriceScheduleLabels
-	CommonLabels pyeza.CommonLabels
-	TableLabels  types.TableLabels
+	Routes centymo.PriceScheduleRoutes
+	Labels centymo.PriceScheduleLabels
+	// PricePlanLabels is the authoritative source for the price-plan drawer
+	// form (sourced from lyngua price_plan.json → price_plan.form). Used when
+	// opening the schedule-scoped Add drawer so all Wave 2 fields render.
+	PricePlanLabels centymo.PricePlanLabels
+	CommonLabels    pyeza.CommonLabels
+	TableLabels     types.TableLabels
 
 	ReadPriceSchedule func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
 	ListLocations     func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
@@ -132,17 +136,25 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			scheduleName := lookupScheduleName(ctx, deps, scheduleID)
 			planOptions := buildPlanOptions(ctx, deps)
+			formLabels := deps.PricePlanLabels.Form
 			return view.OK("price-plan-drawer-form", &form.Data{
-				FormAction:   route.ResolveURL(deps.Routes.PlanAddURL, "id", scheduleID),
-				Context:      form.ContextSchedule,
-				ScheduleID:   scheduleID,
-				ScheduleName: scheduleName,
-				Active:       true,
-				Currency:     "PHP",
-				DurationUnit: "months",
-				PlanOptions:  planOptions,
-				Labels:       form.LabelsFromPriceSchedule(deps.Labels.PlanForm),
-				CommonLabels: deps.CommonLabels,
+				FormAction:          route.ResolveURL(deps.Routes.PlanAddURL, "id", scheduleID),
+				Context:             form.ContextSchedule,
+				ScheduleID:          scheduleID,
+				ScheduleName:        scheduleName,
+				Active:              true,
+				Currency:            "PHP",
+				DurationUnit:        "months",
+				BillingKind:         "BILLING_KIND_RECURRING",
+				AmountBasis:         "AMOUNT_BASIS_PER_CYCLE",
+				BillingCycleUnit:    "month",
+				DefaultTermUnit:     "month",
+				PlanOptions:         planOptions,
+				BillingKindOptions:  form.BuildBillingKindOptions(formLabels),
+				AmountBasisOptions:  form.BuildAmountBasisOptions(formLabels),
+				DurationUnitOptions: form.BuildDurationUnitOptions(deps.CommonLabels),
+				Labels:              form.LabelsFromPricePlan(formLabels),
+				CommonLabels:        deps.CommonLabels,
 			})
 		}
 
@@ -167,16 +179,17 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		ppName := r.FormValue("name")
 		ppDesc := r.FormValue("description")
 		pp := &priceplanpb.PricePlan{
-			PlanId:        planID,
-			Name:          &ppName,
-			Description:   &ppDesc,
-			Amount:        amount,
-			Currency:      currency,
-			DurationValue: int32(dv),
-			DurationUnit:  r.FormValue("duration_unit"),
-			Active:        true,
+			PlanId:          planID,
+			Name:            &ppName,
+			Description:     &ppDesc,
+			BillingAmount:   amount,
+			BillingCurrency: currency,
+			DurationValue:   int32(dv),
+			DurationUnit:    r.FormValue("duration_unit"),
+			Active:          true,
 		}
 		pp.PriceScheduleId = &scheduleID
+		applyBillingFieldsFromRequest(pp, r)
 
 		createResp, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{Data: pp})
 		if err != nil {
@@ -255,7 +268,8 @@ func autoSeedProductPricePlans(ctx context.Context, deps *DetailViewDeps, create
 			continue
 		}
 		productID := pp.GetProductId()
-		if productID == "" {
+		productPlanID := pp.GetId()
+		if productPlanID == "" {
 			continue
 		}
 		// Seed a row regardless of whether the Product can be resolved — zero
@@ -264,21 +278,25 @@ func autoSeedProductPricePlans(ctx context.Context, deps *DetailViewDeps, create
 		var price int64
 		currency := "PHP"
 		if prod := products[productID]; prod != nil {
-			price = prod.GetPrice()
+			// Product.price is optional under Model D (configurable products
+			// have per-variant overrides instead). Only dereference when set.
+			if prod.Price != nil {
+				price = prod.GetPrice()
+			}
 			if c := prod.GetCurrency(); c != "" {
 				currency = c
 			}
 		}
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{
 			Data: &productpriceplanpb.ProductPricePlan{
-				PricePlanId: createdID,
-				ProductId:   productID,
-				Price:       price,
-				Currency:    currency,
-				Active:      true,
+				PricePlanId:     createdID,
+				ProductPlanId:   productPlanID, // Model D — FK to catalog line
+				BillingAmount:   price,
+				BillingCurrency: currency,
+				Active:          true,
 			},
 		}); err != nil {
-			log.Printf("auto-seed product_price_plan failed for %s/%s: %v", createdID, productID, err)
+			log.Printf("auto-seed product_price_plan failed for %s/%s: %v", createdID, productPlanID, err)
 		}
 	}
 }
@@ -479,7 +497,7 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 				if name == "" {
 					name = planNames[pp.GetPlanId()]
 				}
-				currency := pp.GetCurrency()
+				currency := pp.GetBillingCurrency()
 				if currency == "" {
 					currency = "PHP"
 				}
@@ -505,7 +523,7 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 					ID: ppID,
 					Cells: []types.TableCell{
 						{Type: "text", Value: name},
-						types.MoneyCell(float64(pp.GetAmount()), currency, true),
+						types.MoneyCell(float64(pp.GetBillingAmount()), currency, true),
 						{Type: "text", Value: duration},
 						{Type: "badge", Value: planStatus, Variant: planVariant},
 					},
@@ -589,4 +607,38 @@ func lookupLocationName(ctx context.Context, deps *DetailViewDeps, locationID st
 		}
 	}
 	return ""
+}
+
+// applyBillingFieldsFromRequest writes Wave 2 billing-semantics fields
+// (billing_kind, amount_basis, billing_cycle_*, default_term_*) from the POST
+// body onto pp. Mirrors the equivalent helper in views/plan/action.
+func applyBillingFieldsFromRequest(pp *priceplanpb.PricePlan, r *http.Request) {
+	if v := r.FormValue("billing_kind"); v != "" {
+		if bk, ok := priceplanpb.BillingKind_value[v]; ok {
+			pp.BillingKind = priceplanpb.BillingKind(bk)
+		}
+	}
+	if v := r.FormValue("amount_basis"); v != "" {
+		if ab, ok := priceplanpb.AmountBasis_value[v]; ok {
+			pp.AmountBasis = priceplanpb.AmountBasis(ab)
+		}
+	}
+	if s := r.FormValue("billing_cycle_value"); s != "" {
+		if n, err := strconv.ParseInt(s, 10, 32); err == nil {
+			v32 := int32(n)
+			pp.BillingCycleValue = &v32
+		}
+	}
+	if u := r.FormValue("billing_cycle_unit"); u != "" {
+		pp.BillingCycleUnit = &u
+	}
+	if s := r.FormValue("default_term_value"); s != "" {
+		if n, err := strconv.ParseInt(s, 10, 32); err == nil {
+			v32 := int32(n)
+			pp.DefaultTermValue = &v32
+		}
+	}
+	if u := r.FormValue("default_term_unit"); u != "" {
+		pp.DefaultTermUnit = &u
+	}
 }

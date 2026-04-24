@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -20,6 +21,11 @@ type FormLabels struct {
 	Description     string
 	DescPlaceholder string
 	Active          string
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string
+	DescriptionInfo string
+	ActiveInfo      string
 }
 
 // FormData is the template data for the plan drawer form.
@@ -54,6 +60,10 @@ func formLabels(l centymo.PlanLabels) FormLabels {
 		Description:     l.Form.Description,
 		DescPlaceholder: l.Form.DescPlaceholder,
 		Active:          l.Form.Active,
+		// Info fields sourced from centymo.PlanFormLabels (populated from lyngua JSON + defaults).
+		NameInfo:        l.Form.NameInfo,
+		DescriptionInfo: l.Form.DescriptionInfo,
+		ActiveInfo:      l.Form.ActiveInfo,
 	}
 }
 
@@ -94,7 +104,6 @@ func NewAddAction(deps *Deps) view.View {
 			return centymo.HTMXError(err.Error())
 		}
 
-		// Redirect to new plan detail
 		newID := ""
 		if respData := resp.GetData(); len(respData) > 0 {
 			newID = respData[0].GetId()
@@ -105,29 +114,28 @@ func NewAddAction(deps *Deps) view.View {
 				log.Printf("Failed to set plan inactive after create %s: %v", newID, err)
 			}
 		}
-		if newID != "" {
-			return view.ViewResult{
-				StatusCode: http.StatusOK,
-				Headers: map[string]string{
-					"HX-Trigger":  `{"formSuccess":true}`,
-					"HX-Redirect": route.ResolveURL(deps.Routes.DetailURL, "id", newID),
-				},
-			}
-		}
 
 		return centymo.HTMXSuccess("plans-table")
 	})
 }
 
 // NewEditAction creates the plan edit action (GET = form, POST = update).
+// When the GET request includes ?clone=1, the handler returns the drawer form
+// pre-populated from the source record but wired to AddURL (submission creates
+// a new plan) with " (Copy)" appended to the name.
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("plan", "update") {
+		id := viewCtx.Request.PathValue("id")
+		isClone := viewCtx.Request.Method == http.MethodGet && viewCtx.Request.URL.Query().Get("clone") == "1"
+
+		requiredAction := "update"
+		if isClone {
+			requiredAction = "create"
+		}
+		if !perms.Can("plan", requiredAction) {
 			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
-
-		id := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
 			readResp, err := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{
@@ -143,11 +151,19 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := readData[0]
 
+			name := record.GetName()
+			formAction := route.ResolveURL(deps.Routes.EditURL, "id", id)
+			formID := id
+			if isClone {
+				name = strings.TrimSpace(name) + viewCtx.T("actions.copySuffix")
+				formAction = deps.Routes.AddURL
+				formID = ""
+			}
 			return view.OK("plan-drawer-form", &FormData{
-				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:       true,
-				ID:           id,
-				Name:         record.GetName(),
+				FormAction:   formAction,
+				IsEdit:       !isClone,
+				ID:           formID,
+				Name:         name,
 				Description:  record.GetDescription(),
 				Active:       record.GetActive(),
 				Labels:       formLabels(deps.Labels),
@@ -183,12 +199,12 @@ func NewEditAction(deps *Deps) view.View {
 			}
 		}
 
-		// Redirect to detail page
+		// Close drawer and reload current page so the detail view reflects the update.
 		return view.ViewResult{
 			StatusCode: http.StatusOK,
 			Headers: map[string]string{
-				"HX-Trigger":  `{"formSuccess":true}`,
-				"HX-Redirect": route.ResolveURL(deps.Routes.DetailURL, "id", id),
+				"HX-Trigger": `{"formSuccess":true}`,
+				"HX-Refresh": "true",
 			},
 		}
 	})

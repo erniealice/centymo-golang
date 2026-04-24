@@ -2,8 +2,22 @@ package form
 
 import (
 	centymo "github.com/erniealice/centymo-golang"
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 )
+
+// BuildDurationUnitOptions returns the select options for billing_cycle_unit
+// and default_term_unit, sourced from the shared CommonLabels.DurationUnit
+// translations (day(s) / week(s) / month(s) / year(s)).
+func BuildDurationUnitOptions(cl pyeza.CommonLabels) []types.SelectOption {
+	du := cl.DurationUnit
+	return []types.SelectOption{
+		{Value: "day", Label: du.DaySelect},
+		{Value: "week", Label: du.WeekSelect},
+		{Value: "month", Label: du.MonthSelect},
+		{Value: "year", Label: du.YearSelect},
+	}
+}
 
 // BuildBillingKindOptions builds the select options for the BillingKind enum
 // on the PricePlan form. Values match the proto enum string representation

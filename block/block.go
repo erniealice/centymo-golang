@@ -212,6 +212,15 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		productInventoryRoutes := centymo.DefaultProductInventoryRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_inventory", &productInventoryRoutes)
 
+		// Supplies mount — third Product module registration scoped to
+		// product_kind = 'consumable' (used-in-service-delivery items: gauze,
+		// lotion, cleaning solution, coffee beans). Sibling to product_inventory
+		// (resold goods) under the Inventory accordion. Lyngua
+		// `product_supplies` can override individual URLs on top of the
+		// /app/inventory/supplies/* namespace.
+		productSuppliesRoutes := centymo.DefaultProductSuppliesRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_supplies", &productSuppliesRoutes)
+
 		productLineRoutes := centymo.DefaultProductLineRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_line", &productLineRoutes)
 
@@ -220,6 +229,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		priceScheduleRoutes := centymo.DefaultPriceScheduleRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_schedule", &priceScheduleRoutes)
+
+		// Inventory-mount variant — namespace-shifted onto /app/inventory/price-schedules/*.
+		// Anchors ActiveNav to "inventory" so the inventory accordion sidebar stays open
+		// when users browse price schedules from the inventory side. A lyngua
+		// `price_schedule_inventory` override can layer additional tweaks on top.
+		priceScheduleInventoryRoutes := centymo.DefaultPriceScheduleInventoryRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_schedule_inventory", &priceScheduleInventoryRoutes)
 
 		priceListRoutes := centymo.DefaultPriceListRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_list", &priceListRoutes)
@@ -273,6 +289,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// without duplicating every key in the service product.json.
 		productInventoryLabels := productLabels
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_inventory.json", "product_inventory", &productInventoryLabels)
+
+		// Supplies-flavoured labels. Same overlay pattern: baseline from the
+		// service product labels, sparse-overlay product_supplies.json for
+		// headings / CTA ("Add Supply") that should differ from both the
+		// services mount and the inventory mount.
+		productSuppliesLabels := productLabels
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_supplies.json", "product_supplies", &productSuppliesLabels)
 
 		productLineLabels := centymo.DefaultProductLineLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_line.json", "product_line", &productLineLabels)
@@ -567,6 +590,16 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				DefaultProductKind:  defaultProductKind,
 				DefaultDeliveryMode: defaultDeliveryMode,
 				DefaultTrackingMode: defaultTrackingMode,
+				// Services mount locks product_kind to "service" (single option
+				// → drawer renders the select disabled). DeliveryMode and
+				// TrackingMode stay fully open so clinic admins can still pick
+				// e.g. scheduled vs digital vs project per-service.
+				AllowedProductKinds: []string{"service"},
+				// Operation-level RBAC: every perms.Can check inside this mount
+				// uses "service:*" rather than the shared "product:*". Lets a
+				// role grant Services CRUD without implicit grant on Products
+				// or Supplies.
+				PermissionEntity: "service",
 				// SetProductActive uses raw DB update (proto3 omits false booleans)
 				SetProductActive: func(fctx context.Context, id string, active bool) error {
 					_, err := db.Update(fctx, "product", id, map[string]any{"active": active})
@@ -671,7 +704,44 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				productInventoryDeps.DefaultProductKind = "stocked_good"
 				productInventoryDeps.DefaultDeliveryMode = "shipped"
 				productInventoryDeps.DefaultTrackingMode = "bulk"
+				// Inventory (resold goods) mount exposes two product_kind
+				// options so the user picks between stocked vs non-stocked
+				// (drop-ship/special order). Consumables belong to the
+				// supplies mount and are deliberately excluded here.
+				productInventoryDeps.AllowedProductKinds = []string{"stocked_good", "non_stocked_good"}
+				// Operation-level RBAC: inventory mount uses "product:*" —
+				// historically the default entity, so existing product:*
+				// grants keep working on the Products surface without any
+				// role-permission migration.
+				productInventoryDeps.PermissionEntity = "product"
 				productmod.NewModule(&productInventoryDeps).RegisterRoutes(ctx.Routes)
+			}
+
+			// Supplies-flavoured product mount. Mode="supplies" narrows the
+			// list filter to product_kind = 'consumable', and the routes land
+			// under /app/inventory/supplies/* + /action/inventory-supplies/*
+			// so it coexists with both the services and inventory mounts on
+			// the same ServeMux. Gated only on route distinctness — the same
+			// defensive check we use for inventory — so a tier that wipes the
+			// supplies route block back onto an existing mount silently drops
+			// the registration instead of panicking.
+			if productSuppliesRoutes.ListURL != productRoutes.ListURL &&
+				productSuppliesRoutes.ListURL != productInventoryRoutes.ListURL {
+				productSuppliesDeps := *productDeps
+				productSuppliesDeps.Routes = productSuppliesRoutes
+				productSuppliesDeps.Mode = "supplies"
+				productSuppliesDeps.Labels = productSuppliesLabels
+				productSuppliesDeps.DefaultProductKind = "consumable"
+				productSuppliesDeps.DefaultDeliveryMode = "shipped"
+				productSuppliesDeps.DefaultTrackingMode = "bulk"
+				// Supplies mount locks product_kind to "consumable" (single
+				// option → drawer renders the select disabled).
+				productSuppliesDeps.AllowedProductKinds = []string{"consumable"}
+				// Operation-level RBAC: supplies mount uses "supplies:*" so a
+				// stock-clerk role can be granted Supplies CRUD without any
+				// grant on Products or Services.
+				productSuppliesDeps.PermissionEntity = "supplies"
+				productmod.NewModule(&productSuppliesDeps).RegisterRoutes(ctx.Routes)
 			}
 		}
 
@@ -834,6 +904,44 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					priceScheduleDeps.DeleteProductPricePlan = ppp.DeleteProductPricePlan.Execute
 				}
 				priceschedulemod.NewModule(priceScheduleDeps).RegisterRoutes(ctx.Routes)
+
+				// =====================================================================
+				// PriceSchedule inventory-mount (second registration on distinct URLs)
+				// =====================================================================
+				// Reuses the same PriceSchedule views but on /app/inventory/price-schedules/*.
+				// Gate: if a lyngua price_schedule_inventory override ever collapses ListURL
+				// back onto the services mount, skip to avoid a ServeMux duplicate-route panic.
+				if priceScheduleInventoryRoutes.ListURL != priceScheduleRoutes.ListURL {
+					priceScheduleInventoryDeps := &priceschedulemod.ModuleDeps{
+						Routes:                   priceScheduleInventoryRoutes,
+						Labels:                   priceScheduleLabels,
+						PricePlanLabels:          pricePlanLabels,
+						ProductPricePlanLabels:   productPricePlanLabels,
+						CommonLabels:             ctx.Common,
+						TableLabels:              centymoTableLabels,
+						ListPriceSchedules:       uc.ListPriceSchedules.Execute,
+						ReadPriceSchedule:        uc.ReadPriceSchedule.Execute,
+						CreatePriceSchedule:      uc.CreatePriceSchedule.Execute,
+						UpdatePriceSchedule:      uc.UpdatePriceSchedule.Execute,
+						DeletePriceSchedule:      uc.DeletePriceSchedule.Execute,
+						GetPriceScheduleInUseIDs: getPriceScheduleInUseIDs,
+						ListLocations:            priceScheduleDeps.ListLocations,
+						ListPricePlans:           priceScheduleDeps.ListPricePlans,
+						CreatePricePlan:          priceScheduleDeps.CreatePricePlan,
+						ReadPricePlan:            priceScheduleDeps.ReadPricePlan,
+						UpdatePricePlan:          priceScheduleDeps.UpdatePricePlan,
+						DeletePricePlan:          priceScheduleDeps.DeletePricePlan,
+						GetPricePlanInUseIDs:     priceScheduleDeps.GetPricePlanInUseIDs,
+						ListPlans:                priceScheduleDeps.ListPlans,
+						ListProducts:             priceScheduleDeps.ListProducts,
+						ListProductPlans:         priceScheduleDeps.ListProductPlans,
+						ListProductPricePlans:    priceScheduleDeps.ListProductPricePlans,
+						CreateProductPricePlan:   priceScheduleDeps.CreateProductPricePlan,
+						UpdateProductPricePlan:   priceScheduleDeps.UpdateProductPricePlan,
+						DeleteProductPricePlan:   priceScheduleDeps.DeleteProductPricePlan,
+					}
+					priceschedulemod.NewModule(priceScheduleInventoryDeps).RegisterRoutes(ctx.Routes)
+				}
 			}
 		}
 
@@ -938,6 +1046,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
 					planDetailDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
 				}
+				if useCases.Product != nil && useCases.Product.ProductVariant != nil {
+					planDetailDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+				}
 				if useCases.Subscription.PricePlan != nil {
 					planDetailDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
 				}
@@ -960,6 +1071,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ppActionDeps := &planaction.PricePlanDeps{
 						Routes:          planRoutes,
 						Labels:          planLabels,
+						PricePlanLabels: pricePlanLabels,
 						CommonLabels:    ctx.Common,
 						CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
 						ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
@@ -1086,6 +1198,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
 						planBundleDetailDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
 					}
+					if useCases.Product != nil && useCases.Product.ProductVariant != nil {
+						planBundleDetailDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+					}
 					if useCases.Subscription.PricePlan != nil {
 						planBundleDetailDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
 					}
@@ -1206,6 +1321,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 				if useCases.Subscription.PricePlan != nil {
 					subActionDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
+				}
+				if useCases.Subscription.PriceSchedule != nil && useCases.Subscription.PriceSchedule.ListPriceSchedules != nil {
+					subActionDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
 				}
 				ctx.Routes.GET(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))

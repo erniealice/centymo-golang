@@ -20,6 +20,7 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
                 "Label" .Labels.Customer
                 "Value" .ClientLabel
                 "Readonly" true
+                "Info" .Labels.CustomerInfo
             )}}
         </div>
         {{else}}
@@ -35,9 +36,29 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
                 "SelectedLabel" .ClientLabel
                 "Required" true
                 "NoResults" .Labels.CustomerNoResults
+                "Info" .Labels.CustomerInfo
             )}}
         </div>
         {{end}}
+
+        {{/* --- Start Date and End Date --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "date_start_string"
+                "Label" .Labels.StartDate
+                "Value" .DateStart
+                "Required" true
+                "Info" .Labels.StartDateInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "date_end_string"
+                "Label" .Labels.EndDate
+                "Value" .DateEnd
+                "Info" .Labels.EndDateInfo
+            )}}
+        </div>
 
         {{/* --- Price Plan --- */}}
         <div class="form-row single">
@@ -52,6 +73,7 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
                 "SelectedLabel" .PlanLabel
                 "Required" true
                 "NoResults" .Labels.PlanNoResults
+                "Info" .Labels.PlanInfo
             )}}
         </div>
 
@@ -64,23 +86,7 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
                 "Value" .Code
                 "Placeholder" .Labels.CodePlaceholder
                 "MaxLength" "7"
-            )}}
-        </div>
-
-        {{/* --- Start Date and End Date --- */}}
-        <div class="form-row">
-            {{template "form-group" (dict
-                "Type" "date"
-                "Name" "date_start_string"
-                "Label" .Labels.StartDate
-                "Value" .DateStart
-                "Required" true
-            )}}
-            {{template "form-group" (dict
-                "Type" "date"
-                "Name" "date_end_string"
-                "Label" .Labels.EndDate
-                "Value" .DateEnd
+                "Info" .Labels.CodeInfo
             )}}
         </div>
 
@@ -94,10 +100,82 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
+                "Info" .Labels.NotesInfo
             )}}
         </div>
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
+
+<script>
+(function () {
+    var planContainer = document.getElementById('plan-search');
+    var dateStartInput = document.querySelector('[name="date_start_string"]');
+    var dateEndInput = document.querySelector('[name="date_end_string"]');
+
+    if (!planContainer || !dateStartInput || !dateEndInput) {
+        return;
+    }
+
+    var planHidden = planContainer.querySelector('.auto-complete-input');
+    var planTrigger = planContainer.querySelector('.auto-complete-trigger');
+
+    if (!planHidden || !planTrigger) {
+        return;
+    }
+
+    var baseURL = planContainer.dataset.searchUrl || '';
+
+    var clientBillingCurrency = {{ printf "%q" .ClientBillingCurrency }};
+
+    var initialPlaceholderHTML = '<span class="auto-complete-placeholder">{{.Labels.PlanPlaceholder}}</span>';
+
+    function updatePlanSearchURL() {
+        var start = dateStartInput.value;
+        var end = dateEndInput.value;
+        var url = baseURL;
+        var sep = '?';
+        if (start) {
+            url = url + sep + 'date_start=' + encodeURIComponent(start);
+            sep = '&';
+        }
+        if (end) {
+            url = url + sep + 'date_end=' + encodeURIComponent(end);
+        }
+        if (clientBillingCurrency) {
+            url = url + sep + 'billing_currency=' + encodeURIComponent(clientBillingCurrency);
+            sep = '&';
+        }
+        planContainer.dataset.searchUrl = url;
+    }
+
+    function clearPlanSelection() {
+        planHidden.value = '';
+        planHidden.removeAttribute('value');
+
+        var display = planTrigger.querySelector('.auto-complete-display');
+        if (display) {
+            display.innerHTML = initialPlaceholderHTML;
+        }
+
+        var clearBtn = planContainer.querySelector('.auto-complete-clear');
+        if (clearBtn) {
+            clearBtn.style.display = 'none';
+        }
+    }
+
+    dateStartInput.addEventListener('change', function () {
+        updatePlanSearchURL();
+        clearPlanSelection();
+    });
+
+    dateEndInput.addEventListener('change', function () {
+        updatePlanSearchURL();
+        clearPlanSelection();
+    });
+
+    updatePlanSearchURL();
+}());
+</script>
 {{end}}

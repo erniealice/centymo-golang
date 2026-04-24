@@ -48,6 +48,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                 "Value" .Description
                 "Required" true
                 "Placeholder" .Labels.ItemDescriptionPlaceholder
+                "Info" .Labels.DescriptionInfo
             )}}
         </div>
 
@@ -58,6 +59,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                 "Label" .Labels.Quantity
                 "Value" .Quantity
                 "Required" true
+                "Info" .Labels.QuantityInfo
             )}}
             {{template "form-group" (dict
                 "Type" "number"
@@ -66,6 +68,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                 "Value" .UnitPrice
                 "Required" true
                 "Placeholder" "0.00"
+                "Info" .Labels.UnitPriceInfo
             )}}
         </div>
 
@@ -76,6 +79,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                 "Label" .Labels.CostPrice
                 "Value" .CostPrice
                 "Placeholder" "0.00"
+                "Info" .Labels.CostPriceInfo
             )}}
             {{template "form-group" (dict
                 "Type" "number"
@@ -83,6 +87,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                 "Label" .Labels.Discount
                 "Value" .Discount
                 "Placeholder" "0.00"
+                "Info" .Labels.DiscountInfo
             )}}
         </div>
 
@@ -93,6 +98,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
+                "Info" .Labels.NotesInfo
             )}}
         </div>
     </div>

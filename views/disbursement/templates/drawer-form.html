@@ -17,6 +17,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Value" .ReferenceNumber
                 "Required" true
                 "Placeholder" .Labels.ReferencePlaceholder
+                "Info" .Labels.ReferenceInfo
             )}}
             {{template "form-group" (dict
                 "Type" "date"
@@ -24,6 +25,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Label" .Labels.Date
                 "Value" .Date
                 "Required" true
+                "Info" .Labels.DateInfo
             )}}
         </div>
 
@@ -36,6 +38,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Value" .Payee
                 "Required" true
                 "Placeholder" .Labels.PayeePlaceholder
+                "Info" .Labels.PayeeInfo
             )}}
         </div>
 
@@ -48,6 +51,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Value" .Amount
                 "Required" true
                 "Placeholder" .Labels.AmountPlaceholder
+                "Info" .Labels.AmountInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
@@ -55,6 +59,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Label" .Labels.Currency
                 "Value" .Currency
                 "Placeholder" .Labels.CurrencyPlaceholder
+                "Info" .Labels.CurrencyInfo
             )}}
         </div>
 
@@ -87,6 +92,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                     (dict "Value" "gcash" "Label" .Labels.MethodGCash)
                     (dict "Value" "other" "Label" .Labels.MethodOther)
                 )
+                "Info" .Labels.PaymentMethodInfo
             )}}
             {{template "form-group" (dict
                 "Type" "select"
@@ -100,6 +106,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                     (dict "Value" "paid" "Label" .Labels.StatusPaid)
                     (dict "Value" "cancelled" "Label" .Labels.StatusCancelled)
                 )
+                "Info" .Labels.StatusInfo
             )}}
         </div>
 
@@ -117,6 +124,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                     (dict "Value" "utilities" "Label" .Labels.TypeUtilities)
                     (dict "Value" "other" "Label" .Labels.TypeOther)
                 )
+                "Info" .Labels.CategoryInfo
             )}}
         </div>
 
@@ -130,6 +138,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Label" .Labels.ApprovedBy
                 "Value" .ApprovedBy
                 "Placeholder" .Labels.ApproverNamePlaceholder
+                "Info" .Labels.ApprovedByInfo
             )}}
         </div>
 
@@ -143,6 +152,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
+                "Info" .Labels.NotesInfo
             )}}
         </div>
     </div>

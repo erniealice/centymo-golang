@@ -243,7 +243,7 @@ func buildTableRows(lines []*linepb.Line, status string, l centymo.ProductLineLa
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("line", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Buttons.EditProductLine, Disabled: !perms.Can("line", "update"), DisabledTooltip: l.Errors.PermissionDenied},
 				deleteAction,
 			},
 		})

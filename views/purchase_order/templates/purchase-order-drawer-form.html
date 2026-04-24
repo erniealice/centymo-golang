@@ -19,6 +19,7 @@ Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Curre
                 "Value" .PONumber
                 "Required" true
                 "Placeholder" .Labels.PONumberPlaceholder
+                "Info" .Labels.PoNumberInfo
             )}}
             {{template "form-group" (dict
                 "Type" "select"
@@ -30,6 +31,7 @@ Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Curre
                     (dict "Value" "blanket" "Label" .Labels.POTypeBlanket)
                     (dict "Value" "contract" "Label" .Labels.POTypeContract)
                 )
+                "Info" .Labels.PoTypeInfo
             )}}
         </div>
 
@@ -42,6 +44,7 @@ Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Curre
                 "Value" .SupplierID
                 "Required" true
                 "Placeholder" .Labels.SupplierPlaceholder
+                "Info" .Labels.SupplierIDInfo
             )}}
         </div>
 
@@ -53,6 +56,7 @@ Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Curre
                 "Label" .Labels.OrderDate
                 "Value" .OrderDate
                 "Required" true
+                "Info" .Labels.OrderDateInfo
             )}}
             {{template "form-group" (dict
                 "Type" "date"
@@ -73,6 +77,7 @@ Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Curre
                     (dict "Value" "PHP" "Label" .Labels.CurrencyPHP)
                     (dict "Value" "USD" "Label" .Labels.CurrencyUSD)
                 )
+                "Info" .Labels.CurrencyInfo
             )}}
             {{template "form-group" (dict
                 "Type" "select"
@@ -84,6 +89,7 @@ Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Curre
                     (dict "Value" "net_30" "Label" .Labels.PaymentTermsNet30)
                     (dict "Value" "net_60" "Label" .Labels.PaymentTermsNet60)
                 )
+                "Info" .Labels.PaymentTermsInfo
             )}}
         </div>
 
@@ -116,6 +122,7 @@ Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Curre
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
+                "Info" .Labels.NotesInfo
             )}}
         </div>
     </div>

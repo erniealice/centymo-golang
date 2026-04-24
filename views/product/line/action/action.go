@@ -18,6 +18,11 @@ type FormLabels struct {
 	Description     string
 	DescPlaceholder string
 	Active          string
+
+	// Field-level info text surfaced via an info button beside each label.
+	NameInfo        string
+	DescriptionInfo string
+	ActiveInfo      string
 }
 
 // FormData is the template data for the line drawer form.
@@ -48,6 +53,10 @@ func formLabels(labels centymo.ProductLineLabels) FormLabels {
 		Description:     labels.Form.Description,
 		DescPlaceholder: labels.Form.DescPlaceholder,
 		Active:          labels.Form.Active,
+		// Info fields sourced from centymo.ProductLineFormLabels (populated from lyngua JSON + defaults).
+		NameInfo:        labels.Form.NameInfo,
+		DescriptionInfo: labels.Form.DescriptionInfo,
+		ActiveInfo:      labels.Form.ActiveInfo,
 	}
 }
 

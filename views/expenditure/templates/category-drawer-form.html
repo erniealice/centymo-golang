@@ -17,6 +17,7 @@ Data: .Code, .Name, .Description, .ID, .FormAction, .IsEdit,
                 "Label" .Labels.Code
                 "Value" .Code
                 "Required" true
+                "Info" .Labels.CodeInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
@@ -24,6 +25,7 @@ Data: .Code, .Name, .Description, .ID, .FormAction, .IsEdit,
                 "Label" .Labels.Name
                 "Value" .Name
                 "Required" true
+                "Info" .Labels.NameInfo
             )}}
         </div>
 
@@ -34,6 +36,7 @@ Data: .Code, .Name, .Description, .ID, .FormAction, .IsEdit,
                 "Name" "description"
                 "Label" .Labels.Description
                 "Value" .Description
+                "Info" .Labels.DescriptionInfo
             )}}
         </div>
     </div>

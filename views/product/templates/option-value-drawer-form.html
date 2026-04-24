@@ -26,6 +26,7 @@ Data: .Label, .Value, .SortOrder, .ColorHex, .Active, .ID, .ProductID, .OptionID
                 "Value" .Label
                 "Placeholder" .Labels.LabelPlaceholder
                 "Required" true
+                "Info" .Labels.LabelInfo
             )}}
         </div>
 
@@ -37,6 +38,7 @@ Data: .Label, .Value, .SortOrder, .ColorHex, .Active, .ID, .ProductID, .OptionID
                 "Value" .Value
                 "Placeholder" .Labels.ValuePlaceholder
                 "Required" true
+                "Info" .Labels.ValueInfo
             )}}
         </div>
 
@@ -48,6 +50,7 @@ Data: .Label, .Value, .SortOrder, .ColorHex, .Active, .ID, .ProductID, .OptionID
                 "Label" .Labels.ColorHex
                 "Value" .ColorHex
                 "Placeholder" .Labels.ColorHexPlaceholder
+                "Info" .Labels.ColorHexInfo
             )}}
         </div>
         {{end}}
@@ -58,16 +61,32 @@ Data: .Label, .Value, .SortOrder, .ColorHex, .Active, .ID, .ProductID, .OptionID
                 "Name" "sort_order"
                 "Label" .Labels.SortOrder
                 "Value" .SortOrder
+                "Info" .Labels.SortOrderInfo
             )}}
         </div>
 
         <div class="form-row single">
-            {{template "toggle" (dict
-                "Name" "active"
-                "Label" .Labels.Active
-                "Checked" .Active
-                "Value" "true"
-            )}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict
+                    "Name" "active"
+                    "Checked" .Active
+                    "Value" "true"
+                )}}
+            </div>
         </div>
     </div>
 

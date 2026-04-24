@@ -29,6 +29,7 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
                 "Value" ""
                 "Required" true
                 "Placeholder" "0"
+                "Info" .Labels.Form.AmountInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
@@ -36,6 +37,7 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
                 "Label" .Labels.Form.Currency
                 "Value" "PHP"
                 "Required" true
+                "Info" .Labels.Form.CurrencyInfo
             )}}
         </div>
     </div>

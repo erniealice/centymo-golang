@@ -16,6 +16,7 @@ import (
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
@@ -35,6 +36,12 @@ type FormLabels struct {
 	PlanNoResults             string
 	Code                      string
 	CodePlaceholder           string
+	CustomerInfo              string
+	PlanInfo                  string
+	CodeInfo                  string
+	StartDateInfo             string
+	EndDateInfo               string
+	NotesInfo                 string
 }
 
 // FormData is the template data for the subscription drawer form.
@@ -55,8 +62,12 @@ type FormData struct {
 	ClientLabel     string
 	PlanLabel       string
 	ClientLocked    bool
-	Labels          FormLabels
-	CommonLabels    any
+	// ClientBillingCurrency is the selected client's billing currency, passed to
+	// the plan search URL so the grouped auto-complete only shows plans in that
+	// currency. Empty = no currency filter.
+	ClientBillingCurrency string
+	Labels                FormLabels
+	CommonLabels          any
 }
 
 // Deps holds dependencies for subscription action handlers.
@@ -73,6 +84,7 @@ type Deps struct {
 	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
 	SearchPlansByName   func(ctx context.Context, req *planpb.SearchPlansByNameRequest) (*planpb.SearchPlansByNameResponse, error)
 	ListPricePlans      func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 }
 
 func formLabels(l centymo.SubscriptionLabels) FormLabels {
@@ -91,6 +103,12 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 		PlanNoResults:             l.Form.PlanNoResults,
 		Code:                      l.Form.Code,
 		CodePlaceholder:           l.Form.CodePlaceholder,
+		CustomerInfo:              l.Form.CustomerInfo,
+		PlanInfo:                  l.Form.PlanInfo,
+		CodeInfo:                  l.Form.CodeInfo,
+		StartDateInfo:             l.Form.StartDateInfo,
+		EndDateInfo:               l.Form.EndDateInfo,
+		NotesInfo:                 l.Form.NotesInfo,
 	}
 }
 
@@ -154,6 +172,25 @@ func loadPlanOptions(ctx context.Context, listPlans func(ctx context.Context, re
 		})
 	}
 	return options
+}
+
+// resolveClientBillingCurrency finds the billing_currency for a client by ID.
+// Returns empty string when the client has no billing_currency set (caller should
+// treat empty as "no currency filter" in the drawer's plan search).
+func resolveClientBillingCurrency(ctx context.Context, clientID string, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)) string {
+	if clientID == "" || listClients == nil {
+		return ""
+	}
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		return ""
+	}
+	for _, c := range resp.GetData() {
+		if c.GetId() == clientID {
+			return c.GetBillingCurrency()
+		}
+	}
+	return ""
 }
 
 // resolveClientLabel finds the display name for a client by ID.
@@ -223,18 +260,20 @@ func NewAddAction(deps *Deps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			clientID := viewCtx.Request.URL.Query().Get("client_id")
 			clientName := viewCtx.Request.URL.Query().Get("client_name")
+			clientBillingCurrency := viewCtx.Request.URL.Query().Get("billing_currency")
 			clientLocked := clientID != ""
 
 			return view.OK("subscription-drawer-form", &FormData{
-				FormAction:      deps.Routes.AddURL,
-				SearchClientURL: deps.Routes.SearchClientURL,
-				SearchPlanURL:   deps.Routes.SearchPlanURL,
-				ClientID:        clientID,
-				ClientLabel:     clientName,
-				ClientLocked:    clientLocked,
-				Code:            generateCode(),
-				Labels:          formLabels(deps.Labels),
-				CommonLabels:    nil, // injected by ViewAdapter
+				FormAction:            deps.Routes.AddURL,
+				SearchClientURL:       deps.Routes.SearchClientURL,
+				SearchPlanURL:         deps.Routes.SearchPlanURL,
+				ClientID:              clientID,
+				ClientLabel:           clientName,
+				ClientLocked:          clientLocked,
+				ClientBillingCurrency: clientBillingCurrency,
+				Code:                  generateCode(),
+				Labels:                formLabels(deps.Labels),
+				CommonLabels:          nil, // injected by ViewAdapter
 			})
 		}
 
@@ -322,27 +361,29 @@ func NewEditAction(deps *Deps) view.View {
 			record := readData[0]
 
 			clientLabel := resolveClientLabel(ctx, record.GetClientId(), deps.ListClients)
+			clientBillingCurrency := resolveClientBillingCurrency(ctx, record.GetClientId(), deps.ListClients)
 			planLabel := resolvePlanLabel(ctx, record.GetPricePlanId(), deps.ListPlans)
 
 			// Lock client field when opened from client detail page
 			clientLocked := viewCtx.Request.URL.Query().Get("client_id") != ""
 
 			return view.OK("subscription-drawer-form", &FormData{
-				FormAction:      route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:          true,
-				ID:              id,
-				Code:            record.GetCode(),
-				ClientID:        record.GetClientId(),
-				PricePlanID:     record.GetPricePlanId(),
-				DateStart:       formatDateForInput(record.GetDateStart()),
-				DateEnd:         formatDateForInput(record.GetDateEnd()),
-				SearchClientURL: deps.Routes.SearchClientURL,
-				SearchPlanURL:   deps.Routes.SearchPlanURL,
-				ClientLabel:     clientLabel,
-				ClientLocked:    clientLocked,
-				PlanLabel:       planLabel,
-				Labels:          formLabels(deps.Labels),
-				CommonLabels:    nil, // injected by ViewAdapter
+				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
+				IsEdit:                true,
+				ID:                    id,
+				Code:                  record.GetCode(),
+				ClientID:              record.GetClientId(),
+				PricePlanID:           record.GetPricePlanId(),
+				DateStart:             formatDateForInput(record.GetDateStart()),
+				DateEnd:               formatDateForInput(record.GetDateEnd()),
+				SearchClientURL:       deps.Routes.SearchClientURL,
+				SearchPlanURL:         deps.Routes.SearchPlanURL,
+				ClientLabel:           clientLabel,
+				ClientLocked:          clientLocked,
+				ClientBillingCurrency: clientBillingCurrency,
+				PlanLabel:             planLabel,
+				Labels:                formLabels(deps.Labels),
+				CommonLabels:          nil, // injected by ViewAdapter
 			})
 		}
 

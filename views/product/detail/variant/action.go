@@ -41,7 +41,7 @@ func NewTableView(deps *DetailViewDeps) view.View {
 func NewAssignView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("product", "create") {
+		if !perms.Can(deps.permEntity(), "create") {
 			return detail.HtmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
@@ -110,7 +110,7 @@ func NewAssignView(deps *DetailViewDeps) view.View {
 func NewEditView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("product", "update") {
+		if !perms.Can(deps.permEntity(), "update") {
 			return detail.HtmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
@@ -209,7 +209,7 @@ func NewEditView(deps *DetailViewDeps) view.View {
 func NewRemoveView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("product", "delete") {
+		if !perms.Can(deps.permEntity(), "delete") {
 			return detail.HtmxError(deps.Labels.Errors.PermissionDenied)
 		}
 

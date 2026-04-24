@@ -40,6 +40,15 @@ type FormLabels struct {
 	Notes            string
 	NotesPlaceholder string
 	Status           string
+
+	// Field-level info text surfaced via an info button beside each label.
+	PoNumberInfo     string
+	SupplierIDInfo   string
+	PoTypeInfo       string
+	OrderDateInfo    string
+	CurrencyInfo     string
+	PaymentTermsInfo string
+	NotesInfo        string
 }
 
 // Deps holds dependencies for purchase order action handlers.
@@ -66,6 +75,14 @@ func formLabels(l centymo.ExpenditureLabels) FormLabels {
 		Notes:            l.Form.Notes,
 		NotesPlaceholder: l.Form.NotesPlaceholder,
 		Status:           l.Form.Status,
+		// Info fields sourced from centymo.PurchaseOrderFormLabels (populated from lyngua JSON + defaults).
+		PoNumberInfo:     l.PurchaseOrder.Form.PONumberInfo,
+		SupplierIDInfo:   l.PurchaseOrder.Form.SupplierInfo,
+		PoTypeInfo:       l.PurchaseOrder.Form.POTypeInfo,
+		OrderDateInfo:    l.PurchaseOrder.Form.OrderDateInfo,
+		CurrencyInfo:     l.PurchaseOrder.Form.CurrencyInfo,
+		PaymentTermsInfo: l.PurchaseOrder.Form.PaymentTermsInfo,
+		NotesInfo:        l.PurchaseOrder.Form.NotesInfo,
 	}
 }
 

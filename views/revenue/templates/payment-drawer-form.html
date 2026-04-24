@@ -17,6 +17,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
                 "Value" .CollectionMethodID
                 "Required" true
                 "Options" .PaymentMethods
+                "Info" .Labels.Form.PaymentMethodInfo
             )}}
         </div>
 
@@ -28,6 +29,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
                 "Value" .AmountPaid
                 "Required" true
                 "Placeholder" "0.00"
+                "Info" .Labels.Form.AmountInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
@@ -35,6 +37,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
                 "Label" .Labels.Form.Currency
                 "Value" .Currency
                 "Placeholder" "PHP"
+                "Info" .Labels.Form.CurrencyInfo
             )}}
         </div>
 
@@ -45,6 +48,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
                 "Label" .Labels.Form.ReferenceNumber
                 "Value" .ReferenceNumber
                 "Placeholder" .Labels.Form.TransactionIdPlaceholder
+                "Info" .Labels.Form.ReferenceNumberInfo
             )}}
         </div>
 
@@ -55,12 +59,14 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
                 "Label" .Labels.Form.ReceivedBy
                 "Value" .ReceivedBy
                 "Readonly" .IsEdit
+                "Info" .Labels.Form.ReceivedByInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "received_role"
                 "Label" .Labels.Form.Role
                 "Value" .ReceivedRole
+                "Info" .Labels.Form.RoleInfo
             )}}
         </div>
 
@@ -70,6 +76,7 @@ Data: .FormAction, .IsEdit, .ID, .CollectionMethodID, .AmountPaid, .Currency,
                 "Name" "notes"
                 "Label" .Labels.Form.Notes
                 "Value" .Notes
+                "Info" .Labels.Form.NotesInfo
             )}}
         </div>
     </div>

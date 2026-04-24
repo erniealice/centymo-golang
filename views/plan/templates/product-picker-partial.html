@@ -1,8 +1,13 @@
 {{/*
 Product picker partial — returned by NewProductPlanPickerAction via HTMX swap.
-Renders only the auto-complete + hidden name input for the #product-picker-wrapper div.
-Swapping this partial resets product_id and product_name to empty (fresh selection).
-Data: .ProductOptions, .SelectedKind, .PlanID, .Name, .SelectedProductID, .SelectedProductLabel
+Renders the auto-complete + hidden name input + optional variant picker for
+the #product-picker-wrapper div. Swapping this partial resets product_id and
+product_name to empty (fresh selection) when no product_id is in the query,
+or keeps the current selection + adds the variant picker when a configurable
+product is chosen.
+Data: .ProductOptions, .SelectedKind, .PlanID, .Name, .SelectedProductID,
+      .SelectedProductLabel, .VariantConfigurable, .VariantOptions,
+      .VariantSelectLabel, .VariantSelectPlaceholder
 */}}
 {{define "product-picker-partial"}}
 {{template "auto-complete" (dict
@@ -17,4 +22,24 @@ Data: .ProductOptions, .SelectedKind, .PlanID, .Name, .SelectedProductID, .Selec
 )}}
 {{/* Hidden name field — reset to empty on kind-switch so a fresh item must be picked */}}
 <input type="hidden" name="name" value="">
+
+{{/* Model D — variant sub-picker appears only for variant_mode=configurable products. */}}
+{{if .VariantConfigurable}}
+<div class="form-row single" id="product-variant-picker-row">
+    <div class="form-group">
+        <label class="form-label" for="product-variant-select">{{.VariantSelectLabel}}</label>
+        <select
+            id="product-variant-select"
+            class="form-select"
+            name="product_variant_id"
+            required
+        >
+            <option value="">{{.VariantSelectPlaceholder}}</option>
+            {{range .VariantOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+        </select>
+    </div>
+</div>
+{{end}}
 {{end}}

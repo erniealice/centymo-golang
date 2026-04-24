@@ -18,6 +18,11 @@ type FormLabels struct {
 	Code        string
 	Name        string
 	Description string
+
+	// Field-level info text surfaced via an info button beside each label.
+	CodeInfo        string
+	NameInfo        string
+	DescriptionInfo string
 }
 
 // FormData is the template data for the category drawer form.
@@ -62,6 +67,10 @@ func formLabels(l centymo.ExpenditureCategoryLabels) FormLabels {
 		Code:        code,
 		Name:        name,
 		Description: description,
+		// Info fields sourced from centymo.ExpenditureCategoryFormLabels (populated from lyngua JSON + defaults).
+		CodeInfo:        l.Form.CodeInfo,
+		NameInfo:        l.Form.NameInfo,
+		DescriptionInfo: l.Form.DescriptionInfo,
 	}
 }
 

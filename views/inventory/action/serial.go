@@ -23,6 +23,15 @@ type SerialFormLabels struct {
 	WarrantyEnd   string
 	PurchaseOrder string
 	SoldReference string
+
+	// Field-level info text surfaced via an info button beside each label.
+	SerialNumberInfo  string
+	IMEIInfo          string
+	StatusInfo        string
+	WarrantyStartInfo string
+	WarrantyEndInfo   string
+	PurchaseOrderInfo string
+	SoldReferenceInfo string
 }
 
 // SerialFormData is the template data for the serial drawer form.
@@ -42,7 +51,7 @@ type SerialFormData struct {
 	CommonLabels  any
 }
 
-func serialFormLabels(t func(string) string) SerialFormLabels {
+func serialFormLabels(t func(string) string, s centymo.InventorySerialLabels) SerialFormLabels {
 	return SerialFormLabels{
 		SerialNumber:  t("inventory.serial.serialNumber"),
 		IMEI:          t("inventory.serial.imei"),
@@ -51,6 +60,14 @@ func serialFormLabels(t func(string) string) SerialFormLabels {
 		WarrantyEnd:   t("inventory.serial.warrantyEnd"),
 		PurchaseOrder: t("inventory.serial.purchaseOrder"),
 		SoldReference: t("inventory.serial.soldReference"),
+		// Info fields sourced from centymo.InventorySerialLabels (populated from lyngua JSON + defaults).
+		SerialNumberInfo:  s.SerialNumberInfo,
+		IMEIInfo:          s.IMEIInfo,
+		StatusInfo:        s.StatusInfo,
+		WarrantyStartInfo: s.WarrantyStartInfo,
+		WarrantyEndInfo:   s.WarrantyEndInfo,
+		PurchaseOrderInfo: s.PurchaseOrderInfo,
+		SoldReferenceInfo: s.SoldReferenceInfo,
 	}
 }
 
@@ -78,7 +95,7 @@ func NewSerialAssignAction(deps *Deps) view.View {
 			return view.OK("serial-drawer-form", &SerialFormData{
 				FormAction:    route.ResolveURL(deps.Routes.SerialAssignURL, "id", inventoryItemID),
 				Status:        "available",
-				Labels:        serialFormLabels(viewCtx.T),
+				Labels:        serialFormLabels(viewCtx.T, deps.Labels.Serial),
 				StatusOptions: serialStatusOptions(viewCtx.T),
 				CommonLabels:  nil,
 			})
@@ -145,7 +162,7 @@ func NewSerialEditAction(deps *Deps) view.View {
 				WarrantyStart: record.GetWarrantyStart(),
 				WarrantyEnd:   record.GetWarrantyEnd(),
 				PurchaseOrder: record.GetPurchaseOrder(),
-				Labels:        serialFormLabels(viewCtx.T),
+				Labels:        serialFormLabels(viewCtx.T, deps.Labels.Serial),
 				StatusOptions: serialStatusOptions(viewCtx.T),
 				CommonLabels:  nil,
 			})

@@ -19,6 +19,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Value" .ReferenceNumber
                 "Required" true
                 "Placeholder" .Labels.ReferencePlaceholder
+                "Info" .Labels.Form.ReferenceInfo
             )}}
         </div>
 
@@ -31,6 +32,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Value" .Customer
                 "Required" true
                 "Placeholder" .Labels.Form.CustomerNamePlaceholder
+                "Info" .Labels.Form.CustomerInfo
             )}}
         </div>
 
@@ -43,6 +45,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Value" .Amount
                 "Required" true
                 "Placeholder" .Labels.Form.AmountPlaceholder
+                "Info" .Labels.Form.AmountInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
@@ -50,6 +53,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Currency
                 "Value" .Currency
                 "Placeholder" .Labels.Form.CurrencyPlaceholder
+                "Info" .Labels.Form.CurrencyInfo
             )}}
         </div>
 
@@ -69,6 +73,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                     (dict "Value" "card" "Label" .Labels.Form.MethodCard)
                     (dict "Value" "other" "Label" .Labels.Form.MethodOther)
                 )
+                "Info" .Labels.Form.PaymentMethodInfo
             )}}
             {{template "form-group" (dict
                 "Type" "date"
@@ -76,6 +81,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Date
                 "Value" .Date
                 "Required" true
+                "Info" .Labels.Form.DateInfo
             )}}
         </div>
 
@@ -91,6 +97,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                     (dict "Value" "completed" "Label" .Labels.Form.StatusCompleted)
                     (dict "Value" "failed" "Label" .Labels.Form.StatusFailed)
                 )
+                "Info" .Labels.Form.StatusInfo
             )}}
         </div>
 
@@ -104,6 +111,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
+                "Info" .Labels.Form.NotesInfo
             )}}
         </div>
     </div>

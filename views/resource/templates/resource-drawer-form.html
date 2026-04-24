@@ -3,16 +3,16 @@
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <div class="sheet-body">
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder)}}
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder "Info" .Labels.NameInfo)}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder)}}
+            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder "Info" .Labels.DescriptionInfo)}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "product_id" "Label" .Labels.ProductId "Value" .ProductId "Required" true "Placeholder" "Product ID")}}
+            {{template "form-group" (dict "Type" "text" "Name" "product_id" "Label" .Labels.ProductId "Value" .ProductId "Required" true "Placeholder" "Product ID" "Info" .Labels.ProductIdInfo)}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "user_id" "Label" .Labels.UserId "Value" .UserId "Placeholder" "User ID (optional)")}}
+            {{template "form-group" (dict "Type" "text" "Name" "user_id" "Label" .Labels.UserId "Value" .UserId "Placeholder" "User ID (optional)" "Info" .Labels.UserIdInfo)}}
         </div>
     </div>
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

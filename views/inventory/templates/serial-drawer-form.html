@@ -15,6 +15,7 @@ Data: .FormAction, .IsEdit, .ID, .SerialNumber, .IMEI, .Status, .WarrantyStart, 
                 "Label" .Labels.SerialNumber
                 "Value" .SerialNumber
                 "Required" true
+                "Info" .Labels.SerialNumberInfo
             )}}
         </div>
 
@@ -24,6 +25,7 @@ Data: .FormAction, .IsEdit, .ID, .SerialNumber, .IMEI, .Status, .WarrantyStart, 
                 "Name" "imei"
                 "Label" .Labels.IMEI
                 "Value" .IMEI
+                "Info" .Labels.IMEIInfo
             )}}
         </div>
 
@@ -34,6 +36,7 @@ Data: .FormAction, .IsEdit, .ID, .SerialNumber, .IMEI, .Status, .WarrantyStart, 
                 "Label" .Labels.Status
                 "Value" .Status
                 "Options" .StatusOptions
+                "Info" .Labels.StatusInfo
             )}}
         </div>
 
@@ -43,12 +46,14 @@ Data: .FormAction, .IsEdit, .ID, .SerialNumber, .IMEI, .Status, .WarrantyStart, 
                 "Name" "warranty_start"
                 "Label" .Labels.WarrantyStart
                 "Value" .WarrantyStart
+                "Info" .Labels.WarrantyStartInfo
             )}}
             {{template "form-group" (dict
                 "Type" "date"
                 "Name" "warranty_end"
                 "Label" .Labels.WarrantyEnd
                 "Value" .WarrantyEnd
+                "Info" .Labels.WarrantyEndInfo
             )}}
         </div>
 
@@ -58,6 +63,7 @@ Data: .FormAction, .IsEdit, .ID, .SerialNumber, .IMEI, .Status, .WarrantyStart, 
                 "Name" "purchase_order"
                 "Label" .Labels.PurchaseOrder
                 "Value" .PurchaseOrder
+                "Info" .Labels.PurchaseOrderInfo
             )}}
         </div>
 
@@ -67,6 +73,7 @@ Data: .FormAction, .IsEdit, .ID, .SerialNumber, .IMEI, .Status, .WarrantyStart, 
                 "Name" "sold_reference"
                 "Label" .Labels.SoldReference
                 "Value" .SoldReference
+                "Info" .Labels.SoldReferenceInfo
             )}}
         </div>
     </div>

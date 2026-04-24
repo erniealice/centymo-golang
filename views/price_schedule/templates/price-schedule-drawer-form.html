@@ -9,10 +9,10 @@
         {{template "form-section" (dict "Title" .Labels.SectionScheduleDetails)}}
 
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder)}}
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder "Info" .Labels.NameInfo)}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder)}}
+            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder "Info" .Labels.DescriptionInfo)}}
         </div>
 
         {{/* ================================================================ */}}
@@ -21,8 +21,8 @@
         {{template "form-section" (dict "Title" .Labels.SectionDateRange)}}
 
         <div class="form-row">
-            {{template "form-group" (dict "Type" "date" "Name" "date_start" "Label" .Labels.DateStart "Value" .DateStart "Required" true)}}
-            {{template "form-group" (dict "Type" "date" "Name" "date_end" "Label" .Labels.DateEnd "Value" .DateEnd)}}
+            {{template "form-group" (dict "Type" "date" "Name" "date_start" "Label" .Labels.DateStart "Value" .DateStart "Required" true "Info" .Labels.DateStartInfo)}}
+            {{template "form-group" (dict "Type" "date" "Name" "date_end" "Label" .Labels.DateEnd "Value" .DateEnd "Info" .Labels.DateEndInfo)}}
         </div>
 
         {{/* ================================================================ */}}
@@ -40,10 +40,27 @@
                 "Options" .LocationOptions
                 "Value" .SelectedLocationID
                 "SelectedLabel" .SelectedLocationLabel
+                "Info" .Labels.LocationInfo
             )}}
         </div>
         <div class="form-row single">
-            {{template "toggle" (dict "Name" "active" "Label" .Labels.Active "Checked" .Active "Value" "true")}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
         </div>
     </div>
 

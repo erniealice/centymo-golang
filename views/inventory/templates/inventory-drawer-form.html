@@ -16,6 +16,7 @@ Data: .Name, .SKU, .OnHand, .Reserved, .ReorderLevel, .UnitOfMeasure, .LocationI
                 "Label" .Labels.Product
                 "Value" .Name
                 "Required" true
+                "Info" .Labels.ProductInfo
             )}}
         </div>
 
@@ -26,6 +27,7 @@ Data: .Name, .SKU, .OnHand, .Reserved, .ReorderLevel, .UnitOfMeasure, .LocationI
                 "Label" .Labels.SKU
                 "Value" .SKU
                 "Placeholder" .Labels.SKUPlaceholder
+                "Info" .Labels.SKUInfo
             )}}
         </div>
 
@@ -36,12 +38,14 @@ Data: .Name, .SKU, .OnHand, .Reserved, .ReorderLevel, .UnitOfMeasure, .LocationI
                 "Label" .Labels.OnHand
                 "Value" .OnHand
                 "Required" true
+                "Info" .Labels.OnHandInfo
             )}}
             {{template "form-group" (dict
                 "Type" "number"
                 "Name" "quantity_reserved"
                 "Label" .Labels.Reserved
                 "Value" .Reserved
+                "Info" .Labels.ReservedInfo
             )}}
         </div>
 
@@ -51,12 +55,14 @@ Data: .Name, .SKU, .OnHand, .Reserved, .ReorderLevel, .UnitOfMeasure, .LocationI
                 "Name" "reorder_level"
                 "Label" .Labels.ReorderLevel
                 "Value" .ReorderLevel
+                "Info" .Labels.ReorderLevelInfo
             )}}
             {{template "form-group" (dict
                 "Type" "text"
                 "Name" "unit_of_measure"
                 "Label" .Labels.UnitOfMeasure
                 "Value" .UnitOfMeasure
+                "Info" .Labels.UnitOfMeasureInfo
             )}}
         </div>
 
@@ -67,16 +73,32 @@ Data: .Name, .SKU, .OnHand, .Reserved, .ReorderLevel, .UnitOfMeasure, .LocationI
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
+                "Info" .Labels.NotesInfo
             )}}
         </div>
 
         <div class="form-row single">
-            {{template "toggle" (dict
-                "Name" "active"
-                "Label" .Labels.Active
-                "Checked" .Active
-                "Value" "true"
-            )}}
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict
+                    "Name" "active"
+                    "Checked" .Active
+                    "Value" "true"
+                )}}
+            </div>
         </div>
     </div>
 

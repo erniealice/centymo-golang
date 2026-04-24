@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -25,9 +26,13 @@ import (
 
 // PricePlanDeps holds dependencies for price plan action handlers.
 type PricePlanDeps struct {
-	Routes             centymo.PlanRoutes
-	Labels             centymo.PlanLabels
-	CommonLabels       pyeza.CommonLabels
+	Routes centymo.PlanRoutes
+	// Labels carries plan-level strings (errors, actions). Form-field labels
+	// live on PricePlanLabels.Form (sourced from lyngua price_plan.json →
+	// price_plan.form, which is the single source for the drawer).
+	Labels          centymo.PlanLabels
+	PricePlanLabels centymo.PricePlanLabels
+	CommonLabels    pyeza.CommonLabels
 	CreatePricePlan    func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
 	ReadPricePlan      func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	UpdatePricePlan    func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
@@ -161,7 +166,8 @@ func autoSeedProductPricePlans(ctx context.Context, deps *PricePlanDeps, pricePl
 			continue
 		}
 		productID := pp.GetProductId()
-		if productID == "" {
+		productPlanID := pp.GetId()
+		if productPlanID == "" {
 			continue
 		}
 		var price int64
@@ -169,22 +175,25 @@ func autoSeedProductPricePlans(ctx context.Context, deps *PricePlanDeps, pricePl
 		if rowCurrency == "" {
 			rowCurrency = "PHP"
 		}
+		// Product.price is now optional (Model D). Only dereference when set.
 		if prod := products[productID]; prod != nil {
-			price = prod.GetPrice()
+			if prod.Price != nil {
+				price = prod.GetPrice()
+			}
 			if c := prod.GetCurrency(); c != "" {
 				rowCurrency = c
 			}
 		}
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{
 			Data: &productpriceplanpb.ProductPricePlan{
-				PricePlanId: pricePlanID,
-				ProductId:   productID,
-				Price:       price,
-				Currency:    rowCurrency,
-				Active:      true,
+				PricePlanId:     pricePlanID,
+				ProductPlanId:   productPlanID, // Model D — FK to catalog line, not product
+				BillingAmount:   price,
+				BillingCurrency: rowCurrency,
+				Active:          true,
 			},
 		}); err != nil {
-			log.Printf("auto-seed product_price_plan failed for %s/%s: %v", pricePlanID, productID, err)
+			log.Printf("auto-seed product_price_plan failed for %s/%s: %v", pricePlanID, productPlanID, err)
 		}
 	}
 }
@@ -207,17 +216,25 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			schedules := loadScheduleOptions(ctx, deps, scheduleLocationHintPrefix)
+			formLabels := deps.PricePlanLabels.Form
 			return view.OK("price-plan-drawer-form", &form.Data{
-				FormAction:      route.ResolveURL(deps.Routes.PricePlanAddURL, "id", planID),
-				Context:         form.ContextPlan,
-				PlanID:          planID,
-				PlanName:        lookupPlanName(ctx, deps, planID),
-				Active:          true,
-				Currency:        "PHP",
-				DurationUnit:    "months",
-				ScheduleOptions: form.BuildOptions(schedules, ""),
-				Labels:          form.LabelsFromPricePlan(deps.Labels.PricePlanForm),
-				CommonLabels:    deps.CommonLabels,
+				FormAction:          route.ResolveURL(deps.Routes.PricePlanAddURL, "id", planID),
+				Context:             form.ContextPlan,
+				PlanID:              planID,
+				PlanName:            lookupPlanName(ctx, deps, planID),
+				Active:              true,
+				Currency:            "PHP",
+				DurationUnit:        "months",
+				BillingKind:         "BILLING_KIND_RECURRING",
+				AmountBasis:         "AMOUNT_BASIS_PER_CYCLE",
+				BillingCycleUnit:    "month",
+				DefaultTermUnit:     "month",
+				ScheduleOptions:     form.BuildOptions(schedules, ""),
+				BillingKindOptions:  form.BuildBillingKindOptions(formLabels),
+				AmountBasisOptions:  form.BuildAmountBasisOptions(formLabels),
+				DurationUnitOptions: form.BuildDurationUnitOptions(deps.CommonLabels),
+				Labels:              form.LabelsFromPricePlan(formLabels),
+				CommonLabels:        deps.CommonLabels,
 			})
 		}
 
@@ -244,18 +261,19 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 		ppName := r.FormValue("name")
 		ppDescription := r.FormValue("description")
 		pp := &priceplanpb.PricePlan{
-			PlanId:        planID,
-			Name:          &ppName,
-			Description:   &ppDescription,
-			Amount:        amount,
-			Currency:      currency,
-			DurationValue: durationValue,
-			DurationUnit:  r.FormValue("duration_unit"),
-			Active:        active,
+			PlanId:          planID,
+			Name:            &ppName,
+			Description:     &ppDescription,
+			BillingAmount:   amount,
+			BillingCurrency: currency,
+			DurationValue:   durationValue,
+			DurationUnit:    r.FormValue("duration_unit"),
+			Active:          active,
 		}
 		if schedID := r.FormValue("price_schedule_id"); schedID != "" {
 			pp.PriceScheduleId = &schedID
 		}
+		applyBillingFields(pp, r)
 
 		createResp, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{
 			Data: pp,
@@ -301,7 +319,7 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			}
 			pp := data[0]
 
-			amountStr := strconv.FormatFloat(float64(pp.GetAmount())/100.0, 'f', 2, 64)
+			amountStr := strconv.FormatFloat(float64(pp.GetBillingAmount())/100.0, 'f', 2, 64)
 			durationStr := strconv.FormatInt(int64(pp.GetDurationValue()), 10)
 			selectedScheduleID := pp.GetPriceScheduleId()
 			schedules := loadScheduleOptions(ctx, deps, scheduleLocationHintPrefix)
@@ -311,9 +329,19 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			if deps.GetPricePlanInUseIDs != nil {
 				if m, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppID}); m[ppID] {
 					inUse = true
-					lockMsg = "This price plan is in use by active subscriptions. Pricing changes are disabled."
+					lockMsg = deps.PricePlanLabels.Messages.PricingLockedReason
 				}
 			}
+
+			billingCycleStr := ""
+			if v := pp.GetBillingCycleValue(); v > 0 {
+				billingCycleStr = fmt.Sprintf("%d", v)
+			}
+			defaultTermStr := ""
+			if v := pp.GetDefaultTermValue(); v > 0 {
+				defaultTermStr = fmt.Sprintf("%d", v)
+			}
+			formLabels := deps.PricePlanLabels.Form
 
 			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
@@ -326,16 +354,25 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				Name:                  pp.GetName(),
 				Description:           pp.GetDescription(),
 				Amount:                amountStr,
-				Currency:              pp.GetCurrency(),
+				Currency:              pp.GetBillingCurrency(),
 				DurationValue:         durationStr,
 				DurationUnit:          pp.GetDurationUnit(),
 				Active:                pp.GetActive(),
+				BillingKind:           pp.GetBillingKind().String(),
+				AmountBasis:           pp.GetAmountBasis().String(),
+				BillingCycleValue:     billingCycleStr,
+				BillingCycleUnit:      pp.GetBillingCycleUnit(),
+				DefaultTermValue:      defaultTermStr,
+				DefaultTermUnit:       pp.GetDefaultTermUnit(),
+				BillingKindOptions:    form.BuildBillingKindOptions(formLabels),
+				AmountBasisOptions:    form.BuildAmountBasisOptions(formLabels),
+				DurationUnitOptions:   form.BuildDurationUnitOptions(deps.CommonLabels),
 				ScheduleOptions:       form.BuildOptions(schedules, selectedScheduleID),
 				SelectedScheduleID:    selectedScheduleID,
 				SelectedScheduleLabel: form.FindLabel(schedules, selectedScheduleID),
 				InUse:                 inUse,
 				LockMessage:           lockMsg,
-				Labels:                form.LabelsFromPricePlan(deps.Labels.PricePlanForm),
+				Labels:                form.LabelsFromPricePlan(formLabels),
 				CommonLabels:          deps.CommonLabels,
 			})
 		}
@@ -363,19 +400,20 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 		editPPName := r.FormValue("name")
 		editPPDescription := r.FormValue("description")
 		pp := &priceplanpb.PricePlan{
-			Id:            ppID,
-			PlanId:        planID,
-			Name:          &editPPName,
-			Description:   &editPPDescription,
-			Amount:        amount,
-			Currency:      currency,
-			DurationValue: durationValue,
-			DurationUnit:  r.FormValue("duration_unit"),
-			Active:        active,
+			Id:              ppID,
+			PlanId:          planID,
+			Name:            &editPPName,
+			Description:     &editPPDescription,
+			BillingAmount:   amount,
+			BillingCurrency: currency,
+			DurationValue:   durationValue,
+			DurationUnit:    r.FormValue("duration_unit"),
+			Active:          active,
 		}
 		if schedID := r.FormValue("price_schedule_id"); schedID != "" {
 			pp.PriceScheduleId = &schedID
 		}
+		applyBillingFields(pp, r)
 
 		if _, err := deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{Data: pp}); err != nil {
 			log.Printf("Failed to update price plan %s: %v", ppID, err)
@@ -414,3 +452,39 @@ func NewPricePlanDeleteAction(deps *PricePlanDeps) view.View {
 		return centymo.HTMXSuccess("plan-price-plans-table")
 	})
 }
+
+// applyBillingFields reads the Wave 2 billing-semantics fields from the form
+// and writes them onto pp. Mirrors the standalone price_plan action so the
+// plan-nested drawer persists billing_kind, amount_basis, billing_cycle_*
+// and default_term_* alongside the deprecated duration_* dual-write.
+func applyBillingFields(pp *priceplanpb.PricePlan, r *http.Request) {
+	if v := r.FormValue("billing_kind"); v != "" {
+		if bk, ok := priceplanpb.BillingKind_value[v]; ok {
+			pp.BillingKind = priceplanpb.BillingKind(bk)
+		}
+	}
+	if v := r.FormValue("amount_basis"); v != "" {
+		if ab, ok := priceplanpb.AmountBasis_value[v]; ok {
+			pp.AmountBasis = priceplanpb.AmountBasis(ab)
+		}
+	}
+	if s := r.FormValue("billing_cycle_value"); s != "" {
+		if n, err := strconv.ParseInt(s, 10, 32); err == nil {
+			v32 := int32(n)
+			pp.BillingCycleValue = &v32
+		}
+	}
+	if u := r.FormValue("billing_cycle_unit"); u != "" {
+		pp.BillingCycleUnit = &u
+	}
+	if s := r.FormValue("default_term_value"); s != "" {
+		if n, err := strconv.ParseInt(s, 10, 32); err == nil {
+			v32 := int32(n)
+			pp.DefaultTermValue = &v32
+		}
+	}
+	if u := r.FormValue("default_term_unit"); u != "" {
+		pp.DefaultTermUnit = &u
+	}
+}
+

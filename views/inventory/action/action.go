@@ -30,6 +30,16 @@ type FormLabels struct {
 	Notes            string
 	NotesPlaceholder string
 	Active           string
+
+	// Field-level info text surfaced via an info button beside each label.
+	ProductInfo       string
+	SKUInfo           string
+	OnHandInfo        string
+	ReservedInfo      string
+	ReorderLevelInfo  string
+	UnitOfMeasureInfo string
+	NotesInfo         string
+	ActiveInfo        string
 }
 
 // FormData is the template data for the inventory drawer form.
@@ -75,7 +85,7 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func formLabels(t func(string) string) FormLabels {
+func formLabels(t func(string) string, f centymo.InventoryFormLabels) FormLabels {
 	return FormLabels{
 		Product:          t("inventory.form.product"),
 		SKU:              t("inventory.form.sku"),
@@ -87,6 +97,15 @@ func formLabels(t func(string) string) FormLabels {
 		Notes:            t("inventory.form.notes"),
 		NotesPlaceholder: t("inventory.form.notesPlaceholder"),
 		Active:           t("inventory.form.active"),
+		// Info fields sourced from centymo.InventoryFormLabels (populated from lyngua JSON + defaults).
+		ProductInfo:       f.ProductInfo,
+		SKUInfo:           f.SKUInfo,
+		OnHandInfo:        f.OnHandInfo,
+		ReservedInfo:      f.ReservedInfo,
+		ReorderLevelInfo:  f.ReorderLevelInfo,
+		UnitOfMeasureInfo: f.UnitOfMeasureInfo,
+		NotesInfo:         f.NotesInfo,
+		ActiveInfo:        f.ActiveInfo,
 	}
 }
 
@@ -103,7 +122,7 @@ func NewAddAction(deps *Deps) view.View {
 				FormAction:    deps.Routes.AddURL,
 				Active:        true,
 				UnitOfMeasure: "pcs",
-				Labels:        formLabels(viewCtx.T),
+				Labels:        formLabels(viewCtx.T, deps.Labels.Form),
 				CommonLabels:  nil, // injected by ViewAdapter
 			})
 		}
@@ -178,7 +197,7 @@ func NewEditAction(deps *Deps) view.View {
 				LocationID:    item.GetLocationId(),
 				Notes:         item.GetNotes(),
 				Active:        item.GetActive(),
-				Labels:        formLabels(viewCtx.T),
+				Labels:        formLabels(viewCtx.T, deps.Labels.Form),
 				CommonLabels:  nil, // injected by ViewAdapter
 			})
 		}

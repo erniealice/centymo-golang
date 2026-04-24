@@ -24,6 +24,13 @@ type DepreciationFormLabels struct {
 	SalvageValue string
 	UsefulLife   string
 	StartDate    string
+
+	// Field-level info text surfaced via an info button beside each label.
+	MethodInfo       string
+	CostBasisInfo    string
+	SalvageValueInfo string
+	UsefulLifeInfo   string
+	StartDateInfo    string
 }
 
 // DepreciationFormData is the template data for the depreciation drawer form.
@@ -41,13 +48,19 @@ type DepreciationFormData struct {
 	CommonLabels  any
 }
 
-func depreciationFormLabels(t func(string) string) DepreciationFormLabels {
+func depreciationFormLabels(t func(string) string, d centymo.InventoryDepreciationLabels) DepreciationFormLabels {
 	return DepreciationFormLabels{
 		Method:       t("inventory.depreciation.method"),
 		CostBasis:    t("inventory.depreciation.costBasis"),
 		SalvageValue: t("inventory.depreciation.salvageValue"),
 		UsefulLife:   t("inventory.depreciation.usefulLife"),
 		StartDate:    t("inventory.depreciation.startDate"),
+		// Info fields sourced from centymo.InventoryDepreciationLabels (populated from lyngua JSON + defaults).
+		MethodInfo:       d.MethodInfo,
+		CostBasisInfo:    d.CostBasisInfo,
+		SalvageValueInfo: d.SalvageValueInfo,
+		UsefulLifeInfo:   d.UsefulLifeInfo,
+		StartDateInfo:    d.StartDateInfo,
 	}
 }
 
@@ -73,7 +86,7 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 			return view.OK("depreciation-drawer-form", &DepreciationFormData{
 				FormAction:    route.ResolveURL(deps.Routes.DepreciationAssignURL, "id", inventoryItemID),
 				Method:        "straight_line",
-				Labels:        depreciationFormLabels(viewCtx.T),
+				Labels:        depreciationFormLabels(viewCtx.T, deps.Labels.Depreciation),
 				MethodOptions: depreciationMethodOptions(viewCtx.T),
 				CommonLabels:  nil,
 			})
@@ -149,7 +162,7 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 				SalvageValue:  fmt.Sprintf("%.2f", float64(record.GetSalvageValue())/100.0),
 				UsefulLife:    fmt.Sprintf("%d", record.GetUsefulLifeMonths()),
 				StartDate:     record.GetStartDate(),
-				Labels:        depreciationFormLabels(viewCtx.T),
+				Labels:        depreciationFormLabels(viewCtx.T, deps.Labels.Depreciation),
 				MethodOptions: depreciationMethodOptions(viewCtx.T),
 				CommonLabels:  nil,
 			})

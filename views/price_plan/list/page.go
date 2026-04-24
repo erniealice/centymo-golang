@@ -229,7 +229,7 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 		id := pp.GetId()
 		name := pp.GetName()
 
-		currency := pp.GetCurrency()
+		currency := pp.GetBillingCurrency()
 
 		durationDisplay := ""
 		if pp.GetDurationValue() > 0 {
@@ -269,7 +269,7 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
-				types.MoneyCell(float64(pp.GetAmount()), currency, true),
+				types.MoneyCell(float64(pp.GetBillingAmount()), currency, true),
 				{Type: "text", Value: durationDisplay},
 				{Type: "text", Value: planName},
 				{Type: "text", Value: scheduleName},

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/erniealice/pyeza-golang/route"
+	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -15,6 +16,7 @@ import (
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 )
 
 // ProductOption is a minimal struct for rendering product options in the product plan form.
@@ -29,6 +31,11 @@ type ProductPlanFormLabels struct {
 	ProductPlaceholder string
 	SelectProduct      string
 	Active             string
+
+	// Model D — variant picker
+	VariantSelectLabel       string
+	VariantSelectPlaceholder string
+	VariantSelectInfo        string
 }
 
 // KindOption is a value/label pair for the product_kind selector on the
@@ -42,6 +49,7 @@ type KindOption struct {
 type ProductPlanFormData struct {
 	FormAction           string
 	PickerURL            string
+	VariantPickerURL     string
 	IsEdit               bool
 	ID                   string
 	PlanID               string
@@ -57,29 +65,39 @@ type ProductPlanFormData struct {
 	Active               bool
 	Products             []*ProductOption
 	ProductOptions       []map[string]any
-	Labels               ProductPlanFormLabels
-	CommonLabels         any
+	// Model D — variant picker state. Rendered only when the selected
+	// product has variant_mode = "configurable".
+	VariantConfigurable bool
+	SelectedVariantID   string
+	VariantOptions      []types.SelectOption
+	Labels              ProductPlanFormLabels
+	CommonLabels        any
 }
 
 // ProductPlanDeps holds dependencies for product plan action handlers.
 type ProductPlanDeps struct {
-	Routes            centymo.PlanRoutes
-	Labels            centymo.PlanLabels
-	CreateProductPlan func(ctx context.Context, req *productplanpb.CreateProductPlanRequest) (*productplanpb.CreateProductPlanResponse, error)
-	ReadProductPlan   func(ctx context.Context, req *productplanpb.ReadProductPlanRequest) (*productplanpb.ReadProductPlanResponse, error)
-	UpdateProductPlan func(ctx context.Context, req *productplanpb.UpdateProductPlanRequest) (*productplanpb.UpdateProductPlanResponse, error)
-	DeleteProductPlan func(ctx context.Context, req *productplanpb.DeleteProductPlanRequest) (*productplanpb.DeleteProductPlanResponse, error)
-	ListProducts      func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	ListProductPlans  func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	Routes              centymo.PlanRoutes
+	Labels              centymo.PlanLabels
+	CreateProductPlan   func(ctx context.Context, req *productplanpb.CreateProductPlanRequest) (*productplanpb.CreateProductPlanResponse, error)
+	ReadProductPlan     func(ctx context.Context, req *productplanpb.ReadProductPlanRequest) (*productplanpb.ReadProductPlanResponse, error)
+	UpdateProductPlan   func(ctx context.Context, req *productplanpb.UpdateProductPlanRequest) (*productplanpb.UpdateProductPlanResponse, error)
+	DeleteProductPlan   func(ctx context.Context, req *productplanpb.DeleteProductPlanRequest) (*productplanpb.DeleteProductPlanResponse, error)
+	ListProducts        func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductPlans    func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	// Model D — variant lookup for the drawer's variant sub-picker.
+	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
 }
 
 // productPlanFormLabels converts centymo.ProductPlanFormLabels into the local type.
 func productPlanFormLabels(l centymo.ProductPlanFormLabels) ProductPlanFormLabels {
 	return ProductPlanFormLabels{
-		Product:            l.Product,
-		ProductPlaceholder: l.ProductPlaceholder,
-		SelectProduct:      l.SelectProduct,
-		Active:             l.Active,
+		Product:                  l.Product,
+		ProductPlaceholder:       l.ProductPlaceholder,
+		SelectProduct:            l.SelectProduct,
+		Active:                   l.Active,
+		VariantSelectLabel:       l.VariantSelectLabel,
+		VariantSelectPlaceholder: l.VariantSelectPlaceholder,
+		VariantSelectInfo:        l.VariantSelectInfo,
 	}
 }
 
@@ -212,6 +230,53 @@ func lookupProductKind(ctx context.Context, deps *ProductPlanDeps, productID str
 	return ""
 }
 
+// lookupProductVariantMode resolves a product's variant_mode ("none" or
+// "configurable") for Model D's binary invariant. Missing product returns "".
+func lookupProductVariantMode(ctx context.Context, deps *ProductPlanDeps, productID string) string {
+	if productID == "" || deps.ListProducts == nil {
+		return ""
+	}
+	resp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+	if err != nil {
+		return ""
+	}
+	for _, p := range resp.GetData() {
+		if p.GetId() == productID {
+			return p.GetVariantMode()
+		}
+	}
+	return ""
+}
+
+// loadVariantOptions builds a select list for the given product's variants.
+// Label falls back to SKU; empty SKU falls back to the variant ID.
+func loadVariantOptions(ctx context.Context, deps *ProductPlanDeps, productID, selectedID string) []types.SelectOption {
+	if productID == "" || deps.ListProductVariants == nil {
+		return nil
+	}
+	resp, err := deps.ListProductVariants(ctx, &productvariantpb.ListProductVariantsRequest{})
+	if err != nil {
+		log.Printf("Failed to list product variants for %s: %v", productID, err)
+		return nil
+	}
+	options := []types.SelectOption{}
+	for _, v := range resp.GetData() {
+		if v == nil || v.GetProductId() != productID {
+			continue
+		}
+		label := v.GetSku()
+		if label == "" {
+			label = v.GetId()
+		}
+		options = append(options, types.SelectOption{
+			Value:    v.GetId(),
+			Label:    label,
+			Selected: v.GetId() == selectedID,
+		})
+	}
+	return options
+}
+
 // NewProductPlanAddAction creates the product plan add action (GET = form, POST = create).
 // URL: /action/plans/{id}/products/add
 func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
@@ -231,6 +296,7 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 			return view.OK("product-plan-drawer-form", &ProductPlanFormData{
 				FormAction:         route.ResolveURL(deps.Routes.ProductPlanAddURL, "id", planID),
 				PickerURL:          route.ResolveURL(deps.Routes.ProductPlanPickerURL, "id", planID),
+				VariantPickerURL:   route.ResolveURL(deps.Routes.ProductPlanPickerURL, "id", planID),
 				PlanID:             planID,
 				Name:               "",
 				Mode:               "service",
@@ -242,8 +308,11 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 				Active:             true,
 				Products:           products,
 				ProductOptions:     buildProductAutoCompleteOptions(products, "", disabledIDs),
-				Labels:             productPlanFormLabels(formLabels),
-				CommonLabels:       nil, // injected by ViewAdapter
+				// No product selected yet — variant section is hidden until HTMX
+				// re-renders the picker with a chosen product_id.
+				VariantConfigurable: false,
+				Labels:              productPlanFormLabels(formLabels),
+				CommonLabels:        nil, // injected by ViewAdapter
 			})
 		}
 
@@ -256,6 +325,7 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 		active := r.FormValue("active") == "true"
 
 		productID := r.FormValue("product_id")
+		variantID := r.FormValue("product_variant_id")
 
 		name := r.FormValue("name")
 		if name == "" {
@@ -266,12 +336,25 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 			name = findProductLabel(products, productID)
 		}
 
-		// No price/currency at creation — pricing is set via price plans
+		// Model D binary invariant (defensive — use-case layer also enforces):
+		// require variant_id iff the parent product is variant-configurable.
+		variantMode := lookupProductVariantMode(ctx, deps, productID)
+		if variantMode == "configurable" && variantID == "" {
+			return centymo.HTMXError("Please select a variant for this product.")
+		}
+		if variantMode != "configurable" && variantID != "" {
+			// Simple products never carry a variant.
+			variantID = ""
+		}
+
 		pp := &productplanpb.ProductPlan{
 			PlanId:    planID,
 			ProductId: productID,
 			Name:      name,
 			Active:    active,
+		}
+		if variantID != "" {
+			pp.ProductVariantId = &variantID
 		}
 
 		_, err := deps.CreateProductPlan(ctx, &productplanpb.CreateProductPlanRequest{
@@ -322,10 +405,17 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 				selectedKind = kind
 			}
 			products := loadProductOptions(ctx, deps, selectedKind)
+			variantMode := lookupProductVariantMode(ctx, deps, selectedProductID)
+			selectedVariantID := pp.GetProductVariantId()
+			var variantOptions []types.SelectOption
+			if variantMode == "configurable" {
+				variantOptions = loadVariantOptions(ctx, deps, selectedProductID, selectedVariantID)
+			}
 			formLabels := deps.Labels.ProductPlanForm
 			return view.OK("product-plan-drawer-form", &ProductPlanFormData{
 				FormAction:           route.ResolveURL(deps.Routes.ProductPlanEditURL, "id", planID, "ppid", ppID),
 				PickerURL:            route.ResolveURL(deps.Routes.ProductPlanPickerURL, "id", planID),
+				VariantPickerURL:     route.ResolveURL(deps.Routes.ProductPlanPickerURL, "id", planID),
 				IsEdit:               true,
 				ID:                   ppID,
 				PlanID:               planID,
@@ -341,6 +431,9 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 				Active:               pp.GetActive(),
 				Products:             products,
 				ProductOptions:       buildProductAutoCompleteOptions(products, selectedProductID, nil),
+				VariantConfigurable:  variantMode == "configurable",
+				SelectedVariantID:    selectedVariantID,
+				VariantOptions:       variantOptions,
 				Labels:               productPlanFormLabels(formLabels),
 				CommonLabels:         nil, // injected by ViewAdapter
 			})
@@ -354,6 +447,7 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 		productID := r.FormValue("product_id")
+		variantID := r.FormValue("product_variant_id")
 
 		name := r.FormValue("name")
 		if name == "" {
@@ -364,12 +458,23 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 			name = findProductLabel(products, productID)
 		}
 
+		variantMode := lookupProductVariantMode(ctx, deps, productID)
+		if variantMode == "configurable" && variantID == "" {
+			return centymo.HTMXError("Please select a variant for this product.")
+		}
+		if variantMode != "configurable" && variantID != "" {
+			variantID = ""
+		}
+
 		pp := &productplanpb.ProductPlan{
 			Id:        ppID,
 			PlanId:    planID,
 			ProductId: productID,
 			Name:      name,
 			Active:    active,
+		}
+		if variantID != "" {
+			pp.ProductVariantId = &variantID
 		}
 
 		_, err := deps.UpdateProductPlan(ctx, &productplanpb.UpdateProductPlanRequest{
@@ -395,11 +500,20 @@ type PickerPartialData struct {
 	ProductLabel         string
 	ProductPlaceholder   string
 	ProductOptions       []map[string]any
+	// Model D — variant sub-picker rendered when the selected product is
+	// variant-configurable.
+	VariantConfigurable      bool
+	VariantOptions           []types.SelectOption
+	VariantSelectLabel       string
+	VariantSelectPlaceholder string
 }
 
-// NewProductPlanPickerAction handles GET /action/plan/{id}/products/picker?product_kind=...
-// Returns only the product-picker-partial template, filtered by the requested kind.
-// Swapped into #product-picker-wrapper on the drawer form via HTMX.
+// NewProductPlanPickerAction handles GET /action/plan/{id}/products/picker?product_kind=...&product_id=...
+// Returns only the product-picker-partial template, filtered by the requested
+// kind. When a product_id is supplied and that product has variant_mode =
+// "configurable", the partial also surfaces a variant sub-picker populated
+// from ListProductVariants(product_id). Swapped into #product-picker-wrapper
+// on the drawer form via HTMX.
 func NewProductPlanPickerAction(deps *ProductPlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
@@ -412,18 +526,33 @@ func NewProductPlanPickerAction(deps *ProductPlanDeps) view.View {
 		if kind == "" {
 			kind = "service"
 		}
+		productID := viewCtx.Request.URL.Query().Get("product_id")
 
 		products := loadProductOptions(ctx, deps, kind)
 		disabledIDs := loadExistingProductIDs(ctx, deps, planID)
 		formLabels := deps.Labels.ProductPlanForm
+
+		variantConfigurable := false
+		var variantOptions []types.SelectOption
+		if productID != "" {
+			if lookupProductVariantMode(ctx, deps, productID) == "configurable" {
+				variantConfigurable = true
+				variantOptions = loadVariantOptions(ctx, deps, productID, "")
+			}
+		}
+
 		return view.OK("product-picker-partial", &PickerPartialData{
-			PlanID:             planID,
-			Name:               "",
-			SelectedKind:       kind,
-			SelectedProductID:  "",
-			ProductLabel:       formLabels.Product,
-			ProductPlaceholder: formLabels.ProductPlaceholder,
-			ProductOptions:     buildProductAutoCompleteOptions(products, "", disabledIDs),
+			PlanID:                   planID,
+			Name:                     "",
+			SelectedKind:             kind,
+			SelectedProductID:        productID,
+			ProductLabel:             formLabels.Product,
+			ProductPlaceholder:       formLabels.ProductPlaceholder,
+			ProductOptions:           buildProductAutoCompleteOptions(products, productID, disabledIDs),
+			VariantConfigurable:      variantConfigurable,
+			VariantOptions:           variantOptions,
+			VariantSelectLabel:       formLabels.VariantSelectLabel,
+			VariantSelectPlaceholder: formLabels.VariantSelectPlaceholder,
 		})
 	})
 }
