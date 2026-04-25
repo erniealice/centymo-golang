@@ -11,6 +11,9 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
+
+	pyezatypes "github.com/erniealice/pyeza-golang/types"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
@@ -140,11 +143,25 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
-		dateStart := strings.TrimSpace(r.URL.Query().Get("date_start"))
-		dateEnd := strings.TrimSpace(r.URL.Query().Get("date_end"))
+		startISO := strings.TrimSpace(r.URL.Query().Get("date_time_start_iso"))
+		endISO := strings.TrimSpace(r.URL.Query().Get("date_time_end_iso"))
 		// billing_currency filters results to PricePlans matching the client's
 		// billing currency. Empty = no filter (show all currencies).
 		billingCurrency := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("billing_currency")))
+
+		tz := pyezatypes.LocationFromContext(ctx)
+		reqStart, hasStart := parseRFC3339(startISO)
+		reqEnd, hasEnd := parseRFC3339(endISO)
+		hasDateFilter := hasStart || hasEnd
+		if hasDateFilter {
+			if !hasStart {
+				reqStart = reqEnd
+			}
+			if !hasEnd {
+				reqEnd = reqStart
+			}
+		}
+		_ = tz // tz only consumed below for group-label formatting
 
 		if deps.ListPricePlans == nil {
 			// Fallback to plan search if ListPricePlans not wired
@@ -176,17 +193,26 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 			}
 		}
 
-		// Normalise date filter: treat a one-sided filter as a point range.
-		hasDateFilter := dateStart != "" || dateEnd != ""
-		reqStart := dateStart
-		reqEnd := dateEnd
-		if hasDateFilter {
-			if reqStart == "" {
-				reqStart = reqEnd
+		// Per-plan name cache for the embedded-plan fallback. ListPricePlans returns
+		// flat rows without the joined plan, so we resolve names lazily via ReadPlan
+		// and cache the result to avoid repeating the lookup for shared plan_ids.
+		planNameByID := map[string]string{}
+		resolvePlanName := func(planID string) string {
+			if planID == "" || deps.ReadPlan == nil {
+				return ""
 			}
-			if reqEnd == "" {
-				reqEnd = reqStart
+			if name, ok := planNameByID[planID]; ok {
+				return name
 			}
+			id := planID
+			readResp, readErr := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{Data: &planpb.Plan{Id: &id}})
+			if readErr != nil || len(readResp.GetData()) == 0 {
+				planNameByID[planID] = ""
+				return ""
+			}
+			name := readResp.GetData()[0].GetName()
+			planNameByID[planID] = name
+			return name
 		}
 
 		queryLower := strings.ToLower(q)
@@ -211,12 +237,20 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				break
 			}
 
-			// Resolve display name: prefer pp.GetName(), fall back to embedded plan name.
+			// Resolve display name: prefer pp.GetName(), fall back to embedded plan name,
+			// then to the joined plan-name lookup (since ListPricePlans does not embed the plan),
+			// then to a placeholder so the option is never rendered with an empty label.
 			displayName := pp.GetName()
 			if displayName == "" {
 				if pl := pp.GetPlan(); pl != nil {
 					displayName = pl.GetName()
 				}
+			}
+			if displayName == "" {
+				displayName = resolvePlanName(pp.GetPlanId())
+			}
+			if displayName == "" {
+				displayName = "(Unnamed plan)"
 			}
 
 			// Apply query filter.
@@ -235,26 +269,31 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				sched = scheduleByID[schedID]
 			}
 
-			// Apply date filter.
+			// Apply date filter (UTC timestamp comparison).
 			if hasDateFilter {
 				if schedID == "" {
 					// Unscheduled plans are excluded when any date filter is set.
 					continue
 				}
-				if sched != nil {
-					schedStart := sched.GetDateStart()
-					schedEnd := sched.GetDateEnd()
-					// Schedule must cover the requested range:
-					// sched.DateStart <= reqStart AND (sched.DateEnd == "" || reqEnd <= sched.DateEnd)
-					startOK := schedStart <= reqStart
-					endOK := schedEnd == "" || reqEnd <= schedEnd
-					if !startOK || !endOK {
+				if sched == nil {
+					// Unknown schedule referenced — skip.
+					continue
+				}
+				schedStartTS := sched.GetDateTimeStart()
+				schedEndTS := sched.GetDateTimeEnd()
+				if schedStartTS == nil {
+					continue
+				}
+				schedStart := schedStartTS.AsTime()
+				// Schedule must cover the requested range:
+				// schedStart <= reqStart AND (schedEnd == nil || reqEnd <= schedEnd)
+				if schedStart.After(reqStart) {
+					continue
+				}
+				if schedEndTS != nil {
+					if reqEnd.After(schedEndTS.AsTime()) {
 						continue
 					}
-				}
-				// If sched is nil but schedID is set (unknown schedule), skip.
-				if sched == nil {
-					continue
 				}
 			}
 
@@ -267,12 +306,14 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 			if _, exists := groupMap[groupKey]; !exists {
 				entry := &groupEntry{schedID: schedID}
 				if sched != nil {
-					entry.dateStart = sched.GetDateStart()
+					schedStart := pyezatypes.FormatTimestampInTZ(sched.GetDateTimeStart(), tz, pyezatypes.DateInputLayout)
+					schedEnd := pyezatypes.FormatTimestampInTZ(sched.GetDateTimeEnd(), tz, pyezatypes.DateInputLayout)
+					entry.dateStart = schedStart
 					name := sched.GetName()
 					if name == "" {
-						name = sched.GetDateStart()
-						if sched.GetDateEnd() != "" {
-							name += " → " + sched.GetDateEnd()
+						name = schedStart
+						if schedEnd != "" {
+							name += " → " + schedEnd
 						}
 					}
 					entry.schedName = name
@@ -400,4 +441,17 @@ func writeJSON(w http.ResponseWriter, data any) {
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Printf("search: failed to encode JSON response: %v", err)
 	}
+}
+
+// parseRFC3339 returns the parsed UTC instant from an RFC3339 string or
+// (zero, false) when empty/invalid.
+func parseRFC3339(iso string) (time.Time, bool) {
+	if iso == "" {
+		return time.Time{}, false
+	}
+	t, err := time.Parse(time.RFC3339, iso)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t.UTC(), true
 }

@@ -503,7 +503,7 @@ func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, pla
 						Label:       l.Actions.Edit,
 						Action:      "edit",
 						URL:         route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
-						DrawerTitle: l.Actions.Edit,
+						DrawerTitle: l.Buttons.EditPricePlan,
 					},
 					{
 						Type:    "delete",

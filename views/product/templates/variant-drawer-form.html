@@ -25,22 +25,56 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
                 "Name" "price_override"
                 "Label" .Labels.PriceOverride
                 "Value" .PriceOverride
-                "Placeholder" .Labels.Form.PricePlaceholder
+                "Placeholder" .Labels.PricePlaceholder
             )}}
         </div>
 
         {{if .OptionSelections}}
         {{range .OptionSelections}}
-        {{$selected := .Selected}}
+        {{if .NeedsValuesAlert}}
+        <div class="form-row single">
+            {{template "alert" (dict
+                "State" "warning"
+                "Title" .OptionName
+                "Message" $.Labels.OptionNeedsValuesAlert)}}
+        </div>
+        {{end}}
         <div class="form-row single">
             <div class="form-group">
                 <label class="form-label" for="{{.FieldName}}">{{.OptionName}}{{if .Required}} *{{end}}</label>
-                <select id="{{.FieldName}}" name="{{.FieldName}}" class="form-select"{{if .Required}} required{{end}}>
-                    <option value="" disabled {{if not $selected}}selected{{end}}>{{$.Labels.Form.SelectOption}} {{.OptionName}}</option>
-                    {{range .Values}}
-                    <option value="{{.ID}}" {{if eq $selected .ID}}selected{{end}}>{{.Label}}</option>
+                {{if eq .DataType "free_text"}}
+                    <input type="text"
+                           id="{{.FieldName}}"
+                           name="{{.FieldName}}"
+                           class="form-input"
+                           value="{{.SelectedLabel}}"
+                           {{if .Required}}required aria-required="true"{{end}}>
+                {{else if eq .DataType "free_number"}}
+                    <input type="number"
+                           id="{{.FieldName}}"
+                           name="{{.FieldName}}"
+                           class="form-input"
+                           value="{{.SelectedLabel}}"
+                           step="any"
+                           {{if .MinValue}}min="{{.MinValue}}"{{end}}
+                           {{if .MaxValue}}max="{{.MaxValue}}"{{end}}
+                           {{if .Required}}required aria-required="true"{{end}}>
+                {{else}}
+                    {{$selected := .Selected}}
+                    <select id="{{.FieldName}}" name="{{.FieldName}}" class="form-select"{{if .Required}} required{{end}}{{if .NeedsValuesAlert}} disabled aria-disabled="true"{{end}}>
+                        <option value="" disabled {{if not $selected}}selected{{end}}>{{$.Labels.SelectOption}} {{.OptionName}}</option>
+                        {{range .Values}}
+                        <option value="{{.ID}}" {{if eq $selected .ID}}selected{{end}}>{{.Label}}</option>
+                        {{end}}
+                    </select>
+                    {{if .NeedsValuesAlert}}
+                    <a class="form-hint"
+                       href="{{.ViewValuesURL}}"
+                       target="_blank"
+                       rel="noopener"
+                       onclick="event.stopPropagation();">{{$.Labels.ViewValues}} →</a>
                     {{end}}
-                </select>
+                {{end}}
             </div>
         </div>
         {{end}}
@@ -48,7 +82,7 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
 
         <div class="form-row single">
             <div class="form-group form-group-toggle">
-                <label class="form-label" for="active">{{.Labels.Form.Active}}</label>
+                <label class="form-label" for="active">{{.Labels.Active}}</label>
                 {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
             </div>
         </div>

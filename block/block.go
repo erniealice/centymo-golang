@@ -103,6 +103,12 @@ type blockConfig struct {
 	disbursement bool
 	expenditure  bool
 	resource     bool
+	// clientDetailURL is the absolute path template (e.g.
+	// "/app/clients/detail/{id}") used for the subscription detail's
+	// page-header breadcrumb when accessed via the under-client nested route.
+	// Centymo cannot import entydad (wrong dep direction); the consumer
+	// supplies it via WithClientDetailURL.
+	clientDetailURL string
 }
 
 func WithInventory() BlockOption    { return func(c *blockConfig) { c.inventory = true } }
@@ -118,6 +124,15 @@ func WithCollection() BlockOption   { return func(c *blockConfig) { c.collection
 func WithDisbursement() BlockOption { return func(c *blockConfig) { c.disbursement = true } }
 func WithExpenditure() BlockOption  { return func(c *blockConfig) { c.expenditure = true } }
 func WithResource() BlockOption     { return func(c *blockConfig) { c.resource = true } }
+
+// WithClientDetailURL supplies the entydad client-detail path template (e.g.
+// "/app/clients/detail/{id}") so the subscription detail page can render a
+// "client → subscription" breadcrumb when accessed under a client context.
+// Optional — when unset the breadcrumb label still renders (sourced from the
+// joined client) but isn't a link.
+func WithClientDetailURL(url string) BlockOption {
+	return func(c *blockConfig) { c.clientDetailURL = url }
+}
 
 func (c *blockConfig) wantInventory() bool    { return c.enableAll || c.inventory }
 func (c *blockConfig) wantRevenue() bool      { return c.enableAll || c.revenue }
@@ -541,6 +556,16 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// Job activity lookup for "from_activities" revenue type
 			if useCases.Operation != nil && useCases.Operation.JobActivity != nil && useCases.Operation.JobActivity.ReadJobActivity != nil {
 				revDeps.ReadJobActivity = useCases.Operation.JobActivity.ReadJobActivity.Execute
+			}
+
+			// Recognize-revenue use case — shared with the subscription
+			// recognize-drawer flow. When the manual revenue-add picks a
+			// subscription, autoPopulateLineItems delegates to this same use
+			// case (skip_header=true mode) so both paths converge.
+			if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
+				useCases.Revenue.Revenue.RecognizeRevenueFromSubscription != nil {
+				revDeps.RecognizeRevenueFromSubscription =
+					useCases.Revenue.Revenue.RecognizeRevenueFromSubscription.Execute
 			}
 
 			revenueMod := revenuemod.NewModule(revDeps)
@@ -1122,6 +1147,18 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					if useCases.Product.ProductPlan.ListProductPlans != nil {
 						productPlanActionDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
 					}
+					if useCases.Product.ProductVariant != nil {
+						productPlanActionDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+					}
+					if useCases.Product.ProductVariantOption != nil {
+						productPlanActionDeps.ListProductVariantOptions = useCases.Product.ProductVariantOption.ListProductVariantOptions.Execute
+					}
+					if useCases.Product.ProductOptionValue != nil {
+						productPlanActionDeps.ListProductOptionValues = useCases.Product.ProductOptionValue.ListProductOptionValues.Execute
+					}
+					if useCases.Product.ProductOption != nil {
+						productPlanActionDeps.ListProductOptions = useCases.Product.ProductOption.ListProductOptions.Execute
+					}
 					ctx.Routes.GET(planRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(productPlanActionDeps))
 					ctx.Routes.POST(planRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(productPlanActionDeps))
 					ctx.Routes.GET(planRoutes.ProductPlanEditURL, planaction.NewProductPlanEditAction(productPlanActionDeps))
@@ -1221,6 +1258,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						ppBundleDeps := &planaction.PricePlanDeps{
 							Routes:          planBundleRoutes,
 							Labels:          planLabels,
+							PricePlanLabels: pricePlanLabels,
 							CommonLabels:    ctx.Common,
 							CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
 							ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
@@ -1255,6 +1293,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						ctx.Routes.POST(planBundleRoutes.PricePlanEditURL, planaction.NewPricePlanEditAction(ppBundleDeps))
 						ctx.Routes.POST(planBundleRoutes.PricePlanDeleteURL, planaction.NewPricePlanDeleteAction(ppBundleDeps))
 					}
+					// Bundle-mount sibling of services-mount `productPlanActionDeps` (~line 1111).
+					// Keep these two registrations field-for-field identical (only Routes
+					// differs). Unlike PricePlanDeps, ProductPlanDeps has a single Labels
+					// field — all form-label data is nested under centymo.PlanLabels
+					// (`Labels.ProductPlanForm`), so threading `Labels: planLabels` is
+					// sufficient. If a future change adds a separate label struct (e.g.
+					// ProductPlanLabels), thread it into BOTH registrations.
 					if useCases.Product != nil && useCases.Product.ProductPlan != nil && useCases.Product.ProductPlan.CreateProductPlan != nil {
 						ppBundleProductPlanDeps := &planaction.ProductPlanDeps{
 							Routes:            planBundleRoutes,
@@ -1269,6 +1314,18 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						}
 						if useCases.Product.ProductPlan.ListProductPlans != nil {
 							ppBundleProductPlanDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+						}
+						if useCases.Product.ProductVariant != nil {
+							ppBundleProductPlanDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+						}
+						if useCases.Product.ProductVariantOption != nil {
+							ppBundleProductPlanDeps.ListProductVariantOptions = useCases.Product.ProductVariantOption.ListProductVariantOptions.Execute
+						}
+						if useCases.Product.ProductOptionValue != nil {
+							ppBundleProductPlanDeps.ListProductOptionValues = useCases.Product.ProductOptionValue.ListProductOptionValues.Execute
+						}
+						if useCases.Product.ProductOption != nil {
+							ppBundleProductPlanDeps.ListProductOptions = useCases.Product.ProductOption.ListProductOptions.Execute
 						}
 						ctx.Routes.GET(planBundleRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(ppBundleProductPlanDeps))
 						ctx.Routes.POST(planBundleRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(ppBundleProductPlanDeps))
@@ -1295,6 +1352,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			if useCases.Subscription != nil && useCases.Subscription.Subscription != nil {
 				subListDeps.GetSubscriptionListPageData = useCases.Subscription.Subscription.GetSubscriptionListPageData.Execute
 			}
+			if refChecker != nil {
+				subListDeps.GetInUseIDs = refChecker.GetSubscriptionInUseIDs
+			}
 			ctx.Routes.GET(subscriptionRoutes.ListURL, subscriptionlist.NewView(subListDeps))
 
 			// Subscription CRUD actions
@@ -1306,6 +1366,14 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ReadSubscription:   useCases.Subscription.Subscription.ReadSubscription.Execute,
 					UpdateSubscription: useCases.Subscription.Subscription.UpdateSubscription.Execute,
 					DeleteSubscription: useCases.Subscription.Subscription.DeleteSubscription.Execute,
+					// SetSubscriptionActive uses raw DB update (proto3 omits false booleans)
+					SetSubscriptionActive: func(fctx context.Context, id string, active bool) error {
+						_, err := db.Update(fctx, "subscription", id, map[string]any{"active": active})
+						return err
+					},
+				}
+				if refChecker != nil {
+					subActionDeps.GetInUseIDs = refChecker.GetSubscriptionInUseIDs
 				}
 				if useCases.Entity != nil && useCases.Entity.Client != nil {
 					subActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
@@ -1315,21 +1383,46 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 				if useCases.Subscription.Plan != nil {
 					subActionDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+					if useCases.Subscription.Plan.ReadPlan != nil {
+						subActionDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+					}
 					if useCases.Subscription.Plan.SearchPlansByName != nil {
 						subActionDeps.SearchPlansByName = useCases.Subscription.Plan.SearchPlansByName.Execute
 					}
 				}
 				if useCases.Subscription.PricePlan != nil {
 					subActionDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
+					if useCases.Subscription.PricePlan.ReadPricePlan != nil {
+						subActionDeps.ReadPricePlan = useCases.Subscription.PricePlan.ReadPricePlan.Execute
+					}
 				}
 				if useCases.Subscription.PriceSchedule != nil && useCases.Subscription.PriceSchedule.ListPriceSchedules != nil {
 					subActionDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
 				}
+				// Wire the espyna recognize-revenue use case so the new
+				// drawer + the existing manual-revenue-add auto-populate
+				// path share one source of truth.
+				if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
+					useCases.Revenue.Revenue.RecognizeRevenueFromSubscription != nil {
+					subActionDeps.RecognizeRevenueFromSubscription =
+						useCases.Revenue.Revenue.RecognizeRevenueFromSubscription.Execute
+				}
+
 				ctx.Routes.GET(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.GET(subscriptionRoutes.EditURL, subscriptionaction.NewEditAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.EditURL, subscriptionaction.NewEditAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.DeleteURL, subscriptionaction.NewDeleteAction(subActionDeps))
+				ctx.Routes.POST(subscriptionRoutes.BulkDeleteURL, subscriptionaction.NewBulkDeleteAction(subActionDeps))
+				ctx.Routes.POST(subscriptionRoutes.SetStatusURL, subscriptionaction.NewSetStatusAction(subActionDeps))
+				ctx.Routes.POST(subscriptionRoutes.BulkSetStatusURL, subscriptionaction.NewBulkSetStatusAction(subActionDeps))
+				// Recognize-revenue drawer (GET = preview, POST = generate). Per
+				// plan §11.1, POST returns HTMXSuccess + refresh-invoices so the
+				// invoices table refreshes inline.
+				if subActionDeps.RecognizeRevenueFromSubscription != nil && subscriptionRoutes.RecognizeURL != "" {
+					ctx.Routes.GET(subscriptionRoutes.RecognizeURL, subscriptionaction.NewRecognizeAction(subActionDeps))
+					ctx.Routes.POST(subscriptionRoutes.RecognizeURL, subscriptionaction.NewRecognizeAction(subActionDeps))
+				}
 				// Auto-complete search (http.HandlerFunc — uses HandleFunc, not GET)
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchClientURL, subscriptionaction.NewSearchClientsAction(subActionDeps))
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchPlanURL, subscriptionaction.NewSearchPlansAction(subActionDeps))
@@ -1351,8 +1444,22 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						NewAttachmentID:  newAttachmentID,
 					},
 				}
+				if useCases.Subscription.Subscription.GetSubscriptionItemPageData != nil {
+					subDetailDeps.GetSubscriptionItemPageData = useCases.Subscription.Subscription.GetSubscriptionItemPageData.Execute
+				}
+				if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ReadClient != nil {
+					subDetailDeps.ReadClient = useCases.Entity.Client.ReadClient.Execute
+				}
+				if useCases.Revenue != nil && useCases.Revenue.Revenue != nil && useCases.Revenue.Revenue.GetRevenueListPageData != nil {
+					subDetailDeps.GetRevenueListPageData = useCases.Revenue.Revenue.GetRevenueListPageData.Execute
+				}
+				subDetailDeps.ClientDetailURL = cfg.clientDetailURL
 				ctx.Routes.GET(subscriptionRoutes.DetailURL, subscriptiondetail.NewView(subDetailDeps))
 				ctx.Routes.GET(subscriptionRoutes.TabActionURL, subscriptiondetail.NewTabAction(subDetailDeps))
+				// Nested route — same view, breadcrumb activated via path param.
+				if subscriptionRoutes.UnderClientDetailURL != "" {
+					ctx.Routes.GET(subscriptionRoutes.UnderClientDetailURL, subscriptiondetail.NewView(subDetailDeps))
+				}
 				// Subscription attachments
 				if uploadFile != nil {
 					ctx.Routes.GET(subscriptionRoutes.AttachmentUploadURL, subscriptiondetail.NewAttachmentUploadAction(subDetailDeps))

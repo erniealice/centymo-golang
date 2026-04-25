@@ -12,8 +12,8 @@ Data: .Label, .Value, .SortOrder, .ColorHex, .Active, .ID, .ProductID, .OptionID
         {{if .OptionName}}
         <div class="form-row single">
             <div class="form-group">
-                <span class="form-label">{{.Labels.Form.Option}}</span>
-                <span class="detail-info-value">{{.OptionName}}{{if .OptionRequired}} <span class="badge badge--warning badge-sm">{{.Labels.Form.Required}}</span>{{end}}</span>
+                <span class="form-label">{{if .Labels.Option}}{{.Labels.Option}}{{else}}Option{{end}}</span>
+                <span class="detail-info-value">{{.OptionName}}{{if .OptionRequired}} <span class="badge badge--warning badge-sm">{{if .Labels.Required}}{{.Labels.Required}}{{else}}Required{{end}}</span>{{end}}</span>
             </div>
         </div>
         {{end}}

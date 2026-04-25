@@ -13,7 +13,11 @@ import (
 	view "github.com/erniealice/pyeza-golang/view"
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
+	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
+	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
+	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
@@ -42,6 +46,13 @@ type ModuleDeps struct {
 	// Detail page — ProductPricePlan CRUD
 	ListProductPlans         func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	ListProducts             func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	// ListProductVariants / ListProductOptions / ListProductOptionValues /
+	// ListProductVariantOptions feed the enriched catalog-line picker labels
+	// ("Product — SKU — Red / Large / Cotton") in the price drawer.
+	ListProductVariants       func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
+	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 	ListProductPricePlans    func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 	CreateProductPricePlan   func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan   func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
@@ -96,18 +107,22 @@ func NewModule(deps *ModuleDeps) *Module {
 	tableView := priceplanlist.NewTableView(listDeps)
 
 	detailDeps := &priceplandetail.DetailViewDeps{
-		Routes:                 deps.Routes,
-		Labels:                 deps.Labels,
-		ProductPricePlanLabels: deps.ProductPricePlanLabels,
-		CommonLabels:           deps.CommonLabels,
-		TableLabels:            deps.TableLabels,
-		ReadPricePlan:          deps.ReadPricePlan,
-		ListProductPlans:       deps.ListProductPlans,
-		ListProducts:           deps.ListProducts,
-		ListProductPricePlans:  deps.ListProductPricePlans,
-		CreateProductPricePlan: deps.CreateProductPricePlan,
-		UpdateProductPricePlan: deps.UpdateProductPricePlan,
-		DeleteProductPricePlan: deps.DeleteProductPricePlan,
+		Routes:                    deps.Routes,
+		Labels:                    deps.Labels,
+		ProductPricePlanLabels:    deps.ProductPricePlanLabels,
+		CommonLabels:              deps.CommonLabels,
+		TableLabels:               deps.TableLabels,
+		ReadPricePlan:             deps.ReadPricePlan,
+		ListProductPlans:          deps.ListProductPlans,
+		ListProducts:              deps.ListProducts,
+		ListProductVariants:       deps.ListProductVariants,
+		ListProductOptions:        deps.ListProductOptions,
+		ListProductOptionValues:   deps.ListProductOptionValues,
+		ListProductVariantOptions: deps.ListProductVariantOptions,
+		ListProductPricePlans:     deps.ListProductPricePlans,
+		CreateProductPricePlan:    deps.CreateProductPricePlan,
+		UpdateProductPricePlan:    deps.UpdateProductPricePlan,
+		DeleteProductPricePlan:    deps.DeleteProductPricePlan,
 	}
 
 	return &Module{

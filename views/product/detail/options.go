@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 
+	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -47,10 +49,20 @@ func NewOptionsTableView(deps *OptionsDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		productID := viewCtx.Request.PathValue("id")
 
+		// Forward CommonLabels (Yes/No badges live there now). The OptionsDeps
+		// keeps a loosely typed `any` to avoid a cyclic typed dep, so we
+		// downcast here when forwarding into the typed DetailViewDeps. A
+		// missing/empty value is harmless — buildOptionsTable falls back to
+		// hardcoded "Yes"/"No" strings.
+		var commonLabels pyeza.CommonLabels
+		if cl, ok := deps.CommonLabels.(pyeza.CommonLabels); ok {
+			commonLabels = cl
+		}
 		detailDeps := &DetailViewDeps{
 			Routes:                  deps.Routes,
 			DB:                      deps.DB,
 			Labels:                  deps.Labels,
+			CommonLabels:            commonLabels,
 			TableLabels:             deps.TableLabels,
 			ListProductOptions:      deps.ListProductOptions,
 			ListProductOptionValues: deps.ListProductOptionValues,
@@ -67,12 +79,22 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 	ol := l.Options
 
 	columns := []types.TableColumn{
+		{Key: "sortOrder", Label: ol.Columns.SortOrder, Sortable: true, WidthClass: "col-lg"},
 		{Key: "name", Label: ol.Columns.Name, Sortable: true},
 		{Key: "code", Label: ol.Columns.Code, Sortable: true},
 		{Key: "dataType", Label: ol.Columns.DataType, Sortable: true, WidthClass: "col-3xl"},
 		{Key: "valuesCount", Label: ol.Columns.ValuesCount, Sortable: true, WidthClass: "col-lg"},
-		{Key: "sortOrder", Label: ol.Columns.SortOrder, Sortable: true, WidthClass: "col-lg"},
+		{Key: "required", Label: ol.Columns.Required, Sortable: true, WidthClass: "col-lg"},
 		{Key: "status", Label: ol.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+	}
+
+	yesLabel := deps.CommonLabels.Badges.Yes
+	if yesLabel == "" {
+		yesLabel = "Yes"
+	}
+	noLabel := deps.CommonLabels.Badges.No
+	if noLabel == "" {
+		noLabel = "No"
 	}
 
 	rows := []types.TableRow{}
@@ -83,6 +105,20 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 		if err != nil {
 			log.Printf("Failed to list product options: %v", err)
 		} else {
+			// Sort by sort_order ASC so the table matches the variant form ordering.
+			// Stable sort + Name as tiebreaker keeps zero/equal sort_order rows alphabetical.
+			sortedOpts := make([]*productoptionpb.ProductOption, 0, len(optResp.GetData()))
+			for _, o := range optResp.GetData() {
+				if o != nil && o.GetProductId() == productID {
+					sortedOpts = append(sortedOpts, o)
+				}
+			}
+			sort.SliceStable(sortedOpts, func(i, j int) bool {
+				if sortedOpts[i].GetSortOrder() != sortedOpts[j].GetSortOrder() {
+					return sortedOpts[i].GetSortOrder() < sortedOpts[j].GetSortOrder()
+				}
+				return sortedOpts[i].GetName() < sortedOpts[j].GetName()
+			})
 			// Load all option values for counting
 			valueCounts := make(map[string]int)
 			if deps.ListProductOptionValues != nil {
@@ -97,12 +133,7 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 				}
 			}
 
-			for _, o := range optResp.GetData() {
-				pid := o.GetProductId()
-				if pid != productID {
-					continue
-				}
-
+			for _, o := range sortedOpts {
 				oid := o.GetId()
 				name := o.GetName()
 				code := o.GetCode()
@@ -110,6 +141,13 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 				sortOrder := ""
 				if so := o.GetSortOrder(); so != 0 {
 					sortOrder = fmt.Sprintf("%d", so)
+				}
+				required := o.GetRequired()
+				requiredLabel := noLabel
+				requiredVariant := "default"
+				if required {
+					requiredLabel = yesLabel
+					requiredVariant = "info"
 				}
 				active := o.GetActive()
 				status := "active"
@@ -119,6 +157,10 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 
 				dtDisplay := dataTypeDisplayName(dataType, ol.DataTypes)
 				vcDisplay := fmt.Sprintf("%d", valueCounts[oid])
+				// free_text and free_number have no predefined value list —
+				// the option detail page would just show an empty values
+				// table, so disable the View row action for those rows.
+				hasValues := dataType != "free_text" && dataType != "free_number"
 
 				actions := []types.TableAction{
 					{
@@ -135,24 +177,28 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 					},
 					{
 						Type: "view", Label: ol.Actions.ViewValues,
-						Href: route.ResolveURL(deps.Routes.OptionDetailURL, "id", productID, "oid", oid),
+						Href:            route.ResolveURL(deps.Routes.OptionDetailURL, "id", productID, "oid", oid),
+						Disabled:        !hasValues,
+						DisabledTooltip: "This data type does not store predefined values.",
 					},
 				}
 
 				rows = append(rows, types.TableRow{
 					ID: oid,
 					Cells: []types.TableCell{
+						{Type: "text", Value: sortOrder},
 						{Type: "text", Value: name},
 						{Type: "text", Value: code},
 						{Type: "badge", Value: dtDisplay, Variant: "info"},
 						{Type: "text", Value: vcDisplay},
-						{Type: "text", Value: sortOrder},
+						{Type: "badge", Value: requiredLabel, Variant: requiredVariant},
 						{Type: "badge", Value: status, Variant: StatusVariant(status)},
 					},
 					DataAttrs: map[string]string{
-						"name":   name,
-						"code":   code,
-						"status": status,
+						"name":     name,
+						"code":     code,
+						"required": fmt.Sprintf("%t", required),
+						"status":   status,
 					},
 					Actions: actions,
 				})
@@ -175,7 +221,7 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 		ShowExport:           false,
 		ShowDensity:          true,
 		ShowEntries:          true,
-		DefaultSortColumn:    "name",
+		DefaultSortColumn:    "sortOrder",
 		DefaultSortDirection: "asc",
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
@@ -351,11 +397,9 @@ func dataTypeDisplayName(dataType string, labels centymo.ProductOptionDataTypeLa
 	case "text_list":
 		return labels.TextList
 	case "number_list":
-		return labels.NumberList
+		return labels.NumberRange
 	case "color_list":
 		return labels.ColorList
-	case "enum_list":
-		return labels.EnumList
 	case "free_text":
 		return labels.FreeText
 	case "free_number":

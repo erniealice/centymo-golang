@@ -7,25 +7,43 @@
 {{define "product-detail-content"}}
 <div class="page-content detail-layout" data-page-css="/assets/css/centymo/centymo-product-detail.css?v={{.CacheVersion}}">
     {{/* --- HTMX Tab Buttons --- */}}
-    <div class="detail-tabs">
+    {{/* id="detail-tabs" lets the tab-switch response OOB-swap this block
+         so the active class follows the clicked tab. */}}
+    <div id="detail-tabs" class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "product-detail-tabs")}}
     </div>
 
     {{/* --- Tab Content Area --- */}}
     <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
-        {{if eq .ActiveTab "info"}}
-            {{template "product-tab-info" .}}
-        {{else if eq .ActiveTab "variants"}}
-            {{template "product-tab-variants" .}}
-        {{else if eq .ActiveTab "options"}}
-            {{template "product-tab-options" .}}
-        {{else if eq .ActiveTab "lines"}}
-            {{template "product-tab-lines" .}}
-        {{else if eq .ActiveTab "attachments"}}
-            {{template "attachment-tab" .}}
-        {{end}}
+        {{template "product-detail-tab-body" .}}
     </div>
 </div>
+{{end}}
+
+{{/* Tab body dispatcher — shared by initial render and HTMX tab-action. */}}
+{{define "product-detail-tab-body"}}
+{{if eq .ActiveTab "info"}}
+    {{template "product-tab-info" .}}
+{{else if eq .ActiveTab "variants"}}
+    {{template "product-tab-variants" .}}
+{{else if eq .ActiveTab "options"}}
+    {{template "product-tab-options" .}}
+{{else if eq .ActiveTab "lines"}}
+    {{template "product-tab-lines" .}}
+{{else if eq .ActiveTab "attachments"}}
+    {{template "attachment-tab" .}}
+{{else if eq .ActiveTab "audit-history"}}
+    {{template "audit-history-tab" .}}
+{{end}}
+{{end}}
+
+{{/* HTMX tab-action response — swaps the clicked tab's body into #tabContent
+     and OOB-swaps the tab bar so the .active class follows the selection. */}}
+{{define "product-detail-tab-response"}}
+<div id="detail-tabs" class="detail-tabs" hx-swap-oob="true">
+    {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "product-detail-tabs")}}
+</div>
+{{template "product-detail-tab-body" .}}
 {{end}}
 
 {{/* =============================================

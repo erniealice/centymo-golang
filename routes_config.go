@@ -1298,14 +1298,22 @@ type SubscriptionRoutes struct {
 	ActiveNav    string `json:"active_nav"`
 	ActiveSubNav string `json:"active_sub_nav"`
 
-	ListURL         string `json:"list_url"`
-	DetailURL       string `json:"detail_url"`
-	AddURL          string `json:"add_url"`
-	EditURL         string `json:"edit_url"`
-	DeleteURL       string `json:"delete_url"`
-	TabActionURL    string `json:"tab_action_url"`
-	SearchPlanURL   string `json:"search_plan_url"`
-	SearchClientURL string `json:"search_client_url"`
+	ListURL                 string `json:"list_url"`
+	DetailURL               string `json:"detail_url"`
+	UnderClientDetailURL    string `json:"under_client_detail_url"`
+	AddURL                  string `json:"add_url"`
+	EditURL                 string `json:"edit_url"`
+	DeleteURL               string `json:"delete_url"`
+	BulkDeleteURL           string `json:"bulk_delete_url"`
+	SetStatusURL            string `json:"set_status_url"`
+	BulkSetStatusURL        string `json:"bulk_set_status_url"`
+	TabActionURL            string `json:"tab_action_url"`
+	SearchPlanURL           string `json:"search_plan_url"`
+	SearchClientURL         string `json:"search_client_url"`
+
+	// RecognizeURL opens the "Recognize Revenue" drawer for a subscription.
+	// GET = preview drawer (dry_run); POST = generate the Revenue.
+	RecognizeURL string `json:"recognize_url"`
 
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
@@ -1319,14 +1327,19 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		ActiveNav:    "client",
 		ActiveSubNav: "subscriptions",
 
-		ListURL:         SubscriptionListURL,
-		DetailURL:       SubscriptionDetailURL,
-		AddURL:          SubscriptionAddURL,
-		EditURL:         SubscriptionEditURL,
-		DeleteURL:       SubscriptionDeleteURL,
-		TabActionURL:    SubscriptionTabActionURL,
-		SearchPlanURL:   SubscriptionSearchPlanURL,
-		SearchClientURL: SubscriptionSearchClientURL,
+		ListURL:              SubscriptionListURL,
+		DetailURL:            SubscriptionDetailURL,
+		UnderClientDetailURL: SubscriptionUnderClientDetailURL,
+		AddURL:               SubscriptionAddURL,
+		EditURL:              SubscriptionEditURL,
+		DeleteURL:            SubscriptionDeleteURL,
+		BulkDeleteURL:        SubscriptionBulkDeleteURL,
+		SetStatusURL:         SubscriptionSetStatusURL,
+		BulkSetStatusURL:     SubscriptionBulkSetStatusURL,
+		TabActionURL:         SubscriptionTabActionURL,
+		SearchPlanURL:        SubscriptionSearchPlanURL,
+		SearchClientURL:      SubscriptionSearchClientURL,
+		RecognizeURL:         SubscriptionRecognizeURL,
 
 		AttachmentUploadURL: SubscriptionAttachmentUploadURL,
 		AttachmentDeleteURL: SubscriptionAttachmentDeleteURL,
@@ -1337,14 +1350,19 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 // subscription routes.
 func (r SubscriptionRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"subscription.list":          r.ListURL,
-		"subscription.detail":        r.DetailURL,
-		"subscription.add":           r.AddURL,
-		"subscription.edit":          r.EditURL,
-		"subscription.delete":        r.DeleteURL,
-		"subscription.tab_action":    r.TabActionURL,
-		"subscription.search_plan":   r.SearchPlanURL,
-		"subscription.search_client": r.SearchClientURL,
+		"subscription.list":                r.ListURL,
+		"subscription.detail":              r.DetailURL,
+		"subscription.under_client_detail": r.UnderClientDetailURL,
+		"subscription.add":                 r.AddURL,
+		"subscription.edit":                r.EditURL,
+		"subscription.delete":              r.DeleteURL,
+		"subscription.bulk_delete":         r.BulkDeleteURL,
+		"subscription.set_status":          r.SetStatusURL,
+		"subscription.bulk_set_status":     r.BulkSetStatusURL,
+		"subscription.tab_action":          r.TabActionURL,
+		"subscription.search_plan":         r.SearchPlanURL,
+		"subscription.search_client":       r.SearchClientURL,
+		"subscription.recognize":           r.RecognizeURL,
 
 		"subscription.attachment.upload": r.AttachmentUploadURL,
 		"subscription.attachment.delete": r.AttachmentDeleteURL,

@@ -1,0 +1,304 @@
+{{/*
+Subscription "Recognize Revenue" drawer form — loaded into #sheetContent
+via HTMX. Per plan §4.1 mockup.
+
+Data:
+  .FormAction, .SubscriptionID, .SubscriptionName,
+  .ClientLabel, .PlanLabel, .Quantity, .Currency,
+  .PeriodStartDate, .PeriodStartTime, .PeriodStartISO,
+  .PeriodEndDate,   .PeriodEndTime,   .PeriodEndISO,
+  .DefaultTZ, .RevenueDate, .Notes,
+  .PreviewLines [{ProductPricePlanID, Description, UnitPrice, Quantity, TotalPrice, Currency, Treatment, TreatmentLabel}],
+  .TotalAmount,
+  .CurrencyMismatch, .ClientCurrency, .PlanCurrency,
+  .IdempotencyConflict, .ConflictingRevenueID, .ConflictingRevenueURL,
+  .Warnings,
+  .Labels (RecognizeFormLabels), .CommonLabels.
+
+Footer is single "Generate" button (no "Save as Draft" — see plan Phase D
+refinement: both buttons would run the same idempotency check, so we collapse
+to a single CTA in v1).
+*/}}
+{{define "subscription-recognize-drawer-form"}}
+<form
+  hx-post="{{.FormAction}}"
+  hx-swap="none"
+  hx-on::after-request="lf.Sheet.handleResponse(event)"
+  data-default-tz="{{.DefaultTZ}}"
+>
+    <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
+
+    <div class="sheet-body">
+        {{/* --- Read-only context (Client / Plan / Quantity) --- */}}
+        {{template "form-section" (dict "Title" .Labels.ContextSection)}}
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "context_client"
+                "Label" .Labels.ClientLabel
+                "Value" .ClientLabel
+                "Readonly" true
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "context_plan"
+                "Label" .Labels.PlanLabel
+                "Value" .PlanLabel
+                "Readonly" true
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "context_quantity"
+                "Label" .Labels.QuantityLabel
+                "Value" (printf "%d" .Quantity)
+                "Readonly" true
+            )}}
+        </div>
+
+        {{/* --- Currency mismatch banner (blocking) --- */}}
+        {{if .CurrencyMismatch}}
+        <div
+          class="form-row single alert alert--error"
+          data-recognize-currency-mismatch
+          role="alert"
+        >
+            <strong>{{.Labels.CurrencyMismatchError}}</strong>
+            <small>
+              {{.Labels.ClientLabel}}: {{.ClientCurrency}} ·
+              {{.Labels.PlanLabel}}: {{.PlanCurrency}}
+            </small>
+        </div>
+        {{end}}
+
+        {{/* --- Idempotency conflict banner (blocking) --- */}}
+        {{if .IdempotencyConflict}}
+        <div
+          class="form-row single alert alert--error"
+          data-recognize-idempotency-error
+          role="alert"
+        >
+            <strong>{{.Labels.IdempotencyError}}</strong>
+            {{if .ConflictingRevenueURL}}
+            <a href="{{.ConflictingRevenueURL}}" class="alert__link" data-testid="recognize-existing-invoice-link">
+              {{.Labels.IdempotencyExistingLink}}
+            </a>
+            {{end}}
+        </div>
+        {{end}}
+
+        {{/* --- Period section --- */}}
+        {{template "form-section" (dict "Title" .Labels.PeriodSection)}}
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "period_start_date"
+                "Label" .Labels.PeriodStart
+                "Value" .PeriodStartDate
+                "Required" true
+                "Info" .Labels.StartDateInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "time"
+                "Name" "period_start_time"
+                "Label" .Labels.PeriodStart
+                "Value" .PeriodStartTime
+                "Info" .Labels.StartTimeInfo
+            )}}
+        </div>
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "period_end_date"
+                "Label" .Labels.PeriodEnd
+                "Value" .PeriodEndDate
+                "Required" true
+                "Info" .Labels.EndDateInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "time"
+                "Name" "period_end_time"
+                "Label" .Labels.PeriodEnd
+                "Value" .PeriodEndTime
+                "Info" .Labels.EndTimeInfo
+            )}}
+        </div>
+
+        <div class="form-row single">
+            <small class="form-info">
+              <span class="tz-label" data-tz-label>{{.Labels.Timezone}}: {{.DefaultTZ}}</span>
+            </small>
+        </div>
+
+        {{/* Hidden RFC3339 fields populated by JS — backend prefers these. */}}
+        <input type="hidden" name="period_start_iso" value="{{.PeriodStartISO}}">
+        <input type="hidden" name="period_end_iso"   value="{{.PeriodEndISO}}">
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "revenue_date"
+                "Label" .Labels.RevenueDate
+                "Value" .RevenueDate
+                "Required" true
+            )}}
+        </div>
+
+        {{/* --- Line items preview --- */}}
+        {{template "form-section" (dict "Title" .Labels.LineItemsSection)}}
+
+        <div class="recognize-preview" data-testid="recognize-preview-table">
+          <table class="data-table data-table--compact">
+            <thead>
+              <tr>
+                <th>{{.Labels.ColumnDescription}}</th>
+                <th class="cell-right">{{.Labels.ColumnUnitPrice}}</th>
+                <th class="cell-right">{{.Labels.ColumnQuantity}}</th>
+                <th class="cell-right">{{.Labels.ColumnLineTotal}}</th>
+                <th>{{.Labels.ColumnTreatment}}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .PreviewLines}}
+              <tr data-testid="recognize-preview-row" data-ppp-id="{{.ProductPricePlanID}}">
+                <td>{{.Description}}</td>
+                <td class="cell-right">{{.UnitPrice}}</td>
+                <td class="cell-right">{{.Quantity}}</td>
+                <td class="cell-right">{{.TotalPrice}}</td>
+                <td>
+                  <span class="badge badge--{{.Treatment}}" data-testid="recognize-treatment-badge">
+                    {{.TreatmentLabel}}
+                  </span>
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="cell-right"><strong>{{.Labels.TotalLabel}}</strong></td>
+                <td class="cell-right" data-testid="recognize-total-amount"><strong>{{.TotalAmount}}</strong></td>
+                <td>{{.Currency}}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {{/* --- Warnings (non-blocking) --- */}}
+        {{if .Warnings}}
+        <div class="form-row single alert alert--warning" role="status" data-recognize-warnings>
+          <ul>
+            {{range .Warnings}}<li>{{.}}</li>{{end}}
+          </ul>
+        </div>
+        {{end}}
+
+        {{/* --- Notes --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "notes"
+                "Label" .Labels.NotesLabel
+                "Value" .Notes
+                "Placeholder" .Labels.NotesPlaceholder
+            )}}
+        </div>
+    </div>
+
+    <div class="sheet-footer">
+      <button
+        type="button"
+        class="btn btn--secondary"
+        data-sheet-cancel
+        data-testid="recognize-cancel"
+      >
+        {{.Labels.Cancel}}
+      </button>
+      <button
+        type="submit"
+        class="btn btn--primary"
+        data-testid="recognize-generate"
+        {{if or .CurrencyMismatch .IdempotencyConflict}}disabled aria-disabled="true"{{end}}
+      >
+        {{.Labels.Generate}}
+      </button>
+    </div>
+</form>
+
+<script>
+(function () {
+    var form = document.currentScript.previousElementSibling;
+    while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
+    if (!form) { return; }
+
+    var startDate = form.querySelector('[name="period_start_date"]');
+    var startTime = form.querySelector('[name="period_start_time"]');
+    var endDate   = form.querySelector('[name="period_end_date"]');
+    var endTime   = form.querySelector('[name="period_end_time"]');
+    var startISO  = form.querySelector('[name="period_start_iso"]');
+    var endISO    = form.querySelector('[name="period_end_iso"]');
+    var tzLabel   = form.querySelector('[data-tz-label]');
+    var defaultTZ = form.dataset.defaultTz || 'Asia/Manila';
+
+    if (!startDate || !endDate || !startISO || !endISO) { return; }
+
+    function offsetFor(tz, year, month, day, hour, minute) {
+        try {
+            var dtf = new Intl.DateTimeFormat('en-US', {
+                timeZone: tz, hourCycle: 'h23',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            var asUTC = Date.UTC(year, month - 1, day, hour, minute, 0);
+            var parts = dtf.formatToParts(new Date(asUTC));
+            var lookup = {};
+            parts.forEach(function (p) { lookup[p.type] = p.value; });
+            var asTZ = Date.UTC(
+                Number(lookup.year), Number(lookup.month) - 1, Number(lookup.day),
+                Number(lookup.hour) % 24, Number(lookup.minute), Number(lookup.second)
+            );
+            var offsetMinutes = -Math.round((asUTC - asTZ) / 60000);
+            var sign = offsetMinutes >= 0 ? '+' : '-';
+            var abs = Math.abs(offsetMinutes);
+            return sign + String(Math.floor(abs / 60)).padStart(2, '0') + ':' + String(abs % 60).padStart(2, '0');
+        } catch (e) {
+            var local = new Date(year, month - 1, day, hour, minute, 0);
+            var offMin = -local.getTimezoneOffset();
+            var sgn = offMin >= 0 ? '+' : '-';
+            var a = Math.abs(offMin);
+            return sgn + String(Math.floor(a / 60)).padStart(2, '0') + ':' + String(a % 60).padStart(2, '0');
+        }
+    }
+
+    function buildISO(dateInput, timeInput) {
+        var d = dateInput && dateInput.value;
+        if (!d) { return ''; }
+        var t = (timeInput && timeInput.value) || '00:00';
+        var parts = d.split('-');
+        if (parts.length !== 3) { return ''; }
+        var y = Number(parts[0]), m = Number(parts[1]), day = Number(parts[2]);
+        var tparts = t.split(':');
+        var hh = Number(tparts[0]) || 0;
+        var mm = Number(tparts[1]) || 0;
+        var off = offsetFor(defaultTZ, y, m, day, hh, mm);
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        return parts[0] + '-' + pad(m) + '-' + pad(day) + 'T' + pad(hh) + ':' + pad(mm) + ':00' + off;
+    }
+
+    function refreshHidden() {
+        startISO.value = buildISO(startDate, startTime);
+        endISO.value   = buildISO(endDate, endTime);
+    }
+
+    [startDate, startTime, endDate, endTime].forEach(function (el) {
+        if (el) { el.addEventListener('change', refreshHidden); }
+    });
+
+    refreshHidden();
+    if (tzLabel) { tzLabel.textContent = '{{.Labels.Timezone}}: ' + defaultTZ; }
+}());
+</script>
+{{end}}

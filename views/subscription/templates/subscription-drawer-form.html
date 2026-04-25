@@ -1,12 +1,15 @@
 {{/*
 Subscription drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
-Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
+Data: .Code, .ClientID, .PricePlanID,
+      .DateStartDate, .DateStartTime, .DateStartISO,
+      .DateEndDate,   .DateEndTime,   .DateEndISO,
+      .DefaultTZ, .Notes,
       .SearchClientURL, .SearchPlanURL, .ClientLabel, .PlanLabel,
       .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "subscription-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)" data-default-tz="{{.DefaultTZ}}">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     <div class="sheet-body">
@@ -41,24 +44,51 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
         </div>
         {{end}}
 
-        {{/* --- Start Date and End Date --- */}}
+        {{/* --- Start Date+Time --- */}}
         <div class="form-row">
             {{template "form-group" (dict
                 "Type" "date"
-                "Name" "date_start_string"
+                "Name" "date_start_date"
                 "Label" .Labels.StartDate
-                "Value" .DateStart
+                "Value" .DateStartDate
                 "Required" true
                 "Info" .Labels.StartDateInfo
             )}}
             {{template "form-group" (dict
-                "Type" "date"
-                "Name" "date_end_string"
-                "Label" .Labels.EndDate
-                "Value" .DateEnd
-                "Info" .Labels.EndDateInfo
+                "Type" "time"
+                "Name" "date_start_time"
+                "Label" .Labels.StartTime
+                "Value" .DateStartTime
+                "Info" .Labels.StartTimeInfo
             )}}
         </div>
+
+        {{/* --- End Date+Time --- */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "date_end_date"
+                "Label" .Labels.EndDate
+                "Value" .DateEndDate
+                "Info" .Labels.EndDateInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "time"
+                "Name" "date_end_time"
+                "Label" .Labels.EndTime
+                "Value" .DateEndTime
+                "Info" .Labels.EndTimeInfo
+            )}}
+        </div>
+
+        {{/* --- Active TZ label --- */}}
+        <div class="form-row single">
+            <small class="form-info"><span class="tz-label" data-tz-label>{{.Labels.Timezone}}: {{.DefaultTZ}}</span></small>
+        </div>
+
+        {{/* Hidden RFC3339 fields populated by JS — backend prefers these. */}}
+        <input type="hidden" name="date_time_start_iso" value="{{.DateStartISO}}">
+        <input type="hidden" name="date_time_end_iso"   value="{{.DateEndISO}}">
 
         {{/* --- Price Plan --- */}}
         <div class="form-row single">
@@ -110,38 +140,101 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
 
 <script>
 (function () {
-    var planContainer = document.getElementById('plan-search');
-    var dateStartInput = document.querySelector('[name="date_start_string"]');
-    var dateEndInput = document.querySelector('[name="date_end_string"]');
+    var form = document.currentScript.previousElementSibling;
+    while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
+    if (!form) { return; }
 
-    if (!planContainer || !dateStartInput || !dateEndInput) {
+    var planContainer = form.querySelector('#plan-search');
+    var startDate = form.querySelector('[name="date_start_date"]');
+    var startTime = form.querySelector('[name="date_start_time"]');
+    var endDate   = form.querySelector('[name="date_end_date"]');
+    var endTime   = form.querySelector('[name="date_end_time"]');
+    var startISO  = form.querySelector('[name="date_time_start_iso"]');
+    var endISO    = form.querySelector('[name="date_time_end_iso"]');
+    var tzLabel   = form.querySelector('[data-tz-label]');
+
+    if (!planContainer || !startDate || !endDate || !startISO || !endISO) {
         return;
     }
 
     var planHidden = planContainer.querySelector('.auto-complete-input');
     var planTrigger = planContainer.querySelector('.auto-complete-trigger');
 
-    if (!planHidden || !planTrigger) {
-        return;
-    }
-
     var baseURL = planContainer.dataset.searchUrl || '';
-
-    var clientBillingCurrency = {{ printf "%q" .ClientBillingCurrency }};
+    var clientBillingCurrency = {{if .ClientBillingCurrency}}{{ printf "%q" .ClientBillingCurrency }}{{else}}''{{end}};
+    var defaultTZ = form.dataset.defaultTz || 'Asia/Manila';
 
     var initialPlaceholderHTML = '<span class="auto-complete-placeholder">{{.Labels.PlanPlaceholder}}</span>';
 
+    // Compute the offset (e.g. "+08:00") for the chosen IANA tz at the given
+    // wall-clock moment. Fallback to local browser offset if the Intl API
+    // can't render the named zone (very rare; the OS tzdata is missing it).
+    function offsetFor(tz, year, month, day, hour, minute) {
+        try {
+            var dtf = new Intl.DateTimeFormat('en-US', {
+                timeZone: tz, hourCycle: 'h23',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            // Build a UTC instant for the wall-clock time, then ask what time
+            // it is in tz; the difference IS the offset for that wall clock.
+            var asUTC = Date.UTC(year, month - 1, day, hour, minute, 0);
+            var parts = dtf.formatToParts(new Date(asUTC));
+            var lookup = {};
+            parts.forEach(function (p) { lookup[p.type] = p.value; });
+            var asTZ = Date.UTC(
+                Number(lookup.year), Number(lookup.month) - 1, Number(lookup.day),
+                Number(lookup.hour) % 24, Number(lookup.minute), Number(lookup.second)
+            );
+            var offsetMinutes = Math.round((asUTC - asTZ) / 60000);
+            // Convention: positive offsets mean "ahead of UTC" in RFC3339.
+            // Our delta is wall-clock(UTC) - wall-clock(tz); flip the sign.
+            offsetMinutes = -offsetMinutes;
+            var sign = offsetMinutes >= 0 ? '+' : '-';
+            var abs = Math.abs(offsetMinutes);
+            var hh = String(Math.floor(abs / 60)).padStart(2, '0');
+            var mm = String(abs % 60).padStart(2, '0');
+            return sign + hh + ':' + mm;
+        } catch (e) {
+            // Fallback: use the browser's local offset for this instant.
+            var local = new Date(year, month - 1, day, hour, minute, 0);
+            var offMin = -local.getTimezoneOffset();
+            var sgn = offMin >= 0 ? '+' : '-';
+            var a = Math.abs(offMin);
+            return sgn + String(Math.floor(a / 60)).padStart(2, '0') + ':' + String(a % 60).padStart(2, '0');
+        }
+    }
+
+    function buildISO(dateInput, timeInput) {
+        var d = dateInput && dateInput.value;
+        if (!d) { return ''; }
+        var t = (timeInput && timeInput.value) || '00:00';
+        var parts = d.split('-');
+        if (parts.length !== 3) { return ''; }
+        var y = Number(parts[0]), m = Number(parts[1]), day = Number(parts[2]);
+        var tparts = t.split(':');
+        var hh = Number(tparts[0]) || 0;
+        var mm = Number(tparts[1]) || 0;
+        var off = offsetFor(defaultTZ, y, m, day, hh, mm);
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        return parts[0] + '-' + pad(m) + '-' + pad(day) + 'T' + pad(hh) + ':' + pad(mm) + ':00' + off;
+    }
+
+    function refreshHidden() {
+        startISO.value = buildISO(startDate, startTime);
+        endISO.value   = buildISO(endDate, endTime);
+    }
+
     function updatePlanSearchURL() {
-        var start = dateStartInput.value;
-        var end = dateEndInput.value;
         var url = baseURL;
         var sep = '?';
-        if (start) {
-            url = url + sep + 'date_start=' + encodeURIComponent(start);
+        if (startISO.value) {
+            url = url + sep + 'date_time_start_iso=' + encodeURIComponent(startISO.value);
             sep = '&';
         }
-        if (end) {
-            url = url + sep + 'date_end=' + encodeURIComponent(end);
+        if (endISO.value) {
+            url = url + sep + 'date_time_end_iso=' + encodeURIComponent(endISO.value);
+            sep = '&';
         }
         if (clientBillingCurrency) {
             url = url + sep + 'billing_currency=' + encodeURIComponent(clientBillingCurrency);
@@ -151,6 +244,7 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
     }
 
     function clearPlanSelection() {
+        if (!planHidden || !planTrigger) { return; }
         planHidden.value = '';
         planHidden.removeAttribute('value');
 
@@ -165,17 +259,19 @@ Data: .Code, .ClientID, .PricePlanID, .DateStart, .DateEnd, .Notes,
         }
     }
 
-    dateStartInput.addEventListener('change', function () {
+    function onDateTimeChange() {
+        refreshHidden();
         updatePlanSearchURL();
         clearPlanSelection();
+    }
+
+    [startDate, startTime, endDate, endTime].forEach(function (el) {
+        if (el) { el.addEventListener('change', onDateTimeChange); }
     });
 
-    dateEndInput.addEventListener('change', function () {
-        updatePlanSearchURL();
-        clearPlanSelection();
-    });
-
+    refreshHidden();
     updatePlanSearchURL();
+    if (tzLabel) { tzLabel.textContent = '{{.Labels.Timezone}}: ' + defaultTZ; }
 }());
 </script>
 {{end}}

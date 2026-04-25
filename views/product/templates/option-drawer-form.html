@@ -8,7 +8,7 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="product_id" value="{{.ProductID}}">
 
-    <div class="sheet-body">
+    <div class="sheet-body" data-option-form data-initial-data-type="{{.DataType}}">
         <div class="form-row single">
             {{template "form-group" (dict
                 "Type" "text"
@@ -35,6 +35,19 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
 
         <div class="form-row single">
             {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "description"
+                "Label" .Labels.Description
+                "Value" .Description
+                "Placeholder" .Labels.DescriptionPlaceholder
+                "Info" .Labels.DescriptionInfo
+                "Rows" 3
+                "MaxLength" 500
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
                 "Type" "select"
                 "Name" "data_type"
                 "Label" .Labels.DataType
@@ -45,7 +58,10 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
             )}}
         </div>
 
-        <div class="form-row two-col">
+        {{/* Min/Max bounds — only meaningful for numeric data types
+             (number_list, free_number). Hidden for text, color, enum, free_text.
+             Hide/show is driven by the inline script at the bottom of this form. */}}
+        <div class="form-row two-col" data-numeric-only>
             {{template "form-group" (dict
                 "Type" "number"
                 "Name" "min_value"
@@ -72,23 +88,37 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
             )}}
         </div>
 
-        {{if not .IsEdit}}
+        {{/* Edit-only hint pointing at the option detail page where values
+             (Small / Medium / Large rows in product_option_value) are added,
+             reordered, and removed. The option drawer manages metadata only;
+             the value list lives separately so it can grow without bloating
+             this form. Suppressed for free_text / free_number — those don't
+             have a predefined value list. */}}
+        {{if and .IsEdit .IsListType .ManageValuesURL}}
         <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "text"
-                "Name" "initial_values"
-                "Label" .Labels.Form.InitialValues
-                "Value" ""
-                "Placeholder" .Labels.Form.InitialValuesPlaceholder
-            )}}
+            <p class="form-hint">
+                Values for this option (e.g. Small, Medium, Large) are managed on the
+                <a href="{{.ManageValuesURL}}">option detail page</a>.
+            </p>
         </div>
         {{end}}
 
         <div class="form-row single">
             <div class="form-group form-group-toggle">
-                <label class="form-label" for="required">{{.Labels.Form.Required}}</label>
+                <label class="form-label" for="required">
+                    {{if .Labels.Required}}{{.Labels.Required}}{{else}}Required{{end}}
+                </label>
                 {{template "toggle" (dict "Name" "required" "Checked" .Required "Value" "true")}}
             </div>
+        </div>
+
+        {{/* Caution shown only when Required is on. Mirrors the variant-form
+             alert: a required option blocks variant creation until either it
+             has values (for list types) or the user fills the free input. */}}
+        <div class="form-row single" data-required-caution{{if not .Required}} hidden{{end}}>
+            {{template "alert" (dict
+                "State" "warning"
+                "Message" .Labels.RequiredCaution)}}
         </div>
 
         <div class="form-row single">
@@ -118,4 +148,39 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
+
+<script>
+(function() {
+    // Data types that carry a numeric bounds pair (min/max).
+    // Only free_number — number_list stores discrete values in
+    // product_option_value rows, so min/max bounds are redundant there.
+    var numericTypes = { free_number: 1 };
+
+    var form = document.querySelector('[data-option-form]');
+    if (!form) return;
+    var dataTypeSelect = form.querySelector('select[name="data_type"]');
+    var numericRow = form.querySelector('[data-numeric-only]');
+
+    function apply() {
+        var value = dataTypeSelect ? dataTypeSelect.value : form.dataset.initialDataType;
+        if (numericRow) {
+            numericRow.style.display = numericTypes[value] ? '' : 'none';
+        }
+    }
+
+    if (dataTypeSelect) dataTypeSelect.addEventListener('change', apply);
+    apply();
+
+    // Toggle the "Required" caution banner inline so the user sees the
+    // implication before saving — no round-trip to the server needed.
+    var requiredInput = form.querySelector('input[name="required"]');
+    var caution = form.querySelector('[data-required-caution]');
+    function syncCaution() {
+        if (!caution) return;
+        caution.hidden = !(requiredInput && requiredInput.checked);
+    }
+    if (requiredInput) requiredInput.addEventListener('change', syncCaution);
+    syncCaution();
+})();
+</script>
 {{end}}

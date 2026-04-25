@@ -6,21 +6,14 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/pyeza-golang/route"
+	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
-	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 )
-
-// DataTypeOption represents a single data type choice for the option form select.
-type DataTypeOption struct {
-	Value string
-	Label string
-}
 
 // OptionFormData is the template data for the option drawer form.
 type OptionFormData struct {
@@ -30,6 +23,7 @@ type OptionFormData struct {
 	ProductID       string
 	Name            string
 	Code            string
+	Description     string
 	DataType        string
 	SortOrder       string
 	MinValue        string
@@ -38,16 +32,51 @@ type OptionFormData struct {
 	Active          bool
 	Labels          centymo.ProductOptionFormLabels
 	CommonLabels    any
-	DataTypeOptions []DataTypeOption
+	DataTypeOptions []types.SelectOption
+	// ManageValuesURL points at the option detail page, where values
+	// (rows in product_option_value) are added/edited/removed. Only set
+	// in Edit mode — the option must exist before its values do.
+	ManageValuesURL string
+	// IsListType is true when the option's data_type is one whose
+	// per-value rows show on the detail page (text_list / number_list /
+	// color_list). The "Manage values" link is suppressed for free_text
+	// / free_number — those don't have a predefined value set.
+	IsListType bool
 }
 
-// buildDataTypeOptions builds the list of data type choices for the form select dropdown.
-func buildDataTypeOptions(labels centymo.ProductOptionDataTypeLabels) []DataTypeOption {
-	return []DataTypeOption{
+// nextOptionSortOrder returns the smallest unused positive sort_order for the
+// given product, suggested as the default when the Add Option drawer opens.
+// Returns max(existing) + 1, or 1 if the product has no options yet.
+func nextOptionSortOrder(ctx context.Context, deps *OptionsDeps, productID string) int32 {
+	if deps == nil || deps.ListProductOptions == nil {
+		return 1
+	}
+	resp, err := deps.ListProductOptions(ctx, &productoptionpb.ListProductOptionsRequest{})
+	if err != nil {
+		return 1
+	}
+	var max int32
+	for _, o := range resp.GetData() {
+		if o == nil || o.GetProductId() != productID {
+			continue
+		}
+		if so := o.GetSortOrder(); so > max {
+			max = so
+		}
+	}
+	return max + 1
+}
+
+// buildDataTypeOptions builds the list of data type choices for the form select
+// dropdown. Returns []types.SelectOption (not a local struct) so the shared
+// form-group template can read the Description field it expects on every
+// option — form-group.html renders `data-description="{{.Description}}"`
+// unconditionally, so missing the field triggers a template execution error.
+func buildDataTypeOptions(labels centymo.ProductOptionDataTypeLabels) []types.SelectOption {
+	return []types.SelectOption{
 		{Value: "text_list", Label: labels.TextList},
-		{Value: "number_list", Label: labels.NumberList},
+		{Value: "number_list", Label: labels.NumberRange},
 		{Value: "color_list", Label: labels.ColorList},
-		{Value: "enum_list", Label: labels.EnumList},
 		{Value: "free_text", Label: labels.FreeText},
 		{Value: "free_number", Label: labels.FreeNumber},
 	}
@@ -60,9 +89,14 @@ func NewOptionAddView(deps *OptionsDeps) view.View {
 		ol := deps.Labels.Options
 
 		if viewCtx.Request.Method == http.MethodGet {
+			// Pre-fill sort_order with the next slot above existing options so the
+			// user can drop a new option at the end without renumbering. Falls
+			// back to "1" if no options exist yet.
+			nextSort := nextOptionSortOrder(ctx, deps, productID)
 			return view.OK("option-drawer-form", &OptionFormData{
 				FormAction:      route.ResolveURL(deps.Routes.OptionAddURL, "id", productID),
 				ProductID:       productID,
+				SortOrder:       fmt.Sprintf("%d", nextSort),
 				Required:        false,
 				Active:          true,
 				Labels:          ol.Form,
@@ -89,6 +123,9 @@ func NewOptionAddView(deps *OptionsDeps) view.View {
 			Required:  required,
 			Active:    active,
 		}
+		if v := r.FormValue("description"); v != "" {
+			optionData.Description = &v
+		}
 		if v := r.FormValue("sort_order"); v != "" {
 			if so, err := strconv.ParseInt(v, 10, 32); err == nil {
 				optionData.SortOrder = int32(so)
@@ -105,40 +142,11 @@ func NewOptionAddView(deps *OptionsDeps) view.View {
 			}
 		}
 
-		createResp, err := deps.CreateProductOption(ctx, &productoptionpb.CreateProductOptionRequest{
+		if _, err := deps.CreateProductOption(ctx, &productoptionpb.CreateProductOptionRequest{
 			Data: optionData,
-		})
-		if err != nil {
+		}); err != nil {
 			log.Printf("Failed to create product option: %v", err)
 			return HtmxError(err.Error())
-		}
-
-		// Create initial option values from comma-separated input
-		if created := createResp.GetData(); len(created) > 0 {
-			optionID := created[0].GetId()
-			if optionID != "" {
-				if raw := r.FormValue("initial_values"); raw != "" {
-					for i, part := range strings.Split(raw, ",") {
-						label := strings.TrimSpace(part)
-						if label == "" {
-							continue
-						}
-						value := strings.ToLower(strings.ReplaceAll(label, " ", "_"))
-						_, err := deps.CreateProductOptionValue(ctx, &productoptionvaluepb.CreateProductOptionValueRequest{
-							Data: &productoptionvaluepb.ProductOptionValue{
-								ProductOptionId: optionID,
-								Label:           label,
-								Value:           value,
-								SortOrder:       int32(i + 1),
-								Active:          true,
-							},
-						})
-						if err != nil {
-							log.Printf("Failed to create option value %q: %v", label, err)
-						}
-					}
-				}
-			}
 		}
 
 		return HtmxSuccess("product-options-table")
@@ -164,6 +172,7 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 
 			name := record.GetName()
 			code := record.GetCode()
+			description := record.GetDescription()
 			dataType := record.GetDataType()
 			sortOrder := ""
 			if so := record.GetSortOrder(); so != 0 {
@@ -179,6 +188,7 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 			}
 			active := record.GetActive()
 			required := record.GetRequired()
+			isListType := dataType == "text_list" || dataType == "number_list" || dataType == "color_list"
 
 			return view.OK("option-drawer-form", &OptionFormData{
 				FormAction:      route.ResolveURL(deps.Routes.OptionEditURL, "id", productID, "oid", optionID),
@@ -187,6 +197,7 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 				ProductID:       productID,
 				Name:            name,
 				Code:            code,
+				Description:     description,
 				DataType:        dataType,
 				SortOrder:       sortOrder,
 				MinValue:        minValue,
@@ -196,6 +207,8 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 				Labels:          ol.Form,
 				CommonLabels:    nil, // injected by ViewAdapter
 				DataTypeOptions: buildDataTypeOptions(ol.DataTypes),
+				ManageValuesURL: route.ResolveURL(deps.Routes.OptionDetailURL, "id", productID, "oid", optionID),
+				IsListType:      isListType,
 			})
 		}
 
@@ -216,6 +229,9 @@ func NewOptionEditView(deps *OptionsDeps) view.View {
 			DataType: r.FormValue("data_type"),
 			Required: required,
 			Active:   active,
+		}
+		if v := r.FormValue("description"); v != "" {
+			optionData.Description = &v
 		}
 		if v := r.FormValue("sort_order"); v != "" {
 			if so, err := strconv.ParseInt(v, 10, 32); err == nil {

@@ -54,8 +54,13 @@ func NewAssignView(deps *DetailViewDeps) view.View {
 				ProductID:  productID,
 				Active:     true,
 				Labels: VariantFormLabels{
-					SKU:           l.Variant.SKU,
-					PriceOverride: l.Variant.PriceOverride,
+					SKU:                    l.Variant.SKU,
+					PriceOverride:          l.Variant.PriceOverride,
+					PricePlaceholder:       l.Form.PricePlaceholder,
+					SelectOption:           l.Form.SelectOption,
+					Active:                 l.Form.Active,
+					OptionNeedsValuesAlert: l.Form.OptionNeedsValuesAlert,
+					ViewValues:             l.Options.Actions.ViewValues,
 				},
 				CommonLabels:     nil, // injected by ViewAdapter
 				OptionSelections: loadOptionSelections(ctx, deps, productID),
@@ -76,10 +81,14 @@ func NewAssignView(deps *DetailViewDeps) view.View {
 
 		active := r.FormValue("active") == "true"
 
-		var priceOverride int64
+		// price_override is optional — leave the proto field nil when the input is blank
+		// so the DB stores NULL rather than 0 (a real override of zero is also valid;
+		// blank means "no override, use Product.price or rate-card").
+		var priceOverride *int64
 		if v := r.FormValue("price_override"); v != "" {
 			f, _ := strconv.ParseFloat(v, 64)
-			priceOverride = int64(math.Round(f * 100))
+			cents := int64(math.Round(f * 100))
+			priceOverride = &cents
 		}
 
 		resp, err := deps.CreateProductVariant(ctx, &productvariantpb.CreateProductVariantRequest{
@@ -98,7 +107,7 @@ func NewAssignView(deps *DetailViewDeps) view.View {
 		if created := resp.GetData(); len(created) > 0 {
 			variantID := created[0].GetId()
 			if variantID != "" {
-				saveVariantOptions(ctx, deps, variantID, r.Form)
+				saveVariantOptions(ctx, deps, variantID, optionSels, r.Form)
 			}
 		}
 
@@ -139,7 +148,8 @@ func NewEditView(deps *DetailViewDeps) view.View {
 			existing := loadVariantOptionSelections(ctx, deps, variantID)
 			for i := range optionSels {
 				if sel, ok := existing[optionSels[i].OptionID]; ok {
-					optionSels[i].Selected = sel
+					optionSels[i].Selected = sel.ValueID
+					optionSels[i].SelectedLabel = sel.ValueLabel
 				}
 			}
 			return view.OK("variant-drawer-form", &VariantFormData{
@@ -151,8 +161,13 @@ func NewEditView(deps *DetailViewDeps) view.View {
 				PriceOverride: priceOverride,
 				Active:        active,
 				Labels: VariantFormLabels{
-					SKU:           l.Variant.SKU,
-					PriceOverride: l.Variant.PriceOverride,
+					SKU:                    l.Variant.SKU,
+					PriceOverride:          l.Variant.PriceOverride,
+					PricePlaceholder:       l.Form.PricePlaceholder,
+					SelectOption:           l.Form.SelectOption,
+					Active:                 l.Form.Active,
+					OptionNeedsValuesAlert: l.Form.OptionNeedsValuesAlert,
+					ViewValues:             l.Options.Actions.ViewValues,
 				},
 				CommonLabels:     nil, // injected by ViewAdapter
 				OptionSelections: optionSels,
@@ -173,10 +188,12 @@ func NewEditView(deps *DetailViewDeps) view.View {
 
 		active := r.FormValue("active") == "true"
 
-		var editPriceOverride int64
+		// See NewAssignView — blank input means "no override" (nil), not "override = 0".
+		var editPriceOverride *int64
 		if v := r.FormValue("price_override"); v != "" {
 			f, _ := strconv.ParseFloat(v, 64)
-			editPriceOverride = int64(math.Round(f * 100))
+			cents := int64(math.Round(f * 100))
+			editPriceOverride = &cents
 		}
 
 		_, err := deps.UpdateProductVariant(ctx, &productvariantpb.UpdateProductVariantRequest{
@@ -193,7 +210,7 @@ func NewEditView(deps *DetailViewDeps) view.View {
 		}
 
 		deleteVariantOptions(ctx, deps, variantID)
-		saveVariantOptions(ctx, deps, variantID, r.Form)
+		saveVariantOptions(ctx, deps, variantID, optionSels, r.Form)
 
 		return view.ViewResult{
 			StatusCode: http.StatusOK,

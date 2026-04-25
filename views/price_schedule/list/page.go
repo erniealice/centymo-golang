@@ -141,7 +141,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 	l := deps.Labels
 	columns := priceScheduleColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, locationNames)
+	rows := buildTableRows(ctx, resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, locationNames)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -198,7 +198,8 @@ func priceScheduleColumns(l centymo.PriceScheduleLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(priceSchedules []*priceschedulepb.PriceSchedule, status string, l centymo.PriceScheduleLabels, cl pyeza.CommonLabels, routes centymo.PriceScheduleRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, locationNames map[string]string) []types.TableRow {
+func buildTableRows(ctx context.Context, priceSchedules []*priceschedulepb.PriceSchedule, status string, l centymo.PriceScheduleLabels, cl pyeza.CommonLabels, routes centymo.PriceScheduleRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, locationNames map[string]string) []types.TableRow {
+	tz := types.LocationFromContext(ctx)
 	rows := []types.TableRow{}
 	for _, ps := range priceSchedules {
 		recordStatus := "active"
@@ -209,8 +210,8 @@ func buildTableRows(priceSchedules []*priceschedulepb.PriceSchedule, status stri
 		id := ps.GetId()
 		name := ps.GetName()
 		description := ps.GetDescription()
-		dateStart := ps.GetDateStart()
-		dateEnd := ps.GetDateEnd()
+		dateStart := types.FormatTimestampInTZ(ps.GetDateTimeStart(), tz, types.DateTimeReadable)
+		dateEnd := types.FormatTimestampInTZ(ps.GetDateTimeEnd(), tz, types.DateTimeReadable)
 
 		locationName := "—"
 		if locID := ps.GetLocationId(); locID != "" {
@@ -228,8 +229,8 @@ func buildTableRows(priceSchedules []*priceschedulepb.PriceSchedule, status stri
 			Cells: []types.TableCell{
 				{Type: "text", Value: name},
 				{Type: "text", Value: description},
-				types.DateTimeCell(dateStart, types.DateReadable),
-				types.DateTimeCell(dateEnd, types.DateReadable),
+				{Type: "datetime", Value: dateStart},
+				{Type: "datetime", Value: dateEnd},
 				{Type: "text", Value: locationName},
 				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 			},

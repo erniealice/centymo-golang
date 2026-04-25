@@ -178,15 +178,11 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			return view.Error(err)
 		}
 
-		// Return only the tab partial template
-		templateName := "product-tab-" + tab
-		if tab == "attachments" {
-			templateName = "attachment-tab"
-		}
-		if tab == "audit-history" {
-			templateName = "audit-history-tab"
-		}
-		return view.OK(templateName, pageData)
+		// The response partial swaps the clicked tab's body into #tabContent
+		// and OOB-swaps the tab bar so its .active class updates to the
+		// newly-selected tab. Without the OOB swap, the bar stays frozen on
+		// whichever tab was active at full-page render.
+		return view.OK("product-detail-tab-response", pageData)
 	})
 }
 
@@ -312,6 +308,18 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	showVariantTabs := product.GetVariantMode() == "configurable" || optionCount > 0 || variantCount > 0
 	tabItems := buildTabItems(id, l, variantCount, optionCount, lineCount, deps.Routes, showVariantTabs)
 
+	// Header subtitle: use the product description, or fall back to the
+	// "No description provided" lyngua label. Without this fallback the
+	// shared header template uses CommonLabels.Header.WelcomeBack, which
+	// reads as "Welcome back" on a detail page.
+	headerSubtitle := description
+	if headerSubtitle == "" {
+		headerSubtitle = deps.Labels.Detail.NoDescriptionSubtitle
+		if headerSubtitle == "" {
+			headerSubtitle = "No description provided"
+		}
+	}
+
 	pageData := &PageData{
 		PageData: types.PageData{
 			CacheVersion:   viewCtx.CacheVersion,
@@ -320,7 +328,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 			ActiveNav:      deps.Routes.ActiveNav,
 			ActiveSubNav:   deps.Routes.ActiveSubNav,
 			HeaderTitle:    name,
-			HeaderSubtitle: description,
+			HeaderSubtitle: headerSubtitle,
 			HeaderIcon:     "icon-package",
 			CommonLabels:   deps.CommonLabels,
 		},
@@ -790,7 +798,7 @@ func BuildVariantsTable(ctx context.Context, deps *DetailViewDeps, productID str
 					status = "inactive"
 				}
 
-				optionsDisplay := strings.Join(variantOptionLabels[vid], ", ")
+				optionsDisplay := strings.Join(variantOptionLabels[vid], centymo.OptionValueSeparator)
 
 				actions := []types.TableAction{
 					{

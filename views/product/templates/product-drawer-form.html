@@ -175,12 +175,18 @@ Data: .Name, .Description, .Price, .Currency, .Active, .Unit, .VariantMode,
         </div>
 
         {{/* --- Price row: hidden when variant_mode = "configurable" --- */}}
+        {{/* Price is required when variant_mode = "none" (simple product);
+             the backend's business-rule validator rejects a null price in
+             that case. When variant_mode flips to "configurable" the row is
+             hidden by the script below and the required attribute is cleared
+             so the hidden field doesn't block submission. */}}
         <div class="form-row" id="product-price-row" data-variant-mode="{{.VariantMode}}">
             {{template "form-group" (dict
                 "Type" "number"
                 "Name" "price"
                 "Label" .Labels.Price
                 "Value" .Price
+                "Required" (ne .VariantMode "configurable")
                 "Info" .Labels.PriceInfo
             )}}
             {{template "form-group" (dict
@@ -221,10 +227,19 @@ Data: .Name, .Description, .Price, .Currency, .Active, .Unit, .VariantMode,
     var toggle = document.getElementById('variant_mode_toggle');
     var priceRow = document.getElementById('product-price-row');
     if (!toggle || !priceRow) return;
+    var priceInput = priceRow.querySelector('input[name="price"]');
 
     function apply() {
         // Toggle checked => variant_mode = "configurable" => hide price row.
-        priceRow.style.display = toggle.checked ? 'none' : '';
+        var configurable = toggle.checked;
+        priceRow.style.display = configurable ? 'none' : '';
+        if (priceInput) {
+            if (configurable) {
+                priceInput.removeAttribute('required');
+            } else {
+                priceInput.setAttribute('required', '');
+            }
+        }
     }
 
     toggle.addEventListener('change', apply);

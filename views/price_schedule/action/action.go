@@ -5,14 +5,38 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/pyeza-golang/route"
+	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// parseScheduleDate parses a YYYY-MM-DD form input as start-of-day in tz and
+// returns the UTC timestamp. Empty input → nil.
+func parseScheduleDate(input string, tz *time.Location) *timestamppb.Timestamp {
+	if input == "" {
+		return nil
+	}
+	t, err := time.ParseInLocation("2006-01-02", input, tz)
+	if err != nil {
+		return nil
+	}
+	return timestamppb.New(t.UTC())
+}
+
+// formatScheduleDate formats a Timestamp as YYYY-MM-DD in tz for the form input.
+func formatScheduleDate(ts *timestamppb.Timestamp, tz *time.Location) string {
+	if ts == nil || !ts.IsValid() {
+		return ""
+	}
+	return ts.AsTime().In(tz).Format(pyezatypes.DateInputLayout)
+}
 
 type LocationOption struct {
 	Id   string
@@ -105,20 +129,18 @@ func NewAddAction(deps *Deps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 		locationID := r.FormValue("location_id")
-		dateEnd := r.FormValue("date_end")
 		description := r.FormValue("description")
+		tz := pyezatypes.LocationFromContext(ctx)
 		req := &priceschedulepb.CreatePriceScheduleRequest{
 			Data: &priceschedulepb.PriceSchedule{
-				Name:      r.FormValue("name"),
-				DateStart: r.FormValue("date_start"),
-				Active:    active,
+				Name:          r.FormValue("name"),
+				DateTimeStart: parseScheduleDate(r.FormValue("date_start"), tz),
+				DateTimeEnd:   parseScheduleDate(r.FormValue("date_end"), tz),
+				Active:        active,
 			},
 		}
 		if description != "" {
 			req.Data.Description = &description
-		}
-		if dateEnd != "" {
-			req.Data.DateEnd = &dateEnd
 		}
 		if locationID != "" {
 			req.Data.LocationId = &locationID
@@ -166,14 +188,15 @@ func NewEditAction(deps *Deps) view.View {
 				formAction = deps.Routes.AddURL
 				formID = ""
 			}
+			tz := pyezatypes.LocationFromContext(ctx)
 			return view.OK("price-schedule-drawer-form", &FormData{
 				FormAction:            formAction,
 				IsEdit:                !isClone,
 				ID:                    formID,
 				Name:                  name,
 				Description:           record.GetDescription(),
-				DateStart:             record.GetDateStart(),
-				DateEnd:               record.GetDateEnd(),
+				DateStart:             formatScheduleDate(record.GetDateTimeStart(), tz),
+				DateEnd:               formatScheduleDate(record.GetDateTimeEnd(), tz),
 				Active:                record.GetActive(),
 				SelectedLocationID:    selectedLocationID,
 				SelectedLocationLabel: findLocationLabel(locations, selectedLocationID),
@@ -188,21 +211,19 @@ func NewEditAction(deps *Deps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 		locationID := r.FormValue("location_id")
-		dateEnd := r.FormValue("date_end")
 		description := r.FormValue("description")
+		tz := pyezatypes.LocationFromContext(ctx)
 		req := &priceschedulepb.UpdatePriceScheduleRequest{
 			Data: &priceschedulepb.PriceSchedule{
-				Id:        id,
-				Name:      r.FormValue("name"),
-				DateStart: r.FormValue("date_start"),
-				Active:    active,
+				Id:            id,
+				Name:          r.FormValue("name"),
+				DateTimeStart: parseScheduleDate(r.FormValue("date_start"), tz),
+				DateTimeEnd:   parseScheduleDate(r.FormValue("date_end"), tz),
+				Active:        active,
 			},
 		}
 		if description != "" {
 			req.Data.Description = &description
-		}
-		if dateEnd != "" {
-			req.Data.DateEnd = &dateEnd
 		}
 		if locationID != "" {
 			req.Data.LocationId = &locationID
@@ -284,13 +305,13 @@ func NewSetStatusAction(deps *Deps) view.View {
 		record := readResp.GetData()[0]
 		_, err = deps.UpdatePriceSchedule(ctx, &priceschedulepb.UpdatePriceScheduleRequest{
 			Data: &priceschedulepb.PriceSchedule{
-				Id:          id,
-				Name:        record.GetName(),
-				Description: record.Description,
-				DateStart:   record.GetDateStart(),
-				DateEnd:     record.DateEnd,
-				Active:      status == "active",
-				LocationId:  record.LocationId,
+				Id:            id,
+				Name:          record.GetName(),
+				Description:   record.Description,
+				DateTimeStart: record.GetDateTimeStart(),
+				DateTimeEnd:   record.GetDateTimeEnd(),
+				Active:        status == "active",
+				LocationId:    record.LocationId,
 			},
 		})
 		if err != nil {
@@ -320,13 +341,13 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			record := readResp.GetData()[0]
 			_, _ = deps.UpdatePriceSchedule(ctx, &priceschedulepb.UpdatePriceScheduleRequest{
 				Data: &priceschedulepb.PriceSchedule{
-					Id:          id,
-					Name:        record.GetName(),
-					Description: record.Description,
-					DateStart:   record.GetDateStart(),
-					DateEnd:     record.DateEnd,
-					Active:      status == "active",
-					LocationId:  record.LocationId,
+					Id:            id,
+					Name:          record.GetName(),
+					Description:   record.Description,
+					DateTimeStart: record.GetDateTimeStart(),
+					DateTimeEnd:   record.GetDateTimeEnd(),
+					Active:        status == "active",
+					LocationId:    record.LocationId,
 				},
 			})
 		}

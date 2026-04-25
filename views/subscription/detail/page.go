@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/erniealice/centymo-golang"
 
@@ -15,6 +16,9 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
@@ -22,12 +26,58 @@ import (
 type DetailViewDeps struct {
 	Routes           centymo.SubscriptionRoutes
 	ReadSubscription func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
-	Labels           centymo.SubscriptionLabels
-	CommonLabels     pyeza.CommonLabels
-	TableLabels      types.TableLabels
+	// GetSubscriptionItemPageData returns the subscription with its joined
+	// Client (+ User) and PricePlan (+ Plan) populated. Preferred over
+	// ReadSubscription for the detail view so customer + package fields render
+	// without extra round-trips.
+	GetSubscriptionItemPageData func(ctx context.Context, req *subscriptionpb.GetSubscriptionItemPageDataRequest) (*subscriptionpb.GetSubscriptionItemPageDataResponse, error)
+	// ReadClient is used by the nested-route variant ("under client") to look
+	// up the client name for the page-header breadcrumb. Optional — when nil
+	// the embedded client from GetSubscriptionItemPageData is used as the
+	// fallback label, and the URL falls back to the flat subscription list.
+	ReadClient func(ctx context.Context, req *clientpb.ReadClientRequest) (*clientpb.ReadClientResponse, error)
+	// GetRevenueListPageData fetches revenue records (invoices) for the
+	// invoices tab. Filtered by subscription_id. Optional — tab renders empty
+	// state when nil.
+	GetRevenueListPageData func(ctx context.Context, req *revenuepb.GetRevenueListPageDataRequest) (*revenuepb.GetRevenueListPageDataResponse, error)
+	// ClientDetailURL is the absolute path template for the client detail page
+	// (e.g. "/app/clients/detail/{id}"); used to build the breadcrumb link.
+	// Empty string disables the breadcrumb link (label still renders).
+	ClientDetailURL string
+	Labels          centymo.SubscriptionLabels
+	CommonLabels    pyeza.CommonLabels
+	TableLabels     types.TableLabels
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
+}
+
+// loadSubscriptionWithRelations fetches the subscription joined with client
+// and price plan. Falls back to plain ReadSubscription when the page-data
+// dep is unwired.
+func loadSubscriptionWithRelations(ctx context.Context, deps *DetailViewDeps, id string) (*subscriptionpb.Subscription, error) {
+	if deps.GetSubscriptionItemPageData != nil {
+		resp, err := deps.GetSubscriptionItemPageData(ctx, &subscriptionpb.GetSubscriptionItemPageDataRequest{
+			SubscriptionId: id,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if resp == nil || resp.GetSubscription() == nil {
+			return nil, fmt.Errorf("subscription not found")
+		}
+		return resp.GetSubscription(), nil
+	}
+	resp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
+		Data: &subscriptionpb.Subscription{Id: id},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.GetData()) == 0 {
+		return nil, fmt.Errorf("subscription not found")
+	}
+	return resp.GetData()[0], nil
 }
 
 // PageData holds the data for the subscription detail page.
@@ -38,6 +88,8 @@ type PageData struct {
 	Labels              centymo.SubscriptionLabels
 	ActiveTab           string
 	TabItems            []pyeza.TabItem
+	// Invoices tab
+	Invoices        *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	AttachmentUploadURL string
 	// Audit history tab
@@ -48,9 +100,13 @@ type PageData struct {
 }
 
 // subscriptionToMap converts a Subscription protobuf to a map[string]any for template use.
-func subscriptionToMap(s *subscriptionpb.Subscription) map[string]any {
-	// Build customer display name: prefer company_name, fallback to user name
-	customer := s.GetName()
+// Expects the subscription to have its joined Client (+ User) and PricePlan
+// (+ Plan) populated — see loadSubscriptionWithRelations.
+func subscriptionToMap(ctx context.Context, s *subscriptionpb.Subscription) map[string]any {
+	// Customer = company name, falling back to representative full name.
+	// Empty when the join is missing — never use the subscription's own name
+	// here (it's a plan-derived label, not a customer label).
+	customer := ""
 	if c := s.GetClient(); c != nil {
 		if companyName := c.GetName(); companyName != "" {
 			customer = companyName
@@ -79,6 +135,8 @@ func subscriptionToMap(s *subscriptionpb.Subscription) map[string]any {
 		status = "inactive"
 	}
 
+	tz := types.LocationFromContext(ctx)
+
 	return map[string]any{
 		"id":                   s.GetId(),
 		"name":                 s.GetName(),
@@ -86,8 +144,8 @@ func subscriptionToMap(s *subscriptionpb.Subscription) map[string]any {
 		"plan":                 planName,
 		"price_plan_id":        s.GetPricePlanId(),
 		"client_id":            s.GetClientId(),
-		"date_start_string":    s.GetDateStart(),
-		"date_end_string":      s.GetDateEnd(),
+		"date_start_string":    types.FormatTimestampInTZ(s.GetDateTimeStart(), tz, types.DateTimeReadable),
+		"date_end_string":      types.FormatTimestampInTZ(s.GetDateTimeEnd(), tz, types.DateTimeReadable),
 		"status":               status,
 		"active":               s.GetActive(),
 		"date_created_string":  s.GetDateCreatedString(),
@@ -98,33 +156,49 @@ func subscriptionToMap(s *subscriptionpb.Subscription) map[string]any {
 	}
 }
 
-// NewView creates the subscription detail view.
+// NewView creates the subscription detail view. Handles both the flat
+// /app/subscriptions/detail/{id} URL and the nested
+// /app/clients/detail/{client_id}/subscriptions/{id} URL — when the latter
+// path param is set, the page-header renders a "client name → subscription"
+// breadcrumb.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
+		clientIDFromPath := viewCtx.Request.PathValue("client_id")
 
-		resp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
-			Data: &subscriptionpb.Subscription{Id: id},
-		})
+		sub, err := loadSubscriptionWithRelations(ctx, deps, id)
 		if err != nil {
 			log.Printf("Failed to read subscription %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load subscription: %w", err))
 		}
-		data := resp.GetData()
-		if len(data) == 0 {
-			log.Printf("Subscription %s not found", id)
-			return view.Error(fmt.Errorf("subscription not found"))
-		}
-		subscription := subscriptionToMap(data[0])
+		subscription := subscriptionToMap(ctx, sub)
+		breadcrumbLabel, breadcrumbURL := resolveClientBreadcrumb(ctx, deps, clientIDFromPath, sub)
 
 		subName, _ := subscription["name"].(string)
 		customer, _ := subscription["customer"].(string)
+		dateStartStr, _ := subscription["date_start_string"].(string)
+		dateEndStr, _ := subscription["date_end_string"].(string)
+
+		// Header: title = subscription name; subtitle = customer · start[ — end].
 		headerTitle := subName
+		var subtitleParts []string
 		if customer != "" {
-			headerTitle = customer
+			subtitleParts = append(subtitleParts, customer)
+		}
+		switch {
+		case dateStartStr != "" && dateEndStr != "":
+			subtitleParts = append(subtitleParts, dateStartStr+" — "+dateEndStr)
+		case dateStartStr != "":
+			subtitleParts = append(subtitleParts, dateStartStr)
+		case dateEndStr != "":
+			subtitleParts = append(subtitleParts, "until "+dateEndStr)
 		}
 
 		l := deps.Labels
+		headerSubtitle := strings.Join(subtitleParts, " · ")
+		if headerSubtitle == "" {
+			headerSubtitle = l.Detail.PageTitle
+		}
 
 		activeTab := viewCtx.QueryParams["tab"]
 		if activeTab == "" {
@@ -134,15 +208,17 @@ func NewView(deps *DetailViewDeps) view.View {
 
 		pageData := &PageData{
 			PageData: types.PageData{
-				CacheVersion:   viewCtx.CacheVersion,
-				Title:          headerTitle,
-				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      deps.Routes.ActiveNav,
-				ActiveSubNav:   deps.Routes.ActiveSubNav,
-				HeaderTitle:    headerTitle,
-				HeaderSubtitle: l.Detail.PageTitle,
-				HeaderIcon:     "icon-refresh-cw",
-				CommonLabels:   deps.CommonLabels,
+				CacheVersion:        viewCtx.CacheVersion,
+				Title:               headerTitle,
+				CurrentPath:         viewCtx.CurrentPath,
+				ActiveNav:           deps.Routes.ActiveNav,
+				ActiveSubNav:        deps.Routes.ActiveSubNav,
+				HeaderTitle:         headerTitle,
+				HeaderSubtitle:      headerSubtitle,
+				HeaderIcon:          "icon-refresh-cw",
+				HeaderBreadcrumb:    breadcrumbLabel,
+				HeaderBreadcrumbURL: breadcrumbURL,
+				CommonLabels:        deps.CommonLabels,
 			},
 			ContentTemplate: "subscription-detail-content",
 			Subscription:    subscription,
@@ -151,7 +227,23 @@ func NewView(deps *DetailViewDeps) view.View {
 			TabItems:        tabItems,
 		}
 
+		// Inject the tab-content URL into the subscription map so the invoices
+		// tab can refresh inline (HX-Trigger refresh-invoices listens here).
+		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
+
+		perms := view.GetUserPermissions(ctx)
+		canRecognize := perms != nil && perms.Can("revenue", "create")
+		subscriptionActive, _ := subscription["active"].(bool)
+
 		switch activeTab {
+		case "invoices":
+			revenues := loadSubscriptionInvoices(ctx, deps, id)
+			pageData.Invoices = buildInvoicesTable(
+				revenues, l, deps.TableLabels, centymo.RevenueDetailURL,
+				deps.Routes.RecognizeURL, id,
+				canRecognize, subscriptionActive,
+				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
+			)
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := attachmentConfig(deps)
@@ -191,15 +283,207 @@ func NewView(deps *DetailViewDeps) view.View {
 	})
 }
 
+// resolveRecognizeDisabledTooltip returns a sensible tooltip explaining why
+// the recognize action is disabled. Empty string when the action is enabled.
+//
+// We re-use existing label keys (PermissionDenied, InvalidStatus) so this
+// stays lyngua-driven without inventing a new key just for the disabled
+// hover state.
+func resolveRecognizeDisabledTooltip(canRecognize, active bool, l centymo.SubscriptionLabels) string {
+	switch {
+	case !canRecognize:
+		return l.Errors.PermissionDenied
+	case !active:
+		return l.Errors.InvalidStatus
+	default:
+		return ""
+	}
+}
+
+// resolveClientBreadcrumb returns the (label, href) pair for the page-header
+// breadcrumb when the subscription is being viewed under a client context.
+// Resolution order:
+//   1. clientIDFromPath set and ReadClient available → live lookup (most reliable
+//      because the joined client may be missing or stale).
+//   2. clientIDFromPath set, no ReadClient → use the joined client's name if any.
+//   3. clientIDFromPath empty → no breadcrumb (returns empty strings).
+// The href points at the client's engagements tab so "back" lands where the
+// operator clicked through from.
+func resolveClientBreadcrumb(ctx context.Context, deps *DetailViewDeps, clientIDFromPath string, sub *subscriptionpb.Subscription) (string, string) {
+	if clientIDFromPath == "" {
+		return "", ""
+	}
+	label := ""
+	if deps.ReadClient != nil {
+		if resp, err := deps.ReadClient(ctx, &clientpb.ReadClientRequest{
+			Data: &clientpb.Client{Id: clientIDFromPath},
+		}); err == nil && len(resp.GetData()) > 0 {
+			c := resp.GetData()[0]
+			if name := c.GetName(); name != "" {
+				label = name
+			} else if u := c.GetUser(); u != nil {
+				label = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			}
+		}
+	}
+	if label == "" {
+		if c := sub.GetClient(); c != nil {
+			if name := c.GetName(); name != "" {
+				label = name
+			} else if u := c.GetUser(); u != nil {
+				label = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			}
+		}
+	}
+	if label == "" {
+		label = clientIDFromPath
+	}
+	href := ""
+	if deps.ClientDetailURL != "" {
+		href = route.ResolveURL(deps.ClientDetailURL, "id", clientIDFromPath) + "?tab=engagements"
+	}
+	return label, href
+}
+
 func buildTabItems(l centymo.SubscriptionLabels, id string, routes centymo.SubscriptionRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "invoices", Label: l.Tabs.Invoices, Href: base + "?tab=invoices", HxGet: action + "invoices", Icon: "icon-file-text"},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
+}
+
+// loadSubscriptionInvoices fetches revenue records filtered by subscription_id.
+// Returns an empty slice on error or when the dep is nil.
+func loadSubscriptionInvoices(ctx context.Context, deps *DetailViewDeps, subscriptionID string) []*revenuepb.Revenue {
+	if deps.GetRevenueListPageData == nil {
+		return nil
+	}
+	resp, err := deps.GetRevenueListPageData(ctx, &revenuepb.GetRevenueListPageDataRequest{
+		Filters: &commonpb.FilterRequest{
+			Filters: []*commonpb.TypedFilter{
+				{
+					Field: "rv.subscription_id",
+					FilterType: &commonpb.TypedFilter_StringFilter{
+						StringFilter: &commonpb.StringFilter{
+							Value:         subscriptionID,
+							Operator:      commonpb.StringOperator_STRING_EQUALS,
+							CaseSensitive: true,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("Failed to load invoices for subscription %s: %v", subscriptionID, err)
+		return nil
+	}
+	return resp.GetRevenueList()
+}
+
+// buildInvoicesTable builds a TableConfig for the invoices tab.
+// Columns: reference number (code), date, amount, status.
+//
+// Surfaces a "Recognize Revenue" PrimaryAction on the toolbar AND on the
+// empty-state when the operator has revenue:create AND the subscription is
+// active. Disabled state degrades to a tooltip explaining the gate.
+//
+// Note: NO page-header "Recognize Revenue" button — per plan §11.2 / §4.2,
+// cause and effect stay adjacent on the invoices tab.
+func buildInvoicesTable(
+	revenues []*revenuepb.Revenue,
+	l centymo.SubscriptionLabels,
+	tableLabels types.TableLabels,
+	detailURLTemplate string,
+	recognizeURL string,
+	subscriptionID string,
+	canRecognize bool,
+	subscriptionActive bool,
+	disabledTooltip string,
+) *types.TableConfig {
+	columns := []types.TableColumn{
+		{Key: "reference_number", Label: l.Invoices.ColumnCode, Sortable: true},
+		{Key: "revenue_date_string", Label: l.Invoices.ColumnDate, Sortable: true, WidthClass: "col-3xl"},
+		{Key: "total_amount", Label: l.Invoices.ColumnAmount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
+		{Key: "status", Label: l.Invoices.ColumnStatus, Sortable: true, WidthClass: "col-2xl"},
+	}
+
+	var rows []types.TableRow
+	for _, r := range revenues {
+		id := r.GetId()
+		refNumber := r.GetReferenceNumber()
+		currency := r.GetCurrency()
+		status := r.GetStatus()
+
+		statusVariant := "default"
+		switch status {
+		case "draft":
+			statusVariant = "warning"
+		case "complete":
+			statusVariant = "success"
+		case "cancelled":
+			statusVariant = "danger"
+		}
+
+		var detailHref string
+		if detailURLTemplate != "" {
+			detailHref = route.ResolveURL(detailURLTemplate, "id", id)
+		}
+
+		rows = append(rows, types.TableRow{
+			ID:   id,
+			Href: detailHref,
+			Cells: []types.TableCell{
+				{Type: "text", Value: refNumber},
+				types.DateTimeCell(r.GetRevenueDate(), types.DateReadable),
+				types.MoneyCell(float64(r.GetTotalAmount()), currency, true),
+				{Type: "badge", Value: status, Variant: statusVariant},
+			},
+		})
+	}
+
+	types.ApplyColumnStyles(columns, rows)
+
+	tc := &types.TableConfig{
+		ID:                   "subscription-invoices-table",
+		Columns:              columns,
+		Rows:                 rows,
+		Labels:               tableLabels,
+		ShowSearch:           false,
+		ShowActions:          false,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "revenue_date_string",
+		DefaultSortDirection: "desc",
+		EmptyState: types.TableEmptyState{
+			Title:   l.Invoices.Title,
+			Message: l.Invoices.Empty,
+		},
+	}
+
+	// PrimaryAction: tab toolbar CTA + same action surfaced on the empty state
+	// (the table-card template renders the primary action in both places).
+	if recognizeURL != "" && subscriptionID != "" {
+		actionURL := route.ResolveURL(recognizeURL, "id", subscriptionID)
+		disabled := !canRecognize || !subscriptionActive
+		tc.PrimaryAction = &types.PrimaryAction{
+			Label:           l.Invoices.RecognizeAction,
+			ActionURL:       actionURL,
+			Icon:            "icon-file-plus",
+			Disabled:        disabled,
+			DisabledTooltip: disabledTooltip,
+		}
+	}
+
+	types.ApplyTableSettings(tc)
+	return tc
 }
 
 // NewTabAction creates the tab action view (partial — returns only the tab content).
@@ -211,19 +495,12 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			tab = "info"
 		}
 
-		resp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
-			Data: &subscriptionpb.Subscription{Id: id},
-		})
+		sub, err := loadSubscriptionWithRelations(ctx, deps, id)
 		if err != nil {
 			log.Printf("Failed to read subscription %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to load subscription: %w", err))
 		}
-		data := resp.GetData()
-		if len(data) == 0 {
-			log.Printf("Subscription %s not found", id)
-			return view.Error(fmt.Errorf("subscription not found"))
-		}
-		subscription := subscriptionToMap(data[0])
+		subscription := subscriptionToMap(ctx, sub)
 
 		l := deps.Labels
 		pageData := &PageData{
@@ -237,7 +514,22 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			TabItems:     buildTabItems(l, id, deps.Routes),
 		}
 
+		// Same tab_invoices_url + perms gating as the full-page handler so a
+		// tab-only refresh sees a consistent PrimaryAction state.
+		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
+		perms := view.GetUserPermissions(ctx)
+		canRecognize := perms != nil && perms.Can("revenue", "create")
+		subscriptionActive, _ := subscription["active"].(bool)
+
 		switch tab {
+		case "invoices":
+			revenues := loadSubscriptionInvoices(ctx, deps, id)
+			pageData.Invoices = buildInvoicesTable(
+				revenues, l, deps.TableLabels, centymo.RevenueDetailURL,
+				deps.Routes.RecognizeURL, id,
+				canRecognize, subscriptionActive,
+				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
+			)
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := attachmentConfig(deps)
@@ -274,6 +566,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		}
 
 		templateName := "subscription-tab-" + tab
+		if tab == "invoices" {
+			templateName = "subscription-tab-invoices"
+		}
 		if tab == "attachments" {
 			templateName = "attachment-tab"
 		}

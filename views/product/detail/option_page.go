@@ -24,17 +24,21 @@ type Breadcrumb struct {
 // OptionPageData holds data for the option values page.
 type OptionPageData struct {
 	types.PageData
-	ContentTemplate string
-	Breadcrumbs     []Breadcrumb
-	ProductID       string
-	OptionID        string
-	OptionName      string
-	OptionCode      string
-	OptionDataType  string
-	OptionStatus    string
-	StatusVariant   string
-	ValuesTable     *types.TableConfig
-	Labels          centymo.ProductLabels
+	ContentTemplate   string
+	Breadcrumbs       []Breadcrumb
+	ProductID         string
+	OptionID          string
+	OptionName        string
+	OptionCode        string
+	OptionDataType    string
+	OptionStatus      string
+	OptionDescription string
+	StatusVariant     string
+	ActiveTab         string
+	TabItems          []pyeza.TabItem
+	EditOptionURL     string
+	ValuesTable       *types.TableConfig
+	Labels            centymo.ProductLabels
 }
 
 // NewOptionPageView creates the option values full-page view.
@@ -43,6 +47,11 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		productID := viewCtx.Request.PathValue("id")
 		optionID := viewCtx.Request.PathValue("oid")
+
+		activeTab := viewCtx.Request.URL.Query().Get("tab")
+		if activeTab == "" {
+			activeTab = "info"
+		}
 
 		// Load product name for breadcrumb
 		l := deps.Labels
@@ -64,6 +73,7 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 		optionName := l.Breadcrumb.Option
 		optionCode := ""
 		optionDataType := ""
+		optionDescription := ""
 		optionActive := true
 
 		optResp, err := deps.ReadProductOption(ctx, &productoptionpb.ReadProductOptionRequest{
@@ -80,6 +90,7 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 		}
 		optionCode = option.GetCode()
 		optionDataType = option.GetDataType()
+		optionDescription = option.GetDescription()
 		optionActive = option.GetActive()
 
 		// Map data_type to display name
@@ -93,11 +104,19 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 			sVariant = "warning"
 		}
 
-		// Build breadcrumbs
+		// Build breadcrumbs (kept for legacy templates; page-header carries the
+		// visible product → option crumb via HeaderBreadcrumb).
 		breadcrumbs := []Breadcrumb{
 			{Label: l.Breadcrumb.Products, Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
 			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", productID) + "?tab=options"},
 			{Label: optionName, Href: ""},
+		}
+
+		// Build tab items (Href-only — full page reload on tab click)
+		base := route.ResolveURL(deps.Routes.OptionDetailURL, "id", productID, "oid", optionID)
+		tabItems := []pyeza.TabItem{
+			{Key: "info", Label: l.Options.Tabs.Info, Href: base + "?tab=info", Icon: "icon-info"},
+			{Key: "values", Label: l.Options.Tabs.Values, Href: base + "?tab=values", Icon: "icon-list"},
 		}
 
 		// Build option values table
@@ -114,29 +133,45 @@ func NewOptionPageView(deps *OptionsDeps) view.View {
 		// Type-assert CommonLabels
 		commonLabels, _ := deps.CommonLabels.(pyeza.CommonLabels)
 
+		// Header subtitle: option description, falling back to the
+		// "No description provided" label when blank.
+		headerSubtitle := optionDescription
+		if headerSubtitle == "" {
+			headerSubtitle = l.Options.Form.DescriptionEmpty
+			if headerSubtitle == "" {
+				headerSubtitle = "No description provided"
+			}
+		}
+
 		pageData := &OptionPageData{
 			PageData: types.PageData{
-				CacheVersion:   viewCtx.CacheVersion,
-				Title:          optionName,
-				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      deps.Routes.ActiveNav,
-				ActiveSubNav:   deps.Routes.ActiveSubNav,
-				HeaderTitle:    optionName,
-				HeaderSubtitle: optionCode,
-				HeaderIcon:     "icon-settings",
-				CommonLabels:   commonLabels,
+				CacheVersion:       viewCtx.CacheVersion,
+				Title:              optionName,
+				CurrentPath:        viewCtx.CurrentPath,
+				ActiveNav:          deps.Routes.ActiveNav,
+				ActiveSubNav:       deps.Routes.ActiveSubNav,
+				HeaderTitle:        optionName,
+				HeaderSubtitle:     headerSubtitle,
+				HeaderBreadcrumb:   productName,
+				HeaderBreadcrumbURL: route.ResolveURL(deps.Routes.DetailURL, "id", productID) + "?tab=options",
+				HeaderIcon:         "icon-settings",
+				CommonLabels:       commonLabels,
 			},
-			ContentTemplate: "option-detail-content",
-			Breadcrumbs:     breadcrumbs,
-			ProductID:       productID,
-			OptionID:        optionID,
-			OptionName:      optionName,
-			OptionCode:      optionCode,
-			OptionDataType:  dataTypeDisplay,
-			OptionStatus:    optionStatus,
-			StatusVariant:   sVariant,
-			ValuesTable:     valuesTable,
-			Labels:          l,
+			ContentTemplate:   "option-detail-content",
+			Breadcrumbs:       breadcrumbs,
+			ProductID:         productID,
+			OptionID:          optionID,
+			OptionName:        optionName,
+			OptionCode:        optionCode,
+			OptionDataType:    dataTypeDisplay,
+			OptionStatus:      optionStatus,
+			OptionDescription: optionDescription,
+			StatusVariant:     sVariant,
+			ActiveTab:         activeTab,
+			TabItems:          tabItems,
+			EditOptionURL:     route.ResolveURL(deps.Routes.OptionEditURL, "id", productID, "oid", optionID),
+			ValuesTable:       valuesTable,
+			Labels:            l,
 		}
 
 		return view.OK("option-detail", pageData)

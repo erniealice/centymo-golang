@@ -170,7 +170,6 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		if v, err := strconv.ParseFloat(r.FormValue("amount"), 64); err == nil {
 			amount = int64(math.Round(v * 100))
 		}
-		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
 		currency := r.FormValue("currency")
 		if currency == "" {
 			currency = "PHP"
@@ -184,11 +183,19 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 			Description:     &ppDesc,
 			BillingAmount:   amount,
 			BillingCurrency: currency,
-			DurationValue:   int32(dv),
-			DurationUnit:    r.FormValue("duration_unit"),
 			Active:          true,
 		}
 		pp.PriceScheduleId = &scheduleID
+		// Phase 1 legacy dual-write — proto fields now optional; only set when present.
+		if dvStr := r.FormValue("duration_value"); dvStr != "" {
+			if parsed, err := strconv.ParseInt(dvStr, 10, 32); err == nil {
+				dv32 := int32(parsed)
+				pp.DurationValue = &dv32
+			}
+		}
+		if du := r.FormValue("duration_unit"); du != "" {
+			pp.DurationUnit = &du
+		}
 		applyBillingFieldsFromRequest(pp, r)
 
 		createResp, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{Data: pp})
@@ -379,6 +386,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		headerSubtitle = l.Detail.NoDescriptionSubtitle
 	}
 
+	tz := types.LocationFromContext(ctx)
+
 	pageData := &PageData{
 		PageData: types.PageData{
 			CacheVersion:   viewCtx.CacheVersion,
@@ -399,8 +408,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ID:              id,
 		Name:            ps.GetName(),
 		Description:     ps.GetDescription(),
-		DateStart:       ps.GetDateStart(),
-		DateEnd:         ps.GetDateEnd(),
+		DateStart:       types.FormatTimestampInTZ(ps.GetDateTimeStart(), tz, types.DateTimeReadable),
+		DateEnd:         types.FormatTimestampInTZ(ps.GetDateTimeEnd(), tz, types.DateTimeReadable),
 		LocationName:    locationName,
 		Status:          status,
 		StatusVariant:   statusVariant,

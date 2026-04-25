@@ -9,15 +9,18 @@ import (
 	"time"
 
 	"github.com/erniealice/pyeza-golang/route"
+	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // FormLabels holds i18n labels for the subscription drawer form template.
@@ -28,6 +31,9 @@ type FormLabels struct {
 	PlanPlaceholder           string
 	StartDate                 string
 	EndDate                   string
+	StartTime                 string
+	EndTime                   string
+	Timezone                  string
 	Notes                     string
 	NotesPlaceholder          string
 	CustomerSearchPlaceholder string
@@ -41,6 +47,8 @@ type FormLabels struct {
 	CodeInfo                  string
 	StartDateInfo             string
 	EndDateInfo               string
+	StartTimeInfo             string
+	EndTimeInfo               string
 	NotesInfo                 string
 }
 
@@ -52,9 +60,21 @@ type FormData struct {
 	Code            string
 	ClientID        string
 	PricePlanID     string
-	DateStart       string
-	DateEnd         string
-	Notes           string
+	// Date/Time form values, split for the two-row date+time grid.
+	// Stored in the operator's display TZ (DefaultTZ) for the date/time inputs;
+	// JS recombines + converts to UTC RFC 3339 for the hidden field.
+	DateStartDate string
+	DateStartTime string
+	DateEndDate   string
+	DateEndTime   string
+	// Pre-computed RFC 3339 hidden values; JS overwrites on every change.
+	DateStartISO string
+	DateEndISO   string
+	// DefaultTZ is the IANA name of the operator's display timezone, surfaced as
+	// data-default-tz on the form for client-side recombination.
+	DefaultTZ string
+	Notes     string
+
 	Clients         []map[string]string
 	PricePlans      []map[string]string
 	SearchClientURL string
@@ -81,10 +101,28 @@ type Deps struct {
 	DeleteSubscription  func(ctx context.Context, req *subscriptionpb.DeleteSubscriptionRequest) (*subscriptionpb.DeleteSubscriptionResponse, error)
 	ListClients         func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
 	ListPlans           func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ReadPlan            func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
 	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
 	SearchPlansByName   func(ctx context.Context, req *planpb.SearchPlansByNameRequest) (*planpb.SearchPlansByNameResponse, error)
 	ListPricePlans      func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ReadPricePlan       func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+
+	// SetSubscriptionActive performs a raw DB update of the active field.
+	// Required for set-status and bulk-set-status handlers.
+	// Uses raw update (not proto) because proto3 omits bool=false on serialization.
+	SetSubscriptionActive func(ctx context.Context, id string, active bool) error
+
+	// GetInUseIDs checks whether subscription IDs are referenced by dependent records.
+	// Used by the bulk-delete handler to skip in-use rows.
+	GetInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// RecognizeRevenueFromSubscription invokes the espyna use case that
+	// materializes a Revenue + N RevenueLineItems for a billing period.
+	// Set when the centymo block wiring threads the use case through. Used
+	// by NewRecognizeAction (drawer GET dry-run + POST commit) and by the
+	// existing manual revenue-add flow's auto-populate path (skip_header=true).
+	RecognizeRevenueFromSubscription func(ctx context.Context, req *revenuepb.CreateRevenueWithLineItemsRequest) (*revenuepb.CreateRevenueWithLineItemsResponse, error)
 }
 
 func formLabels(l centymo.SubscriptionLabels) FormLabels {
@@ -95,6 +133,9 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 		PlanPlaceholder:           l.Form.PlanPlaceholder,
 		StartDate:                 l.Form.StartDate,
 		EndDate:                   l.Form.EndDate,
+		StartTime:                 l.Form.StartTime,
+		EndTime:                   l.Form.EndTime,
+		Timezone:                  l.Form.Timezone,
 		Notes:                     l.Form.Notes,
 		NotesPlaceholder:          l.Form.NotesPlaceholder,
 		CustomerSearchPlaceholder: l.Form.CustomerSearchPlaceholder,
@@ -108,6 +149,8 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 		CodeInfo:                  l.Form.CodeInfo,
 		StartDateInfo:             l.Form.StartDateInfo,
 		EndDateInfo:               l.Form.EndDateInfo,
+		StartTimeInfo:             l.Form.StartTimeInfo,
+		EndTimeInfo:               l.Form.EndTimeInfo,
 		NotesInfo:                 l.Form.NotesInfo,
 	}
 }
@@ -237,16 +280,78 @@ func resolvePlanLabel(ctx context.Context, planID string, listPlans func(ctx con
 	return planID
 }
 
-// formatDateForInput normalizes subscription dates for HTML date inputs.
-// DateStart/DateEnd are now ISO 8601 strings (YYYY-MM-DD); trim any timestamp suffix.
-func formatDateForInput(dateString string) string {
-	if dateString == "" {
+// resolvePricePlanName looks up a PricePlan by ID and returns its display name.
+// Prefers a single-row ReadPricePlan lookup over a full list scan.
+// Falls back to the legacy ListPlans scan only when ReadPricePlan is nil or errors.
+func resolvePricePlanName(ctx context.Context, pricePlanID string, deps *Deps) string {
+	if pricePlanID == "" {
 		return ""
 	}
-	if len(dateString) >= len("2006-01-02") {
-		return dateString[:10]
+	// Single-row lookup is preferred over ListPricePlans for one-shot resolution.
+	if deps.ReadPricePlan != nil {
+		if resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
+			Data: &priceplanpb.PricePlan{Id: pricePlanID},
+		}); err == nil && resp != nil && len(resp.GetData()) > 0 {
+			pp := resp.GetData()[0]
+			if name := pp.GetName(); name != "" {
+				return name
+			}
+			if pl := pp.GetPlan(); pl != nil && pl.GetName() != "" {
+				return pl.GetName()
+			}
+			if deps.ReadPlan != nil && pp.GetPlanId() != "" {
+				planID := pp.GetPlanId()
+				if rr, err := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{Data: &planpb.Plan{Id: &planID}}); err == nil && len(rr.GetData()) > 0 {
+					if n := rr.GetData()[0].GetName(); n != "" {
+						return n
+					}
+				}
+			}
+			return pricePlanID
+		}
 	}
-	return dateString
+	// Last-resort fallback: legacy Plan list (handles cases where the
+	// submitted ID is actually a plan_id rather than a price_plan_id).
+	if deps.ListPlans != nil {
+		if name := resolvePlanLabel(ctx, pricePlanID, deps.ListPlans); name != "" && name != pricePlanID {
+			return name
+		}
+	}
+	return pricePlanID
+}
+
+// splitTimestampForInputs renders ts in tz as a (date, time, RFC3339) triple
+// suitable for the drawer's two-input grid + hidden ISO field. Nil ts → empties.
+func splitTimestampForInputs(ts *timestamppb.Timestamp, tz *time.Location) (date, t, iso string) {
+	if ts == nil || !ts.IsValid() {
+		return "", "", ""
+	}
+	moment := ts.AsTime().In(tz)
+	return moment.Format(pyezatypes.DateInputLayout), moment.Format(pyezatypes.TimeInputLayout), moment.Format(time.RFC3339)
+}
+
+// parseFormDateTime combines a date input ("2026-04-17"), a time input ("09:00"),
+// and an explicit RFC3339 ISO string (set by JS with the chosen TZ offset) into
+// a *timestamppb.Timestamp. The hidden ISO wins when present so the operator's
+// chosen offset is preserved exactly. Falls back to date+time-in-tz when JS is
+// disabled or the hidden field is empty. Empty all → nil.
+func parseFormDateTime(date, t, iso string, tz *time.Location) *timestamppb.Timestamp {
+	if iso != "" {
+		if parsed, err := time.Parse(time.RFC3339, iso); err == nil {
+			return timestamppb.New(parsed.UTC())
+		}
+	}
+	if date == "" {
+		return nil
+	}
+	if t == "" {
+		t = "00:00"
+	}
+	parsed, err := time.ParseInLocation("2006-01-02 15:04", date+" "+t, tz)
+	if err != nil {
+		return nil
+	}
+	return timestamppb.New(parsed.UTC())
 }
 
 // NewAddAction creates the subscription add action (GET = form, POST = create).
@@ -263,6 +368,11 @@ func NewAddAction(deps *Deps) view.View {
 			clientBillingCurrency := viewCtx.Request.URL.Query().Get("billing_currency")
 			clientLocked := clientID != ""
 
+			tz := pyezatypes.LocationFromContext(ctx)
+			// Default new engagement to "today, 00:00" in the operator's TZ.
+			today := time.Now().In(tz)
+			defaultDate := today.Format(pyezatypes.DateInputLayout)
+			defaultISO := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz).Format(time.RFC3339)
 			return view.OK("subscription-drawer-form", &FormData{
 				FormAction:            deps.Routes.AddURL,
 				SearchClientURL:       deps.Routes.SearchClientURL,
@@ -272,6 +382,9 @@ func NewAddAction(deps *Deps) view.View {
 				ClientLocked:          clientLocked,
 				ClientBillingCurrency: clientBillingCurrency,
 				Code:                  generateCode(),
+				DateStartDate:         defaultDate,
+				DateStartISO:          defaultISO,
+				DefaultTZ:             tz.String(),
 				Labels:                formLabels(deps.Labels),
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
@@ -284,8 +397,19 @@ func NewAddAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		dateStart := r.FormValue("date_start_string")
-		dateEnd := r.FormValue("date_end_string")
+		tz := pyezatypes.LocationFromContext(ctx)
+		dateTimeStart := parseFormDateTime(
+			r.FormValue("date_start_date"),
+			r.FormValue("date_start_time"),
+			r.FormValue("date_time_start_iso"),
+			tz,
+		)
+		dateTimeEnd := parseFormDateTime(
+			r.FormValue("date_end_date"),
+			r.FormValue("date_end_time"),
+			r.FormValue("date_time_end_iso"),
+			tz,
+		)
 
 		pricePlanID := r.FormValue("price_plan_id")
 
@@ -294,36 +418,23 @@ func NewAddAction(deps *Deps) view.View {
 			code = generateCode()
 		}
 
-		// Resolve plan name for auto-generated subscription name
-		planName := ""
-		if deps.ListPlans != nil && pricePlanID != "" {
-			planName = resolvePlanLabel(ctx, pricePlanID, deps.ListPlans)
-		}
+		// Resolve plan name for auto-generated subscription name. The drawer
+		// submits a price_plan_id, so look up the PricePlan (not the Plan).
+		planName := resolvePricePlanName(ctx, pricePlanID, deps)
 		name := planName
 		if code != "" {
 			name = planName + " [" + code + "]"
 		}
 
-		// Validate: start date must not be in the past
-		if dateStart != "" {
-			startTime, parseErr := time.Parse("2006-01-02", dateStart)
-			if parseErr == nil {
-				today := time.Now().Truncate(24 * time.Hour)
-				if startTime.Before(today) {
-					return centymo.HTMXError("Start date cannot be in the past")
-				}
-			}
-		}
-
 		resp, err := deps.CreateSubscription(ctx, &subscriptionpb.CreateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
-				Name:            name,
-				ClientId:        r.FormValue("client_id"),
-				PricePlanId:     pricePlanID,
-				Code:      strPtr(code),
-				DateStart: strPtr(dateStart),
-				DateEnd:   strPtr(dateEnd),
-				Active:    true,
+				Name:          name,
+				ClientId:      r.FormValue("client_id"),
+				PricePlanId:   pricePlanID,
+				Code:          strPtr(code),
+				DateTimeStart: dateTimeStart,
+				DateTimeEnd:   dateTimeEnd,
+				Active:        true,
 			},
 		})
 		if err != nil {
@@ -362,10 +473,16 @@ func NewEditAction(deps *Deps) view.View {
 
 			clientLabel := resolveClientLabel(ctx, record.GetClientId(), deps.ListClients)
 			clientBillingCurrency := resolveClientBillingCurrency(ctx, record.GetClientId(), deps.ListClients)
-			planLabel := resolvePlanLabel(ctx, record.GetPricePlanId(), deps.ListPlans)
+			// PricePlanID, not a plan_id — resolve via PricePlan so the selected
+			// label matches the autocomplete dropdown's display.
+			planLabel := resolvePricePlanName(ctx, record.GetPricePlanId(), deps)
 
 			// Lock client field when opened from client detail page
 			clientLocked := viewCtx.Request.URL.Query().Get("client_id") != ""
+
+			tz := pyezatypes.LocationFromContext(ctx)
+			startDate, startTime, startISO := splitTimestampForInputs(record.GetDateTimeStart(), tz)
+			endDate, endTime, endISO := splitTimestampForInputs(record.GetDateTimeEnd(), tz)
 
 			return view.OK("subscription-drawer-form", &FormData{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
@@ -374,8 +491,13 @@ func NewEditAction(deps *Deps) view.View {
 				Code:                  record.GetCode(),
 				ClientID:              record.GetClientId(),
 				PricePlanID:           record.GetPricePlanId(),
-				DateStart:             formatDateForInput(record.GetDateStart()),
-				DateEnd:               formatDateForInput(record.GetDateEnd()),
+				DateStartDate:         startDate,
+				DateStartTime:         startTime,
+				DateStartISO:          startISO,
+				DateEndDate:           endDate,
+				DateEndTime:           endTime,
+				DateEndISO:            endISO,
+				DefaultTZ:             tz.String(),
 				SearchClientURL:       deps.Routes.SearchClientURL,
 				SearchPlanURL:         deps.Routes.SearchPlanURL,
 				ClientLabel:           clientLabel,
@@ -394,8 +516,19 @@ func NewEditAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 
-		dateStart := r.FormValue("date_start_string")
-		dateEnd := r.FormValue("date_end_string")
+		tz := pyezatypes.LocationFromContext(ctx)
+		dateTimeStart := parseFormDateTime(
+			r.FormValue("date_start_date"),
+			r.FormValue("date_start_time"),
+			r.FormValue("date_time_start_iso"),
+			tz,
+		)
+		dateTimeEnd := parseFormDateTime(
+			r.FormValue("date_end_date"),
+			r.FormValue("date_end_time"),
+			r.FormValue("date_time_end_iso"),
+			tz,
+		)
 
 		pricePlanID := r.FormValue("price_plan_id")
 		if pricePlanID == "" {
@@ -407,36 +540,23 @@ func NewEditAction(deps *Deps) view.View {
 			code = generateCode()
 		}
 
-		// Resolve plan name for auto-generated subscription name
-		planName := ""
-		if deps.ListPlans != nil && pricePlanID != "" {
-			planName = resolvePlanLabel(ctx, pricePlanID, deps.ListPlans)
-		}
+		// Resolve plan name for auto-generated subscription name. The drawer
+		// submits a price_plan_id, so look up the PricePlan (not the Plan).
+		planName := resolvePricePlanName(ctx, pricePlanID, deps)
 		name := planName
 		if code != "" {
 			name = planName + " [" + code + "]"
 		}
 
-		// Validate: start date must not be in the past
-		if dateStart != "" {
-			startTime, parseErr := time.Parse("2006-01-02", dateStart)
-			if parseErr == nil {
-				today := time.Now().Truncate(24 * time.Hour)
-				if startTime.Before(today) {
-					return centymo.HTMXError("Start date cannot be in the past")
-				}
-			}
-		}
-
 		_, err := deps.UpdateSubscription(ctx, &subscriptionpb.UpdateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
-				Id:              id,
-				Name:            name,
-				ClientId:        r.FormValue("client_id"),
-				PricePlanId:     pricePlanID,
-				Code:      strPtr(code),
-				DateStart: strPtr(dateStart),
-				DateEnd:   strPtr(dateEnd),
+				Id:            id,
+				Name:          name,
+				ClientId:      r.FormValue("client_id"),
+				PricePlanId:   pricePlanID,
+				Code:          strPtr(code),
+				DateTimeStart: dateTimeStart,
+				DateTimeEnd:   dateTimeEnd,
 			},
 		})
 		if err != nil {
@@ -482,3 +602,4 @@ func NewDeleteAction(deps *Deps) view.View {
 func strPtr(s string) *string {
 	return &s
 }
+

@@ -225,6 +225,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		PermissionEntity:     deps.PermissionEntity,
 	}
 	detailDeps := &productdetail.DetailViewDeps{
+		Routes:                    deps.Routes,
 		ReadProduct:               deps.ReadProduct,
 		Labels:                    deps.Labels,
 		CommonLabels:              deps.CommonLabels,
@@ -252,6 +253,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		},
 	}
 	variantDeps := &productvariant.DetailViewDeps{
+		Routes:                     deps.Routes,
 		DB:                         deps.DB,
 		Labels:                     deps.Labels,
 		CommonLabels:               deps.CommonLabels,
@@ -264,6 +266,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		CreateProductVariantOption: deps.CreateProductVariantOption,
 		ListProductOptions:         deps.ListProductOptions,
 		ListProductOptionValues:    deps.ListProductOptionValues,
+		CreateProductOptionValue:   deps.CreateProductOptionValue,
 		ListProductVariants:        deps.ListProductVariants,
 		ReadProduct:                deps.ReadProduct,
 		ListInventoryItems:         deps.ListInventoryItems,
@@ -286,6 +289,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		},
 	}
 	optionDeps := &productdetail.OptionsDeps{
+		Routes:                   deps.Routes,
 		DB:                       deps.DB,
 		Labels:                   deps.Labels,
 		CommonLabels:             deps.CommonLabels,
@@ -303,6 +307,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		ReadProduct:              deps.ReadProduct,
 	}
 	attributeDeps := &productdetail.AttributeDeps{
+		Routes:                 deps.Routes,
 		DB:                     deps.DB,
 		Labels:                 deps.Labels,
 		CommonLabels:           deps.CommonLabels,

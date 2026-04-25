@@ -283,7 +283,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 		if v, err := strconv.ParseFloat(r.FormValue("amount"), 64); err == nil {
 			amount = int64(math.Round(v * 100))
 		}
-		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
+		dvStr := r.FormValue("duration_value")
 		currency := r.FormValue("currency")
 		if currency == "" {
 			currency = "PHP"
@@ -300,14 +300,18 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 		// overwrite the four pricing fields with the existing DB values so a client
 		// cannot bypass the read-only drawer by editing the HTML.
 		durationUnit := r.FormValue("duration_unit")
+		var existingDurationValue *int32
+		var existingDurationUnit *string
 		if deps.GetPricePlanInUseIDs != nil && existing != nil && len(existing.GetData()) > 0 {
 			inUseMap, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid})
 			if inUseMap[ppid] {
 				ex := existing.GetData()[0]
 				amount = ex.GetBillingAmount()
 				currency = ex.GetBillingCurrency()
-				dv = int64(ex.GetDurationValue())
-				durationUnit = ex.GetDurationUnit()
+				existingDurationValue = ex.DurationValue
+				existingDurationUnit = ex.DurationUnit
+				dvStr = ""        // sentinel: prefer existingDurationValue below
+				durationUnit = "" // sentinel: prefer existingDurationUnit below
 			}
 		}
 
@@ -331,12 +335,25 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				Description:     &planPageDesc,
 				BillingAmount:   amount,
 				BillingCurrency: currency,
-				DurationValue:   int32(dv),    // Phase 1 legacy dual-write
-				DurationUnit:    durationUnit, // Phase 1 legacy dual-write
 				Active:          active,
 			},
 		}
 		req.Data.PriceScheduleId = &sid
+		// Phase 1 legacy dual-write — proto fields now optional. Prefer the
+		// in-use snapshot when locked; otherwise read from form input.
+		if existingDurationValue != nil {
+			req.Data.DurationValue = existingDurationValue
+		} else if dvStr != "" {
+			if parsed, err := strconv.ParseInt(dvStr, 10, 32); err == nil {
+				dv32 := int32(parsed)
+				req.Data.DurationValue = &dv32
+			}
+		}
+		if existingDurationUnit != nil {
+			req.Data.DurationUnit = existingDurationUnit
+		} else if durationUnit != "" {
+			req.Data.DurationUnit = &durationUnit
+		}
 		// Set new enum fields.
 		if billingKindStr != "" {
 			if bk, ok := priceplanpb.BillingKind_value[billingKindStr]; ok {

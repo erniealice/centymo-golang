@@ -124,6 +124,9 @@ func NewPageView(deps *DetailViewDeps) view.View {
 			headerTitle = productName + " - " + strings.Join(vals, " | ")
 		}
 
+		// Breadcrumb data is retained for any legacy consumers; the visible
+		// product → variant crumb is rendered via HeaderBreadcrumb on the
+		// shared page-header partial (see option_page.go for the same pattern).
 		breadcrumbs := []detail.Breadcrumb{
 			{Label: l.Breadcrumb.Products, Href: route.ResolveURL(deps.Routes.ListURL, "status", "active")},
 			{Label: productName, Href: route.ResolveURL(deps.Routes.DetailURL, "id", id) + "?tab=variants"},
@@ -134,15 +137,17 @@ func NewPageView(deps *DetailViewDeps) view.View {
 
 		pageData := &VariantPageData{
 			PageData: types.PageData{
-				CacheVersion:   viewCtx.CacheVersion,
-				Title:          headerTitle,
-				CurrentPath:    viewCtx.CurrentPath,
-				ActiveNav:      deps.Routes.ActiveNav,
-				ActiveSubNav:   deps.Routes.ActiveSubNav,
-				HeaderTitle:    headerTitle,
-				HeaderSubtitle: sku,
-				HeaderIcon:     "icon-layers",
-				CommonLabels:   deps.CommonLabels,
+				CacheVersion:        viewCtx.CacheVersion,
+				Title:               headerTitle,
+				CurrentPath:         viewCtx.CurrentPath,
+				ActiveNav:           deps.Routes.ActiveNav,
+				ActiveSubNav:        deps.Routes.ActiveSubNav,
+				HeaderTitle:         headerTitle,
+				HeaderSubtitle:      sku,
+				HeaderBreadcrumb:    productName,
+				HeaderBreadcrumbURL: route.ResolveURL(deps.Routes.DetailURL, "id", id) + "?tab=variants",
+				HeaderIcon:          "icon-layers",
+				CommonLabels:        deps.CommonLabels,
 			},
 			ContentTemplate: "variant-detail-content",
 			Breadcrumbs:     breadcrumbs,

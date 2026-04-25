@@ -30,7 +30,11 @@ Data: ProductPricePlanFormData — see views/price_plan/detail/page.go
                 <select name="product_plan_id" id="price-plan-product-plan" class="form-select" data-testid="product-plan-select" required {{if .IsEdit}}disabled{{end}}>
                     <option value="">{{.Labels.CatalogLinePlaceholder}}</option>
                     {{range .ProductPlanOptions}}
-                    <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+                    <optgroup label="{{.ProductName}}">
+                        {{range .Options}}
+                        <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+                        {{end}}
+                    </optgroup>
                     {{end}}
                 </select>
                 {{if .IsEdit}}

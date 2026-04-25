@@ -116,6 +116,13 @@ type ModuleDeps struct {
 
 	// Job activity lookup for "from_activities" revenue type (optional — gracefully degrades when nil)
 	ReadJobActivity func(ctx context.Context, req *jobactivitypb.ReadJobActivityRequest) (*jobactivitypb.ReadJobActivityResponse, error)
+
+	// RecognizeRevenueFromSubscription delegates auto-population of line items
+	// from a subscription's price plan to the espyna use case
+	// (skip_header=true mode). When wired, the manual revenue-add flow's
+	// autoPopulateLineItems path goes through the use case so the recognize
+	// drawer + manual flow share one source of truth.
+	RecognizeRevenueFromSubscription func(ctx context.Context, req *revenuepb.CreateRevenueWithLineItemsRequest) (*revenuepb.CreateRevenueWithLineItemsResponse, error)
 }
 
 // Module holds all constructed revenue views.
@@ -181,9 +188,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListInventoryItems:           deps.ListInventoryItems,
 		UpdateInventorySerial:        deps.UpdateInventorySerial,
 		CreateInventorySerialHistory: deps.CreateInventorySerialHistory,
-		FindApplicablePriceList:      deps.FindApplicablePriceList,
-		ListPriceProducts:            deps.ListPriceProducts,
-		ReadJobActivity:              deps.ReadJobActivity,
+		FindApplicablePriceList:          deps.FindApplicablePriceList,
+		ListPriceProducts:                deps.ListPriceProducts,
+		ReadJobActivity:                  deps.ReadJobActivity,
+		RecognizeRevenueFromSubscription: deps.RecognizeRevenueFromSubscription,
 	}
 	paymentDeps := &revenueaction.PaymentDeps{Routes: deps.Routes, DB: deps.DB, Labels: deps.Labels}
 	detailDeps := &revenuedetail.DetailViewDeps{

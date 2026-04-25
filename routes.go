@@ -73,14 +73,23 @@ const (
 
 	SubscriptionListURL             = "/app/subscriptions/list/{status}"
 	SubscriptionDetailURL           = "/app/subscriptions/detail/{id}"
+	// SubscriptionUnderClientDetailURL is the nested subscription-detail path
+	// rendered with a client breadcrumb. Same view as SubscriptionDetailURL.
+	SubscriptionUnderClientDetailURL = "/app/clients/detail/{client_id}/subscriptions/{id}"
 	SubscriptionAddURL              = "/action/subscription/add"
 	SubscriptionEditURL             = "/action/subscription/edit/{id}"
 	SubscriptionDeleteURL           = "/action/subscription/delete"
+	SubscriptionBulkDeleteURL       = "/action/subscription/bulk-delete"
+	SubscriptionSetStatusURL        = "/action/subscription/set-status"
+	SubscriptionBulkSetStatusURL    = "/action/subscription/bulk-set-status"
 	SubscriptionTabActionURL        = "/action/subscription/detail/{id}/tab/{tab}"
 	SubscriptionAttachmentUploadURL = "/action/subscription/detail/{id}/attachments/upload"
 	SubscriptionAttachmentDeleteURL = "/action/subscription/detail/{id}/attachments/delete"
 	SubscriptionSearchPlanURL       = "/action/subscription/search/plans"
 	SubscriptionSearchClientURL     = "/action/subscription/search/clients"
+	// SubscriptionRecognizeURL opens the "Recognize Revenue" drawer for a
+	// subscription. GET = preview drawer (dry_run); POST = generate the Revenue.
+	SubscriptionRecognizeURL        = "/action/subscription/{id}/recognize-revenue"
 
 	// Collection (money IN) routes
 	CollectionListURL             = "/app/collections/list/{status}"

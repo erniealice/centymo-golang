@@ -15,8 +15,11 @@ import (
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
+	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
+	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
+	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
 )
 
 // ProductOption is a minimal struct for rendering product options in the product plan form.
@@ -86,6 +89,12 @@ type ProductPlanDeps struct {
 	ListProductPlans    func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	// Model D — variant lookup for the drawer's variant sub-picker.
 	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	// Model D — variant label enrichment. Used to render labels of the form
+	// "SKU — Red / Large / Cotton" in the variant sub-picker, with the trailing
+	// option-value labels ordered by ProductOption.sort_order ASC.
+	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
+	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
 }
 
 // productPlanFormLabels converts centymo.ProductPlanFormLabels into the local type.
@@ -249,7 +258,15 @@ func lookupProductVariantMode(ctx context.Context, deps *ProductPlanDeps, produc
 }
 
 // loadVariantOptions builds a select list for the given product's variants.
-// Label falls back to SKU; empty SKU falls back to the variant ID.
+//
+// Label format: "SKU — Red / Large / Cotton" where the trailing concat is the
+// variant's option-value labels, ordered by the corresponding
+// ProductOption.sort_order ASC, joined with " / ". When a variant has no
+// product_variant_option rows (data drift, or product hasn't been configured
+// yet), the label degrades to plain SKU (no en-dash, no concat).
+//
+// SKU falls back to the variant ID when blank. Final []types.SelectOption is
+// sorted alphabetically by Label ASC (case-insensitive).
 func loadVariantOptions(ctx context.Context, deps *ProductPlanDeps, productID, selectedID string) []types.SelectOption {
 	if productID == "" || deps.ListProductVariants == nil {
 		return nil
@@ -259,14 +276,30 @@ func loadVariantOptions(ctx context.Context, deps *ProductPlanDeps, productID, s
 		log.Printf("Failed to list product variants for %s: %v", productID, err)
 		return nil
 	}
+
+	// Build variantID → []optionValueLabel ordered by ProductOption.sort_order ASC.
+	// Mirrors the lookup in views/product/detail/page.go BuildVariantsTable.
+	variantOptionLabels := buildVariantOptionLabels(ctx, deps)
+
 	options := []types.SelectOption{}
 	for _, v := range resp.GetData() {
 		if v == nil || v.GetProductId() != productID {
 			continue
 		}
-		label := v.GetSku()
-		if label == "" {
-			label = v.GetId()
+		// Skip inactive variants — they shouldn't be assignable to new
+		// catalog lines. Edit-mode callers pass selectedID; if the
+		// previously-selected variant is now inactive, surface it anyway
+		// so the picker round-trips correctly.
+		if !v.GetActive() && v.GetId() != selectedID {
+			continue
+		}
+		sku := v.GetSku()
+		if sku == "" {
+			sku = v.GetId()
+		}
+		label := sku
+		if parts := variantOptionLabels[v.GetId()]; len(parts) > 0 {
+			label = sku + " — " + strings.Join(parts, centymo.OptionValueSeparator)
 		}
 		options = append(options, types.SelectOption{
 			Value:    v.GetId(),
@@ -274,7 +307,93 @@ func loadVariantOptions(ctx context.Context, deps *ProductPlanDeps, productID, s
 			Selected: v.GetId() == selectedID,
 		})
 	}
+
+	sort.SliceStable(options, func(i, j int) bool {
+		return strings.ToLower(options[i].Label) < strings.ToLower(options[j].Label)
+	})
 	return options
+}
+
+// buildVariantOptionLabels returns variantID → []optionValueLabel where the
+// labels are ordered by their parent ProductOption.sort_order ASC. Labels are
+// the human-readable ProductOptionValue.label values (e.g., "Red", "Large").
+// Returns an empty map when any of the three lookup deps are missing or when
+// the upstream calls fail — callers fall back to plain SKU labels.
+func buildVariantOptionLabels(ctx context.Context, deps *ProductPlanDeps) map[string][]string {
+	out := map[string][]string{}
+	if deps.ListProductVariantOptions == nil || deps.ListProductOptionValues == nil || deps.ListProductOptions == nil {
+		return out
+	}
+
+	voResp, err := deps.ListProductVariantOptions(ctx, &productvariantoptionpb.ListProductVariantOptionsRequest{})
+	if err != nil {
+		log.Printf("Failed to list product variant options: %v", err)
+		return out
+	}
+	ovResp, err := deps.ListProductOptionValues(ctx, &productoptionvaluepb.ListProductOptionValuesRequest{})
+	if err != nil {
+		log.Printf("Failed to list product option values: %v", err)
+		return out
+	}
+	optResp, err := deps.ListProductOptions(ctx, &productoptionpb.ListProductOptionsRequest{})
+	if err != nil {
+		log.Printf("Failed to list product options: %v", err)
+		return out
+	}
+
+	// productOptionID → sort_order
+	optionSortOrder := map[string]int32{}
+	for _, o := range optResp.GetData() {
+		if o == nil {
+			continue
+		}
+		optionSortOrder[o.GetId()] = o.GetSortOrder()
+	}
+
+	// productOptionValueID → (label, parent sort_order)
+	type valueInfo struct {
+		label     string
+		sortOrder int32
+	}
+	valueLookup := map[string]valueInfo{}
+	for _, ov := range ovResp.GetData() {
+		if ov == nil {
+			continue
+		}
+		valueLookup[ov.GetId()] = valueInfo{
+			label:     ov.GetLabel(),
+			sortOrder: optionSortOrder[ov.GetProductOptionId()],
+		}
+	}
+
+	// variantID → []{label, sort_order}, then sort and project.
+	type entry struct {
+		label     string
+		sortOrder int32
+	}
+	bucket := map[string][]entry{}
+	for _, vo := range voResp.GetData() {
+		if vo == nil {
+			continue
+		}
+		varID := vo.GetProductVariantId()
+		info, ok := valueLookup[vo.GetProductOptionValueId()]
+		if !ok || varID == "" {
+			continue
+		}
+		bucket[varID] = append(bucket[varID], entry{label: info.label, sortOrder: info.sortOrder})
+	}
+	for varID, entries := range bucket {
+		sort.SliceStable(entries, func(i, j int) bool {
+			return entries[i].sortOrder < entries[j].sortOrder
+		})
+		labels := make([]string, 0, len(entries))
+		for _, e := range entries {
+			labels = append(labels, e.label)
+		}
+		out[varID] = labels
+	}
+	return out
 }
 
 // NewProductPlanAddAction creates the product plan add action (GET = form, POST = create).

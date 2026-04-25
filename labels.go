@@ -702,12 +702,11 @@ type ProductFormLabels struct {
 	// Variant / option / attribute form labels
 	PricePlaceholder         string `json:"pricePlaceholder"`
 	SelectOption             string `json:"selectOption"`
-	InitialValues            string `json:"initialValues"`
-	InitialValuesPlaceholder string `json:"initialValuesPlaceholder"`
 	Required                 string `json:"required"`
 	Option                   string `json:"option"`
 	SelectAttribute          string `json:"selectAttribute"`
 	AllAttributesAssigned    string `json:"allAttributesAssigned"`
+	OptionNeedsValuesAlert   string `json:"optionNeedsValuesAlert"`
 
 	// Field-level info text surfaced via an info button beside each label.
 	NameInfo        string `json:"nameInfo"`
@@ -782,6 +781,10 @@ type ProductDetailLabels struct {
 	Status               string `json:"status"`
 	OptionsLabel         string `json:"optionsLabel"`
 	EmptyVariantsMessage string `json:"emptyVariantsMessage"`
+	// Header subtitle fallback when the product has no description.
+	// Consumed by buildPageData to override the generic "Welcome back"
+	// CommonLabels default on the product detail page header.
+	NoDescriptionSubtitle string `json:"noDescriptionSubtitle"`
 	// Model D — detail-page rows for unit of measure + variant mode.
 	// Falls back to English defaults when lyngua doesn't overlay the key.
 	Unit        string `json:"unit"`
@@ -900,6 +903,7 @@ type ProductBreadcrumbLabels struct {
 
 type ProductOptionLabels struct {
 	Tab       ProductOptionTabLabels      `json:"tab"`
+	Tabs      ProductOptionTabsLabels     `json:"tabs"`
 	Columns   ProductOptionColumnLabels   `json:"columns"`
 	Form      ProductOptionFormLabels     `json:"form"`
 	DataTypes ProductOptionDataTypeLabels `json:"dataTypes"`
@@ -913,12 +917,18 @@ type ProductOptionTabLabels struct {
 	Title string `json:"title"`
 }
 
+type ProductOptionTabsLabels struct {
+	Info   string `json:"info"`
+	Values string `json:"values"`
+}
+
 type ProductOptionColumnLabels struct {
 	Name        string `json:"name"`
 	Code        string `json:"code"`
 	DataType    string `json:"dataType"`
 	ValuesCount string `json:"valuesCount"`
 	SortOrder   string `json:"sortOrder"`
+	Required    string `json:"required"`
 	Status      string `json:"status"`
 }
 
@@ -932,33 +942,27 @@ type ProductOptionFormLabels struct {
 	MinValue                string `json:"minValue"`
 	MaxValue                string `json:"maxValue"`
 	Active                  string `json:"active"`
-	InitialValues           string `json:"initialValues"`
-	InitialValuesPlaceholder string `json:"initialValuesPlaceholder"`
 	Required                string `json:"required"`
-	Form                    ProductOptionFormInnerLabels `json:"form"`
+	RequiredCaution         string `json:"requiredCaution"`
+	Description             string `json:"description"`
+	DescriptionPlaceholder  string `json:"descriptionPlaceholder"`
+	DescriptionEmpty        string `json:"descriptionEmpty"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	NameInfo      string `json:"nameInfo"`
-	CodeInfo      string `json:"codeInfo"`
-	DataTypeInfo  string `json:"dataTypeInfo"`
-	MinValueInfo  string `json:"minValueInfo"`
-	MaxValueInfo  string `json:"maxValueInfo"`
-	SortOrderInfo string `json:"sortOrderInfo"`
-	ActiveInfo    string `json:"activeInfo"`
-}
-
-// ProductOptionFormInnerLabels holds nested form labels referenced by the template as .Labels.Form.*
-type ProductOptionFormInnerLabels struct {
-	InitialValues           string `json:"initialValues"`
-	InitialValuesPlaceholder string `json:"initialValuesPlaceholder"`
-	Required                string `json:"required"`
+	NameInfo        string `json:"nameInfo"`
+	CodeInfo        string `json:"codeInfo"`
+	DataTypeInfo    string `json:"dataTypeInfo"`
+	MinValueInfo    string `json:"minValueInfo"`
+	MaxValueInfo    string `json:"maxValueInfo"`
+	SortOrderInfo   string `json:"sortOrderInfo"`
+	ActiveInfo      string `json:"activeInfo"`
+	DescriptionInfo string `json:"descriptionInfo"`
 }
 
 type ProductOptionDataTypeLabels struct {
 	TextList   string `json:"textList"`
-	NumberList string `json:"numberList"`
+	NumberRange string `json:"numberRange"`
 	ColorList  string `json:"colorList"`
-	EnumList   string `json:"enumList"`
 	FreeText   string `json:"freeText"`
 	FreeNumber string `json:"freeNumber"`
 }
@@ -985,6 +989,10 @@ type ProductOptionValueFormLabels struct {
 	ColorHex            string `json:"colorHex"`
 	ColorHexPlaceholder string `json:"colorHexPlaceholder"`
 	Active              string `json:"active"`
+	// Context labels surfaced on the value drawer to remind the user
+	// which option this value belongs to.
+	Option   string `json:"option"`
+	Required string `json:"required"`
 
 	// Field-level info text surfaced via an info button beside each label.
 	LabelInfo     string `json:"labelInfo"`
@@ -995,13 +1003,14 @@ type ProductOptionValueFormLabels struct {
 }
 
 type ProductOptionActionLabels struct {
-	AddOption    string `json:"addOption"`
-	EditOption   string `json:"editOption"`
-	DeleteOption string `json:"deleteOption"`
-	ViewValues   string `json:"viewValues"`
-	AddValue     string `json:"addValue"`
-	EditValue    string `json:"editValue"`
-	DeleteValue  string `json:"deleteValue"`
+	AddOption         string `json:"addOption"`
+	EditOption        string `json:"editOption"`
+	EditProductOption string `json:"editProductOption"`
+	DeleteOption      string `json:"deleteOption"`
+	ViewValues        string `json:"viewValues"`
+	AddValue          string `json:"addValue"`
+	EditValue         string `json:"editValue"`
+	DeleteValue       string `json:"deleteValue"`
 }
 
 type ProductOptionEmptyLabels struct {
@@ -2964,6 +2973,7 @@ type PlanPageLabels struct {
 type PlanButtonLabels struct {
 	AddPlan       string `json:"addPlan"`
 	AddPricePlan  string `json:"addPricePlan"`
+	EditPricePlan string `json:"editPricePlan"`
 	AddProduct    string `json:"addProduct"`
 }
 
@@ -3132,16 +3142,20 @@ type PlanConfirmLabels struct {
 
 // SubscriptionLabels holds all translatable strings for the subscription module.
 type SubscriptionLabels struct {
-	Page    SubscriptionPageLabels    `json:"page"`
-	Buttons SubscriptionButtonLabels  `json:"buttons"`
-	Columns SubscriptionColumnLabels  `json:"columns"`
-	Empty   SubscriptionEmptyLabels   `json:"empty"`
-	Form    SubscriptionFormLabels    `json:"form"`
-	Actions SubscriptionActionLabels  `json:"actions"`
-	Detail  SubscriptionDetailLabels  `json:"detail"`
-	Tabs    SubscriptionTabLabels     `json:"tabs"`
-	Confirm SubscriptionConfirmLabels `json:"confirm"`
-	Errors  SubscriptionErrorLabels   `json:"errors"`
+	Page      SubscriptionPageLabels      `json:"page"`
+	Buttons   SubscriptionButtonLabels    `json:"buttons"`
+	Columns   SubscriptionColumnLabels    `json:"columns"`
+	Empty     SubscriptionEmptyLabels     `json:"empty"`
+	Form      SubscriptionFormLabels      `json:"form"`
+	Actions   SubscriptionActionLabels    `json:"actions"`
+	Bulk      SubscriptionBulkLabels      `json:"bulkActions"`
+	Status    SubscriptionStatusLabels    `json:"status"`
+	Detail    SubscriptionDetailLabels    `json:"detail"`
+	Tabs      SubscriptionTabLabels       `json:"tabs"`
+	Invoices  SubscriptionInvoicesLabels  `json:"invoices"`
+	Recognize SubscriptionRecognizeLabels `json:"recognize"`
+	Confirm   SubscriptionConfirmLabels   `json:"confirm"`
+	Errors    SubscriptionErrorLabels     `json:"errors"`
 }
 
 type SubscriptionPageLabels struct {
@@ -3158,9 +3172,12 @@ type SubscriptionButtonLabels struct {
 }
 
 type SubscriptionColumnLabels struct {
-	Customer  string `json:"customer"`
+	Name      string `json:"name"`
+	Client    string `json:"client"`
+	Customer  string `json:"customer"` // legacy alias; kept for backward compat with old translations
 	Plan      string `json:"plan"`
 	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
 	Status    string `json:"status"`
 }
 
@@ -3170,9 +3187,23 @@ type SubscriptionEmptyLabels struct {
 }
 
 type SubscriptionActionLabels struct {
-	View   string `json:"view"`
-	Edit   string `json:"edit"`
-	Cancel string `json:"cancel"`
+	View       string `json:"view"`
+	Edit       string `json:"edit"`
+	Cancel     string `json:"cancel"`
+	Delete     string `json:"delete"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type SubscriptionBulkLabels struct {
+	Delete     string `json:"delete"`
+	Activate   string `json:"bulkActivate"`
+	Deactivate string `json:"bulkDeactivate"`
+}
+
+type SubscriptionStatusLabels struct {
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
 }
 
 type SubscriptionErrorLabels struct {
@@ -3180,7 +3211,11 @@ type SubscriptionErrorLabels struct {
 	InvalidFormData  string `json:"invalidFormData"`
 	NotFound         string `json:"notFound"`
 	IDRequired       string `json:"idRequired"`
+	NoIDsProvided    string `json:"noIDsProvided"`
+	InvalidStatus    string `json:"invalidStatus"`
 	NoPermission     string `json:"noPermission"`
+	CannotDelete     string `json:"cannotDelete"`
+	InUse            string `json:"inUse"`
 }
 
 // ---------------------------------------------------------------------------
@@ -3194,6 +3229,9 @@ type SubscriptionFormLabels struct {
 	PlanPlaceholder           string `json:"planPlaceholder"`
 	StartDate                 string `json:"startDate"`
 	EndDate                   string `json:"endDate"`
+	StartTime                 string `json:"startTime"`
+	EndTime                   string `json:"endTime"`
+	Timezone                  string `json:"timezone"`
 	Active                    string `json:"active"`
 	Notes                     string `json:"notes"`
 	NotesPlaceholder          string `json:"notesPlaceholder"`
@@ -3210,6 +3248,8 @@ type SubscriptionFormLabels struct {
 	CodeInfo      string `json:"codeInfo"`
 	StartDateInfo string `json:"startDateInfo"`
 	EndDateInfo   string `json:"endDateInfo"`
+	StartTimeInfo string `json:"startTimeInfo"`
+	EndTimeInfo   string `json:"endTimeInfo"`
 	NotesInfo     string `json:"notesInfo"`
 }
 
@@ -3228,14 +3268,91 @@ type SubscriptionDetailLabels struct {
 
 type SubscriptionTabLabels struct {
 	Info        string `json:"info"`
+	Invoices    string `json:"invoices"`
 	History     string `json:"history"`
 	Attachments string `json:"attachments"`
 	AuditTrail  string `json:"auditTrail"`
 }
 
+type SubscriptionInvoicesLabels struct {
+	Title        string `json:"title"`
+	Empty        string `json:"empty"`
+	ColumnCode   string `json:"columnCode"`
+	ColumnDate   string `json:"columnDate"`
+	ColumnAmount string `json:"columnAmount"`
+	ColumnStatus string `json:"columnStatus"`
+
+	// Recognize-revenue action surfaced as a primary action on the invoices
+	// tab toolbar AND on the empty-state. No page-header button (per plan
+	// §11.2 — tab-only).
+	RecognizeAction   string `json:"recognizeAction"`
+	RecognizeTitle    string `json:"recognizeTitle"`
+	RecognizeSubtitle string `json:"recognizeSubtitle"`
+}
+
+// SubscriptionRecognizeLabels holds drawer-form labels for the
+// "Recognize Revenue" flow. See plan §5 Phase E for the full table; the
+// blocking-error keys (currencyMismatchError, idempotencyError) are renamed
+// from their advisory counterparts since v1 surfaces them as hard blocks.
+type SubscriptionRecognizeLabels struct {
+	// Header / context section
+	ContextSection string `json:"contextSection"`
+	ClientLabel    string `json:"clientLabel"`
+	PlanLabel      string `json:"planLabel"`
+	QuantityLabel  string `json:"quantityLabel"`
+
+	// Period section
+	PeriodSection string `json:"periodSection"`
+	PeriodStart   string `json:"periodStart"`
+	PeriodEnd     string `json:"periodEnd"`
+	RevenueDate   string `json:"revenueDate"`
+
+	// Line items table
+	LineItemsSection      string `json:"lineItemsSection"`
+	ColumnDescription     string `json:"columnDescription"`
+	ColumnUnitPrice       string `json:"columnUnitPrice"`
+	ColumnQuantity        string `json:"columnQuantity"`
+	ColumnLineTotal       string `json:"columnLineTotal"`
+	ColumnTreatment       string `json:"columnTreatment"`
+	TotalLabel            string `json:"totalLabel"`
+	RemoveLine            string `json:"removeLine"`
+	TreatmentRecurring    string `json:"treatmentRecurring"`
+	TreatmentFirstCycle   string `json:"treatmentFirstCycle"`
+	TreatmentUsageBased   string `json:"treatmentUsageBased"`
+	TreatmentOneTime      string `json:"treatmentOneTime"`
+
+	// Notes
+	NotesLabel       string `json:"notesLabel"`
+	NotesPlaceholder string `json:"notesPlaceholder"`
+
+	// Footer buttons (v1 — single Generate button; "Save as Draft" is dropped
+	// per plan Phase D refinement since both paths run the idempotency check.)
+	Generate string `json:"generate"`
+	Cancel   string `json:"cancel"`
+
+	// Blocking error banners
+	CurrencyMismatchError       string `json:"currencyMismatchError"`
+	IdempotencyError            string `json:"idempotencyError"`
+	IdempotencyExistingLink     string `json:"idempotencyExistingLink"`
+	CycleNotConfiguredWarning   string `json:"cycleNotConfiguredWarning"`
+	UsageBasedSkippedNotice     string `json:"usageBasedSkippedNotice"`
+}
+
 type SubscriptionConfirmLabels struct {
-	Cancel        string `json:"cancel"`
-	CancelMessage string `json:"cancelMessage"`
+	Cancel                string `json:"cancel"`
+	CancelMessage         string `json:"cancelMessage"`
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
 }
 
 // DefaultPlanLabels returns PlanLabels with sensible English defaults.
@@ -3250,9 +3367,10 @@ func DefaultPlanLabels() PlanLabels {
 			CaptionInactive: "View inactive or archived plans",
 		},
 		Buttons: PlanButtonLabels{
-			AddPlan:      "Add Plan",
-			AddPricePlan: "Add Price Plan",
-			AddProduct:   "Add Product",
+			AddPlan:       "Add Plan",
+			AddPricePlan:  "Add Price Plan",
+			EditPricePlan: "Edit Price Plan",
+			AddProduct:    "Add Product",
 		},
 		Columns: PlanColumnLabels{
 			Name:        "Name",
@@ -4095,9 +4213,12 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			AddSubscription: "Add Subscription",
 		},
 		Columns: SubscriptionColumnLabels{
+			Name:      "Engagement",
+			Client:    "Client",
 			Customer:  "Customer",
 			Plan:      "Plan",
 			StartDate: "Start Date",
+			EndDate:   "End Date",
 			Status:    "Status",
 		},
 		Empty: SubscriptionEmptyLabels{
@@ -4111,6 +4232,9 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			PlanPlaceholder:           "Select plan...",
 			StartDate:                 "Start Date",
 			EndDate:                   "End Date",
+			StartTime:                 "Start time",
+			EndTime:                   "End time",
+			Timezone:                  "Timezone",
 			Active:                    "Active",
 			Notes:                     "Notes",
 			NotesPlaceholder:          "Enter notes...",
@@ -4126,12 +4250,26 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			CodeInfo:      "Short reference used on invoices and receipts. Leave blank to auto-generate.",
 			StartDateInfo: "First day the subscription is active. Billing cycles are counted from this date.",
 			EndDateInfo:   "Last day the subscription is active. Leave blank for open-ended.",
+			StartTimeInfo: "Time of day in the operator's display timezone.",
+			EndTimeInfo:   "Optional. Leave blank for an open-ended subscription.",
 			NotesInfo:     "Internal remarks — shown on detail pages but not on customer-facing documents.",
 		},
 		Actions: SubscriptionActionLabels{
-			View:   "View Subscription",
-			Edit:   "Edit Subscription",
-			Cancel: "Cancel Subscription",
+			View:       "View Subscription",
+			Edit:       "Edit Subscription",
+			Cancel:     "Cancel Subscription",
+			Delete:     "Delete",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Bulk: SubscriptionBulkLabels{
+			Delete:     "Delete Selected",
+			Activate:   "Activate Selected",
+			Deactivate: "Deactivate Selected",
+		},
+		Status: SubscriptionStatusLabels{
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
 		},
 		Detail: SubscriptionDetailLabels{
 			PageTitle:            "Subscription Details",
@@ -4147,20 +4285,79 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 		},
 		Tabs: SubscriptionTabLabels{
 			Info:        "Information",
+			Invoices:    "Invoices",
 			History:     "History",
 			Attachments: "Attachments",
 			AuditTrail:  "Audit Trail",
 		},
+		Invoices: SubscriptionInvoicesLabels{
+			Title:             "Invoices",
+			Empty:             "No invoices yet — click Recognize Revenue to generate the first one.",
+			ColumnCode:        "Number",
+			ColumnDate:        "Date",
+			ColumnAmount:      "Amount",
+			ColumnStatus:      "Status",
+			RecognizeAction:   "Recognize Revenue",
+			RecognizeTitle:    "Recognize Revenue",
+			RecognizeSubtitle: "Generate an invoice from this subscription's price plan.",
+		},
+		Recognize: SubscriptionRecognizeLabels{
+			ContextSection:        "Subscription",
+			ClientLabel:           "Client",
+			PlanLabel:             "Plan / Rate Card",
+			QuantityLabel:         "Quantity",
+			PeriodSection:         "Billing period",
+			PeriodStart:           "Period start",
+			PeriodEnd:             "Period end",
+			RevenueDate:           "Revenue date",
+			LineItemsSection:      "Line items",
+			ColumnDescription:     "Description",
+			ColumnUnitPrice:       "Unit price",
+			ColumnQuantity:        "Qty",
+			ColumnLineTotal:       "Line total",
+			ColumnTreatment:       "Treatment",
+			TotalLabel:            "Total",
+			RemoveLine:            "Remove",
+			TreatmentRecurring:    "Every cycle",
+			TreatmentFirstCycle:   "First cycle only",
+			TreatmentUsageBased:   "On use",
+			TreatmentOneTime:      "One time",
+			NotesLabel:            "Notes",
+			NotesPlaceholder:      "Notes are auto-prefixed with the period; append any free-text below.",
+			Generate:              "Generate",
+			Cancel:                "Cancel",
+			CurrencyMismatchError: "Client billing currency ({{.ClientCurrency}}) does not match the rate card ({{.PlanCurrency}}). Update one before generating revenue.",
+			IdempotencyError:      "An invoice for this period already exists. Cancel the existing one or pick a different period.",
+			IdempotencyExistingLink: "View the existing invoice",
+			CycleNotConfiguredWarning: "Plan has no billing cycle configured; defaulting to 1 month.",
+			UsageBasedSkippedNotice:   "Usage-based lines were skipped — record them via metering.",
+		},
 		Confirm: SubscriptionConfirmLabels{
-			Cancel:        "Cancel Subscription",
-			CancelMessage: "Are you sure you want to cancel this subscription? This action cannot be undone.",
+			Cancel:                "Cancel Subscription",
+			CancelMessage:         "Are you sure you want to cancel this subscription? This action cannot be undone.",
+			Delete:                "Delete Subscription",
+			DeleteMessage:         "Are you sure you want to delete this subscription? This action cannot be undone.",
+			Activate:              "Activate Subscription",
+			ActivateMessage:       "Are you sure you want to activate %s?",
+			Deactivate:            "Deactivate Subscription",
+			DeactivateMessage:     "Are you sure you want to deactivate %s?",
+			BulkActivate:          "Activate Selected",
+			BulkActivateMessage:   "Are you sure you want to activate the selected subscriptions?",
+			BulkDeactivate:        "Deactivate Selected",
+			BulkDeactivateMessage: "Are you sure you want to deactivate the selected subscriptions?",
+			BulkDelete:            "Delete Selected",
+			BulkDeleteMessage:     "Are you sure you want to delete the selected subscriptions? This action cannot be undone.",
 		},
 		Errors: SubscriptionErrorLabels{
 			PermissionDenied: "You do not have permission to perform this action",
 			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
 			NotFound:         "Subscription not found",
 			IDRequired:       "Subscription ID is required",
+			NoIDsProvided:    "No subscription IDs provided",
+			InvalidStatus:    "Invalid status value",
 			NoPermission:     "No permission",
+			CannotDelete:     "Cannot delete — this engagement has dependent records",
+			InUse:            "Cannot delete — this engagement has dependent records (jobs, revenue, invoices, etc.)",
 		},
 	}
 }

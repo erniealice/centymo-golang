@@ -22,6 +22,7 @@ import (
 type ListViewDeps struct {
 	Routes                      centymo.SubscriptionRoutes
 	GetSubscriptionListPageData func(ctx context.Context, req *subscriptionpb.GetSubscriptionListPageDataRequest) (*subscriptionpb.GetSubscriptionListPageDataResponse, error)
+	GetInUseIDs                 func(ctx context.Context, ids []string) (map[string]bool, error)
 	Labels                      centymo.SubscriptionLabels
 	CommonLabels                pyeza.CommonLabels
 	TableLabels                 types.TableLabels
@@ -80,9 +81,19 @@ func NewView(deps *ListViewDeps) view.View {
 			return view.Error(fmt.Errorf("failed to load subscriptions: %w", err))
 		}
 
+		// Collect IDs and check which are in use (referenced by dependent tables).
+		var inUseIDs map[string]bool
+		if deps.GetInUseIDs != nil {
+			var itemIDs []string
+			for _, s := range resp.GetSubscriptionList() {
+				itemIDs = append(itemIDs, s.GetId())
+			}
+			inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+		}
+
 		l := deps.Labels
 		columns := subscriptionColumns(l)
-		rows := buildTableRows(resp.GetSubscriptionList(), status, l, deps.Routes, perms)
+		rows := buildTableRows(ctx, resp.GetSubscriptionList(), status, l, deps.Routes, inUseIDs, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		refreshURL := route.ResolveURL(deps.Routes.ListURL, "status", status)
@@ -104,6 +115,42 @@ func NewView(deps *ListViewDeps) view.View {
 		}
 		sp.BuildDisplay()
 
+		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+		bulkCfg.Actions = []types.BulkAction{
+			{
+				Key:              "activate",
+				Label:            l.Status.Activate,
+				Icon:             "icon-check-circle",
+				Variant:          "success",
+				Endpoint:         deps.Routes.BulkSetStatusURL,
+				ExtraParamsJSON:  `{"target_status":"active"}`,
+				ConfirmTitle:     l.Confirm.BulkActivate,
+				ConfirmMessage:   l.Confirm.BulkActivateMessage,
+				RequiresDataAttr: "activatable",
+			},
+			{
+				Key:              "deactivate",
+				Label:            l.Status.Deactivate,
+				Icon:             "icon-x-circle",
+				Variant:          "warning",
+				Endpoint:         deps.Routes.BulkSetStatusURL,
+				ExtraParamsJSON:  `{"target_status":"inactive"}`,
+				ConfirmTitle:     l.Confirm.BulkDeactivate,
+				ConfirmMessage:   l.Confirm.BulkDeactivateMessage,
+				RequiresDataAttr: "deactivatable",
+			},
+			{
+				Key:              "delete",
+				Label:            l.Bulk.Delete,
+				Icon:             "icon-trash-2",
+				Variant:          "danger",
+				Endpoint:         deps.Routes.BulkDeleteURL,
+				ConfirmTitle:     l.Confirm.BulkDelete,
+				ConfirmMessage:   l.Confirm.BulkDeleteMessage,
+				RequiresDataAttr: "deletable",
+			},
+		}
+
 		tableConfig := &types.TableConfig{
 			ID:                   "subscriptions-table",
 			RefreshURL:           refreshURL,
@@ -122,14 +169,20 @@ func NewView(deps *ListViewDeps) view.View {
 				Title:   l.Empty.Title,
 				Message: l.Empty.Message,
 			},
-			PrimaryAction: &types.PrimaryAction{
+			ServerPagination: sp,
+			BulkActions:      &bulkCfg,
+		}
+		// Add button is only meaningful on the active list — new engagements
+		// always start active. Mirrors the plan list's behavior at
+		// /app/services/list/inactive.
+		if status == "active" {
+			tableConfig.PrimaryAction = &types.PrimaryAction{
 				Label:           l.Buttons.AddSubscription,
 				ActionURL:       deps.Routes.AddURL,
 				Icon:            "icon-plus",
 				Disabled:        !perms.Can("subscription", "create"),
 				DisabledTooltip: l.Errors.NoPermission,
-			},
-			ServerPagination: sp,
+			}
 		}
 		types.ApplyTableSettings(tableConfig)
 
@@ -154,15 +207,31 @@ func NewView(deps *ListViewDeps) view.View {
 }
 
 func subscriptionColumns(l centymo.SubscriptionLabels) []types.TableColumn {
+	nameLabel := l.Columns.Name
+	if nameLabel == "" {
+		nameLabel = "Engagement"
+	}
+	clientLabel := l.Columns.Client
+	if clientLabel == "" {
+		clientLabel = l.Columns.Customer
+	}
+	endDateLabel := l.Columns.EndDate
+	if endDateLabel == "" {
+		endDateLabel = "End Date"
+	}
+	// Status column omitted on purpose — the list page is already scoped
+	// by /list/{status}, so a per-row badge would be redundant.
 	return []types.TableColumn{
-		{Key: "customer", Label: l.Columns.Customer, Sortable: true},
+		{Key: "name", Label: nameLabel, Sortable: true},
+		{Key: "client", Label: clientLabel, Sortable: true},
 		{Key: "plan", Label: l.Columns.Plan, Sortable: true},
 		{Key: "start_date", Label: l.Columns.StartDate, Sortable: true, WidthClass: "col-4xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "end_date", Label: endDateLabel, Sortable: true, WidthClass: "col-4xl"},
 	}
 }
 
-func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string, l centymo.SubscriptionLabels, routes centymo.SubscriptionRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(ctx context.Context, subscriptions []*subscriptionpb.Subscription, status string, l centymo.SubscriptionLabels, routes centymo.SubscriptionRoutes, inUseIDs map[string]bool, perms *types.UserPermissions) []types.TableRow {
+	tz := types.LocationFromContext(ctx)
 	rows := []types.TableRow{}
 	for _, s := range subscriptions {
 		active := s.GetActive()
@@ -172,22 +241,24 @@ func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string,
 		}
 
 		id := s.GetId()
+		subName := s.GetName()
 
-		// Build customer display name: prefer company_name, fallback to user name
-		customer := s.GetName()
+		// Client display name: prefer company_name, fallback to representative
+		// full name; empty when the join is missing.
+		clientName := ""
 		if c := s.GetClient(); c != nil {
 			if companyName := c.GetName(); companyName != "" {
-				customer = companyName
+				clientName = companyName
 			} else if u := c.GetUser(); u != nil {
 				firstName := u.GetFirstName()
 				lastName := u.GetLastName()
 				if firstName != "" || lastName != "" {
-					customer = firstName + " " + lastName
+					clientName = firstName + " " + lastName
 				}
 			}
 		}
 
-		// Get plan name from nested price_plan → plan
+		// Plan name from nested price_plan → plan, with PricePlan as fallback.
 		planName := ""
 		if pp := s.GetPricePlan(); pp != nil {
 			if p := pp.GetPlan(); p != nil {
@@ -198,27 +269,87 @@ func buildTableRows(subscriptions []*subscriptionpb.Subscription, status string,
 			}
 		}
 
-		startDate := s.GetDateStart()
+		startDate := types.FormatTimestampInTZ(s.GetDateTimeStart(), tz, types.DateTimeReadable)
+		endDate := types.FormatTimestampInTZ(s.GetDateTimeEnd(), tz, types.DateTimeReadable)
+
+		// Build per-row actions — conditional on status and in-use state.
+		actions := []types.TableAction{
+			{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
+		}
+
+		if recordStatus == "active" {
+			actions = append(actions, types.TableAction{
+				Type:            "edit",
+				Label:           l.Actions.Edit,
+				Action:          "edit",
+				URL:             route.ResolveURL(routes.EditURL, "id", id),
+				DrawerTitle:     l.Actions.Edit,
+				Disabled:        !perms.Can("subscription", "update"),
+				DisabledTooltip: l.Errors.NoPermission,
+			})
+			actions = append(actions, types.TableAction{
+				Type:            "deactivate",
+				Label:           l.Actions.Deactivate,
+				Action:          "deactivate",
+				URL:             routes.SetStatusURL + "?status=inactive",
+				ItemName:        subName,
+				ConfirmTitle:    l.Confirm.Deactivate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.DeactivateMessage, subName),
+				Disabled:        !perms.Can("subscription", "update"),
+				DisabledTooltip: l.Errors.NoPermission,
+			})
+		} else {
+			actions = append(actions, types.TableAction{
+				Type:            "activate",
+				Label:           l.Actions.Activate,
+				Action:          "activate",
+				URL:             routes.SetStatusURL + "?status=active",
+				ItemName:        subName,
+				ConfirmTitle:    l.Confirm.Activate,
+				ConfirmMessage:  fmt.Sprintf(l.Confirm.ActivateMessage, subName),
+				Disabled:        !perms.Can("subscription", "update"),
+				DisabledTooltip: l.Errors.NoPermission,
+			})
+		}
+
+		deleteAction := types.TableAction{
+			Type:     "delete",
+			Label:    l.Actions.Delete,
+			Action:   "delete",
+			URL:      routes.DeleteURL,
+			ItemName: subName,
+		}
+		if inUseIDs[id] {
+			deleteAction.Disabled = true
+			deleteAction.DisabledTooltip = l.Errors.InUse
+		}
+		if !perms.Can("subscription", "delete") {
+			deleteAction.Disabled = true
+			deleteAction.DisabledTooltip = l.Errors.NoPermission
+		}
+		actions = append(actions, deleteAction)
 
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
-				{Type: "text", Value: customer},
+				{Type: "text", Value: subName},
+				{Type: "text", Value: clientName},
 				{Type: "text", Value: planName},
-				types.DateTimeCell(startDate, types.DateReadable),
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
+				{Type: "datetime", Value: startDate},
+				{Type: "datetime", Value: endDate},
 			},
 			DataAttrs: map[string]string{
-				"customer":   customer,
-				"plan":       planName,
-				"start_date": startDate,
-				"status":     recordStatus,
+				"name":          subName,
+				"client":        clientName,
+				"plan":          planName,
+				"start_date":    startDate,
+				"end_date":      endDate,
+				"status":        recordStatus,
+				"deletable":     boolAttr(!inUseIDs[id]),
+				"activatable":   boolAttr(recordStatus == "inactive"),
+				"deactivatable": boolAttr(recordStatus == "active"),
 			},
-			Actions: []types.TableAction{
-				{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("subscription", "update"), DisabledTooltip: l.Errors.NoPermission},
-				{Type: "delete", Label: l.Actions.Cancel, Action: "delete", URL: routes.DeleteURL, ItemName: customer, Disabled: !perms.Can("subscription", "delete"), DisabledTooltip: l.Errors.NoPermission},
-			},
+			Actions: actions,
 		})
 	}
 	return rows
@@ -244,6 +375,13 @@ func statusSubtitle(l centymo.SubscriptionLabels, status string) string {
 	default:
 		return l.Page.Caption
 	}
+}
+
+func boolAttr(v bool) string {
+	if v {
+		return "true"
+	}
+	return "false"
 }
 
 func statusVariant(status string) string {

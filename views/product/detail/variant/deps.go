@@ -3,7 +3,11 @@ package variant
 import (
 	"context"
 	"log"
+	"sort"
+	"strconv"
 	"strings"
+
+	"github.com/erniealice/pyeza-golang/route"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -23,9 +27,20 @@ import (
 )
 
 // VariantFormLabels holds labels for the variant drawer form template.
+//
+// SKU / PriceOverride are variant-specific (sourced from
+// centymo.ProductVariantLabels). PricePlaceholder / SelectOption / Active
+// are shared form labels reused from centymo.ProductFormLabels — they show
+// up on every drawer form, not just variants, so we don't duplicate the
+// lyngua keys.
 type VariantFormLabels struct {
-	SKU           string
-	PriceOverride string
+	SKU                    string
+	PriceOverride          string
+	PricePlaceholder       string
+	SelectOption           string
+	Active                 string
+	OptionNeedsValuesAlert string
+	ViewValues             string
 }
 
 // OptionValueChoice represents a selectable option value in the variant form dropdown.
@@ -35,13 +50,36 @@ type OptionValueChoice struct {
 }
 
 // OptionSelection represents a product option with its available values for the variant form.
+//
+// DataType drives template rendering and submit-time persistence:
+//   - text_list / number_list / color_list → <select> populated from Values;
+//     form key "option_value_<optionID>" carries the chosen product_option_value ID.
+//   - free_text → <input type="text">;
+//     form key "option_free_<optionID>" carries the raw text. On submit the
+//     handler upserts a one-off product_option_value row (label=value=raw) and
+//     links the variant to it, so the rest of the schema stays uniform.
+//   - free_number → <input type="number" min max>;
+//     same persistence model as free_text but with numeric bounds from the option.
 type OptionSelection struct {
-	OptionID   string
-	OptionName string
-	FieldName  string // "option_value_{optionID}"
-	Values     []OptionValueChoice
-	Selected   string // for edit mode
-	Required   bool
+	OptionID      string
+	OptionName    string
+	DataType      string
+	FieldName     string // "option_value_<optionID>" (select types) or "option_free_<optionID>" (free types)
+	Values        []OptionValueChoice
+	Selected      string  // for edit mode — value ID for select types
+	SelectedLabel string  // for edit mode — raw text/number for free types
+	MinValue      *float64
+	MaxValue      *float64
+	Required      bool
+	SortOrder     int32
+	// NeedsValuesAlert is true when the option is a required *select* type
+	// (text_list / number_list / color_list) with zero value rows — the user
+	// can't satisfy the required constraint until they add values. Free types
+	// don't trigger this since they accept arbitrary input.
+	NeedsValuesAlert bool
+	// ViewValuesURL is the deep link to the option detail page where values
+	// can be added. Surfaced from the alert so the user can fix the gap inline.
+	ViewValuesURL string
 }
 
 // VariantFormData is the template data for the variant drawer form.
@@ -77,8 +115,9 @@ type DetailViewDeps struct {
 	CreateProductVariantOption func(ctx context.Context, req *productvariantoptionpb.CreateProductVariantOptionRequest) (*productvariantoptionpb.CreateProductVariantOptionResponse, error)
 
 	// Typed proto funcs for product_option/value (for dropdowns)
-	ListProductOptions      func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
-	ListProductOptionValues func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	ListProductOptions       func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
+	ListProductOptionValues  func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	CreateProductOptionValue func(ctx context.Context, req *productoptionvaluepb.CreateProductOptionValueRequest) (*productoptionvaluepb.CreateProductOptionValueResponse, error)
 
 	// Typed proto funcs shared with detail.DetailViewDeps (for table building)
 	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
@@ -153,20 +192,68 @@ func loadOptionSelections(ctx context.Context, deps *DetailViewDeps, productID s
 			continue
 		}
 		oid := o.GetId()
-		name := o.GetName()
+		dataType := o.GetDataType()
+		fieldName := "option_value_" + oid
+		if isFreeType(dataType) {
+			fieldName = "option_free_" + oid
+		}
+		var minV, maxV *float64
+		if o.MinValue != nil {
+			v := o.GetMinValue()
+			minV = &v
+		}
+		if o.MaxValue != nil {
+			v := o.GetMaxValue()
+			maxV = &v
+		}
+		required := o.GetRequired()
+		values := valuesByOption[oid]
+		needsAlert := required && !isFreeType(dataType) && len(values) == 0
+		viewValuesURL := ""
+		if needsAlert {
+			viewValuesURL = route.ResolveURL(deps.Routes.OptionDetailURL, "id", productID, "oid", oid)
+		}
 		selections = append(selections, OptionSelection{
-			OptionID:   oid,
-			OptionName: name,
-			FieldName:  "option_value_" + oid,
-			Values:     valuesByOption[oid],
-			Required:   o.GetRequired(),
+			OptionID:         oid,
+			OptionName:       o.GetName(),
+			DataType:         dataType,
+			FieldName:        fieldName,
+			Values:           values,
+			MinValue:         minV,
+			MaxValue:         maxV,
+			Required:         required,
+			SortOrder:        o.GetSortOrder(),
+			NeedsValuesAlert: needsAlert,
+			ViewValuesURL:    viewValuesURL,
 		})
 	}
+	// Sort by sort_order ASC, name as tiebreaker — keeps the variant form
+	// fields in the same order as the options table on the parent page.
+	sort.SliceStable(selections, func(i, j int) bool {
+		if selections[i].SortOrder != selections[j].SortOrder {
+			return selections[i].SortOrder < selections[j].SortOrder
+		}
+		return selections[i].OptionName < selections[j].OptionName
+	})
 	return selections
 }
 
+// isFreeType reports whether a data_type stores its variant value as raw text/number
+// (no predefined product_option_value list shown in the option detail page).
+func isFreeType(dataType string) bool {
+	return dataType == "free_text" || dataType == "free_number"
+}
+
+// VariantOptionSelection holds the existing option_value link for a variant in
+// edit mode. ValueID is what the <select> uses for select-type options;
+// ValueLabel is what the free-text/free-number inputs prefill from.
+type VariantOptionSelection struct {
+	ValueID    string
+	ValueLabel string
+}
+
 // loadVariantOptionSelections loads existing option value selections for a variant (edit mode).
-func loadVariantOptionSelections(ctx context.Context, deps *DetailViewDeps, variantID string) map[string]string {
+func loadVariantOptionSelections(ctx context.Context, deps *DetailViewDeps, variantID string) map[string]VariantOptionSelection {
 	if deps.ListProductVariantOptions == nil || deps.ListProductOptionValues == nil {
 		return nil
 	}
@@ -177,56 +264,147 @@ func loadVariantOptionSelections(ctx context.Context, deps *DetailViewDeps, vari
 		return nil
 	}
 
-	// Build valueID → optionID lookup
+	// Build valueID → (optionID, label) lookup
 	valResp, err := deps.ListProductOptionValues(ctx, &productoptionvaluepb.ListProductOptionValuesRequest{})
 	if err != nil {
 		log.Printf("Failed to list product option values: %v", err)
 		return nil
 	}
-	valueToOption := make(map[string]string)
+	type valMeta struct {
+		OptionID string
+		Label    string
+	}
+	valueLookup := make(map[string]valMeta)
 	for _, v := range valResp.GetData() {
 		vid := v.GetId()
-		oid := v.GetProductOptionId()
-		if vid != "" && oid != "" {
-			valueToOption[vid] = oid
+		if vid == "" {
+			continue
 		}
+		valueLookup[vid] = valMeta{OptionID: v.GetProductOptionId(), Label: v.GetLabel()}
 	}
 
-	// Map: optionID → selected valueID
-	result := make(map[string]string)
+	result := make(map[string]VariantOptionSelection)
 	for _, vo := range voResp.GetData() {
-		vid := vo.GetProductVariantId()
-		if vid != variantID {
+		if vo.GetProductVariantId() != variantID {
 			continue
 		}
 		valueID := vo.GetProductOptionValueId()
-		if optionID, ok := valueToOption[valueID]; ok {
-			result[optionID] = valueID
+		meta, ok := valueLookup[valueID]
+		if !ok || meta.OptionID == "" {
+			continue
 		}
+		result[meta.OptionID] = VariantOptionSelection{ValueID: valueID, ValueLabel: meta.Label}
 	}
 	return result
 }
 
 // saveVariantOptions creates product_variant_option rows from form selections.
-func saveVariantOptions(ctx context.Context, deps *DetailViewDeps, variantID string, form map[string][]string) {
+//
+// For select-type options (text_list / number_list / color_list) the form
+// carries `option_value_<optionID>` with a chosen product_option_value ID.
+//
+// For free-type options (free_text / free_number) the form carries
+// `option_free_<optionID>` with the raw user input. We upsert a
+// product_option_value row keyed on (option_id, value) — reusing one if it
+// exists (the table has a unique_together on those columns) — and link the
+// variant to that value. This keeps product_variant_option uniform without
+// schema changes.
+func saveVariantOptions(ctx context.Context, deps *DetailViewDeps, variantID string, selections []OptionSelection, form map[string][]string) {
 	if deps.CreateProductVariantOption == nil {
 		return
 	}
+	selByOption := make(map[string]OptionSelection, len(selections))
+	for _, s := range selections {
+		selByOption[s.OptionID] = s
+	}
+
 	for key, vals := range form {
-		if !strings.HasPrefix(key, "option_value_") || len(vals) == 0 || vals[0] == "" {
+		if len(vals) == 0 || vals[0] == "" {
+			continue
+		}
+		raw := vals[0]
+		var optionID, valueID string
+
+		switch {
+		case strings.HasPrefix(key, "option_value_"):
+			optionID = strings.TrimPrefix(key, "option_value_")
+			valueID = raw
+		case strings.HasPrefix(key, "option_free_"):
+			optionID = strings.TrimPrefix(key, "option_free_")
+			sel, ok := selByOption[optionID]
+			if !ok {
+				continue
+			}
+			id, err := upsertFreeOptionValue(ctx, deps, optionID, sel.DataType, raw)
+			if err != nil || id == "" {
+				log.Printf("Failed to upsert free option_value for option %s: %v", optionID, err)
+				continue
+			}
+			valueID = id
+		default:
+			continue
+		}
+
+		if valueID == "" {
 			continue
 		}
 		_, err := deps.CreateProductVariantOption(ctx, &productvariantoptionpb.CreateProductVariantOptionRequest{
 			Data: &productvariantoptionpb.ProductVariantOption{
 				ProductVariantId:     variantID,
-				ProductOptionValueId: vals[0],
+				ProductOptionValueId: valueID,
 				Active:               true,
 			},
 		})
 		if err != nil {
 			log.Printf("Failed to create product_variant_option: %v", err)
 		}
+		_ = optionID // optionID is consumed implicitly via valueID; kept for future audit
 	}
+}
+
+// upsertFreeOptionValue finds-or-creates a product_option_value row for the
+// given option keyed on (option_id, value). For free_number we normalize the
+// value field via float parsing so "5", "5.0", and " 5 " collapse to one row.
+// Returns the value row's ID.
+func upsertFreeOptionValue(ctx context.Context, deps *DetailViewDeps, optionID, dataType, raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	label := value
+	if dataType == "free_number" {
+		// Normalize so float-equivalent inputs share a row.
+		if f, err := strconv.ParseFloat(value, 64); err == nil {
+			value = strconv.FormatFloat(f, 'f', -1, 64)
+		}
+	}
+
+	if deps.ListProductOptionValues != nil {
+		valResp, err := deps.ListProductOptionValues(ctx, &productoptionvaluepb.ListProductOptionValuesRequest{})
+		if err == nil {
+			for _, v := range valResp.GetData() {
+				if v.GetProductOptionId() == optionID && v.GetValue() == value {
+					return v.GetId(), nil
+				}
+			}
+		}
+	}
+
+	if deps.CreateProductOptionValue == nil {
+		return "", nil
+	}
+	resp, err := deps.CreateProductOptionValue(ctx, &productoptionvaluepb.CreateProductOptionValueRequest{
+		Data: &productoptionvaluepb.ProductOptionValue{
+			ProductOptionId: optionID,
+			Label:           label,
+			Value:           value,
+			Active:          true,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if data := resp.GetData(); len(data) > 0 {
+		return data[0].GetId(), nil
+	}
+	return "", nil
 }
 
 // deleteVariantOptions removes all product_variant_option rows for a variant.
@@ -254,14 +432,16 @@ func deleteVariantOptions(ctx context.Context, deps *DetailViewDeps, variantID s
 	}
 }
 
-// validateRequiredOptions checks that all required product options have a value selected.
+// validateRequiredOptions checks that all required product options have a value
+// supplied. The field name (option_value_* vs option_free_*) is already encoded
+// per data type on the OptionSelection, so the check is uniform.
 func validateRequiredOptions(selections []OptionSelection, form map[string][]string) string {
 	for _, sel := range selections {
 		if !sel.Required {
 			continue
 		}
 		vals := form[sel.FieldName]
-		if len(vals) == 0 || vals[0] == "" {
+		if len(vals) == 0 || strings.TrimSpace(vals[0]) == "" {
 			return sel.OptionName + " is required"
 		}
 	}

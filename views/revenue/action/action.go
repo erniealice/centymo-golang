@@ -164,6 +164,13 @@ type Deps struct {
 	// Price lookup for line item (optional — gracefully degrades when nil)
 	FindApplicablePriceList func(ctx context.Context, req *pricelistpb.FindApplicablePriceListRequest) (*pricelistpb.FindApplicablePriceListResponse, error)
 	ListPriceProducts       func(ctx context.Context, req *priceproductpb.ListPriceProductsRequest) (*priceproductpb.ListPriceProductsResponse, error)
+
+	// RecognizeRevenueFromSubscription delegates auto-population of line items
+	// to the espyna use case (skip_header=true mode). When set, the manual
+	// revenue-add flow's autoPopulateLineItems path goes through the use case
+	// — single source of truth across the recognize-drawer + manual flows.
+	// Optional — falls back to the legacy in-line implementation when nil.
+	RecognizeRevenueFromSubscription func(ctx context.Context, req *revenuepb.CreateRevenueWithLineItemsRequest) (*revenuepb.CreateRevenueWithLineItemsResponse, error)
 }
 
 func formLabels(t func(string) string) FormLabels {
@@ -399,17 +406,39 @@ func NewAddAction(deps *Deps) view.View {
 	})
 }
 
-// autoPopulateLineItems creates revenue line items from a subscription's price plan.
-// It fetches the subscription to get the price_plan_id, then looks for associated
-// ProductPricePlan records. If itemized plans exist, each becomes its own line item;
-// otherwise a single bundle line item is created from the PricePlan amount.
-// All errors are logged and silently ignored — this is best-effort enrichment.
+// autoPopulateLineItems creates revenue line items from a subscription's
+// price plan after a manual revenue-add. Delegates to the espyna
+// RecognizeRevenueFromSubscription use case (skip_header=true mode) so the
+// recognize-drawer flow and the manual-revenue-add flow share a single
+// source of truth — see plan §5 Phase C decision (b).
+//
+// Falls back to the legacy in-line implementation when the espyna delegate
+// is not wired (e.g. older deployments where centymo's revenue Deps don't
+// receive RecognizeRevenueFromSubscription).
 func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscriptionID string) {
+	if deps.RecognizeRevenueFromSubscription != nil {
+		subID := subscriptionID
+		revID := revenueID
+		skip := true
+		_, err := deps.RecognizeRevenueFromSubscription(ctx, &revenuepb.CreateRevenueWithLineItemsRequest{
+			Data:              &revenuepb.Revenue{},
+			SubscriptionId:    &subID,
+			SkipHeader:        &skip,
+			ExistingRevenueId: &revID,
+		})
+		if err != nil {
+			log.Printf("autoPopulateLineItems: recognize-revenue use case failed for subscription %s: %v", subscriptionID, err)
+		}
+		return
+	}
+
+	// --- Legacy fallback (kept for compatibility when the espyna delegate is
+	// not wired). The ichizen-os production wiring sets the delegate, so this
+	// path should be exercised only by tests that stub a partial Deps.
 	if deps.ReadSubscription == nil || deps.ListRevenueLineItems == nil {
 		return
 	}
 
-	// 1. Read subscription to get price_plan_id
 	subResp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
 		Data: &subscriptionpb.Subscription{Id: subscriptionID},
 	})
@@ -422,7 +451,6 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 		return
 	}
 
-	// 2. List ProductPricePlans and filter by price_plan_id in Go
 	var items []*productpriceplanpb.ProductPricePlan
 	if deps.ListProductPricePlans != nil {
 		pppResp, err := deps.ListProductPricePlans(ctx, &productpriceplanpb.ListProductPricePlansRequest{})
@@ -438,9 +466,6 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 	}
 
 	if len(items) > 0 && deps.CreateRevenueLineItem != nil {
-		// Model D — ProductPricePlan → ProductPlan → Product. Build a
-		// product_plan_id → product_id map once so we can resolve line item
-		// products without N+1 ReadProductPlan calls.
 		productPlanToProduct := map[string]string{}
 		if deps.ListProductPlans != nil {
 			if ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{}); err == nil {
@@ -452,10 +477,7 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 			}
 		}
 
-		// Itemized mode — one line item per ProductPricePlan
 		for _, ppp := range items {
-			// Prefer the embedded ProductPlan (when the adapter populates it);
-			// fall back to the lookup map resolved above.
 			productID := ""
 			if embed := ppp.GetProductPlan(); embed != nil {
 				productID = embed.GetProductId()
@@ -496,7 +518,6 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 			}
 		}
 	} else if deps.ReadPricePlan != nil && deps.CreateRevenueLineItem != nil {
-		// Bundle mode — single line item from PricePlan.amount
 		ppResp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
 			Data: &priceplanpb.PricePlan{Id: pricePlanID},
 		})

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -14,8 +16,11 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
+	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
+	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
+	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 )
@@ -32,10 +37,25 @@ type DetailViewDeps struct {
 	ListProductPlans       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	ListProducts           func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	ListProductVariants    func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	// ListProductOptions / ListProductOptionValues / ListProductVariantOptions
+	// power the enriched variant label in the catalog-line picker
+	// ("Product — SKU — Red / Large / Cotton"). Optional — when nil the
+	// label falls back to the plain "Product — SKU" form.
+	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
+	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
+	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 	ListProductPricePlans  func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
 	DeleteProductPricePlan func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
+}
+
+// ProductPlanGroup groups catalog-line options by parent product so the
+// drawer's <select> can render <optgroup label="Product Name">…</optgroup>
+// blocks. Within each group, Options is sorted alphabetically by Label.
+type ProductPlanGroup struct {
+	ProductName string
+	Options     []types.SelectOption
 }
 
 // PageData holds the data for the price plan detail page.
@@ -73,7 +93,10 @@ type ProductPricePlanFormData struct {
 	ID                 string
 	PricePlanID        string
 	ProductPlanID      string
-	ProductPlanOptions []types.SelectOption
+	// Grouped by parent product — each ProductPlanGroup renders as an
+	// <optgroup>. Within each group, Options is alphabetically sorted; the
+	// outer slice is sorted by ProductName.
+	ProductPlanOptions []ProductPlanGroup
 	// Read-only display of the selected catalog line's product + variant
 	// (surfaced above the price input).
 	SelectedProductName string
@@ -147,7 +170,7 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			// Model D — load catalog-line options scoped to the PricePlan's parent Plan.
 			planID := loadPricePlanPlanID(ctx, deps, id)
-			productPlanOptions := loadProductPlanOptions(ctx, deps, planID, "")
+			productPlanOptions := loadProductPlanOptions(ctx, deps, planID, id, "")
 			currency := loadPricePlanCurrency(ctx, deps, id)
 			pplLabels := deps.ProductPricePlanLabels.Form
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
@@ -237,7 +260,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			planID := loadPricePlanPlanID(ctx, deps, id)
 			existingProductPlanID := existing.GetProductPlanId()
-			productPlanOptions := loadProductPlanOptions(ctx, deps, planID, existingProductPlanID)
+			productPlanOptions := loadProductPlanOptions(ctx, deps, planID, id, existingProductPlanID)
 			productName, variantName := resolveProductPlanDisplay(ctx, deps, existingProductPlanID)
 			currency := existing.GetBillingCurrency()
 			if currency == "" {
@@ -696,16 +719,34 @@ func loadPricePlanCurrency(ctx context.Context, deps *DetailViewDeps, pricePlanI
 	return c
 }
 
-// loadProductPlanOptions builds a select list of catalog lines (ProductPlan
-// rows) belonging to the given Plan. This is the Model D replacement for the
-// bare product picker — users now pick *which catalog line to price*, not a
-// bare product, so the selector is intrinsically scoped to the plan.
-// Labels render as "Product (SKU)" when the catalog line carries a variant.
-func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, selectedProductPlanID string) []types.SelectOption {
+// loadProductPlanOptions builds a grouped select list of catalog lines
+// (ProductPlan rows) belonging to the given Plan. This is the Model D
+// replacement for the bare product picker — users now pick *which catalog
+// line to price*, not a bare product, so the selector is intrinsically
+// scoped to the plan.
+//
+// The returned []ProductPlanGroup is grouped by parent product (one
+// <optgroup> per product). Within each group, Options is sorted
+// alphabetically by Label (case-insensitive); the outer slice is sorted by
+// ProductName.
+//
+// Label format:
+//   - Product-only line: "Product Name"
+//   - Variant line with option values: "Product Name — SKU — Red / Large / Cotton"
+//     (option values ordered by product_option.sort_order ASC,
+//     joined by " / ")
+//   - Variant line without option-value rows: "Product Name — SKU"
+//
+// Lines that already have a ProductPricePlan row in the current PricePlan
+// (pricePlanID) are excluded so the user cannot double-price the same
+// catalog line. The currently-selected line (selectedProductPlanID, set in
+// edit mode) is always included even if it is "already priced" — otherwise
+// the edit drawer would render with an empty selection.
+func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, pricePlanID, selectedProductPlanID string) []ProductPlanGroup {
 	if deps.ListProductPlans == nil || planID == "" {
 		return nil
 	}
-	// Build product ID → name map
+	// Build product ID → name map.
 	productNames := map[string]string{}
 	if deps.ListProducts != nil {
 		prodResp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
@@ -717,7 +758,11 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, s
 			}
 		}
 	}
-	variantLabels := map[string]string{}
+	// Build variant ID → SKU + active map. We track active state alongside SKU
+	// so the picker can filter out catalog lines pinned to deactivated variants
+	// (with an edit-mode exception so the previously-selected line round-trips).
+	variantSKUs := map[string]string{}
+	variantActive := map[string]bool{}
 	if deps.ListProductVariants != nil {
 		vResp, err := deps.ListProductVariants(ctx, &productvariantpb.ListProductVariantsRequest{})
 		if err == nil {
@@ -729,7 +774,94 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, s
 				if sku == "" {
 					sku = v.GetId()
 				}
-				variantLabels[v.GetId()] = sku
+				variantSKUs[v.GetId()] = sku
+				variantActive[v.GetId()] = v.GetActive()
+			}
+		}
+	}
+
+	// Build variant ID → []labelInOptionSortOrder. Mirrors the variantOptionLabels
+	// map in product/detail/page.go BuildVariantsTable. Two lookups are needed:
+	//   1. product_option_value.id → (label, product_option_id)
+	//   2. product_option.id → sort_order
+	// Then for each product_variant_option row, place the value's label at the
+	// position dictated by its parent option's sort_order.
+	variantOptionLabels := map[string][]string{}
+	if deps.ListProductVariantOptions != nil && deps.ListProductOptionValues != nil {
+		// product_option_id → sort_order
+		optionSortOrder := map[string]int32{}
+		if deps.ListProductOptions != nil {
+			if optResp, err := deps.ListProductOptions(ctx, &productoptionpb.ListProductOptionsRequest{}); err == nil {
+				for _, opt := range optResp.GetData() {
+					if opt != nil {
+						optionSortOrder[opt.GetId()] = opt.GetSortOrder()
+					}
+				}
+			}
+		}
+		// product_option_value.id → (label, product_option_id)
+		type valueRef struct {
+			label    string
+			optionID string
+		}
+		valueByID := map[string]valueRef{}
+		if ovResp, err := deps.ListProductOptionValues(ctx, &productoptionvaluepb.ListProductOptionValuesRequest{}); err == nil {
+			for _, ov := range ovResp.GetData() {
+				if ov != nil {
+					valueByID[ov.GetId()] = valueRef{
+						label:    ov.GetLabel(),
+						optionID: ov.GetProductOptionId(),
+					}
+				}
+			}
+		}
+		// Per-variant tuples (sortOrder, label) so we can sort, then project to []string.
+		type ordered struct {
+			sortOrder int32
+			label     string
+		}
+		acc := map[string][]ordered{}
+		if voResp, err := deps.ListProductVariantOptions(ctx, &productvariantoptionpb.ListProductVariantOptionsRequest{}); err == nil {
+			for _, vo := range voResp.GetData() {
+				if vo == nil {
+					continue
+				}
+				vid := vo.GetProductVariantId()
+				ref, ok := valueByID[vo.GetProductOptionValueId()]
+				if !ok || vid == "" {
+					continue
+				}
+				acc[vid] = append(acc[vid], ordered{
+					sortOrder: optionSortOrder[ref.optionID],
+					label:     ref.label,
+				})
+			}
+		}
+		for vid, list := range acc {
+			sort.SliceStable(list, func(i, j int) bool {
+				return list[i].sortOrder < list[j].sortOrder
+			})
+			labels := make([]string, 0, len(list))
+			for _, o := range list {
+				labels = append(labels, o.label)
+			}
+			variantOptionLabels[vid] = labels
+		}
+	}
+
+	// Build the set of ProductPlan IDs already priced under this PricePlan,
+	// so we can exclude them from the picker. Edit mode preserves the
+	// currently-selected line via the selectedProductPlanID exception.
+	alreadyPriced := map[string]bool{}
+	if deps.ListProductPricePlans != nil && pricePlanID != "" {
+		if pppResp, err := deps.ListProductPricePlans(ctx, &productpriceplanpb.ListProductPricePlansRequest{}); err == nil {
+			for _, item := range pppResp.GetData() {
+				if item == nil || item.GetPricePlanId() != pricePlanID {
+					continue
+				}
+				if ppid := item.GetProductPlanId(); ppid != "" {
+					alreadyPriced[ppid] = true
+				}
 			}
 		}
 	}
@@ -740,31 +872,84 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, s
 		return nil
 	}
 
-	options := []types.SelectOption{}
+	// Group options by parent product name. We keep the underlying productID
+	// in a parallel map so blank product names from missing lookups don't
+	// collide across different products.
+	byProduct := map[string]*ProductPlanGroup{}
 	for _, pp := range ppResp.GetData() {
 		if pp == nil || pp.GetPlanId() != planID {
 			continue
 		}
-		pid := pp.GetProductId()
-		label := productNames[pid]
-		if label == "" {
-			label = pp.GetName()
+		ppID := pp.GetId()
+		isSelected := ppID == selectedProductPlanID
+		// Filter already-priced lines unless this is the line the user is
+		// currently editing.
+		if alreadyPriced[ppID] && !isSelected {
+			continue
 		}
-		if label == "" {
-			label = pid
+		// Filter inactive catalog lines (and lines pinned to a deactivated
+		// variant) so the picker only surfaces things you can actually price
+		// today. Edit mode keeps the selected line visible regardless so the
+		// form round-trips a known-good FK.
+		if !pp.GetActive() && !isSelected {
+			continue
 		}
 		if vid := pp.GetProductVariantId(); vid != "" {
-			if sku := variantLabels[vid]; sku != "" {
-				label = fmt.Sprintf("%s (%s)", label, sku)
+			if active, known := variantActive[vid]; known && !active && !isSelected {
+				continue
 			}
 		}
-		options = append(options, types.SelectOption{
-			Value:    pp.GetId(),
+
+		pid := pp.GetProductId()
+		productName := productNames[pid]
+		if productName == "" {
+			productName = pp.GetName()
+		}
+		if productName == "" {
+			productName = pid
+		}
+
+		// Build the option label per the rules above.
+		label := productName
+		if vid := pp.GetProductVariantId(); vid != "" {
+			sku := variantSKUs[vid]
+			if sku == "" {
+				sku = vid
+			}
+			label = fmt.Sprintf("%s — %s", productName, sku)
+			if values := variantOptionLabels[vid]; len(values) > 0 {
+				label = fmt.Sprintf("%s — %s", label, strings.Join(values, centymo.OptionValueSeparator))
+			}
+		}
+
+		groupKey := pid
+		if groupKey == "" {
+			groupKey = productName
+		}
+		group, ok := byProduct[groupKey]
+		if !ok {
+			group = &ProductPlanGroup{ProductName: productName}
+			byProduct[groupKey] = group
+		}
+		group.Options = append(group.Options, types.SelectOption{
+			Value:    ppID,
 			Label:    label,
-			Selected: pp.GetId() == selectedProductPlanID,
+			Selected: ppID == selectedProductPlanID,
 		})
 	}
-	return options
+
+	// Materialise + sort.
+	groups := make([]ProductPlanGroup, 0, len(byProduct))
+	for _, g := range byProduct {
+		sort.SliceStable(g.Options, func(i, j int) bool {
+			return strings.ToLower(g.Options[i].Label) < strings.ToLower(g.Options[j].Label)
+		})
+		groups = append(groups, *g)
+	}
+	sort.SliceStable(groups, func(i, j int) bool {
+		return strings.ToLower(groups[i].ProductName) < strings.ToLower(groups[j].ProductName)
+	})
+	return groups
 }
 
 // resolveProductPlanDisplay returns the product name + variant SKU (if any)

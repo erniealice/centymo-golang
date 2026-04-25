@@ -251,11 +251,6 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 			amount = int64(math.Round(v * 100))
 		}
 
-		durationValue := int32(0)
-		if v, err := strconv.ParseInt(r.FormValue("duration_value"), 10, 32); err == nil {
-			durationValue = int32(v)
-		}
-
 		currency := r.FormValue("currency")
 
 		ppName := r.FormValue("name")
@@ -266,9 +261,17 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 			Description:     &ppDescription,
 			BillingAmount:   amount,
 			BillingCurrency: currency,
-			DurationValue:   durationValue,
-			DurationUnit:    r.FormValue("duration_unit"),
 			Active:          active,
+		}
+		// Phase 1 legacy dual-write — proto fields now optional; only set when present.
+		if dvStr := r.FormValue("duration_value"); dvStr != "" {
+			if v, err := strconv.ParseInt(dvStr, 10, 32); err == nil {
+				dv32 := int32(v)
+				pp.DurationValue = &dv32
+			}
+		}
+		if du := r.FormValue("duration_unit"); du != "" {
+			pp.DurationUnit = &du
 		}
 		if schedID := r.FormValue("price_schedule_id"); schedID != "" {
 			pp.PriceScheduleId = &schedID
@@ -390,11 +393,6 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			amount = int64(math.Round(v * 100))
 		}
 
-		durationValue := int32(0)
-		if v, err := strconv.ParseInt(r.FormValue("duration_value"), 10, 32); err == nil {
-			durationValue = int32(v)
-		}
-
 		currency := r.FormValue("currency")
 
 		editPPName := r.FormValue("name")
@@ -406,9 +404,17 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			Description:     &editPPDescription,
 			BillingAmount:   amount,
 			BillingCurrency: currency,
-			DurationValue:   durationValue,
-			DurationUnit:    r.FormValue("duration_unit"),
 			Active:          active,
+		}
+		// Phase 1 legacy dual-write — proto fields now optional; only set when present.
+		if dvStr := r.FormValue("duration_value"); dvStr != "" {
+			if v, err := strconv.ParseInt(dvStr, 10, 32); err == nil {
+				dv32 := int32(v)
+				pp.DurationValue = &dv32
+			}
+		}
+		if du := r.FormValue("duration_unit"); du != "" {
+			pp.DurationUnit = &du
 		}
 		if schedID := r.FormValue("price_schedule_id"); schedID != "" {
 			pp.PriceScheduleId = &schedID

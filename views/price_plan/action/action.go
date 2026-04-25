@@ -189,8 +189,6 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
-		// Legacy dual-write: duration_value/unit (Phase 1).
-		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
 		scheduleID := r.FormValue("price_schedule_id")
 		createName := r.FormValue("name")
 		createDescription := r.FormValue("description")
@@ -212,10 +210,20 @@ func NewAddAction(deps *Deps) view.View {
 				Description:     &createDescription,
 				BillingAmount:   parseAmount(r.FormValue("amount")),
 				BillingCurrency: r.FormValue("currency"),
-				DurationValue:   int32(dv),                    // Phase 1 legacy dual-write
-				DurationUnit:    r.FormValue("duration_unit"), // Phase 1 legacy dual-write
 				Active:          active,
 			},
+		}
+		// Legacy dual-write: duration_value/unit (Phase 1) — proto fields are now optional,
+		// so only assign when the form actually carries a non-empty value. BILLING_KIND_ONE_TIME
+		// hides the cycle row entirely; the resulting nil pointer maps to a NULL column.
+		if dvStr := r.FormValue("duration_value"); dvStr != "" {
+			if parsed, err := strconv.ParseInt(dvStr, 10, 32); err == nil {
+				dv32 := int32(parsed)
+				req.Data.DurationValue = &dv32
+			}
+		}
+		if du := r.FormValue("duration_unit"); du != "" {
+			req.Data.DurationUnit = &du
 		}
 		if scheduleID != "" {
 			req.Data.PriceScheduleId = &scheduleID
@@ -330,8 +338,6 @@ func NewEditAction(deps *Deps) view.View {
 		}
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
-		// Legacy dual-write: duration_value/unit (Phase 1).
-		dv, _ := strconv.ParseInt(r.FormValue("duration_value"), 10, 32)
 		scheduleID := r.FormValue("price_schedule_id")
 		editName := r.FormValue("name")
 		editDescription := r.FormValue("description")
@@ -354,10 +360,19 @@ func NewEditAction(deps *Deps) view.View {
 				Description:     &editDescription,
 				BillingAmount:   parseAmount(r.FormValue("amount")),
 				BillingCurrency: r.FormValue("currency"),
-				DurationValue:   int32(dv),                    // Phase 1 legacy dual-write
-				DurationUnit:    r.FormValue("duration_unit"), // Phase 1 legacy dual-write
 				Active:          active,
 			},
+		}
+		// Legacy dual-write: duration_value/unit (Phase 1) — proto fields are now optional,
+		// so only assign when the form actually carries a non-empty value.
+		if dvStr := r.FormValue("duration_value"); dvStr != "" {
+			if parsed, err := strconv.ParseInt(dvStr, 10, 32); err == nil {
+				dv32 := int32(parsed)
+				req.Data.DurationValue = &dv32
+			}
+		}
+		if du := r.FormValue("duration_unit"); du != "" {
+			req.Data.DurationUnit = &du
 		}
 		if scheduleID != "" {
 			req.Data.PriceScheduleId = &scheduleID
@@ -463,8 +478,8 @@ func NewSetStatusAction(deps *Deps) view.View {
 			Data: &priceplanpb.PricePlan{
 				Id: id, PlanId: record.GetPlanId(), Name: &statusName,
 				Description: &statusDescription, BillingAmount: record.GetBillingAmount(),
-				BillingCurrency: record.GetBillingCurrency(), DurationValue: record.GetDurationValue(),
-				DurationUnit: record.GetDurationUnit(), Active: status == "active",
+				BillingCurrency: record.GetBillingCurrency(), DurationValue: record.DurationValue,
+				DurationUnit: record.DurationUnit, Active: status == "active",
 				PriceScheduleId: record.PriceScheduleId,
 			},
 		})
@@ -499,8 +514,8 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				Data: &priceplanpb.PricePlan{
 					Id: id, PlanId: record.GetPlanId(), Name: &bulkName,
 					Description: &bulkDescription, BillingAmount: record.GetBillingAmount(),
-					BillingCurrency: record.GetBillingCurrency(), DurationValue: record.GetDurationValue(),
-					DurationUnit: record.GetDurationUnit(), Active: status == "active",
+					BillingCurrency: record.GetBillingCurrency(), DurationValue: record.DurationValue,
+					DurationUnit: record.DurationUnit, Active: status == "active",
 					PriceScheduleId: record.PriceScheduleId,
 				},
 			})
