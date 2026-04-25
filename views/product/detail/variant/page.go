@@ -22,8 +22,13 @@ import (
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
+	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 )
 
 // OptionEntry represents a name-value pair for a variant's option selection.
@@ -50,6 +55,8 @@ type VariantPageData struct {
 	OptionEntries []OptionEntry
 	// Stock tab
 	StockTable *types.TableConfig
+	// Pricing tab
+	PricingTable *types.TableConfig
 	// Images tab
 	Images []ImageData
 	// Attachments tab
@@ -166,6 +173,8 @@ func NewPageView(deps *DetailViewDeps) view.View {
 
 		// Load tab-specific data
 		switch activeTab {
+		case "pricing":
+			pageData.PricingTable = buildPricingTable(ctx, deps, id, vid)
 		case "stock":
 			pageData.StockTable = buildStockTable(ctx, deps, id, vid)
 		case "images":
@@ -257,6 +266,8 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		switch tab {
 		case "info":
 			pageData.OptionEntries = loadVariantOptionEntries(ctx, deps, id, vid)
+		case "pricing":
+			pageData.PricingTable = buildPricingTable(ctx, deps, id, vid)
 		case "stock":
 			pageData.StockTable = buildStockTable(ctx, deps, id, vid)
 		case "images":
@@ -478,6 +489,243 @@ func buildStockTable(ctx context.Context, deps *DetailViewDeps, productID, varia
 		EmptyState: types.TableEmptyState{
 			Title:   l.Variant.NoStock,
 			Message: l.Variant.NoStockMsg,
+		},
+	}
+	types.ApplyTableSettings(tableConfig)
+
+	return tableConfig
+}
+
+// buildPricingTable builds the pricing table for the variant detail page.
+// It joins: product_plan → product_price_plan → price_plan → price_schedule → plan.
+// Only product_plan rows where both product_id and product_variant_id match are included.
+func buildPricingTable(ctx context.Context, deps *DetailViewDeps, productID, variantID string) *types.TableConfig {
+	l := deps.Labels
+
+	columns := []types.TableColumn{
+		{Key: "start", Label: "Start Date", Sortable: true},
+		{Key: "end", Label: "End Date", Sortable: true},
+		{Key: "package", Label: "Package", Sortable: true},
+		{Key: "rate_card", Label: "Rate Card", Sortable: true},
+		{Key: "amount", Label: "Amount", Sortable: true, WidthClass: "col-2xl"},
+	}
+
+	emptyTitle := l.Detail.VariantPricing
+	if emptyTitle == "" {
+		emptyTitle = "No Pricing"
+	}
+	emptyMsg := "No pricing plans have been set for this variant yet."
+
+	noData := func() *types.TableConfig {
+		return &types.TableConfig{
+			ID:      "variant-pricing-table",
+			Columns: columns,
+			Rows:    []types.TableRow{},
+			Labels:  deps.TableLabels,
+			EmptyState: types.TableEmptyState{
+				Title:   emptyTitle,
+				Message: emptyMsg,
+			},
+		}
+	}
+
+	// Guard: all five list deps required.
+	if deps.ListProductPlans == nil || deps.ListProductPricePlans == nil ||
+		deps.ListPricePlans == nil || deps.ListPriceSchedules == nil || deps.ListPlans == nil {
+		return noData()
+	}
+
+	// Step 1: find product_plan rows for this (product, variant) pair.
+	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+	if err != nil {
+		log.Printf("buildPricingTable: ListProductPlans error: %v", err)
+		return noData()
+	}
+	productPlanIDs := map[string]bool{}
+	for _, pp := range ppResp.GetData() {
+		if pp.GetProductId() == productID && pp.GetProductVariantId() == variantID {
+			productPlanIDs[pp.GetId()] = true
+		}
+	}
+	if len(productPlanIDs) == 0 {
+		return noData()
+	}
+
+	// Step 2: find product_price_plan rows pointing at those product_plan IDs.
+	pppResp, err := deps.ListProductPricePlans(ctx, &productpriceplanpb.ListProductPricePlansRequest{})
+	if err != nil {
+		log.Printf("buildPricingTable: ListProductPricePlans error: %v", err)
+		return noData()
+	}
+	pricePlanIDs := map[string]bool{}
+	for _, ppp := range pppResp.GetData() {
+		if productPlanIDs[ppp.GetProductPlanId()] {
+			pricePlanIDs[ppp.GetPricePlanId()] = true
+		}
+	}
+	if len(pricePlanIDs) == 0 {
+		return noData()
+	}
+
+	// Step 3: load price_plan rows.
+	plResp, err := deps.ListPricePlans(ctx, &priceplanpb.ListPricePlansRequest{})
+	if err != nil {
+		log.Printf("buildPricingTable: ListPricePlans error: %v", err)
+		return noData()
+	}
+	type pricePlanMeta struct {
+		name            string
+		billingAmount   int64
+		billingCurrency string
+		planID          string
+		scheduleID      string
+	}
+	relevantPlans := map[string]pricePlanMeta{}
+	scheduleIDs := map[string]bool{}
+	planIDs := map[string]bool{}
+	for _, pp := range plResp.GetData() {
+		if !pricePlanIDs[pp.GetId()] {
+			continue
+		}
+		n := ""
+		if pp.Name != nil {
+			n = pp.GetName()
+		}
+		relevantPlans[pp.GetId()] = pricePlanMeta{
+			name:            n,
+			billingAmount:   pp.GetBillingAmount(),
+			billingCurrency: pp.GetBillingCurrency(),
+			planID:          pp.GetPlanId(),
+			scheduleID:      pp.GetPriceScheduleId(),
+		}
+		if pp.GetPriceScheduleId() != "" {
+			scheduleIDs[pp.GetPriceScheduleId()] = true
+		}
+		if pp.GetPlanId() != "" {
+			planIDs[pp.GetPlanId()] = true
+		}
+	}
+
+	// Step 4: load price_schedule rows for date range + rate-card name.
+	schedResp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
+	if err != nil {
+		log.Printf("buildPricingTable: ListPriceSchedules error: %v", err)
+		return noData()
+	}
+	type scheduleMeta struct {
+		name      string
+		dateStart string
+		dateEnd   string
+	}
+	scheduleByID := map[string]scheduleMeta{}
+	for _, s := range schedResp.GetData() {
+		if !scheduleIDs[s.GetId()] {
+			continue
+		}
+		startStr := ""
+		if ts := s.GetDateTimeStart(); ts != nil {
+			startStr = ts.AsTime().Format("2006-01-02")
+		}
+		endStr := "—" // em-dash for null
+		if ts := s.GetDateTimeEnd(); ts != nil {
+			endStr = ts.AsTime().Format("2006-01-02")
+		}
+		scheduleByID[s.GetId()] = scheduleMeta{
+			name:      s.GetName(),
+			dateStart: startStr,
+			dateEnd:   endStr,
+		}
+	}
+
+	// Step 5: load plan rows for package name fallback.
+	planResp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
+	if err != nil {
+		log.Printf("buildPricingTable: ListPlans error: %v", err)
+		return noData()
+	}
+	planNameByID := map[string]string{}
+	for _, p := range planResp.GetData() {
+		if planIDs[p.GetId()] {
+			planNameByID[p.GetId()] = p.GetName()
+		}
+	}
+
+	// Step 6: build table rows, one per relevant price_plan.
+	type pricingRow struct {
+		dateStart string
+		dateEnd   string
+		pkg       string
+		rateCard  string
+		amount    string
+	}
+	var rows []pricingRow
+	for ppID, meta := range relevantPlans {
+		_ = ppID
+		sched := scheduleByID[meta.scheduleID]
+
+		pkgName := meta.name
+		if pkgName == "" {
+			pkgName = planNameByID[meta.planID]
+		}
+
+		rateCardName := sched.name
+		if rateCardName == "" {
+			rateCardName = meta.scheduleID
+		}
+
+		currency := meta.billingCurrency
+		if currency == "" {
+			currency = "PHP"
+		}
+		amountStr := detail.FormatPrice(currency, float64(meta.billingAmount)/100.0)
+
+		rows = append(rows, pricingRow{
+			dateStart: sched.dateStart,
+			dateEnd:   sched.dateEnd,
+			pkg:       pkgName,
+			rateCard:  rateCardName,
+			amount:    amountStr,
+		})
+	}
+
+	// Sort by start date ASC for predictability.
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i].dateStart < rows[j].dateStart
+	})
+
+	tableRows := make([]types.TableRow, 0, len(rows))
+	for _, r := range rows {
+		tableRows = append(tableRows, types.TableRow{
+			Cells: []types.TableCell{
+				{Type: "text", Value: r.dateStart},
+				{Type: "text", Value: r.dateEnd},
+				{Type: "text", Value: r.pkg},
+				{Type: "text", Value: r.rateCard},
+				{Type: "text", Value: r.amount},
+			},
+		})
+	}
+
+	types.ApplyColumnStyles(columns, tableRows)
+
+	tableConfig := &types.TableConfig{
+		ID:                   "variant-pricing-table",
+		Columns:              columns,
+		Rows:                 tableRows,
+		ShowSearch:           false,
+		ShowActions:          false,
+		ShowFilters:          false,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowExport:           false,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "start",
+		DefaultSortDirection: "asc",
+		Labels:               deps.TableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   emptyTitle,
+			Message: emptyMsg,
 		},
 	}
 	types.ApplyTableSettings(tableConfig)

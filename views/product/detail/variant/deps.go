@@ -21,9 +21,14 @@ import (
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
+	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	productvariantimagepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_image"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 )
 
 // VariantFormLabels holds labels for the variant drawer form template.
@@ -132,6 +137,18 @@ type DetailViewDeps struct {
 	ListProductVariantImages  func(ctx context.Context, req *productvariantimagepb.ListProductVariantImagesRequest) (*productvariantimagepb.ListProductVariantImagesResponse, error)
 	CreateProductVariantImage func(ctx context.Context, req *productvariantimagepb.CreateProductVariantImageRequest) (*productvariantimagepb.CreateProductVariantImageResponse, error)
 	DeleteProductVariantImage func(ctx context.Context, req *productvariantimagepb.DeleteProductVariantImageRequest) (*productvariantimagepb.DeleteProductVariantImageResponse, error)
+
+	// Pricing (for the Pricing tab on the variant detail page).
+	// Join path: product_plan (filtered by product_id + variant_id)
+	//   → product_price_plan (filtered by product_plan_id)
+	//     → price_plan (for amount/currency/name)
+	//       → price_schedule (for date range + rate-card name)
+	//         → plan (for fallback package name)
+	ListProductPlans     func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	ListPricePlans       func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListPriceSchedules   func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	ListPlans            func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 
 	// Storage uploader (for file content → object storage)
 	UploadImage func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
