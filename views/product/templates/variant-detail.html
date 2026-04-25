@@ -78,14 +78,18 @@
 {{end}}
 
 {{/* =============================================
-     TAB PARTIAL: Pricing (placeholder)
+     TAB PARTIAL: Pricing
      ============================================= */}}
 {{define "variant-tab-pricing"}}
-<div class="tab-scroll">
-    <div class="coming-soon-panel">
-        <div class="coming-soon-title">{{.Labels.Detail.VariantPricing}}</div>
-        <p class="coming-soon-text">{{.Labels.Detail.VariantPricingDesc}}</p>
-    </div>
+<div class="tab-scroll tab-scroll--table">
+    {{if .PricingTable}}
+        {{template "table-card" .PricingTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">{{.Labels.Detail.VariantPricing}}</div>
+            <p class="coming-soon-text">{{.Labels.Detail.VariantPricingDesc}}</p>
+        </div>
+    {{end}}
 </div>
 {{end}}
 

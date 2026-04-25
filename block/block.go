@@ -707,6 +707,26 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					productDeps.ListInventorySerials = uc.ListInventorySerials.Execute
 				}
 			}
+			// Pricing deps (for variant detail Pricing tab).
+			if useCases.Product != nil {
+				if uc := useCases.Product.ProductPlan; uc != nil {
+					productDeps.ListProductPlans = uc.ListProductPlans.Execute
+				}
+			}
+			if useCases.Subscription != nil {
+				if uc := useCases.Subscription.ProductPricePlan; uc != nil {
+					productDeps.ListProductPricePlans = uc.ListProductPricePlans.Execute
+				}
+				if uc := useCases.Subscription.PricePlan; uc != nil {
+					productDeps.ListPricePlans = uc.ListPricePlans.Execute
+				}
+				if uc := useCases.Subscription.PriceSchedule; uc != nil {
+					productDeps.ListPriceSchedules = uc.ListPriceSchedules.Execute
+				}
+				if uc := useCases.Subscription.Plan; uc != nil {
+					productDeps.ListPlans = uc.ListPlans.Execute
+				}
+			}
 			productmod.NewModule(productDeps).RegisterRoutes(ctx.Routes)
 
 			// Inventory-flavoured product mount. Reuses the same product module
