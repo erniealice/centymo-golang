@@ -24,9 +24,14 @@ import (
 	productlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_line"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
+	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	productvariantimagepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_image"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
 )
@@ -143,6 +148,14 @@ type ModuleDeps struct {
 
 	// Storage uploader
 	UploadImage func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error
+
+	// Pricing (for variant detail Pricing tab).
+	// Join path: product_plan → product_price_plan → price_plan → price_schedule → plan.
+	ListProductPlans      func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	ListPricePlans        func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListPriceSchedules    func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	ListPlans             func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 
 	// Attachment operations
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
@@ -277,6 +290,12 @@ func NewModule(deps *ModuleDeps) *Module {
 		DeleteProductVariantImage:  deps.DeleteProductVariantImage,
 		UploadImage:                deps.UploadImage,
 		PermissionEntity:           deps.PermissionEntity,
+		// Pricing tab deps
+		ListProductPlans:      deps.ListProductPlans,
+		ListProductPricePlans: deps.ListProductPricePlans,
+		ListPricePlans:        deps.ListPricePlans,
+		ListPriceSchedules:    deps.ListPriceSchedules,
+		ListPlans:             deps.ListPlans,
 		AttachmentOps: attachment.AttachmentOps{
 			UploadFile:       deps.UploadFile,
 			ListAttachments:  deps.ListAttachments,
