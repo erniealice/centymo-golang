@@ -41,11 +41,152 @@ var subscriptionAllowedSortCols = []string{
 
 var subscriptionSearchFields = []string{"name"}
 
-// NewView creates the subscription list view.
+// buildTableConfig fetches subscription data and builds the table configuration.
+// Shared by NewView (full page render) and NewTableView (HTMX partial swap target).
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+	perms := view.GetUserPermissions(ctx)
+
+	listParams := espynahttp.ToListParams(p, subscriptionSearchFields)
+
+	// Inject status filter for server-side pagination
+	activeValue := status != "inactive"
+	if listParams.Filters == nil {
+		listParams.Filters = &commonpb.FilterRequest{}
+	}
+	listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+		Field: "s.active",
+		FilterType: &commonpb.TypedFilter_BooleanFilter{
+			BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
+		},
+	})
+
+	resp, err := deps.GetSubscriptionListPageData(ctx, &subscriptionpb.GetSubscriptionListPageDataRequest{
+		Search:     listParams.Search,
+		Filters:    listParams.Filters,
+		Sort:       listParams.Sort,
+		Pagination: listParams.Pagination,
+	})
+	if err != nil {
+		log.Printf("Failed to list subscriptions: %v", err)
+		return nil, fmt.Errorf("failed to load subscriptions: %w", err)
+	}
+
+	// Collect IDs and check which are in use (referenced by dependent tables).
+	var inUseIDs map[string]bool
+	if deps.GetInUseIDs != nil {
+		var itemIDs []string
+		for _, s := range resp.GetSubscriptionList() {
+			itemIDs = append(itemIDs, s.GetId())
+		}
+		inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+	}
+
+	l := deps.Labels
+	columns := subscriptionColumns(l)
+	rows := buildTableRows(ctx, resp.GetSubscriptionList(), status, l, deps.Routes, inUseIDs, perms)
+	types.ApplyColumnStyles(columns, rows)
+
+	// data-refresh-url MUST point at the table-only endpoint so HTMX swaps
+	// just the table-card partial; pointing at the full /app/list URL would
+	// re-render the entire page (including app-shell) and confuse the swap.
+	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
+	if deps.Routes.TableURL == "" {
+		refreshURL = route.ResolveURL(deps.Routes.ListURL, "status", status)
+	}
+
+	// Build ServerPagination
+	totalRows := int(resp.GetPagination().GetTotalItems())
+	sp := &types.ServerPagination{
+		Enabled:       true,
+		Mode:          "offset",
+		CurrentPage:   p.Page,
+		PageSize:      p.PageSize,
+		TotalRows:     totalRows,
+		TotalPages:    int(math.Ceil(float64(totalRows) / float64(p.PageSize))),
+		SearchQuery:   p.Search,
+		SortColumn:    p.SortColumn,
+		SortDirection: p.SortDir,
+		FiltersJSON:   p.FiltersRaw,
+		PaginationURL: refreshURL,
+	}
+	sp.BuildDisplay()
+
+	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg.Actions = []types.BulkAction{
+		{
+			Key:              "activate",
+			Label:            l.Status.Activate,
+			Icon:             "icon-check-circle",
+			Variant:          "success",
+			Endpoint:         deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON:  `{"target_status":"active"}`,
+			ConfirmTitle:     l.Confirm.BulkActivate,
+			ConfirmMessage:   l.Confirm.BulkActivateMessage,
+			RequiresDataAttr: "activatable",
+		},
+		{
+			Key:              "deactivate",
+			Label:            l.Status.Deactivate,
+			Icon:             "icon-x-circle",
+			Variant:          "warning",
+			Endpoint:         deps.Routes.BulkSetStatusURL,
+			ExtraParamsJSON:  `{"target_status":"inactive"}`,
+			ConfirmTitle:     l.Confirm.BulkDeactivate,
+			ConfirmMessage:   l.Confirm.BulkDeactivateMessage,
+			RequiresDataAttr: "deactivatable",
+		},
+		{
+			Key:              "delete",
+			Label:            l.Bulk.Delete,
+			Icon:             "icon-trash-2",
+			Variant:          "danger",
+			Endpoint:         deps.Routes.BulkDeleteURL,
+			ConfirmTitle:     l.Confirm.BulkDelete,
+			ConfirmMessage:   l.Confirm.BulkDeleteMessage,
+			RequiresDataAttr: "deletable",
+		},
+	}
+
+	tableConfig := &types.TableConfig{
+		ID:                   "subscriptions-table",
+		RefreshURL:           refreshURL,
+		Columns:              columns,
+		Rows:                 rows,
+		ShowSearch:           true,
+		ShowActions:          true,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "customer",
+		DefaultSortDirection: "asc",
+		Labels:               deps.TableLabels,
+		EmptyState: types.TableEmptyState{
+			Title:   l.Empty.Title,
+			Message: l.Empty.Message,
+		},
+		ServerPagination: sp,
+		BulkActions:      &bulkCfg,
+	}
+	// Add button is only meaningful on the active list — new engagements
+	// always start active. Mirrors the plan list's behavior at
+	// /app/services/list/inactive.
+	if status == "active" {
+		tableConfig.PrimaryAction = &types.PrimaryAction{
+			Label:           l.Buttons.AddSubscription,
+			ActionURL:       deps.Routes.AddURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can("subscription", "create"),
+			DisabledTooltip: l.Errors.NoPermission,
+		}
+	}
+	types.ApplyTableSettings(tableConfig)
+	return tableConfig, nil
+}
+
+// NewView creates the subscription list view (full page).
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
-
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
@@ -56,136 +197,12 @@ func NewView(deps *ListViewDeps) view.View {
 			return view.Error(err)
 		}
 
-		listParams := espynahttp.ToListParams(p, subscriptionSearchFields)
-
-		// Inject status filter for server-side pagination
-		activeValue := status != "inactive"
-		if listParams.Filters == nil {
-			listParams.Filters = &commonpb.FilterRequest{}
-		}
-		listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
-			Field: "s.active",
-			FilterType: &commonpb.TypedFilter_BooleanFilter{
-				BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
-			},
-		})
-
-		resp, err := deps.GetSubscriptionListPageData(ctx, &subscriptionpb.GetSubscriptionListPageDataRequest{
-			Search:     listParams.Search,
-			Filters:    listParams.Filters,
-			Sort:       listParams.Sort,
-			Pagination: listParams.Pagination,
-		})
+		tableConfig, err := buildTableConfig(ctx, deps, status, p)
 		if err != nil {
-			log.Printf("Failed to list subscriptions: %v", err)
-			return view.Error(fmt.Errorf("failed to load subscriptions: %w", err))
-		}
-
-		// Collect IDs and check which are in use (referenced by dependent tables).
-		var inUseIDs map[string]bool
-		if deps.GetInUseIDs != nil {
-			var itemIDs []string
-			for _, s := range resp.GetSubscriptionList() {
-				itemIDs = append(itemIDs, s.GetId())
-			}
-			inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
+			return view.Error(err)
 		}
 
 		l := deps.Labels
-		columns := subscriptionColumns(l)
-		rows := buildTableRows(ctx, resp.GetSubscriptionList(), status, l, deps.Routes, inUseIDs, perms)
-		types.ApplyColumnStyles(columns, rows)
-
-		refreshURL := route.ResolveURL(deps.Routes.ListURL, "status", status)
-
-		// Build ServerPagination
-		totalRows := int(resp.GetPagination().GetTotalItems())
-		sp := &types.ServerPagination{
-			Enabled:       true,
-			Mode:          "offset",
-			CurrentPage:   p.Page,
-			PageSize:      p.PageSize,
-			TotalRows:     totalRows,
-			TotalPages:    int(math.Ceil(float64(totalRows) / float64(p.PageSize))),
-			SearchQuery:   p.Search,
-			SortColumn:    p.SortColumn,
-			SortDirection: p.SortDir,
-			FiltersJSON:   p.FiltersRaw,
-			PaginationURL: refreshURL,
-		}
-		sp.BuildDisplay()
-
-		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = []types.BulkAction{
-			{
-				Key:              "activate",
-				Label:            l.Status.Activate,
-				Icon:             "icon-check-circle",
-				Variant:          "success",
-				Endpoint:         deps.Routes.BulkSetStatusURL,
-				ExtraParamsJSON:  `{"target_status":"active"}`,
-				ConfirmTitle:     l.Confirm.BulkActivate,
-				ConfirmMessage:   l.Confirm.BulkActivateMessage,
-				RequiresDataAttr: "activatable",
-			},
-			{
-				Key:              "deactivate",
-				Label:            l.Status.Deactivate,
-				Icon:             "icon-x-circle",
-				Variant:          "warning",
-				Endpoint:         deps.Routes.BulkSetStatusURL,
-				ExtraParamsJSON:  `{"target_status":"inactive"}`,
-				ConfirmTitle:     l.Confirm.BulkDeactivate,
-				ConfirmMessage:   l.Confirm.BulkDeactivateMessage,
-				RequiresDataAttr: "deactivatable",
-			},
-			{
-				Key:              "delete",
-				Label:            l.Bulk.Delete,
-				Icon:             "icon-trash-2",
-				Variant:          "danger",
-				Endpoint:         deps.Routes.BulkDeleteURL,
-				ConfirmTitle:     l.Confirm.BulkDelete,
-				ConfirmMessage:   l.Confirm.BulkDeleteMessage,
-				RequiresDataAttr: "deletable",
-			},
-		}
-
-		tableConfig := &types.TableConfig{
-			ID:                   "subscriptions-table",
-			RefreshURL:           refreshURL,
-			Columns:              columns,
-			Rows:                 rows,
-			ShowSearch:           true,
-			ShowActions:          true,
-			ShowSort:             true,
-			ShowColumns:          true,
-			ShowDensity:          true,
-			ShowEntries:          true,
-			DefaultSortColumn:    "customer",
-			DefaultSortDirection: "asc",
-			Labels:               deps.TableLabels,
-			EmptyState: types.TableEmptyState{
-				Title:   l.Empty.Title,
-				Message: l.Empty.Message,
-			},
-			ServerPagination: sp,
-			BulkActions:      &bulkCfg,
-		}
-		// Add button is only meaningful on the active list — new engagements
-		// always start active. Mirrors the plan list's behavior at
-		// /app/services/list/inactive.
-		if status == "active" {
-			tableConfig.PrimaryAction = &types.PrimaryAction{
-				Label:           l.Buttons.AddSubscription,
-				ActionURL:       deps.Routes.AddURL,
-				Icon:            "icon-plus",
-				Disabled:        !perms.Can("subscription", "create"),
-				DisabledTooltip: l.Errors.NoPermission,
-			}
-		}
-		types.ApplyTableSettings(tableConfig)
-
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
@@ -203,6 +220,29 @@ func NewView(deps *ListViewDeps) view.View {
 		}
 
 		return view.OK("subscription-list", pageData)
+	})
+}
+
+// NewTableView returns ONLY the table-card partial. Used as the data-refresh-url
+// after row/bulk activate/deactivate/delete so HTMX swaps just the table.
+func NewTableView(deps *ListViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		status := viewCtx.Request.PathValue("status")
+		if status == "" {
+			status = "active"
+		}
+
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, subscriptionAllowedSortCols)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		if err != nil {
+			return view.Error(err)
+		}
+
+		return view.OK("table-card", tableConfig)
 	})
 }
 

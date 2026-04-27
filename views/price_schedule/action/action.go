@@ -12,6 +12,7 @@ import (
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -56,8 +57,19 @@ type FormData struct {
 	SelectedLocationID    string
 	SelectedLocationLabel string
 	LocationOptions       []map[string]any
-	Labels                centymo.PriceScheduleFormLabels
-	CommonLabels          any
+
+	// 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
+	ClientID            string
+	ClientLabel         string
+	ClientOptions       []map[string]any
+	SearchClientURL     string
+	// SuggestNameURL is the GET endpoint that the Client picker hits via
+	// HTMX to refresh the Name input with the per-tier derived name
+	// "{ClientName} - {customClientPriceScheduleLabelSuffix}".
+	SuggestNameURL string
+
+	Labels       centymo.PriceScheduleFormLabels
+	CommonLabels any
 }
 
 type Deps struct {
@@ -69,6 +81,10 @@ type Deps struct {
 	DeletePriceSchedule      func(ctx context.Context, req *priceschedulepb.DeletePriceScheduleRequest) (*priceschedulepb.DeletePriceScheduleResponse, error)
 	ListLocations            func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
 	GetPriceScheduleInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
+	ListClients      func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	SearchClientsURL string
 }
 
 func loadLocations(ctx context.Context, deps *Deps) []*LocationOption {
@@ -107,6 +123,85 @@ func findLocationLabel(locations []*LocationOption, id string) string {
 	return ""
 }
 
+// loadClientOptions fetches the workspace's clients and converts them into
+// auto-complete options. Returns nil when the dep is unwired.
+//
+// 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
+func loadClientOptions(ctx context.Context, deps *Deps, selectedID string) []map[string]any {
+	if deps.ListClients == nil {
+		return nil
+	}
+	resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		return nil
+	}
+	opts := make([]map[string]any, 0, len(resp.GetData()))
+	for _, c := range resp.GetData() {
+		label := c.GetName()
+		if label == "" {
+			if u := c.GetUser(); u != nil {
+				label = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			}
+		}
+		if label == "" {
+			label = c.GetId()
+		}
+		opts = append(opts, map[string]any{
+			"Value":    c.GetId(),
+			"Label":    label,
+			"Selected": c.GetId() == selectedID,
+		})
+	}
+	return opts
+}
+
+// resolveClientName looks up a client_id in the workspace and returns its
+// display name. Falls back to the rep full name and finally the bare ID,
+// mirroring resolveClientBreadcrumb in the subscription detail view.
+func resolveClientName(ctx context.Context, deps *Deps, clientID string) string {
+	if clientID == "" || deps.ListClients == nil {
+		return ""
+	}
+	resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		return clientID
+	}
+	for _, c := range resp.GetData() {
+		if c.GetId() != clientID {
+			continue
+		}
+		if name := c.GetName(); name != "" {
+			return name
+		}
+		if u := c.GetUser(); u != nil {
+			full := strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			if full != "" {
+				return full
+			}
+		}
+		return clientID
+	}
+	return clientID
+}
+
+// buildDerivedScheduleName produces "{ClientName} - {customClientPriceScheduleLabelSuffix}"
+// per plan §4.4.1. Empty client name short-circuits to the suffix alone, and
+// empty suffix short-circuits to the client name alone.
+func buildDerivedScheduleName(clientName, suffix string) string {
+	clientName = strings.TrimSpace(clientName)
+	suffix = strings.TrimSpace(suffix)
+	if clientName == "" && suffix == "" {
+		return ""
+	}
+	if suffix == "" {
+		return clientName
+	}
+	if clientName == "" {
+		return suffix
+	}
+	return clientName + " - " + suffix
+}
+
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
@@ -114,12 +209,40 @@ func NewAddAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if viewCtx.Request.Method == http.MethodGet {
+			// 2026-04-27 plan-client-scope plan §4.4.1 — when the request
+			// asks for a name suggestion, render only the Name input partial
+			// so the schedule-drawer's HTMX picker swap can update the name
+			// without reloading the entire form.
+			if viewCtx.Request.URL.Query().Get("suggest_name") == "1" {
+				clientID := viewCtx.Request.URL.Query().Get("client_id")
+				clientName := resolveClientName(ctx, deps, clientID)
+				derived := buildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
+				return view.OK("price-schedule-name-suggest", map[string]any{
+					"Value":           derived,
+					"NamePlaceholder": deps.Labels.Form.NamePlaceholder,
+				})
+			}
+
 			locations := loadLocations(ctx, deps)
+			// 2026-04-27 plan-client-scope plan §4.4.1 / §6.7 — Client picker
+			// + name pre-fill via HTMX swap when a client is selected.
+			pinnedClientID := viewCtx.Request.URL.Query().Get("client_id")
+			clientLabel := resolveClientName(ctx, deps, pinnedClientID)
+			defaultName := ""
+			if pinnedClientID != "" {
+				defaultName = buildDerivedScheduleName(clientLabel, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
+			}
 			return view.OK("price-schedule-drawer-form", &FormData{
 				FormAction:      deps.Routes.AddURL,
 				Active:          true,
+				Name:            defaultName,
 				Locations:       locations,
 				LocationOptions: buildLocationAutoCompleteOptions(locations, ""),
+				ClientID:        pinnedClientID,
+				ClientLabel:     clientLabel,
+				ClientOptions:   loadClientOptions(ctx, deps, pinnedClientID),
+				SearchClientURL: deps.SearchClientsURL,
+				SuggestNameURL:  deps.Routes.AddURL + "?suggest_name=1",
 				Labels:          deps.Labels.Form,
 			})
 		}
@@ -130,6 +253,7 @@ func NewAddAction(deps *Deps) view.View {
 		active := r.FormValue("active") == "true"
 		locationID := r.FormValue("location_id")
 		description := r.FormValue("description")
+		clientID := strings.TrimSpace(r.FormValue("client_id"))
 		tz := pyezatypes.LocationFromContext(ctx)
 		req := &priceschedulepb.CreatePriceScheduleRequest{
 			Data: &priceschedulepb.PriceSchedule{
@@ -145,11 +269,32 @@ func NewAddAction(deps *Deps) view.View {
 		if locationID != "" {
 			req.Data.LocationId = &locationID
 		}
+		if clientID != "" {
+			req.Data.ClientId = &clientID
+		}
 		if _, err := deps.CreatePriceSchedule(ctx, req); err != nil {
 			log.Printf("Failed to create price schedule: %v", err)
 			return centymo.HTMXError(err.Error())
 		}
 		return centymo.HTMXSuccess("price-schedules-table")
+	})
+}
+
+// NewSuggestNameAction renders the per-tier "{ClientName} - {suffix}" name
+// as a partial HTML <input> for the schedule add drawer's Client picker
+// HTMX swap (plan §4.4.1 fallback path). Idempotent GET.
+//
+// Wired at GET deps.Routes.AddURL with `?suggest_name=1`. Centymo block
+// registers it alongside the regular Add handler.
+func NewSuggestNameAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		clientID := viewCtx.Request.URL.Query().Get("client_id")
+		clientName := resolveClientName(ctx, deps, clientID)
+		derived := buildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
+		return view.OK("price-schedule-name-suggest", map[string]any{
+			"Value":           derived,
+			"NamePlaceholder": deps.Labels.Form.NamePlaceholder,
+		})
 	})
 }
 
@@ -189,6 +334,8 @@ func NewEditAction(deps *Deps) view.View {
 				formID = ""
 			}
 			tz := pyezatypes.LocationFromContext(ctx)
+			selectedClientID := record.GetClientId()
+			clientLabel := resolveClientName(ctx, deps, selectedClientID)
 			return view.OK("price-schedule-drawer-form", &FormData{
 				FormAction:            formAction,
 				IsEdit:                !isClone,
@@ -202,7 +349,13 @@ func NewEditAction(deps *Deps) view.View {
 				SelectedLocationLabel: findLocationLabel(locations, selectedLocationID),
 				Locations:             locations,
 				LocationOptions:       buildLocationAutoCompleteOptions(locations, selectedLocationID),
-				Labels:                deps.Labels.Form,
+				// 2026-04-27 plan-client-scope plan §6.7 — Client picker.
+				ClientID:        selectedClientID,
+				ClientLabel:     clientLabel,
+				ClientOptions:   loadClientOptions(ctx, deps, selectedClientID),
+				SearchClientURL: deps.SearchClientsURL,
+				SuggestNameURL:  deps.Routes.AddURL + "?suggest_name=1",
+				Labels:          deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -212,6 +365,7 @@ func NewEditAction(deps *Deps) view.View {
 		active := r.FormValue("active") == "true"
 		locationID := r.FormValue("location_id")
 		description := r.FormValue("description")
+		clientID := strings.TrimSpace(r.FormValue("client_id"))
 		tz := pyezatypes.LocationFromContext(ctx)
 		req := &priceschedulepb.UpdatePriceScheduleRequest{
 			Data: &priceschedulepb.PriceSchedule{
@@ -227,6 +381,9 @@ func NewEditAction(deps *Deps) view.View {
 		}
 		if locationID != "" {
 			req.Data.LocationId = &locationID
+		}
+		if clientID != "" {
+			req.Data.ClientId = &clientID
 		}
 		if _, err := deps.UpdatePriceSchedule(ctx, req); err != nil {
 			return centymo.HTMXError(err.Error())

@@ -26,11 +26,16 @@ import (
 
 // DetailViewDeps holds view dependencies.
 type DetailViewDeps struct {
-	Routes             centymo.PlanRoutes
-	ReadPlan           func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
-	Labels             centymo.PlanLabels
-	CommonLabels       pyeza.CommonLabels
-	TableLabels        types.TableLabels
+	Routes centymo.PlanRoutes
+	// PriceSchedulePlanDetailURL is the schedule-scoped PricePlan detail URL pattern
+	// (e.g. /app/services/rate-cards/detail/{id}/plan/{ppid}). Used to render the
+	// "view" row action in the price-plans tab so navigation lands on the same
+	// destination as the rate-card detail page.
+	PriceSchedulePlanDetailURL string
+	ReadPlan                   func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+	Labels                     centymo.PlanLabels
+	CommonLabels               pyeza.CommonLabels
+	TableLabels                types.TableLabels
 	ListProductPlans    func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	ListProducts        func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
@@ -497,22 +502,42 @@ func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, pla
 					status = "inactive"
 				}
 
-				rowActions := []types.TableAction{
-					{
+				rowActions := []types.TableAction{}
+				// Prefer the package-scoped detail (/app/plans/detail/{id}/price/{ppid})
+				// so users stay in the Package URL namespace; fall back to the
+				// rate-card-scoped detail for the inventory mount or older wirings
+				// that have not yet plumbed PricePlanDetailURL.
+				if deps.Routes.PricePlanDetailURL != "" {
+					rowActions = append(rowActions, types.TableAction{
+						Type:   "view",
+						Label:  l.Actions.View,
+						Action: "view",
+						Href:   route.ResolveURL(deps.Routes.PricePlanDetailURL, "id", planID, "ppid", ppID),
+					})
+				} else if schedID := pp.GetPriceScheduleId(); schedID != "" && deps.PriceSchedulePlanDetailURL != "" {
+					rowActions = append(rowActions, types.TableAction{
+						Type:   "view",
+						Label:  l.Actions.View,
+						Action: "view",
+						Href:   route.ResolveURL(deps.PriceSchedulePlanDetailURL, "id", schedID, "ppid", ppID),
+					})
+				}
+				rowActions = append(rowActions,
+					types.TableAction{
 						Type:        "edit",
 						Label:       l.Actions.Edit,
 						Action:      "edit",
 						URL:         route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
 						DrawerTitle: l.Buttons.EditPricePlan,
 					},
-					{
-						Type:    "delete",
-						Label:   l.Actions.Delete,
-						Action:  "delete",
-						URL:     route.ResolveURL(deps.Routes.PricePlanDeleteURL, "id", planID),
+					types.TableAction{
+						Type:     "delete",
+						Label:    l.Actions.Delete,
+						Action:   "delete",
+						URL:      route.ResolveURL(deps.Routes.PricePlanDeleteURL, "id", planID),
 						ItemName: name,
 					},
-				}
+				)
 
 				rows = append(rows, types.TableRow{
 					ID: ppID,

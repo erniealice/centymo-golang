@@ -21,6 +21,18 @@ const (
 	PricePlanEditURL   = "/action/plan/{id}/price-plans/edit/{ppid}"
 	PricePlanDeleteURL = "/action/plan/{id}/price-plans/delete"
 
+	// Plan-scoped PricePlan detail — mirrors PriceSchedulePlanDetailURL but
+	// keeps users in the Package (Plan) URL namespace so ActiveNav stays
+	// anchored to the Services accordion's Packages section.
+	// {id}=plan id, {ppid}=price_plan id.
+	PlanPricePlanDetailURL             = "/app/plans/detail/{id}/price/{ppid}"
+	PlanPricePlanTabActionURL          = "/action/plan/{id}/price/{ppid}/tab/{tab}"
+	PlanPricePlanEditURL               = "/action/plan/{id}/price/{ppid}/edit"
+	PlanPricePlanDeleteURL             = "/action/plan/{id}/price/{ppid}/delete"
+	PlanPricePlanProductPriceAddURL    = "/action/plan/{id}/price/{ppid}/product-prices/add"
+	PlanPricePlanProductPriceEditURL   = "/action/plan/{id}/price/{ppid}/product-prices/edit/{pppid}"
+	PlanPricePlanProductPriceDeleteURL = "/action/plan/{id}/price/{ppid}/product-prices/delete"
+
 	// ProductPlan CRUD routes (within plan context)
 	PlanProductPlanAddURL    = "/action/plan/{id}/products/add"
 	PlanProductPlanEditURL   = "/action/plan/{id}/products/edit/{ppid}"
@@ -72,6 +84,9 @@ const (
 	PriceSchedulePlanProductPriceDeleteURL = "/action/price-schedule/{id}/plan/{ppid}/product-prices/delete"
 
 	SubscriptionListURL             = "/app/subscriptions/list/{status}"
+	// SubscriptionTableURL returns ONLY the table-card partial — used as the
+	// data-refresh-url so HTMX swaps the table without re-rendering the whole page.
+	SubscriptionTableURL            = "/action/subscription/table/{status}"
 	SubscriptionDetailURL           = "/app/subscriptions/detail/{id}"
 	// SubscriptionUnderClientDetailURL is the nested subscription-detail path
 	// rendered with a client breadcrumb. Same view as SubscriptionDetailURL.
@@ -89,7 +104,18 @@ const (
 	SubscriptionSearchClientURL     = "/action/subscription/search/clients"
 	// SubscriptionRecognizeURL opens the "Recognize Revenue" drawer for a
 	// subscription. GET = preview drawer (dry_run); POST = generate the Revenue.
-	SubscriptionRecognizeURL        = "/action/subscription/{id}/recognize-revenue"
+	// Verb-first to avoid Go ServeMux ambiguity with /action/subscription/edit/{id}
+	// — id-first and static-prefix patterns at the same depth can't disambiguate
+	// (e.g. "/action/subscription/edit/recognize-revenue" matches both).
+	SubscriptionRecognizeURL        = "/action/subscription/recognize-revenue/{id}"
+
+	// SubscriptionCustomizePackageURL is the POST endpoint that drives the
+	// "Customize this package for {ClientName}" CTA on the subscription
+	// detail's Package tab. Calls espyna's CustomizePlanForClient use case
+	// and HX-redirects to the new (cloned) PricePlan's package page.
+	// Verb-first ("customize-package") to avoid the same ServeMux ambiguity
+	// SubscriptionRecognizeURL above guards against.
+	SubscriptionCustomizePackageURL = "/action/subscription/customize-package/{id}"
 
 	// Collection (money IN) routes
 	CollectionListURL             = "/app/collections/list/{status}"
@@ -390,4 +416,60 @@ const (
 	// Price Product routes (within price list detail)
 	PriceProductAddURL    = "/action/inventory-price-list/{id}/products/add"
 	PriceProductDeleteURL = "/action/inventory-price-list/{id}/products/delete"
+
+	// ---------------------------------------------------------------------------
+	// P3a — SupplierContract + SupplierContractLine route constants
+	// ---------------------------------------------------------------------------
+
+	// SupplierContract master routes
+	SupplierContractListURL          = "/app/supplier-contracts/list/{status}"
+	SupplierContractDetailURL        = "/app/supplier-contracts/detail/{id}"
+	SupplierContractAddURL           = "/action/supplier-contract/add"
+	SupplierContractEditURL          = "/action/supplier-contract/edit/{id}"
+	SupplierContractDeleteURL        = "/action/supplier-contract/delete"
+	SupplierContractSetStatusURL     = "/action/supplier-contract/set-status"
+	SupplierContractBulkSetStatusURL = "/action/supplier-contract/bulk-set-status"
+	SupplierContractTabActionURL     = "/action/supplier-contract/detail/{id}/tab/{tab}"
+	SupplierContractApproveURL       = "/action/supplier-contract/approve/{id}"
+	SupplierContractTerminateURL     = "/action/supplier-contract/terminate/{id}"
+
+	// SupplierContractLine routes (child of contract detail)
+	SupplierContractLineAddURL    = "/action/supplier-contract/{id}/lines/add"
+	SupplierContractLineEditURL   = "/action/supplier-contract/{id}/lines/edit/{lid}"
+	SupplierContractLineDeleteURL = "/action/supplier-contract/{id}/lines/delete"
+
+	// ---------------------------------------------------------------------------
+	// P3a — ProcurementRequest + ProcurementRequestLine route constants
+	// ---------------------------------------------------------------------------
+
+	// ProcurementRequest routes
+	ProcurementRequestListURL          = "/app/procurement-requests/list/{status}"
+	ProcurementRequestDetailURL        = "/app/procurement-requests/detail/{id}"
+	ProcurementRequestAddURL           = "/action/procurement-request/add"
+	ProcurementRequestEditURL          = "/action/procurement-request/edit/{id}"
+	ProcurementRequestDeleteURL        = "/action/procurement-request/delete"
+	ProcurementRequestSetStatusURL     = "/action/procurement-request/set-status"
+	ProcurementRequestBulkSetStatusURL = "/action/procurement-request/bulk-set-status"
+	ProcurementRequestTabActionURL     = "/action/procurement-request/detail/{id}/tab/{tab}"
+	ProcurementRequestSubmitURL        = "/action/procurement-request/submit/{id}"
+	ProcurementRequestApproveURL       = "/action/procurement-request/approve/{id}"
+	ProcurementRequestRejectURL        = "/action/procurement-request/reject/{id}"
+	ProcurementRequestSpawnPOURL       = "/action/procurement-request/spawn-po/{id}"
+
+	// ProcurementRequestLine routes (child of request detail)
+	ProcurementRequestLineAddURL    = "/action/procurement-request/{id}/lines/add"
+	ProcurementRequestLineEditURL   = "/action/procurement-request/{id}/lines/edit/{lid}"
+	ProcurementRequestLineDeleteURL = "/action/procurement-request/{id}/lines/delete"
+
+	// ---------------------------------------------------------------------------
+	// P3b — Procurement Operations app route constants
+	// (composition surface; no proto entity)
+	// ---------------------------------------------------------------------------
+
+	// Procurement Operations app — all GET, read-only views
+	ProcurementDashboardURL        = "/app/procurement/dashboard"
+	ProcurementRenewalCalendarURL  = "/app/procurement/renewals"
+	ProcurementVarianceURL         = "/app/procurement/variance"
+	ProcurementUtilizationURL      = "/app/procurement/utilization"
+	ProcurementRecurrenceDraftsURL = "/app/procurement/recurrence-drafts/list/{status}"
 )

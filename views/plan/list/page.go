@@ -25,6 +25,28 @@ type ListViewDeps struct {
 	Labels       centymo.PlanLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+
+	// Client name lookup for the optional Client column. Returns id → display
+	// name. Optional — when nil the column shows the bare client_id.
+	// Used by buildClientNameMap below.
+	ListClientNames func(ctx context.Context) map[string]string
+}
+
+// ScopeChip represents one chip in the scope filter bar on the list page.
+// 2026-04-27 plan-client-scope plan §6.1.
+type ScopeChip struct {
+	Label  string
+	URL    string
+	Active bool
+}
+
+// ScopeFilterData holds the rendered chip group data for the plan list toolbar.
+type ScopeFilterData struct {
+	Label  string
+	Active string
+	Master ScopeChip
+	Client ScopeChip
+	All    ScopeChip
 }
 
 // PageData holds the data for the plan list page.
@@ -32,10 +54,31 @@ type PageData struct {
 	types.PageData
 	ContentTemplate string
 	Table           *types.TableConfig
+	ScopeFilter     ScopeFilterData
 }
 
 var planAllowedSortCols = []string{"date_created", "name", "status"}
 var planSearchFields = []string{"name", "description"}
+
+// buildScopeFilterData constructs the three scope chips for the plan list toolbar.
+// baseListURL is the fully-resolved list URL without query params (e.g. /app/plans/list/active).
+// clientFilter is preserved across chip clicks when set.
+func buildScopeFilterData(baseListURL, scope, clientFilter string, l centymo.PlanLabels) ScopeFilterData {
+	chipURL := func(s string) string {
+		u := baseListURL + "?scope=" + s
+		if clientFilter != "" {
+			u += "&client_id=" + clientFilter
+		}
+		return u
+	}
+	return ScopeFilterData{
+		Label:  l.Filters.ScopeChipLabel,
+		Active: scope,
+		Master: ScopeChip{Label: l.Filters.ScopeMaster, URL: chipURL("master"), Active: scope == "master"},
+		Client: ScopeChip{Label: l.Filters.ScopeClient, URL: chipURL("client"), Active: scope == "client"},
+		All:    ScopeChip{Label: l.Filters.ScopeAll, URL: chipURL("all"), Active: scope == "all"},
+	}
+}
 
 // NewView creates the plan list view.
 func NewView(deps *ListViewDeps) view.View {
@@ -50,10 +93,15 @@ func NewView(deps *ListViewDeps) view.View {
 			return view.Error(err)
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		scope := normalizeScope(viewCtx.Request.URL.Query().Get("scope"))
+		clientFilter := viewCtx.Request.URL.Query().Get("client_id")
+		tableConfig, err := buildTableConfig(ctx, deps, status, scope, clientFilter, p)
 		if err != nil {
 			return view.Error(err)
 		}
+
+		baseListURL := route.ResolveURL(deps.Routes.ListURL, "status", status)
+		scopeFilter := buildScopeFilterData(baseListURL, scope, clientFilter, deps.Labels)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -69,6 +117,7 @@ func NewView(deps *ListViewDeps) view.View {
 			},
 			ContentTemplate: "plan-list-content",
 			Table:           tableConfig,
+			ScopeFilter:     scopeFilter,
 		}
 
 		return view.OK("plan-list", pageData)
@@ -90,7 +139,9 @@ func NewTableView(deps *ListViewDeps) view.View {
 			return view.Error(err)
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		scope := normalizeScope(viewCtx.Request.URL.Query().Get("scope"))
+		clientFilter := viewCtx.Request.URL.Query().Get("client_id")
+		tableConfig, err := buildTableConfig(ctx, deps, status, scope, clientFilter, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -99,8 +150,28 @@ func NewTableView(deps *ListViewDeps) view.View {
 	})
 }
 
+// normalizeScope coerces an arbitrary client-scope filter value to one of
+// the three supported chips: "master" (default), "client", "all".
+//
+// 2026-04-27 plan-client-scope plan §6.1.
+func normalizeScope(s string) string {
+	switch s {
+	case "client", "all":
+		return s
+	default:
+		return "master"
+	}
+}
+
 // buildTableConfig fetches plan data and builds the table configuration.
-func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+//
+// scope filters by client_id per plan §6.1:
+//   - "master"  → only client_id IS NULL (default)
+//   - "client"  → only client_id IS NOT NULL
+//   - "all"     → no client filter
+//
+// clientFilter narrows further to a single client_id when set.
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, status, scope, clientFilter string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 
 	listParams := espynahttp.ToListParams(p, planSearchFields)
@@ -128,18 +199,30 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		return nil, fmt.Errorf("failed to load plans: %w", err)
 	}
 
+	// Apply client-scope filter post-fetch — the canonical filter shape
+	// (NULL vs NOT NULL on client_id) is not yet expressible as a TypedFilter,
+	// so we filter in Go. Volume is small (a workspace has hundreds, not
+	// millions, of plans).
+	filtered := applyClientScopeFilter(resp.GetData(), scope, clientFilter)
+
 	var inUseIDs map[string]bool
 	if deps.GetInUseIDs != nil {
 		var itemIDs []string
-		for _, item := range resp.GetData() {
+		for _, item := range filtered {
 			itemIDs = append(itemIDs, item.GetId())
 		}
 		inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
 	}
 
+	clientNames := map[string]string{}
+	if deps.ListClientNames != nil && scope != "master" {
+		clientNames = deps.ListClientNames(ctx)
+	}
+
 	l := deps.Labels
-	columns := planColumns(l)
-	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms)
+	includeClientColumn := scope != "master"
+	columns := planColumns(l, includeClientColumn)
+	rows := buildTableRows(filtered, status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, clientNames, includeClientColumn)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -179,6 +262,13 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 
 	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
+	// Preserve client-scope filter on table refresh.
+	if scope != "master" {
+		refreshURL = appendQuery(refreshURL, "scope", scope)
+	}
+	if clientFilter != "" {
+		refreshURL = appendQuery(refreshURL, "client_id", clientFilter)
+	}
 
 	var primaryAction *types.PrimaryAction
 	if status == "active" {
@@ -217,14 +307,46 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	return tableConfig, nil
 }
 
-func planColumns(l centymo.PlanLabels) []types.TableColumn {
-	return []types.TableColumn{
+func planColumns(l centymo.PlanLabels, includeClient bool) []types.TableColumn {
+	cols := []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name, Sortable: true},
 		{Key: "price", Label: l.Columns.Price, Sortable: true, WidthClass: "col-9xl"},
 	}
+	if includeClient {
+		cols = append(cols, types.TableColumn{Key: "client", Label: l.Form.ClientLabel, Sortable: false, WidthClass: "col-3xl"})
+	}
+	return cols
 }
 
-func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, cl pyeza.CommonLabels, routes centymo.PlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions) []types.TableRow {
+// applyClientScopeFilter narrows the plan list per the §6.1 filter chip:
+//   - "master" — keep only plans with client_id == "" (NULL).
+//   - "client" — keep only plans with client_id != "".
+//   - "all"    — pass-through.
+//
+// When clientFilter is set, restricts further to that single client_id.
+func applyClientScopeFilter(plans []*planpb.Plan, scope, clientFilter string) []*planpb.Plan {
+	out := make([]*planpb.Plan, 0, len(plans))
+	for _, p := range plans {
+		cid := p.GetClientId()
+		switch scope {
+		case "master":
+			if cid != "" {
+				continue
+			}
+		case "client":
+			if cid == "" {
+				continue
+			}
+		}
+		if clientFilter != "" && cid != clientFilter {
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, cl pyeza.CommonLabels, routes centymo.PlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, clientNames map[string]string, includeClient bool) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, p := range plans {
 		active := p.GetActive()
@@ -236,6 +358,15 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 		id := p.GetId()
 		name := p.GetName()
 		description := p.GetDescription()
+		clientID := p.GetClientId()
+		clientLabel := ""
+		if clientID != "" {
+			if n, ok := clientNames[clientID]; ok {
+				clientLabel = n
+			} else {
+				clientLabel = clientID
+			}
+		}
 
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
@@ -294,12 +425,21 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 		}
 		actions = append(actions, deleteAction)
 
+		cells := []types.TableCell{
+			{Type: "text", Value: name},
+			{Type: "text", Value: description},
+		}
+		if includeClient {
+			if clientLabel != "" {
+				cells = append(cells, types.TableCell{Type: "badge", Value: clientLabel, Variant: "info"})
+			} else {
+				cells = append(cells, types.TableCell{Type: "text", Value: ""})
+			}
+		}
+
 		rows = append(rows, types.TableRow{
-			ID: id,
-			Cells: []types.TableCell{
-				{Type: "text", Value: name},
-				{Type: "text", Value: description},
-			},
+			ID:    id,
+			Cells: cells,
 			DataAttrs: map[string]string{
 				"name":           name,
 				"price":          description,
@@ -307,6 +447,7 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 				"deletable":      boolAttr(!inUseIDs[id]),
 				"activatable":    boolAttr(recordStatus == "inactive"),
 				"deactivatable":  boolAttr(recordStatus == "active"),
+				"client_id":      clientID,
 			},
 			Actions: actions,
 		})
@@ -363,4 +504,18 @@ func intervalVariant(interval string) string {
 	default:
 		return "default"
 	}
+}
+
+// appendQuery glues key=value to a URL using the right separator. Plain
+// concatenation is fine because the keys here are static (`scope`, `client_id`)
+// and the values are pre-validated.
+func appendQuery(u, key, value string) string {
+	sep := "?"
+	for i := 0; i < len(u); i++ {
+		if u[i] == '?' {
+			sep = "&"
+			break
+		}
+	}
+	return u + sep + key + "=" + value
 }

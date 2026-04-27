@@ -1,0 +1,190 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "supplier-contract-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "supplier-contract-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Title}}">
+    <div class="detail-header-actions">
+        {{if .ApproveURL}}
+        <button type="button" class="btn btn-primary"
+            aria-haspopup="dialog"
+            data-testid="supplier-contract-approve-btn"
+            hx-post="{{.ApproveURL}}" hx-swap="none"
+            hx-on::after-request="lf.Sheet.handleResponse(event)">
+            {{.Labels.Form.Approve}}
+        </button>
+        {{end}}
+        {{if .TerminateURL}}
+        <button type="button" class="btn btn-danger"
+            aria-haspopup="dialog"
+            data-testid="supplier-contract-terminate-btn"
+            hx-post="{{.TerminateURL}}" hx-swap="none"
+            hx-on::after-request="lf.Sheet.handleResponse(event)">
+            {{.Labels.Form.Terminate}}
+        </button>
+        {{end}}
+        {{if .EditURL}}
+        <button type="button" class="btn btn-secondary"
+            aria-haspopup="dialog"
+            data-testid="supplier-contract-edit-btn"
+            hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Form.EditTitle}}')">
+            {{.Labels.Form.Edit}}
+        </button>
+        {{end}}
+    </div>
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "sc-tabs")}}
+    </div>
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+        {{template "supplier-contract-tab-info" .}}
+        {{else if eq .ActiveTab "lines"}}
+        {{template "supplier-contract-tab-lines" .}}
+        {{else if eq .ActiveTab "linked-pos"}}
+        {{template "supplier-contract-tab-linked-pos" .}}
+        {{else if eq .ActiveTab "linked-expenditures"}}
+        {{template "supplier-contract-tab-linked-expenditures" .}}
+        {{else if eq .ActiveTab "activity"}}
+        {{template "supplier-contract-tab-activity" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* Tab content partial for HTMX tab switches */}}
+{{define "supplier-contract-tab-content"}}
+{{if eq .ActiveTab "info"}}
+{{template "supplier-contract-tab-info" .}}
+{{else if eq .ActiveTab "lines"}}
+{{template "supplier-contract-tab-lines" .}}
+{{else if eq .ActiveTab "linked-pos"}}
+{{template "supplier-contract-tab-linked-pos" .}}
+{{else if eq .ActiveTab "linked-expenditures"}}
+{{template "supplier-contract-tab-linked-expenditures" .}}
+{{else if eq .ActiveTab "activity"}}
+{{template "supplier-contract-tab-activity" .}}
+{{end}}
+{{end}}
+
+{{/* Info tab */}}
+{{define "supplier-contract-tab-info"}}
+<div class="tab-scroll">
+    <h3 class="detail-section-title">{{.Labels.Detail.InfoSection}}</h3>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Name}}</span>
+            <span class="detail-info-value">{{index .Contract "name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Kind}}</span>
+            <span class="detail-info-value">{{index .Contract "kind"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
+            <span class="detail-info-value">
+                {{template "status-badge" (dict "Status" (index .Contract "status") "Variant" .StatusVariant)}}
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Supplier}}</span>
+            <span class="detail-info-value">{{index .Contract "supplier_name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.StartDate}}</span>
+            <span class="detail-info-value">{{index .Contract "start_date"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.EndDate}}</span>
+            <span class="detail-info-value">{{index .Contract "end_date"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.AutoRenew}}</span>
+            <span class="detail-info-value">{{index .Contract "auto_renew"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Currency}}</span>
+            <span class="detail-info-value mono">{{index .Contract "currency"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.CommittedAmount}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Contract "committed_amount")}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.ReleasedAmount}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Contract "released_amount")}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.BilledAmount}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Contract "billed_amount")}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.RemainingAmount}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Contract "remaining_amount")}}</span>
+        </div>
+        {{if index .Contract "notes"}}
+        <div class="detail-info-item detail-info-item--full">
+            <span class="detail-info-label">{{.Labels.Detail.Notes}}</span>
+            <span class="detail-info-value">{{index .Contract "notes"}}</span>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* Lines tab */}}
+{{define "supplier-contract-tab-lines"}}
+<div class="transaction-items-toolbar">
+    {{if .LineItemAddURL}}
+    <div class="transaction-items-actions">
+        <button type="button" class="btn btn-primary toolbar-primary-action"
+            aria-haspopup="dialog"
+            data-testid="supplier-contract-add-line-btn"
+            hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Lines.AddLine}}')">
+            {{.Labels.Lines.AddLine}}
+        </button>
+    </div>
+    {{end}}
+</div>
+{{if .LineItemTable}}
+<div class="tab-scroll">
+    {{template "table-card" .LineItemTable}}
+</div>
+{{else}}
+<div class="tab-scroll">
+    <p class="text-muted">{{.Labels.Lines.EmptyMessage}}</p>
+</div>
+{{end}}
+{{end}}
+
+{{/* Linked POs tab */}}
+{{define "supplier-contract-tab-linked-pos"}}
+<div class="tab-scroll">
+    {{if .LinkedPOTable}}
+    {{template "table-card" .LinkedPOTable}}
+    {{else}}
+    <p class="text-muted">{{.Labels.LinkedPOs.EmptyMessage}}</p>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Linked Expenditures tab */}}
+{{define "supplier-contract-tab-linked-expenditures"}}
+<div class="tab-scroll">
+    {{if .LinkedExpenditureTable}}
+    {{template "table-card" .LinkedExpenditureTable}}
+    {{else}}
+    <p class="text-muted">{{.Labels.LinkedExpenditures.EmptyMessage}}</p>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Activity tab */}}
+{{define "supplier-contract-tab-activity"}}
+<div class="tab-scroll">
+    <p class="text-muted">{{.Labels.Tabs.ActivityEmpty}}</p>
+</div>
+{{end}}

@@ -1,0 +1,128 @@
+{{/*
+Procurement Request Line drawer form — child of procurement request detail Lines tab.
+Single-section line form: description, line_type, product_id, quantity,
+estimated_unit_price, estimated_total_price, expenditure_category_id, location_id.
+*/}}
+{{define "procurement-request-line-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="procurement_request_id" value="{{.ProcurementRequestID}}">
+
+    <div class="sheet-body">
+
+        {{/* Description — required */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "description"
+                "Label" .Labels.Lines.FormDescription
+                "Value" .Description
+                "Required" true
+                "Placeholder" .Labels.Lines.FormDescriptionPlaceholder
+            )}}
+        </div>
+
+        {{/* Line type */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "line_type"
+                "Label" .Labels.Lines.FormLineType
+                "Value" .LineType
+                "Required" true
+                "Options" (list
+                    (dict "Value" "goods"   "Label" .Labels.Lines.LineTypeGoods)
+                    (dict "Value" "service" "Label" .Labels.Lines.LineTypeService)
+                    (dict "Value" "expense" "Label" .Labels.Lines.LineTypeExpense)
+                )
+                "Info" .Labels.Lines.FormLineTypeInfo
+            )}}
+        </div>
+
+        {{/* Product picker — optional */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "product_id"
+                "Label" .Labels.Lines.FormProduct
+                "Value" .ProductID
+                "Options" .Products
+                "Placeholder" .Labels.Lines.FormProductPlaceholder
+            )}}
+        </div>
+
+        {{/* Quantity + Estimated unit price */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "quantity"
+                "Label" .Labels.Lines.FormQuantity
+                "Value" .Quantity
+                "Required" true
+                "Placeholder" "1"
+                "Info" .Labels.Lines.FormQuantityInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "estimated_unit_price"
+                "Label" .Labels.Lines.FormEstimatedUnitPrice
+                "Value" .EstimatedUnitPrice
+                "Required" true
+                "Placeholder" "0.00"
+                "Info" .Labels.Lines.FormEstimatedUnitPriceInfo
+            )}}
+        </div>
+
+        {{/* Estimated total price — auto-calculated but user-editable */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "estimated_total_price"
+                "Label" .Labels.Lines.FormEstimatedTotalPrice
+                "Value" .EstimatedTotalPrice
+                "Placeholder" "0.00"
+                "Hint" .Labels.Lines.FormEstimatedTotalPriceHint
+            )}}
+        </div>
+
+        {{/* Expenditure category + Location */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "expenditure_category_id"
+                "Label" .Labels.Lines.FormExpenditureCategory
+                "Value" .ExpenditureCategoryID
+                "Placeholder" .Labels.Lines.FormExpenditureCategoryPlaceholder
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "location_id"
+                "Label" .Labels.Lines.FormLocation
+                "Value" .LocationID
+                "Placeholder" .Labels.Lines.FormLocationPlaceholder
+            )}}
+        </div>
+
+        {{/* Line number */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "line_number"
+                "Label" .Labels.Lines.FormLineNumber
+                "Value" .LineNumber
+                "Placeholder" "1"
+            )}}
+        </div>
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
+            {{.CommonLabels.Actions.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary" data-testid="pr-line-save-btn">
+            {{.CommonLabels.Actions.Save}}
+        </button>
+    </div>
+</form>
+{{end}}

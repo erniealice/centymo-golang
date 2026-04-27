@@ -70,6 +70,10 @@ type Deps struct {
 	ListPlans              func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	ListPriceSchedules     func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 	GetPricePlanInUseIDs   func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// 2026-04-27 plan-client-scope plan §6.7. Optional — when set, used to
+	// resolve the parent-schedule client name for the info banner.
+	ListClientNames func(ctx context.Context) map[string]string
 }
 
 func loadPlans(ctx context.Context, deps *Deps) []*PlanOption {
@@ -103,6 +107,39 @@ func loadSchedules(ctx context.Context, deps *Deps) []*ScheduleOption {
 		opts = append(opts, &ScheduleOption{Id: s.GetId(), Name: s.GetName()})
 	}
 	return opts
+}
+
+// resolveParentScheduleClient looks up the parent PriceSchedule for the
+// scheduleID and returns its (clientID, clientName) when client-scoped.
+// Empty strings when the schedule is master or the lookup fails.
+//
+// 2026-04-27 plan-client-scope plan §6.7.
+func resolveParentScheduleClient(ctx context.Context, deps *Deps, scheduleID string) (clientID, clientName string) {
+	if scheduleID == "" || deps.ListPriceSchedules == nil {
+		return "", ""
+	}
+	resp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
+	if err != nil {
+		return "", ""
+	}
+	for _, s := range resp.GetData() {
+		if s.GetId() != scheduleID {
+			continue
+		}
+		clientID = s.GetClientId()
+		break
+	}
+	if clientID == "" {
+		return "", ""
+	}
+	if deps.ListClientNames != nil {
+		if names := deps.ListClientNames(ctx); names != nil {
+			if n, ok := names[clientID]; ok {
+				return clientID, n
+			}
+		}
+	}
+	return clientID, clientID
 }
 
 func buildPlanAutoCompleteOptions(plans []*PlanOption, selectedID string) []map[string]any {
@@ -284,7 +321,7 @@ func NewEditAction(deps *Deps) view.View {
 			if deps.GetPricePlanInUseIDs != nil {
 				if m, _ := deps.GetPricePlanInUseIDs(ctx, []string{id}); m[id] {
 					inUse = true
-					lockMsg = "This price plan is in use by active subscriptions. Pricing changes are disabled."
+					lockMsg = deps.Labels.Messages.PricingLockedReason
 				}
 			}
 			// Populate new fields from the existing record.
@@ -297,13 +334,16 @@ func NewEditAction(deps *Deps) view.View {
 				defaultTermValue = fmt.Sprintf("%d", v)
 			}
 			formLabels := deps.Labels.Form
+			parentScheduleClientID, parentScheduleClientName := resolveParentScheduleClient(ctx, deps, selectedScheduleID)
 			return view.OK("price-plan-drawer-form", &form.Data{
-				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:                true,
-				Context:               form.ContextStandalone,
-				ID:                    id,
-				PlanID:                selectedPlanID,
-				ScheduleID:            selectedScheduleID,
+				FormAction:               route.ResolveURL(deps.Routes.EditURL, "id", id),
+				IsEdit:                   true,
+				Context:                  form.ContextStandalone,
+				ID:                       id,
+				PlanID:                   selectedPlanID,
+				ScheduleID:               selectedScheduleID,
+				ParentScheduleClientID:   parentScheduleClientID,
+				ParentScheduleClientName: parentScheduleClientName,
 				Name:                  record.GetName(),
 				Description:           record.GetDescription(),
 				Amount:                formatAmount(record.GetBillingAmount()),
@@ -318,8 +358,8 @@ func NewEditAction(deps *Deps) view.View {
 				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
 				BillingCycleValue:   billingCycleValue,
 				BillingCycleUnit:    record.GetBillingCycleUnit(),
-				DefaultTermValue:    defaultTermValue,
-				DefaultTermUnit:     record.GetDefaultTermUnit(),
+				TermValue:           defaultTermValue,
+				TermUnit:            record.GetDefaultTermUnit(),
 				DurationUnitOptions: buildDurationUnitOptions(deps.CommonLabels),
 				PlanOptions:           buildPlanAutoCompleteOptions(plans, selectedPlanID),
 				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),

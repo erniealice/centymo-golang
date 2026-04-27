@@ -1,0 +1,277 @@
+{{/*
+Supplier Contract drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+
+5-section layout (entity drawer parity convention):
+  §1 Company / Identity Details — name, contract_number, kind select, supplier autocomplete
+  §2 Validity & Recurrence     — start_date, end_date, billing_cycle_value/unit, auto_renew, renewal_notice_days
+  §3 Money & Approval          — currency, committed_amount, cycle_amount, payment_term_id, status select, approval fields (read-only after approval)
+  §4 Categorization            — expenditure_category_id, expense_account_id, location_id
+  §5 Others                    — notes, active toggle (outside any section)
+*/}}
+{{define "supplier-contract-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+
+        {{/* ── §1 Company / Identity Details ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionIdentity}}</h3>
+
+            {{/* Name — required */}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "name"
+                    "Label" .Labels.Name
+                    "Value" .Name
+                    "Required" true
+                    "Placeholder" .Labels.NamePlaceholder
+                    "Info" .Labels.NameInfo
+                )}}
+            </div>
+
+            {{/* Contract number + Kind */}}
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "contract_number"
+                    "Label" .Labels.ContractNumber
+                    "Value" .ContractNumber
+                    "Placeholder" .Labels.ContractNumberPlaceholder
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "kind"
+                    "Label" .Labels.Kind
+                    "Value" .Kind
+                    "Required" true
+                    "Options" .KindOptions
+                    "Info" .Labels.KindInfo
+                )}}
+            </div>
+
+            {{/* Supplier autocomplete */}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "supplier_id"
+                    "Label" .Labels.Supplier
+                    "Value" .SupplierID
+                    "Required" true
+                    "Options" .Suppliers
+                    "Placeholder" .Labels.SupplierPlaceholder
+                    "Info" .Labels.SupplierInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §2 Validity & Recurrence ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionValidity}}</h3>
+
+            {{/* Start date + End date */}}
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "start_date"
+                    "Label" .Labels.StartDate
+                    "Value" .StartDate
+                    "Required" true
+                )}}
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "end_date"
+                    "Label" .Labels.EndDate
+                    "Value" .EndDate
+                    "Hint" .Labels.EndDateHint
+                )}}
+            </div>
+
+            {{/* Billing cycle value + unit */}}
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "billing_cycle_value"
+                    "Label" .Labels.BillingCycleValue
+                    "Value" .BillingCycleValue
+                    "Placeholder" "1"
+                    "Info" .Labels.BillingCycleInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "billing_cycle_unit"
+                    "Label" .Labels.BillingCycleUnit
+                    "Value" .BillingCycleUnit
+                    "Options" (list
+                        (dict "Value" "day"   "Label" .Labels.CycleUnitDay)
+                        (dict "Value" "week"  "Label" .Labels.CycleUnitWeek)
+                        (dict "Value" "month" "Label" .Labels.CycleUnitMonth)
+                        (dict "Value" "year"  "Label" .Labels.CycleUnitYear)
+                    )
+                )}}
+            </div>
+
+            {{/* Auto-renew toggle + Renewal notice days */}}
+            <div class="form-row">
+                <div class="form-group form-group-toggle">
+                    <label class="form-label" for="auto_renew">{{.Labels.AutoRenew}}</label>
+                    {{template "toggle" (dict "Name" "auto_renew" "Checked" .AutoRenew "Value" "true")}}
+                </div>
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "renewal_notice_days"
+                    "Label" .Labels.RenewalNoticeDays
+                    "Value" .RenewalNoticeDays
+                    "Placeholder" "30"
+                    "Hint" .Labels.RenewalNoticeDaysHint
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §3 Money & Approval ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionMoney}}</h3>
+
+            {{/* Currency + Status */}}
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "currency"
+                    "Label" .Labels.Currency
+                    "Value" .Currency
+                    "Required" true
+                    "Placeholder" "PHP"
+                    "Info" .Labels.CurrencyInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "status"
+                    "Label" .Labels.Status
+                    "Value" .Status
+                    "Options" .StatusOptions
+                    "Info" .Labels.StatusInfo
+                )}}
+            </div>
+
+            {{/* Committed amount + Cycle amount */}}
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "committed_amount"
+                    "Label" .Labels.CommittedAmount
+                    "Value" .CommittedAmount
+                    "Placeholder" "0.00"
+                    "Info" .Labels.CommittedAmountInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "cycle_amount"
+                    "Label" .Labels.CycleAmount
+                    "Value" .CycleAmount
+                    "Placeholder" "0.00"
+                    "Hint" .Labels.CycleAmountHint
+                )}}
+            </div>
+
+            {{/* Payment term */}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "payment_term_id"
+                    "Label" .Labels.PaymentTerm
+                    "Value" .PaymentTermID
+                    "Options" .PaymentTerms
+                    "Placeholder" .Labels.PaymentTermPlaceholder
+                )}}
+            </div>
+
+            {{/* Approval fields — read-only context when contract is post-approval */}}
+            {{if .ApprovedBy}}
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "approved_by"
+                    "Label" .Labels.ApprovedBy
+                    "Value" .ApprovedBy
+                    "Disabled" true
+                )}}
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "approved_date"
+                    "Label" .Labels.ApprovedDate
+                    "Value" .ApprovedDate
+                    "Disabled" true
+                )}}
+            </div>
+            {{end}}
+        </div>
+
+        {{/* ── §4 Categorization ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionCategorization}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "expenditure_category_id"
+                    "Label" .Labels.ExpenditureCategory
+                    "Value" .ExpenditureCategoryID
+                    "Placeholder" .Labels.ExpenditureCategoryPlaceholder
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "expense_account_id"
+                    "Label" .Labels.ExpenseAccount
+                    "Value" .ExpenseAccountID
+                    "Placeholder" .Labels.ExpenseAccountPlaceholder
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "location_id"
+                    "Label" .Labels.Location
+                    "Value" .LocationID
+                    "Placeholder" .Labels.LocationPlaceholder
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §5 Others ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionOthers}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "notes"
+                    "Label" .Labels.Notes
+                    "Value" .Notes
+                    "Placeholder" .Labels.NotesPlaceholder
+                    "Rows" 3
+                )}}
+            </div>
+        </div>
+
+        {{/* Active toggle — outside any section, at the bottom */}}
+        <div class="form-row single">
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">{{.Labels.Active}}</label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
+        </div>
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
+            {{.CommonLabels.Actions.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary" data-testid="supplier-contract-save-btn">
+            {{.CommonLabels.Actions.Save}}
+        </button>
+    </div>
+</form>
+{{end}}

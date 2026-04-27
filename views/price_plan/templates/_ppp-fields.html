@@ -1,0 +1,88 @@
+{{/*
+Shared editable-fields block for the ProductPricePlan add/edit drawer.
+Used by:
+  - product-price-plan-drawer-form (standalone, has the catalog-line picker)
+  - price-schedule-plan-product-price-drawer (schedule-scoped, line is locked)
+
+Both outer templates render the picker / catalog-line context themselves; this
+partial owns only the fields that should respond identically on both drawers
+(Pricing section, optional billing-treatment, effective dates) so the parent
+PricePlan config drives the same behaviour everywhere.
+
+Expected dict shape:
+    Labels                centymo.ProductPricePlanFormLabels
+    Price                 string  — formatted decimal (e.g. "35000.00")
+    Currency              string  — locked to parent.billing_currency
+    BillingTreatment      string  — proto enum string
+    BillingTreatmentOptions []types.SelectOption
+    DateStart             string  — "YYYY-MM-DD" or empty
+    DateEnd               string  — "YYYY-MM-DD" or empty
+    ShowTreatment         bool    — false when parent.billing_kind = ONE_TIME
+    PricingLocked         bool    — true when parent PricePlan is in use
+    BasisBannerMessage    string  — optional one-line hint about parent.amount_basis
+    PricingSectionTitle   string
+    EffectiveSectionTitle string
+*/}}
+{{define "ppp-fields"}}
+{{/* Currency is pinned to the parent rate-card. Hidden input keeps the POST
+     shape stable while the visible field shows the pinned value. */}}
+<input type="hidden" name="currency" value="{{.Currency}}">
+
+{{if .BasisBannerMessage}}
+<div class="form-row single">
+    {{template "alert" (dict "State" "info" "Message" .BasisBannerMessage)}}
+</div>
+{{end}}
+
+{{if .PricingSectionTitle}}
+{{template "form-section" (dict "Title" .PricingSectionTitle)}}
+{{end}}
+
+<div class="form-row">
+    {{template "form-group" (dict
+        "Type" "number"
+        "Name" "price"
+        "Label" .Labels.PriceLabel
+        "Value" .Price
+        "Required" true
+        "Placeholder" .Labels.PricePlaceholder
+        "Step" "0.01"
+        "Min" "0"
+        "Disabled" .PricingLocked
+        "Info" .Labels.PriceInfo
+    )}}
+    {{template "form-group" (dict
+        "Type" "text"
+        "Name" "_currency_display"
+        "Label" .Labels.CurrencyLabel
+        "Value" .Currency
+        "Disabled" true
+        "Info" .Labels.CurrencyInfo
+    )}}
+</div>
+
+{{if .ShowTreatment}}
+<div class="form-row single">
+    {{template "form-group" (dict
+        "Type" "select"
+        "Name" "billing_treatment"
+        "Label" .Labels.BillingTreatmentLabel
+        "Value" .BillingTreatment
+        "Required" true
+        "Options" .BillingTreatmentOptions
+        "Info" .Labels.BillingTreatmentInfo
+    )}}
+</div>
+{{end}}
+
+{{/*
+Per-line effective dates (date_start / date_end) are hidden until the revenue
+recognition engine honours them. See
+docs/plan/20260425-subscription-revenue-recognition/deferred.md.
+The proto fields stay; we just don't surface them on the drawer so operators
+don't think they control billing today. Existing values are preserved on edit
+through hidden inputs so re-saving a row does not blank the columns.
+*/}}
+<input type="hidden" name="date_start" value="{{.DateStart}}">
+<input type="hidden" name="date_end" value="{{.DateEnd}}">
+{{end}}

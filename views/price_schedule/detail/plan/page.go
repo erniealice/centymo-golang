@@ -55,6 +55,28 @@ type DetailViewDeps struct {
 	// Reference checker: returns a map of price_plan_id → true for plans in use by active subscriptions.
 	// When a plan is in use, Pricing fields in the Edit drawer are read-only.
 	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// Mount overrides — populated only by the plan-scoped entry points
+	// (NewPlanScopedView / NewPlanScopedTabAction) so the same render path
+	// can be served under /app/plans/detail/{id}/price/{ppid} with the
+	// sidebar anchored to Services > Packages instead of Rate Cards. When
+	// any of these is empty, buildPageData falls back to the rate-card
+	// defaults derived from Routes (PriceScheduleRoutes).
+	ActiveNavOverride    string
+	ActiveSubNavOverride string
+	// PlanDetailBackURL is the package-detail URL pattern — e.g.
+	// "/app/services/packages/detail/{id}". When set, buildPageData resolves
+	// it with the loaded price_plan's plan_id and appends `?tab=` +
+	// PlanDetailBackTab to point the breadcrumb back at the package's
+	// package-prices tab. The breadcrumb label becomes the plan name.
+	PlanDetailBackURL string
+	PlanDetailBackTab string
+	// PlanScopedDetailURL / TabActionURL are the new package-scoped routes
+	// (PlanRoutes.PricePlanDetailURL / PricePlanTabActionURL). When set, tab
+	// items render with these URLs so the address bar stays under the plan
+	// namespace as the operator switches tabs.
+	PlanScopedDetailURL    string
+	PlanScopedTabActionURL string
 }
 
 // PageData is the template data for the schedule-scoped plan detail page.
@@ -112,8 +134,8 @@ type EditFormData struct {
 	AmountBasisOptions  []types.SelectOption
 	BillingCycleValue   string
 	BillingCycleUnit    string
-	DefaultTermValue    string
-	DefaultTermUnit     string
+	// kept as DefaultTermValue/Unit on the wire (form input names) but renamed
+	// in the form.Data struct.
 	DurationUnitOptions []types.SelectOption
 
 	// PricingLocked is true when the price_plan is referenced by active subscriptions.
@@ -151,8 +173,27 @@ type ProductPriceFormData struct {
 	DateStart               string // ISO 8601 (YYYY-MM-DD) or empty
 	DateEnd                 string // ISO 8601 (YYYY-MM-DD) or empty
 
+	// Parent PricePlan context — drives field visibility and currency lock.
+	// Why: billing_treatment is meaningless when parent.billing_kind=ONE_TIME
+	// (no cycles); per-line currency must match parent.billing_currency.
+	ParentBillingKind  string // proto enum string, e.g. "BILLING_KIND_RECURRING"
+	ParentAmountBasis  string // proto enum string, e.g. "AMOUNT_BASIS_PER_CYCLE"
+	ShowTreatment      bool   // false when parent.billing_kind=ONE_TIME
+	BasisBannerMessage string // contextual hint about the parent's amount_basis
+
+	// Read-only "package context" block (Plan, Rate card, Billing model,
+	// Amount basis, Billing cycle, Term, Currency) rendered above the
+	// editable fields via the shared `ppp-parent-context` partial.
+	BillingKindDisplay    string
+	AmountBasisDisplay    string
+	BillingCycleDisplay   string
+	TermDisplay           string
+	ParentCurrencyDisplay string
+	RateCardName          string
+
 	// Wave 2: labels for the new fields.
 	ProductPricePlanLabels centymo.ProductPricePlanFormLabels
+	PriceScheduleLabels    centymo.PriceScheduleDetailLabels // for section labels
 
 	// PricingLocked is true when the parent PricePlan is referenced by an active
 	// subscription — editing the per-item price would shift revenue allocation
@@ -179,6 +220,69 @@ func NewView(deps *DetailViewDeps) view.View {
 
 		return view.OK("price-schedule-plan-detail", pageData)
 	})
+}
+
+// NewPlanScopedView renders the same detail page but mounted under
+// /app/plans/detail/{id}/price/{ppid}, where {id} is the plan_id (not the
+// schedule_id). The handler resolves the underlying schedule_id by reading the
+// price_plan, then delegates to buildPageData. The mount-override fields on
+// deps anchor ActiveNav to Services > Packages and point the breadcrumb back
+// at the plan detail's package-prices tab.
+func NewPlanScopedView(deps *DetailViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		ppid := viewCtx.Request.PathValue("ppid")
+		sid, err := resolveScheduleIDFromPricePlan(ctx, deps, ppid)
+		if err != nil {
+			return view.Error(err)
+		}
+		activeTab := deps.ScheduleLabels.Tabs.CanonicalizeTab(viewCtx.Request.URL.Query().Get("tab"))
+		if activeTab == "" {
+			activeTab = "info"
+		}
+		pageData, err := buildPageData(ctx, deps, sid, ppid, activeTab, viewCtx)
+		if err != nil {
+			return view.Error(err)
+		}
+		return view.OK("price-schedule-plan-detail", pageData)
+	})
+}
+
+// NewPlanScopedTabAction handles GET /action/plan/{id}/price/{ppid}/tab/{tab}.
+// {id} is plan_id; resolves schedule_id from the price_plan record.
+func NewPlanScopedTabAction(deps *DetailViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		ppid := viewCtx.Request.PathValue("ppid")
+		sid, err := resolveScheduleIDFromPricePlan(ctx, deps, ppid)
+		if err != nil {
+			return view.Error(err)
+		}
+		tab := deps.ScheduleLabels.Tabs.CanonicalizeTab(viewCtx.Request.PathValue("tab"))
+		if tab == "" {
+			tab = "info"
+		}
+		pageData, err := buildPageData(ctx, deps, sid, ppid, tab, viewCtx)
+		if err != nil {
+			return view.Error(err)
+		}
+		return view.OK("price-schedule-plan-tab-"+tab, pageData)
+	})
+}
+
+// resolveScheduleIDFromPricePlan looks up a price_plan and returns its
+// price_schedule_id. Used by the plan-scoped entry points to translate
+// {plan_id, ppid} URL params into the {schedule_id, ppid} pair the existing
+// buildPageData helper expects.
+func resolveScheduleIDFromPricePlan(ctx context.Context, deps *DetailViewDeps, ppid string) (string, error) {
+	if deps.ReadPricePlan == nil || ppid == "" {
+		return "", fmt.Errorf("price plan not found")
+	}
+	resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
+		Data: &priceplanpb.PricePlan{Id: ppid},
+	})
+	if err != nil || len(resp.GetData()) == 0 {
+		return "", fmt.Errorf("price plan not found")
+	}
+	return resp.GetData()[0].GetPriceScheduleId(), nil
 }
 
 // NewTabAction handles GET /action/price-schedule/{id}/plan/{ppid}/tab/{tab}.
@@ -262,8 +366,8 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
 				BillingCycleValue:   billingCycleValue,
 				BillingCycleUnit:    pp.GetBillingCycleUnit(),
-				DefaultTermValue:    defaultTermValue,
-				DefaultTermUnit:     pp.GetDefaultTermUnit(),
+				TermValue:           defaultTermValue,
+				TermUnit:            pp.GetDefaultTermUnit(),
 				DurationUnitOptions: buildDurationUnitOptions(deps.CommonLabels),
 				PlanOptions:           planOpts,
 				SelectedPlanID:        pp.GetPlanId(),
@@ -427,16 +531,33 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		pplLabels := deps.ProductPricePlanLabels.Form
 		if viewCtx.Request.Method == http.MethodGet {
 			planName, planDesc := lookupPackageNameDesc(ctx, deps, ppid)
+			parent, _ := loadParentContext(ctx, deps, ppid)
+			currency := parent.Currency
+			if currency == "" {
+				currency = "PHP"
+			}
+			showTreatment := parent.BillingKind != "BILLING_KIND_ONE_TIME"
 			return view.OK("price-schedule-plan-product-price-drawer", &ProductPriceFormData{
 				FormAction:              route.ResolveURL(deps.Routes.PlanProductPriceAddURL, "id", sid, "ppid", ppid),
 				ScheduleID:              sid,
 				PricePlanID:             ppid,
-				Currency:                loadPricePlanCurrency(ctx, deps, ppid),
+				Currency:                currency,
 				CommonLabels:            deps.CommonLabels,
 				PlanName:                planName,
 				PlanDescription:         planDesc,
 				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
+				ParentBillingKind:       parent.BillingKind,
+				ParentAmountBasis:       parent.AmountBasis,
+				ShowTreatment:           showTreatment,
+				BasisBannerMessage:      basisBannerMessage(parent.AmountBasis, deps.ScheduleLabels.Detail),
+				BillingKindDisplay:      parent.BillingKindDisplay,
+				AmountBasisDisplay:      parent.AmountBasisDisplay,
+				BillingCycleDisplay:     parent.BillingCycleDisplay,
+				TermDisplay:             parent.TermDisplay,
+				ParentCurrencyDisplay:   parent.ParentCurrencyDisplay,
+				RateCardName:            parent.RateCardName,
 				ProductPricePlanLabels:  pplLabels,
+				PriceScheduleLabels:     deps.ScheduleLabels.Detail,
 			})
 		}
 
@@ -465,6 +586,16 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		dateStart := viewCtx.Request.FormValue("date_start")
 		dateEnd := viewCtx.Request.FormValue("date_end")
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
+		parent, _ := loadParentContext(ctx, deps, ppid)
+		// Currency must match parent PricePlan.billing_currency (proto invariant).
+		if parent.Currency != "" && currency != parent.Currency {
+			return centymo.HTMXError(deps.PlanLabels.Messages.CurrencyMismatch)
+		}
+		// billing_treatment is meaningless when parent has no cycles. Drop the
+		// posted value so we never persist a stale treatment on a ONE_TIME plan.
+		if parent.BillingKind == "BILLING_KIND_ONE_TIME" {
+			billingTreatment = ""
+		}
 		record := &productpriceplanpb.ProductPricePlan{
 			PricePlanId:     ppid,
 			ProductPlanId:   productPlanID,
@@ -512,10 +643,15 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 
 		pplLabels := deps.ProductPricePlanLabels.Form
 		if viewCtx.Request.Method == http.MethodGet {
+			parent, _ := loadParentContext(ctx, deps, ppid)
 			currency := existing.GetBillingCurrency()
+			if currency == "" {
+				currency = parent.Currency
+			}
 			if currency == "" {
 				currency = "PHP"
 			}
+			showTreatment := parent.BillingKind != "BILLING_KIND_ONE_TIME"
 			planName, planDesc := lookupPackageNameDesc(ctx, deps, ppid)
 			// Model D — resolve product + variant via the referenced ProductPlan row.
 			existingProductPlanID := existing.GetProductPlanId()
@@ -552,7 +688,18 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
 				DateStart:               existing.GetDateStart(),
 				DateEnd:                 existing.GetDateEnd(),
+				ParentBillingKind:       parent.BillingKind,
+				ParentAmountBasis:       parent.AmountBasis,
+				ShowTreatment:           showTreatment,
+				BasisBannerMessage:      basisBannerMessage(parent.AmountBasis, deps.ScheduleLabels.Detail),
+				BillingKindDisplay:      parent.BillingKindDisplay,
+				AmountBasisDisplay:      parent.AmountBasisDisplay,
+				BillingCycleDisplay:     parent.BillingCycleDisplay,
+				TermDisplay:             parent.TermDisplay,
+				ParentCurrencyDisplay:   parent.ParentCurrencyDisplay,
+				RateCardName:            parent.RateCardName,
 				ProductPricePlanLabels:  pplLabels,
+				PriceScheduleLabels:     deps.ScheduleLabels.Detail,
 			})
 		}
 
@@ -580,6 +727,13 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		dateStart := viewCtx.Request.FormValue("date_start")
 		dateEnd := viewCtx.Request.FormValue("date_end")
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
+		parent, _ := loadParentContext(ctx, deps, ppid)
+		if parent.Currency != "" && currency != parent.Currency {
+			return centymo.HTMXError(deps.PlanLabels.Messages.CurrencyMismatch)
+		}
+		if parent.BillingKind == "BILLING_KIND_ONE_TIME" {
+			billingTreatment = ""
+		}
 		updated := &productpriceplanpb.ProductPricePlan{
 			Id:              pppid,
 			PricePlanId:     ppid,
@@ -674,9 +828,34 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 	scheduleName := lookupScheduleName(ctx, deps, sid)
 	scheduleBack := route.ResolveURL(deps.Routes.DetailURL, "id", sid) + "?tab=" + deps.ScheduleLabels.Tabs.ResolveTabSlug("pricePlan")
 
+	// Plan-scoped mount overrides — keep the page anchored to Services > Packages
+	// when invoked under /app/plans/detail/{id}/price/{ppid}. The breadcrumb
+	// resolves to the loaded price_plan's plan_id so the back link survives
+	// even when the schedule is missing.
+	breadcrumbLabel := scheduleName
+	breadcrumbURL := scheduleBack
+	if deps.PlanDetailBackURL != "" {
+		back := route.ResolveURL(deps.PlanDetailBackURL, "id", pp.GetPlanId())
+		if deps.PlanDetailBackTab != "" {
+			back += "?tab=" + deps.PlanDetailBackTab
+		}
+		breadcrumbURL = back
+	}
+	activeNav := deps.Routes.ActiveNav
+	if deps.ActiveNavOverride != "" {
+		activeNav = deps.ActiveNavOverride
+	}
+	activeSubNav := deps.Routes.ActiveSubNav
+	if deps.ActiveSubNavOverride != "" {
+		activeSubNav = deps.ActiveSubNavOverride
+	}
+
 	// Fallback to linked Plan's name/description when price_plan values are blank —
 	// mirrors the rate-card packages-tab table convention.
 	planName, planDesc := lookupPlanNameDesc(ctx, deps, pp.GetPlanId())
+	if deps.PlanDetailBackURL != "" && planName != "" {
+		breadcrumbLabel = planName
+	}
 	effectiveName := strings.TrimSpace(pp.GetName())
 	if effectiveName == "" {
 		effectiveName = planName
@@ -699,8 +878,22 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 		}
 	}
 
-	base := route.ResolveURL(deps.Routes.PlanDetailURL, "id", sid, "ppid", ppid)
-	action := route.ResolveURL(deps.Routes.PlanTabActionURL, "id", sid, "ppid", ppid, "tab", "")
+	// Tab item URLs reflect the active mount: when plan-scoped, they live under
+	// /app/plans/detail/{plan_id}/price/{ppid}; otherwise the rate-card-scoped
+	// defaults derived from PriceScheduleRoutes.
+	detailURLTemplate := deps.Routes.PlanDetailURL
+	tabActionURLTemplate := deps.Routes.PlanTabActionURL
+	pathID := sid
+	if deps.PlanScopedDetailURL != "" {
+		detailURLTemplate = deps.PlanScopedDetailURL
+		// Plan-scoped routes use plan_id as {id}; resolve from the loaded price_plan.
+		pathID = pp.GetPlanId()
+	}
+	if deps.PlanScopedTabActionURL != "" {
+		tabActionURLTemplate = deps.PlanScopedTabActionURL
+	}
+	base := route.ResolveURL(detailURLTemplate, "id", pathID, "ppid", ppid)
+	action := route.ResolveURL(tabActionURLTemplate, "id", pathID, "ppid", ppid, "tab", "")
 	productPricesSlug := deps.ScheduleLabels.Tabs.ResolveTabSlug("product-prices")
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: deps.ScheduleLabels.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
@@ -717,19 +910,19 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 			CacheVersion:        viewCtx.CacheVersion,
 			Title:               effectiveName,
 			CurrentPath:         viewCtx.CurrentPath,
-			ActiveNav:           deps.Routes.ActiveNav,
-			ActiveSubNav:        deps.Routes.ActiveSubNav,
+			ActiveNav:           activeNav,
+			ActiveSubNav:        activeSubNav,
 			HeaderTitle:         effectiveName,
 			HeaderSubtitle:      headerSubtitle,
-			HeaderBreadcrumb:    scheduleName,
-			HeaderBreadcrumbURL: scheduleBack,
+			HeaderBreadcrumb:    breadcrumbLabel,
+			HeaderBreadcrumbURL: breadcrumbURL,
 			HeaderIcon:          "icon-tag",
 			CommonLabels:        deps.CommonLabels,
 		},
 		ContentTemplate:        "price-schedule-plan-detail-content",
 		ScheduleID:             sid,
 		ScheduleName:           scheduleName,
-		ScheduleBackURL:        scheduleBack,
+		ScheduleBackURL:        breadcrumbURL,
 		PricePlan:              pp,
 		Labels:                 deps.PlanLabels,
 		ActiveTab:              activeTab,
@@ -759,10 +952,19 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 	perms := view.GetUserPermissions(ctx)
 	l := deps.PlanLabels
 
+	pplLabels := deps.ProductPricePlanLabels.Form
+	parent, _ := loadParentContext(ctx, deps, ppid)
+	showTreatment := parent.BillingKind != "BILLING_KIND_ONE_TIME"
+
 	columns := []types.TableColumn{
 		{Key: "product", Label: deps.ScheduleLabels.Detail.ProductPriceColumnProduct, Sortable: true},
-		{Key: "price", Label: deps.ScheduleLabels.Detail.ProductPriceColumnPrice, Sortable: true, WidthClass: "col-4xl"},
+		{Key: "price", Label: deps.ScheduleLabels.Detail.ProductPriceColumnPrice, Sortable: true, WidthClass: "col-4xl", Align: "right"},
+		{Key: "currency", Label: deps.ScheduleLabels.Detail.ProductPriceColumnCurrency, Sortable: false, WidthClass: "col-2xl"},
 	}
+	if showTreatment {
+		columns = append(columns, types.TableColumn{Key: "treatment", Label: deps.ScheduleLabels.Detail.ProductPriceColumnTreatment, Sortable: false, WidthClass: "col-3xl"})
+	}
+	columns = append(columns, types.TableColumn{Key: "effective", Label: deps.ScheduleLabels.Detail.ProductPriceColumnEffective, Sortable: false, WidthClass: "col-4xl"})
 
 	productNames := map[string]string{}
 	if deps.ListProducts != nil {
@@ -831,12 +1033,18 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 					itemCurrency = "PHP"
 				}
 				priceCell := types.MoneyCell(float64(item.GetBillingAmount()), itemCurrency, true)
+				cells := []types.TableCell{
+					{Type: "text", Value: productName},
+					priceCell,
+					{Type: "text", Value: itemCurrency},
+				}
+				if showTreatment {
+					cells = append(cells, types.TableCell{Type: "text", Value: billingTreatmentDisplay(item.GetBillingTreatment().String(), pplLabels)})
+				}
+				cells = append(cells, types.TableCell{Type: "text", Value: effectiveRangeDisplay(item.GetDateStart(), item.GetDateEnd())})
 				rows = append(rows, types.TableRow{
-					ID: itemID,
-					Cells: []types.TableCell{
-						{Type: "text", Value: productName},
-						priceCell,
-					},
+					ID:    itemID,
+					Cells: cells,
 					// No delete action: rows are auto-seeded from product_plan assignments,
 					// so deletion here would desync the two tables. Use the plan's
 					// Products tab to remove the product_plan link, which in turn
@@ -914,20 +1122,134 @@ func loadPricePlanPlanID(ctx context.Context, deps *DetailViewDeps, pricePlanID 
 }
 
 func loadPricePlanCurrency(ctx context.Context, deps *DetailViewDeps, pricePlanID string) string {
-	if deps.ReadPricePlan == nil {
+	parent, ok := loadParentContext(ctx, deps, pricePlanID)
+	if !ok || parent.Currency == "" {
 		return "PHP"
+	}
+	return parent.Currency
+}
+
+// parentPricePlanContext captures the parent PricePlan fields the PPP drawer
+// needs to know about: currency (locks the per-line currency), billing_kind
+// (decides whether billing_treatment renders), amount_basis (drives the
+// banner explaining what the line prices mean), and pre-formatted display
+// strings for the read-only context block above the editable fields.
+type parentPricePlanContext struct {
+	Currency    string
+	BillingKind string
+	AmountBasis string
+
+	// Display strings — empty when the corresponding source data is missing.
+	BillingKindDisplay    string
+	AmountBasisDisplay    string
+	BillingCycleDisplay   string
+	TermDisplay           string
+	ParentCurrencyDisplay string
+	RateCardName          string
+}
+
+func loadParentContext(ctx context.Context, deps *DetailViewDeps, pricePlanID string) (parentPricePlanContext, bool) {
+	if deps.ReadPricePlan == nil || pricePlanID == "" {
+		return parentPricePlanContext{}, false
 	}
 	resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
 		Data: &priceplanpb.PricePlan{Id: pricePlanID},
 	})
 	if err != nil || len(resp.GetData()) == 0 {
-		return "PHP"
+		return parentPricePlanContext{}, false
 	}
-	c := resp.GetData()[0].GetBillingCurrency()
-	if c == "" {
-		return "PHP"
+	pp := resp.GetData()[0]
+	pc := parentPricePlanContext{
+		Currency:              pp.GetBillingCurrency(),
+		BillingKind:           pp.GetBillingKind().String(),
+		AmountBasis:           pp.GetAmountBasis().String(),
+		ParentCurrencyDisplay: pp.GetBillingCurrency(),
+		BillingKindDisplay:    formatBillingKindLabel(pp.GetBillingKind().String(), deps.PlanLabels.Form),
+		AmountBasisDisplay:    formatAmountBasisLabel(pp.GetAmountBasis().String(), deps.PlanLabels.Form),
 	}
-	return c
+	if v := pp.GetBillingCycleValue(); v > 0 {
+		pc.BillingCycleDisplay = pyeza.FormatDuration(v, pp.GetBillingCycleUnit(), deps.CommonLabels.DurationUnit)
+	}
+	if v := pp.GetDefaultTermValue(); v > 0 {
+		pc.TermDisplay = pyeza.FormatDuration(v, pp.GetDefaultTermUnit(), deps.CommonLabels.DurationUnit)
+	}
+	if scheduleID := pp.GetPriceScheduleId(); scheduleID != "" && deps.ReadPriceSchedule != nil {
+		if schedResp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{
+			Data: &priceschedulepb.PriceSchedule{Id: scheduleID},
+		}); err == nil && len(schedResp.GetData()) > 0 {
+			pc.RateCardName = schedResp.GetData()[0].GetName()
+		}
+	}
+	return pc, true
+}
+
+func formatBillingKindLabel(kind string, l centymo.PricePlanFormLabels) string {
+	switch kind {
+	case "BILLING_KIND_ONE_TIME":
+		return l.BillingKindOneTime
+	case "BILLING_KIND_RECURRING":
+		return l.BillingKindRecurring
+	case "BILLING_KIND_CONTRACT":
+		return l.BillingKindContract
+	}
+	return kind
+}
+
+func formatAmountBasisLabel(basis string, l centymo.PricePlanFormLabels) string {
+	switch basis {
+	case "AMOUNT_BASIS_PER_CYCLE":
+		return l.AmountBasisPerCycle
+	case "AMOUNT_BASIS_TOTAL_PACKAGE":
+		return l.AmountBasisTotalPackage
+	case "AMOUNT_BASIS_DERIVED_FROM_LINES":
+		return l.AmountBasisDerivedFromLines
+	}
+	return basis
+}
+
+// billingTreatmentDisplay maps the proto enum string to its human label.
+// Returns "—" for unspecified so the table cell stays visually quiet.
+func billingTreatmentDisplay(value string, l centymo.ProductPricePlanFormLabels) string {
+	switch value {
+	case "BILLING_TREATMENT_RECURRING":
+		return l.BillingTreatmentRecurring
+	case "BILLING_TREATMENT_ONE_TIME_INITIAL":
+		return l.BillingTreatmentOneTimeInitial
+	case "BILLING_TREATMENT_USAGE_BASED":
+		return l.BillingTreatmentUsageBased
+	}
+	return "—"
+}
+
+// effectiveRangeDisplay renders the per-line effective dates as "start → end",
+// "from start", "until end", or "Always" when both ends are empty.
+func effectiveRangeDisplay(start, end string) string {
+	switch {
+	case start == "" && end == "":
+		return "Always"
+	case start != "" && end == "":
+		return "from " + start
+	case start == "" && end != "":
+		return "until " + end
+	default:
+		return start + " → " + end
+	}
+}
+
+// basisBannerMessage returns a one-line explanation for the user about the
+// relationship between the parent PricePlan's amount_basis and the per-line
+// price they're editing. Sourced from PriceScheduleDetailLabels so tier
+// overrides flow through lyngua.
+func basisBannerMessage(amountBasis string, l centymo.PriceScheduleDetailLabels) string {
+	switch amountBasis {
+	case "AMOUNT_BASIS_DERIVED_FROM_LINES":
+		return l.BasisBannerDerived
+	case "AMOUNT_BASIS_TOTAL_PACKAGE":
+		return l.BasisBannerTotalPackage
+	case "AMOUNT_BASIS_PER_CYCLE":
+		return l.BasisBannerPerCycle
+	}
+	return ""
 }
 
 func loadProductOptions(ctx context.Context, deps *DetailViewDeps, planID, selectedProductID string) []types.SelectOption {

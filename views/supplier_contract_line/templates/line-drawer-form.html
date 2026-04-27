@@ -1,0 +1,135 @@
+{{/*
+Supplier Contract Line drawer form — child of contract detail Lines tab.
+Single-section line form: description, line_type, product_id, quantity,
+unit_price, treatment select, expense_account_id, start_date, end_date.
+*/}}
+{{define "supplier-contract-line-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="supplier_contract_id" value="{{.SupplierContractID}}">
+
+    <div class="sheet-body">
+
+        {{/* Description — required */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "description"
+                "Label" .Labels.Lines.FormDescription
+                "Value" .Description
+                "Required" true
+                "Placeholder" .Labels.Lines.FormDescriptionPlaceholder
+            )}}
+        </div>
+
+        {{/* Line type + Treatment */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "line_type"
+                "Label" .Labels.Lines.FormLineType
+                "Value" .LineType
+                "Required" true
+                "Options" (list
+                    (dict "Value" "goods"   "Label" .Labels.Lines.LineTypeGoods)
+                    (dict "Value" "service" "Label" .Labels.Lines.LineTypeService)
+                    (dict "Value" "expense" "Label" .Labels.Lines.LineTypeExpense)
+                )
+                "Info" .Labels.Lines.FormLineTypeInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "treatment"
+                "Label" .Labels.Lines.FormTreatment
+                "Value" .Treatment
+                "Required" true
+                "Options" .TreatmentOptions
+                "Info" .Labels.Lines.FormTreatmentInfo
+            )}}
+        </div>
+
+        {{/* Product picker — optional */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "product_id"
+                "Label" .Labels.Lines.FormProduct
+                "Value" .ProductID
+                "Options" .Products
+                "Placeholder" .Labels.Lines.FormProductPlaceholder
+            )}}
+        </div>
+
+        {{/* Quantity + Unit price */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "quantity"
+                "Label" .Labels.Lines.FormQuantity
+                "Value" .Quantity
+                "Required" true
+                "Placeholder" "1"
+                "Info" .Labels.Lines.FormQuantityInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "unit_price"
+                "Label" .Labels.Lines.FormUnitPrice
+                "Value" .UnitPrice
+                "Required" true
+                "Placeholder" "0.00"
+                "Info" .Labels.Lines.FormUnitPriceInfo
+            )}}
+        </div>
+
+        {{/* Expense account ID */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "expense_account_id"
+                "Label" .Labels.Lines.FormExpenseAccount
+                "Value" .ExpenseAccountID
+                "Placeholder" .Labels.Lines.FormExpenseAccountPlaceholder
+            )}}
+        </div>
+
+        {{/* Line dates — optional override from contract dates */}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "start_date"
+                "Label" .Labels.Lines.FormStartDate
+                "Value" .StartDate
+                "Hint" .Labels.Lines.FormStartDateHint
+            )}}
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "end_date"
+                "Label" .Labels.Lines.FormEndDate
+                "Value" .EndDate
+            )}}
+        </div>
+
+        {{/* Line number — hidden by default, shown for ordering */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "line_number"
+                "Label" .Labels.Lines.FormLineNumber
+                "Value" .LineNumber
+                "Placeholder" "1"
+            )}}
+        </div>
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
+            {{.CommonLabels.Actions.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary" data-testid="contract-line-save-btn">
+            {{.CommonLabels.Actions.Save}}
+        </button>
+    </div>
+</form>
+{{end}}

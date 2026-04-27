@@ -59,11 +59,11 @@ type Data struct {
 	BillingKindOptions []types.SelectOption
 	AmountBasis        string
 	AmountBasisOptions []types.SelectOption
-	BillingCycleValue  string // int32 as string for form field
-	BillingCycleUnit   string
-	DefaultTermValue   string // int32 as string for form field
-	DefaultTermUnit    string
-	DurationUnitOptions []types.SelectOption // reused for both billing_cycle_unit and default_term_unit
+	BillingCycleValue   string // int32 as string for form field
+	BillingCycleUnit    string
+	TermValue           string // int32 as string for form field; backs default_term_value on the wire
+	TermUnit            string // backs default_term_unit on the wire
+	DurationUnitOptions []types.SelectOption // reused for both billing_cycle_unit and term unit
 
 	// Auto-complete option lists. Each entry is {Value, Label, Selected?}.
 	// PlanOptions is consumed in Schedule + Standalone contexts;
@@ -80,6 +80,14 @@ type Data struct {
 	// on an edit load, the template disables amount/currency/duration_*.
 	InUse       bool
 	LockMessage string
+
+	// 2026-04-27 plan-client-scope plan §6.7 — surfaced when the parent
+	// PriceSchedule is client-scoped. The template renders an info banner
+	// "{ClientName} owns this rate card..." above the first form section
+	// and emits a hidden client_id input populated server-side. Empty when
+	// the parent schedule is master.
+	ParentScheduleClientID   string
+	ParentScheduleClientName string
 
 	Labels       Labels
 	CommonLabels pyeza.CommonLabels
@@ -111,13 +119,13 @@ type Labels struct {
 	LocationHintPrefix     string
 
 	// Wave 2: new billing semantics labels.
-	BillingKindLabel            string
-	AmountBasisLabel            string
-	BillingCycleLabel           string
-	BillingCyclePlaceholder     string
-	DefaultTermLabel            string
-	DefaultTermPlaceholder      string
-	DefaultTermOpenEndedHelp    string
+	BillingKindLabel        string
+	AmountBasisLabel        string
+	BillingCycleLabel       string
+	BillingCyclePlaceholder string
+	TermLabel               string
+	TermPlaceholder         string
+	TermOpenEndedHelp       string
 
 	// Field-level info text surfaced via an info button beside each label.
 	// Hover/click opens a popover explaining what the field means.
@@ -130,8 +138,12 @@ type Labels struct {
 	AmountInfo       string
 	CurrencyInfo     string
 	BillingCycleInfo string
-	DefaultTermInfo  string
+	TermInfo         string
 	ActiveInfo       string
+
+	// 2026-04-27 plan-client-scope plan §6.7 — info banner template.
+	// Templated via {{.ClientName}}. Blank means "no banner".
+	ParentScheduleClientNotice string
 }
 
 // LabelsFromPriceSchedule maps the price-schedule-side PlanForm labels into
@@ -197,13 +209,13 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		ScheduleSearch:         pp.ScheduleSearch,
 		LocationHintPrefix:     pp.LocationHintPrefix,
 		// Wave 2 new fields
-		BillingKindLabel:         pp.BillingKindLabel,
-		AmountBasisLabel:         pp.AmountBasisLabel,
-		BillingCycleLabel:        pp.BillingCycleLabel,
-		BillingCyclePlaceholder:  pp.BillingCyclePlaceholder,
-		DefaultTermLabel:         pp.DefaultTermLabel,
-		DefaultTermPlaceholder:   pp.DefaultTermPlaceholder,
-		DefaultTermOpenEndedHelp: pp.DefaultTermOpenEndedHelp,
+		BillingKindLabel:        pp.BillingKindLabel,
+		AmountBasisLabel:        pp.AmountBasisLabel,
+		BillingCycleLabel:       pp.BillingCycleLabel,
+		BillingCyclePlaceholder: pp.BillingCyclePlaceholder,
+		TermLabel:               pp.TermLabel,
+		TermPlaceholder:         pp.TermPlaceholder,
+		TermOpenEndedHelp:       pp.TermOpenEndedHelp,
 		// Field-level info popovers
 		PlanInfo:         pp.PlanInfo,
 		ScheduleInfo:     pp.ScheduleInfo,
@@ -214,8 +226,10 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		AmountInfo:       pp.AmountInfo,
 		CurrencyInfo:     pp.CurrencyInfo,
 		BillingCycleInfo: pp.BillingCycleInfo,
-		DefaultTermInfo:  pp.DefaultTermInfo,
+		TermInfo:         pp.TermInfo,
 		ActiveInfo:       pp.ActiveInfo,
+		// 2026-04-27 plan-client-scope plan §6.7.
+		ParentScheduleClientNotice: pp.ParentScheduleClientNotice,
 	}
 }
 

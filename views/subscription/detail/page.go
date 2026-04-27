@@ -97,6 +97,15 @@ type PageData struct {
 	AuditHasNext    bool
 	AuditNextCursor string
 	AuditHistoryURL string
+
+	// 2026-04-27 plan-client-scope plan §6.5 — Package tab.
+	// CTA shown on the package tab when pricePlan.client_id IS NULL.
+	PackageCustomizeURL    string // POST endpoint for the customize CTA
+	PackageCustomizeLabel  string // pre-resolved label with {{.ClientName}}
+	PackageCustomizeShown  bool   // false hides the CTA (already client-scoped)
+	PackageCustomizeDisabled bool // true grays the CTA (no permission, etc.)
+	PackageClientName      string
+	PackagePricePlan       map[string]any // {id, name, currency, amount, plan_id, client_id}
 }
 
 // subscriptionToMap converts a Subscription protobuf to a map[string]any for template use.
@@ -236,6 +245,16 @@ func NewView(deps *DetailViewDeps) view.View {
 		subscriptionActive, _ := subscription["active"].(bool)
 
 		switch activeTab {
+		case "package":
+			canCustomize := perms != nil && (perms.Can("revenue", "create") || perms.Can("plan", "create"))
+			customizeURL := route.ResolveURL(deps.Routes.CustomizePackageURL, "id", id)
+			shown, disabled, label, clientName, ppData := buildPackageTabData(sub, customizeURL, l.Actions.CustomizePackage, canCustomize)
+			pageData.PackageCustomizeURL = customizeURL
+			pageData.PackageCustomizeShown = shown && subscriptionActive
+			pageData.PackageCustomizeDisabled = disabled
+			pageData.PackageCustomizeLabel = label
+			pageData.PackageClientName = clientName
+			pageData.PackagePricePlan = ppData
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			pageData.Invoices = buildInvoicesTable(
@@ -350,11 +369,52 @@ func buildTabItems(l centymo.SubscriptionLabels, id string, routes centymo.Subsc
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		// 2026-04-27 plan-client-scope plan §6.5 — Package tab.
+		{Key: "package", Label: l.Detail.Plan, Href: base + "?tab=package", HxGet: action + "package", Icon: "icon-package"},
 		{Key: "invoices", Label: l.Tabs.Invoices, Href: base + "?tab=invoices", HxGet: action + "invoices", Icon: "icon-file-text"},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
-		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+		{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
+}
+
+// buildPackageTabData populates the per-tab fields used by the Package tab
+// per plan §6.5. The CTA is shown when pricePlan.client_id == "" (master);
+// hidden when the PricePlan is already client-scoped. Caller passes the
+// pre-resolved customize URL (centymo.SubscriptionCustomizePackageURL with
+// the {id} substituted) — keeps this helper free of route knowledge.
+func buildPackageTabData(sub *subscriptionpb.Subscription, customizeURL, customizeLabelTemplate string, canCustomize bool) (shown, disabled bool, label, clientName string, pp map[string]any) {
+	if sub == nil {
+		return false, false, "", "", nil
+	}
+	if c := sub.GetClient(); c != nil {
+		clientName = c.GetName()
+		if clientName == "" {
+			if u := c.GetUser(); u != nil {
+				clientName = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			}
+		}
+	}
+	if pricePlan := sub.GetPricePlan(); pricePlan != nil {
+		pp = map[string]any{
+			"id":         pricePlan.GetId(),
+			"name":       pricePlan.GetName(),
+			"plan_id":    pricePlan.GetPlanId(),
+			"client_id":  pricePlan.GetClientId(),
+			"amount":     pricePlan.GetBillingAmount(),
+			"currency":   pricePlan.GetBillingCurrency(),
+		}
+		// CTA gating per plan §6.5 / decision #6:
+		//   - master (client_id == "") → show.
+		//   - already client-scoped → hide (offer Edit instead).
+		shown = pricePlan.GetClientId() == ""
+	}
+	if shown {
+		label = strings.ReplaceAll(customizeLabelTemplate, "{{.ClientName}}", clientName)
+		disabled = !canCustomize
+	}
+	_ = customizeURL // template reads this from PageData.PackageCustomizeURL
+	return shown, disabled, label, clientName, pp
 }
 
 // loadSubscriptionInvoices fetches revenue records filtered by subscription_id.
@@ -522,6 +582,16 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		subscriptionActive, _ := subscription["active"].(bool)
 
 		switch tab {
+		case "package":
+			canCustomize := perms != nil && (perms.Can("revenue", "create") || perms.Can("plan", "create"))
+			customizeURL := route.ResolveURL(deps.Routes.CustomizePackageURL, "id", id)
+			shown, disabled, label, clientName, ppData := buildPackageTabData(sub, customizeURL, l.Actions.CustomizePackage, canCustomize)
+			pageData.PackageCustomizeURL = customizeURL
+			pageData.PackageCustomizeShown = shown && subscriptionActive
+			pageData.PackageCustomizeDisabled = disabled
+			pageData.PackageCustomizeLabel = label
+			pageData.PackageClientName = clientName
+			pageData.PackagePricePlan = ppData
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			pageData.Invoices = buildInvoicesTable(
@@ -568,6 +638,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		templateName := "subscription-tab-" + tab
 		if tab == "invoices" {
 			templateName = "subscription-tab-invoices"
+		}
+		if tab == "package" {
+			templateName = "subscription-tab-package"
 		}
 		if tab == "attachments" {
 			templateName = "attachment-tab"

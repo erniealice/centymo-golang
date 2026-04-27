@@ -56,7 +56,7 @@ type PageData struct {
 func purchaseOrderToMap(po *purchaseorderpb.PurchaseOrder) map[string]any {
 	supplierName := ""
 	if supplier := po.GetSupplier(); supplier != nil {
-		supplierName = supplier.GetCompanyName()
+		supplierName = supplier.GetName()
 	}
 	if supplierName == "" {
 		supplierName = po.GetSupplierId()

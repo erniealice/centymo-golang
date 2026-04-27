@@ -13,6 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	view "github.com/erniealice/pyeza-golang/view"
 
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
@@ -57,6 +58,13 @@ type ModuleDeps struct {
 
 	GetPriceScheduleInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 	GetPricePlanInUseIDs     func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
+	ListClients      func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	SearchClientsURL string
+	// ListClientNames returns id → display name. Used by the schedule list's
+	// optional Client column when the §6.1 filter chip is set.
+	ListClientNames func(ctx context.Context) map[string]string
 }
 
 // Module holds all constructed price_schedule views.
@@ -82,6 +90,9 @@ type Module struct {
 	PlanProductPriceAdd     view.View
 	PlanProductPriceEdit    view.View
 	PlanProductPriceDelete  view.View
+
+	// 2026-04-27 plan-client-scope plan §4.4.1 — name suggest swap.
+	SuggestName view.View
 }
 
 // NewModule creates the price_schedule module with all views wired.
@@ -95,6 +106,9 @@ func NewModule(deps *ModuleDeps) *Module {
 		DeletePriceSchedule:      deps.DeletePriceSchedule,
 		ListLocations:            deps.ListLocations,
 		GetPriceScheduleInUseIDs: deps.GetPriceScheduleInUseIDs,
+		// 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
+		ListClients:      deps.ListClients,
+		SearchClientsURL: deps.SearchClientsURL,
 	}
 
 	listDeps := &priceschedulelist.ListViewDeps{
@@ -105,6 +119,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		CommonLabels:             deps.CommonLabels,
 		TableLabels:              deps.TableLabels,
 		GetPriceScheduleInUseIDs: deps.GetPriceScheduleInUseIDs,
+		ListClientNames:          deps.ListClientNames,
 	}
 	listView := priceschedulelist.NewView(listDeps)
 	tableView := priceschedulelist.NewTableView(listDeps)
@@ -170,6 +185,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		PlanProductPriceAdd:    priceschedulePlan.NewProductPriceAddAction(planDetailDeps),
 		PlanProductPriceEdit:   priceschedulePlan.NewProductPriceEditAction(planDetailDeps),
 		PlanProductPriceDelete: priceschedulePlan.NewProductPriceDeleteAction(planDetailDeps),
+		SuggestName:            pricescheduleaction.NewSuggestNameAction(actionDeps),
 	}
 }
 

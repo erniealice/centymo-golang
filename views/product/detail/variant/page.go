@@ -502,12 +502,33 @@ func buildStockTable(ctx context.Context, deps *DetailViewDeps, productID, varia
 func buildPricingTable(ctx context.Context, deps *DetailViewDeps, productID, variantID string) *types.TableConfig {
 	l := deps.Labels
 
+	startLabel := l.Variant.Pricing.Start
+	if startLabel == "" {
+		startLabel = "Start Date"
+	}
+	endLabel := l.Variant.Pricing.End
+	if endLabel == "" {
+		endLabel = "End Date"
+	}
+	packageLabel := l.Variant.Pricing.Package
+	if packageLabel == "" {
+		packageLabel = "Package"
+	}
+	rateCardLabel := l.Variant.Pricing.RateCard
+	if rateCardLabel == "" {
+		rateCardLabel = "Rate Card"
+	}
+	amountLabel := l.Variant.Pricing.Amount
+	if amountLabel == "" {
+		amountLabel = "Amount"
+	}
+
 	columns := []types.TableColumn{
-		{Key: "start", Label: "Start Date", Sortable: true},
-		{Key: "end", Label: "End Date", Sortable: true},
-		{Key: "package", Label: "Package", Sortable: true},
-		{Key: "rate_card", Label: "Rate Card", Sortable: true},
-		{Key: "amount", Label: "Amount", Sortable: true, WidthClass: "col-2xl"},
+		{Key: "start", Label: startLabel, Sortable: true},
+		{Key: "end", Label: endLabel, Sortable: true},
+		{Key: "package", Label: packageLabel, Sortable: true},
+		{Key: "rate_card", Label: rateCardLabel, Sortable: true},
+		{Key: "amount", Label: amountLabel, Sortable: true, WidthClass: "col-2xl"},
 	}
 
 	emptyTitle := l.Detail.VariantPricing

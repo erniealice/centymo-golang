@@ -26,11 +26,12 @@ import (
 
 // ModuleDeps holds all dependencies for the price_plan module.
 type ModuleDeps struct {
-	Routes                 centymo.PricePlanRoutes
-	Labels                 centymo.PricePlanLabels
-	ProductPricePlanLabels centymo.ProductPricePlanLabels
-	CommonLabels           pyeza.CommonLabels
-	TableLabels            types.TableLabels
+	Routes                    centymo.PricePlanRoutes
+	Labels                    centymo.PricePlanLabels
+	ProductPricePlanLabels    centymo.ProductPricePlanLabels
+	PriceScheduleDetailLabels centymo.PriceScheduleDetailLabels // for the PPP drawer's basis banner
+	CommonLabels              pyeza.CommonLabels
+	TableLabels               types.TableLabels
 
 	ListPricePlans  func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
 	ReadPricePlan   func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
@@ -57,6 +58,10 @@ type ModuleDeps struct {
 	CreateProductPricePlan   func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan   func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
 	DeleteProductPricePlan   func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
+
+	// 2026-04-27 plan-client-scope plan §6.7 — used by the price-plan drawer
+	// to resolve the parent PriceSchedule's client name for the info banner.
+	ListClientNames func(ctx context.Context) map[string]string
 }
 
 // Module holds all constructed price_plan views.
@@ -91,6 +96,8 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListPlans:            deps.ListPlans,
 		ListPriceSchedules:   deps.ListPriceSchedules,
 		GetPricePlanInUseIDs: deps.GetPricePlanInUseIDs,
+		// 2026-04-27 plan-client-scope plan §6.7.
+		ListClientNames: deps.ListClientNames,
 	}
 
 	listDeps := &priceplanlist.ListViewDeps{
@@ -110,6 +117,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		Routes:                    deps.Routes,
 		Labels:                    deps.Labels,
 		ProductPricePlanLabels:    deps.ProductPricePlanLabels,
+		PriceScheduleDetailLabels: deps.PriceScheduleDetailLabels,
 		CommonLabels:              deps.CommonLabels,
 		TableLabels:               deps.TableLabels,
 		ReadPricePlan:             deps.ReadPricePlan,
@@ -123,6 +131,8 @@ func NewModule(deps *ModuleDeps) *Module {
 		CreateProductPricePlan:    deps.CreateProductPricePlan,
 		UpdateProductPricePlan:    deps.UpdateProductPricePlan,
 		DeleteProductPricePlan:    deps.DeleteProductPricePlan,
+		ListPlans:                 deps.ListPlans,
+		ListPriceSchedules:        deps.ListPriceSchedules,
 	}
 
 	return &Module{

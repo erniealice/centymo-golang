@@ -1,0 +1,172 @@
+{{/*
+Procurement Request drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+
+Adapted 5-section layout for procurement requests:
+  §1 Identity — request_number, requester_user_id, supplier_id (nullable for RFQ), location_id
+  §2 Financial — currency, estimated_total_amount
+  §3 Timing & Approval — needed_by_date, status select, approved_by (read-only after approval)
+  §4 Others — justification, notes, active toggle
+*/}}
+{{define "procurement-request-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+
+        {{/* ── §1 Identity ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionIdentity}}</h3>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "request_number"
+                    "Label" .Labels.RequestNumber
+                    "Value" .RequestNumber
+                    "Required" true
+                    "Placeholder" .Labels.RequestNumberPlaceholder
+                    "Info" .Labels.RequestNumberInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "requester_user_id"
+                    "Label" .Labels.RequesterUser
+                    "Value" .RequesterUserID
+                    "Required" true
+                    "Placeholder" .Labels.RequesterUserPlaceholder
+                )}}
+            </div>
+
+            {{/* Supplier — nullable: RFQ may not know supplier yet */}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "supplier_id"
+                    "Label" .Labels.Supplier
+                    "Value" .SupplierID
+                    "Options" .Suppliers
+                    "Placeholder" .Labels.SupplierPlaceholder
+                    "Hint" .Labels.SupplierHint
+                )}}
+            </div>
+
+            {{/* Location */}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "location_id"
+                    "Label" .Labels.Location
+                    "Value" .LocationID
+                    "Placeholder" .Labels.LocationPlaceholder
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §2 Financial ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionFinancial}}</h3>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "currency"
+                    "Label" .Labels.Currency
+                    "Value" .Currency
+                    "Required" true
+                    "Placeholder" "PHP"
+                    "Info" .Labels.CurrencyInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "estimated_total_amount"
+                    "Label" .Labels.EstimatedTotal
+                    "Value" .EstimatedTotalAmount
+                    "Placeholder" "0.00"
+                    "Info" .Labels.EstimatedTotalInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §3 Timing & Approval ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionApproval}}</h3>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "needed_by_date"
+                    "Label" .Labels.NeededByDate
+                    "Value" .NeededByDate
+                    "Info" .Labels.NeededByDateInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "status"
+                    "Label" .Labels.Status
+                    "Value" .Status
+                    "Options" .StatusOptions
+                    "Info" .Labels.StatusInfo
+                )}}
+            </div>
+
+            {{/* Approved by — read-only when set */}}
+            {{if .ApprovedBy}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "approved_by"
+                    "Label" .Labels.ApprovedBy
+                    "Value" .ApprovedBy
+                    "Disabled" true
+                )}}
+            </div>
+            {{end}}
+        </div>
+
+        {{/* ── §4 Others ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionOthers}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "justification"
+                    "Label" .Labels.Justification
+                    "Value" .Justification
+                    "Placeholder" .Labels.JustificationPlaceholder
+                    "Rows" 2
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "notes"
+                    "Label" .Labels.Notes
+                    "Value" .Notes
+                    "Placeholder" .Labels.NotesPlaceholder
+                    "Rows" 3
+                )}}
+            </div>
+        </div>
+
+        {{/* Active toggle */}}
+        <div class="form-row single">
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">{{.Labels.Active}}</label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
+        </div>
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
+            {{.CommonLabels.Actions.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary" data-testid="procurement-request-save-btn">
+            {{.CommonLabels.Actions.Save}}
+        </button>
+    </div>
+</form>
+{{end}}

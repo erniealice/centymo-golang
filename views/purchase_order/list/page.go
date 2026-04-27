@@ -136,7 +136,7 @@ func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l centymo.Expenditu
 
 		supplierName := ""
 		if supplier := po.GetSupplier(); supplier != nil {
-			supplierName = supplier.GetCompanyName()
+			supplierName = supplier.GetName()
 		}
 		if supplierName == "" {
 			supplierName = po.GetSupplierId()

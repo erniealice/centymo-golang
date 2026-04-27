@@ -1,0 +1,61 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "procurement-utilization-report"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "procurement-utilization-report-content"}}
+<div class="page-content">
+    <div class="page-header">
+        <h1 class="page-heading">{{.Labels.UtilizationTitle}}</h1>
+    </div>
+
+    {{if .Empty}}
+    <div class="empty-state" data-testid="procurement-utilization-empty">
+        <div class="empty-state-icon">{{template "icon-bar-chart-2"}}</div>
+        <p class="empty-state-message">{{.Labels.EmptyUtilization}}</p>
+    </div>
+    {{else}}
+    <div class="card">
+        <table class="data-table" id="procurement-utilization-table">
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Contract Ref</th>
+                    <th>Committed</th>
+                    <th>Released</th>
+                    <th>Billed</th>
+                    <th>Remaining</th>
+                    <th>Released %</th>
+                    <th>Billed %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Rows}}
+                <tr data-testid="utilization-row">
+                    <td>{{.SupplierName}}</td>
+                    <td>{{.ContractRef}}</td>
+                    <td class="amount">{{.CommittedAmount}}</td>
+                    <td class="amount">{{.ReleasedAmount}}</td>
+                    <td class="amount">{{.BilledAmount}}</td>
+                    <td class="amount">{{.RemainingAmount}}</td>
+                    <td>{{.ReleasedPct}}%</td>
+                    <td>{{.BilledPct}}%</td>
+                </tr>
+                {{end}}
+            </tbody>
+            <tfoot>
+                <tr class="totals-row" data-testid="utilization-totals">
+                    <td colspan="2"><strong>Total</strong></td>
+                    <td class="amount"><strong>{{.TotalCommitted}}</strong></td>
+                    <td class="amount"><strong>{{.TotalReleased}}</strong></td>
+                    <td class="amount"><strong>{{.TotalBilled}}</strong></td>
+                    <td class="amount"><strong>{{.TotalRemaining}}</strong></td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {{end}}
+</div>
+{{end}}

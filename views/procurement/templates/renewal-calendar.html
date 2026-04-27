@@ -1,0 +1,47 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "procurement-renewal-calendar"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "procurement-renewal-calendar-content"}}
+<div class="page-content">
+    <div class="page-header">
+        <h1 class="page-heading">{{.Labels.RenewalsTitle}}</h1>
+    </div>
+
+    {{if .Empty}}
+    <div class="empty-state" data-testid="procurement-renewals-empty">
+        <div class="empty-state-icon">{{template "icon-calendar"}}</div>
+        <p class="empty-state-message">{{.Labels.EmptyRenewals}}</p>
+    </div>
+    {{else}}
+    <div class="card">
+        <table class="data-table" id="procurement-renewals-table">
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Contract Ref</th>
+                    <th>End Date</th>
+                    <th>{{.Labels.DaysUntilExpiry}}</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Rows}}
+                <tr data-testid="renewal-row">
+                    <td>{{.SupplierName}}</td>
+                    <td>{{.ContractRef}}</td>
+                    <td>{{.DateTimeEnd}}</td>
+                    <td>{{.DaysUntil}}</td>
+                    <td>
+                        <span class="status-badge status-{{.Status}}">{{.Status}}</span>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{end}}
+</div>
+{{end}}

@@ -1,0 +1,69 @@
+{{/*
+Read-only "package context" block rendered above the editable PPP drawer fields.
+Surfaces the parent PricePlan config (Plan, Rate card, Billing model, Amount basis,
+Billing cycle, Term, Currency) so the operator can see how the line they're
+pricing relates to the rate-card without leaving the drawer.
+
+Each row only renders when its value is non-empty — callers that haven't
+plumbed the corresponding field skip the row silently. This keeps the partial
+backwards-compatible with older call sites that only pass a subset.
+
+Expected dict shape:
+    PlanName              string
+    RateCardName          string
+    BillingKindDisplay    string  — translated label, e.g. "Recurring retainer"
+    AmountBasisDisplay    string  — translated label, e.g. "Per cycle"
+    BillingCycleDisplay   string  — formatted, e.g. "every 1 month"
+    TermDisplay           string  — formatted, e.g. "12 months"
+    ParentCurrencyDisplay string  — e.g. "PHP" / "USD"
+*/}}
+{{define "ppp-parent-context"}}
+{{if or .RateCardName .BillingKindDisplay .AmountBasisDisplay .BillingCycleDisplay .TermDisplay .ParentCurrencyDisplay}}
+{{/*
+The "Package" row (PlanName) is intentionally omitted — the operator is already
+on the package detail page or arrived from a row labelled by package, so it
+would be redundant context.
+*/}}
+<details class="form-section ppp-parent-context-details" data-testid="ppp-parent-context">
+    <summary class="form-section-title ppp-parent-context-summary" style="cursor: pointer; user-select: none;">More details</summary>
+    <div class="detail-info-grid" style="margin-top: var(--spacing-md);">
+    {{if .RateCardName}}
+    <div class="detail-info-item">
+        <span class="detail-info-label">Rate card</span>
+        <span class="detail-info-value">{{.RateCardName}}</span>
+    </div>
+    {{end}}
+    {{if .BillingKindDisplay}}
+    <div class="detail-info-item">
+        <span class="detail-info-label">Billing model</span>
+        <span class="detail-info-value">{{.BillingKindDisplay}}</span>
+    </div>
+    {{end}}
+    {{if .AmountBasisDisplay}}
+    <div class="detail-info-item">
+        <span class="detail-info-label">Amount basis</span>
+        <span class="detail-info-value">{{.AmountBasisDisplay}}</span>
+    </div>
+    {{end}}
+    {{if .BillingCycleDisplay}}
+    <div class="detail-info-item">
+        <span class="detail-info-label">Billing cycle</span>
+        <span class="detail-info-value">{{.BillingCycleDisplay}}</span>
+    </div>
+    {{end}}
+    {{if .TermDisplay}}
+    <div class="detail-info-item">
+        <span class="detail-info-label">Term</span>
+        <span class="detail-info-value">{{.TermDisplay}}</span>
+    </div>
+    {{end}}
+    {{if .ParentCurrencyDisplay}}
+    <div class="detail-info-item">
+        <span class="detail-info-label">Currency</span>
+        <span class="detail-info-value">{{.ParentCurrencyDisplay}}</span>
+    </div>
+    {{end}}
+    </div>
+</details>
+{{end}}
+{{end}}

@@ -50,6 +50,18 @@ type FormLabels struct {
 	StartTimeInfo             string
 	EndTimeInfo               string
 	NotesInfo                 string
+
+	// 2026-04-27 plan-client-scope plan §5.1 / §7 — group headers in the
+	// grouped Plan / PricePlan auto-complete picker.
+	PlanGroupForClient string // "For {ClientName}" — pre-resolved with ClientName injected.
+	PlanGroupGeneral   string
+}
+
+// PlanOptionGroup is one optgroup in the grouped Plan/PricePlan auto-complete
+// on the subscription drawer (plan §5.1).
+type PlanOptionGroup struct {
+	Label   string             // group header
+	Options []map[string]string // {Value, Label} entries
 }
 
 // FormData is the template data for the subscription drawer form.
@@ -86,6 +98,12 @@ type FormData struct {
 	// the plan search URL so the grouped auto-complete only shows plans in that
 	// currency. Empty = no currency filter.
 	ClientBillingCurrency string
+
+	// 2026-04-27 plan-client-scope plan §5 — grouped picker options. When
+	// non-empty, the template renders the grouped variant instead of the
+	// flat search auto-complete.
+	PlanOptionGroups []PlanOptionGroup
+
 	Labels                FormLabels
 	CommonLabels          any
 }
@@ -97,6 +115,11 @@ type Deps struct {
 
 	CreateSubscription  func(ctx context.Context, req *subscriptionpb.CreateSubscriptionRequest) (*subscriptionpb.CreateSubscriptionResponse, error)
 	ReadSubscription    func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
+	// GetSubscriptionItemPageData returns the subscription with its joined
+	// Client (+ User) and PricePlan (+ Plan) populated. Edit drawer uses it
+	// to render the customer name (not the bare client_id) without depending
+	// on a separate ListClients-and-iterate fallback.
+	GetSubscriptionItemPageData func(ctx context.Context, req *subscriptionpb.GetSubscriptionItemPageDataRequest) (*subscriptionpb.GetSubscriptionItemPageDataResponse, error)
 	UpdateSubscription  func(ctx context.Context, req *subscriptionpb.UpdateSubscriptionRequest) (*subscriptionpb.UpdateSubscriptionResponse, error)
 	DeleteSubscription  func(ctx context.Context, req *subscriptionpb.DeleteSubscriptionRequest) (*subscriptionpb.DeleteSubscriptionResponse, error)
 	ListClients         func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
@@ -123,6 +146,40 @@ type Deps struct {
 	// by NewRecognizeAction (drawer GET dry-run + POST commit) and by the
 	// existing manual revenue-add flow's auto-populate path (skip_header=true).
 	RecognizeRevenueFromSubscription func(ctx context.Context, req *revenuepb.CreateRevenueWithLineItemsRequest) (*revenuepb.CreateRevenueWithLineItemsResponse, error)
+
+	// CustomClientPriceScheduleLabelSuffix carries the lyngua-resolved suffix
+	// appended to a client's name when constructing the default custom
+	// PriceSchedule name (e.g. "Price Schedule" / "Rate Cards"). Read by the
+	// customize handler; sourced from PriceScheduleLabels.Form by block.go.
+	CustomClientPriceScheduleLabelSuffix string
+
+	// CustomizePlanForClient invokes the espyna use case that clones the
+	// source Plan + PricePlan into a client-scoped copy and (optionally)
+	// repoints the subscription onto the new PricePlan. See plan §4.
+	// Wired by the centymo block when the use case is available.
+	CustomizePlanForClient func(ctx context.Context, req *CustomizePlanForClientRequest) (*CustomizePlanForClientResponse, error)
+}
+
+// CustomizePlanForClientRequest mirrors the espyna use-case request shape
+// (plan §4.1). Centymo handlers build this and pass it through Deps.
+// The `derivedName` carries the per-tier "{Client.name} - {suffix}" label
+// resolved on the centymo side from typed labels (plan §4.4.1 step 2-3).
+type CustomizePlanForClientRequest struct {
+	SourcePlanID      string
+	SourcePricePlanID string
+	ClientID          string
+	SubscriptionID    string
+	NewScheduleName   string
+}
+
+// CustomizePlanForClientResponse mirrors the espyna use-case response shape
+// (plan §4.1). Only the fields centymo's POST handler needs are surfaced;
+// extend if a future caller needs the cloned proto records.
+type CustomizePlanForClientResponse struct {
+	NewPlanID      string
+	NewPricePlanID string
+	NewScheduleID  string
+	Reused         bool
 }
 
 func formLabels(l centymo.SubscriptionLabels) FormLabels {
@@ -152,7 +209,19 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 		StartTimeInfo:             l.Form.StartTimeInfo,
 		EndTimeInfo:               l.Form.EndTimeInfo,
 		NotesInfo:                 l.Form.NotesInfo,
+		PlanGroupForClient:        l.Form.PlanGroupForClient,
+		PlanGroupGeneral:          l.Form.PlanGroupGeneral,
 	}
+}
+
+// resolvePlanGroupForClientLabel renders the {{.ClientName}}-templated
+// "For {ClientName}" group header. Falls back gracefully when the label
+// has no template directive or the client name is empty.
+func resolvePlanGroupForClientLabel(template, clientName string) string {
+	if clientName == "" {
+		return template
+	}
+	return strings.ReplaceAll(template, "{{.ClientName}}", clientName)
 }
 
 // generateCode returns a random 7-character uppercase alphanumeric code,
@@ -215,6 +284,104 @@ func loadPlanOptions(ctx context.Context, listPlans func(ctx context.Context, re
 		})
 	}
 	return options
+}
+
+// loadPlanOptionGroups builds the grouped Plan picker for the subscription
+// drawer per plan §5.1. Group order: client-scoped first ("For {ClientName}"),
+// general ("General packages") second. Empty groups are omitted.
+//
+// The list is filtered post-fetch in Go because TypedFilter doesn't yet
+// expose a NULL/NOT-NULL primitive on string fields. Volume is small.
+func loadPlanOptionGroups(ctx context.Context, listPlans func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error), clientID, clientName string, l FormLabels) []PlanOptionGroup {
+	if listPlans == nil {
+		return nil
+	}
+	resp, err := listPlans(ctx, &planpb.ListPlansRequest{})
+	if err != nil {
+		log.Printf("Failed to load plans for grouped picker: %v", err)
+		return nil
+	}
+
+	var clientPlans, masterPlans []map[string]string
+	for _, p := range resp.GetData() {
+		if !p.GetActive() {
+			continue
+		}
+		entry := map[string]string{"Value": p.GetId(), "Label": p.GetName()}
+		switch cid := p.GetClientId(); {
+		case cid == "":
+			masterPlans = append(masterPlans, entry)
+		case clientID != "" && cid == clientID:
+			clientPlans = append(clientPlans, entry)
+		}
+	}
+
+	var groups []PlanOptionGroup
+	if len(clientPlans) > 0 {
+		groups = append(groups, PlanOptionGroup{
+			Label:   resolvePlanGroupForClientLabel(l.PlanGroupForClient, clientName),
+			Options: clientPlans,
+		})
+	}
+	if len(masterPlans) > 0 {
+		groups = append(groups, PlanOptionGroup{
+			Label:   l.PlanGroupGeneral,
+			Options: masterPlans,
+		})
+	}
+	return groups
+}
+
+// loadPricePlanOptionGroups is the same shape as loadPlanOptionGroups but
+// keyed off PricePlan.client_id. Used by the subscription edit drawer's
+// PricePlan picker.
+func loadPricePlanOptionGroups(ctx context.Context, listPricePlans func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error), clientID, clientName string, l FormLabels) []PlanOptionGroup {
+	if listPricePlans == nil {
+		return nil
+	}
+	resp, err := listPricePlans(ctx, &priceplanpb.ListPricePlansRequest{})
+	if err != nil {
+		log.Printf("Failed to load price plans for grouped picker: %v", err)
+		return nil
+	}
+
+	var clientPP, masterPP []map[string]string
+	for _, pp := range resp.GetData() {
+		if !pp.GetActive() {
+			continue
+		}
+		label := pp.GetName()
+		if label == "" {
+			if pl := pp.GetPlan(); pl != nil {
+				label = pl.GetName()
+			}
+			if label == "" {
+				label = pp.GetId()
+			}
+		}
+		entry := map[string]string{"Value": pp.GetId(), "Label": label}
+		switch cid := pp.GetClientId(); {
+		case cid == "":
+			masterPP = append(masterPP, entry)
+		case clientID != "" && cid == clientID:
+			clientPP = append(clientPP, entry)
+		}
+	}
+
+	var groups []PlanOptionGroup
+	if len(clientPP) > 0 {
+		groups = append(groups, PlanOptionGroup{
+			Label:   resolvePlanGroupForClientLabel(l.PlanGroupForClient, clientName),
+			Options: clientPP,
+		})
+	}
+	if len(masterPP) > 0 {
+		groups = append(groups, PlanOptionGroup{
+			Label:   l.PlanGroupGeneral,
+			Options: masterPP,
+		})
+	}
+	return groups
 }
 
 // resolveClientBillingCurrency finds the billing_currency for a client by ID.
@@ -373,6 +540,7 @@ func NewAddAction(deps *Deps) view.View {
 			today := time.Now().In(tz)
 			defaultDate := today.Format(pyezatypes.DateInputLayout)
 			defaultISO := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz).Format(time.RFC3339)
+			labels := formLabels(deps.Labels)
 			return view.OK("subscription-drawer-form", &FormData{
 				FormAction:            deps.Routes.AddURL,
 				SearchClientURL:       deps.Routes.SearchClientURL,
@@ -385,7 +553,8 @@ func NewAddAction(deps *Deps) view.View {
 				DateStartDate:         defaultDate,
 				DateStartISO:          defaultISO,
 				DefaultTZ:             tz.String(),
-				Labels:                formLabels(deps.Labels),
+				PlanOptionGroups:      loadPricePlanOptionGroups(ctx, deps.ListPricePlans, clientID, clientName, labels),
+				Labels:                labels,
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
 		}
@@ -458,21 +627,54 @@ func NewEditAction(deps *Deps) view.View {
 		id := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			readResp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
-				Data: &subscriptionpb.Subscription{Id: id},
-			})
-			if err != nil {
-				log.Printf("Failed to read subscription %s: %v", id, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			// Prefer the joined item-page-data path so Client (+ User) is populated
+			// without a second ListClients-and-iterate roundtrip. Falls back to
+			// ReadSubscription only if the dep is unwired.
+			var record *subscriptionpb.Subscription
+			if deps.GetSubscriptionItemPageData != nil {
+				resp, err := deps.GetSubscriptionItemPageData(ctx, &subscriptionpb.GetSubscriptionItemPageDataRequest{
+					SubscriptionId: id,
+				})
+				if err != nil || resp == nil || resp.GetSubscription() == nil {
+					log.Printf("Failed to read subscription %s: %v", id, err)
+					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				}
+				record = resp.GetSubscription()
+			} else {
+				readResp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
+					Data: &subscriptionpb.Subscription{Id: id},
+				})
+				if err != nil {
+					log.Printf("Failed to read subscription %s: %v", id, err)
+					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				}
+				readData := readResp.GetData()
+				if len(readData) == 0 {
+					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				}
+				record = readData[0]
 			}
-			readData := readResp.GetData()
-			if len(readData) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
-			}
-			record := readData[0]
 
-			clientLabel := resolveClientLabel(ctx, record.GetClientId(), deps.ListClients)
-			clientBillingCurrency := resolveClientBillingCurrency(ctx, record.GetClientId(), deps.ListClients)
+			// Prefer the joined client (populated by GetSubscriptionItemPageData);
+			// fall back to the ListClients lookup for the legacy ReadSubscription path.
+			clientLabel := ""
+			if c := record.GetClient(); c != nil {
+				if name := c.GetName(); name != "" {
+					clientLabel = name
+				} else if u := c.GetUser(); u != nil {
+					clientLabel = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+				}
+			}
+			if clientLabel == "" {
+				clientLabel = resolveClientLabel(ctx, record.GetClientId(), deps.ListClients)
+			}
+			clientBillingCurrency := ""
+			if c := record.GetClient(); c != nil {
+				clientBillingCurrency = c.GetBillingCurrency()
+			}
+			if clientBillingCurrency == "" {
+				clientBillingCurrency = resolveClientBillingCurrency(ctx, record.GetClientId(), deps.ListClients)
+			}
 			// PricePlanID, not a plan_id — resolve via PricePlan so the selected
 			// label matches the autocomplete dropdown's display.
 			planLabel := resolvePricePlanName(ctx, record.GetPricePlanId(), deps)
@@ -484,6 +686,7 @@ func NewEditAction(deps *Deps) view.View {
 			startDate, startTime, startISO := splitTimestampForInputs(record.GetDateTimeStart(), tz)
 			endDate, endTime, endISO := splitTimestampForInputs(record.GetDateTimeEnd(), tz)
 
+			labels := formLabels(deps.Labels)
 			return view.OK("subscription-drawer-form", &FormData{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
@@ -504,7 +707,8 @@ func NewEditAction(deps *Deps) view.View {
 				ClientLocked:          clientLocked,
 				ClientBillingCurrency: clientBillingCurrency,
 				PlanLabel:             planLabel,
-				Labels:                formLabels(deps.Labels),
+				PlanOptionGroups:      loadPricePlanOptionGroups(ctx, deps.ListPricePlans, record.GetClientId(), clientLabel, labels),
+				Labels:                labels,
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
 		}

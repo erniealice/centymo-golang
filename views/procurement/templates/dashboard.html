@@ -1,0 +1,122 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "procurement-dashboard"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "procurement-dashboard-content"}}
+<div class="page-content">
+
+    <!-- Summary widgets row -->
+    <div class="centymo-stats-row">
+        {{template "stat-card" dict
+            "Icon"     "icon-inbox"
+            "Value"    .PendingApprovalCount
+            "Label"    .Labels.PendingApprovalsTitle
+            "TrendUp"  false
+            "Color"    "amber"}}
+        {{template "stat-card" dict
+            "Icon"     "icon-calendar"
+            "Value"    (len .ExpiringContracts)
+            "Label"    .Labels.ExpiringTitle
+            "TrendUp"  false
+            "Color"    "terracotta"}}
+        {{template "stat-card" dict
+            "Icon"     "icon-alert-triangle"
+            "Value"    (len .TopVarianceAlerts)
+            "Label"    .Labels.VarianceTitle
+            "TrendUp"  false
+            "Color"    "navy"}}
+        {{template "stat-card" dict
+            "Icon"     "icon-refresh-cw"
+            "Value"    .RecurrenceDraftsCount
+            "Label"    .Labels.RecurrenceTitle
+            "TrendUp"  false
+            "Color"    "sage"}}
+    </div>
+
+    <div class="centymo-dashboard-grid">
+
+        <!-- Expiring contracts widget -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">{{.Labels.ExpiringTitle}}</h2>
+                <a class="card-btn" href="{{.Routes.RenewalCalendarURL}}">{{.Labels.RenewalsTitle}}</a>
+            </div>
+            {{if .ExpiringContracts}}
+            <table class="data-table" id="procurement-dashboard-expiring-table">
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>{{.Labels.DaysUntilExpiry}}</th>
+                        <th>End Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .ExpiringContracts}}
+                    <tr data-testid="expiring-contract-row">
+                        <td>{{.SupplierName}}</td>
+                        <td>{{.DaysUntil}}</td>
+                        <td>{{.DateTimeEnd}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="empty-state" data-testid="procurement-dashboard-expiring-empty">
+                <p>{{.Labels.EmptyRenewals}}</p>
+            </div>
+            {{end}}
+        </div>
+
+        <!-- Top variance alerts widget -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">{{.Labels.VarianceTitle}}</h2>
+                <a class="card-btn" href="{{.Routes.VarianceURL}}">{{.Labels.BudgetPressureLabel}}</a>
+            </div>
+            {{if .TopVarianceAlerts}}
+            <table class="data-table" id="procurement-dashboard-variance-table">
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>{{.Labels.UtilizationPercent}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .TopVarianceAlerts}}
+                    <tr data-testid="variance-alert-row">
+                        <td>{{.SupplierName}}</td>
+                        <td>{{.UtilizationPct}}%</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="empty-state" data-testid="procurement-dashboard-variance-empty">
+                <p>{{.Labels.EmptyVariance}}</p>
+            </div>
+            {{end}}
+        </div>
+
+    </div><!-- /centymo-dashboard-grid -->
+
+    <!-- Recurrence drafts widget (deferred until P5) -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">{{.Labels.RecurrenceTitle}}</h2>
+            <a class="card-btn" href="{{.Routes.RecurrenceDraftsURL}}">{{.Labels.RecurrenceTitle}}</a>
+        </div>
+        {{if gt .RecurrenceDraftsCount 0}}
+        <div class="centymo-activity-item" data-testid="procurement-dashboard-recurrence-count">
+            <span>{{.RecurrenceDraftsCount}} {{.Labels.EmptyRecurrence}}</span>
+        </div>
+        {{else}}
+        <div class="empty-state" data-testid="procurement-dashboard-recurrence-empty">
+            <p>{{.Labels.EmptyRecurrence}}</p>
+        </div>
+        {{end}}
+    </div>
+
+</div>
+{{end}}

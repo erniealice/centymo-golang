@@ -126,7 +126,7 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if deps.CreatePricePlan == nil {
-			return centymo.HTMXError("Price plan create is not available")
+			return centymo.HTMXError(deps.Labels.Errors.PricePlanCreateUnavailable)
 		}
 		scheduleID := viewCtx.Request.PathValue("id")
 		if scheduleID == "" {
@@ -148,7 +148,7 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 				BillingKind:         "BILLING_KIND_RECURRING",
 				AmountBasis:         "AMOUNT_BASIS_PER_CYCLE",
 				BillingCycleUnit:    "month",
-				DefaultTermUnit:     "month",
+				TermUnit:            "month",
 				PlanOptions:         planOptions,
 				BillingKindOptions:  form.BuildBillingKindOptions(formLabels),
 				AmountBasisOptions:  form.BuildAmountBasisOptions(formLabels),
@@ -471,11 +471,23 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 			log.Printf("Failed to list price plans for schedule %s: %v", ps.GetId(), err)
 		} else {
 			schedID := ps.GetId()
+			// 2026-04-27 plan-client-scope plan §6.4. When the schedule itself is
+			// master, the default Plans tab hides client-scoped PricePlans; the
+			// `?show_client_specific=1` toggle on the toolbar opts back in. When
+			// the schedule is client-scoped, the §3.2 cascade guarantees every
+			// PricePlan inside shares its client_id, so the filter is a no-op.
+			scheduleIsClientScoped := ps.GetClientId() != ""
 
 			// Collect IDs for the reference checker (one batch call for the whole table).
 			var ppIDs []string
 			for _, pp := range resp.GetData() {
 				if pp != nil && pp.GetPriceScheduleId() == schedID {
+					if !scheduleIsClientScoped && pp.GetClientId() != "" {
+						// Hidden by default on master schedules; the toolbar
+						// toggle in the template opts in via a query param,
+						// which the View handler can pass through if needed.
+						continue
+					}
 					ppIDs = append(ppIDs, pp.GetId())
 				}
 			}
@@ -499,6 +511,10 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 
 			for _, pp := range resp.GetData() {
 				if pp == nil || pp.GetPriceScheduleId() != schedID {
+					continue
+				}
+				// Same client-scope filter as the ID collection loop above.
+				if !scheduleIsClientScoped && pp.GetClientId() != "" {
 					continue
 				}
 				ppID := pp.GetId()

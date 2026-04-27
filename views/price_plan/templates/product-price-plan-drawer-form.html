@@ -57,37 +57,22 @@ Data: ProductPricePlanFormData — see views/price_plan/detail/page.go
         </div>
         {{end}}
 
-        <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" .Labels.PriceLabel "Value" .Price "Required" true "Placeholder" .Labels.PricePlaceholder "Step" "0.01" "Min" "0" "Info" .Labels.PriceInfo)}}
-            {{template "form-group" (dict "Type" "select" "Name" "currency" "Label" .Labels.CurrencyLabel "Value" .Currency "Required" true "Options" (list (dict "Value" "PHP" "Label" .Labels.CurrencyPHP) (dict "Value" "USD" "Label" .Labels.CurrencyUSD)) "Info" .Labels.CurrencyInfo)}}
-        </div>
-        <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "select"
-                "Name" "billing_treatment"
-                "Label" .Labels.BillingTreatmentLabel
-                "Value" .BillingTreatment
-                "Required" true
-                "Options" .BillingTreatmentOptions
-                "Info" .Labels.BillingTreatmentInfo
-            )}}
-        </div>
-        <div class="form-row">
-            {{template "form-group" (dict
-                "Type" "date"
-                "Name" "date_start"
-                "Label" .Labels.DateStartLabel
-                "Value" .DateStart
-                "Info" .Labels.DateStartInfo
-            )}}
-            {{template "form-group" (dict
-                "Type" "date"
-                "Name" "date_end"
-                "Label" .Labels.DateEndLabel
-                "Value" .DateEnd
-                "Info" .Labels.DateEndInfo
-            )}}
-        </div>
+        {{template "ppp-parent-context" .}}
+
+        {{template "ppp-fields" (dict
+            "Labels" .Labels
+            "Price" .Price
+            "Currency" .Currency
+            "BillingTreatment" .BillingTreatment
+            "BillingTreatmentOptions" .BillingTreatmentOptions
+            "DateStart" .DateStart
+            "DateEnd" .DateEnd
+            "ShowTreatment" .ShowTreatment
+            "PricingLocked" false
+            "BasisBannerMessage" .BasisBannerMessage
+            "PricingSectionTitle" ""
+            "EffectiveSectionTitle" ""
+        )}}
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

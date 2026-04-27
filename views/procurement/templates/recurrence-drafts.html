@@ -1,0 +1,53 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "procurement-recurrence-drafts"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "procurement-recurrence-drafts-content"}}
+<div class="page-content">
+    <div class="page-header">
+        <h1 class="page-heading">{{.Labels.RecurrenceTitle}}</h1>
+    </div>
+
+    {{if .Empty}}
+    <div class="empty-state" data-testid="procurement-recurrence-empty">
+        <div class="empty-state-icon">{{template "icon-refresh-cw"}}</div>
+        {{if .P5Pending}}
+        {{/* Recurrence engine not yet active (P5 deferred) */}}
+        <p class="empty-state-message">{{.Labels.EmptyRecurrence}}</p>
+        <p class="empty-state-caption">Recurrence drafts will appear here once the recurrence engine is active.</p>
+        {{else}}
+        <p class="empty-state-message">{{.Labels.EmptyRecurrence}}</p>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="card">
+        <table class="data-table" id="procurement-recurrence-drafts-table">
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Contract</th>
+                    <th>Amount</th>
+                    <th>Date Created</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Rows}}
+                <tr data-testid="recurrence-draft-row">
+                    <td>{{.SupplierName}}</td>
+                    <td>{{.ContractID}}</td>
+                    <td class="amount">{{.Amount}}</td>
+                    <td>{{.DateCreatedString}}</td>
+                    <td>
+                        <span class="status-badge status-{{.Status}}">{{.Status}}</span>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{end}}
+</div>
+{{end}}

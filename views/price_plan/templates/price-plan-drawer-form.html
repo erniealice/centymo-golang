@@ -21,6 +21,25 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
         <input type="hidden" name="price_schedule_id" value="{{.ScheduleID}}">
     {{end}}
 
+    {{/* 2026-04-27 plan-client-scope plan §6.7 — when the parent
+         PriceSchedule is client-scoped, surface a tinted info banner above
+         the form sections explaining that the new PricePlan inherits that
+         client identity. The hidden client_id input keeps the cascade
+         server-authoritative even though the field is never user-editable. */}}
+    {{if .ParentScheduleClientName}}
+    <input type="hidden" name="client_id" value="{{.ParentScheduleClientID}}">
+    <div class="sheet-banner alert alert-info" role="status" data-testid="price-plan-parent-scope-banner">
+        {{template "icon-info"}}
+        <span>
+            {{/* The notice template carries {{.ClientName}}; render once with
+                 simple ReplaceAll on the client side via Go template — but we
+                 only have html/template here, so just inline the client name. */}}
+            {{.Labels.ParentScheduleClientNotice}}
+            <strong>{{.ParentScheduleClientName}}</strong>
+        </span>
+    </div>
+    {{end}}
+
     <div class="sheet-body">
         {{/* ================================================================ */}}
         {{/* Section 1: Basic / Context                                        */}}
@@ -216,23 +235,24 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
             )}}
         </div>
 
-        {{/* Default term (catalog default validity; null = open-ended) */}}
+        {{/* Term — engagement length / contract length / catalog validity.
+             Null = open-ended. Backed by proto fields default_term_value / unit. */}}
         <div class="form-row" id="default-term-row">
             {{template "form-group" (dict
                 "Type" "number"
                 "Name" "default_term_value"
-                "Label" .Labels.DefaultTermLabel
-                "Value" .DefaultTermValue
+                "Label" .Labels.TermLabel
+                "Value" .TermValue
                 "Min" "0"
-                "Placeholder" .Labels.DefaultTermPlaceholder
-                "Info" .Labels.DefaultTermInfo
+                "Placeholder" .Labels.TermPlaceholder
+                "Info" .Labels.TermInfo
                 "Disabled" (and .IsEdit .InUse)
             )}}
             {{template "form-group" (dict
                 "Type" "select"
                 "Name" "default_term_unit"
                 "Label" .Labels.DurationUnitLabel
-                "Value" .DefaultTermUnit
+                "Value" .TermUnit
                 "Options" .DurationUnitOptions
                 "Disabled" (and .IsEdit .InUse)
             )}}
@@ -278,21 +298,94 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     var cycleRow = document.getElementById('billing-cycle-row');
     var termRow = document.getElementById('default-term-row');
     var amountInput = document.querySelector('input[name="amount"]');
+    var legacyDurationValue = document.querySelector('input[name="duration_value"][type="hidden"]');
+    var legacyDurationUnit = document.querySelector('input[name="duration_unit"][type="hidden"]');
+
+    // Hidden rows must POST as null, not stale typed values. Clearing on hide
+    // keeps the rev-rec algorithm correct: e.g. switching basis from PER_CYCLE
+    // to TOTAL_PACKAGE leaves billing_cycle_* null so the engine doesn't
+    // miscompute period_end.
+    function setRow(row, visible, names) {
+        if (!row) return;
+        row.style.display = visible ? '' : 'none';
+        if (visible) return;
+        names.forEach(function(n) {
+            var el = row.querySelector('[name="' + n + '"]');
+            if (!el) return;
+            if (el.tagName === 'SELECT') {
+                el.selectedIndex = 0;
+                el.value = '';
+            } else {
+                el.value = '';
+            }
+        });
+    }
 
     function apply() {
         var kind = kindSel ? kindSel.value : '';
         var basis = basisSel ? basisSel.value : '';
-        // billing_cycle is meaningful for RECURRING and CONTRACT
-        if (cycleRow) cycleRow.style.display = (kind === 'BILLING_KIND_ONE_TIME') ? 'none' : '';
-        // default_term is meaningful for ONE_TIME (validity) and CONTRACT (fixed term); less so for open-ended RECURRING
-        if (termRow) termRow.style.display = (kind === 'BILLING_KIND_RECURRING') ? 'none' : '';
-        // amount_basis=DERIVED_FROM_LINES hides the amount input (it's ignored)
-        if (amountInput) amountInput.closest('.form-group').style.display =
-            (basis === 'AMOUNT_BASIS_DERIVED_FROM_LINES') ? 'none' : '';
+        // billing_cycle is only meaningful when the parent prices per cycle.
+        // Hide for ONE_TIME (no cycles) and for TOTAL_PACKAGE / DERIVED_FROM_LINES
+        // (cycle is irrelevant — see docs/plan/20260421-pricing-unification/plan.md §scenarios).
+        var cycleVisible = kind !== 'BILLING_KIND_ONE_TIME' &&
+                           basis !== 'AMOUNT_BASIS_TOTAL_PACKAGE' &&
+                           basis !== 'AMOUNT_BASIS_DERIVED_FROM_LINES';
+        setRow(cycleRow, cycleVisible, ['billing_cycle_value', 'billing_cycle_unit']);
+
+        // Term hides for open-ended RECURRING + PER_CYCLE; visible for everything else
+        // (ONE_TIME validity, CONTRACT length, DERIVED_FROM_LINES window).
+        var termVisible = !(kind === 'BILLING_KIND_RECURRING' && basis === 'AMOUNT_BASIS_PER_CYCLE');
+        setRow(termRow, termVisible, ['default_term_value', 'default_term_unit']);
+
+        // amount_basis=DERIVED_FROM_LINES hides the amount input (it's ignored).
+        if (amountInput) {
+            var amountGroup = amountInput.closest('.form-group');
+            if (amountGroup) amountGroup.style.display =
+                (basis === 'AMOUNT_BASIS_DERIVED_FROM_LINES') ? 'none' : '';
+        }
+
+        // Mirror the cleared cycle into the legacy dual-write inputs so the
+        // Phase 1 fallback also nulls out instead of preserving a stale value.
+        if (!cycleVisible) {
+            if (legacyDurationValue) legacyDurationValue.value = '';
+            if (legacyDurationUnit) legacyDurationUnit.value = '';
+        } else {
+            var cv = cycleRow ? cycleRow.querySelector('[name="billing_cycle_value"]') : null;
+            var cu = cycleRow ? cycleRow.querySelector('[name="billing_cycle_unit"]') : null;
+            if (legacyDurationValue && cv) legacyDurationValue.value = cv.value;
+            if (legacyDurationUnit && cu) legacyDurationUnit.value = cu.value;
+        }
     }
 
-    if (kindSel) kindSel.addEventListener('change', apply);
+    // Disable incoherent basis options based on kind. When the disabled option
+    // is currently selected, snap the value to the closest coherent neighbour.
+    // Matrix from rev-rec plan §2.7: ONE_TIME × PER_CYCLE → TOTAL_PACKAGE;
+    // RECURRING × TOTAL_PACKAGE → PER_CYCLE. CONTRACT accepts all three.
+    function applyBasisOptionGuards() {
+        if (!basisSel || !kindSel) return;
+        var kind = kindSel.value;
+        var perCycleOpt = basisSel.querySelector('option[value="AMOUNT_BASIS_PER_CYCLE"]');
+        var totalPackageOpt = basisSel.querySelector('option[value="AMOUNT_BASIS_TOTAL_PACKAGE"]');
+        if (perCycleOpt) perCycleOpt.disabled = (kind === 'BILLING_KIND_ONE_TIME');
+        if (totalPackageOpt) totalPackageOpt.disabled = (kind === 'BILLING_KIND_RECURRING');
+        if (kind === 'BILLING_KIND_ONE_TIME' && basisSel.value === 'AMOUNT_BASIS_PER_CYCLE') {
+            basisSel.value = 'AMOUNT_BASIS_TOTAL_PACKAGE';
+        } else if (kind === 'BILLING_KIND_RECURRING' && basisSel.value === 'AMOUNT_BASIS_TOTAL_PACKAGE') {
+            basisSel.value = 'AMOUNT_BASIS_PER_CYCLE';
+        }
+    }
+
+    if (kindSel) kindSel.addEventListener('change', function() {
+        applyBasisOptionGuards();
+        apply();
+    });
     if (basisSel) basisSel.addEventListener('change', apply);
+    // Keep legacy duration_* inputs in sync when the user types in the cycle field.
+    if (cycleRow) {
+        cycleRow.addEventListener('input', apply);
+        cycleRow.addEventListener('change', apply);
+    }
+    applyBasisOptionGuards();
     apply();
 })();
 </script>

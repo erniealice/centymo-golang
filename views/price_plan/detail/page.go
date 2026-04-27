@@ -21,7 +21,9 @@ import (
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 )
 
@@ -30,8 +32,12 @@ type DetailViewDeps struct {
 	Routes                 centymo.PricePlanRoutes
 	Labels                 centymo.PricePlanLabels
 	ProductPricePlanLabels centymo.ProductPricePlanLabels
-	CommonLabels           pyeza.CommonLabels
-	TableLabels            types.TableLabels
+	// PriceScheduleDetailLabels supplies the basis-banner strings + PPP table
+	// column labels shared with the schedule-scoped drawer. Optional — when
+	// blank, the basis banner falls back to empty (drawer renders without it).
+	PriceScheduleDetailLabels centymo.PriceScheduleDetailLabels
+	CommonLabels              pyeza.CommonLabels
+	TableLabels               types.TableLabels
 
 	ReadPricePlan          func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	ListProductPlans       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
@@ -48,6 +54,12 @@ type DetailViewDeps struct {
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
 	DeleteProductPricePlan func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
+
+	// Optional — used by the PPP drawer to render the read-only parent-context
+	// block (Plan name / Rate card name) above the editable fields. When nil,
+	// the corresponding rows are blank and the template skips them.
+	ListPlans          func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 }
 
 // ProductPlanGroup groups catalog-line options by parent product so the
@@ -111,6 +123,26 @@ type ProductPricePlanFormData struct {
 	DateStart               string // ISO 8601 (YYYY-MM-DD) or empty
 	DateEnd                 string // ISO 8601 (YYYY-MM-DD) or empty
 
+	// Parent PricePlan context — drives field visibility on the shared
+	// ppp-fields partial. ShowTreatment is false when the parent's
+	// billing_kind is ONE_TIME (no cycles, treatment is meaningless).
+	// BasisBannerMessage explains how the per-line price relates to the
+	// parent's amount_basis (per cycle / total package / sum of items).
+	ShowTreatment      bool
+	BasisBannerMessage string
+
+	// Read-only context block rendered above the editable fields so the
+	// operator can see the parent PricePlan config without leaving the
+	// drawer. All fields are pre-formatted display strings (the template
+	// only renders rows whose values are non-empty).
+	PlanName                string
+	RateCardName            string
+	BillingKindDisplay      string
+	AmountBasisDisplay      string
+	BillingCycleDisplay     string
+	TermDisplay             string
+	ParentCurrencyDisplay   string
+
 	// Wave 2: labels for the new fields (populated from ProductPricePlanLabels).
 	Labels centymo.ProductPricePlanFormLabels
 }
@@ -168,10 +200,24 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
+			parent, _ := loadPricePlanContext(ctx, deps, id)
 			// Model D — load catalog-line options scoped to the PricePlan's parent Plan.
-			planID := loadPricePlanPlanID(ctx, deps, id)
+			planID := ""
+			if parent.pricePlan != nil {
+				planID = parent.pricePlan.GetPlanId()
+			}
 			productPlanOptions := loadProductPlanOptions(ctx, deps, planID, id, "")
-			currency := loadPricePlanCurrency(ctx, deps, id)
+			currency := parent.currency
+			if currency == "" {
+				currency = "PHP"
+			}
+			parentKind := ""
+			parentBasis := ""
+			if parent.pricePlan != nil {
+				parentKind = parent.pricePlan.GetBillingKind().String()
+				parentBasis = parent.pricePlan.GetAmountBasis().String()
+			}
+			showTreatment := parentKind != "BILLING_KIND_ONE_TIME"
 			pplLabels := deps.ProductPricePlanLabels.Form
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
 				FormAction:              route.ResolveURL(deps.Routes.ProductPriceAddURL, "id", id),
@@ -180,6 +226,15 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 				ProductPlanOptions:      productPlanOptions,
 				CommonLabels:            deps.CommonLabels,
 				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
+				ShowTreatment:           showTreatment,
+				BasisBannerMessage:      basisBannerMessage(parentBasis, deps.PriceScheduleDetailLabels),
+				PlanName:                parent.planName,
+				RateCardName:            parent.rateCardName,
+				BillingKindDisplay:      parent.billingKindDisplay,
+				AmountBasisDisplay:      parent.amountBasisDisplay,
+				BillingCycleDisplay:     parent.billingCycleDisplay,
+				TermDisplay:             parent.termDisplay,
+				ParentCurrencyDisplay:   parent.parentCurrencyDisplay,
 				Labels:                  pplLabels,
 			})
 		}
@@ -207,6 +262,15 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		dateStart := viewCtx.Request.FormValue("date_start")
 		dateEnd := viewCtx.Request.FormValue("date_end")
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
+		// Server-side guards mirror the schedule-scoped variant. Currency must
+		// match parent (proto invariant); treatment is meaningless on ONE_TIME.
+		parent, _ := loadPricePlanContext(ctx, deps, id)
+		if parent.currency != "" && currency != parent.currency {
+			return centymo.HTMXError("Currency must match the rate card currency")
+		}
+		if parent.pricePlan != nil && parent.pricePlan.GetBillingKind().String() == "BILLING_KIND_ONE_TIME" {
+			billingTreatment = ""
+		}
 
 		record := &productpriceplanpb.ProductPricePlan{
 			PricePlanId:   id,
@@ -258,14 +322,28 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		pplLabels := deps.ProductPricePlanLabels.Form
 
 		if viewCtx.Request.Method == http.MethodGet {
-			planID := loadPricePlanPlanID(ctx, deps, id)
+			parent, _ := loadPricePlanContext(ctx, deps, id)
+			planID := ""
+			if parent.pricePlan != nil {
+				planID = parent.pricePlan.GetPlanId()
+			}
 			existingProductPlanID := existing.GetProductPlanId()
 			productPlanOptions := loadProductPlanOptions(ctx, deps, planID, id, existingProductPlanID)
 			productName, variantName := resolveProductPlanDisplay(ctx, deps, existingProductPlanID)
 			currency := existing.GetBillingCurrency()
 			if currency == "" {
+				currency = parent.currency
+			}
+			if currency == "" {
 				currency = "PHP"
 			}
+			parentKind := ""
+			parentBasis := ""
+			if parent.pricePlan != nil {
+				parentKind = parent.pricePlan.GetBillingKind().String()
+				parentBasis = parent.pricePlan.GetAmountBasis().String()
+			}
+			showTreatment := parentKind != "BILLING_KIND_ONE_TIME"
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
 				FormAction:              route.ResolveURL(deps.Routes.ProductPriceEditURL, "id", id, "ppid", ppid),
 				IsEdit:                  true,
@@ -282,6 +360,15 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
 				DateStart:               existing.GetDateStart(),
 				DateEnd:                 existing.GetDateEnd(),
+				ShowTreatment:           showTreatment,
+				BasisBannerMessage:      basisBannerMessage(parentBasis, deps.PriceScheduleDetailLabels),
+				PlanName:                parent.planName,
+				RateCardName:            parent.rateCardName,
+				BillingKindDisplay:      parent.billingKindDisplay,
+				AmountBasisDisplay:      parent.amountBasisDisplay,
+				BillingCycleDisplay:     parent.billingCycleDisplay,
+				TermDisplay:             parent.termDisplay,
+				ParentCurrencyDisplay:   parent.parentCurrencyDisplay,
 				Labels:                  pplLabels,
 			})
 		}
@@ -314,6 +401,13 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		dateStart := viewCtx.Request.FormValue("date_start")
 		dateEnd := viewCtx.Request.FormValue("date_end")
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
+		parent, _ := loadPricePlanContext(ctx, deps, id)
+		if parent.currency != "" && currency != parent.currency {
+			return centymo.HTMXError("Currency must match the rate card currency")
+		}
+		if parent.pricePlan != nil && parent.pricePlan.GetBillingKind().String() == "BILLING_KIND_ONE_TIME" {
+			billingTreatment = ""
+		}
 
 		updated := &productpriceplanpb.ProductPricePlan{
 			Id:              ppid,
@@ -703,20 +797,126 @@ func loadPricePlanPlanID(ctx context.Context, deps *DetailViewDeps, pricePlanID 
 
 // loadPricePlanCurrency reads the price plan to get its currency.
 func loadPricePlanCurrency(ctx context.Context, deps *DetailViewDeps, pricePlanID string) string {
-	if deps.ReadPricePlan == nil {
+	parent, ok := loadPricePlanContext(ctx, deps, pricePlanID)
+	if !ok || parent.currency == "" {
 		return "PHP"
+	}
+	return parent.currency
+}
+
+// pricePlanContext bundles the parent PricePlan fields the PPP drawer needs:
+// the locked currency, the kind/basis enums (so the drawer can hide treatment
+// and pick the right basis banner), and pre-formatted display strings for the
+// read-only context block above the editable fields.
+type pricePlanContext struct {
+	pricePlan *priceplanpb.PricePlan
+	currency  string
+
+	// Display strings rendered in the context block. Empty string = skip row.
+	planName              string
+	rateCardName          string
+	billingKindDisplay    string
+	amountBasisDisplay    string
+	billingCycleDisplay   string
+	termDisplay           string
+	parentCurrencyDisplay string
+}
+
+// loadPricePlanContext loads the PricePlan and resolves human-friendly display
+// strings for the read-only context block on the PPP drawer. Resolves Plan +
+// PriceSchedule names when the corresponding deps are wired; falls back to IDs
+// when not available.
+func loadPricePlanContext(ctx context.Context, deps *DetailViewDeps, pricePlanID string) (pricePlanContext, bool) {
+	if deps.ReadPricePlan == nil || pricePlanID == "" {
+		return pricePlanContext{}, false
 	}
 	resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
 		Data: &priceplanpb.PricePlan{Id: pricePlanID},
 	})
 	if err != nil || len(resp.GetData()) == 0 {
-		return "PHP"
+		return pricePlanContext{}, false
 	}
-	c := resp.GetData()[0].GetBillingCurrency()
-	if c == "" {
-		return "PHP"
+	pp := resp.GetData()[0]
+
+	pc := pricePlanContext{
+		pricePlan:             pp,
+		currency:              pp.GetBillingCurrency(),
+		billingKindDisplay:    formatBillingKind(pp.GetBillingKind().String(), deps.Labels.Form),
+		amountBasisDisplay:    formatAmountBasis(pp.GetAmountBasis().String(), deps.Labels.Form),
+		parentCurrencyDisplay: pp.GetBillingCurrency(),
 	}
-	return c
+
+	if v := pp.GetBillingCycleValue(); v > 0 {
+		pc.billingCycleDisplay = pyeza.FormatDuration(v, pp.GetBillingCycleUnit(), deps.CommonLabels.DurationUnit)
+	}
+	if v := pp.GetDefaultTermValue(); v > 0 {
+		pc.termDisplay = pyeza.FormatDuration(v, pp.GetDefaultTermUnit(), deps.CommonLabels.DurationUnit)
+	}
+
+	if planID := pp.GetPlanId(); planID != "" && deps.ListPlans != nil {
+		if planResp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{}); err == nil {
+			for _, plan := range planResp.GetData() {
+				if plan != nil && plan.GetId() == planID {
+					pc.planName = plan.GetName()
+					break
+				}
+			}
+		}
+	}
+	if scheduleID := pp.GetPriceScheduleId(); scheduleID != "" && deps.ListPriceSchedules != nil {
+		if schedResp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{}); err == nil {
+			for _, sched := range schedResp.GetData() {
+				if sched != nil && sched.GetId() == scheduleID {
+					pc.rateCardName = sched.GetName()
+					break
+				}
+			}
+		}
+	}
+	return pc, true
+}
+
+// formatBillingKind / formatAmountBasis map proto enum strings to the
+// translated display labels from the parent PricePlanFormLabels. Falls back to
+// the raw enum string when no label is available so debugging stays possible.
+func formatBillingKind(kind string, l centymo.PricePlanFormLabels) string {
+	switch kind {
+	case "BILLING_KIND_ONE_TIME":
+		return l.BillingKindOneTime
+	case "BILLING_KIND_RECURRING":
+		return l.BillingKindRecurring
+	case "BILLING_KIND_CONTRACT":
+		return l.BillingKindContract
+	}
+	return kind
+}
+
+func formatAmountBasis(basis string, l centymo.PricePlanFormLabels) string {
+	switch basis {
+	case "AMOUNT_BASIS_PER_CYCLE":
+		return l.AmountBasisPerCycle
+	case "AMOUNT_BASIS_TOTAL_PACKAGE":
+		return l.AmountBasisTotalPackage
+	case "AMOUNT_BASIS_DERIVED_FROM_LINES":
+		return l.AmountBasisDerivedFromLines
+	}
+	return basis
+}
+
+// basisBannerMessage returns the same banner the schedule-scoped drawer uses,
+// keyed off the parent's amount_basis. We re-source the strings from
+// PriceScheduleDetailLabels so both drawers render identical wording (the keys
+// already exist; standalone callers wire the labels through).
+func basisBannerMessage(amountBasis string, l centymo.PriceScheduleDetailLabels) string {
+	switch amountBasis {
+	case "AMOUNT_BASIS_DERIVED_FROM_LINES":
+		return l.BasisBannerDerived
+	case "AMOUNT_BASIS_TOTAL_PACKAGE":
+		return l.BasisBannerTotalPackage
+	case "AMOUNT_BASIS_PER_CYCLE":
+		return l.BasisBannerPerCycle
+	}
+	return ""
 }
 
 // loadProductPlanOptions builds a grouped select list of catalog lines

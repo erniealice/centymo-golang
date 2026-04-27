@@ -218,7 +218,7 @@ func loadSupplierOptions(
 		if !s.GetActive() {
 			continue
 		}
-		label := s.GetCompanyName()
+		label := s.GetName()
 		if label == "" {
 			label = s.GetId()
 		}
@@ -251,7 +251,7 @@ func loadPurchaseOrderOptions(
 		}
 		supplierName := ""
 		if s := po.GetSupplier(); s != nil {
-			supplierName = s.GetCompanyName()
+			supplierName = s.GetName()
 		}
 		opts = append(opts, &PurchaseOrderOption{
 			Id:           po.GetId(),

@@ -30,6 +30,7 @@ import (
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 	templateview "github.com/erniealice/hybra-golang/views/template"
@@ -47,6 +48,7 @@ import (
 	productlinemod "github.com/erniealice/centymo-golang/views/product/line"
 	priceplanmod "github.com/erniealice/centymo-golang/views/price_plan"
 	priceschedulemod "github.com/erniealice/centymo-golang/views/price_schedule"
+	priceschedulepricepldetail "github.com/erniealice/centymo-golang/views/price_schedule/detail/plan"
 	resourcemod "github.com/erniealice/centymo-golang/views/resource"
 	revenuemod "github.com/erniealice/centymo-golang/views/revenue"
 	subscriptionaction "github.com/erniealice/centymo-golang/views/subscription/action"
@@ -157,10 +159,19 @@ func (c *blockConfig) wantResource() bool     { return c.enableAll || c.resource
 // report routes). Call with no options to register ALL modules. Call with specific
 // WithX() options for a subset.
 func Block(opts ...BlockOption) pyeza.AppOption {
-	cfg := &blockConfig{enableAll: len(opts) == 0}
+	cfg := &blockConfig{}
 	for _, opt := range opts {
 		opt(cfg)
 	}
+	// "Enable all modules" is a derived flag — true when no module-toggling
+	// option was passed. Non-module options (e.g. WithClientDetailURL) must
+	// NOT flip this off, otherwise passing only a config option (no module
+	// toggle) silently disables every module.
+	moduleSelected := cfg.inventory || cfg.revenue || cfg.product || cfg.productLine ||
+		cfg.pricePlan || cfg.priceSchedule || cfg.priceList || cfg.plan ||
+		cfg.subscription || cfg.collection || cfg.disbursement || cfg.expenditure ||
+		cfg.resource
+	cfg.enableAll = !moduleSelected
 
 	return func(ctx *pyeza.AppContext) error {
 		// --- Type-assert translations ---
@@ -848,18 +859,45 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if refChecker != nil {
 					getPricePlanInUseIDs = refChecker.GetPricePlanInUseIDs
 				}
+				// 2026-04-27 plan-client-scope plan §6.7 — closure used to look
+				// up the parent PriceSchedule's client name for the info banner
+				// rendered on the price-plan drawer.
+				var ppListClientNames func(ctx context.Context) map[string]string
+				if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
+					lc := useCases.Entity.Client.ListClients.Execute
+					ppListClientNames = func(fctx context.Context) map[string]string {
+						out := map[string]string{}
+						resp, err := lc(fctx, &clientpb.ListClientsRequest{})
+						if err != nil {
+							return out
+						}
+						for _, c := range resp.GetData() {
+							label := c.GetName()
+							if label == "" {
+								if u := c.GetUser(); u != nil {
+									label = u.GetFirstName() + " " + u.GetLastName()
+								}
+							}
+							out[c.GetId()] = label
+						}
+						return out
+					}
+				}
+
 				pricePlanDeps := &priceplanmod.ModuleDeps{
-					Routes:                 pricePlanRoutes,
-					Labels:                 pricePlanLabels,
-					ProductPricePlanLabels: productPricePlanLabels,
-					CommonLabels:           ctx.Common,
-					TableLabels:            centymoTableLabels,
+					Routes:                    pricePlanRoutes,
+					Labels:                    pricePlanLabels,
+					ProductPricePlanLabels:    productPricePlanLabels,
+					PriceScheduleDetailLabels: priceScheduleLabels.Detail,
+					CommonLabels:              ctx.Common,
+					TableLabels:               centymoTableLabels,
 					ListPricePlans:         uc.ListPricePlans.Execute,
 					ReadPricePlan:          uc.ReadPricePlan.Execute,
 					CreatePricePlan:        uc.CreatePricePlan.Execute,
 					UpdatePricePlan:        uc.UpdatePricePlan.Execute,
 					DeletePricePlan:        uc.DeletePricePlan.Execute,
 					GetPricePlanInUseIDs:   getPricePlanInUseIDs,
+					ListClientNames:        ppListClientNames,
 				}
 				// Price schedule listing — parent container (owns location + date range)
 				if useCases.Subscription.PriceSchedule != nil {
@@ -900,6 +938,31 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if refChecker != nil {
 					getPriceScheduleInUseIDs = refChecker.GetPriceScheduleInUseIDs
 				}
+				// 2026-04-27 plan-client-scope plan §6.1 / §4.4.1 — schedule list
+				// Client column lookup + drawer Client picker. Same listClientNames
+				// helper used by the plan list.
+				var psListClientNames func(ctx context.Context) map[string]string
+				if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
+					lc := useCases.Entity.Client.ListClients.Execute
+					psListClientNames = func(fctx context.Context) map[string]string {
+						out := map[string]string{}
+						resp, err := lc(fctx, &clientpb.ListClientsRequest{})
+						if err != nil {
+							return out
+						}
+						for _, c := range resp.GetData() {
+							label := c.GetName()
+							if label == "" {
+								if u := c.GetUser(); u != nil {
+									label = u.GetFirstName() + " " + u.GetLastName()
+								}
+							}
+							out[c.GetId()] = label
+						}
+						return out
+					}
+				}
+
 				priceScheduleDeps := &priceschedulemod.ModuleDeps{
 					Routes:                   priceScheduleRoutes,
 					Labels:                   priceScheduleLabels,
@@ -913,6 +976,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					UpdatePriceSchedule:      uc.UpdatePriceSchedule.Execute,
 					DeletePriceSchedule:      uc.DeletePriceSchedule.Execute,
 					GetPriceScheduleInUseIDs: getPriceScheduleInUseIDs,
+					ListClientNames:          psListClientNames,
+				}
+				// 2026-04-27 plan-client-scope plan §6.7 / §4.4.1 — Client picker
+				// for the schedule add/edit drawer.
+				if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
+					priceScheduleDeps.ListClients = useCases.Entity.Client.ListClients.Execute
 				}
 				// Add location listing if available
 				if useCases.Entity != nil && useCases.Entity.Location != nil {
@@ -1029,11 +1098,38 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantPlan() {
+			// 2026-04-27 plan-client-scope plan §6.1 / §6.2 — client name lookup
+			// for the optional Client column on the plan list and for the
+			// plan-drawer Client picker label resolution. Falls back to the
+			// bare client_id when no use case is wired (e.g. tests).
+			var listClientNames func(ctx context.Context) map[string]string
+			if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
+				lc := useCases.Entity.Client.ListClients.Execute
+				listClientNames = func(fctx context.Context) map[string]string {
+					out := map[string]string{}
+					resp, err := lc(fctx, &clientpb.ListClientsRequest{})
+					if err != nil {
+						return out
+					}
+					for _, c := range resp.GetData() {
+						label := c.GetName()
+						if label == "" {
+							if u := c.GetUser(); u != nil {
+								label = u.GetFirstName() + " " + u.GetLastName()
+							}
+						}
+						out[c.GetId()] = label
+					}
+					return out
+				}
+			}
+
 			planListDeps := &planlist.ListViewDeps{
-				Routes:       planRoutes,
-				Labels:       planLabels,
-				CommonLabels: ctx.Common,
-				TableLabels:  centymoTableLabels,
+				Routes:          planRoutes,
+				Labels:          planLabels,
+				CommonLabels:    ctx.Common,
+				TableLabels:     centymoTableLabels,
+				ListClientNames: listClientNames,
 			}
 			if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
 				planListDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
@@ -1059,6 +1155,19 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						return err
 					},
 				}
+				// 2026-04-27 plan-client-scope plan §6.2 — Client picker support
+				// + reference-checker lock state.
+				if useCases.Entity != nil && useCases.Entity.Client != nil {
+					if useCases.Entity.Client.ListClients != nil {
+						planActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+					}
+					if useCases.Entity.Client.SearchClientsByName != nil {
+						planActionDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName.Execute
+					}
+				}
+				if refChecker != nil {
+					planActionDeps.GetPlanClientScopeLockedIDs = refChecker.GetPlanClientScopeLockedIDs
+				}
 				ctx.Routes.GET(planRoutes.AddURL, planaction.NewAddAction(planActionDeps))
 				ctx.Routes.POST(planRoutes.AddURL, planaction.NewAddAction(planActionDeps))
 				ctx.Routes.GET(planRoutes.EditURL, planaction.NewEditAction(planActionDeps))
@@ -1072,11 +1181,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// Plan detail page + tab action
 			if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
 				planDetailDeps := &plandetail.DetailViewDeps{
-					Routes:       planRoutes,
-					ReadPlan:     useCases.Subscription.Plan.ReadPlan.Execute,
-					Labels:       planLabels,
-					CommonLabels: ctx.Common,
-					TableLabels:  centymoTableLabels,
+					Routes:                     planRoutes,
+					PriceSchedulePlanDetailURL: priceScheduleRoutes.PlanDetailURL,
+					ReadPlan:                   useCases.Subscription.Plan.ReadPlan.Execute,
+					Labels:                     planLabels,
+					CommonLabels:               ctx.Common,
+					TableLabels:                centymoTableLabels,
 					AttachmentOps: attachment.AttachmentOps{
 						UploadFile:       uploadFile,
 						ListAttachments:  listAttachments,
@@ -1105,6 +1215,56 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 				ctx.Routes.GET(planRoutes.DetailURL, plandetail.NewView(planDetailDeps))
 				ctx.Routes.GET(planRoutes.TabActionURL, plandetail.NewTabAction(planDetailDeps))
+
+				// Plan-scoped PricePlan detail (/app/plans/detail/{id}/price/{ppid}).
+				// Reuses the schedule-scoped detail body but anchors ActiveNav to
+				// Services > Packages and points the breadcrumb back at the
+				// package's package-prices tab. The {id} path value is plan_id;
+				// the handler resolves schedule_id from the price_plan record.
+				if planRoutes.PricePlanDetailURL != "" && useCases.Subscription.PricePlan != nil {
+					// The plan detail's "Package prices" tab is registered under the
+					// `pricePlan` key in plan tab labels; the lyngua professional
+					// override surfaces it as the slug "package-prices" in the URL.
+					packagePricesSlug := planLabels.Tabs.ResolveTabSlug("pricePlan")
+					planScopedDeps := &priceschedulepricepldetail.DetailViewDeps{
+						Routes:                 priceScheduleRoutes,
+						ScheduleLabels:         priceScheduleLabels,
+						PlanLabels:             pricePlanLabels,
+						ProductPricePlanLabels: productPricePlanLabels,
+						CommonLabels:           ctx.Common,
+						TableLabels:            centymoTableLabels,
+						ReadPricePlan:          useCases.Subscription.PricePlan.ReadPricePlan.Execute,
+						// Mount overrides — keep the page anchored to Packages.
+						ActiveNavOverride:      planRoutes.ActiveNav,
+						ActiveSubNavOverride:   planRoutes.ActiveSubNav,
+						PlanDetailBackURL:      planRoutes.DetailURL,
+						PlanDetailBackTab:      packagePricesSlug,
+						PlanScopedDetailURL:    planRoutes.PricePlanDetailURL,
+						PlanScopedTabActionURL: planRoutes.PricePlanTabActionURL,
+					}
+					if useCases.Subscription.PriceSchedule != nil {
+						planScopedDeps.ReadPriceSchedule = useCases.Subscription.PriceSchedule.ReadPriceSchedule.Execute
+					}
+					if useCases.Subscription.Plan != nil {
+						planScopedDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+					}
+					if useCases.Product != nil && useCases.Product.Product != nil {
+						planScopedDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+					}
+					if useCases.Product != nil && useCases.Product.ProductPlan != nil {
+						planScopedDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+					}
+					if useCases.Product != nil && useCases.Product.ProductVariant != nil {
+						planScopedDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+					}
+					if useCases.Subscription.ProductPricePlan != nil {
+						planScopedDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
+					}
+					ctx.Routes.GET(planRoutes.PricePlanDetailURL, priceschedulepricepldetail.NewPlanScopedView(planScopedDeps))
+					if planRoutes.PricePlanTabActionURL != "" {
+						ctx.Routes.GET(planRoutes.PricePlanTabActionURL, priceschedulepricepldetail.NewPlanScopedTabAction(planScopedDeps))
+					}
+				}
 				// Plan attachments
 				if uploadFile != nil {
 					ctx.Routes.GET(planRoutes.AttachmentUploadURL, plandetail.NewAttachmentUploadAction(planDetailDeps))
@@ -1196,10 +1356,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// onto the services mount, skip to avoid a ServeMux duplicate-route panic.
 			if cfg.wantPlan() && planBundleRoutes.ListURL != planRoutes.ListURL {
 				planBundleListDeps := &planlist.ListViewDeps{
-					Routes:       planBundleRoutes,
-					Labels:       planLabels,
-					CommonLabels: ctx.Common,
-					TableLabels:  centymoTableLabels,
+					Routes:          planBundleRoutes,
+					Labels:          planLabels,
+					CommonLabels:    ctx.Common,
+					TableLabels:     centymoTableLabels,
+					ListClientNames: listClientNames,
 				}
 				if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
 					planBundleListDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
@@ -1224,6 +1385,19 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 							return err
 						},
 					}
+					// 2026-04-27 plan-client-scope plan §6.2 — same Client picker
+					// + lock state on the bundle mount.
+					if useCases.Entity != nil && useCases.Entity.Client != nil {
+						if useCases.Entity.Client.ListClients != nil {
+							planBundleActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+						}
+						if useCases.Entity.Client.SearchClientsByName != nil {
+							planBundleActionDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName.Execute
+						}
+					}
+					if refChecker != nil {
+						planBundleActionDeps.GetPlanClientScopeLockedIDs = refChecker.GetPlanClientScopeLockedIDs
+					}
 					ctx.Routes.GET(planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
 					ctx.Routes.POST(planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
 					ctx.Routes.GET(planBundleRoutes.EditURL, planaction.NewEditAction(planBundleActionDeps))
@@ -1236,11 +1410,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 				if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
 					planBundleDetailDeps := &plandetail.DetailViewDeps{
-						Routes:       planBundleRoutes,
-						ReadPlan:     useCases.Subscription.Plan.ReadPlan.Execute,
-						Labels:       planLabels,
-						CommonLabels: ctx.Common,
-						TableLabels:  centymoTableLabels,
+						Routes:                     planBundleRoutes,
+						PriceSchedulePlanDetailURL: priceScheduleRoutes.PlanDetailURL,
+						ReadPlan:                   useCases.Subscription.Plan.ReadPlan.Execute,
+						Labels:                     planLabels,
+						CommonLabels:               ctx.Common,
+						TableLabels:                centymoTableLabels,
 						AttachmentOps: attachment.AttachmentOps{
 							UploadFile:       uploadFile,
 							ListAttachments:  listAttachments,
@@ -1376,6 +1551,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				subListDeps.GetInUseIDs = refChecker.GetSubscriptionInUseIDs
 			}
 			ctx.Routes.GET(subscriptionRoutes.ListURL, subscriptionlist.NewView(subListDeps))
+			// Table-only endpoint — used by sheet.js refreshTable() after
+			// activate/deactivate/delete so HTMX swaps the table-card partial,
+			// not the whole page.
+			if subscriptionRoutes.TableURL != "" {
+				ctx.Routes.GET(subscriptionRoutes.TableURL, subscriptionlist.NewTableView(subListDeps))
+			}
 
 			// Subscription CRUD actions
 			if useCases.Subscription != nil && useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.CreateSubscription != nil {
@@ -1394,6 +1575,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 				if refChecker != nil {
 					subActionDeps.GetInUseIDs = refChecker.GetSubscriptionInUseIDs
+				}
+				if useCases.Subscription.Subscription.GetSubscriptionItemPageData != nil {
+					subActionDeps.GetSubscriptionItemPageData = useCases.Subscription.Subscription.GetSubscriptionItemPageData.Execute
 				}
 				if useCases.Entity != nil && useCases.Entity.Client != nil {
 					subActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
@@ -1428,6 +1612,18 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						useCases.Revenue.Revenue.RecognizeRevenueFromSubscription.Execute
 				}
 
+				// 2026-04-27 plan-client-scope plan §4 / §6.5 — wire the
+				// CustomizePlanForClient use case via a thin adapter that
+				// converts the centymo-side request shape to whatever the
+				// espyna-golang use case expects. The espyna use case is in
+				// flight in a parallel agent's branch; until its signature
+				// stabilizes the Plan.CustomizePlanForClient pointer is
+				// optional here — when nil, the customize CTA returns
+				// `customize_failed` and the drawer error toast surfaces.
+				subActionDeps.CustomClientPriceScheduleLabelSuffix =
+					priceScheduleLabels.Form.CustomClientPriceScheduleLabelSuffix
+				wireCustomizePlanForClient(useCases, subActionDeps)
+
 				ctx.Routes.GET(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.GET(subscriptionRoutes.EditURL, subscriptionaction.NewEditAction(subActionDeps))
@@ -1442,6 +1638,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if subActionDeps.RecognizeRevenueFromSubscription != nil && subscriptionRoutes.RecognizeURL != "" {
 					ctx.Routes.GET(subscriptionRoutes.RecognizeURL, subscriptionaction.NewRecognizeAction(subActionDeps))
 					ctx.Routes.POST(subscriptionRoutes.RecognizeURL, subscriptionaction.NewRecognizeAction(subActionDeps))
+				}
+				// 2026-04-27 plan-client-scope plan §6.5 — Customize package
+				// CTA on subscription detail's Package tab.
+				if subscriptionRoutes.CustomizePackageURL != "" {
+					ctx.Routes.POST(subscriptionRoutes.CustomizePackageURL, subscriptionaction.NewCustomizePackageAction(subActionDeps))
 				}
 				// Auto-complete search (http.HandlerFunc — uses HandleFunc, not GET)
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchClientURL, subscriptionaction.NewSearchClientsAction(subActionDeps))
@@ -1660,5 +1861,51 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		log.Println("  centymo commerce domain initialized")
 		return nil
+	}
+}
+
+// wireCustomizePlanForClient threads the espyna Plan.CustomizePlanForClient use
+// case into the centymo subscription action Deps. The espyna side ships an
+// independent request/response shape; the centymo side uses an in-package
+// type-narrow shape so its handlers don't depend directly on the espyna
+// generated proto/use-case structs.
+//
+// When the use case isn't wired (composition layer didn't initialize it), we
+// leave the function pointer nil; the handler falls through to a generic
+// `customize_failed` toast.
+//
+// 2026-04-27 plan-client-scope plan §4. Same adapter pattern as
+// RecognizeRevenueFromSubscription above.
+func wireCustomizePlanForClient(useCases *consumer.UseCases, subActionDeps *subscriptionaction.Deps) {
+	if useCases == nil || useCases.Subscription == nil || useCases.Subscription.Plan == nil {
+		return
+	}
+	customizeUC := useCases.Subscription.Plan.CustomizePlanForClient
+	if customizeUC == nil {
+		return
+	}
+	_ = customizeUC
+	subActionDeps.CustomizePlanForClient = func(
+		ctx context.Context, req *subscriptionaction.CustomizePlanForClientRequest,
+	) (*subscriptionaction.CustomizePlanForClientResponse, error) {
+		resp, err := consumer.CustomizePlanForClient(useCases, ctx, &consumer.CustomizePlanForClientRequest{
+			SourcePlanID:      req.SourcePlanID,
+			SourcePricePlanID: req.SourcePricePlanID,
+			ClientID:          req.ClientID,
+			SubscriptionID:    req.SubscriptionID,
+			NewScheduleName:   req.NewScheduleName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if resp == nil {
+			return &subscriptionaction.CustomizePlanForClientResponse{}, nil
+		}
+		return &subscriptionaction.CustomizePlanForClientResponse{
+			NewPlanID:      resp.NewPlanID,
+			NewPricePlanID: resp.NewPricePlanID,
+			NewScheduleID:  resp.NewScheduleID,
+			Reused:         resp.Reused,
+		}, nil
 	}
 }

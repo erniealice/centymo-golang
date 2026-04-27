@@ -938,6 +938,16 @@ type PlanRoutes struct {
 	PricePlanEditURL   string `json:"price_plan_edit_url"`
 	PricePlanDeleteURL string `json:"price_plan_delete_url"`
 
+	// Plan-scoped PricePlan detail (mirrors PriceSchedulePlanRoutes.PlanDetailURL
+	// but anchored under /app/plans/detail/{id}/price/{ppid}). Lets the package
+	// detail's package-prices tab keep ActiveNav on Services > Packages instead
+	// of jumping to the rate-cards namespace.
+	PricePlanDetailURL             string `json:"price_plan_detail_url"`
+	PricePlanTabActionURL          string `json:"price_plan_tab_action_url"`
+	PricePlanProductPriceAddURL    string `json:"price_plan_product_price_add_url"`
+	PricePlanProductPriceEditURL   string `json:"price_plan_product_price_edit_url"`
+	PricePlanProductPriceDeleteURL string `json:"price_plan_product_price_delete_url"`
+
 	// ProductPlan CRUD routes (within plan context)
 	ProductPlanAddURL    string `json:"product_plan_add_url"`
 	ProductPlanEditURL   string `json:"product_plan_edit_url"`
@@ -969,6 +979,12 @@ func DefaultPlanRoutes() PlanRoutes {
 		PricePlanAddURL:    PricePlanAddURL,
 		PricePlanEditURL:   PricePlanEditURL,
 		PricePlanDeleteURL: PricePlanDeleteURL,
+
+		PricePlanDetailURL:             PlanPricePlanDetailURL,
+		PricePlanTabActionURL:          PlanPricePlanTabActionURL,
+		PricePlanProductPriceAddURL:    PlanPricePlanProductPriceAddURL,
+		PricePlanProductPriceEditURL:   PlanPricePlanProductPriceEditURL,
+		PricePlanProductPriceDeleteURL: PlanPricePlanProductPriceDeleteURL,
 
 		ProductPlanAddURL:    PlanProductPlanAddURL,
 		ProductPlanEditURL:   PlanProductPlanEditURL,
@@ -1015,6 +1031,11 @@ func DefaultPlanBundleRoutes() PlanRoutes {
 	r.PricePlanAddURL = shift(r.PricePlanAddURL)
 	r.PricePlanEditURL = shift(r.PricePlanEditURL)
 	r.PricePlanDeleteURL = shift(r.PricePlanDeleteURL)
+	r.PricePlanDetailURL = shift(r.PricePlanDetailURL)
+	r.PricePlanTabActionURL = shift(r.PricePlanTabActionURL)
+	r.PricePlanProductPriceAddURL = shift(r.PricePlanProductPriceAddURL)
+	r.PricePlanProductPriceEditURL = shift(r.PricePlanProductPriceEditURL)
+	r.PricePlanProductPriceDeleteURL = shift(r.PricePlanProductPriceDeleteURL)
 	r.ProductPlanAddURL = shift(r.ProductPlanAddURL)
 	r.ProductPlanEditURL = shift(r.ProductPlanEditURL)
 	r.ProductPlanDeleteURL = shift(r.ProductPlanDeleteURL)
@@ -1043,6 +1064,12 @@ func (r PlanRoutes) RouteMap() map[string]string {
 		"plan.pricelist.add":    r.PricePlanAddURL,
 		"plan.pricelist.edit":   r.PricePlanEditURL,
 		"plan.pricelist.delete": r.PricePlanDeleteURL,
+
+		"plan.price.detail":               r.PricePlanDetailURL,
+		"plan.price.tab_action":           r.PricePlanTabActionURL,
+		"plan.price.product_price.add":    r.PricePlanProductPriceAddURL,
+		"plan.price.product_price.edit":   r.PricePlanProductPriceEditURL,
+		"plan.price.product_price.delete": r.PricePlanProductPriceDeleteURL,
 
 		"plan.product_plan.add":    r.ProductPlanAddURL,
 		"plan.product_plan.edit":   r.ProductPlanEditURL,
@@ -1299,6 +1326,7 @@ type SubscriptionRoutes struct {
 	ActiveSubNav string `json:"active_sub_nav"`
 
 	ListURL                 string `json:"list_url"`
+	TableURL                string `json:"table_url"`
 	DetailURL               string `json:"detail_url"`
 	UnderClientDetailURL    string `json:"under_client_detail_url"`
 	AddURL                  string `json:"add_url"`
@@ -1315,6 +1343,12 @@ type SubscriptionRoutes struct {
 	// GET = preview drawer (dry_run); POST = generate the Revenue.
 	RecognizeURL string `json:"recognize_url"`
 
+	// CustomizePackageURL is the POST endpoint that drives the "Customize
+	// this package for {ClientName}" CTA on the subscription detail's
+	// Package tab. Server clones the source Plan + PricePlan into a
+	// client-scoped copy and HX-redirects to the new package URL.
+	CustomizePackageURL string `json:"customize_package_url"`
+
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
@@ -1328,6 +1362,7 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		ActiveSubNav: "subscriptions",
 
 		ListURL:              SubscriptionListURL,
+		TableURL:             SubscriptionTableURL,
 		DetailURL:            SubscriptionDetailURL,
 		UnderClientDetailURL: SubscriptionUnderClientDetailURL,
 		AddURL:               SubscriptionAddURL,
@@ -1340,6 +1375,7 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		SearchPlanURL:        SubscriptionSearchPlanURL,
 		SearchClientURL:      SubscriptionSearchClientURL,
 		RecognizeURL:         SubscriptionRecognizeURL,
+		CustomizePackageURL:  SubscriptionCustomizePackageURL,
 
 		AttachmentUploadURL: SubscriptionAttachmentUploadURL,
 		AttachmentDeleteURL: SubscriptionAttachmentDeleteURL,
@@ -1351,6 +1387,7 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 func (r SubscriptionRoutes) RouteMap() map[string]string {
 	return map[string]string{
 		"subscription.list":                r.ListURL,
+		"subscription.table":               r.TableURL,
 		"subscription.detail":              r.DetailURL,
 		"subscription.under_client_detail": r.UnderClientDetailURL,
 		"subscription.add":                 r.AddURL,
@@ -1363,6 +1400,7 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		"subscription.search_plan":         r.SearchPlanURL,
 		"subscription.search_client":       r.SearchClientURL,
 		"subscription.recognize":           r.RecognizeURL,
+		"subscription.customize_package":   r.CustomizePackageURL,
 
 		"subscription.attachment.upload": r.AttachmentUploadURL,
 		"subscription.attachment.delete": r.AttachmentDeleteURL,
@@ -1550,5 +1588,190 @@ func (r PriceListRoutes) RouteMap() map[string]string {
 
 		"price_list.price_product.add":    r.PriceProductAddURL,
 		"price_list.price_product.delete": r.PriceProductDeleteURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SupplierContractRoutes — P3a
+// ---------------------------------------------------------------------------
+
+// SupplierContractRoutes holds all route paths for supplier_contract views.
+type SupplierContractRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL           string `json:"list_url"`
+	DetailURL         string `json:"detail_url"`
+	AddURL            string `json:"add_url"`
+	EditURL           string `json:"edit_url"`
+	DeleteURL         string `json:"delete_url"`
+	SetStatusURL      string `json:"set_status_url"`
+	BulkSetStatusURL  string `json:"bulk_set_status_url"`
+	TabActionURL      string `json:"tab_action_url"`
+
+	// Workflow
+	ApproveURL   string `json:"approve_url"`
+	TerminateURL string `json:"terminate_url"`
+
+	// Line item actions (child entity)
+	LineAddURL    string `json:"line_add_url"`
+	LineEditURL   string `json:"line_edit_url"`
+	LineDeleteURL string `json:"line_delete_url"`
+}
+
+// DefaultSupplierContractRoutes returns a SupplierContractRoutes using the
+// package-level route constants.
+func DefaultSupplierContractRoutes() SupplierContractRoutes {
+	return SupplierContractRoutes{
+		ActiveNav:        "supplier-contracts",
+		ActiveSubNav:     "active",
+		ListURL:          SupplierContractListURL,
+		DetailURL:        SupplierContractDetailURL,
+		AddURL:           SupplierContractAddURL,
+		EditURL:          SupplierContractEditURL,
+		DeleteURL:        SupplierContractDeleteURL,
+		SetStatusURL:     SupplierContractSetStatusURL,
+		BulkSetStatusURL: SupplierContractBulkSetStatusURL,
+		TabActionURL:     SupplierContractTabActionURL,
+		ApproveURL:       SupplierContractApproveURL,
+		TerminateURL:     SupplierContractTerminateURL,
+		LineAddURL:       SupplierContractLineAddURL,
+		LineEditURL:      SupplierContractLineEditURL,
+		LineDeleteURL:    SupplierContractLineDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r SupplierContractRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"supplier_contract.list":          r.ListURL,
+		"supplier_contract.detail":        r.DetailURL,
+		"supplier_contract.add":           r.AddURL,
+		"supplier_contract.edit":          r.EditURL,
+		"supplier_contract.delete":        r.DeleteURL,
+		"supplier_contract.set_status":    r.SetStatusURL,
+		"supplier_contract.approve":       r.ApproveURL,
+		"supplier_contract.terminate":     r.TerminateURL,
+		"supplier_contract.line.add":      r.LineAddURL,
+		"supplier_contract.line.edit":     r.LineEditURL,
+		"supplier_contract.line.delete":   r.LineDeleteURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ProcurementRequestRoutes — P3a
+// ---------------------------------------------------------------------------
+
+// ProcurementRequestRoutes holds all route paths for procurement_request views.
+type ProcurementRequestRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL           string `json:"list_url"`
+	DetailURL         string `json:"detail_url"`
+	AddURL            string `json:"add_url"`
+	EditURL           string `json:"edit_url"`
+	DeleteURL         string `json:"delete_url"`
+	SetStatusURL      string `json:"set_status_url"`
+	BulkSetStatusURL  string `json:"bulk_set_status_url"`
+	TabActionURL      string `json:"tab_action_url"`
+
+	// Workflow actions
+	SubmitURL  string `json:"submit_url"`
+	ApproveURL string `json:"approve_url"`
+	RejectURL  string `json:"reject_url"`
+	SpawnPOURL string `json:"spawn_po_url"`
+
+	// Line item actions (child entity)
+	LineAddURL    string `json:"line_add_url"`
+	LineEditURL   string `json:"line_edit_url"`
+	LineDeleteURL string `json:"line_delete_url"`
+}
+
+// DefaultProcurementRequestRoutes returns a ProcurementRequestRoutes using the
+// package-level route constants.
+func DefaultProcurementRequestRoutes() ProcurementRequestRoutes {
+	return ProcurementRequestRoutes{
+		ActiveNav:        "procurement-requests",
+		ActiveSubNav:     "draft",
+		ListURL:          ProcurementRequestListURL,
+		DetailURL:        ProcurementRequestDetailURL,
+		AddURL:           ProcurementRequestAddURL,
+		EditURL:          ProcurementRequestEditURL,
+		DeleteURL:        ProcurementRequestDeleteURL,
+		SetStatusURL:     ProcurementRequestSetStatusURL,
+		BulkSetStatusURL: ProcurementRequestBulkSetStatusURL,
+		TabActionURL:     ProcurementRequestTabActionURL,
+		SubmitURL:        ProcurementRequestSubmitURL,
+		ApproveURL:       ProcurementRequestApproveURL,
+		RejectURL:        ProcurementRequestRejectURL,
+		SpawnPOURL:       ProcurementRequestSpawnPOURL,
+		LineAddURL:       ProcurementRequestLineAddURL,
+		LineEditURL:      ProcurementRequestLineEditURL,
+		LineDeleteURL:    ProcurementRequestLineDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r ProcurementRequestRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"procurement_request.list":        r.ListURL,
+		"procurement_request.detail":      r.DetailURL,
+		"procurement_request.add":         r.AddURL,
+		"procurement_request.edit":        r.EditURL,
+		"procurement_request.delete":      r.DeleteURL,
+		"procurement_request.set_status":  r.SetStatusURL,
+		"procurement_request.submit":      r.SubmitURL,
+		"procurement_request.approve":     r.ApproveURL,
+		"procurement_request.reject":      r.RejectURL,
+		"procurement_request.spawn_po":    r.SpawnPOURL,
+		"procurement_request.line.add":    r.LineAddURL,
+		"procurement_request.line.edit":   r.LineEditURL,
+		"procurement_request.line.delete": r.LineDeleteURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3b — Procurement Operations app routes
+// (composition surface; no proto entity — mirrors the schedule/cyta pattern)
+// ---------------------------------------------------------------------------
+
+// ProcurementRoutes holds the URL constants for the Procurement Operations app.
+// These are defined in the centymo package so service-admin composition (P3c)
+// can wire them into SidebarRoutes.Operations.Procurement.
+type ProcurementRoutes struct {
+	// Dashboard
+	DashboardURL string `json:"dashboard_url"`
+
+	// Contract operations (views over SupplierContract)
+	RenewalCalendarURL string `json:"renewal_calendar_url"`
+	VarianceURL        string `json:"variance_url"`
+	UtilizationURL     string `json:"utilization_url"`
+
+	// Recurrence drafts queue (lights up when P5 ships the recurrence engine)
+	RecurrenceDraftsURL string `json:"recurrence_drafts_url"`
+}
+
+// DefaultProcurementRoutes returns a ProcurementRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultProcurementRoutes() ProcurementRoutes {
+	return ProcurementRoutes{
+		DashboardURL:        ProcurementDashboardURL,
+		RenewalCalendarURL:  ProcurementRenewalCalendarURL,
+		VarianceURL:         ProcurementVarianceURL,
+		UtilizationURL:      ProcurementUtilizationURL,
+		RecurrenceDraftsURL: ProcurementRecurrenceDraftsURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// procurement operations app routes.
+func (r ProcurementRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"procurement.dashboard":        r.DashboardURL,
+		"procurement.renewals":         r.RenewalCalendarURL,
+		"procurement.variance":         r.VarianceURL,
+		"procurement.utilization":      r.UtilizationURL,
+		"procurement.recurrence_drafts": r.RecurrenceDraftsURL,
 	}
 }

@@ -1,0 +1,53 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "procurement-variance-alerts"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "procurement-variance-alerts-content"}}
+<div class="page-content">
+    <div class="page-header">
+        <h1 class="page-heading">{{.Labels.VarianceTitle}}</h1>
+        <p class="page-caption">{{.Labels.BudgetPressureLabel}} &gt;{{.ThresholdPct}}%</p>
+    </div>
+
+    {{if .Empty}}
+    <div class="empty-state" data-testid="procurement-variance-empty">
+        <div class="empty-state-icon">{{template "icon-check-circle"}}</div>
+        <p class="empty-state-message">{{.Labels.EmptyVariance}}</p>
+    </div>
+    {{else}}
+    <div class="card">
+        <table class="data-table" id="procurement-variance-table">
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Contract Ref</th>
+                    <th>Committed</th>
+                    <th>Billed</th>
+                    <th>Remaining</th>
+                    <th>{{.Labels.UtilizationPercent}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Rows}}
+                <tr data-testid="variance-row">
+                    <td>{{.SupplierName}}</td>
+                    <td>{{.ContractRef}}</td>
+                    <td>{{.CommittedAmount}}</td>
+                    <td>{{.BilledAmount}}</td>
+                    <td>{{.RemainingAmount}}</td>
+                    <td>
+                        <div class="progress-bar-container" title="{{.UtilizationPct}}%">
+                            <div class="progress-bar progress-bar--danger" style="width:{{.UtilizationPct}}%"></div>
+                        </div>
+                        {{.UtilizationPct}}%
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{end}}
+</div>
+{{end}}

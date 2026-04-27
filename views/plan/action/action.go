@@ -11,6 +11,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 )
 
@@ -26,7 +27,32 @@ type FormLabels struct {
 	NameInfo        string
 	DescriptionInfo string
 	ActiveInfo      string
+
+	// 2026-04-27 plan-client-scope plan §6.2 / §6.6 — Client picker.
+	Client                  string
+	ClientHelp              string
+	ClientPlaceholder       string
+	ClientSearchPlaceholder string
+	ClientNoResults         string
+	ClientLockedTooltip     string
+	ClientForLabel          string // "For {{.ClientName}}" — read-only badge in client-context entry
+	ClientInfo              string
 }
+
+// ClientFieldMode selects how the Client field renders on the drawer per
+// plan §6.6:
+//   - "picker"   → standard auto-complete (workspace add).
+//   - "readonly" → read-only badge "For {ClientName}" (client-context entry,
+//     ?context=client&client_id=...).
+//   - "locked"   → read-only badge with the lock tooltip (Plan has active
+//     subscriptions and client_id is reference-checker locked).
+type ClientFieldMode string
+
+const (
+	ClientFieldModePicker   ClientFieldMode = "picker"
+	ClientFieldModeReadonly ClientFieldMode = "readonly"
+	ClientFieldModeLocked   ClientFieldMode = "locked"
+)
 
 // FormData is the template data for the plan drawer form.
 type FormData struct {
@@ -36,6 +62,14 @@ type FormData struct {
 	Name         string
 	Description  string
 	Active       bool
+
+	// 2026-04-27 plan-client-scope plan §6.2 / §6.6.
+	ClientFieldMode      ClientFieldMode
+	ClientID             string             // existing or pre-filled client_id
+	ClientLabel          string             // display name for the chosen client
+	ClientOptions        []map[string]any   // optgroup-flattened options for the picker
+	SearchClientURL      string             // auto-complete search endpoint
+
 	Labels       FormLabels
 	CommonLabels any
 }
@@ -51,6 +85,19 @@ type Deps struct {
 	UpdatePlan    func(ctx context.Context, req *planpb.UpdatePlanRequest) (*planpb.UpdatePlanResponse, error)
 	DeletePlan    func(ctx context.Context, req *planpb.DeletePlanRequest) (*planpb.DeletePlanResponse, error)
 	SetPlanActive func(ctx context.Context, id string, active bool) error
+
+	// 2026-04-27 plan-client-scope plan §6.2.
+	// Client picker support — list / search clients for the auto-complete and
+	// resolve a single client's display name when editing.
+	ListClients         func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
+	SearchClientsURL    string
+
+	// GetPlanClientScopeLockedIDs is the espyna reference checker that
+	// returns plan IDs whose client_id is locked because at least one of
+	// their PricePlans is attached to an active subscription. Optional —
+	// when nil, lock state never flips.
+	GetPlanClientScopeLockedIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
 func formLabels(l centymo.PlanLabels) FormLabels {
@@ -64,7 +111,76 @@ func formLabels(l centymo.PlanLabels) FormLabels {
 		NameInfo:        l.Form.NameInfo,
 		DescriptionInfo: l.Form.DescriptionInfo,
 		ActiveInfo:      l.Form.ActiveInfo,
+		// 2026-04-27 plan-client-scope plan §6.2.
+		Client:                  l.Form.ClientLabel,
+		ClientHelp:              l.Form.ClientHelp,
+		ClientPlaceholder:       l.Form.ClientPlaceholder,
+		ClientSearchPlaceholder: l.Form.ClientSearchPlaceholder,
+		ClientNoResults:         l.Form.ClientNoResults,
+		ClientLockedTooltip:     l.Form.ClientLockedTooltip,
+		ClientForLabel:          l.Form.ClientForLabel,
+		ClientInfo:              l.Form.ClientInfo,
 	}
+}
+
+// loadClientOptions fetches the workspace's clients and converts them into
+// the auto-complete option shape ({Value, Label, Selected}). Returns nil
+// when the dep is unwired.
+func loadClientOptions(ctx context.Context, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error), selectedID string) []map[string]any {
+	if listClients == nil {
+		return nil
+	}
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		log.Printf("Failed to load clients for plan drawer: %v", err)
+		return nil
+	}
+	opts := make([]map[string]any, 0, len(resp.GetData()))
+	for _, c := range resp.GetData() {
+		label := c.GetName()
+		if label == "" {
+			if u := c.GetUser(); u != nil {
+				label = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			}
+		}
+		if label == "" {
+			label = c.GetId()
+		}
+		opts = append(opts, map[string]any{
+			"Value":    c.GetId(),
+			"Label":    label,
+			"Selected": c.GetId() == selectedID,
+		})
+	}
+	return opts
+}
+
+// resolveClientLabel finds the display name for a single client_id. Empty
+// when listClients is unwired or the lookup misses.
+func resolveClientLabel(ctx context.Context, clientID string, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)) string {
+	if clientID == "" || listClients == nil {
+		return ""
+	}
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		return clientID
+	}
+	for _, c := range resp.GetData() {
+		if c.GetId() != clientID {
+			continue
+		}
+		if name := c.GetName(); name != "" {
+			return name
+		}
+		if u := c.GetUser(); u != nil {
+			full := strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			if full != "" {
+				return full
+			}
+		}
+		return clientID
+	}
+	return clientID
 }
 
 // NewAddAction creates the plan add action (GET = form, POST = create).
@@ -76,11 +192,26 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
+			// Plan §6.6 — when opened with ?context=client&client_id=...
+			// the Client field renders read-only (with a hidden input).
+			ctxParam := viewCtx.Request.URL.Query().Get("context")
+			pinnedClientID := viewCtx.Request.URL.Query().Get("client_id")
+			fieldMode := ClientFieldModePicker
+			clientLabel := ""
+			if ctxParam == "client" && pinnedClientID != "" {
+				fieldMode = ClientFieldModeReadonly
+				clientLabel = resolveClientLabel(ctx, pinnedClientID, deps.ListClients)
+			}
 			return view.OK("plan-drawer-form", &FormData{
-				FormAction:   deps.Routes.AddURL,
-				Active:       true,
-				Labels:       formLabels(deps.Labels),
-				CommonLabels: nil, // injected by ViewAdapter
+				FormAction:      deps.Routes.AddURL,
+				Active:          true,
+				ClientFieldMode: fieldMode,
+				ClientID:        pinnedClientID,
+				ClientLabel:     clientLabel,
+				ClientOptions:   loadClientOptions(ctx, deps.ListClients, pinnedClientID),
+				SearchClientURL: deps.SearchClientsURL,
+				Labels:          formLabels(deps.Labels),
+				CommonLabels:    nil, // injected by ViewAdapter
 			})
 		}
 
@@ -91,13 +222,18 @@ func NewAddAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
+		clientID := strings.TrimSpace(r.FormValue("client_id"))
 
+		planData := &planpb.Plan{
+			Name:        r.FormValue("name"),
+			Description: strPtr(r.FormValue("description")),
+			Active:      active,
+		}
+		if clientID != "" {
+			planData.ClientId = strPtr(clientID)
+		}
 		resp, err := deps.CreatePlan(ctx, &planpb.CreatePlanRequest{
-			Data: &planpb.Plan{
-				Name:        r.FormValue("name"),
-				Description: strPtr(r.FormValue("description")),
-				Active:      active,
-			},
+			Data: planData,
 		})
 		if err != nil {
 			log.Printf("Failed to create plan: %v", err)
@@ -159,15 +295,47 @@ func NewEditAction(deps *Deps) view.View {
 				formAction = deps.Routes.AddURL
 				formID = ""
 			}
+
+			// 2026-04-27 plan-client-scope plan §3.1 / §6.2 — Client field
+			// renders as a picker by default; flips to read-only-with-tooltip
+			// when the reference checker reports the plan as locked.
+			clientID := record.GetClientId()
+			clientLabel := resolveClientLabel(ctx, clientID, deps.ListClients)
+			fieldMode := ClientFieldModePicker
+			if isClone {
+				// Cloning starts fresh — the new plan can be assigned to any
+				// client (or none). Skip the lock check.
+			} else if deps.GetPlanClientScopeLockedIDs != nil {
+				if locked, _ := deps.GetPlanClientScopeLockedIDs(ctx, []string{id}); locked[id] {
+					fieldMode = ClientFieldModeLocked
+				}
+			}
+			// Honor ?context=client&client_id=... overrides on edit (e.g. opened
+			// from the client detail Packages tab) — a context-pinned drawer
+			// always renders read-only regardless of lock state, since the
+			// client identity is implied by the entry point.
+			if viewCtx.Request.URL.Query().Get("context") == "client" {
+				if pinned := viewCtx.Request.URL.Query().Get("client_id"); pinned != "" {
+					clientID = pinned
+					clientLabel = resolveClientLabel(ctx, pinned, deps.ListClients)
+					fieldMode = ClientFieldModeReadonly
+				}
+			}
+
 			return view.OK("plan-drawer-form", &FormData{
-				FormAction:   formAction,
-				IsEdit:       !isClone,
-				ID:           formID,
-				Name:         name,
-				Description:  record.GetDescription(),
-				Active:       record.GetActive(),
-				Labels:       formLabels(deps.Labels),
-				CommonLabels: nil, // injected by ViewAdapter
+				FormAction:      formAction,
+				IsEdit:          !isClone,
+				ID:              formID,
+				Name:            name,
+				Description:     record.GetDescription(),
+				Active:          record.GetActive(),
+				ClientFieldMode: fieldMode,
+				ClientID:        clientID,
+				ClientLabel:     clientLabel,
+				ClientOptions:   loadClientOptions(ctx, deps.ListClients, clientID),
+				SearchClientURL: deps.SearchClientsURL,
+				Labels:          formLabels(deps.Labels),
+				CommonLabels:    nil, // injected by ViewAdapter
 			})
 		}
 
@@ -178,13 +346,19 @@ func NewEditAction(deps *Deps) view.View {
 
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
+		clientID := strings.TrimSpace(r.FormValue("client_id"))
 
+		updateData := &planpb.Plan{
+			Id:          &id,
+			Name:        r.FormValue("name"),
+			Description: strPtr(r.FormValue("description")),
+		}
+		// Always send the client_id (empty string clears the column) so the
+		// espyna update use case can detect a master ↔ client_id transition
+		// and run the §3.1 reference-checker guard.
+		updateData.ClientId = strPtr(clientID)
 		_, err := deps.UpdatePlan(ctx, &planpb.UpdatePlanRequest{
-			Data: &planpb.Plan{
-				Id:          &id,
-				Name:        r.FormValue("name"),
-				Description: strPtr(r.FormValue("description")),
-			},
+			Data: updateData,
 		})
 		if err != nil {
 			log.Printf("Failed to update plan %s: %v", id, err)

@@ -854,6 +854,17 @@ type ProductVariantLabels struct {
 	SerialCount string `json:"serialCount"`
 	NoStock     string `json:"noStock"`
 	NoStockMsg  string `json:"noStockMsg"`
+	// Pricing tab column headers
+	Pricing VariantPricingLabels `json:"pricing"`
+}
+
+// VariantPricingLabels holds column header labels for the variant pricing tab table.
+type VariantPricingLabels struct {
+	Start    string `json:"start"`
+	End      string `json:"end"`
+	Package  string `json:"package"`
+	RateCard string `json:"rateCard"`
+	Amount   string `json:"amount"`
 }
 
 type ProductAttributeLabels struct {
@@ -2763,6 +2774,15 @@ func DefaultDisbursementLabels() DisbursementLabels {
 // Plan labels
 // ---------------------------------------------------------------------------
 
+// PlanFilterLabels holds translatable labels for the scope filter chip on the
+// plan list page (§6.1 of the 2026-04-27 plan-client-scope plan).
+type PlanFilterLabels struct {
+	ScopeChipLabel string `json:"scopeChipLabel"`
+	ScopeMaster    string `json:"scopeMaster"`
+	ScopeClient    string `json:"scopeClient"`
+	ScopeAll       string `json:"scopeAll"`
+}
+
 // PlanLabels holds all translatable strings for the plan module.
 type PlanLabels struct {
 	Page            PlanPageLabels         `json:"page"`
@@ -2779,6 +2799,7 @@ type PlanLabels struct {
 	Errors          PlanErrorLabels        `json:"errors"`
 	PricePlanForm   PricePlanFormLabels    `json:"pricePlanForm"`
 	ProductPlanForm ProductPlanFormLabels  `json:"productPlanForm"`
+	Filters         PlanFilterLabels       `json:"filters"`
 }
 
 // ProductPlanFormLabels holds translatable labels for the ProductPlan add/edit form within a plan.
@@ -2860,11 +2881,11 @@ type PricePlanFormLabels struct {
 	AmountBasisPerCycle        string `json:"amountBasisPerCycle"`
 	AmountBasisTotalPackage    string `json:"amountBasisTotalPackage"`
 	AmountBasisDerivedFromLines string `json:"amountBasisDerivedFromLines"`
-	BillingCycleLabel          string `json:"billingCycleLabel"`
-	BillingCyclePlaceholder    string `json:"billingCyclePlaceholder"`
-	DefaultTermLabel           string `json:"defaultTermLabel"`
-	DefaultTermPlaceholder     string `json:"defaultTermPlaceholder"`
-	DefaultTermOpenEndedHelp   string `json:"defaultTermOpenEndedHelp"`
+	BillingCycleLabel       string `json:"billingCycleLabel"`
+	BillingCyclePlaceholder string `json:"billingCyclePlaceholder"`
+	TermLabel               string `json:"termLabel"`
+	TermPlaceholder         string `json:"termPlaceholder"`
+	TermOpenEndedHelp       string `json:"termOpenEndedHelp"`
 
 	// Field-level info text surfaced via an info button beside each label.
 	PlanInfo         string `json:"planInfo"`
@@ -2876,8 +2897,13 @@ type PricePlanFormLabels struct {
 	AmountInfo       string `json:"amountInfo"`
 	CurrencyInfo     string `json:"currencyInfo"`
 	BillingCycleInfo string `json:"billingCycleInfo"`
-	DefaultTermInfo  string `json:"defaultTermInfo"`
+	TermInfo         string `json:"termInfo"`
 	ActiveInfo       string `json:"activeInfo"`
+
+	// 2026-04-27 plan-client-scope plan §6.7 — info banner shown above the
+	// PricePlan add/edit form when its parent PriceSchedule is client-scoped.
+	// Templated via Go's text/template ({{.ClientName}}).
+	ParentScheduleClientNotice string `json:"parentScheduleClientNotice"`
 }
 
 // ---------------------------------------------------------------------------
@@ -3026,6 +3052,11 @@ type PlanErrorLabels struct {
 	InvalidStatus    string `json:"invalidStatus"`
 	NoPermission     string `json:"noPermission"`
 	CannotDelete     string `json:"cannotDelete"`
+
+	// 2026-04-27 plan-client-scope plan §7 — surfaced when an operator tries
+	// to change a Plan's client_id while one of its PricePlans is attached
+	// to an active subscription. Hard block; no force-override.
+	ClientScopeLocked string `json:"clientScopeLocked"`
 }
 
 // ---------------------------------------------------------------------------
@@ -3059,6 +3090,17 @@ type PlanFormLabels struct {
 	NameInfo        string `json:"nameInfo"`
 	DescriptionInfo string `json:"descriptionInfo"`
 	ActiveInfo      string `json:"activeInfo"`
+
+	// Client-scope fields (2026-04-27 plan-client-scope plan §7).
+	// Set on the Plan add/edit drawer Client picker.
+	ClientLabel              string `json:"clientLabel"`
+	ClientHelp               string `json:"clientHelp"`
+	ClientPlaceholder        string `json:"clientPlaceholder"`
+	ClientSearchPlaceholder  string `json:"clientSearchPlaceholder"`
+	ClientNoResults          string `json:"clientNoResults"`
+	ClientLockedTooltip      string `json:"clientLockedTooltip"`
+	ClientForLabel           string `json:"clientForLabel"` // "For {{.ClientName}}" — read-only badge in client-context entry-point
+	ClientInfo               string `json:"clientInfo"`
 }
 
 type PlanDetailLabels struct {
@@ -3193,6 +3235,10 @@ type SubscriptionActionLabels struct {
 	Delete     string `json:"delete"`
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
+
+	// 2026-04-27 plan-client-scope plan §6.5 / §7 — CTA copy on the
+	// subscription detail's Package tab. Templated via {{.ClientName}}.
+	CustomizePackage string `json:"customizePackage"`
 }
 
 type SubscriptionBulkLabels struct {
@@ -3216,6 +3262,13 @@ type SubscriptionErrorLabels struct {
 	NoPermission     string `json:"noPermission"`
 	CannotDelete     string `json:"cannotDelete"`
 	InUse            string `json:"inUse"`
+
+	// 2026-04-27 plan-client-scope plan §3.3 / §7 — surfaced when the
+	// subscription's selected price_plan belongs to a different client.
+	PlanClientMismatch string `json:"planClientMismatch"`
+	// Surfaced when the customize-package CTA fails (cross-package errors
+	// from the espyna use case bubble up here as a generic fallback).
+	CustomizeFailed string `json:"customizeFailed"`
 }
 
 // ---------------------------------------------------------------------------
@@ -3251,6 +3304,12 @@ type SubscriptionFormLabels struct {
 	StartTimeInfo string `json:"startTimeInfo"`
 	EndTimeInfo   string `json:"endTimeInfo"`
 	NotesInfo     string `json:"notesInfo"`
+
+	// 2026-04-27 plan-client-scope plan §5.1 / §7 — group headers in the
+	// grouped Plan / PricePlan auto-complete picker on the subscription
+	// drawer. Templated via {{.ClientName}} for the per-client group.
+	PlanGroupForClient string `json:"planGroupForClient"`
+	PlanGroupGeneral   string `json:"planGroupGeneral"`
 }
 
 type SubscriptionDetailLabels struct {
@@ -3267,11 +3326,12 @@ type SubscriptionDetailLabels struct {
 }
 
 type SubscriptionTabLabels struct {
-	Info        string `json:"info"`
-	Invoices    string `json:"invoices"`
-	History     string `json:"history"`
-	Attachments string `json:"attachments"`
-	AuditTrail  string `json:"auditTrail"`
+	Info         string `json:"info"`
+	Invoices     string `json:"invoices"`
+	History      string `json:"history"`
+	Attachments  string `json:"attachments"`
+	AuditTrail   string `json:"auditTrail"`
+	AuditHistory string `json:"auditHistory"`
 }
 
 type SubscriptionInvoicesLabels struct {
@@ -3336,6 +3396,11 @@ type SubscriptionRecognizeLabels struct {
 	IdempotencyExistingLink     string `json:"idempotencyExistingLink"`
 	CycleNotConfiguredWarning   string `json:"cycleNotConfiguredWarning"`
 	UsageBasedSkippedNotice     string `json:"usageBasedSkippedNotice"`
+
+	// 2026-04-27 plan-client-scope plan §7 — info notice on the recognize
+	// drawer when the active subscription's PricePlan is client-scoped.
+	// Templated via {{.ClientName}}.
+	ClientCustomNotice string `json:"clientCustomNotice"`
 }
 
 type SubscriptionConfirmLabels struct {
@@ -3415,6 +3480,15 @@ func DefaultPlanLabels() PlanLabels {
 			NameInfo:        "Display name for this plan. Shown in subscription lists and invoices.",
 			DescriptionInfo: "Optional notes about this plan. Visible on detail pages.",
 			ActiveInfo:      "Inactive plans are hidden from new subscriptions.",
+			// Client-scope fields (2026-04-27 plan-client-scope plan §7).
+			ClientLabel:             "Client",
+			ClientHelp:              "Leave blank to make this package available for any client. Set a client to make it a custom package for that client only.",
+			ClientPlaceholder:       "Leave blank for a general package",
+			ClientSearchPlaceholder: "Search clients...",
+			ClientNoResults:         "No clients found",
+			ClientLockedTooltip:     "Locked — this plan has active subscriptions. Detach them or create a new plan.",
+			ClientForLabel:          "For {{.ClientName}}",
+			ClientInfo:              "Optional. When set, this plan only appears for engagements with that client.",
 		},
 		Actions: PlanActionLabels{
 			View:       "View Plan",
@@ -3470,14 +3544,15 @@ func DefaultPlanLabels() PlanLabels {
 			BulkDeleteMessage:     "Are you sure you want to delete the selected plans? This action cannot be undone.",
 		},
 		Errors: PlanErrorLabels{
-			PermissionDenied: "You do not have permission to perform this action",
-			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
-			NotFound:         "Plan not found",
-			IDRequired:       "Plan ID is required",
-			NoIDsProvided:    "No plan IDs provided",
-			InvalidStatus:    "Invalid status",
-			NoPermission:     "No permission",
-			CannotDelete:     "This plan cannot be deleted because it has products or rate cards assigned",
+			PermissionDenied:  "You do not have permission to perform this action",
+			InvalidFormData:   "Invalid form data. Please check your inputs and try again.",
+			NotFound:          "Plan not found",
+			IDRequired:        "Plan ID is required",
+			NoIDsProvided:     "No plan IDs provided",
+			InvalidStatus:     "Invalid status",
+			NoPermission:      "No permission",
+			CannotDelete:      "This plan cannot be deleted because it has products or rate cards assigned",
+			ClientScopeLocked: "Cannot change this plan's client while it has active subscriptions.",
 		},
 		PricePlanForm: PricePlanFormLabels{
 			Name:                "Price Plan Name",
@@ -3513,6 +3588,12 @@ func DefaultPlanLabels() PlanLabels {
 			VariantSelectLabel:       "Variant",
 			VariantSelectPlaceholder: "Select a variant",
 			VariantSelectInfo:        "Required when the parent product has variants enabled.",
+		},
+		Filters: PlanFilterLabels{
+			ScopeChipLabel: "Show:",
+			ScopeMaster:    "Master",
+			ScopeClient:    "Client-specific",
+			ScopeAll:       "All",
 		},
 	}
 }
@@ -3558,6 +3639,7 @@ type PricePlanMessageLabels struct {
 	InUseCannotModify       string `json:"inUseCannotModify"`
 	IDRequired              string `json:"idRequired"`
 	DeleteNotAvailable      string `json:"deleteNotAvailable"`
+	CurrencyMismatch        string `json:"currencyMismatch"`
 }
 
 type PricePlanPageLabels struct {
@@ -3648,6 +3730,12 @@ type PricePlanConfirmLabels struct {
 	DeleteMessage     string `json:"deleteMessage"`
 	DeactivateTitle   string `json:"deactivateTitle"`
 	DeactivateMessage string `json:"deactivateMessage"`
+
+	// 2026-04-27 plan-client-scope plan §3.5 — fired by the centymo confirm
+	// dialog when an operator changes monetary fields on a client-scoped
+	// PricePlan that has N > 1 active subscriptions. Templated via
+	// {{.Count}} and {{.ClientName}}.
+	EditAmountMultipleEngagements string `json:"editAmountMultipleEngagements"`
 }
 
 type PricePlanErrorLabels struct {
@@ -3658,6 +3746,13 @@ type PricePlanErrorLabels struct {
 	UpdateFailed string `json:"updateFailed"`
 	DeleteFailed string `json:"deleteFailed"`
 	InUse        string `json:"inUse"`
+
+	// 2026-04-27 plan-client-scope plan §7. Surfaced when an UpdatePricePlan
+	// body sends a client_id that doesn't match the parent Plan's client_id.
+	ClientScopeMismatch string `json:"clientScopeMismatch"`
+	// Server-side-only error key — the centymo confirm dialog catches the
+	// N>1-engagements gate before this surfaces.
+	MultiEngagementConfirmRequired string `json:"multiEngagementConfirmRequired"`
 }
 
 // DefaultPricePlanLabels returns PricePlanLabels with sensible English defaults.
@@ -3734,9 +3829,9 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			AmountBasisDerivedFromLines: "Sum of items",
 			BillingCycleLabel:           "Billing cycle",
 			BillingCyclePlaceholder:     "e.g. every 1 month",
-			DefaultTermLabel:            "Default term",
-			DefaultTermPlaceholder:      "e.g. 12 months",
-			DefaultTermOpenEndedHelp:    "Leave empty for open-ended / no expiration",
+			TermLabel:                   "Term",
+			TermPlaceholder:             "e.g. 12 months",
+			TermOpenEndedHelp:           "Leave empty for open-ended / no expiration",
 			// Field-level info popovers — use proto-generic wording; business-type
 			// tiers override via lyngua (e.g. "plan" → "package" / "rate card").
 			PlanInfo:         "The plan this price plan belongs to. Locked from the parent page.",
@@ -3748,8 +3843,11 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			AmountInfo:       "Price in the selected currency. For Sum of items, this is computed automatically.",
 			CurrencyInfo:     "Currency applied to this price plan and any auto-seeded product price plans.",
 			BillingCycleInfo: "How often the recurring charge is issued (e.g. every 1 month).",
-			DefaultTermInfo:  "Catalog default subscription length. Leave empty for open-ended / no expiration.",
+			TermInfo:         "How long the engagement lasts. Leave empty for open-ended / no expiration.",
 			ActiveInfo:       "Inactive price plans stay on record but are hidden from new subscriptions.",
+			// 2026-04-27 plan-client-scope plan §6.7 — info banner shown above
+			// the form when its parent PriceSchedule is client-scoped.
+			ParentScheduleClientNotice: "This price schedule belongs to {{.ClientName}}. Price plans created here will be available only for engagements with this client.",
 		},
 		Actions: PricePlanActionLabels{
 			CreateSuccess: "Rate card created successfully.",
@@ -3795,15 +3893,19 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			DeleteMessage:     "Are you sure you want to delete this rate card? This action cannot be undone.",
 			DeactivateTitle:   "Deactivate Rate Card",
 			DeactivateMessage: "Are you sure you want to deactivate this rate card?",
+			// 2026-04-27 plan-client-scope plan §3.5 / §7.
+			EditAmountMultipleEngagements: "This price plan is attached to {{.Count}} active subscriptions for {{.ClientName}}. Changing the amount or cycle will affect all of them on the next bill cycle. Continue?",
 		},
 		Errors: PricePlanErrorLabels{
-			NotFound:     "Rate card not found.",
-			LoadFailed:   "Failed to load rate cards.",
-			Unauthorized: "You do not have permission to access this resource.",
-			CreateFailed: "Failed to create rate card.",
-			UpdateFailed: "Failed to update rate card.",
-			DeleteFailed: "Failed to delete rate card.",
-			InUse:        "This price plan is in use by active subscriptions and cannot be deleted.",
+			NotFound:                       "Rate card not found.",
+			LoadFailed:                     "Failed to load rate cards.",
+			Unauthorized:                   "You do not have permission to access this resource.",
+			CreateFailed:                   "Failed to create rate card.",
+			UpdateFailed:                   "Failed to update rate card.",
+			DeleteFailed:                   "Failed to delete rate card.",
+			InUse:                          "This price plan is in use by active subscriptions and cannot be deleted.",
+			ClientScopeMismatch:            "Price plan client must match its parent plan's client.",
+			MultiEngagementConfirmRequired: "Confirmation required — multiple attached subscriptions and monetary fields changing.",
 		},
 		ProductPrice: PricePlanProductPriceLabels{
 			EditTitle:   "Edit Product Price",
@@ -3821,6 +3923,7 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			InUseCannotModify:       "This package is in use by active engagements. Item price and currency are locked.",
 			IDRequired:              "ID is required.",
 			DeleteNotAvailable:      "Product price plan delete is not available.",
+			CurrencyMismatch:        "Currency must match the rate card currency.",
 		},
 	}
 }
@@ -3828,6 +3931,15 @@ func DefaultPricePlanLabels() PricePlanLabels {
 // ---------------------------------------------------------------------------
 // Price Schedule labels
 // ---------------------------------------------------------------------------
+
+// PriceScheduleFilterLabels holds translatable labels for the scope filter chip
+// on the price schedule list page (§6.1 of the 2026-04-27 plan-client-scope plan).
+type PriceScheduleFilterLabels struct {
+	ScopeChipLabel string `json:"scopeChipLabel"`
+	ScopeMaster    string `json:"scopeMaster"`
+	ScopeClient    string `json:"scopeClient"`
+	ScopeAll       string `json:"scopeAll"`
+}
 
 // PriceScheduleLabels holds all labels for the price schedule module.
 type PriceScheduleLabels struct {
@@ -3842,6 +3954,7 @@ type PriceScheduleLabels struct {
 	Tabs     PriceScheduleTabLabels       `json:"tabs"`
 	Detail   PriceScheduleDetailLabels    `json:"detail"`
 	Errors   PriceScheduleErrorLabels     `json:"errors"`
+	Filters  PriceScheduleFilterLabels    `json:"filters"`
 }
 
 // PriceSchedulePlanFormLabels holds labels for the "Add Plan" (price_plan) drawer form
@@ -3929,6 +4042,20 @@ type PriceScheduleFormLabels struct {
 	DateEndInfo     string `json:"dateEndInfo"`
 	LocationInfo    string `json:"locationInfo"`
 	ActiveInfo      string `json:"activeInfo"`
+
+	// Client-scope fields (2026-04-27 plan-client-scope plan §7).
+	// Set on the schedule add/edit drawer Client picker. The suffix is
+	// appended to the client's name to produce the default schedule name
+	// (e.g. "Cruz Engineering - Rate Cards" on professional tier, or
+	// "Cruz Engineering - Price Schedule" on general). See plan §4.4.1.
+	ClientLabel                          string `json:"clientLabel"`
+	ClientHelp                           string `json:"clientHelp"`
+	ClientPlaceholder                    string `json:"clientPlaceholder"`
+	ClientSearchPlaceholder              string `json:"clientSearchPlaceholder"`
+	ClientNoResults                      string `json:"clientNoResults"`
+	ClientInfo                           string `json:"clientInfo"`
+	CustomClientPriceScheduleLabelSuffix string `json:"customClientPriceScheduleLabelSuffix"`
+	LocationSearchPlaceholder            string `json:"locationSearchPlaceholder"`
 }
 
 type PriceScheduleBulkLabels struct {
@@ -4032,18 +4159,33 @@ type PriceScheduleDetailLabels struct {
 	PlanRequired     string `json:"planRequired"`
 
 	// Product prices table columns.
-	ProductPriceColumnProduct string `json:"productPriceColumnProduct"`
-	ProductPriceColumnPrice   string `json:"productPriceColumnPrice"`
+	ProductPriceColumnProduct   string `json:"productPriceColumnProduct"`
+	ProductPriceColumnPrice     string `json:"productPriceColumnPrice"`
+	ProductPriceColumnCurrency  string `json:"productPriceColumnCurrency"`
+	ProductPriceColumnTreatment string `json:"productPriceColumnTreatment"`
+	ProductPriceColumnEffective string `json:"productPriceColumnEffective"`
+
+	// Drawer banners explaining how the per-line price relates to the parent
+	// PricePlan.amount_basis. Surfaced above the Price input.
+	BasisBannerPerCycle     string `json:"basisBannerPerCycle"`
+	BasisBannerTotalPackage string `json:"basisBannerTotalPackage"`
+	BasisBannerDerived      string `json:"basisBannerDerived"`
+
+	// Drawer section labels used by the schedule-scoped PPP drawer.
+	ProductPriceCatalogSection string `json:"productPriceCatalogSection"`
+	ProductPricePricingSection string `json:"productPricePricingSection"`
+	ProductPriceEffectiveSection string `json:"productPriceEffectiveSection"`
 }
 
 type PriceScheduleErrorLabels struct {
-	NotFound     string `json:"notFound"`
-	LoadFailed   string `json:"loadFailed"`
-	Unauthorized string `json:"unauthorized"`
-	CreateFailed string `json:"createFailed"`
-	UpdateFailed string `json:"updateFailed"`
-	DeleteFailed string `json:"deleteFailed"`
-	InUse        string `json:"inUse"`
+	NotFound                    string `json:"notFound"`
+	LoadFailed                  string `json:"loadFailed"`
+	Unauthorized                string `json:"unauthorized"`
+	CreateFailed                string `json:"createFailed"`
+	UpdateFailed                string `json:"updateFailed"`
+	DeleteFailed                string `json:"deleteFailed"`
+	InUse                       string `json:"inUse"`
+	PricePlanCreateUnavailable  string `json:"pricePlanCreateUnavailable"`
 }
 
 // DefaultPriceScheduleLabels returns PriceScheduleLabels with sensible English defaults.
@@ -4100,6 +4242,15 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			DateEndInfo:     "Last date this price schedule is effective. Leave empty for no end date.",
 			LocationInfo:    "Restrict this price schedule to a specific location, or leave empty to apply to all locations.",
 			ActiveInfo:      "Inactive price schedules are hidden from new subscriptions.",
+			// Client-scope fields (2026-04-27 plan-client-scope plan §7).
+			ClientLabel:                          "Client",
+			ClientHelp:                           "Leave blank for a general schedule. Set a client to create a bespoke schedule reused across that client's price plans.",
+			ClientPlaceholder:                    "Leave blank for a general schedule",
+			ClientSearchPlaceholder:              "Search clients...",
+			ClientNoResults:                      "No clients found",
+			ClientInfo:                           "Optional. When set, this schedule is reserved for that client's bespoke price plans.",
+			CustomClientPriceScheduleLabelSuffix: "Price Schedule",
+			LocationSearchPlaceholder:            "Filter...",
 		},
 		Bulk: PriceScheduleBulkLabels{
 			DeleteTitle:       "Delete Price Schedules",
@@ -4158,8 +4309,17 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			PlanAdd:      "Add Plan",
 			PlanRequired: "Plan is required",
 
-			ProductPriceColumnProduct: "Product",
-			ProductPriceColumnPrice:   "Price",
+			ProductPriceColumnProduct:    "Product",
+			ProductPriceColumnPrice:      "Price",
+			ProductPriceColumnCurrency:   "Currency",
+			ProductPriceColumnTreatment:  "Billing",
+			ProductPriceColumnEffective:  "Effective",
+			BasisBannerPerCycle:          "Each line below is charged every billing cycle.",
+			BasisBannerTotalPackage:      "These per-line prices are informational. The package is sold at a flat rate; the total here does not have to match.",
+			BasisBannerDerived:           "The package price is the sum of these line prices. Editing a line changes the package total.",
+			ProductPriceCatalogSection:   "Catalog line",
+			ProductPricePricingSection:   "Pricing",
+			ProductPriceEffectiveSection: "Effective dates",
 		},
 		PlanForm: PriceSchedulePlanFormLabels{
 			SectionSchedule:        "Schedule",
@@ -4187,14 +4347,55 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			LocationHintPrefix:     "Location: ",
 		},
 		Errors: PriceScheduleErrorLabels{
-			NotFound:     "Price schedule not found",
-			LoadFailed:   "Failed to load price schedule",
-			Unauthorized: "You are not authorized to perform this action",
-			CreateFailed: "Failed to create price schedule",
-			UpdateFailed: "Failed to update price schedule",
-			DeleteFailed: "Failed to delete price schedule",
-			InUse:        "This price schedule is in use by active subscriptions and cannot be deleted.",
+			NotFound:                   "Price schedule not found",
+			LoadFailed:                 "Failed to load price schedule",
+			Unauthorized:               "You are not authorized to perform this action",
+			CreateFailed:               "Failed to create price schedule",
+			UpdateFailed:               "Failed to update price schedule",
+			DeleteFailed:               "Failed to delete price schedule",
+			InUse:                      "This price schedule is in use by active subscriptions and cannot be deleted.",
+			PricePlanCreateUnavailable: "Adding a price plan is not available. Please contact support.",
 		},
+		Filters: PriceScheduleFilterLabels{
+			ScopeChipLabel: "Show:",
+			ScopeMaster:    "Master",
+			ScopeClient:    "Client-specific",
+			ScopeAll:       "All",
+		},
+	}
+}
+
+// ClientPackagesLabels holds labels for the client detail "Packages" tab —
+// the list of client-scoped Plans for a given client, with the
+// "Add custom package" CTA. Mounted from entydad's client detail page via
+// a centymo helper view (plan §6.6 option 1).
+//
+// 2026-04-27 plan-client-scope plan §6.3 / §7.
+type ClientPackagesLabels struct {
+	TabTitle  string `json:"tabTitle"`
+	Empty     string `json:"empty"`
+	AddAction string `json:"addAction"`
+
+	// Column headers for the table on the tab.
+	ColumnName        string `json:"columnName"`
+	ColumnSchedule    string `json:"columnSchedule"`
+	ColumnEngagements string `json:"columnEngagements"`
+}
+
+// DefaultClientPackagesLabels returns ClientPackagesLabels with sensible English
+// defaults. Surfaces the labels for the client-detail Packages tab + the
+// "Add custom package" CTA. Centymo owns these labels because the cross-block
+// helper that renders this tab lives here (see plan §6.6 option 1).
+//
+// 2026-04-27 plan-client-scope plan §7.
+func DefaultClientPackagesLabels() ClientPackagesLabels {
+	return ClientPackagesLabels{
+		TabTitle:    "Packages",
+		Empty:       "No custom packages yet — every engagement uses a general package.",
+		AddAction:   "Add custom package",
+		ColumnName:     "Name",
+		ColumnSchedule: "Rate card",
+		ColumnEngagements: "Engagements",
 	}
 }
 
@@ -4253,6 +4454,9 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			StartTimeInfo: "Time of day in the operator's display timezone.",
 			EndTimeInfo:   "Optional. Leave blank for an open-ended subscription.",
 			NotesInfo:     "Internal remarks — shown on detail pages but not on customer-facing documents.",
+			// 2026-04-27 plan-client-scope plan §5.1 / §7 — grouped picker headers.
+			PlanGroupForClient: "For {{.ClientName}}",
+			PlanGroupGeneral:   "General packages",
 		},
 		Actions: SubscriptionActionLabels{
 			View:       "View Subscription",
@@ -4261,6 +4465,8 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			Delete:     "Delete",
 			Activate:   "Activate",
 			Deactivate: "Deactivate",
+			// 2026-04-27 plan-client-scope plan §6.5 / §7 — Package tab CTA.
+			CustomizePackage: "Customize this package for {{.ClientName}}",
 		},
 		Bulk: SubscriptionBulkLabels{
 			Delete:     "Delete Selected",
@@ -4284,11 +4490,12 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			AuditTrailDesc:       "Audit trail for subscription changes is coming soon.",
 		},
 		Tabs: SubscriptionTabLabels{
-			Info:        "Information",
-			Invoices:    "Invoices",
-			History:     "History",
-			Attachments: "Attachments",
-			AuditTrail:  "Audit Trail",
+			Info:         "Information",
+			Invoices:     "Invoices",
+			History:      "History",
+			Attachments:  "Attachments",
+			AuditTrail:   "Audit Trail",
+			AuditHistory: "History",
 		},
 		Invoices: SubscriptionInvoicesLabels{
 			Title:             "Invoices",
@@ -4331,6 +4538,9 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			IdempotencyExistingLink: "View the existing invoice",
 			CycleNotConfiguredWarning: "Plan has no billing cycle configured; defaulting to 1 month.",
 			UsageBasedSkippedNotice:   "Usage-based lines were skipped — record them via metering.",
+			// 2026-04-27 plan-client-scope plan §7 — surfaced when the
+			// active subscription's PricePlan is client-scoped.
+			ClientCustomNotice: "This engagement uses a custom package for {{.ClientName}}.",
 		},
 		Confirm: SubscriptionConfirmLabels{
 			Cancel:                "Cancel Subscription",
@@ -4349,15 +4559,17 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			BulkDeleteMessage:     "Are you sure you want to delete the selected subscriptions? This action cannot be undone.",
 		},
 		Errors: SubscriptionErrorLabels{
-			PermissionDenied: "You do not have permission to perform this action",
-			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
-			NotFound:         "Subscription not found",
-			IDRequired:       "Subscription ID is required",
-			NoIDsProvided:    "No subscription IDs provided",
-			InvalidStatus:    "Invalid status value",
-			NoPermission:     "No permission",
-			CannotDelete:     "Cannot delete — this engagement has dependent records",
-			InUse:            "Cannot delete — this engagement has dependent records (jobs, revenue, invoices, etc.)",
+			PermissionDenied:   "You do not have permission to perform this action",
+			InvalidFormData:    "Invalid form data. Please check your inputs and try again.",
+			NotFound:           "Subscription not found",
+			IDRequired:         "Subscription ID is required",
+			NoIDsProvided:      "No subscription IDs provided",
+			InvalidStatus:      "Invalid status value",
+			NoPermission:       "No permission",
+			CannotDelete:       "Cannot delete — this engagement has dependent records",
+			InUse:              "Cannot delete — this engagement has dependent records (jobs, revenue, invoices, etc.)",
+			PlanClientMismatch: "This package belongs to a different client and cannot be attached here.",
+			CustomizeFailed:    "Failed to customize this package. Please try again.",
 		},
 	}
 }
@@ -4570,6 +4782,711 @@ func MapTableLabels(common pyeza.CommonLabels) types.TableLabels {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// SupplierContract labels  (P3a)
+// ---------------------------------------------------------------------------
+
+// SupplierContractLabels holds all translatable strings for the supplier_contract module.
+type SupplierContractLabels struct {
+	Page               SupplierContractPageLabels              `json:"page"`
+	Columns            SupplierContractColumnLabels            `json:"columns"`
+	Tabs               SupplierContractTabLabels               `json:"tabs"`
+	Detail             SupplierContractDetailLabels            `json:"detail"`
+	Lines              SupplierContractLineLabels              `json:"lines"`
+	LinkedPOs          SupplierContractLinkedPOLabels          `json:"linkedPos"`
+	LinkedExpenditures SupplierContractLinkedExpenditureLabels `json:"linkedExpenditures"`
+	Form               SupplierContractFormLabels              `json:"form"`
+	Empty              SupplierContractEmptyLabels             `json:"empty"`
+}
+
+type SupplierContractPageLabels struct {
+	Heading           string `json:"heading"`
+	HeadingDraft      string `json:"headingDraft"`
+	HeadingActive     string `json:"headingActive"`
+	HeadingExpiring   string `json:"headingExpiring"`
+	HeadingExpired    string `json:"headingExpired"`
+	HeadingTerminated string `json:"headingTerminated"`
+	Caption           string `json:"caption"`
+	AddButton         string `json:"addButton"`
+	DetailSubtitle    string `json:"detailSubtitle"`
+}
+
+type SupplierContractColumnLabels struct {
+	Name      string `json:"name"`
+	Supplier  string `json:"supplier"`
+	Kind      string `json:"kind"`
+	Status    string `json:"status"`
+	Validity  string `json:"validity"`
+	Committed string `json:"committed"`
+	Released  string `json:"released"`
+	Billed    string `json:"billed"`
+	Remaining string `json:"remaining"`
+}
+
+type SupplierContractTabLabels struct {
+	Info               string `json:"info"`
+	Lines              string `json:"lines"`
+	LinkedPOs          string `json:"linkedPos"`
+	LinkedExpenditures string `json:"linkedExpenditures"`
+	Activity           string `json:"activity"`
+	ActivityEmpty      string `json:"activityEmpty"`
+}
+
+type SupplierContractDetailLabels struct {
+	InfoSection     string `json:"infoSection"`
+	Name            string `json:"name"`
+	Kind            string `json:"kind"`
+	Status          string `json:"status"`
+	Supplier        string `json:"supplier"`
+	StartDate       string `json:"startDate"`
+	EndDate         string `json:"endDate"`
+	AutoRenew       string `json:"autoRenew"`
+	Currency        string `json:"currency"`
+	CommittedAmount string `json:"committedAmount"`
+	ReleasedAmount  string `json:"releasedAmount"`
+	BilledAmount    string `json:"billedAmount"`
+	RemainingAmount string `json:"remainingAmount"`
+	Notes           string `json:"notes"`
+}
+
+type SupplierContractLineLabels struct {
+	// Column labels
+	Description  string `json:"description"`
+	LineType     string `json:"lineType"`
+	Quantity     string `json:"quantity"`
+	UnitPrice    string `json:"unitPrice"`
+	Total        string `json:"total"`
+	Treatment    string `json:"treatment"`
+	EmptyTitle   string `json:"emptyTitle"`
+	EmptyMessage string `json:"emptyMessage"`
+	AddLine      string `json:"addLine"`
+
+	// Enum label values for treatment
+	TreatmentRecurring         string `json:"treatmentRecurring"`
+	TreatmentOneTime           string `json:"treatmentOneTime"`
+	TreatmentUsageBased        string `json:"treatmentUsageBased"`
+	TreatmentMinimumCommitment string `json:"treatmentMinimumCommitment"`
+
+	// Enum label values for line_type
+	LineTypeGoods   string `json:"lineTypeGoods"`
+	LineTypeService string `json:"lineTypeService"`
+	LineTypeExpense string `json:"lineTypeExpense"`
+
+	// Drawer form labels
+	FormDescription               string `json:"formDescription"`
+	FormDescriptionPlaceholder    string `json:"formDescriptionPlaceholder"`
+	FormLineType                  string `json:"formLineType"`
+	FormLineTypeInfo              string `json:"formLineTypeInfo"`
+	FormTreatment                 string `json:"formTreatment"`
+	FormTreatmentInfo             string `json:"formTreatmentInfo"`
+	FormProduct                   string `json:"formProduct"`
+	FormProductPlaceholder        string `json:"formProductPlaceholder"`
+	FormQuantity                  string `json:"formQuantity"`
+	FormQuantityInfo              string `json:"formQuantityInfo"`
+	FormUnitPrice                 string `json:"formUnitPrice"`
+	FormUnitPriceInfo             string `json:"formUnitPriceInfo"`
+	FormExpenseAccount            string `json:"formExpenseAccount"`
+	FormExpenseAccountPlaceholder string `json:"formExpenseAccountPlaceholder"`
+	FormStartDate                 string `json:"formStartDate"`
+	FormStartDateHint             string `json:"formStartDateHint"`
+	FormEndDate                   string `json:"formEndDate"`
+	FormLineNumber                string `json:"formLineNumber"`
+}
+
+type SupplierContractLinkedPOLabels struct {
+	PONumber     string `json:"poNumber"`
+	Status       string `json:"status"`
+	TotalAmount  string `json:"totalAmount"`
+	OrderDate    string `json:"orderDate"`
+	EmptyTitle   string `json:"emptyTitle"`
+	EmptyMessage string `json:"emptyMessage"`
+}
+
+type SupplierContractLinkedExpenditureLabels struct {
+	Reference    string `json:"reference"`
+	Status       string `json:"status"`
+	Amount       string `json:"amount"`
+	Date         string `json:"date"`
+	EmptyTitle   string `json:"emptyTitle"`
+	EmptyMessage string `json:"emptyMessage"`
+}
+
+// SupplierContractFormLabels holds all form-level labels for the drawer form.
+type SupplierContractFormLabels struct {
+	// Section headers (5-section parity layout)
+	SectionIdentity       string `json:"sectionIdentity"`
+	SectionValidity       string `json:"sectionValidity"`
+	SectionMoney          string `json:"sectionMoney"`
+	SectionCategorization string `json:"sectionCategorization"`
+	SectionOthers         string `json:"sectionOthers"`
+
+	// §1 Identity
+	Name                       string `json:"name"`
+	NamePlaceholder            string `json:"namePlaceholder"`
+	NameInfo                   string `json:"nameInfo"`
+	ContractNumber             string `json:"contractNumber"`
+	ContractNumberPlaceholder  string `json:"contractNumberPlaceholder"`
+	Kind                       string `json:"kind"`
+	KindInfo                   string `json:"kindInfo"`
+	KindSubscription           string `json:"kindSubscription"`
+	KindRetainer               string `json:"kindRetainer"`
+	KindLease                  string `json:"kindLease"`
+	KindUtility                string `json:"kindUtility"`
+	KindFramework              string `json:"kindFramework"`
+	KindBlanket                string `json:"kindBlanket"`
+	KindOneTime                string `json:"kindOneTime"`
+	KindOther                  string `json:"kindOther"`
+	Supplier                   string `json:"supplier"`
+	SupplierPlaceholder        string `json:"supplierPlaceholder"`
+	SupplierInfo               string `json:"supplierInfo"`
+
+	// §2 Validity & Recurrence
+	StartDate             string `json:"startDate"`
+	EndDate               string `json:"endDate"`
+	EndDateHint           string `json:"endDateHint"`
+	BillingCycleValue     string `json:"billingCycleValue"`
+	BillingCycleUnit      string `json:"billingCycleUnit"`
+	BillingCycleInfo      string `json:"billingCycleInfo"`
+	CycleUnitDay          string `json:"cycleUnitDay"`
+	CycleUnitWeek         string `json:"cycleUnitWeek"`
+	CycleUnitMonth        string `json:"cycleUnitMonth"`
+	CycleUnitYear         string `json:"cycleUnitYear"`
+	AutoRenew             string `json:"autoRenew"`
+	RenewalNoticeDays     string `json:"renewalNoticeDays"`
+	RenewalNoticeDaysHint string `json:"renewalNoticeDaysHint"`
+
+	// §3 Money & Approval
+	Currency               string `json:"currency"`
+	CurrencyInfo           string `json:"currencyInfo"`
+	Status                 string `json:"status"`
+	StatusInfo             string `json:"statusInfo"`
+	StatusDraft            string `json:"statusDraft"`
+	StatusRequested        string `json:"statusRequested"`
+	StatusPendingApproval  string `json:"statusPendingApproval"`
+	StatusApproved         string `json:"statusApproved"`
+	StatusActive           string `json:"statusActive"`
+	StatusExpiring         string `json:"statusExpiring"`
+	StatusSuspended        string `json:"statusSuspended"`
+	StatusExpired          string `json:"statusExpired"`
+	StatusTerminated       string `json:"statusTerminated"`
+	StatusRejected         string `json:"statusRejected"`
+	CommittedAmount        string `json:"committedAmount"`
+	CommittedAmountInfo    string `json:"committedAmountInfo"`
+	CycleAmount            string `json:"cycleAmount"`
+	CycleAmountHint        string `json:"cycleAmountHint"`
+	PaymentTerm            string `json:"paymentTerm"`
+	PaymentTermPlaceholder string `json:"paymentTermPlaceholder"`
+	ApprovedBy             string `json:"approvedBy"`
+	ApprovedDate           string `json:"approvedDate"`
+
+	// §4 Categorization
+	ExpenditureCategory            string `json:"expenditureCategory"`
+	ExpenditureCategoryPlaceholder string `json:"expenditureCategoryPlaceholder"`
+	ExpenseAccount                 string `json:"expenseAccount"`
+	ExpenseAccountPlaceholder      string `json:"expenseAccountPlaceholder"`
+	Location                       string `json:"location"`
+	LocationPlaceholder            string `json:"locationPlaceholder"`
+
+	// §5 Others
+	Notes            string `json:"notes"`
+	NotesPlaceholder string `json:"notesPlaceholder"`
+	Active           string `json:"active"`
+
+	// Action buttons on detail page
+	Edit      string `json:"edit"`
+	EditTitle string `json:"editTitle"`
+	Approve   string `json:"approve"`
+	Terminate string `json:"terminate"`
+}
+
+type SupplierContractEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+// DefaultSupplierContractLabels returns English fallback labels.
+// Uses proto-generic naming — tier overrides belong in lyngua JSON.
+func DefaultSupplierContractLabels() SupplierContractLabels {
+	return SupplierContractLabels{
+		Page: SupplierContractPageLabels{
+			Heading:           "Supplier Contracts",
+			HeadingDraft:      "Draft Contracts",
+			HeadingActive:     "Active Contracts",
+			HeadingExpiring:   "Expiring Contracts",
+			HeadingExpired:    "Expired Contracts",
+			HeadingTerminated: "Terminated Contracts",
+			Caption:           "Standing agreements with suppliers",
+			AddButton:         "New Contract",
+			DetailSubtitle:    "Contract details",
+		},
+		Columns: SupplierContractColumnLabels{
+			Name:      "Name",
+			Supplier:  "Supplier",
+			Kind:      "Kind",
+			Status:    "Status",
+			Validity:  "Validity",
+			Committed: "Committed",
+			Released:  "Released",
+			Billed:    "Billed",
+			Remaining: "Remaining",
+		},
+		Tabs: SupplierContractTabLabels{
+			Info:               "Info",
+			Lines:              "Lines",
+			LinkedPOs:          "Linked POs",
+			LinkedExpenditures: "Linked Expenditures",
+			Activity:           "Activity",
+			ActivityEmpty:      "No activity recorded yet.",
+		},
+		Detail: SupplierContractDetailLabels{
+			InfoSection:     "Contract Information",
+			Name:            "Name",
+			Kind:            "Kind",
+			Status:          "Status",
+			Supplier:        "Supplier",
+			StartDate:       "Start Date",
+			EndDate:         "End Date",
+			AutoRenew:       "Auto Renew",
+			Currency:        "Currency",
+			CommittedAmount: "Committed Amount",
+			ReleasedAmount:  "Released Amount",
+			BilledAmount:    "Billed Amount",
+			RemainingAmount: "Remaining Amount",
+			Notes:           "Notes",
+		},
+		Lines: SupplierContractLineLabels{
+			Description:                "Description",
+			LineType:                   "Line Type",
+			Quantity:                   "Quantity",
+			UnitPrice:                  "Unit Price",
+			Total:                      "Total",
+			Treatment:                  "Treatment",
+			EmptyTitle:                 "No lines yet",
+			EmptyMessage:               "Add a line to this contract.",
+			AddLine:                    "Add Line",
+			TreatmentRecurring:         "Recurring",
+			TreatmentOneTime:           "One Time",
+			TreatmentUsageBased:        "Usage Based",
+			TreatmentMinimumCommitment: "Minimum Commitment",
+			LineTypeGoods:              "Goods",
+			LineTypeService:            "Service",
+			LineTypeExpense:            "Expense",
+			FormDescription:            "Description",
+			FormDescriptionPlaceholder: "e.g. Cloud hosting — 50 seats",
+			FormLineType:               "Line Type",
+			FormLineTypeInfo:           "Goods = physical items; Service = intangible; Expense = direct cost",
+			FormTreatment:              "Treatment",
+			FormTreatmentInfo:          "How this line is billed: recurring, one-time, usage-based, or minimum commitment",
+			FormProduct:                "Product",
+			FormProductPlaceholder:     "Select a product (optional)",
+			FormQuantity:               "Quantity",
+			FormQuantityInfo:           "For recurring lines, this is the per-cycle quantity.",
+			FormUnitPrice:              "Unit Price",
+			FormUnitPriceInfo:          "Amount in centavos ÷ 100 for display.",
+			FormExpenseAccount:         "Expense Account",
+			FormExpenseAccountPlaceholder: "GL account ID",
+			FormStartDate:              "Start Date",
+			FormStartDateHint:          "Leave empty to inherit from contract.",
+			FormEndDate:                "End Date",
+			FormLineNumber:             "Line Number",
+		},
+		LinkedPOs: SupplierContractLinkedPOLabels{
+			PONumber:     "PO Number",
+			Status:       "Status",
+			TotalAmount:  "Total Amount",
+			OrderDate:    "Order Date",
+			EmptyTitle:   "No linked purchase orders",
+			EmptyMessage: "POs created against this contract will appear here.",
+		},
+		LinkedExpenditures: SupplierContractLinkedExpenditureLabels{
+			Reference:    "Reference",
+			Status:       "Status",
+			Amount:       "Amount",
+			Date:         "Date",
+			EmptyTitle:   "No linked expenditures",
+			EmptyMessage: "Expenditures linked to this contract will appear here.",
+		},
+		Form: SupplierContractFormLabels{
+			SectionIdentity:            "Identity Details",
+			SectionValidity:            "Validity & Recurrence",
+			SectionMoney:               "Money & Approval",
+			SectionCategorization:      "Categorization",
+			SectionOthers:              "Others",
+			Name:                       "Contract Name",
+			NamePlaceholder:            "e.g. AWS Hosting MSA 2026",
+			NameInfo:                   "A short descriptive name for this contract.",
+			ContractNumber:             "Contract Number",
+			ContractNumberPlaceholder:  "Supplier's reference number",
+			Kind:                       "Kind",
+			KindInfo:                   "Subscription = recurring time-based; Blanket = quantity-based commitment; Framework = pricing agreement only.",
+			KindSubscription:           "Subscription",
+			KindRetainer:               "Retainer",
+			KindLease:                  "Lease",
+			KindUtility:                "Utility",
+			KindFramework:              "Framework",
+			KindBlanket:                "Blanket",
+			KindOneTime:                "One Time",
+			KindOther:                  "Other",
+			Supplier:                   "Supplier",
+			SupplierPlaceholder:        "Select supplier",
+			SupplierInfo:               "The vendor or service provider you are committing to.",
+			StartDate:                  "Start Date",
+			EndDate:                    "End Date",
+			EndDateHint:                "Leave empty for open-ended.",
+			BillingCycleValue:          "Billing Cycle",
+			BillingCycleUnit:           "Cycle Unit",
+			BillingCycleInfo:           "How often this contract generates an expenditure (for recurring kinds).",
+			CycleUnitDay:               "Day",
+			CycleUnitWeek:              "Week",
+			CycleUnitMonth:             "Month",
+			CycleUnitYear:              "Year",
+			AutoRenew:                  "Auto Renew",
+			RenewalNoticeDays:          "Renewal Notice (days)",
+			RenewalNoticeDaysHint:      "How many days before expiry to send a renewal reminder.",
+			Currency:                   "Currency",
+			CurrencyInfo:               "ISO 4217 currency code (e.g. PHP, USD).",
+			Status:                     "Status",
+			StatusInfo:                 "Lifecycle stage. draft → requested → pending_approval → approved → active → expiring/expired/terminated.",
+			StatusDraft:                "Draft",
+			StatusRequested:            "Requested",
+			StatusPendingApproval:      "Pending Approval",
+			StatusApproved:             "Approved",
+			StatusActive:               "Active",
+			StatusExpiring:             "Expiring",
+			StatusSuspended:            "Suspended",
+			StatusExpired:              "Expired",
+			StatusTerminated:           "Terminated",
+			StatusRejected:             "Rejected",
+			CommittedAmount:            "Committed Amount",
+			CommittedAmountInfo:        "Total value committed at signing (centavos). Immutable after approval.",
+			CycleAmount:                "Cycle Amount",
+			CycleAmountHint:            "Expected per-cycle charge for recurring contracts.",
+			PaymentTerm:                "Payment Term",
+			PaymentTermPlaceholder:     "Select payment term",
+			ApprovedBy:                 "Approved By",
+			ApprovedDate:               "Approved Date",
+			ExpenditureCategory:            "Expenditure Category",
+			ExpenditureCategoryPlaceholder: "Select category",
+			ExpenseAccount:             "Expense Account",
+			ExpenseAccountPlaceholder:  "GL account ID",
+			Location:                   "Location",
+			LocationPlaceholder:        "Branch or cost center",
+			Notes:                      "Notes",
+			NotesPlaceholder:           "Additional notes or context",
+			Active:                     "Active",
+			Edit:                       "Edit",
+			EditTitle:                  "Edit Supplier Contract",
+			Approve:                    "Approve",
+			Terminate:                  "Terminate",
+		},
+		Empty: SupplierContractEmptyLabels{
+			Title:   "No supplier contracts",
+			Message: "Create your first supplier contract to start tracking commitments.",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ProcurementRequest labels  (P3a)
+// ---------------------------------------------------------------------------
+
+// ProcurementRequestLabels holds all translatable strings for the procurement_request module.
+type ProcurementRequestLabels struct {
+	Page       ProcurementRequestPageLabels      `json:"page"`
+	Columns    ProcurementRequestColumnLabels    `json:"columns"`
+	Tabs       ProcurementRequestTabLabels       `json:"tabs"`
+	Detail     ProcurementRequestDetailLabels    `json:"detail"`
+	Lines      ProcurementRequestLineLabels      `json:"lines"`
+	SpawnedPOs ProcurementRequestSpawnedPOLabels `json:"spawnedPos"`
+	Form       ProcurementRequestFormLabels      `json:"form"`
+	Empty      ProcurementRequestEmptyLabels     `json:"empty"`
+}
+
+type ProcurementRequestPageLabels struct {
+	Heading                string `json:"heading"`
+	HeadingDraft           string `json:"headingDraft"`
+	HeadingSubmitted       string `json:"headingSubmitted"`
+	HeadingPendingApproval string `json:"headingPendingApproval"`
+	HeadingApproved        string `json:"headingApproved"`
+	HeadingRejected        string `json:"headingRejected"`
+	HeadingFulfilled       string `json:"headingFulfilled"`
+	HeadingCancelled       string `json:"headingCancelled"`
+	Caption                string `json:"caption"`
+	AddButton              string `json:"addButton"`
+	DetailSubtitle         string `json:"detailSubtitle"`
+}
+
+type ProcurementRequestColumnLabels struct {
+	RequestNumber  string `json:"requestNumber"`
+	Status         string `json:"status"`
+	Requester      string `json:"requester"`
+	Supplier       string `json:"supplier"`
+	EstimatedTotal string `json:"estimatedTotal"`
+	NeededBy       string `json:"neededBy"`
+	DateCreated    string `json:"dateCreated"`
+}
+
+type ProcurementRequestTabLabels struct {
+	Info          string `json:"info"`
+	Lines         string `json:"lines"`
+	SpawnedPOs    string `json:"spawnedPos"`
+	Activity      string `json:"activity"`
+	ActivityEmpty string `json:"activityEmpty"`
+}
+
+type ProcurementRequestDetailLabels struct {
+	InfoSection    string `json:"infoSection"`
+	RequestNumber  string `json:"requestNumber"`
+	Status         string `json:"status"`
+	Requester      string `json:"requester"`
+	Supplier       string `json:"supplier"`
+	Currency       string `json:"currency"`
+	EstimatedTotal string `json:"estimatedTotal"`
+	NeededBy       string `json:"neededBy"`
+	DateCreated    string `json:"dateCreated"`
+	ApprovedBy     string `json:"approvedBy"`
+	Justification  string `json:"justification"`
+}
+
+type ProcurementRequestLineLabels struct {
+	// Column labels
+	Description         string `json:"description"`
+	LineType            string `json:"lineType"`
+	Quantity            string `json:"quantity"`
+	EstimatedUnitPrice  string `json:"estimatedUnitPrice"`
+	EstimatedTotalPrice string `json:"estimatedTotalPrice"`
+	EmptyTitle          string `json:"emptyTitle"`
+	EmptyMessage        string `json:"emptyMessage"`
+	AddLine             string `json:"addLine"`
+
+	// Enum label values for line_type
+	LineTypeGoods   string `json:"lineTypeGoods"`
+	LineTypeService string `json:"lineTypeService"`
+	LineTypeExpense string `json:"lineTypeExpense"`
+
+	// Drawer form labels
+	FormDescription                    string `json:"formDescription"`
+	FormDescriptionPlaceholder         string `json:"formDescriptionPlaceholder"`
+	FormLineType                       string `json:"formLineType"`
+	FormLineTypeInfo                   string `json:"formLineTypeInfo"`
+	FormProduct                        string `json:"formProduct"`
+	FormProductPlaceholder             string `json:"formProductPlaceholder"`
+	FormQuantity                       string `json:"formQuantity"`
+	FormQuantityInfo                   string `json:"formQuantityInfo"`
+	FormEstimatedUnitPrice             string `json:"formEstimatedUnitPrice"`
+	FormEstimatedUnitPriceInfo         string `json:"formEstimatedUnitPriceInfo"`
+	FormEstimatedTotalPrice            string `json:"formEstimatedTotalPrice"`
+	FormEstimatedTotalPriceHint        string `json:"formEstimatedTotalPriceHint"`
+	FormExpenditureCategory            string `json:"formExpenditureCategory"`
+	FormExpenditureCategoryPlaceholder string `json:"formExpenditureCategoryPlaceholder"`
+	FormLocation                       string `json:"formLocation"`
+	FormLocationPlaceholder            string `json:"formLocationPlaceholder"`
+	FormLineNumber                     string `json:"formLineNumber"`
+}
+
+type ProcurementRequestSpawnedPOLabels struct {
+	PONumber     string `json:"poNumber"`
+	Status       string `json:"status"`
+	TotalAmount  string `json:"totalAmount"`
+	OrderDate    string `json:"orderDate"`
+	EmptyTitle   string `json:"emptyTitle"`
+	EmptyMessage string `json:"emptyMessage"`
+}
+
+// ProcurementRequestFormLabels holds all form-level labels for the drawer form.
+type ProcurementRequestFormLabels struct {
+	// Section headers
+	SectionIdentity  string `json:"sectionIdentity"`
+	SectionFinancial string `json:"sectionFinancial"`
+	SectionApproval  string `json:"sectionApproval"`
+	SectionOthers    string `json:"sectionOthers"`
+
+	// §1 Identity
+	RequestNumber            string `json:"requestNumber"`
+	RequestNumberPlaceholder string `json:"requestNumberPlaceholder"`
+	RequestNumberInfo        string `json:"requestNumberInfo"`
+	RequesterUser            string `json:"requesterUser"`
+	RequesterUserPlaceholder string `json:"requesterUserPlaceholder"`
+	Supplier                 string `json:"supplier"`
+	SupplierPlaceholder      string `json:"supplierPlaceholder"`
+	SupplierHint             string `json:"supplierHint"`
+	Location                 string `json:"location"`
+	LocationPlaceholder      string `json:"locationPlaceholder"`
+
+	// §2 Financial
+	Currency           string `json:"currency"`
+	CurrencyInfo       string `json:"currencyInfo"`
+	EstimatedTotal     string `json:"estimatedTotal"`
+	EstimatedTotalInfo string `json:"estimatedTotalInfo"`
+
+	// §3 Timing & Approval
+	NeededByDate          string `json:"neededByDate"`
+	NeededByDateInfo      string `json:"neededByDateInfo"`
+	Status                string `json:"status"`
+	StatusInfo            string `json:"statusInfo"`
+	StatusDraft           string `json:"statusDraft"`
+	StatusSubmitted       string `json:"statusSubmitted"`
+	StatusPendingApproval string `json:"statusPendingApproval"`
+	StatusApproved        string `json:"statusApproved"`
+	StatusRejected        string `json:"statusRejected"`
+	StatusFulfilled       string `json:"statusFulfilled"`
+	StatusCancelled       string `json:"statusCancelled"`
+	ApprovedBy            string `json:"approvedBy"`
+
+	// §4 Others
+	Justification            string `json:"justification"`
+	JustificationPlaceholder string `json:"justificationPlaceholder"`
+	Notes                    string `json:"notes"`
+	NotesPlaceholder         string `json:"notesPlaceholder"`
+	Active                   string `json:"active"`
+
+	// Action buttons
+	Edit      string `json:"edit"`
+	EditTitle string `json:"editTitle"`
+	Submit    string `json:"submit"`
+	Approve   string `json:"approve"`
+	Reject    string `json:"reject"`
+	SpawnPO   string `json:"spawnPo"`
+}
+
+type ProcurementRequestEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+// DefaultProcurementRequestLabels returns English fallback labels.
+func DefaultProcurementRequestLabels() ProcurementRequestLabels {
+	return ProcurementRequestLabels{
+		Page: ProcurementRequestPageLabels{
+			Heading:                "Procurement Requests",
+			HeadingDraft:           "Draft Requests",
+			HeadingSubmitted:       "Submitted Requests",
+			HeadingPendingApproval: "Pending Approval",
+			HeadingApproved:        "Approved Requests",
+			HeadingRejected:        "Rejected Requests",
+			HeadingFulfilled:       "Fulfilled Requests",
+			HeadingCancelled:       "Cancelled Requests",
+			Caption:                "Internal purchase intent records",
+			AddButton:              "New Request",
+			DetailSubtitle:         "Procurement request details",
+		},
+		Columns: ProcurementRequestColumnLabels{
+			RequestNumber:  "Request #",
+			Status:         "Status",
+			Requester:      "Requester",
+			Supplier:       "Supplier",
+			EstimatedTotal: "Estimated Total",
+			NeededBy:       "Needed By",
+			DateCreated:    "Created",
+		},
+		Tabs: ProcurementRequestTabLabels{
+			Info:          "Info",
+			Lines:         "Lines",
+			SpawnedPOs:    "Spawned POs",
+			Activity:      "Activity",
+			ActivityEmpty: "No activity recorded yet.",
+		},
+		Detail: ProcurementRequestDetailLabels{
+			InfoSection:    "Request Information",
+			RequestNumber:  "Request Number",
+			Status:         "Status",
+			Requester:      "Requester",
+			Supplier:       "Supplier",
+			Currency:       "Currency",
+			EstimatedTotal: "Estimated Total",
+			NeededBy:       "Needed By",
+			DateCreated:    "Created",
+			ApprovedBy:     "Approved By",
+			Justification:  "Justification",
+		},
+		Lines: ProcurementRequestLineLabels{
+			Description:                        "Description",
+			LineType:                           "Line Type",
+			Quantity:                           "Quantity",
+			EstimatedUnitPrice:                 "Est. Unit Price",
+			EstimatedTotalPrice:                "Est. Total",
+			EmptyTitle:                         "No lines yet",
+			EmptyMessage:                       "Add a line to this request.",
+			AddLine:                            "Add Line",
+			LineTypeGoods:                      "Goods",
+			LineTypeService:                    "Service",
+			LineTypeExpense:                    "Expense",
+			FormDescription:                    "Description",
+			FormDescriptionPlaceholder:         "e.g. 50 laptop units",
+			FormLineType:                       "Line Type",
+			FormLineTypeInfo:                   "Goods = physical items; Service = intangible; Expense = direct cost",
+			FormProduct:                        "Product",
+			FormProductPlaceholder:             "Select a product (optional)",
+			FormQuantity:                       "Quantity",
+			FormQuantityInfo:                   "Number of units requested.",
+			FormEstimatedUnitPrice:             "Estimated Unit Price",
+			FormEstimatedUnitPriceInfo:         "Best estimate in centavos ÷ 100.",
+			FormEstimatedTotalPrice:            "Estimated Total Price",
+			FormEstimatedTotalPriceHint:        "Auto-calculated. Override if needed.",
+			FormExpenditureCategory:            "Expenditure Category",
+			FormExpenditureCategoryPlaceholder: "Select category",
+			FormLocation:                       "Location",
+			FormLocationPlaceholder:            "Branch or cost center",
+			FormLineNumber:                     "Line Number",
+		},
+		SpawnedPOs: ProcurementRequestSpawnedPOLabels{
+			PONumber:     "PO Number",
+			Status:       "Status",
+			TotalAmount:  "Total Amount",
+			OrderDate:    "Order Date",
+			EmptyTitle:   "No purchase orders yet",
+			EmptyMessage: "POs spawned from this request will appear here after approval.",
+		},
+		Form: ProcurementRequestFormLabels{
+			SectionIdentity:          "Identity",
+			SectionFinancial:         "Financial",
+			SectionApproval:          "Timing & Approval",
+			SectionOthers:            "Others",
+			RequestNumber:            "Request Number",
+			RequestNumberPlaceholder: "e.g. PR-2026-001",
+			RequestNumberInfo:        "A unique identifier for this procurement request.",
+			RequesterUser:            "Requester",
+			RequesterUserPlaceholder: "User ID of requester",
+			Supplier:                 "Supplier",
+			SupplierPlaceholder:      "Select supplier (optional for RFQ)",
+			SupplierHint:             "Leave empty if supplier is not yet selected (RFQ flow).",
+			Location:                 "Location",
+			LocationPlaceholder:      "Branch or cost center",
+			Currency:                 "Currency",
+			CurrencyInfo:             "ISO 4217 currency code (e.g. PHP, USD).",
+			EstimatedTotal:           "Estimated Total",
+			EstimatedTotalInfo:       "Best estimate of total spend (centavos ÷ 100 for display).",
+			NeededByDate:             "Needed By",
+			NeededByDateInfo:         "When the goods or services are required.",
+			Status:                   "Status",
+			StatusInfo:               "Lifecycle stage. draft → submitted → pending_approval → approved/rejected → fulfilled/cancelled.",
+			StatusDraft:              "Draft",
+			StatusSubmitted:          "Submitted",
+			StatusPendingApproval:    "Pending Approval",
+			StatusApproved:           "Approved",
+			StatusRejected:           "Rejected",
+			StatusFulfilled:          "Fulfilled",
+			StatusCancelled:          "Cancelled",
+			ApprovedBy:               "Approved By",
+			Justification:            "Justification",
+			JustificationPlaceholder: "Business reason for this request",
+			Notes:                    "Notes",
+			NotesPlaceholder:         "Additional notes or context",
+			Active:                   "Active",
+			Edit:                     "Edit",
+			EditTitle:                "Edit Procurement Request",
+			Submit:                   "Submit for Approval",
+			Approve:                  "Approve",
+			Reject:                   "Reject",
+			SpawnPO:                  "Create PO",
+		},
+		Empty: ProcurementRequestEmptyLabels{
+			Title:   "No procurement requests",
+			Message: "Create a procurement request to start the approval workflow.",
+		},
+	}
+}
+
 // MapBulkConfig returns a BulkActionsConfig with labels from common bulk labels.
 func MapBulkConfig(common pyeza.CommonLabels) types.BulkActionsConfig {
 	return types.BulkActionsConfig{
@@ -4594,4 +5511,31 @@ func LocationDisplayName(slug string) string {
 		return name
 	}
 	return slug
+}
+
+// ---------------------------------------------------------------------------
+// P3b — Procurement Operations app labels
+// (composition surface, no proto entity — mirrors the schedule/cyta pattern)
+// ---------------------------------------------------------------------------
+
+// ProcurementLabels holds all translatable strings for the Procurement
+// Operations composition app. Populated via lyngua (P4). These keys are
+// intentionally generic so they render without overrides when lyngua has not
+// yet supplied values.
+type ProcurementLabels struct {
+	AppLabel              string `json:"app_label"`
+	DashboardTitle        string `json:"dashboard_title"`
+	PendingApprovalsTitle string `json:"pending_approvals_title"`
+	ExpiringTitle         string `json:"expiring_title"`
+	VarianceTitle         string `json:"variance_title"`
+	RecurrenceTitle       string `json:"recurrence_title"`
+	RenewalsTitle         string `json:"renewals_title"`
+	UtilizationTitle      string `json:"utilization_title"`
+	EmptyRenewals         string `json:"empty_renewals"`
+	EmptyVariance         string `json:"empty_variance"`
+	EmptyUtilization      string `json:"empty_utilization"`
+	EmptyRecurrence       string `json:"empty_recurrence"`
+	DaysUntilExpiry       string `json:"days_until_expiry"`
+	UtilizationPercent    string `json:"utilization_percent"`
+	BudgetPressureLabel   string `json:"budget_pressure_label"`
 }

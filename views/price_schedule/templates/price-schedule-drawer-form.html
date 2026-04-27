@@ -8,7 +8,30 @@
         {{/* ================================================================ */}}
         {{template "form-section" (dict "Title" .Labels.SectionScheduleDetails)}}
 
+        {{/* Client picker — 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
+             Changing the client triggers a server-side suggest-name swap so
+             the Name input below becomes "{ClientName} - {suffix}". */}}
         <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "schedule-client-search"
+                "Name" "client_id"
+                "Label" .Labels.ClientLabel
+                "Placeholder" .Labels.ClientPlaceholder
+                "SearchPlaceholder" .Labels.ClientSearchPlaceholder
+                "SearchURL" .SearchClientURL
+                "Options" .ClientOptions
+                "Value" .ClientID
+                "SelectedLabel" .ClientLabel
+                "NoResults" .Labels.ClientNoResults
+                "Info" .Labels.ClientInfo
+                "Hint" .Labels.ClientHelp
+                "OnChangeURL" .SuggestNameURL
+                "OnChangeTarget" "#schedule-name-input-wrap"
+                "OnChangeSwap" "innerHTML"
+            )}}
+        </div>
+
+        <div class="form-row single" id="schedule-name-input-wrap">
             {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder "Info" .Labels.NameInfo)}}
         </div>
         <div class="form-row single">
@@ -36,7 +59,7 @@
                 "Name" "location_id"
                 "Label" .Labels.Location
                 "Placeholder" .Labels.LocationPlaceholder
-                "SearchPlaceholder" "Filter..."
+                "SearchPlaceholder" .Labels.LocationSearchPlaceholder
                 "Options" .LocationOptions
                 "Value" .SelectedLocationID
                 "SelectedLabel" .SelectedLocationLabel
@@ -66,4 +89,48 @@
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
+
+{{/* 2026-04-27 plan-client-scope plan §4.4.1 fallback path — when the
+     auto-complete component doesn't natively support OnChangeURL, this
+     inline script wires the same effect: on Client picker change, fetch
+     the suggest-name partial and swap it into #schedule-name-input-wrap. */}}
+<script>
+(function () {
+    var form = document.currentScript.previousElementSibling;
+    while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
+    if (!form) { return; }
+    var picker = form.querySelector('#schedule-client-search');
+    var nameWrap = form.querySelector('#schedule-name-input-wrap');
+    var suggestURL = {{if .SuggestNameURL}}{{ printf "%q" .SuggestNameURL }}{{else}}''{{end}};
+    if (!picker || !nameWrap || !suggestURL) { return; }
+    var hidden = picker.querySelector('.auto-complete-input');
+    if (!hidden) { return; }
+    var lastValue = hidden.value || '';
+    function fetchSuggest() {
+        var clientID = hidden.value || '';
+        if (clientID === lastValue) { return; }
+        lastValue = clientID;
+        if (!clientID) { return; }
+        var sep = suggestURL.indexOf('?') === -1 ? '?' : '&';
+        var url = suggestURL + sep + 'client_id=' + encodeURIComponent(clientID);
+        if (window.htmx) {
+            window.htmx.ajax('GET', url, {
+                target: '#schedule-name-input-wrap',
+                swap: 'innerHTML',
+                pushUrl: false
+            });
+        }
+    }
+    // Pickers fire either a 'change' on the hidden input or a custom event
+    // on the picker container; subscribe to both to be defensive.
+    hidden.addEventListener('change', fetchSuggest);
+    picker.addEventListener('auto-complete:change', fetchSuggest);
+}());
+</script>
+{{end}}
+
+{{/* Suggest-name partial — server-rendered swap target for the Name input
+     when the Client picker changes (plan §4.4.1). */}}
+{{define "price-schedule-name-suggest"}}
+{{template "form-group" (dict "Type" "text" "Name" "name" "Label" "" "Value" .Value "Required" true "Placeholder" .NamePlaceholder)}}
 {{end}}

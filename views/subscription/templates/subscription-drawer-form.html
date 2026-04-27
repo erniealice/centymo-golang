@@ -90,8 +90,28 @@ Data: .Code, .ClientID, .PricePlanID,
         <input type="hidden" name="date_time_start_iso" value="{{.DateStartISO}}">
         <input type="hidden" name="date_time_end_iso"   value="{{.DateEndISO}}">
 
-        {{/* --- Price Plan --- */}}
+        {{/* --- Price Plan ---
+             2026-04-27 plan-client-scope plan §5.3 — when .PlanOptionGroups is
+             populated, render a grouped auto-complete (client-scoped first,
+             general second). Otherwise fall back to the legacy flat search
+             auto-complete used before client-scope landed. */}}
         <div class="form-row single">
+            {{if .PlanOptionGroups}}
+            {{template "auto-complete" (dict
+                "ID" "plan-search"
+                "Name" "price_plan_id"
+                "Label" .Labels.Plan
+                "Placeholder" .Labels.PlanPlaceholder
+                "SearchPlaceholder" .Labels.PlanSearchPlaceholder
+                "SearchURL" .SearchPlanURL
+                "Value" .PricePlanID
+                "SelectedLabel" .PlanLabel
+                "OptionGroups" .PlanOptionGroups
+                "Required" true
+                "NoResults" .Labels.PlanNoResults
+                "Info" .Labels.PlanInfo
+            )}}
+            {{else}}
             {{template "auto-complete" (dict
                 "ID" "plan-search"
                 "Name" "price_plan_id"
@@ -105,6 +125,7 @@ Data: .Code, .ClientID, .PricePlanID,
                 "NoResults" .Labels.PlanNoResults
                 "Info" .Labels.PlanInfo
             )}}
+            {{end}}
         </div>
 
         {{/* --- Engagement Code --- */}}

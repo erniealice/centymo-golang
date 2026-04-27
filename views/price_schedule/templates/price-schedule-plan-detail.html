@@ -95,20 +95,39 @@
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <div class="sheet-body">
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "_plan_display" "Label" "Package" "Value" .PlanName "Disabled" true "Hint" .PlanDescription)}}
+            {{template "form-group" (dict "Type" "text" "Name" "_plan_display" "Label" .PriceScheduleLabels.PlanColumnPlan "Value" .PlanName "Disabled" true "Hint" .PlanDescription)}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "_product_display" "Label" "Item" "Value" .ProductName "Disabled" true "Hint" .ProductDescription)}}
+            {{template "form-group" (dict "Type" "text" "Name" "_product_display" "Label" .ProductPricePlanLabels.ProductLabel "Value" .ProductName "Disabled" true "Hint" .ProductDescription)}}
         </div>
         {{if .PricingLockedReason}}
         <div class="form-row single">
             {{template "alert" (dict "State" "info" "Message" .PricingLockedReason)}}
         </div>
         {{end}}
-        <div class="form-row">
-            {{template "form-group" (dict "Type" "number" "Name" "price" "Label" .ProductPricePlanLabels.PriceLabel "Value" .Price "Required" true "Placeholder" .ProductPricePlanLabels.PricePlaceholder "Step" "0.01" "Min" "0" "Disabled" .PricingLocked)}}
-            {{template "form-group" (dict "Type" "select" "Name" "currency" "Label" .ProductPricePlanLabels.CurrencyLabel "Value" .Currency "Required" true "Disabled" .PricingLocked "Options" (list (dict "Value" "PHP" "Label" .ProductPricePlanLabels.CurrencyPHP) (dict "Value" "USD" "Label" .ProductPricePlanLabels.CurrencyUSD)))}}
-        </div>
+        {{template "ppp-parent-context" (dict
+            "PlanName" .PlanName
+            "RateCardName" .RateCardName
+            "BillingKindDisplay" .BillingKindDisplay
+            "AmountBasisDisplay" .AmountBasisDisplay
+            "BillingCycleDisplay" .BillingCycleDisplay
+            "TermDisplay" .TermDisplay
+            "ParentCurrencyDisplay" .ParentCurrencyDisplay
+        )}}
+        {{template "ppp-fields" (dict
+            "Labels" .ProductPricePlanLabels
+            "Price" .Price
+            "Currency" .Currency
+            "BillingTreatment" .BillingTreatment
+            "BillingTreatmentOptions" .BillingTreatmentOptions
+            "DateStart" .DateStart
+            "DateEnd" .DateEnd
+            "ShowTreatment" .ShowTreatment
+            "PricingLocked" .PricingLocked
+            "BasisBannerMessage" .BasisBannerMessage
+            "PricingSectionTitle" .PriceScheduleLabels.ProductPricePricingSection
+            "EffectiveSectionTitle" .PriceScheduleLabels.ProductPriceEffectiveSection
+        )}}
     </div>
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
