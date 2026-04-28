@@ -89,6 +89,17 @@ to a single CTA in v1).
         </div>
         {{end}}
 
+        {{/* --- No-lines-to-invoice banner (blocking) --- */}}
+        {{if .NoLinesToInvoice}}
+        <div
+          class="form-row single alert alert--error"
+          data-recognize-no-lines-error
+          role="alert"
+        >
+            <strong>{{.Labels.NoLinesError}}</strong>
+        </div>
+        {{end}}
+
         {{/* --- Period section --- */}}
         {{template "form-section" (dict "Title" .Labels.PeriodSection)}}
 
@@ -221,7 +232,7 @@ to a single CTA in v1).
         type="submit"
         class="btn btn--primary"
         data-testid="recognize-generate"
-        {{if or .CurrencyMismatch .IdempotencyConflict}}disabled aria-disabled="true"{{end}}
+        {{if or .CurrencyMismatch .IdempotencyConflict .NoLinesToInvoice}}disabled aria-disabled="true"{{end}}
       >
         {{.Labels.Generate}}
       </button>

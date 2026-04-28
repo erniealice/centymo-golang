@@ -1213,6 +1213,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if useCases.Subscription.PriceSchedule != nil {
 					planDetailDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
 				}
+				// 2026-04-28 plan-client-scope — Info tab Client row needs to
+				// resolve the plan's client_id label and (optionally) link to
+				// the entydad client-detail page.
+				if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
+					planDetailDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+				}
+				planDetailDeps.ClientDetailURL = cfg.clientDetailURL
 				ctx.Routes.GET(planRoutes.DetailURL, plandetail.NewView(planDetailDeps))
 				ctx.Routes.GET(planRoutes.TabActionURL, plandetail.NewTabAction(planDetailDeps))
 
@@ -1274,10 +1281,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				// PricePlan CRUD within plan detail
 				if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.CreatePricePlan != nil {
 					ppActionDeps := &planaction.PricePlanDeps{
-						Routes:          planRoutes,
-						Labels:          planLabels,
-						PricePlanLabels: pricePlanLabels,
-						CommonLabels:    ctx.Common,
+						Routes:              planRoutes,
+						Labels:              planLabels,
+						PricePlanLabels:     pricePlanLabels,
+						PriceScheduleLabels: priceScheduleLabels,
+						CommonLabels:        ctx.Common,
 						CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
 						ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
 						UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,
@@ -1288,6 +1296,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					}
 					if useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
 						ppActionDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+					}
+					// Plan §6.7 — ListClients powers the readonly schedule
+					// label + lock tooltip when the parent Plan is client-scoped.
+					if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
+						ppActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
 					}
 					if useCases.Entity != nil && useCases.Entity.Location != nil && useCases.Entity.Location.ListLocations != nil {
 						ppActionDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
@@ -1442,6 +1455,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					if useCases.Subscription.PriceSchedule != nil {
 						planBundleDetailDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
 					}
+					// 2026-04-28 plan-client-scope — same Info tab Client row
+					// wiring on the bundle mount.
+					if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
+						planBundleDetailDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+					}
+					planBundleDetailDeps.ClientDetailURL = cfg.clientDetailURL
 					ctx.Routes.GET(planBundleRoutes.DetailURL, plandetail.NewView(planBundleDetailDeps))
 					ctx.Routes.GET(planBundleRoutes.TabActionURL, plandetail.NewTabAction(planBundleDetailDeps))
 					if uploadFile != nil {
@@ -1451,10 +1470,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					}
 					if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.CreatePricePlan != nil {
 						ppBundleDeps := &planaction.PricePlanDeps{
-							Routes:          planBundleRoutes,
-							Labels:          planLabels,
-							PricePlanLabels: pricePlanLabels,
-							CommonLabels:    ctx.Common,
+							Routes:              planBundleRoutes,
+							Labels:              planLabels,
+							PricePlanLabels:     pricePlanLabels,
+							PriceScheduleLabels: priceScheduleLabels,
+							CommonLabels:        ctx.Common,
 							CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
 							ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
 							UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,
@@ -1465,6 +1485,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						}
 						if useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
 							ppBundleDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+						}
+						// Plan §6.7 — ListClients powers the readonly schedule
+						// label + lock tooltip on the bundle-mount drawer.
+						if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
+							ppBundleDeps.ListClients = useCases.Entity.Client.ListClients.Execute
 						}
 						if useCases.Entity != nil && useCases.Entity.Location != nil && useCases.Entity.Location.ListLocations != nil {
 							ppBundleDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute

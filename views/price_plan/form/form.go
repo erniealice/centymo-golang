@@ -89,6 +89,33 @@ type Data struct {
 	ParentScheduleClientID   string
 	ParentScheduleClientName string
 
+	// 2026-04-27 plan-client-scope plan §6.7 — Schedule field rendering
+	// mode. When the parent Plan is client-scoped, the price-schedule
+	// auto-complete is replaced with a readonly display row that carries
+	// the resolved or derived schedule label, plus a hidden
+	// `price_schedule_id` input. When the resolution misses (no schedule
+	// exists yet for the client), `ScheduleID` is empty and submitting will
+	// trigger an auto-create on the use-case side.
+	//
+	// Modes:
+	//   "picker"   → standard auto-complete (default, when plan.client_id == "").
+	//   "readonly" → static label + hidden input (when plan.client_id != "").
+	ScheduleFieldMode        string
+	// ScheduleLabel is the resolved or derived display label for the
+	// readonly mode (e.g. "Cruz Engineering - Rate Cards"). Empty in picker
+	// mode.
+	ScheduleLabel string
+	// ScheduleLockedClientName carries the parent Plan's client name when
+	// ScheduleFieldMode == "readonly". Used by the lyngua-driven
+	// ScheduleLockedTooltip template ({{.ClientName}}).
+	ScheduleLockedClientName string
+	// ScheduleAutoHint is the resolved info-line shown beneath the readonly
+	// schedule field — either "no schedule yet, will create on save" or
+	// "will be added to existing schedule for X". The handler picks the right
+	// variant based on whether ScheduleID resolved (via findClientPriceSchedule).
+	// Empty when the field is in picker mode or the parent Plan is master.
+	ScheduleAutoHint string
+
 	Labels       Labels
 	CommonLabels pyeza.CommonLabels
 }
@@ -144,6 +171,11 @@ type Labels struct {
 	// 2026-04-27 plan-client-scope plan §6.7 — info banner template.
 	// Templated via {{.ClientName}}. Blank means "no banner".
 	ParentScheduleClientNotice string
+
+	// 2026-04-27 plan-client-scope plan §6.7 — tooltip for the readonly
+	// Schedule field when the parent Plan is client-scoped. Templated via
+	// {{.ClientName}}. Blank means "no tooltip".
+	ScheduleLockedTooltip string
 }
 
 // LabelsFromPriceSchedule maps the price-schedule-side PlanForm labels into
@@ -230,6 +262,7 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		ActiveInfo:       pp.ActiveInfo,
 		// 2026-04-27 plan-client-scope plan §6.7.
 		ParentScheduleClientNotice: pp.ParentScheduleClientNotice,
+		ScheduleLockedTooltip:      pp.ScheduleLockedTooltip,
 	}
 }
 

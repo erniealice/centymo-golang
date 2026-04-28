@@ -8,10 +8,52 @@
         {{/* ================================================================ */}}
         {{template "form-section" (dict "Title" .Labels.SectionScheduleDetails)}}
 
-        {{/* Client picker — 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
-             Changing the client triggers a server-side suggest-name swap so
-             the Name input below becomes "{ClientName} - {suffix}". */}}
+        {{/* ----------------------------------------------------------------
+             Scope radio (2026-04-28). Mutually excludes the Client and
+             Location pickers below. The two pickers stay rendered (and
+             therefore wired up to JS) but are hidden by display:none until
+             their matching radio option is selected. Server-side, the POST
+             handlers force-clear the inverse FK so the use case sees only
+             one populated.
+
+             Migrated 2026-04-28 to the pyeza form-radio-group component.
+             The option `value` strings ("location"/"client") are preserved
+             so the existing form-data shape is unchanged; the inline
+             scope-toggle script below now matches the radios via
+             `input[name="scope"][value="..."]` instead of by id, so this
+             template is decoupled from form-radio's auto-generated id
+             format.
+             ---------------------------------------------------------------- */}}
         <div class="form-row single">
+            {{template "form-radio-group" (dict
+                "Name" "scope"
+                "Label" .Labels.ScopeLabel
+                "Info" .Labels.ScopeInfo
+                "Selected" (or .Scope "location")
+                "Direction" "vertical"
+                "Options" (list
+                    (dict
+                        "Value" "location"
+                        "Label" .Labels.ScopeOptionLocation
+                        "Description" .Labels.ScopeOptionLocationHelp
+                    )
+                    (dict
+                        "Value" "client"
+                        "Label" .Labels.ScopeOptionClient
+                        "Description" .Labels.ScopeOptionClientHelp
+                    )
+                )
+            )}}
+        </div>
+
+        {{/* Client picker — 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
+             Visible only when scope=client. Changing the client triggers a
+             server-side suggest-name swap so the Name input below becomes
+             "{ClientName} - {suffix}". The container div carries the
+             scope-aware id so the inline scope-toggle script can flip its
+             display. */}}
+        <div class="form-row single" id="schedule-client-picker-wrap"
+             {{if ne .Scope "client"}}style="display:none"{{end}}>
             {{template "auto-complete" (dict
                 "ID" "schedule-client-search"
                 "Name" "client_id"
@@ -31,29 +73,9 @@
             )}}
         </div>
 
-        <div class="form-row single" id="schedule-name-input-wrap">
-            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder "Info" .Labels.NameInfo)}}
-        </div>
-        <div class="form-row single">
-            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder "Info" .Labels.DescriptionInfo)}}
-        </div>
-
-        {{/* ================================================================ */}}
-        {{/* Section: Date Range                                              */}}
-        {{/* ================================================================ */}}
-        {{template "form-section" (dict "Title" .Labels.SectionDateRange)}}
-
-        <div class="form-row">
-            {{template "form-group" (dict "Type" "date" "Name" "date_start" "Label" .Labels.DateStart "Value" .DateStart "Required" true "Info" .Labels.DateStartInfo)}}
-            {{template "form-group" (dict "Type" "date" "Name" "date_end" "Label" .Labels.DateEnd "Value" .DateEnd "Info" .Labels.DateEndInfo)}}
-        </div>
-
-        {{/* ================================================================ */}}
-        {{/* Section: Location                                                */}}
-        {{/* ================================================================ */}}
-        {{template "form-section" (dict "Title" .Labels.SectionLocation)}}
-
-        <div class="form-row single">
+        {{/* Location picker — visible only when scope=location. */}}
+        <div class="form-row single" id="schedule-location-picker-wrap"
+             {{if eq .Scope "client"}}style="display:none"{{end}}>
             {{template "auto-complete" (dict
                 "ID" "location-select"
                 "Name" "location_id"
@@ -66,6 +88,37 @@
                 "Info" .Labels.LocationInfo
             )}}
         </div>
+
+        {{/* Name moved AFTER the Client/Location pickers per the 2026-04-28
+             redesign; keeps the suggest-name HTMX target id intact. */}}
+        <div class="form-row single" id="schedule-name-input-wrap">
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder "Info" .Labels.NameInfo)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "textarea" "Name" "description" "Label" .Labels.Description "Value" .Description "Placeholder" .Labels.DescPlaceholder "Info" .Labels.DescriptionInfo)}}
+        </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section: Date Range                                              */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" .Labels.SectionDateRange)}}
+
+        {{/* Date + optional time rows. Time inputs are OPTIONAL — when left
+             blank, the POST handler defaults Start to 00:00:00 and End to
+             23:59:59 in the request timezone (parseScheduleDateTime in
+             price_schedule/action/action.go). 2026-04-28 date+time field
+             plan §4 — proto already supports sub-day precision via
+             google.protobuf.Timestamp; this UI surfaces it without a proto
+             change. */}}
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "date" "Name" "date_start_date" "Label" .Labels.DateStart "Value" .DateStartDate "Required" true "Info" .Labels.DateStartInfo)}}
+            {{template "form-group" (dict "Type" "time" "Name" "date_start_time" "Label" .Labels.TimeStart "Value" .DateStartTime "Placeholder" .Labels.TimePlaceholder "Info" .Labels.TimeStartInfo)}}
+        </div>
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "date" "Name" "date_end_date" "Label" .Labels.DateEnd "Value" .DateEndDate "Info" .Labels.DateEndInfo)}}
+            {{template "form-group" (dict "Type" "time" "Name" "date_end_time" "Label" .Labels.TimeEnd "Value" .DateEndTime "Placeholder" .Labels.TimePlaceholder "Info" .Labels.TimeEndInfo)}}
+        </div>
+
         <div class="form-row single">
             <div class="form-group form-group-toggle">
                 <label class="form-label" for="active">
@@ -90,10 +143,44 @@
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
 
+{{/* 2026-04-28 — Scope radio toggles the visibility of the Client/Location
+     picker wraps. Both pickers stay in the DOM so their JS bindings (the
+     auto-complete component init + the Client picker's HTMX suggest-name
+     wiring below) keep firing. The radio's change handler simply flips
+     display:none on the matching wrap. */}}
+<script>
+(function () {
+    var form = document.currentScript.previousElementSibling;
+    while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
+    if (!form) { return; }
+    {{/* form-radio auto-generates ids as `{Name}-{Value}` — see
+         pyeza components/form-radio.html. Querying by name+value attribute
+         insulates this script from any future id-naming change. */}}
+    var locationRadio = form.querySelector('input[name="scope"][value="location"]');
+    var clientRadio = form.querySelector('input[name="scope"][value="client"]');
+    var clientWrap = form.querySelector('#schedule-client-picker-wrap');
+    var locationWrap = form.querySelector('#schedule-location-picker-wrap');
+    if (!locationRadio || !clientRadio || !clientWrap || !locationWrap) { return; }
+    function applyScope() {
+        var clientChecked = clientRadio.checked;
+        clientWrap.style.display = clientChecked ? '' : 'none';
+        locationWrap.style.display = clientChecked ? 'none' : '';
+    }
+    locationRadio.addEventListener('change', applyScope);
+    clientRadio.addEventListener('change', applyScope);
+    applyScope();
+}());
+</script>
+
 {{/* 2026-04-27 plan-client-scope plan §4.4.1 fallback path — when the
      auto-complete component doesn't natively support OnChangeURL, this
      inline script wires the same effect: on Client picker change, fetch
-     the suggest-name partial and swap it into #schedule-name-input-wrap. */}}
+     the suggest-name partial and swap it into #schedule-name-input-wrap.
+     The picker stays in the DOM even when scope=location (just hidden),
+     so this binding is harmless when the user hasn't switched scope. We
+     additionally guard the fetch behind the radio's current value so a
+     stale value in the hidden input doesn't trigger a swap when scope is
+     "location". */}}
 <script>
 (function () {
     var form = document.currentScript.previousElementSibling;
@@ -101,12 +188,14 @@
     if (!form) { return; }
     var picker = form.querySelector('#schedule-client-search');
     var nameWrap = form.querySelector('#schedule-name-input-wrap');
+    var clientRadio = form.querySelector('input[name="scope"][value="client"]');
     var suggestURL = {{if .SuggestNameURL}}{{ printf "%q" .SuggestNameURL }}{{else}}''{{end}};
     if (!picker || !nameWrap || !suggestURL) { return; }
     var hidden = picker.querySelector('.auto-complete-input');
     if (!hidden) { return; }
     var lastValue = hidden.value || '';
     function fetchSuggest() {
+        if (clientRadio && !clientRadio.checked) { return; }
         var clientID = hidden.value || '';
         if (clientID === lastValue) { return; }
         lastValue = clientID;

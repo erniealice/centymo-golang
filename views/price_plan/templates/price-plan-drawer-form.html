@@ -58,6 +58,25 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     "Info" .Labels.PlanInfo
                 )}}
             </div>
+            {{/* 2026-04-27 plan-client-scope plan §6.7 — when the parent Plan
+                 is client-scoped, the price-schedule picker collapses into a
+                 readonly display row carrying the resolved (or derived)
+                 client schedule label, plus a hidden price_schedule_id input.
+                 ScheduleID may be empty; the use case auto-creates on save. */}}
+            {{if eq .ScheduleFieldMode "readonly"}}
+            <div class="form-row single">
+                <input type="hidden" name="price_schedule_id" value="{{.ScheduleID}}">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "_schedule_display"
+                    "Label" .Labels.ScheduleLabel
+                    "Value" .ScheduleLabel
+                    "Disabled" true
+                    "Info" .Labels.ScheduleLockedTooltip
+                    "Hint" .ScheduleAutoHint
+                )}}
+            </div>
+            {{else}}
             <div class="form-row single">
                 {{template "auto-complete" (dict
                     "ID" "price-schedule-select"
@@ -70,6 +89,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     "SelectedLabel" .SelectedScheduleLabel
                 )}}
             </div>
+            {{end}}
         {{end}}
 
         {{if eq .Context "Schedule"}}
@@ -126,7 +146,10 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
             </div>
         {{end}}
 
-        {{/* Name and Description — optional, no required */}}
+        {{/* Name and Description — optional, no required.
+             Name field hidden for now; the use case handles empty name by
+             design. Description still surfaced. Re-enable by uncommenting. */}}
+        {{/*
         <div class="form-row single">
             {{template "form-group" (dict
                 "Type" "text"
@@ -137,6 +160,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Info" .Labels.NameInfo
             )}}
         </div>
+        */}}
         <div class="form-row single">
             {{template "form-group" (dict
                 "Type" "textarea"

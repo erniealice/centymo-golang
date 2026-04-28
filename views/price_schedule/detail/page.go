@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/price_plan/form"
@@ -388,6 +389,15 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	tz := types.LocationFromContext(ctx)
 
+	createdDate := ""
+	if ms := ps.GetDateCreated(); ms > 0 {
+		createdDate = types.FormatInTZ(time.UnixMilli(ms), tz, types.DateTimeReadable)
+	}
+	modifiedDate := ""
+	if ms := ps.GetDateModified(); ms > 0 {
+		modifiedDate = types.FormatInTZ(time.UnixMilli(ms), tz, types.DateTimeReadable)
+	}
+
 	pageData := &PageData{
 		PageData: types.PageData{
 			CacheVersion:   viewCtx.CacheVersion,
@@ -413,8 +423,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		LocationName:    locationName,
 		Status:          status,
 		StatusVariant:   statusVariant,
-		CreatedDate:     ps.GetDateCreatedString(),
-		ModifiedDate:    ps.GetDateModifiedString(),
+		CreatedDate:     createdDate,
+		ModifiedDate:    modifiedDate,
 	}
 
 	if activeTab == "pricePlan" {

@@ -59,6 +59,7 @@ type RecognizeFormLabels struct {
 	CurrencyMismatchError   string
 	IdempotencyError        string
 	IdempotencyExistingLink string
+	NoLinesError            string
 }
 
 // RecognizePreviewLine is the row shape consumed by the drawer template.
@@ -112,6 +113,7 @@ type RecognizeFormData struct {
 	IdempotencyConflict     bool
 	ConflictingRevenueID    string
 	ConflictingRevenueURL   string
+	NoLinesToInvoice        bool
 
 	// Non-blocking warnings (e.g. usage-based skipped notice).
 	Warnings []string
@@ -157,6 +159,7 @@ func recognizeFormLabels(l centymo.SubscriptionLabels) RecognizeFormLabels {
 		CurrencyMismatchError:   l.Recognize.CurrencyMismatchError,
 		IdempotencyError:        l.Recognize.IdempotencyError,
 		IdempotencyExistingLink: l.Recognize.IdempotencyExistingLink,
+		NoLinesError:            l.Recognize.NoLinesError,
 	}
 }
 
@@ -423,7 +426,13 @@ func applyResponseToFormData(
 		client.GetBillingCurrency() != pricePlan.GetBillingCurrency() {
 		data.CurrencyMismatch = true
 	}
-	_ = err // err is logged by the caller; the banner state above is enough for the drawer
+	// no_lines_to_invoice is a hard block returned BEFORE the response is
+	// populated — detect it via the error string. The translation key the use
+	// case emits is revenue.errors.no_lines_to_invoice; deps.Labels carries
+	// the resolved English/professional copy.
+	if err != nil && strings.Contains(err.Error(), "no line items") {
+		data.NoLinesToInvoice = true
+	}
 }
 
 // buildPreviewRequest assembles a CreateRevenueWithLineItemsRequest with the

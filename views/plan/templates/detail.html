@@ -51,6 +51,26 @@
                 </span>
             </span>
         </div>
+        {{/* 2026-04-28 plan-client-scope — surface client scope (Master vs
+             Custom) the same way the add/edit drawer does. */}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.ClientLabel}}</span>
+            <span class="detail-info-value">
+                {{if .IsCustomPlan}}
+                    {{if .ClientHref}}
+                        <a href="{{.ClientHref}}">{{.ClientName}}</a>
+                    {{else}}
+                        {{.ClientName}}
+                    {{end}}
+                    <span class="badge badge--info">Custom</span>
+                    {{if .Labels.Form.ClientInfo}}
+                        <span class="detail-info-hint">{{.Labels.Form.ClientInfo}}</span>
+                    {{end}}
+                {{else}}
+                    <span class="badge badge--default">Master</span>
+                {{end}}
+            </span>
+        </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.CreatedDate}}</span>
             <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>

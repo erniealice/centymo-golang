@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/hybra-golang/views/attachment"
@@ -13,6 +14,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
@@ -43,6 +45,17 @@ type DetailViewDeps struct {
 	ListLocations       func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
 	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 
+	// 2026-04-28 plan-client-scope — Info tab Client row.
+	// ListClients resolves the display label for Plan.client_id (mirrors the
+	// drawer's resolveClientLabel). Optional — when nil the Info tab still
+	// renders ("Master plan" / raw ID fallback).
+	ListClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	// ClientDetailURL is the entydad client-detail path template (e.g.
+	// "/app/clients/detail/{id}"). When set, the Info tab Client row renders
+	// as a link; when empty, plain text. Optional — centymo cannot import
+	// entydad, so the consumer supplies it.
+	ClientDetailURL string
+
 	attachment.AttachmentOps
 	auditlog.AuditOps
 }
@@ -62,6 +75,17 @@ type PageData struct {
 	StatusVariant       string
 	CreatedDate         string
 	ModifiedDate        string
+	// 2026-04-28 plan-client-scope — Info tab Client row.
+	// IsCustomPlan is true when the plan has a non-empty client_id (i.e.
+	// scoped to a specific client). When false, the Info tab renders the
+	// "Master" (general / catalog-wide) badge.
+	IsCustomPlan bool
+	ClientID     string
+	ClientName   string
+	// ClientHref is the resolved entydad client-detail URL for ClientID. Empty
+	// when ClientDetailURL was not supplied or the plan is not custom; the
+	// template gracefully falls back to plain text.
+	ClientHref          string
 	ProductsTable       *types.TableConfig
 	PricePlansTable     *types.TableConfig
 	AttachmentTable     *types.TableConfig
@@ -150,6 +174,23 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	createdDate := plan.GetDateCreatedString()
 	modifiedDate := plan.GetDateModifiedString()
 
+	// 2026-04-28 plan-client-scope — surface client scope on the Info tab.
+	// Mirrors the drawer's resolveClientLabel behaviour: empty client_id =
+	// master plan; non-empty resolves to a display label via ListClients.
+	clientID := plan.GetClientId()
+	isCustom := clientID != ""
+	clientName := ""
+	clientHref := ""
+	if isCustom {
+		clientName = resolveClientLabel(ctx, clientID, deps.ListClients)
+		if clientName == "" {
+			clientName = clientID
+		}
+		if deps.ClientDetailURL != "" {
+			clientHref = route.ResolveURL(deps.ClientDetailURL, "id", clientID)
+		}
+	}
+
 	// Get counts for tab badges — filter by plan_id so only this plan's products are counted
 	productCount := 0
 	if deps.ListProductPlans != nil {
@@ -213,6 +254,10 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		StatusVariant:   statusVariant,
 		CreatedDate:     createdDate,
 		ModifiedDate:    modifiedDate,
+		IsCustomPlan:    isCustom,
+		ClientID:        clientID,
+		ClientName:      clientName,
+		ClientHref:      clientHref,
 	}
 
 	// Load tab-specific data
@@ -556,8 +601,11 @@ func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, pla
 
 	types.ApplyColumnStyles(columns, rows)
 
+	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", planID, "tab", "") + l.Tabs.ResolveTabSlug("pricePlan")
+
 	tableConfig := &types.TableConfig{
 		ID:                   "plan-price-plans-table",
+		RefreshURL:           refreshURL,
 		Columns:              columns,
 		Rows:                 rows,
 		ShowSearch:           true,
@@ -601,4 +649,34 @@ func statusVariant(status string) string {
 	default:
 		return "default"
 	}
+}
+
+// resolveClientLabel mirrors action.resolveClientLabel — finds the display name
+// for a single client_id by listing all clients once. Returns empty string when
+// listClients is nil or clientID is empty; returns clientID as a graceful
+// fallback when the lookup misses or errors.
+func resolveClientLabel(ctx context.Context, clientID string, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)) string {
+	if clientID == "" || listClients == nil {
+		return ""
+	}
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		return clientID
+	}
+	for _, c := range resp.GetData() {
+		if c.GetId() != clientID {
+			continue
+		}
+		if name := c.GetName(); name != "" {
+			return name
+		}
+		if u := c.GetUser(); u != nil {
+			full := strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			if full != "" {
+				return full
+			}
+		}
+		return clientID
+	}
+	return clientID
 }

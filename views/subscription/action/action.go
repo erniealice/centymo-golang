@@ -502,7 +502,11 @@ func splitTimestampForInputs(ts *timestamppb.Timestamp, tz *time.Location) (date
 // a *timestamppb.Timestamp. The hidden ISO wins when present so the operator's
 // chosen offset is preserved exactly. Falls back to date+time-in-tz when JS is
 // disabled or the hidden field is empty. Empty all → nil.
-func parseFormDateTime(date, t, iso string, tz *time.Location) *timestamppb.Timestamp {
+//
+// 2026-04-28 date+time field plan §4 — when no time is provided, isEnd
+// switches the default between 00:00:00 (start) and 23:59:59 (end) so that an
+// "end" date without a time still includes the full day.
+func parseFormDateTime(date, t, iso string, tz *time.Location, isEnd bool) *timestamppb.Timestamp {
 	if iso != "" {
 		if parsed, err := time.Parse(time.RFC3339, iso); err == nil {
 			return timestamppb.New(parsed.UTC())
@@ -512,9 +516,16 @@ func parseFormDateTime(date, t, iso string, tz *time.Location) *timestamppb.Time
 		return nil
 	}
 	if t == "" {
-		t = "00:00"
+		if isEnd {
+			t = "23:59:59"
+		} else {
+			t = "00:00:00"
+		}
+	} else if len(t) == 5 {
+		// Browser time inputs default to HH:MM precision; pad seconds.
+		t = t + ":00"
 	}
-	parsed, err := time.ParseInLocation("2006-01-02 15:04", date+" "+t, tz)
+	parsed, err := time.ParseInLocation("2006-01-02 15:04:05", date+" "+t, tz)
 	if err != nil {
 		return nil
 	}
@@ -572,12 +583,14 @@ func NewAddAction(deps *Deps) view.View {
 			r.FormValue("date_start_time"),
 			r.FormValue("date_time_start_iso"),
 			tz,
+			false,
 		)
 		dateTimeEnd := parseFormDateTime(
 			r.FormValue("date_end_date"),
 			r.FormValue("date_end_time"),
 			r.FormValue("date_time_end_iso"),
 			tz,
+			true,
 		)
 
 		pricePlanID := r.FormValue("price_plan_id")
@@ -726,12 +739,14 @@ func NewEditAction(deps *Deps) view.View {
 			r.FormValue("date_start_time"),
 			r.FormValue("date_time_start_iso"),
 			tz,
+			false,
 		)
 		dateTimeEnd := parseFormDateTime(
 			r.FormValue("date_end_date"),
 			r.FormValue("date_end_time"),
 			r.FormValue("date_time_end_iso"),
 			tz,
+			true,
 		)
 
 		pricePlanID := r.FormValue("price_plan_id")

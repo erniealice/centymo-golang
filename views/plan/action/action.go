@@ -353,10 +353,15 @@ func NewEditAction(deps *Deps) view.View {
 			Name:        r.FormValue("name"),
 			Description: strPtr(r.FormValue("description")),
 		}
-		// Always send the client_id (empty string clears the column) so the
-		// espyna update use case can detect a master ↔ client_id transition
-		// and run the §3.1 reference-checker guard.
-		updateData.ClientId = strPtr(clientID)
+		// Always send the client_id (empty → nil so postgres writes NULL,
+		// otherwise the empty string trips plan_client_id_fkey) so the espyna
+		// update use case can detect a master ↔ client_id transition and run
+		// the §3.1 reference-checker guard.
+		if clientID == "" {
+			updateData.ClientId = nil
+		} else {
+			updateData.ClientId = &clientID
+		}
 		_, err := deps.UpdatePlan(ctx, &planpb.UpdatePlanRequest{
 			Data: updateData,
 		})

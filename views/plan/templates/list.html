@@ -6,15 +6,6 @@
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "plan-list-content"}}
 <div class="page-content page-content--table">
-    <div class="filter-chip-group" data-testid="scope-filter">
-        <span class="filter-chip-label">{{.ScopeFilter.Label}}</span>
-        <a class="filter-chip{{if .ScopeFilter.Master.Active}} is-active{{end}}"
-           href="{{.ScopeFilter.Master.URL}}">{{.ScopeFilter.Master.Label}}</a>
-        <a class="filter-chip{{if .ScopeFilter.Client.Active}} is-active{{end}}"
-           href="{{.ScopeFilter.Client.URL}}">{{.ScopeFilter.Client.Label}}</a>
-        <a class="filter-chip{{if .ScopeFilter.All.Active}} is-active{{end}}"
-           href="{{.ScopeFilter.All.URL}}">{{.ScopeFilter.All.Label}}</a>
-    </div>
     {{template "table-card" .Table}}
 </div>
 {{end}}

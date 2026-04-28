@@ -18,25 +18,45 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// parseScheduleDate parses a YYYY-MM-DD form input as start-of-day in tz and
-// returns the UTC timestamp. Empty input → nil.
-func parseScheduleDate(input string, tz *time.Location) *timestamppb.Timestamp {
-	if input == "" {
+// splitScheduleDateTimeForInputs renders ts in tz as a (date, time) pair
+// suitable for the drawer's date+time input grid. Nil ts → ("", "").
+func splitScheduleDateTimeForInputs(ts *timestamppb.Timestamp, tz *time.Location) (date, t string) {
+	if ts == nil || !ts.IsValid() {
+		return "", ""
+	}
+	moment := ts.AsTime().In(tz)
+	return moment.Format(pyezatypes.DateInputLayout), moment.Format(pyezatypes.TimeInputLayout)
+}
+
+// parseScheduleDateTime combines a date input (YYYY-MM-DD) and an OPTIONAL
+// time input (HH:MM) into a UTC timestamp, anchored to tz.
+//
+// When time is empty:
+//   - For start-of-range (isEnd=false): defaults to 00:00:00 (start-of-day).
+//   - For end-of-range (isEnd=true): defaults to 23:59:59 (end-of-day) so an
+//     "end" date without a time still includes the full day.
+//
+// Empty date → nil. The 2026-04-28 date+time field plan §4 anchors to
+// types.LocationFromContext(ctx) for the operator's display timezone.
+func parseScheduleDateTime(date, t string, tz *time.Location, isEnd bool) *timestamppb.Timestamp {
+	if date == "" {
 		return nil
 	}
-	t, err := time.ParseInLocation("2006-01-02", input, tz)
+	if t == "" {
+		if isEnd {
+			t = "23:59:59"
+		} else {
+			t = "00:00:00"
+		}
+	} else if len(t) == 5 {
+		// Browser time inputs default to HH:MM precision; pad seconds.
+		t = t + ":00"
+	}
+	parsed, err := time.ParseInLocation("2006-01-02 15:04:05", date+" "+t, tz)
 	if err != nil {
 		return nil
 	}
-	return timestamppb.New(t.UTC())
-}
-
-// formatScheduleDate formats a Timestamp as YYYY-MM-DD in tz for the form input.
-func formatScheduleDate(ts *timestamppb.Timestamp, tz *time.Location) string {
-	if ts == nil || !ts.IsValid() {
-		return ""
-	}
-	return ts.AsTime().In(tz).Format(pyezatypes.DateInputLayout)
+	return timestamppb.New(parsed.UTC())
 }
 
 type LocationOption struct {
@@ -50,8 +70,15 @@ type FormData struct {
 	ID                    string
 	Name                  string
 	Description           string
-	DateStart             string
-	DateEnd               string
+	// Date + optional time inputs (2026-04-28 date+time field plan).
+	// The drawer renders <input type="date"> + <input type="time"> side
+	// by side; time is OPTIONAL. Empty time defaults to 00:00:00 for
+	// DateStart and 23:59:59 for DateEnd so an end-only date covers the
+	// full day. parseScheduleDateTime() applies the rule on POST.
+	DateStartDate         string
+	DateStartTime         string
+	DateEndDate           string
+	DateEndTime           string
 	Active                bool
 	Locations             []*LocationOption
 	SelectedLocationID    string
@@ -67,6 +94,11 @@ type FormData struct {
 	// HTMX to refresh the Name input with the per-tier derived name
 	// "{ClientName} - {customClientPriceScheduleLabelSuffix}".
 	SuggestNameURL string
+
+	// Scope (2026-04-28) — "location" or "client". Drives the radio that
+	// mutually excludes the Location and Client pickers. Default "location"
+	// for new schedules; for edit, derived from record.client_id presence.
+	Scope string
 
 	Labels       centymo.PriceScheduleFormLabels
 	CommonLabels any
@@ -232,6 +264,12 @@ func NewAddAction(deps *Deps) view.View {
 			if pinnedClientID != "" {
 				defaultName = buildDerivedScheduleName(clientLabel, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
 			}
+			// 2026-04-28 — Scope radio default. `location` unless the URL
+			// pins a client (?client_id=...) which implies client scope.
+			scope := "location"
+			if pinnedClientID != "" {
+				scope = "client"
+			}
 			return view.OK("price-schedule-drawer-form", &FormData{
 				FormAction:      deps.Routes.AddURL,
 				Active:          true,
@@ -243,6 +281,7 @@ func NewAddAction(deps *Deps) view.View {
 				ClientOptions:   loadClientOptions(ctx, deps, pinnedClientID),
 				SearchClientURL: deps.SearchClientsURL,
 				SuggestNameURL:  deps.Routes.AddURL + "?suggest_name=1",
+				Scope:           scope,
 				Labels:          deps.Labels.Form,
 			})
 		}
@@ -254,12 +293,25 @@ func NewAddAction(deps *Deps) view.View {
 		locationID := r.FormValue("location_id")
 		description := r.FormValue("description")
 		clientID := strings.TrimSpace(r.FormValue("client_id"))
+		// 2026-04-28 — Scope radio enforces mutual exclusion server-side:
+		// when scope=location, drop any submitted client_id; when scope=client,
+		// drop any submitted location_id. Defaults to "location" so legacy
+		// callers without a scope field keep prior behaviour.
+		scope := r.FormValue("scope")
+		if scope == "" {
+			scope = "location"
+		}
+		if scope == "location" {
+			clientID = ""
+		} else if scope == "client" {
+			locationID = ""
+		}
 		tz := pyezatypes.LocationFromContext(ctx)
 		req := &priceschedulepb.CreatePriceScheduleRequest{
 			Data: &priceschedulepb.PriceSchedule{
 				Name:          r.FormValue("name"),
-				DateTimeStart: parseScheduleDate(r.FormValue("date_start"), tz),
-				DateTimeEnd:   parseScheduleDate(r.FormValue("date_end"), tz),
+				DateTimeStart: parseScheduleDateTime(r.FormValue("date_start_date"), r.FormValue("date_start_time"), tz, false),
+				DateTimeEnd:   parseScheduleDateTime(r.FormValue("date_end_date"), r.FormValue("date_end_time"), tz, true),
 				Active:        active,
 			},
 		}
@@ -336,14 +388,24 @@ func NewEditAction(deps *Deps) view.View {
 			tz := pyezatypes.LocationFromContext(ctx)
 			selectedClientID := record.GetClientId()
 			clientLabel := resolveClientName(ctx, deps, selectedClientID)
+			// 2026-04-28 — Scope detection on edit: a populated client_id
+			// means the schedule is client-scoped; otherwise location-scoped.
+			scope := "location"
+			if selectedClientID != "" {
+				scope = "client"
+			}
+			startDate, startTime := splitScheduleDateTimeForInputs(record.GetDateTimeStart(), tz)
+			endDate, endTime := splitScheduleDateTimeForInputs(record.GetDateTimeEnd(), tz)
 			return view.OK("price-schedule-drawer-form", &FormData{
 				FormAction:            formAction,
 				IsEdit:                !isClone,
 				ID:                    formID,
 				Name:                  name,
 				Description:           record.GetDescription(),
-				DateStart:             formatScheduleDate(record.GetDateTimeStart(), tz),
-				DateEnd:               formatScheduleDate(record.GetDateTimeEnd(), tz),
+				DateStartDate:         startDate,
+				DateStartTime:         startTime,
+				DateEndDate:           endDate,
+				DateEndTime:           endTime,
 				Active:                record.GetActive(),
 				SelectedLocationID:    selectedLocationID,
 				SelectedLocationLabel: findLocationLabel(locations, selectedLocationID),
@@ -355,6 +417,7 @@ func NewEditAction(deps *Deps) view.View {
 				ClientOptions:   loadClientOptions(ctx, deps, selectedClientID),
 				SearchClientURL: deps.SearchClientsURL,
 				SuggestNameURL:  deps.Routes.AddURL + "?suggest_name=1",
+				Scope:           scope,
 				Labels:          deps.Labels.Form,
 			})
 		}
@@ -366,25 +429,34 @@ func NewEditAction(deps *Deps) view.View {
 		locationID := r.FormValue("location_id")
 		description := r.FormValue("description")
 		clientID := strings.TrimSpace(r.FormValue("client_id"))
+		// 2026-04-28 — Mirror the Add POST scope-driven mutual exclusion.
+		scope := r.FormValue("scope")
+		if scope == "" {
+			scope = "location"
+		}
+		if scope == "location" {
+			clientID = ""
+		} else if scope == "client" {
+			locationID = ""
+		}
 		tz := pyezatypes.LocationFromContext(ctx)
 		req := &priceschedulepb.UpdatePriceScheduleRequest{
 			Data: &priceschedulepb.PriceSchedule{
 				Id:            id,
 				Name:          r.FormValue("name"),
-				DateTimeStart: parseScheduleDate(r.FormValue("date_start"), tz),
-				DateTimeEnd:   parseScheduleDate(r.FormValue("date_end"), tz),
+				DateTimeStart: parseScheduleDateTime(r.FormValue("date_start_date"), r.FormValue("date_start_time"), tz, false),
+				DateTimeEnd:   parseScheduleDateTime(r.FormValue("date_end_date"), r.FormValue("date_end_time"), tz, true),
 				Active:        active,
 			},
 		}
 		if description != "" {
 			req.Data.Description = &description
 		}
-		if locationID != "" {
-			req.Data.LocationId = &locationID
-		}
-		if clientID != "" {
-			req.Data.ClientId = &clientID
-		}
+		// 2026-04-28 — Always set both pointers explicitly so that flipping
+		// scope on edit actively clears the inverse FK rather than leaving
+		// the previous value behind.
+		req.Data.LocationId = &locationID
+		req.Data.ClientId = &clientID
 		if _, err := deps.UpdatePriceSchedule(ctx, req); err != nil {
 			return centymo.HTMXError(err.Error())
 		}

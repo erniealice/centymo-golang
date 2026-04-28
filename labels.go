@@ -2904,6 +2904,21 @@ type PricePlanFormLabels struct {
 	// PricePlan add/edit form when its parent PriceSchedule is client-scoped.
 	// Templated via Go's text/template ({{.ClientName}}).
 	ParentScheduleClientNotice string `json:"parentScheduleClientNotice"`
+
+	// 2026-04-27 plan-client-scope plan §6.7 — tooltip surfaced beside the
+	// readonly Schedule label when the PricePlan's parent Plan is
+	// client-scoped (the schedule field is locked to the resolved/derived
+	// client schedule). Templated via Go's text/template ({{.ClientName}}).
+	ScheduleLockedTooltip string `json:"scheduleLockedTooltip"`
+	// 2026-04-28 — info-row hints rendered beneath the readonly Schedule
+	// label so the operator knows what happens on save:
+	//   ScheduleAutoCreateHint — no client rate card exists yet; one will be
+	//     created with this client's name + the lyngua suffix.
+	//   ScheduleAutoReuseHint  — an existing client rate card was found; the
+	//     new price plan will attach to it.
+	// Both templated with {{.ClientName}}.
+	ScheduleAutoCreateHint string `json:"scheduleAutoCreateHint"`
+	ScheduleAutoReuseHint  string `json:"scheduleAutoReuseHint"`
 }
 
 // ---------------------------------------------------------------------------
@@ -3284,6 +3299,7 @@ type SubscriptionFormLabels struct {
 	EndDate                   string `json:"endDate"`
 	StartTime                 string `json:"startTime"`
 	EndTime                   string `json:"endTime"`
+	TimePlaceholder           string `json:"timePlaceholder"`
 	Timezone                  string `json:"timezone"`
 	Active                    string `json:"active"`
 	Notes                     string `json:"notes"`
@@ -3394,6 +3410,7 @@ type SubscriptionRecognizeLabels struct {
 	CurrencyMismatchError       string `json:"currencyMismatchError"`
 	IdempotencyError            string `json:"idempotencyError"`
 	IdempotencyExistingLink     string `json:"idempotencyExistingLink"`
+	NoLinesError                string `json:"noLinesError"`
 	CycleNotConfiguredWarning   string `json:"cycleNotConfiguredWarning"`
 	UsageBasedSkippedNotice     string `json:"usageBasedSkippedNotice"`
 
@@ -3750,6 +3767,17 @@ type PricePlanErrorLabels struct {
 	// 2026-04-27 plan-client-scope plan §7. Surfaced when an UpdatePricePlan
 	// body sends a client_id that doesn't match the parent Plan's client_id.
 	ClientScopeMismatch string `json:"clientScopeMismatch"`
+	// 2026-04-28 — surfaced when the operator picks a price_schedule whose
+	// client_id belongs to a different client than the parent Plan. Master
+	// schedules (sched.client_id == "") are still accepted; only the
+	// cross-client cases get rejected.
+	ScheduleClientMismatch string `json:"scheduleClientMismatch"`
+	// 2026-04-28 — surfaced when an operator submits a PricePlan with no
+	// price_schedule_id under a client-scoped Plan. The use case used to
+	// auto-create a schedule with a synthetic now() date; reverted because
+	// that hid real operator intent. Operator must pick or create a client
+	// rate card first.
+	ScheduleRequiredForClientScope string `json:"scheduleRequiredForClientScope"`
 	// Server-side-only error key — the centymo confirm dialog catches the
 	// N>1-engagements gate before this surfaces.
 	MultiEngagementConfirmRequired string `json:"multiEngagementConfirmRequired"`
@@ -3848,6 +3876,12 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			// 2026-04-27 plan-client-scope plan §6.7 — info banner shown above
 			// the form when its parent PriceSchedule is client-scoped.
 			ParentScheduleClientNotice: "This price schedule belongs to {{.ClientName}}. Price plans created here will be available only for engagements with this client.",
+			// 2026-04-27 plan-client-scope plan §6.7 — tooltip on the readonly
+			// Schedule label when the parent Plan is client-scoped. Proto-generic
+			// wording; tier overrides live in lyngua.
+			ScheduleLockedTooltip:  "This price plan is bound to {{.ClientName}}'s price schedule.",
+			ScheduleAutoCreateHint: "No price schedule exists for {{.ClientName}} yet — one will be created automatically when you save.",
+			ScheduleAutoReuseHint:  "This price plan will be added to the existing price schedule for {{.ClientName}}.",
 		},
 		Actions: PricePlanActionLabels{
 			CreateSuccess: "Rate card created successfully.",
@@ -3905,6 +3939,8 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			DeleteFailed:                   "Failed to delete rate card.",
 			InUse:                          "This price plan is in use by active subscriptions and cannot be deleted.",
 			ClientScopeMismatch:            "Price plan client must match its parent plan's client.",
+			ScheduleClientMismatch:         "Selected schedule belongs to a different client and cannot be attached to this price plan.",
+			ScheduleRequiredForClientScope: "This package is scoped to a client. Pick or create a rate card for that client before adding a price plan.",
 			MultiEngagementConfirmRequired: "Confirmation required — multiple attached subscriptions and monetary fields changing.",
 		},
 		ProductPrice: PricePlanProductPriceLabels{
@@ -4025,6 +4061,11 @@ type PriceScheduleFormLabels struct {
 	DescPlaceholder     string `json:"descPlaceholder"`
 	DateStart           string `json:"dateStart"`
 	DateEnd             string `json:"dateEnd"`
+	// Optional time inputs paired with DateStart/DateEnd (2026-04-28 date+time
+	// field plan). TimePlaceholder is shared by both inputs.
+	TimeStart        string `json:"timeStart"`
+	TimeEnd          string `json:"timeEnd"`
+	TimePlaceholder  string `json:"timePlaceholder"`
 	Location            string `json:"location"`
 	LocationPlaceholder string `json:"locationPlaceholder"`
 	SelectLocation      string `json:"selectLocation"`
@@ -4040,6 +4081,8 @@ type PriceScheduleFormLabels struct {
 	DescriptionInfo string `json:"descriptionInfo"`
 	DateStartInfo   string `json:"dateStartInfo"`
 	DateEndInfo     string `json:"dateEndInfo"`
+	TimeStartInfo   string `json:"timeStartInfo"`
+	TimeEndInfo     string `json:"timeEndInfo"`
 	LocationInfo    string `json:"locationInfo"`
 	ActiveInfo      string `json:"activeInfo"`
 
@@ -4056,6 +4099,14 @@ type PriceScheduleFormLabels struct {
 	ClientInfo                           string `json:"clientInfo"`
 	CustomClientPriceScheduleLabelSuffix string `json:"customClientPriceScheduleLabelSuffix"`
 	LocationSearchPlaceholder            string `json:"locationSearchPlaceholder"`
+
+	// Scope radio (2026-04-28) — mutually exclusive Location / Client picker.
+	ScopeLabel               string `json:"scopeLabel"`
+	ScopeInfo                string `json:"scopeInfo"`
+	ScopeOptionLocation      string `json:"scopeOptionLocation"`
+	ScopeOptionClient        string `json:"scopeOptionClient"`
+	ScopeOptionLocationHelp  string `json:"scopeOptionLocationHelp"`
+	ScopeOptionClientHelp    string `json:"scopeOptionClientHelp"`
 }
 
 type PriceScheduleBulkLabels struct {
@@ -4227,6 +4278,9 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			DescPlaceholder:     "Enter description...",
 			DateStart:           "Start Date",
 			DateEnd:             "End Date",
+			TimeStart:           "Start Time (optional)",
+			TimeEnd:             "End Time (optional)",
+			TimePlaceholder:     "HH:MM",
 			Location:            "Location",
 			LocationPlaceholder: "Select a location...",
 			SelectLocation:      "— No location (all locations) —",
@@ -4240,6 +4294,8 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			DescriptionInfo: "Optional notes or context for this price schedule.",
 			DateStartInfo:   "First date this price schedule becomes effective.",
 			DateEndInfo:     "Last date this price schedule is effective. Leave empty for no end date.",
+			TimeStartInfo:   "Optional time of day in the operator's display timezone. Leave blank for start of day (00:00).",
+			TimeEndInfo:     "Optional time of day in the operator's display timezone. Leave blank for end of day (23:59).",
 			LocationInfo:    "Restrict this price schedule to a specific location, or leave empty to apply to all locations.",
 			ActiveInfo:      "Inactive price schedules are hidden from new subscriptions.",
 			// Client-scope fields (2026-04-27 plan-client-scope plan §7).
@@ -4251,6 +4307,13 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			ClientInfo:                           "Optional. When set, this schedule is reserved for that client's bespoke price plans.",
 			CustomClientPriceScheduleLabelSuffix: "Price Schedule",
 			LocationSearchPlaceholder:            "Filter...",
+			// Scope radio (2026-04-28).
+			ScopeLabel:              "Scope",
+			ScopeInfo:               "Choose whether this schedule is shared across every client at a location, or reserved for one client's bespoke pricing. Switching scope clears the inactive picker on save.",
+			ScopeOptionLocation:     "Location-scoped",
+			ScopeOptionClient:       "Client-scoped",
+			ScopeOptionLocationHelp: "Reusable across all clients at this location.",
+			ScopeOptionClientHelp:   "Reserved for one client's bespoke pricing.",
 		},
 		Bulk: PriceScheduleBulkLabels{
 			DeleteTitle:       "Delete Price Schedules",
@@ -4433,8 +4496,9 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			PlanPlaceholder:           "Select plan...",
 			StartDate:                 "Start Date",
 			EndDate:                   "End Date",
-			StartTime:                 "Start time",
-			EndTime:                   "End time",
+			StartTime:                 "Start Time (optional)",
+			EndTime:                   "End Time (optional)",
+			TimePlaceholder:           "HH:MM",
 			Timezone:                  "Timezone",
 			Active:                    "Active",
 			Notes:                     "Notes",
@@ -4451,8 +4515,8 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			CodeInfo:      "Short reference used on invoices and receipts. Leave blank to auto-generate.",
 			StartDateInfo: "First day the subscription is active. Billing cycles are counted from this date.",
 			EndDateInfo:   "Last day the subscription is active. Leave blank for open-ended.",
-			StartTimeInfo: "Time of day in the operator's display timezone.",
-			EndTimeInfo:   "Optional. Leave blank for an open-ended subscription.",
+			StartTimeInfo: "Optional time of day in the operator's display timezone. Leave blank for start of day (00:00).",
+			EndTimeInfo:   "Optional time of day in the operator's display timezone. Leave blank for end of day (23:59).",
 			NotesInfo:     "Internal remarks — shown on detail pages but not on customer-facing documents.",
 			// 2026-04-27 plan-client-scope plan §5.1 / §7 — grouped picker headers.
 			PlanGroupForClient: "For {{.ClientName}}",
@@ -4536,6 +4600,7 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			CurrencyMismatchError: "Client billing currency ({{.ClientCurrency}}) does not match the rate card ({{.PlanCurrency}}). Update one before generating revenue.",
 			IdempotencyError:      "An invoice for this period already exists. Cancel the existing one or pick a different period.",
 			IdempotencyExistingLink: "View the existing invoice",
+			NoLinesError:            "Cannot create an invoice with no line items. Add a price plan with at least one product, or override at least one line.",
 			CycleNotConfiguredWarning: "Plan has no billing cycle configured; defaulting to 1 month.",
 			UsageBasedSkippedNotice:   "Usage-based lines were skipped — record them via metering.",
 			// 2026-04-27 plan-client-scope plan §7 — surfaced when the

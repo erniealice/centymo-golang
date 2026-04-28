@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/price_plan/form"
@@ -15,6 +16,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
@@ -30,9 +32,14 @@ type PricePlanDeps struct {
 	// Labels carries plan-level strings (errors, actions). Form-field labels
 	// live on PricePlanLabels.Form (sourced from lyngua price_plan.json →
 	// price_plan.form, which is the single source for the drawer).
-	Labels          centymo.PlanLabels
-	PricePlanLabels centymo.PricePlanLabels
-	CommonLabels    pyeza.CommonLabels
+	Labels              centymo.PlanLabels
+	PricePlanLabels     centymo.PricePlanLabels
+	// PriceScheduleLabels surfaces the customClientPriceScheduleLabelSuffix
+	// used to derive the readonly Schedule label when the parent Plan is
+	// client-scoped (plan §6.7). Optional — when zero-value, the helper
+	// falls back to the proto-generic "Price Schedule".
+	PriceScheduleLabels centymo.PriceScheduleLabels
+	CommonLabels        pyeza.CommonLabels
 	CreatePricePlan    func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
 	ReadPricePlan      func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	UpdatePricePlan    func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
@@ -40,8 +47,14 @@ type PricePlanDeps struct {
 	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 
 	// ReadPlan resolves the parent plan's name for display in the locked
-	// "Package" field on the drawer.
+	// "Package" field on the drawer, plus its client_id for the
+	// client-scope schedule lock (plan §6.7).
 	ReadPlan func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+
+	// ListClients resolves a client_id → display name for the readonly
+	// schedule label and the lock tooltip (plan §6.7). Optional — when
+	// nil, the lock falls back to a label derived from the client_id alone.
+	ListClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
 
 	// ListLocations resolves price_schedule.location_id → location.name for
 	// the form-hint below the rate-card auto-complete.
@@ -108,20 +121,137 @@ func loadScheduleOptions(ctx context.Context, deps *PricePlanDeps, hintPrefix st
 // form.Labels.LocationHintPrefix so the hint reads e.g. "Location: Manila".
 const scheduleLocationHintPrefix = "Location: "
 
-// lookupPlanName reads the parent plan and returns its name for the locked
-// Package display. Falls back to the planID on any error.
-func lookupPlanName(ctx context.Context, deps *PricePlanDeps, planID string) string {
-	if deps.ReadPlan == nil {
-		return planID
+// readPlan returns the parent plan record (for both name and client_id), or
+// nil when unwired or missing. Single read shared by add + edit handlers.
+func readPlan(ctx context.Context, deps *PricePlanDeps, planID string) *planpb.Plan {
+	if deps.ReadPlan == nil || planID == "" {
+		return nil
 	}
 	resp, err := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{Data: &planpb.Plan{Id: &planID}})
 	if err != nil || len(resp.GetData()) == 0 {
-		return planID
+		return nil
 	}
-	if name := resp.GetData()[0].GetName(); name != "" {
-		return name
+	return resp.GetData()[0]
+}
+
+// resolvePricePlanClientName mirrors plan/action/action.go:resolveClientLabel
+// — duplicated locally to avoid a cross-package import on the helper. Returns
+// the empty string when the dep is unwired or the lookup misses; returns the
+// client_id verbatim as a last resort so the drawer never renders a blank
+// label.
+func resolvePricePlanClientName(ctx context.Context, clientID string, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)) string {
+	if clientID == "" || listClients == nil {
+		return ""
 	}
-	return planID
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	if err != nil {
+		return clientID
+	}
+	for _, c := range resp.GetData() {
+		if c.GetId() != clientID {
+			continue
+		}
+		if name := c.GetName(); name != "" {
+			return name
+		}
+		if u := c.GetUser(); u != nil {
+			full := strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			if full != "" {
+				return full
+			}
+		}
+		return clientID
+	}
+	return clientID
+}
+
+// findClientPriceSchedule searches the workspace's active price schedules
+// for the one bound to the supplied client_id. Returns the first match's ID,
+// or the empty string when none exists (the use case will auto-create on
+// save in the next task).
+func findClientPriceSchedule(ctx context.Context, deps *PricePlanDeps, clientID string) string {
+	if clientID == "" || deps.ListPriceSchedules == nil {
+		return ""
+	}
+	resp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
+	if err != nil {
+		log.Printf("Failed to list price schedules for client schedule lock: %v", err)
+		return ""
+	}
+	for _, s := range resp.GetData() {
+		if !s.GetActive() {
+			continue
+		}
+		if s.GetClientId() == clientID {
+			return s.GetId()
+		}
+	}
+	return ""
+}
+
+// resolveScheduleLock computes the (mode, scheduleID, scheduleLabel,
+// clientName) tuple for the price-schedule field on the PricePlan drawer.
+// When the parent plan carries a client_id, the field collapses to readonly
+// and the label derives from "{ClientName} - {Suffix}" — Suffix sourced from
+// PriceScheduleFormLabels.CustomClientPriceScheduleLabelSuffix (general:
+// "Price Schedule"; professional: "Rate Cards"). When the plan is master,
+// returns ("picker", "", "", "") so the caller falls through to the standard
+// auto-complete branch.
+func resolveScheduleLock(ctx context.Context, deps *PricePlanDeps, plan *planpb.Plan) (mode, scheduleID, scheduleLabel, clientName string) {
+	if plan == nil {
+		return "picker", "", "", ""
+	}
+	clientID := plan.GetClientId()
+	if clientID == "" {
+		return "picker", "", "", ""
+	}
+	clientName = resolvePricePlanClientName(ctx, clientID, deps.ListClients)
+	suffix := deps.PriceScheduleLabels.Form.CustomClientPriceScheduleLabelSuffix
+	if suffix == "" {
+		suffix = "Price Schedule"
+	}
+	derived := strings.TrimSpace(clientName)
+	if derived == "" {
+		derived = clientID
+	}
+	derived = derived + " - " + suffix
+	scheduleID = findClientPriceSchedule(ctx, deps, clientID)
+	// Always lock — when a matching client schedule exists the saved
+	// PricePlan attaches to it; when none exists yet, the use case
+	// auto-creates one on save. Drawer renders a contextual hint
+	// (will-create vs will-reuse) below the field.
+	return "readonly", scheduleID, derived, clientName
+}
+
+// buildScheduleAutoHint picks the right info-line for the readonly schedule
+// field: "will create" when no client schedule exists yet, "will reuse" when
+// one was found. Empty string when the field is in picker mode (parent Plan
+// is master). Substitutes {{.ClientName}} server-side because html/template
+// doesn't recursively render label values.
+func buildScheduleAutoHint(formLabels centymo.PricePlanFormLabels, mode, scheduleID, clientName string) string {
+	if mode != "readonly" {
+		return ""
+	}
+	tmpl := formLabels.ScheduleAutoCreateHint
+	if scheduleID != "" {
+		tmpl = formLabels.ScheduleAutoReuseHint
+	}
+	if tmpl == "" || clientName == "" {
+		return tmpl
+	}
+	return strings.ReplaceAll(tmpl, "{{.ClientName}}", clientName)
+}
+
+// applyScheduleLockTooltip substitutes the {{.ClientName}} placeholder in
+// the lyngua-driven scheduleLockedTooltip with the resolved client name.
+// html/template doesn't recursively render strings stored in label fields,
+// so we do the swap server-side. When clientName is empty, returns the
+// raw template (still readable in the unlikely case ListClients is unwired).
+func applyScheduleLockTooltip(template, clientName string) string {
+	if template == "" || clientName == "" {
+		return template
+	}
+	return strings.ReplaceAll(template, "{{.ClientName}}", clientName)
 }
 
 // autoSeedProductPricePlans creates one ProductPricePlan row per product_plan
@@ -217,11 +347,22 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			schedules := loadScheduleOptions(ctx, deps, scheduleLocationHintPrefix)
 			formLabels := deps.PricePlanLabels.Form
+			parentPlan := readPlan(ctx, deps, planID)
+			planName := planID
+			if parentPlan != nil {
+				if n := parentPlan.GetName(); n != "" {
+					planName = n
+				}
+			}
+			scheduleMode, scheduleLockID, scheduleLockLabel, scheduleLockClient := resolveScheduleLock(ctx, deps, parentPlan)
+			labels := form.LabelsFromPricePlan(formLabels)
+			labels.ScheduleLockedTooltip = applyScheduleLockTooltip(labels.ScheduleLockedTooltip, scheduleLockClient)
+			scheduleAutoHint := buildScheduleAutoHint(formLabels, scheduleMode, scheduleLockID, scheduleLockClient)
 			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:          route.ResolveURL(deps.Routes.PricePlanAddURL, "id", planID),
 				Context:             form.ContextPlan,
 				PlanID:              planID,
-				PlanName:            lookupPlanName(ctx, deps, planID),
+				PlanName:            planName,
 				Active:              true,
 				Currency:            "PHP",
 				DurationUnit:        "months",
@@ -233,8 +374,15 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 				BillingKindOptions:  form.BuildBillingKindOptions(formLabels),
 				AmountBasisOptions:  form.BuildAmountBasisOptions(formLabels),
 				DurationUnitOptions: form.BuildDurationUnitOptions(deps.CommonLabels),
-				Labels:              form.LabelsFromPricePlan(formLabels),
-				CommonLabels:        deps.CommonLabels,
+				// Plan §6.7 — readonly schedule field when parent plan is
+				// client-scoped. ScheduleID may be empty (auto-create on save).
+				ScheduleFieldMode:        scheduleMode,
+				ScheduleID:               scheduleLockID,
+				ScheduleLabel:            scheduleLockLabel,
+				ScheduleLockedClientName: scheduleLockClient,
+				ScheduleAutoHint:         scheduleAutoHint,
+				Labels:                   labels,
+				CommonLabels:             deps.CommonLabels,
 			})
 		}
 
@@ -345,6 +493,28 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				defaultTermStr = fmt.Sprintf("%d", v)
 			}
 			formLabels := deps.PricePlanLabels.Form
+			parentPlan := readPlan(ctx, deps, planID)
+			planName := planID
+			if parentPlan != nil {
+				if n := parentPlan.GetName(); n != "" {
+					planName = n
+				}
+			}
+			// Plan §6.7 — apply the same readonly-schedule rule on edit.
+			// When the parent Plan is client-scoped, prefer the existing
+			// PricePlan's price_schedule_id over the resolver lookup so the
+			// drawer never silently rebinds an in-flight record.
+			editScheduleMode, editScheduleLockID, editScheduleLockLabel, editScheduleLockClient := resolveScheduleLock(ctx, deps, parentPlan)
+			editScheduleID := selectedScheduleID
+			if editScheduleMode == "readonly" {
+				if selectedScheduleID != "" {
+					editScheduleLockID = selectedScheduleID
+				}
+				editScheduleID = editScheduleLockID
+			}
+			editLabels := form.LabelsFromPricePlan(formLabels)
+			editLabels.ScheduleLockedTooltip = applyScheduleLockTooltip(editLabels.ScheduleLockedTooltip, editScheduleLockClient)
+			editScheduleAutoHint := buildScheduleAutoHint(formLabels, editScheduleMode, editScheduleLockID, editScheduleLockClient)
 
 			return view.OK("price-plan-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
@@ -352,8 +522,8 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				Context:               form.ContextPlan,
 				ID:                    ppID,
 				PlanID:                planID,
-				PlanName:              lookupPlanName(ctx, deps, planID),
-				ScheduleID:            selectedScheduleID,
+				PlanName:              planName,
+				ScheduleID:            editScheduleID,
 				Name:                  pp.GetName(),
 				Description:           pp.GetDescription(),
 				Amount:                amountStr,
@@ -373,10 +543,18 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				ScheduleOptions:       form.BuildOptions(schedules, selectedScheduleID),
 				SelectedScheduleID:    selectedScheduleID,
 				SelectedScheduleLabel: form.FindLabel(schedules, selectedScheduleID),
-				InUse:                 inUse,
-				LockMessage:           lockMsg,
-				Labels:                form.LabelsFromPricePlan(formLabels),
-				CommonLabels:          deps.CommonLabels,
+				// Plan §6.7 — when the parent Plan is client-scoped, the
+				// schedule field collapses to readonly carrying the
+				// existing/derived schedule label. ScheduleFieldMode stays
+				// "" (= picker) when the plan is master.
+				ScheduleFieldMode:        editScheduleMode,
+				ScheduleLabel:            editScheduleLockLabel,
+				ScheduleLockedClientName: editScheduleLockClient,
+				ScheduleAutoHint:         editScheduleAutoHint,
+				InUse:                    inUse,
+				LockMessage:              lockMsg,
+				Labels:                   editLabels,
+				CommonLabels:             deps.CommonLabels,
 			})
 		}
 
