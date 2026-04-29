@@ -323,7 +323,20 @@ func submitRecognizeDrawer(
 			data.TotalAmount = sumPreview(data.PreviewLines)
 		}
 		log.Printf("Recognize revenue from subscription %s failed: %v", subscriptionID, err)
-		return view.OK("subscription-recognize-drawer-form", &data)
+		// HTMX sees a 2xx response as "successful" (the sheet then auto-
+		// closes). For a soft block we want the sheet to stay open with the
+		// re-rendered form (banner included). 422 + HX-Reswap/HX-Retarget
+		// headers tell HTMX to swap the response body into the form, so the
+		// banner becomes visible without closing the drawer.
+		return view.ViewResult{
+			Template:   "subscription-recognize-drawer-form",
+			Data:       &data,
+			StatusCode: http.StatusUnprocessableEntity,
+			Headers: map[string]string{
+				"HX-Reswap":   "outerHTML",
+				"HX-Retarget": "#sheet form",
+			},
+		}
 	}
 
 	// Success — close the drawer and refresh the invoices table.

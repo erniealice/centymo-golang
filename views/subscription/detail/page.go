@@ -241,7 +241,9 @@ func NewView(deps *DetailViewDeps) view.View {
 		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
 
 		perms := view.GetUserPermissions(ctx)
-		canRecognize := perms != nil && perms.Can("revenue", "create")
+		// nil perms = no restrictions (dev / mock mode). Consistent with
+		// the comment on UserPermissions.Can() and most other view checks.
+		canRecognize := perms == nil || perms.Can("revenue", "create")
 		subscriptionActive, _ := subscription["active"].(bool)
 
 		switch activeTab {
@@ -578,7 +580,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		// tab-only refresh sees a consistent PrimaryAction state.
 		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
 		perms := view.GetUserPermissions(ctx)
-		canRecognize := perms != nil && perms.Can("revenue", "create")
+		// nil perms = no restrictions (dev / mock mode). Consistent with
+		// the comment on UserPermissions.Can() and most other view checks.
+		canRecognize := perms == nil || perms.Can("revenue", "create")
 		subscriptionActive, _ := subscription["active"].(bool)
 
 		switch tab {

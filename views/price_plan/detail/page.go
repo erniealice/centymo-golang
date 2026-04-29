@@ -15,6 +15,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
@@ -614,7 +615,22 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 	}
 	productPlans := map[string]productPlanRef{}
 	if deps.ListProductPlans != nil {
-		ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+		// Scope to this plan's product_plan rows — same pagination concern
+		// as the picker (loadProductPlanOptions). An unfiltered request
+		// returns only the default page and silently drops newer rows.
+		ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
+			Filters: &commonpb.FilterRequest{
+				Filters: []*commonpb.TypedFilter{{
+					Field: "plan_id",
+					FilterType: &commonpb.TypedFilter_StringFilter{
+						StringFilter: &commonpb.StringFilter{
+							Value:    planID,
+							Operator: commonpb.StringOperator_STRING_EQUALS,
+						},
+					},
+				}},
+			},
+		})
 		if err == nil {
 			for _, pp := range ppResp.GetData() {
 				if pp == nil {
@@ -1066,7 +1082,24 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, p
 		}
 	}
 
-	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+	// Push the plan_id into the request so the SQL adapter narrows the result
+	// set instead of returning a default-page slice we then filter in Go. With
+	// hundreds of historical product_plan rows in the workspace, an unfiltered
+	// request silently drops the newest rows off the page and the picker
+	// renders an empty optgroup.
+	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
+		Filters: &commonpb.FilterRequest{
+			Filters: []*commonpb.TypedFilter{{
+				Field: "plan_id",
+				FilterType: &commonpb.TypedFilter_StringFilter{
+					StringFilter: &commonpb.StringFilter{
+						Value:    planID,
+						Operator: commonpb.StringOperator_STRING_EQUALS,
+					},
+				},
+			}},
+		},
+	})
 	if err != nil {
 		log.Printf("Failed to list product plans for plan %s: %v", planID, err)
 		return nil
@@ -1159,7 +1192,21 @@ func resolveProductPlanDisplay(ctx context.Context, deps *DetailViewDeps, produc
 	if productPlanID == "" || deps.ListProductPlans == nil {
 		return "", ""
 	}
-	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{})
+	// Scope to the single product_plan we care about — an unfiltered list
+	// returns only the default page and silently misses newer rows.
+	ppResp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{
+		Filters: &commonpb.FilterRequest{
+			Filters: []*commonpb.TypedFilter{{
+				Field: "id",
+				FilterType: &commonpb.TypedFilter_StringFilter{
+					StringFilter: &commonpb.StringFilter{
+						Value:    productPlanID,
+						Operator: commonpb.StringOperator_STRING_EQUALS,
+					},
+				},
+			}},
+		},
+	})
 	if err != nil {
 		return "", ""
 	}

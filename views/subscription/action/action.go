@@ -33,6 +33,7 @@ type FormLabels struct {
 	EndDate                   string
 	StartTime                 string
 	EndTime                   string
+	TimePlaceholder           string
 	Timezone                  string
 	Notes                     string
 	NotesPlaceholder          string
@@ -58,10 +59,12 @@ type FormLabels struct {
 }
 
 // PlanOptionGroup is one optgroup in the grouped Plan/PricePlan auto-complete
-// on the subscription drawer (plan §5.1).
+// on the subscription drawer (plan §5.1). Field name `GroupLabel` matches the
+// pyeza auto-complete component's expected SelectOptionGroup shape — see
+// templates/components/auto-complete.html.
 type PlanOptionGroup struct {
-	Label   string             // group header
-	Options []map[string]string // {Value, Label} entries
+	GroupLabel string              // group header
+	Options    []map[string]string // {Value, Label} entries
 }
 
 // FormData is the template data for the subscription drawer form.
@@ -192,6 +195,7 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 		EndDate:                   l.Form.EndDate,
 		StartTime:                 l.Form.StartTime,
 		EndTime:                   l.Form.EndTime,
+		TimePlaceholder:           l.Form.TimePlaceholder,
 		Timezone:                  l.Form.Timezone,
 		Notes:                     l.Form.Notes,
 		NotesPlaceholder:          l.Form.NotesPlaceholder,
@@ -319,14 +323,14 @@ func loadPlanOptionGroups(ctx context.Context, listPlans func(ctx context.Contex
 	var groups []PlanOptionGroup
 	if len(clientPlans) > 0 {
 		groups = append(groups, PlanOptionGroup{
-			Label:   resolvePlanGroupForClientLabel(l.PlanGroupForClient, clientName),
-			Options: clientPlans,
+			GroupLabel: resolvePlanGroupForClientLabel(l.PlanGroupForClient, clientName),
+			Options:    clientPlans,
 		})
 	}
 	if len(masterPlans) > 0 {
 		groups = append(groups, PlanOptionGroup{
-			Label:   l.PlanGroupGeneral,
-			Options: masterPlans,
+			GroupLabel: l.PlanGroupGeneral,
+			Options:    masterPlans,
 		})
 	}
 	return groups
@@ -371,14 +375,14 @@ func loadPricePlanOptionGroups(ctx context.Context, listPricePlans func(ctx cont
 	var groups []PlanOptionGroup
 	if len(clientPP) > 0 {
 		groups = append(groups, PlanOptionGroup{
-			Label:   resolvePlanGroupForClientLabel(l.PlanGroupForClient, clientName),
-			Options: clientPP,
+			GroupLabel: resolvePlanGroupForClientLabel(l.PlanGroupForClient, clientName),
+			Options:    clientPP,
 		})
 	}
 	if len(masterPP) > 0 {
 		groups = append(groups, PlanOptionGroup{
-			Label:   l.PlanGroupGeneral,
-			Options: masterPP,
+			GroupLabel: l.PlanGroupGeneral,
+			Options:    masterPP,
 		})
 	}
 	return groups
