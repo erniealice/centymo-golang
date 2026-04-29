@@ -2965,6 +2965,14 @@ type ProductPricePlanFormLabels struct {
 	CatalogLineLabel       string `json:"catalogLineLabel"`
 	CatalogLinePlaceholder string `json:"catalogLinePlaceholder"`
 	CatalogLineInfo        string `json:"catalogLineInfo"`
+
+	// 2026-04-29 milestone-billing plan §5 / Phase D — milestone (job
+	// template phase) select. Surfaced when the parent PricePlan has
+	// billing_kind = MILESTONE; an empty selection falls through to the
+	// first event for the milestone plan.
+	MilestonePhaseLabel       string `json:"milestonePhaseLabel"`
+	MilestonePhaseFallthrough string `json:"milestonePhaseFallthrough"`
+	MilestonePhaseBillable    string `json:"milestonePhaseBillable"`
 }
 
 // DefaultProductPricePlanLabels returns ProductPricePlanLabels with sensible English defaults.
@@ -2999,6 +3007,10 @@ func DefaultProductPricePlanLabels() ProductPricePlanLabels {
 			CatalogLineLabel:       "Catalog line",
 			CatalogLinePlaceholder: "Select a line from the plan's catalog",
 			CatalogLineInfo:        "Prices the chosen catalog line from the parent plan. If the line has a variant, that variant is priced.",
+			// 2026-04-29 milestone-billing plan §5 — milestone phase select.
+			MilestonePhaseLabel:       "Milestone phase",
+			MilestonePhaseFallthrough: "Falls through to first event",
+			MilestonePhaseBillable:    "billable",
 		},
 	}
 }

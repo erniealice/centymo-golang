@@ -12,6 +12,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	view "github.com/erniealice/pyeza-golang/view"
 
+	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
@@ -62,6 +63,12 @@ type ModuleDeps struct {
 	// 2026-04-27 plan-client-scope plan §6.7 — used by the price-plan drawer
 	// to resolve the parent PriceSchedule's client name for the info banner.
 	ListClientNames func(ctx context.Context) map[string]string
+
+	// 2026-04-29 milestone-billing plan §5 / Phase D — used by the PPP drawer
+	// to populate the optional milestone (job_template_phase) select when the
+	// parent PricePlan has billing_kind = MILESTONE.
+	ReadPlan                           func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+	ListJobTemplatePhasesByJobTemplate func(ctx context.Context, req *jobtemplatephasepb.ListByJobTemplateRequest) (*jobtemplatephasepb.ListByJobTemplateResponse, error)
 }
 
 // Module holds all constructed price_plan views.
@@ -114,25 +121,27 @@ func NewModule(deps *ModuleDeps) *Module {
 	tableView := priceplanlist.NewTableView(listDeps)
 
 	detailDeps := &priceplandetail.DetailViewDeps{
-		Routes:                    deps.Routes,
-		Labels:                    deps.Labels,
-		ProductPricePlanLabels:    deps.ProductPricePlanLabels,
-		PriceScheduleDetailLabels: deps.PriceScheduleDetailLabels,
-		CommonLabels:              deps.CommonLabels,
-		TableLabels:               deps.TableLabels,
-		ReadPricePlan:             deps.ReadPricePlan,
-		ListProductPlans:          deps.ListProductPlans,
-		ListProducts:              deps.ListProducts,
-		ListProductVariants:       deps.ListProductVariants,
-		ListProductOptions:        deps.ListProductOptions,
-		ListProductOptionValues:   deps.ListProductOptionValues,
-		ListProductVariantOptions: deps.ListProductVariantOptions,
-		ListProductPricePlans:     deps.ListProductPricePlans,
-		CreateProductPricePlan:    deps.CreateProductPricePlan,
-		UpdateProductPricePlan:    deps.UpdateProductPricePlan,
-		DeleteProductPricePlan:    deps.DeleteProductPricePlan,
-		ListPlans:                 deps.ListPlans,
-		ListPriceSchedules:        deps.ListPriceSchedules,
+		Routes:                             deps.Routes,
+		Labels:                             deps.Labels,
+		ProductPricePlanLabels:             deps.ProductPricePlanLabels,
+		PriceScheduleDetailLabels:          deps.PriceScheduleDetailLabels,
+		CommonLabels:                       deps.CommonLabels,
+		TableLabels:                        deps.TableLabels,
+		ReadPricePlan:                      deps.ReadPricePlan,
+		ListProductPlans:                   deps.ListProductPlans,
+		ListProducts:                       deps.ListProducts,
+		ListProductVariants:                deps.ListProductVariants,
+		ListProductOptions:                 deps.ListProductOptions,
+		ListProductOptionValues:            deps.ListProductOptionValues,
+		ListProductVariantOptions:          deps.ListProductVariantOptions,
+		ListProductPricePlans:              deps.ListProductPricePlans,
+		CreateProductPricePlan:             deps.CreateProductPricePlan,
+		UpdateProductPricePlan:             deps.UpdateProductPricePlan,
+		DeleteProductPricePlan:             deps.DeleteProductPricePlan,
+		ListPlans:                          deps.ListPlans,
+		ListPriceSchedules:                 deps.ListPriceSchedules,
+		ReadPlan:                           deps.ReadPlan,
+		ListJobTemplatePhasesByJobTemplate: deps.ListJobTemplatePhasesByJobTemplate,
 	}
 
 	return &Module{

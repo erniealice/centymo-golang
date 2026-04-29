@@ -939,6 +939,15 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					pricePlanDeps.UpdateProductPricePlan = ppp.UpdateProductPricePlan.Execute
 					pricePlanDeps.DeleteProductPricePlan = ppp.DeleteProductPricePlan.Execute
 				}
+				// 2026-04-29 milestone-billing plan §5 / Phase D — milestone phase
+				// select on the PPP drawer needs ReadPlan (to resolve job_template_id)
+				// and ListByJobTemplate (to load phase rows).
+				if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
+					pricePlanDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+				}
+				if useCases.Operation != nil && useCases.Operation.JobTemplatePhase != nil && useCases.Operation.JobTemplatePhase.ListByJobTemplate != nil {
+					pricePlanDeps.ListJobTemplatePhasesByJobTemplate = useCases.Operation.JobTemplatePhase.ListByJobTemplate.Execute
+				}
 				priceplanmod.NewModule(pricePlanDeps).RegisterRoutes(ctx.Routes)
 			}
 		}

@@ -67,13 +67,13 @@ Data: ProductPricePlanFormData — see views/price_plan/detail/page.go
         <div class="form-row single">
           <div class="form-group">
             <label class="form-label" for="ppp-job-template-phase-select">
-              Milestone phase
+              {{.Labels.MilestonePhaseLabel}}
             </label>
             <select name="job_template_phase_id"
                     id="ppp-job-template-phase-select"
                     class="form-select"
                     data-testid="ppp-job-template-phase-select">
-              <option value="">Falls through to first event</option>
+              <option value="">{{.Labels.MilestonePhaseFallthrough}}</option>
               {{range .JobTemplatePhaseOptions}}
               <option value="{{.Value}}" {{if eq .Value $.JobTemplatePhaseID}}selected{{end}}>{{.Label}}</option>
               {{end}}

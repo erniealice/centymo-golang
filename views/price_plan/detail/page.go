@@ -16,6 +16,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
@@ -61,6 +62,15 @@ type DetailViewDeps struct {
 	// the corresponding rows are blank and the template skips them.
 	ListPlans          func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+
+	// 2026-04-29 milestone-billing plan §5 / Phase D — used by the PPP drawer
+	// to populate the optional milestone (job_template_phase) select when the
+	// parent PricePlan has billing_kind = MILESTONE. ReadPlan resolves the
+	// parent Plan's job_template_id; ListJobTemplatePhasesByJobTemplate then
+	// loads the phase rows. Both nil-safe — when unwired, the gate stays
+	// false and the field is hidden.
+	ReadPlan                           func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+	ListJobTemplatePhasesByJobTemplate func(ctx context.Context, req *jobtemplatephasepb.ListByJobTemplateRequest) (*jobtemplatephasepb.ListByJobTemplateResponse, error)
 }
 
 // ProductPlanGroup groups catalog-line options by parent product so the
@@ -228,6 +238,7 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 			}
 			showTreatment := parentKind != "BILLING_KIND_ONE_TIME"
 			pplLabels := deps.ProductPricePlanLabels.Form
+			showJobTemplatePhase, jobTemplatePhaseOptions := loadJobTemplatePhaseOptions(ctx, deps, parent.pricePlan, "", pplLabels)
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
 				FormAction:              route.ResolveURL(deps.Routes.ProductPriceAddURL, "id", id),
 				PricePlanID:             id,
@@ -244,6 +255,8 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 				BillingCycleDisplay:     parent.billingCycleDisplay,
 				TermDisplay:             parent.termDisplay,
 				ParentCurrencyDisplay:   parent.parentCurrencyDisplay,
+				ShowJobTemplatePhase:    showJobTemplatePhase,
+				JobTemplatePhaseOptions: jobTemplatePhaseOptions,
 				Labels:                  pplLabels,
 			})
 		}
@@ -357,6 +370,8 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				parentBasis = parent.pricePlan.GetAmountBasis().String()
 			}
 			showTreatment := parentKind != "BILLING_KIND_ONE_TIME"
+			existingJobTemplatePhaseID := existing.GetJobTemplatePhaseId()
+			showJobTemplatePhase, jobTemplatePhaseOptions := loadJobTemplatePhaseOptions(ctx, deps, parent.pricePlan, existingJobTemplatePhaseID, pplLabels)
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
 				FormAction:              route.ResolveURL(deps.Routes.ProductPriceEditURL, "id", id, "ppid", ppid),
 				IsEdit:                  true,
@@ -382,6 +397,9 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				BillingCycleDisplay:     parent.billingCycleDisplay,
 				TermDisplay:             parent.termDisplay,
 				ParentCurrencyDisplay:   parent.parentCurrencyDisplay,
+				ShowJobTemplatePhase:    showJobTemplatePhase,
+				JobTemplatePhaseOptions: jobTemplatePhaseOptions,
+				JobTemplatePhaseID:      existingJobTemplatePhaseID,
 				Labels:                  pplLabels,
 			})
 		}
@@ -1261,6 +1279,73 @@ func resolveProductPlanDisplay(ctx context.Context, deps *DetailViewDeps, produc
 		}
 	}
 	return productName, variantName
+}
+
+// loadJobTemplatePhaseOptions resolves the milestone-phase select state for the
+// PPP drawer. Returns (showGate, options):
+//
+//   - showGate is true only when the parent PricePlan has billing_kind =
+//     MILESTONE — outside that, the field stays hidden.
+//   - options is the list of phases for the parent Plan's job_template_id,
+//     each labeled "<name>" or "<name> (<billable>)" when triggers_billing
+//     is set. The leading empty option ("Falls through to first event") is
+//     rendered by the template, not in this slice.
+//
+// Resolution chain: parent PricePlan → Plan (via plan_id) → JobTemplate (via
+// job_template_id) → JobTemplatePhase rows. Any link missing yields an empty
+// options slice with showGate still true so the drawer renders the empty
+// fallthrough state instead of silently hiding the field.
+func loadJobTemplatePhaseOptions(ctx context.Context, deps *DetailViewDeps, parent *priceplanpb.PricePlan, selectedPhaseID string, labels centymo.ProductPricePlanFormLabels) (bool, []types.SelectOption) {
+	if parent == nil || parent.GetBillingKind().String() != "BILLING_KIND_MILESTONE" {
+		return false, nil
+	}
+	showGate := true
+	if deps.ReadPlan == nil || deps.ListJobTemplatePhasesByJobTemplate == nil {
+		return showGate, nil
+	}
+	planID := parent.GetPlanId()
+	if planID == "" {
+		return showGate, nil
+	}
+	planResp, err := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{Data: &planpb.Plan{Id: &planID}})
+	if err != nil || len(planResp.GetData()) == 0 {
+		return showGate, nil
+	}
+	jobTemplateID := planResp.GetData()[0].GetJobTemplateId()
+	if jobTemplateID == "" {
+		return showGate, nil
+	}
+	phaseResp, err := deps.ListJobTemplatePhasesByJobTemplate(ctx, &jobtemplatephasepb.ListByJobTemplateRequest{
+		JobTemplateId: jobTemplateID,
+	})
+	if err != nil {
+		log.Printf("Failed to list job template phases for template %s: %v", jobTemplateID, err)
+		return showGate, nil
+	}
+	phases := phaseResp.GetJobTemplatePhases()
+	options := make([]types.SelectOption, 0, len(phases))
+	for _, p := range phases {
+		if p == nil || !p.GetActive() {
+			continue
+		}
+		label := p.GetName()
+		if label == "" {
+			label = p.GetId()
+		}
+		if p.GetTriggersBilling() {
+			suffix := labels.MilestonePhaseBillable
+			if suffix == "" {
+				suffix = "billable"
+			}
+			label = fmt.Sprintf("%s (%s)", label, suffix)
+		}
+		options = append(options, types.SelectOption{
+			Value:    p.GetId(),
+			Label:    label,
+			Selected: p.GetId() == selectedPhaseID,
+		})
+	}
+	return showGate, options
 }
 
 // buildBillingTreatmentOptions builds the select options for the BillingTreatment
