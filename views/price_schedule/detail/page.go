@@ -151,8 +151,6 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 				BillingCycleUnit:    "month",
 				TermUnit:            "month",
 				PlanOptions:         planOptions,
-				BillingKindOptions:  form.BuildBillingKindOptions(formLabels),
-				AmountBasisOptions:  form.BuildAmountBasisOptions(formLabels),
 				DurationUnitOptions: form.BuildDurationUnitOptions(deps.CommonLabels),
 				Labels:              form.LabelsFromPricePlan(formLabels),
 				CommonLabels:        deps.CommonLabels,

@@ -371,8 +371,6 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 				BillingCycleUnit:    "month",
 				TermUnit:            "month",
 				ScheduleOptions:     form.BuildOptions(schedules, ""),
-				BillingKindOptions:  form.BuildBillingKindOptions(formLabels),
-				AmountBasisOptions:  form.BuildAmountBasisOptions(formLabels),
 				DurationUnitOptions: form.BuildDurationUnitOptions(deps.CommonLabels),
 				// Plan §6.7 — readonly schedule field when parent plan is
 				// client-scoped. ScheduleID may be empty (auto-create on save).
@@ -537,8 +535,6 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				BillingCycleUnit:      pp.GetBillingCycleUnit(),
 				TermValue:             defaultTermStr,
 				TermUnit:              pp.GetDefaultTermUnit(),
-				BillingKindOptions:    form.BuildBillingKindOptions(formLabels),
-				AmountBasisOptions:    form.BuildAmountBasisOptions(formLabels),
 				DurationUnitOptions:   form.BuildDurationUnitOptions(deps.CommonLabels),
 				ScheduleOptions:       form.BuildOptions(schedules, selectedScheduleID),
 				SelectedScheduleID:    selectedScheduleID,

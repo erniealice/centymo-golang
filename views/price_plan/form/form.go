@@ -55,10 +55,12 @@ type Data struct {
 	Active        bool
 
 	// Wave 2: new billing semantics fields (Phase 1 dual-write alongside DurationValue/Unit).
-	BillingKind        string
-	BillingKindOptions []types.SelectOption
-	AmountBasis        string
-	AmountBasisOptions []types.SelectOption
+	//
+	// 2026-04-30 enum-select-canonicalize — BillingKindOptions /
+	// AmountBasisOptions removed. The drawer template hardcodes the option
+	// values; only the selected value is passed in.
+	BillingKind         string
+	AmountBasis         string
 	BillingCycleValue   string // int32 as string for form field
 	BillingCycleUnit    string
 	TermValue           string // int32 as string for form field; backs default_term_value on the wire
@@ -154,6 +156,20 @@ type Labels struct {
 	TermPlaceholder         string
 	TermOpenEndedHelp       string
 
+	// 2026-04-30 enum-select-canonicalize — per-option labels for the
+	// hardcoded BillingKind / AmountBasis <option> tags rendered directly
+	// in price-plan-drawer-form.html. The template is the source of
+	// truth; a drift test in templates_test.go diffs the option values
+	// against the proto enum's _name map so MILESTONE-style additions
+	// can't sneak past again.
+	BillingKindOneTime          string
+	BillingKindRecurring        string
+	BillingKindContract         string
+	BillingKindMilestone        string
+	AmountBasisPerCycle         string
+	AmountBasisTotalPackage     string
+	AmountBasisDerivedFromLines string
+
 	// Field-level info text surfaced via an info button beside each label.
 	// Hover/click opens a popover explaining what the field means.
 	PlanInfo         string
@@ -248,6 +264,16 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		TermLabel:               pp.TermLabel,
 		TermPlaceholder:         pp.TermPlaceholder,
 		TermOpenEndedHelp:       pp.TermOpenEndedHelp,
+		// 2026-04-30 enum-select-canonicalize — pass through the per-option
+		// labels so the inline <option> tags in price-plan-drawer-form.html
+		// can read them directly.
+		BillingKindOneTime:          pp.BillingKindOneTime,
+		BillingKindRecurring:        pp.BillingKindRecurring,
+		BillingKindContract:         pp.BillingKindContract,
+		BillingKindMilestone:        pp.BillingKindMilestone,
+		AmountBasisPerCycle:         pp.AmountBasisPerCycle,
+		AmountBasisTotalPackage:     pp.AmountBasisTotalPackage,
+		AmountBasisDerivedFromLines: pp.AmountBasisDerivedFromLines,
 		// Field-level info popovers
 		PlanInfo:         pp.PlanInfo,
 		ScheduleInfo:     pp.ScheduleInfo,

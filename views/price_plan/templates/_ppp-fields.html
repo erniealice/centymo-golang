@@ -9,12 +9,15 @@ partial owns only the fields that should respond identically on both drawers
 (Pricing section, optional billing-treatment, effective dates) so the parent
 PricePlan config drives the same behaviour everywhere.
 
+2026-04-30 enum-select-canonicalize plan §6 — billing_treatment options are
+hardcoded below. Drift test in templates/templates_test.go diffs the values
+against productpriceplanpb.BillingTreatment_name.
+
 Expected dict shape:
     Labels                centymo.ProductPricePlanFormLabels
     Price                 string  — formatted decimal (e.g. "35000.00")
     Currency              string  — locked to parent.billing_currency
     BillingTreatment      string  — proto enum string
-    BillingTreatmentOptions []types.SelectOption
     DateStart             string  — "YYYY-MM-DD" or empty
     DateEnd               string  — "YYYY-MM-DD" or empty
     ShowTreatment         bool    — false when parent.billing_kind = ONE_TIME
@@ -63,15 +66,27 @@ Expected dict shape:
 
 {{if .ShowTreatment}}
 <div class="form-row single">
-    {{template "form-group" (dict
-        "Type" "select"
-        "Name" "billing_treatment"
-        "Label" .Labels.BillingTreatmentLabel
-        "Value" .BillingTreatment
-        "Required" true
-        "Options" .BillingTreatmentOptions
-        "Info" .Labels.BillingTreatmentInfo
-    )}}
+    <div class="form-group">
+        <label class="form-label" for="billing_treatment">
+            {{.Labels.BillingTreatmentLabel}} <span class="form-required" aria-hidden="true">*</span>
+            {{if .Labels.BillingTreatmentInfo}}
+            <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                    {{template "icon-info"}}
+                </button>
+                <div class="popover-panel form-label-info-panel" role="tooltip">
+                    <div class="popover-arrow"></div>
+                    {{.Labels.BillingTreatmentInfo}}
+                </div>
+            </span>
+            {{end}}
+        </label>
+        <select id="billing_treatment" name="billing_treatment" class="form-select" required aria-required="true">
+            <option value="BILLING_TREATMENT_RECURRING"        {{if eq .BillingTreatment "BILLING_TREATMENT_RECURRING"}}selected{{end}}>{{.Labels.BillingTreatmentRecurring}}</option>
+            <option value="BILLING_TREATMENT_ONE_TIME_INITIAL" {{if eq .BillingTreatment "BILLING_TREATMENT_ONE_TIME_INITIAL"}}selected{{end}}>{{.Labels.BillingTreatmentOneTimeInitial}}</option>
+            <option value="BILLING_TREATMENT_USAGE_BASED"      {{if eq .BillingTreatment "BILLING_TREATMENT_USAGE_BASED"}}selected{{end}}>{{.Labels.BillingTreatmentUsageBased}}</option>
+        </select>
+    </div>
 </div>
 {{end}}
 

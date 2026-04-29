@@ -128,10 +128,12 @@ type EditFormData struct {
 	Labels        centymo.PriceScheduleLabels
 
 	// Wave 2: new billing semantics fields.
+	//
+	// 2026-04-30 enum-select-canonicalize — BillingKindOptions /
+	// AmountBasisOptions removed; the drawer template hardcodes the option
+	// list. Only the selected value is passed in.
 	BillingKind         string
-	BillingKindOptions  []types.SelectOption
 	AmountBasis         string
-	AmountBasisOptions  []types.SelectOption
 	BillingCycleValue   string
 	BillingCycleUnit    string
 	// kept as DefaultTermValue/Unit on the wire (form input names) but renamed
@@ -168,8 +170,10 @@ type ProductPriceFormData struct {
 	VariantName        string // SKU of the catalog line's variant, when any
 
 	// Wave 2: billing treatment + effective date fields.
+	//
+	// 2026-04-30 enum-select-canonicalize — BillingTreatmentOptions removed;
+	// the drawer template (_ppp-fields.html) hardcodes the option list.
 	BillingTreatment        string
-	BillingTreatmentOptions []types.SelectOption
 	DateStart               string // ISO 8601 (YYYY-MM-DD) or empty
 	DateEnd                 string // ISO 8601 (YYYY-MM-DD) or empty
 
@@ -361,9 +365,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				Active:                pp.GetActive(),
 				// Wave 2: populate new billing fields.
 				BillingKind:         pp.GetBillingKind().String(),
-				BillingKindOptions:  form.BuildBillingKindOptions(formLabels),
 				AmountBasis:         pp.GetAmountBasis().String(),
-				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
 				BillingCycleValue:   billingCycleValue,
 				BillingCycleUnit:    pp.GetBillingCycleUnit(),
 				TermValue:           defaultTermValue,
@@ -545,7 +547,6 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 				CommonLabels:            deps.CommonLabels,
 				PlanName:                planName,
 				PlanDescription:         planDesc,
-				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
 				ParentBillingKind:       parent.BillingKind,
 				ParentAmountBasis:       parent.AmountBasis,
 				ShowTreatment:           showTreatment,
@@ -685,7 +686,6 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				PricingLockedReason:     pricingLockedReason,
 				// Wave 2: populate billing treatment and dates from existing record.
 				BillingTreatment:        existing.GetBillingTreatment().String(),
-				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
 				DateStart:               existing.GetDateStart(),
 				DateEnd:                 existing.GetDateEnd(),
 				ParentBillingKind:       parent.BillingKind,
@@ -1479,31 +1479,18 @@ func labelFromOptions(opts []map[string]any, id string) string {
 }
 
 // ---------------------------------------------------------------------------
-// Wave 2 option builder helpers (lyngua-fed, no hardcoded English strings)
+// Option builder helpers — non-proto-enum only
 // ---------------------------------------------------------------------------
-
-// buildAmountBasisOptions builds select options for the AmountBasis enum.
-// Values match proto AmountBasis.String() — e.g. "AMOUNT_BASIS_PER_CYCLE".
-func buildAmountBasisOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
-	return []types.SelectOption{
-		{Value: "AMOUNT_BASIS_PER_CYCLE", Label: labels.AmountBasisPerCycle},
-		{Value: "AMOUNT_BASIS_TOTAL_PACKAGE", Label: labels.AmountBasisTotalPackage},
-		{Value: "AMOUNT_BASIS_DERIVED_FROM_LINES", Label: labels.AmountBasisDerivedFromLines},
-	}
-}
-
-// buildBillingTreatmentOptions builds select options for the BillingTreatment enum.
-// Values match proto BillingTreatment.String() — e.g. "BILLING_TREATMENT_RECURRING".
-func buildBillingTreatmentOptions(labels centymo.ProductPricePlanFormLabels) []types.SelectOption {
-	return []types.SelectOption{
-		{Value: "BILLING_TREATMENT_RECURRING", Label: labels.BillingTreatmentRecurring},
-		{Value: "BILLING_TREATMENT_ONE_TIME_INITIAL", Label: labels.BillingTreatmentOneTimeInitial},
-		{Value: "BILLING_TREATMENT_USAGE_BASED", Label: labels.BillingTreatmentUsageBased},
-	}
-}
+//
+// 2026-04-30 enum-select-canonicalize plan §6 — the proto-enum option
+// builders (BillingKind, AmountBasis, BillingTreatment) are gone. Their
+// option lists now live as hardcoded <option> tags in the drawer
+// templates, and a checked-in drift test (price_plan/templates/templates_test.go)
+// keeps them aligned with the proto enum's _name map.
 
 // buildDurationUnitOptions builds select options for billing_cycle_unit / default_term_unit
-// reusing the existing DurationUnit labels from CommonLabels.
+// reusing the existing DurationUnit labels from CommonLabels. duration_unit is
+// a plain string column (not a proto enum), so its option builder stays.
 func buildDurationUnitOptions(cl pyeza.CommonLabels) []types.SelectOption {
 	du := cl.DurationUnit
 	return []types.SelectOption{

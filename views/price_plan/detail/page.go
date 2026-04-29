@@ -142,8 +142,11 @@ type ProductPricePlanFormData struct {
 	CommonLabels        pyeza.CommonLabels
 
 	// Wave 2: billing treatment + effective date fields.
+	//
+	// 2026-04-30 enum-select-canonicalize — BillingTreatmentOptions removed.
+	// The drawer template (_ppp-fields.html) hardcodes the option list; only
+	// the selected value is passed in.
 	BillingTreatment        string
-	BillingTreatmentOptions []types.SelectOption
 	DateStart               string // ISO 8601 (YYYY-MM-DD) or empty
 	DateEnd                 string // ISO 8601 (YYYY-MM-DD) or empty
 
@@ -258,7 +261,6 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 				Currency:                currency,
 				ProductPlanOptions:      productPlanOptions,
 				CommonLabels:            deps.CommonLabels,
-				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
 				ShowTreatment:           showTreatment,
 				BasisBannerMessage:      basisBannerMessage(parentBasis, deps.PriceScheduleDetailLabels),
 				PlanName:                parent.planName,
@@ -398,7 +400,6 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				Currency:                currency,
 				CommonLabels:            deps.CommonLabels,
 				BillingTreatment:        existing.GetBillingTreatment().String(),
-				BillingTreatmentOptions: buildBillingTreatmentOptions(pplLabels),
 				DateStart:               existing.GetDateStart(),
 				DateEnd:                 existing.GetDateEnd(),
 				ShowTreatment:           showTreatment,
@@ -1371,13 +1372,7 @@ func loadJobTemplatePhaseOptions(ctx context.Context, deps *DetailViewDeps, pare
 	return showGate, options
 }
 
-// buildBillingTreatmentOptions builds the select options for the BillingTreatment
-// enum using lyngua-provided labels. Values are proto enum string names.
-func buildBillingTreatmentOptions(labels centymo.ProductPricePlanFormLabels) []types.SelectOption {
-	return []types.SelectOption{
-		{Value: "BILLING_TREATMENT_RECURRING", Label: labels.BillingTreatmentRecurring},
-		{Value: "BILLING_TREATMENT_ONE_TIME_INITIAL", Label: labels.BillingTreatmentOneTimeInitial},
-		{Value: "BILLING_TREATMENT_USAGE_BASED", Label: labels.BillingTreatmentUsageBased},
-	}
-}
+// 2026-04-30 enum-select-canonicalize — buildBillingTreatmentOptions removed.
+// The drawer template (_ppp-fields.html) hardcodes the option list; a checked-in
+// drift test ensures it stays in lockstep with the proto enum.
 

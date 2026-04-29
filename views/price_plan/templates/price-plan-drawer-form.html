@@ -185,28 +185,58 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
         </div>
         {{end}}
 
-        {{/* Billing kind + amount basis selects */}}
+        {{/* Billing kind + amount basis selects.
+
+             Per docs/plan/20260430-enum-select-canonicalize/plan.md, the option
+             list is hardcoded here — the template IS the source of truth, no
+             Go option-builder. A drift test in templates_test.go diffs the
+             values below against priceplanpb.BillingKind_name /
+             AmountBasis_name to catch the next time someone adds a proto
+             enum value without updating this template. */}}
         <div class="form-row">
-            {{template "form-group" (dict
-                "Type" "select"
-                "Name" "billing_kind"
-                "Label" .Labels.BillingKindLabel
-                "Value" .BillingKind
-                "Required" true
-                "Disabled" (and .IsEdit .InUse)
-                "Options" .BillingKindOptions
-                "Info" .Labels.BillingKindInfo
-            )}}
-            {{template "form-group" (dict
-                "Type" "select"
-                "Name" "amount_basis"
-                "Label" .Labels.AmountBasisLabel
-                "Value" .AmountBasis
-                "Required" true
-                "Disabled" (and .IsEdit .InUse)
-                "Options" .AmountBasisOptions
-                "Info" .Labels.AmountBasisInfo
-            )}}
+            <div class="form-group">
+                <label class="form-label" for="billing_kind">
+                    {{.Labels.BillingKindLabel}} <span class="form-required" aria-hidden="true">*</span>
+                    {{if .Labels.BillingKindInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.BillingKindInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                <select id="billing_kind" name="billing_kind" class="form-select" required aria-required="true" {{if and .IsEdit .InUse}}disabled{{end}}>
+                    <option value="BILLING_KIND_ONE_TIME"  {{if eq .BillingKind "BILLING_KIND_ONE_TIME"}}selected{{end}}>{{.Labels.BillingKindOneTime}}</option>
+                    <option value="BILLING_KIND_RECURRING" {{if eq .BillingKind "BILLING_KIND_RECURRING"}}selected{{end}}>{{.Labels.BillingKindRecurring}}</option>
+                    <option value="BILLING_KIND_CONTRACT"  {{if eq .BillingKind "BILLING_KIND_CONTRACT"}}selected{{end}}>{{.Labels.BillingKindContract}}</option>
+                    <option value="BILLING_KIND_MILESTONE" {{if eq .BillingKind "BILLING_KIND_MILESTONE"}}selected{{end}}>{{.Labels.BillingKindMilestone}}</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="amount_basis">
+                    {{.Labels.AmountBasisLabel}} <span class="form-required" aria-hidden="true">*</span>
+                    {{if .Labels.AmountBasisInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.AmountBasisInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                <select id="amount_basis" name="amount_basis" class="form-select" required aria-required="true" {{if and .IsEdit .InUse}}disabled{{end}}>
+                    <option value="AMOUNT_BASIS_PER_CYCLE"          {{if eq .AmountBasis "AMOUNT_BASIS_PER_CYCLE"}}selected{{end}}>{{.Labels.AmountBasisPerCycle}}</option>
+                    <option value="AMOUNT_BASIS_TOTAL_PACKAGE"      {{if eq .AmountBasis "AMOUNT_BASIS_TOTAL_PACKAGE"}}selected{{end}}>{{.Labels.AmountBasisTotalPackage}}</option>
+                    <option value="AMOUNT_BASIS_DERIVED_FROM_LINES" {{if eq .AmountBasis "AMOUNT_BASIS_DERIVED_FROM_LINES"}}selected{{end}}>{{.Labels.AmountBasisDerivedFromLines}}</option>
+                </select>
+            </div>
         </div>
 
         <div class="form-row">

@@ -214,8 +214,6 @@ func NewAddAction(deps *Deps) view.View {
 				DurationUnit:        "months",
 				PlanOptions:         buildPlanAutoCompleteOptions(plans, ""),
 				ScheduleOptions:     buildScheduleAutoCompleteOptions(schedules, ""),
-				BillingKindOptions:  buildBillingKindOptions(formLabels),
-				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
 				DurationUnitOptions: buildDurationUnitOptions(deps.CommonLabels),
 				Labels:              form.LabelsFromPricePlan(formLabels),
 				CommonLabels:        deps.CommonLabels,
@@ -362,9 +360,7 @@ func NewEditAction(deps *Deps) view.View {
 				Active:                record.GetActive(),
 				// Wave 2: populate new billing fields from existing record.
 				BillingKind:         record.GetBillingKind().String(),
-				BillingKindOptions:  buildBillingKindOptions(formLabels),
 				AmountBasis:         record.GetAmountBasis().String(),
-				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
 				BillingCycleValue:   billingCycleValue,
 				BillingCycleUnit:    record.GetBillingCycleUnit(),
 				TermValue:           defaultTermValue,
@@ -580,33 +576,15 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 }
 
 // ---------------------------------------------------------------------------
-// Wave 2 option builder helpers (lyngua-fed, no hardcoded English strings)
+// Option builder helpers — non-proto-enum only
 // ---------------------------------------------------------------------------
-
-// buildBillingKindOptions builds select options for the BillingKind enum.
-// Values match proto BillingKind.String() — e.g. "BILLING_KIND_ONE_TIME".
 //
-// 2026-04-29 milestone-billing — includes MILESTONE option. The drawer JS
-// clears billing_cycle_* on selection; the action POST below also coerces
-// cycle fields to nil when the form posts MILESTONE.
-func buildBillingKindOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
-	return []types.SelectOption{
-		{Value: "BILLING_KIND_ONE_TIME", Label: labels.BillingKindOneTime},
-		{Value: "BILLING_KIND_RECURRING", Label: labels.BillingKindRecurring},
-		{Value: "BILLING_KIND_CONTRACT", Label: labels.BillingKindContract},
-		{Value: "BILLING_KIND_MILESTONE", Label: labels.BillingKindMilestone},
-	}
-}
-
-// buildAmountBasisOptions builds select options for the AmountBasis enum.
-// Values match proto AmountBasis.String() — e.g. "AMOUNT_BASIS_PER_CYCLE".
-func buildAmountBasisOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
-	return []types.SelectOption{
-		{Value: "AMOUNT_BASIS_PER_CYCLE", Label: labels.AmountBasisPerCycle},
-		{Value: "AMOUNT_BASIS_TOTAL_PACKAGE", Label: labels.AmountBasisTotalPackage},
-		{Value: "AMOUNT_BASIS_DERIVED_FROM_LINES", Label: labels.AmountBasisDerivedFromLines},
-	}
-}
+// 2026-04-30 enum-select-canonicalize plan §6 — buildBillingKindOptions and
+// buildAmountBasisOptions removed. Their values now live as hardcoded
+// <option> tags in price-plan-drawer-form.html, and a checked-in drift test
+// (templates/templates_test.go) keeps them aligned with the proto.
+// duration_unit is a plain string column (not a proto enum), so its option
+// builder is allowed to stay here.
 
 // buildDurationUnitOptions builds select options for billing_cycle_unit / default_term_unit
 // reusing the existing DurationUnit labels from CommonLabels.
