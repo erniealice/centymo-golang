@@ -4011,8 +4011,8 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			Status:         "Status",
 			DateCreated:    "Date Created",
 			DateModified:   "Date Modified",
-			Edit:           "Edit",
-			EditTitle:      "Edit Plan",
+			Edit:           "Edit Price Plan",
+			EditTitle:      "Edit Price Plan",
 		},
 		Tabs: PricePlanTabLabels2{
 			Info:        "Information",
