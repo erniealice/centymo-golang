@@ -127,7 +127,12 @@ const (
 	// spawn drawer endpoint (GET = drawer, POST = spawn) and HTMX-driven
 	// partial that re-renders the Spawn Jobs section in the create drawer
 	// when the operator changes the selected Plan / PricePlan.
-	SubscriptionSpawnJobsURL        = "/action/subscription/{subscriptionId}/spawn-jobs"
+	//
+	// Verb-first ("spawn-jobs") to avoid the Go ServeMux ambiguity that would
+	// otherwise pit `{subscriptionId}/spawn-jobs` against
+	// `table/{status}` (and similar id-first/static-prefix patterns at the
+	// same depth — same root cause as SubscriptionRecognizeURL above).
+	SubscriptionSpawnJobsURL        = "/action/subscription/spawn-jobs/{subscriptionId}"
 	SubscriptionSpawnJobsPartialURL = "/action/subscription/_partial/spawn-jobs-section"
 
 	// Collection (money IN) routes

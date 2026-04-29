@@ -1183,6 +1183,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if refChecker != nil {
 					planActionDeps.GetPlanClientScopeLockedIDs = refChecker.GetPlanClientScopeLockedIDs
 				}
+				// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 —
+				// JobTemplate select for Plan.job_template_id assignment.
+				if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ListJobTemplates != nil {
+					planActionDeps.ListJobTemplates = useCases.Operation.JobTemplate.ListJobTemplates.Execute
+				}
 				ctx.Routes.GET(planRoutes.AddURL, planaction.NewAddAction(planActionDeps))
 				ctx.Routes.POST(planRoutes.AddURL, planaction.NewAddAction(planActionDeps))
 				ctx.Routes.GET(planRoutes.EditURL, planaction.NewEditAction(planActionDeps))
@@ -1235,6 +1240,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					planDetailDeps.ListClients = useCases.Entity.Client.ListClients.Execute
 				}
 				planDetailDeps.ClientDetailURL = cfg.clientDetailURL
+				// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Info
+				// tab JobTemplate row resolution.
+				if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ReadJobTemplate != nil {
+					planDetailDeps.ReadJobTemplate = useCases.Operation.JobTemplate.ReadJobTemplate.Execute
+				}
 				ctx.Routes.GET(planRoutes.DetailURL, plandetail.NewView(planDetailDeps))
 				ctx.Routes.GET(planRoutes.TabActionURL, plandetail.NewTabAction(planDetailDeps))
 
@@ -1426,6 +1436,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					if refChecker != nil {
 						planBundleActionDeps.GetPlanClientScopeLockedIDs = refChecker.GetPlanClientScopeLockedIDs
 					}
+					// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 —
+					// JobTemplate select on the bundle mount.
+					if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ListJobTemplates != nil {
+						planBundleActionDeps.ListJobTemplates = useCases.Operation.JobTemplate.ListJobTemplates.Execute
+					}
 					ctx.Routes.GET(planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
 					ctx.Routes.POST(planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
 					ctx.Routes.GET(planBundleRoutes.EditURL, planaction.NewEditAction(planBundleActionDeps))
@@ -1476,6 +1491,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						planBundleDetailDeps.ListClients = useCases.Entity.Client.ListClients.Execute
 					}
 					planBundleDetailDeps.ClientDetailURL = cfg.clientDetailURL
+					// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 —
+					// Info tab JobTemplate row on the bundle mount.
+					if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ReadJobTemplate != nil {
+						planBundleDetailDeps.ReadJobTemplate = useCases.Operation.JobTemplate.ReadJobTemplate.Execute
+					}
 					ctx.Routes.GET(planBundleRoutes.DetailURL, plandetail.NewView(planBundleDetailDeps))
 					ctx.Routes.GET(planBundleRoutes.TabActionURL, plandetail.NewTabAction(planBundleDetailDeps))
 					if uploadFile != nil {

@@ -3117,6 +3117,13 @@ type PlanFormLabels struct {
 	ClientLockedTooltip      string `json:"clientLockedTooltip"`
 	ClientForLabel           string `json:"clientForLabel"` // "For {{.ClientName}}" — read-only badge in client-context entry-point
 	ClientInfo               string `json:"clientInfo"`
+
+	// JobTemplate select (2026-04-29 auto-spawn-jobs-from-subscription plan §5
+	// — Plan.job_template_id assignment from the drawer). Empty value =
+	// advisory-only plan; spawn use case skips silently.
+	JobTemplate     string `json:"jobTemplate"`
+	JobTemplateNone string `json:"jobTemplateNone"`
+	JobTemplateHint string `json:"jobTemplateHint"`
 }
 
 type PlanDetailLabels struct {
@@ -3581,6 +3588,9 @@ func DefaultPlanLabels() PlanLabels {
 			ClientLockedTooltip:     "Locked — this plan has active subscriptions. Detach them or create a new plan.",
 			ClientForLabel:          "For {{.ClientName}}",
 			ClientInfo:              "Optional. When set, this plan only appears for engagements with that client.",
+			JobTemplate:             "Job Template",
+			JobTemplateNone:         "(none — engagement has no operational tracking)",
+			JobTemplateHint:         "Select the operational template that defines the work for this engagement. Leave empty for advisory-only plans.",
 		},
 		Actions: PlanActionLabels{
 			View:       "View Plan",

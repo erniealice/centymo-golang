@@ -71,6 +71,17 @@
                 {{end}}
             </span>
         </div>
+        {{/* 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — surface
+             the assigned JobTemplate (if any). Empty = advisory plan, row
+             hidden. */}}
+        {{if .JobTemplateID}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.JobTemplate}}</span>
+            <span class="detail-info-value" data-testid="plan-job-template-name">
+                {{if .JobTemplateName}}{{.JobTemplateName}}{{else}}{{.JobTemplateID}}{{end}}
+            </span>
+        </div>
+        {{end}}
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.CreatedDate}}</span>
             <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>

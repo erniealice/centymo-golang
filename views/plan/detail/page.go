@@ -18,6 +18,7 @@ import (
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
+	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
@@ -56,6 +57,11 @@ type DetailViewDeps struct {
 	// entydad, so the consumer supplies it.
 	ClientDetailURL string
 
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Info tab Job
+	// Template row. Resolves Plan.job_template_id to a display name. Optional
+	// — when nil, the Info tab simply omits the row.
+	ReadJobTemplate func(ctx context.Context, req *jobtemplatepb.ReadJobTemplateRequest) (*jobtemplatepb.ReadJobTemplateResponse, error)
+
 	attachment.AttachmentOps
 	auditlog.AuditOps
 }
@@ -86,6 +92,12 @@ type PageData struct {
 	// when ClientDetailURL was not supplied or the plan is not custom; the
 	// template gracefully falls back to plain text.
 	ClientHref          string
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Info tab Job
+	// Template row. JobTemplateID is the raw FK; JobTemplateName is the
+	// resolved display label (falls back to ID when ReadJobTemplate is nil
+	// or the template is missing). Empty JobTemplateID = advisory-only plan.
+	JobTemplateID       string
+	JobTemplateName     string
 	ProductsTable       *types.TableConfig
 	PricePlansTable     *types.TableConfig
 	AttachmentTable     *types.TableConfig
@@ -191,6 +203,14 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		}
 	}
 
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Info tab Job
+	// Template row. Empty job_template_id = advisory plan, no row rendered.
+	jobTemplateID := plan.GetJobTemplateId()
+	jobTemplateName := ""
+	if jobTemplateID != "" {
+		jobTemplateName = resolveJobTemplateName(ctx, jobTemplateID, deps.ReadJobTemplate)
+	}
+
 	// Get counts for tab badges — filter by plan_id so only this plan's products are counted
 	productCount := 0
 	if deps.ListProductPlans != nil {
@@ -258,6 +278,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ClientID:        clientID,
 		ClientName:      clientName,
 		ClientHref:      clientHref,
+		JobTemplateID:   jobTemplateID,
+		JobTemplateName: jobTemplateName,
 	}
 
 	// Load tab-specific data
@@ -649,6 +671,33 @@ func statusVariant(status string) string {
 	default:
 		return "default"
 	}
+}
+
+// resolveJobTemplateName resolves a JobTemplate ID to its display name. Returns
+// the raw ID as a graceful fallback when ReadJobTemplate is nil, the template
+// is missing, or the lookup errors.
+func resolveJobTemplateName(ctx context.Context, id string, readJobTemplate func(ctx context.Context, req *jobtemplatepb.ReadJobTemplateRequest) (*jobtemplatepb.ReadJobTemplateResponse, error)) string {
+	if id == "" {
+		return ""
+	}
+	if readJobTemplate == nil {
+		return id
+	}
+	resp, err := readJobTemplate(ctx, &jobtemplatepb.ReadJobTemplateRequest{
+		Data: &jobtemplatepb.JobTemplate{Id: id},
+	})
+	if err != nil {
+		log.Printf("Failed to read job template %s for plan detail: %v", id, err)
+		return id
+	}
+	data := resp.GetData()
+	if len(data) == 0 || data[0] == nil {
+		return id
+	}
+	if name := data[0].GetName(); name != "" {
+		return name
+	}
+	return id
 }
 
 // resolveClientLabel mirrors action.resolveClientLabel — finds the display name

@@ -12,6 +12,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 )
 
@@ -37,6 +38,11 @@ type FormLabels struct {
 	ClientLockedTooltip     string
 	ClientForLabel          string // "For {{.ClientName}}" — read-only badge in client-context entry
 	ClientInfo              string
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — JobTemplate select.
+	JobTemplate     string
+	JobTemplateNone string
+	JobTemplateHint string
 }
 
 // ClientFieldMode selects how the Client field renders on the drawer per
@@ -54,6 +60,12 @@ const (
 	ClientFieldModeLocked   ClientFieldMode = "locked"
 )
 
+// JobTemplateOption is a {value, label} pair for the JobTemplate select.
+type JobTemplateOption struct {
+	Value string
+	Label string
+}
+
 // FormData is the template data for the plan drawer form.
 type FormData struct {
 	FormAction   string
@@ -69,6 +81,13 @@ type FormData struct {
 	ClientLabel          string             // display name for the chosen client
 	ClientOptions        []map[string]any   // optgroup-flattened options for the picker
 	SearchClientURL      string             // auto-complete search endpoint
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Plan.job_template_id
+	// assignment. JobTemplateID is the currently-assigned id (empty on add /
+	// when unset); JobTemplateOptions enumerates active JobTemplates for the
+	// drawer's <select>.
+	JobTemplateID      string
+	JobTemplateOptions []JobTemplateOption
 
 	Labels       FormLabels
 	CommonLabels any
@@ -98,6 +117,11 @@ type Deps struct {
 	// their PricePlans is attached to an active subscription. Optional —
 	// when nil, lock state never flips.
 	GetPlanClientScopeLockedIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — JobTemplate select
+	// on the Plan drawer. Optional: when nil the drawer hides the select and
+	// Plan.job_template_id is left untouched.
+	ListJobTemplates func(ctx context.Context, req *jobtemplatepb.ListJobTemplatesRequest) (*jobtemplatepb.ListJobTemplatesResponse, error)
 }
 
 func formLabels(l centymo.PlanLabels) FormLabels {
@@ -120,7 +144,44 @@ func formLabels(l centymo.PlanLabels) FormLabels {
 		ClientLockedTooltip:     l.Form.ClientLockedTooltip,
 		ClientForLabel:          l.Form.ClientForLabel,
 		ClientInfo:              l.Form.ClientInfo,
+		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.
+		JobTemplate:     l.Form.JobTemplate,
+		JobTemplateNone: l.Form.JobTemplateNone,
+		JobTemplateHint: l.Form.JobTemplateHint,
 	}
+}
+
+// loadJobTemplateOptions fetches active JobTemplates for the Plan drawer's
+// JobTemplate select. Returns nil when the dep is unwired so the template
+// can hide the field gracefully.
+func loadJobTemplateOptions(ctx context.Context, listJobTemplates func(ctx context.Context, req *jobtemplatepb.ListJobTemplatesRequest) (*jobtemplatepb.ListJobTemplatesResponse, error)) []JobTemplateOption {
+	if listJobTemplates == nil {
+		return nil
+	}
+	resp, err := listJobTemplates(ctx, &jobtemplatepb.ListJobTemplatesRequest{})
+	if err != nil {
+		log.Printf("Failed to load job templates for plan drawer: %v", err)
+		return nil
+	}
+	opts := make([]JobTemplateOption, 0, len(resp.GetData()))
+	for _, t := range resp.GetData() {
+		if t == nil {
+			continue
+		}
+		// Skip inactive templates so operators only assign live workflows.
+		if !t.GetActive() {
+			continue
+		}
+		label := t.GetName()
+		if label == "" {
+			label = t.GetId()
+		}
+		opts = append(opts, JobTemplateOption{
+			Value: t.GetId(),
+			Label: label,
+		})
+	}
+	return opts
 }
 
 // loadClientOptions fetches the workspace's clients and converts them into
@@ -203,15 +264,16 @@ func NewAddAction(deps *Deps) view.View {
 				clientLabel = resolveClientLabel(ctx, pinnedClientID, deps.ListClients)
 			}
 			return view.OK("plan-drawer-form", &FormData{
-				FormAction:      deps.Routes.AddURL,
-				Active:          true,
-				ClientFieldMode: fieldMode,
-				ClientID:        pinnedClientID,
-				ClientLabel:     clientLabel,
-				ClientOptions:   loadClientOptions(ctx, deps.ListClients, pinnedClientID),
-				SearchClientURL: deps.SearchClientsURL,
-				Labels:          formLabels(deps.Labels),
-				CommonLabels:    nil, // injected by ViewAdapter
+				FormAction:         deps.Routes.AddURL,
+				Active:             true,
+				ClientFieldMode:    fieldMode,
+				ClientID:           pinnedClientID,
+				ClientLabel:        clientLabel,
+				ClientOptions:      loadClientOptions(ctx, deps.ListClients, pinnedClientID),
+				SearchClientURL:    deps.SearchClientsURL,
+				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
+				Labels:             formLabels(deps.Labels),
+				CommonLabels:       nil, // injected by ViewAdapter
 			})
 		}
 
@@ -223,6 +285,7 @@ func NewAddAction(deps *Deps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 		clientID := strings.TrimSpace(r.FormValue("client_id"))
+		jobTemplateID := strings.TrimSpace(r.FormValue("job_template_id"))
 
 		planData := &planpb.Plan{
 			Name:        r.FormValue("name"),
@@ -231,6 +294,9 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if clientID != "" {
 			planData.ClientId = strPtr(clientID)
+		}
+		if jobTemplateID != "" {
+			planData.JobTemplateId = strPtr(jobTemplateID)
 		}
 		resp, err := deps.CreatePlan(ctx, &planpb.CreatePlanRequest{
 			Data: planData,
@@ -323,19 +389,21 @@ func NewEditAction(deps *Deps) view.View {
 			}
 
 			return view.OK("plan-drawer-form", &FormData{
-				FormAction:      formAction,
-				IsEdit:          !isClone,
-				ID:              formID,
-				Name:            name,
-				Description:     record.GetDescription(),
-				Active:          record.GetActive(),
-				ClientFieldMode: fieldMode,
-				ClientID:        clientID,
-				ClientLabel:     clientLabel,
-				ClientOptions:   loadClientOptions(ctx, deps.ListClients, clientID),
-				SearchClientURL: deps.SearchClientsURL,
-				Labels:          formLabels(deps.Labels),
-				CommonLabels:    nil, // injected by ViewAdapter
+				FormAction:         formAction,
+				IsEdit:             !isClone,
+				ID:                 formID,
+				Name:               name,
+				Description:        record.GetDescription(),
+				Active:             record.GetActive(),
+				ClientFieldMode:    fieldMode,
+				ClientID:           clientID,
+				ClientLabel:        clientLabel,
+				ClientOptions:      loadClientOptions(ctx, deps.ListClients, clientID),
+				SearchClientURL:    deps.SearchClientsURL,
+				JobTemplateID:      record.GetJobTemplateId(),
+				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
+				Labels:             formLabels(deps.Labels),
+				CommonLabels:       nil, // injected by ViewAdapter
 			})
 		}
 
@@ -347,6 +415,7 @@ func NewEditAction(deps *Deps) view.View {
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
 		clientID := strings.TrimSpace(r.FormValue("client_id"))
+		jobTemplateID := strings.TrimSpace(r.FormValue("job_template_id"))
 
 		updateData := &planpb.Plan{
 			Id:          &id,
@@ -361,6 +430,13 @@ func NewEditAction(deps *Deps) view.View {
 			updateData.ClientId = nil
 		} else {
 			updateData.ClientId = &clientID
+		}
+		// Always send job_template_id (empty → nil so postgres writes NULL,
+		// otherwise the empty string would trip plan_job_template_id_fkey).
+		if jobTemplateID == "" {
+			updateData.JobTemplateId = nil
+		} else {
+			updateData.JobTemplateId = &jobTemplateID
 		}
 		_, err := deps.UpdatePlan(ctx, &planpb.UpdatePlanRequest{
 			Data: updateData,

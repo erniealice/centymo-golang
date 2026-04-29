@@ -82,6 +82,32 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels,
         </div>
         {{end}}
 
+        {{/* 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Plan.job_template_id
+             assignment. Only rendered when JobTemplateOptions is populated
+             (deps.ListJobTemplates wired). Empty value saves NULL = advisory
+             plan, spawn use case skips silently. */}}
+        {{if .JobTemplateOptions}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label" for="plan-job-template-select">
+                    {{.Labels.JobTemplate}}
+                </label>
+                <select name="job_template_id"
+                        id="plan-job-template-select"
+                        class="form-select"
+                        data-testid="plan-job-template-select">
+                    <option value="">{{.Labels.JobTemplateNone}}</option>
+                    {{range .JobTemplateOptions}}
+                    <option value="{{.Value}}" {{if eq .Value $.JobTemplateID}}selected{{end}}>{{.Label}}</option>
+                    {{end}}
+                </select>
+                {{if .Labels.JobTemplateHint}}
+                <p class="form-hint">{{.Labels.JobTemplateHint}}</p>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+
         <div class="form-row single">
             <div class="form-group form-group-toggle">
                 <label class="form-label" for="active">
