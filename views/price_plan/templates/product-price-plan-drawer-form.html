@@ -59,6 +59,29 @@ Data: ProductPricePlanFormData — see views/price_plan/detail/page.go
 
         {{template "ppp-parent-context" .}}
 
+        {{/* 2026-04-29 milestone-billing plan §5 — optional milestone (job
+             template phase) select. Rendered when ShowJobTemplatePhase is
+             true (parent PricePlan = MILESTONE). Empty value means the line
+             falls through to the first event for the milestone plan. */}}
+        {{if .ShowJobTemplatePhase}}
+        <div class="form-row single">
+          <div class="form-group">
+            <label class="form-label" for="ppp-job-template-phase-select">
+              Milestone phase
+            </label>
+            <select name="job_template_phase_id"
+                    id="ppp-job-template-phase-select"
+                    class="form-select"
+                    data-testid="ppp-job-template-phase-select">
+              <option value="">Falls through to first event</option>
+              {{range .JobTemplatePhaseOptions}}
+              <option value="{{.Value}}" {{if eq .Value $.JobTemplatePhaseID}}selected{{end}}>{{.Label}}</option>
+              {{end}}
+            </select>
+          </div>
+        </div>
+        {{end}}
+
         {{template "ppp-fields" (dict
             "Labels" .Labels
             "Price" .Price

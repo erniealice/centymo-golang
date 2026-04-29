@@ -146,6 +146,14 @@ type ProductPricePlanFormData struct {
 
 	// Wave 2: labels for the new fields (populated from ProductPricePlanLabels).
 	Labels centymo.ProductPricePlanFormLabels
+
+	// 2026-04-29 milestone-billing plan §5 / Phase D — optional milestone
+	// (job_template_phase) select. Surfaced when the parent PricePlan has
+	// billing_kind = MILESTONE; rendered as null = "Falls through to first
+	// event". When unset by the caller, the template skips the field.
+	JobTemplatePhaseID      string
+	JobTemplatePhaseOptions []types.SelectOption
+	ShowJobTemplatePhase    bool
 }
 
 // NewView creates the price plan detail view (full page).
@@ -263,6 +271,7 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		dateStart := viewCtx.Request.FormValue("date_start")
 		dateEnd := viewCtx.Request.FormValue("date_end")
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
+		jobTemplatePhaseID := strings.TrimSpace(viewCtx.Request.FormValue("job_template_phase_id"))
 		// Server-side guards mirror the schedule-scoped variant. Currency must
 		// match parent (proto invariant); treatment is meaningless on ONE_TIME.
 		parent, _ := loadPricePlanContext(ctx, deps, id)
@@ -290,6 +299,9 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		}
 		if dateEnd != "" {
 			record.DateEnd = &dateEnd
+		}
+		if jobTemplatePhaseID != "" {
+			record.JobTemplatePhaseId = &jobTemplatePhaseID
 		}
 
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{Data: record}); err != nil {
@@ -402,6 +414,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		dateStart := viewCtx.Request.FormValue("date_start")
 		dateEnd := viewCtx.Request.FormValue("date_end")
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
+		jobTemplatePhaseID := strings.TrimSpace(viewCtx.Request.FormValue("job_template_phase_id"))
 		parent, _ := loadPricePlanContext(ctx, deps, id)
 		if parent.currency != "" && currency != parent.currency {
 			return centymo.HTMXError("Currency must match the rate card currency")
@@ -428,6 +441,9 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		}
 		if dateEnd != "" {
 			updated.DateEnd = &dateEnd
+		}
+		if jobTemplatePhaseID != "" {
+			updated.JobTemplatePhaseId = &jobTemplatePhaseID
 		}
 
 		if _, err := deps.UpdateProductPricePlan(ctx, &productpriceplanpb.UpdateProductPricePlanRequest{Data: updated}); err != nil {

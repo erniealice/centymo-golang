@@ -2877,6 +2877,7 @@ type PricePlanFormLabels struct {
 	BillingKindOneTime         string `json:"billingKindOneTime"`
 	BillingKindRecurring       string `json:"billingKindRecurring"`
 	BillingKindContract        string `json:"billingKindContract"`
+	BillingKindMilestone       string `json:"billingKindMilestone"`
 	AmountBasisLabel           string `json:"amountBasisLabel"`
 	AmountBasisPerCycle        string `json:"amountBasisPerCycle"`
 	AmountBasisTotalPackage    string `json:"amountBasisTotalPackage"`
@@ -3199,20 +3200,21 @@ type PlanConfirmLabels struct {
 
 // SubscriptionLabels holds all translatable strings for the subscription module.
 type SubscriptionLabels struct {
-	Page      SubscriptionPageLabels      `json:"page"`
-	Buttons   SubscriptionButtonLabels    `json:"buttons"`
-	Columns   SubscriptionColumnLabels    `json:"columns"`
-	Empty     SubscriptionEmptyLabels     `json:"empty"`
-	Form      SubscriptionFormLabels      `json:"form"`
-	Actions   SubscriptionActionLabels    `json:"actions"`
-	Bulk      SubscriptionBulkLabels      `json:"bulkActions"`
-	Status    SubscriptionStatusLabels    `json:"status"`
-	Detail    SubscriptionDetailLabels    `json:"detail"`
-	Tabs      SubscriptionTabLabels       `json:"tabs"`
-	Invoices  SubscriptionInvoicesLabels  `json:"invoices"`
-	Recognize SubscriptionRecognizeLabels `json:"recognize"`
-	Confirm   SubscriptionConfirmLabels   `json:"confirm"`
-	Errors    SubscriptionErrorLabels     `json:"errors"`
+	Page      SubscriptionPageLabels       `json:"page"`
+	Buttons   SubscriptionButtonLabels     `json:"buttons"`
+	Columns   SubscriptionColumnLabels     `json:"columns"`
+	Empty     SubscriptionEmptyLabels      `json:"empty"`
+	Form      SubscriptionFormLabels       `json:"form"`
+	Actions   SubscriptionActionLabels     `json:"actions"`
+	Bulk      SubscriptionBulkLabels       `json:"bulkActions"`
+	Status    SubscriptionStatusLabels     `json:"status"`
+	Detail    SubscriptionDetailLabels     `json:"detail"`
+	Tabs      SubscriptionTabLabels        `json:"tabs"`
+	Invoices  SubscriptionInvoicesLabels   `json:"invoices"`
+	Recognize SubscriptionRecognizeLabels  `json:"recognize"`
+	Milestone SubscriptionMilestoneLabels  `json:"milestone"`
+	Confirm   SubscriptionConfirmLabels    `json:"confirm"`
+	Errors    SubscriptionErrorLabels      `json:"errors"`
 }
 
 type SubscriptionPageLabels struct {
@@ -3418,6 +3420,39 @@ type SubscriptionRecognizeLabels struct {
 	// drawer when the active subscription's PricePlan is client-scoped.
 	// Templated via {{.ClientName}}.
 	ClientCustomNotice string `json:"clientCustomNotice"`
+
+	// 2026-04-29 milestone-billing plan §5 / Phase E — milestone-specific
+	// drawer fields. Surfaced only when pricePlan.billing_kind = MILESTONE.
+	MilestoneSelect            string `json:"milestoneSelect"`
+	MilestoneSelectPlaceholder string `json:"milestoneSelectPlaceholder"`
+	NoReadyMilestone           string `json:"noReadyMilestone"`
+	MilestoneNotApplicable     string `json:"milestoneNotApplicable"`
+	BillAmount                 string `json:"billAmount"`
+	LeaveRemainderOpen         string `json:"leaveRemainderOpen"`
+	CloseShort                 string `json:"closeShort"`
+	PartialReason              string `json:"partialReason"`
+	PartialReasonRequired      string `json:"partialReasonRequired"`
+	OverBillingRejected        string `json:"overBillingRejected"`
+}
+
+// SubscriptionMilestoneLabels holds labels for the Subscription Package tab's
+// Milestones section + the mark-ready / waive CTAs. Lyngua key:
+// `subscription.milestone.*`. See milestone-billing plan §5.
+type SubscriptionMilestoneLabels struct {
+	Title            string `json:"title"`
+	Subtitle         string `json:"subtitle"`
+	MarkReady        string `json:"markReady"`
+	Waive            string `json:"waive"`
+	ViewInvoice      string `json:"viewInvoice"`
+	StatusPending    string `json:"statusPending"`
+	StatusReady      string `json:"statusReady"`
+	StatusBilled     string `json:"statusBilled"`
+	StatusWaived     string `json:"statusWaived"`
+	StatusDeferred   string `json:"statusDeferred"`
+	StatusCancelled  string `json:"statusCancelled"`
+	TotalInvoiced    string `json:"totalInvoiced"`
+	AmountFull       string `json:"amountFull"`
+	AmountPartial    string `json:"amountPartial"`
 }
 
 type SubscriptionConfirmLabels struct {
@@ -3851,6 +3886,7 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			BillingKindOneTime:          "One-time",
 			BillingKindRecurring:        "Recurring retainer",
 			BillingKindContract:         "Fixed-term engagement",
+			BillingKindMilestone:        "Milestone",
 			AmountBasisLabel:            "Amount basis",
 			AmountBasisPerCycle:         "Per cycle",
 			AmountBasisTotalPackage:     "Total package",
@@ -4606,6 +4642,33 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			// 2026-04-27 plan-client-scope plan §7 — surfaced when the
 			// active subscription's PricePlan is client-scoped.
 			ClientCustomNotice: "This engagement uses a custom package for {{.ClientName}}.",
+			// 2026-04-29 milestone-billing plan §5 / Phase E.
+			MilestoneSelect:            "Milestone",
+			MilestoneSelectPlaceholder: "Select a ready milestone",
+			NoReadyMilestone:           "No milestone is ready to bill.",
+			MilestoneNotApplicable:     "Milestones are only available on milestone-priced plans.",
+			BillAmount:                 "Bill amount",
+			LeaveRemainderOpen:         "Partial — leave remainder open",
+			CloseShort:                 "Partial — close milestone short",
+			PartialReason:              "Reason",
+			PartialReasonRequired:      "A reason is required when billing partially.",
+			OverBillingRejected:        "Cannot bill: total would exceed milestone amount.",
+		},
+		Milestone: SubscriptionMilestoneLabels{
+			Title:           "Billing Schedule",
+			Subtitle:        "Milestone events for this engagement",
+			MarkReady:       "Mark Ready",
+			Waive:           "Waive",
+			ViewInvoice:     "View Invoice",
+			StatusPending:   "Pending",
+			StatusReady:     "Ready",
+			StatusBilled:    "Billed",
+			StatusWaived:    "Waived",
+			StatusDeferred:  "Deferred",
+			StatusCancelled: "Cancelled",
+			TotalInvoiced:   "Total Invoiced",
+			AmountFull:      "Full amount",
+			AmountPartial:   "Partial — {{.Billed}} of {{.Full}}",
 		},
 		Confirm: SubscriptionConfirmLabels{
 			Cancel:                "Cancel Subscription",

@@ -1649,6 +1649,17 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					priceScheduleLabels.Form.CustomClientPriceScheduleLabelSuffix
 				wireCustomizePlanForClient(useCases, subActionDeps)
 
+				// 2026-04-29 milestone-billing plan §5 / Phase D — wire the
+				// BillingEvent server through to the recognize drawer +
+				// mark-ready/waive handlers. nil-safe: the espyna subscription
+				// composition exposes the server pointer directly (no use-case
+				// wrapper yet).
+				if useCases.Subscription.BillingEvent != nil {
+					be := useCases.Subscription.BillingEvent
+					subActionDeps.ListBillingEventsBySubscription = be.ListBySubscription
+					subActionDeps.SetBillingEventStatus = be.SetStatus
+				}
+
 				ctx.Routes.GET(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.GET(subscriptionRoutes.EditURL, subscriptionaction.NewEditAction(subActionDeps))
@@ -1668,6 +1679,24 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				// CTA on subscription detail's Package tab.
 				if subscriptionRoutes.CustomizePackageURL != "" {
 					ctx.Routes.POST(subscriptionRoutes.CustomizePackageURL, subscriptionaction.NewCustomizePackageAction(subActionDeps))
+				}
+				// 2026-04-29 milestone-billing plan §5 / Phase D — mark-ready +
+				// waive handlers for BillingEvent rows on the subscription
+				// Package tab. Only registered when the BillingEvent server
+				// is wired (espyna subscription provider has the adapter).
+				if subActionDeps.SetBillingEventStatus != nil {
+					if subscriptionRoutes.MilestoneMarkReadyURL != "" {
+						ctx.Routes.POST(subscriptionRoutes.MilestoneMarkReadyURL,
+							subscriptionaction.NewMilestoneMarkReadyAction(
+								subActionDeps.SetBillingEventStatus,
+								subActionDeps.Labels.Errors))
+					}
+					if subscriptionRoutes.MilestoneWaiveURL != "" {
+						ctx.Routes.POST(subscriptionRoutes.MilestoneWaiveURL,
+							subscriptionaction.NewMilestoneWaiveAction(
+								subActionDeps.SetBillingEventStatus,
+								subActionDeps.Labels.Errors))
+					}
 				}
 				// Auto-complete search (http.HandlerFunc — uses HandleFunc, not GET)
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchClientURL, subscriptionaction.NewSearchClientsAction(subActionDeps))
@@ -1698,6 +1727,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 				if useCases.Revenue != nil && useCases.Revenue.Revenue != nil && useCases.Revenue.Revenue.GetRevenueListPageData != nil {
 					subDetailDeps.GetRevenueListPageData = useCases.Revenue.Revenue.GetRevenueListPageData.Execute
+				}
+				// 2026-04-29 milestone-billing — wire BillingEvent listing into
+				// the subscription detail Package tab.
+				if useCases.Subscription.BillingEvent != nil {
+					subDetailDeps.ListBillingEventsBySubscription = useCases.Subscription.BillingEvent.ListBySubscription
 				}
 				subDetailDeps.ClientDetailURL = cfg.clientDetailURL
 				ctx.Routes.GET(subscriptionRoutes.DetailURL, subscriptiondetail.NewView(subDetailDeps))

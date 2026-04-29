@@ -19,6 +19,8 @@ import (
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
+	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
@@ -26,6 +28,9 @@ import (
 type DetailViewDeps struct {
 	Routes           centymo.SubscriptionRoutes
 	ReadSubscription func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
+
+	// 2026-04-29 milestone-billing — list events for the Package tab. nil-safe.
+	ListBillingEventsBySubscription func(ctx context.Context, req *billingeventpb.ListBillingEventsBySubscriptionRequest) (*billingeventpb.ListBillingEventsBySubscriptionResponse, error)
 	// GetSubscriptionItemPageData returns the subscription with its joined
 	// Client (+ User) and PricePlan (+ Plan) populated. Preferred over
 	// ReadSubscription for the detail view so customer + package fields render
@@ -106,6 +111,34 @@ type PageData struct {
 	PackageCustomizeDisabled bool // true grays the CTA (no permission, etc.)
 	PackageClientName      string
 	PackagePricePlan       map[string]any // {id, name, currency, amount, plan_id, client_id}
+
+	// 2026-04-29 milestone-billing plan §5 / Phase D — Milestones section
+	// inside Package tab. Rendered only when pricePlan.billing_kind = MILESTONE.
+	MilestonesShown        bool
+	Milestones             []MilestoneRow
+	TotalInvoicedDisplay   string // formatted "₱430,000.00"
+	MilestoneCurrency      string
+}
+
+// MilestoneRow is a single BillingEvent row rendered inside the Package tab's
+// Milestones section. flow.md §10 selectors:
+//   - [data-testid="milestone-row"][data-event-id="ev-XXX"]
+//   - [data-testid="milestone-status-{pending|ready|billed|...}"]
+type MilestoneRow struct {
+	EventID         string
+	StatusKey       string // "pending" | "ready" | "billed" | "waived" | "deferred" | "cancelled"
+	StatusLabel     string
+	SequenceLabel   string
+	BillableAmount  int64
+	BillableDisplay string
+	Currency        string
+	RevenueID       string
+	RevenueURL      string
+	MarkReadyURL    string
+	WaiveURL        string
+	ShowMarkReady   bool
+	ShowWaive       bool
+	ShowRevenueLink bool
 }
 
 // subscriptionToMap converts a Subscription protobuf to a map[string]any for template use.
@@ -257,6 +290,8 @@ func NewView(deps *DetailViewDeps) view.View {
 			pageData.PackageCustomizeLabel = label
 			pageData.PackageClientName = clientName
 			pageData.PackagePricePlan = ppData
+			// 2026-04-29 milestone-billing — milestones list (only on MILESTONE plans).
+			applyMilestoneTabData(ctx, deps, sub, pageData, id)
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			pageData.Invoices = buildInvoicesTable(
@@ -417,6 +452,142 @@ func buildPackageTabData(sub *subscriptionpb.Subscription, customizeURL, customi
 	}
 	_ = customizeURL // template reads this from PageData.PackageCustomizeURL
 	return shown, disabled, label, clientName, pp
+}
+
+// loadMilestoneRows fetches BillingEvent rows for a subscription and converts
+// them into the per-row template shape per flow.md §10. Returns the rendered
+// rows, the running total invoiced (centavos), and the inferred currency.
+//
+// 2026-04-29 milestone-billing plan §5 / Phase D.
+func loadMilestoneRows(ctx context.Context, deps *DetailViewDeps, subscriptionID string) ([]MilestoneRow, int64, string) {
+	if deps.ListBillingEventsBySubscription == nil {
+		return nil, 0, ""
+	}
+	resp, err := deps.ListBillingEventsBySubscription(ctx, &billingeventpb.ListBillingEventsBySubscriptionRequest{
+		SubscriptionId: subscriptionID,
+	})
+	if err != nil || resp == nil {
+		return nil, 0, ""
+	}
+	events := resp.GetBillingEvents()
+	mLabels := deps.Labels.Milestone
+	currency := ""
+	var totalInvoiced int64
+	rows := make([]MilestoneRow, 0, len(events))
+	for _, ev := range events {
+		if currency == "" {
+			currency = ev.GetBillingCurrency()
+		}
+		status := ev.GetStatus()
+		statusKey := statusKeyForBillingEventDetail(status)
+		statusLabel := statusLabelForBillingEventDetail(status, mLabels)
+		seq := strings.TrimSpace(ev.GetSequenceLabel())
+		if seq == "" {
+			id := ev.GetId()
+			if len(id) > 8 {
+				seq = "Event " + id[len(id)-6:]
+			} else {
+				seq = "Event " + id
+			}
+		}
+		row := MilestoneRow{
+			EventID:         ev.GetId(),
+			StatusKey:       statusKey,
+			StatusLabel:     statusLabel,
+			SequenceLabel:   seq,
+			BillableAmount:  ev.GetBillableAmount(),
+			BillableDisplay: formatCentavoDisplay(ev.GetBillableAmount()),
+			Currency:        ev.GetBillingCurrency(),
+		}
+		// Mark-ready when status = UNSPECIFIED (pending) or DEFERRED.
+		row.ShowMarkReady = status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_UNSPECIFIED ||
+			status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_DEFERRED
+		// Waive when UNSPECIFIED or READY.
+		row.ShowWaive = status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_UNSPECIFIED ||
+			status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_READY
+		if status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_BILLED {
+			row.ShowRevenueLink = true
+			row.RevenueID = ev.GetRevenueId()
+			if row.RevenueID != "" {
+				row.RevenueURL = strings.ReplaceAll(centymo.RevenueDetailURL, "{id}", row.RevenueID)
+			}
+			totalInvoiced += ev.GetBillableAmount()
+		}
+		// Resolve URLs for the action buttons.
+		row.MarkReadyURL = resolveBillingEventURL(deps.Routes.MilestoneMarkReadyURL, subscriptionID, ev.GetId())
+		row.WaiveURL = resolveBillingEventURL(deps.Routes.MilestoneWaiveURL, subscriptionID, ev.GetId())
+		rows = append(rows, row)
+	}
+	return rows, totalInvoiced, currency
+}
+
+func resolveBillingEventURL(template, subscriptionID, eventID string) string {
+	if template == "" {
+		return ""
+	}
+	r := strings.ReplaceAll(template, "{id}", subscriptionID)
+	r = strings.ReplaceAll(r, "{eventId}", eventID)
+	return r
+}
+
+func statusKeyForBillingEventDetail(s billingeventpb.BillingEventStatus) string {
+	switch s {
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_READY:
+		return "ready"
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_BILLED:
+		return "billed"
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_WAIVED:
+		return "waived"
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_DEFERRED:
+		return "deferred"
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_CANCELLED:
+		return "cancelled"
+	default:
+		return "pending"
+	}
+}
+
+func statusLabelForBillingEventDetail(s billingeventpb.BillingEventStatus, l centymo.SubscriptionMilestoneLabels) string {
+	switch s {
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_READY:
+		return l.StatusReady
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_BILLED:
+		return l.StatusBilled
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_WAIVED:
+		return l.StatusWaived
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_DEFERRED:
+		return l.StatusDeferred
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_CANCELLED:
+		return l.StatusCancelled
+	default:
+		return l.StatusPending
+	}
+}
+
+func formatCentavoDisplay(c int64) string {
+	whole := c / 100
+	frac := c % 100
+	if frac < 0 {
+		frac = -frac
+	}
+	return fmt.Sprintf("%d.%02d", whole, frac)
+}
+
+// applyMilestoneTabData populates the package-tab milestone fields when the
+// subscription's PricePlan is MILESTONE. No-op for other billing kinds.
+func applyMilestoneTabData(ctx context.Context, deps *DetailViewDeps, sub *subscriptionpb.Subscription, pageData *PageData, subscriptionID string) {
+	if sub == nil {
+		return
+	}
+	pp := sub.GetPricePlan()
+	if pp == nil || pp.GetBillingKind() != priceplanpb.BillingKind_BILLING_KIND_MILESTONE {
+		return
+	}
+	rows, total, currency := loadMilestoneRows(ctx, deps, subscriptionID)
+	pageData.MilestonesShown = true
+	pageData.Milestones = rows
+	pageData.TotalInvoicedDisplay = formatCentavoDisplay(total)
+	pageData.MilestoneCurrency = currency
 }
 
 // loadSubscriptionInvoices fetches revenue records filtered by subscription_id.
@@ -596,6 +767,8 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			pageData.PackageCustomizeLabel = label
 			pageData.PackageClientName = clientName
 			pageData.PackagePricePlan = ppData
+			// 2026-04-29 milestone-billing — milestones list (only on MILESTONE plans).
+			applyMilestoneTabData(ctx, deps, sub, pageData, id)
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			pageData.Invoices = buildInvoicesTable(

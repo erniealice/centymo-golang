@@ -16,6 +16,7 @@ import (
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
+	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
@@ -161,6 +162,14 @@ type Deps struct {
 	// repoints the subscription onto the new PricePlan. See plan §4.
 	// Wired by the centymo block when the use case is available.
 	CustomizePlanForClient func(ctx context.Context, req *CustomizePlanForClientRequest) (*CustomizePlanForClientResponse, error)
+
+	// 2026-04-29 milestone-billing plan §5 / Phase D — BillingEvent operations
+	// for the subscription Package tab Milestones section + recognize drawer
+	// milestone select. nil-safe: when unset (no adapter registered), the
+	// drawer falls back to the legacy non-milestone branches and the Package
+	// tab milestone section is skipped.
+	ListBillingEventsBySubscription func(ctx context.Context, req *billingeventpb.ListBillingEventsBySubscriptionRequest) (*billingeventpb.ListBillingEventsBySubscriptionResponse, error)
+	SetBillingEventStatus           func(ctx context.Context, req *billingeventpb.SetBillingEventStatusRequest) (*billingeventpb.SetBillingEventStatusResponse, error)
 }
 
 // CustomizePlanForClientRequest mirrors the espyna use-case request shape

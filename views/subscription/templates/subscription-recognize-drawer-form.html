@@ -100,54 +100,102 @@ to a single CTA in v1).
         </div>
         {{end}}
 
-        {{/* --- Period section --- */}}
-        {{template "form-section" (dict "Title" .Labels.PeriodSection)}}
+        {{/* --- Milestone-only banners + select (when MILESTONE plan) --- */}}
+        {{if .IsMilestone}}
+            {{/* No-ready-milestone banner — shown when MilestoneOptions has no
+                 selectable rows. Idempotent re-render shows the same banner. */}}
+            {{$hasSelectable := false}}
+            {{range .MilestoneOptions}}{{if .Selectable}}{{$hasSelectable = true}}{{end}}{{end}}
+            {{if not $hasSelectable}}
+            <div class="form-row single alert alert--warning"
+                 data-recognize-no-ready-milestone
+                 role="alert">
+              <strong>{{.Labels.NoReadyMilestone}}</strong>
+            </div>
+            {{end}}
 
-        <div class="form-row">
-            {{template "form-group" (dict
-                "Type" "date"
-                "Name" "period_start_date"
-                "Label" .Labels.PeriodStart
-                "Value" .PeriodStartDate
-                "Required" true
-                "Info" .Labels.StartDateInfo
-            )}}
-            {{template "form-group" (dict
-                "Type" "time"
-                "Name" "period_start_time"
-                "Label" .Labels.PeriodStart
-                "Value" .PeriodStartTime
-                "Info" .Labels.StartTimeInfo
-            )}}
-        </div>
+            {{/* Over-billing rejection banner. */}}
+            {{if .OverBillingError}}
+            <div class="form-row single alert alert--error"
+                 data-recognize-overbilling-error
+                 role="alert">
+              <strong>{{.Labels.OverBillingRejected}}</strong>
+            </div>
+            {{end}}
 
-        <div class="form-row">
-            {{template "form-group" (dict
-                "Type" "date"
-                "Name" "period_end_date"
-                "Label" .Labels.PeriodEnd
-                "Value" .PeriodEndDate
-                "Required" true
-                "Info" .Labels.EndDateInfo
-            )}}
-            {{template "form-group" (dict
-                "Type" "time"
-                "Name" "period_end_time"
-                "Label" .Labels.PeriodEnd
-                "Value" .PeriodEndTime
-                "Info" .Labels.EndTimeInfo
-            )}}
-        </div>
+            {{/* Milestone select — disabled options stay visible (BILLED) so the
+                 operator can see history; UNSPECIFIED (Hidden=true) is skipped. */}}
+            <div class="form-row single">
+              <div class="form-group">
+                <label class="form-label" for="recognize-milestone-select">{{.Labels.MilestoneSelect}}</label>
+                <select name="billing_event_id"
+                        id="recognize-milestone-select"
+                        class="form-select"
+                        data-testid="recognize-milestone-select">
+                  <option value="">{{.Labels.MilestoneSelectPlaceholder}}</option>
+                  {{range .MilestoneOptions}}
+                    {{if not .Hidden}}
+                    <option value="{{.EventID}}"
+                            data-testid="recognize-milestone-option"
+                            {{if not .Selectable}}disabled{{end}}
+                            {{if .Selected}}selected{{end}}>
+                      {{.SequenceLabel}} — {{.StatusLabel}} · {{.BillableDisplay}} {{.Currency}}
+                    </option>
+                    {{end}}
+                  {{end}}
+                </select>
+              </div>
+            </div>
+        {{else}}
+            {{/* --- Period section (non-milestone branches only) --- */}}
+            {{template "form-section" (dict "Title" .Labels.PeriodSection)}}
 
-        <div class="form-row single">
-            <small class="form-info">
-              <span class="tz-label" data-tz-label>{{.Labels.Timezone}}: {{.DefaultTZ}}</span>
-            </small>
-        </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "period_start_date"
+                    "Label" .Labels.PeriodStart
+                    "Value" .PeriodStartDate
+                    "Required" true
+                    "Info" .Labels.StartDateInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "time"
+                    "Name" "period_start_time"
+                    "Label" .Labels.PeriodStart
+                    "Value" .PeriodStartTime
+                    "Info" .Labels.StartTimeInfo
+                )}}
+            </div>
 
-        {{/* Hidden RFC3339 fields populated by JS — backend prefers these. */}}
-        <input type="hidden" name="period_start_iso" value="{{.PeriodStartISO}}">
-        <input type="hidden" name="period_end_iso"   value="{{.PeriodEndISO}}">
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "period_end_date"
+                    "Label" .Labels.PeriodEnd
+                    "Value" .PeriodEndDate
+                    "Required" true
+                    "Info" .Labels.EndDateInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "time"
+                    "Name" "period_end_time"
+                    "Label" .Labels.PeriodEnd
+                    "Value" .PeriodEndTime
+                    "Info" .Labels.EndTimeInfo
+                )}}
+            </div>
+
+            <div class="form-row single">
+                <small class="form-info">
+                  <span class="tz-label" data-tz-label>{{.Labels.Timezone}}: {{.DefaultTZ}}</span>
+                </small>
+            </div>
+
+            {{/* Hidden RFC3339 fields populated by JS — backend prefers these. */}}
+            <input type="hidden" name="period_start_iso" value="{{.PeriodStartISO}}">
+            <input type="hidden" name="period_end_iso"   value="{{.PeriodEndISO}}">
+        {{end}}
 
         <div class="form-row single">
             {{template "form-group" (dict
@@ -158,6 +206,48 @@ to a single CTA in v1).
                 "Required" true
             )}}
         </div>
+
+        {{/* Milestone partial-billing controls — only shown when MILESTONE. */}}
+        {{if .IsMilestone}}
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "bill_amount"
+                    "Label" .Labels.BillAmount
+                    "Value" .BillAmountDisplay
+                    "Step" "0.01"
+                    "Min" "0"
+                )}}
+            </div>
+            <div class="form-row single">
+                <label class="form-checkbox">
+                    <input type="checkbox"
+                           name="leave_remainder_open"
+                           value="true"
+                           data-testid="recognize-leave-remainder"
+                           {{if .LeaveRemainderOpen}}checked{{end}}>
+                    {{.Labels.LeaveRemainderOpen}}
+                </label>
+            </div>
+            <div class="form-row single">
+                <label class="form-checkbox">
+                    <input type="checkbox"
+                           name="close_short"
+                           value="true"
+                           data-testid="recognize-close-short"
+                           {{if .CloseShort}}checked{{end}}>
+                    {{.Labels.CloseShort}}
+                </label>
+            </div>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "partial_reason"
+                    "Label" .Labels.PartialReason
+                    "Value" .PartialReasonValue
+                )}}
+            </div>
+        {{end}}
 
         {{/* --- Line items preview --- */}}
         {{template "form-section" (dict "Title" .Labels.LineItemsSection)}}
@@ -228,11 +318,17 @@ to a single CTA in v1).
       >
         {{.Labels.Cancel}}
       </button>
+      {{$noReady := false}}
+      {{if .IsMilestone}}
+        {{$hasSelectable := false}}
+        {{range .MilestoneOptions}}{{if .Selectable}}{{$hasSelectable = true}}{{end}}{{end}}
+        {{if not $hasSelectable}}{{$noReady = true}}{{end}}
+      {{end}}
       <button
         type="submit"
         class="btn btn--primary"
         data-testid="recognize-generate"
-        {{if or .CurrencyMismatch .IdempotencyConflict .NoLinesToInvoice}}disabled aria-disabled="true"{{end}}
+        {{if or .CurrencyMismatch .IdempotencyConflict .NoLinesToInvoice .OverBillingError $noReady}}disabled aria-disabled="true"{{end}}
       >
         {{.Labels.Generate}}
       </button>
@@ -254,7 +350,11 @@ to a single CTA in v1).
     var tzLabel   = form.querySelector('[data-tz-label]');
     var defaultTZ = form.dataset.defaultTz || 'Asia/Manila';
 
-    if (!startDate || !endDate || !startISO || !endISO) { return; }
+    if (!startDate || !endDate || !startISO || !endISO) {
+        // Milestone mode hides the period inputs entirely — there is nothing
+        // to wire up. Suppress the data-testid emit + early-return clean.
+        return;
+    }
 
     function offsetFor(tz, year, month, day, hour, minute) {
         try {

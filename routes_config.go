@@ -1349,6 +1349,11 @@ type SubscriptionRoutes struct {
 	// client-scoped copy and HX-redirects to the new package URL.
 	CustomizePackageURL string `json:"customize_package_url"`
 
+	// 2026-04-29 milestone-billing plan §5 / Phase D — mark-ready + waive
+	// endpoints for BillingEvent rows on the subscription Package tab.
+	MilestoneMarkReadyURL string `json:"milestone_mark_ready_url"`
+	MilestoneWaiveURL     string `json:"milestone_waive_url"`
+
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
@@ -1377,6 +1382,10 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		RecognizeURL:         SubscriptionRecognizeURL,
 		CustomizePackageURL:  SubscriptionCustomizePackageURL,
 
+		// 2026-04-29 milestone-billing.
+		MilestoneMarkReadyURL: MilestoneMarkReadyURL,
+		MilestoneWaiveURL:     MilestoneWaiveURL,
+
 		AttachmentUploadURL: SubscriptionAttachmentUploadURL,
 		AttachmentDeleteURL: SubscriptionAttachmentDeleteURL,
 	}
@@ -1401,6 +1410,10 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		"subscription.search_client":       r.SearchClientURL,
 		"subscription.recognize":           r.RecognizeURL,
 		"subscription.customize_package":   r.CustomizePackageURL,
+
+		// 2026-04-29 milestone-billing routes.
+		"milestone.mark_ready": r.MilestoneMarkReadyURL,
+		"milestone.waive":      r.MilestoneWaiveURL,
 
 		"subscription.attachment.upload": r.AttachmentUploadURL,
 		"subscription.attachment.delete": r.AttachmentDeleteURL,

@@ -67,6 +67,85 @@
         </button>
     </div>
     {{end}}
+
+    {{/* 2026-04-29 milestone-billing plan §5 / Phase D — Milestones section.
+         Rendered when subscription.price_plan.billing_kind = MILESTONE. */}}
+    {{if .MilestonesShown}}
+    <div class="milestones-section"
+         data-testid="subscription-milestones-section"
+         hx-trigger="refresh-milestones from:body"
+         hx-get="{{index .Subscription "tab_invoices_url"}}"
+         hx-target="closest #tabContent"
+         hx-swap="outerHTML"
+         style="margin-top: 1.5rem;">
+      <h4 class="detail-section-title">{{.Labels.Milestone.Title}}</h4>
+      <p class="detail-section-caption">{{.Labels.Milestone.Subtitle}}</p>
+      <table class="data-table data-table--compact">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>{{.Labels.Milestone.Title}}</th>
+            <th>{{.Labels.Detail.Status}}</th>
+            <th class="cell-right">{{.Labels.Recognize.TotalLabel}}</th>
+            <th>{{.Labels.Recognize.ColumnTreatment}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Milestones}}
+          <tr data-testid="milestone-row" data-event-id="{{.EventID}}">
+            <td>{{.SequenceLabel}}</td>
+            <td>{{.SequenceLabel}}</td>
+            <td>
+              <span class="badge badge--{{.StatusKey}}"
+                    data-testid="milestone-status-{{.StatusKey}}">
+                {{.StatusLabel}}
+              </span>
+            </td>
+            <td class="cell-right">{{.BillableDisplay}} {{.Currency}}</td>
+            <td>
+              {{if .ShowMarkReady}}
+              <button type="button"
+                      class="btn btn--secondary btn--sm"
+                      data-testid="milestone-mark-ready"
+                      hx-post="{{.MarkReadyURL}}"
+                      hx-swap="none">
+                {{$.Labels.Milestone.MarkReady}}
+              </button>
+              {{end}}
+              {{if .ShowWaive}}
+              <button type="button"
+                      class="btn btn--ghost btn--sm"
+                      data-testid="milestone-waive"
+                      hx-post="{{.WaiveURL}}"
+                      hx-swap="none">
+                {{$.Labels.Milestone.Waive}}
+              </button>
+              {{end}}
+              {{if .ShowRevenueLink}}
+              <a href="{{.RevenueURL}}"
+                 data-testid="milestone-revenue-link"
+                 class="btn btn--link btn--sm">
+                {{$.Labels.Milestone.ViewInvoice}}
+              </a>
+              {{end}}
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="cell-right">
+              <strong>{{.Labels.Milestone.TotalInvoiced}}</strong>
+            </td>
+            <td class="cell-right" data-testid="subscription-total-invoiced">
+              <strong>{{.TotalInvoicedDisplay}} {{.MilestoneCurrency}}</strong>
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {{end}}
 </div>
 {{end}}
 

@@ -117,6 +117,12 @@ const (
 	// SubscriptionRecognizeURL above guards against.
 	SubscriptionCustomizePackageURL = "/action/subscription/customize-package/{id}"
 
+	// 2026-04-29 milestone-billing plan §5 / Phase D — mark-ready + waive
+	// handlers for BillingEvent rows on the subscription Package tab.
+	// Both POST through the espyna BillingEvent.SetStatus domain service.
+	MilestoneMarkReadyURL = "/action/subscription/{id}/billing-event/{eventId}/mark-ready"
+	MilestoneWaiveURL     = "/action/subscription/{id}/billing-event/{eventId}/waive"
+
 	// Collection (money IN) routes
 	CollectionListURL             = "/app/collections/list/{status}"
 	CollectionDetailURL           = "/app/collections/detail/{id}"

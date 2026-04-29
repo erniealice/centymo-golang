@@ -22,11 +22,17 @@ func BuildDurationUnitOptions(cl pyeza.CommonLabels) []types.SelectOption {
 // BuildBillingKindOptions builds the select options for the BillingKind enum
 // on the PricePlan form. Values match the proto enum string representation
 // returned by BillingKind.String() — e.g. "BILLING_KIND_ONE_TIME".
+//
+// 2026-04-29 milestone-billing plan §2.2 / Phase D — adds MILESTONE option.
+// When MILESTONE is selected, the drawer's JS clears + disables the cycle
+// inputs (cycle has no meaning for milestones); the use case defends against
+// stale values by coercing to nil server-side.
 func BuildBillingKindOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
 	return []types.SelectOption{
 		{Value: "BILLING_KIND_ONE_TIME", Label: labels.BillingKindOneTime},
 		{Value: "BILLING_KIND_RECURRING", Label: labels.BillingKindRecurring},
 		{Value: "BILLING_KIND_CONTRACT", Label: labels.BillingKindContract},
+		{Value: "BILLING_KIND_MILESTONE", Label: labels.BillingKindMilestone},
 	}
 }
 

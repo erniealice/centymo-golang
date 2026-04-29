@@ -240,6 +240,15 @@ func NewAddAction(deps *Deps) view.View {
 		billingKindStr := r.FormValue("billing_kind")
 		amountBasisStr := r.FormValue("amount_basis")
 
+		// 2026-04-29 milestone-billing plan §2.2 — defense in depth. The
+		// drawer JS clears the cycle inputs on MILESTONE selection, but a stale
+		// browser submission could still POST cycle values. Coerce them to nil
+		// server-side so the engine's MILESTONE branch sees a clean record.
+		if billingKindStr == "BILLING_KIND_MILESTONE" {
+			bcvStr = ""
+			bcu = ""
+		}
+
 		req := &priceplanpb.CreatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
 				PlanId:          r.FormValue("plan_id"),
@@ -391,6 +400,12 @@ func NewEditAction(deps *Deps) view.View {
 		dtu := r.FormValue("default_term_unit")
 		billingKindStr := r.FormValue("billing_kind")
 		amountBasisStr := r.FormValue("amount_basis")
+
+		// 2026-04-29 milestone-billing plan §2.2 — coerce cycle to nil for MILESTONE.
+		if billingKindStr == "BILLING_KIND_MILESTONE" {
+			bcvStr = ""
+			bcu = ""
+		}
 
 		req := &priceplanpb.UpdatePricePlanRequest{
 			Data: &priceplanpb.PricePlan{
@@ -570,11 +585,16 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 
 // buildBillingKindOptions builds select options for the BillingKind enum.
 // Values match proto BillingKind.String() — e.g. "BILLING_KIND_ONE_TIME".
+//
+// 2026-04-29 milestone-billing — includes MILESTONE option. The drawer JS
+// clears billing_cycle_* on selection; the action POST below also coerces
+// cycle fields to nil when the form posts MILESTONE.
 func buildBillingKindOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
 	return []types.SelectOption{
 		{Value: "BILLING_KIND_ONE_TIME", Label: labels.BillingKindOneTime},
 		{Value: "BILLING_KIND_RECURRING", Label: labels.BillingKindRecurring},
 		{Value: "BILLING_KIND_CONTRACT", Label: labels.BillingKindContract},
+		{Value: "BILLING_KIND_MILESTONE", Label: labels.BillingKindMilestone},
 	}
 }
 
