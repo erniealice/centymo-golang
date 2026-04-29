@@ -9,7 +9,7 @@ Data: .Code, .ClientID, .PricePlanID,
       .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "subscription-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)" data-default-tz="{{.DefaultTZ}}">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="if (event.detail && event.detail.elt === event.currentTarget) lf.Sheet.handleResponse(event)" data-default-tz="{{.DefaultTZ}}">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     <div class="sheet-body">
