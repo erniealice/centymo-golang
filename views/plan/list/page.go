@@ -30,6 +30,14 @@ type ListViewDeps struct {
 	// name. Optional — when nil the column shows the bare client_id.
 	// Used by buildClientNameMap below.
 	ListClientNames func(ctx context.Context) map[string]string
+
+	// JobTemplate name lookup for the optional Job Template column. Returns
+	// id → display name. Optional — when nil the column shows the bare
+	// job_template_id (mirrors the ListClientNames pattern).
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — surfaces the
+	// configured workflow on the Plan list so operators can see at a glance
+	// which Plans will spawn jobs on subscription activation.
+	ListJobTemplateNames func(ctx context.Context) map[string]string
 }
 
 // PageData holds the data for the plan list page.
@@ -150,9 +158,14 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		clientNames = deps.ListClientNames(ctx)
 	}
 
+	templateNames := map[string]string{}
+	if deps.ListJobTemplateNames != nil {
+		templateNames = deps.ListJobTemplateNames(ctx)
+	}
+
 	l := deps.Labels
 	columns := planColumns(l)
-	rows := buildTableRows(items, status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, clientNames)
+	rows := buildTableRows(items, status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, clientNames, templateNames)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -235,10 +248,11 @@ func planColumns(l centymo.PlanLabels) []types.TableColumn {
 		{Key: "name", Label: l.Columns.Name, Sortable: true},
 		{Key: "price", Label: l.Columns.Price, Sortable: true, WidthClass: "col-9xl"},
 		{Key: "client", Label: l.Form.ClientLabel, Sortable: false, WidthClass: "col-3xl"},
+		{Key: "job_template", Label: l.Form.JobTemplate, Sortable: false, WidthClass: "col-3xl"},
 	}
 }
 
-func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, cl pyeza.CommonLabels, routes centymo.PlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, clientNames map[string]string) []types.TableRow {
+func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, cl pyeza.CommonLabels, routes centymo.PlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, clientNames map[string]string, templateNames map[string]string) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, p := range plans {
 		active := p.GetActive()
@@ -257,6 +271,15 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 				clientLabel = n
 			} else {
 				clientLabel = clientID
+			}
+		}
+
+		tplLabel := ""
+		if tid := p.GetJobTemplateId(); tid != "" {
+			if n, ok := templateNames[tid]; ok {
+				tplLabel = n
+			} else {
+				tplLabel = tid
 			}
 		}
 
@@ -326,18 +349,25 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 		} else {
 			cells = append(cells, types.TableCell{Type: "text", Value: ""})
 		}
+		if tplLabel != "" {
+			cells = append(cells, types.TableCell{Type: "badge", Value: tplLabel, Variant: "info"})
+		} else {
+			cells = append(cells, types.TableCell{Type: "text", Value: "—"})
+		}
 
 		rows = append(rows, types.TableRow{
 			ID:    id,
 			Cells: cells,
 			DataAttrs: map[string]string{
-				"name":           name,
-				"price":          description,
-				"status":         recordStatus,
-				"deletable":      boolAttr(!inUseIDs[id]),
-				"activatable":    boolAttr(recordStatus == "inactive"),
-				"deactivatable":  boolAttr(recordStatus == "active"),
-				"client_id":      clientID,
+				"name":             name,
+				"price":            description,
+				"status":           recordStatus,
+				"deletable":        boolAttr(!inUseIDs[id]),
+				"activatable":      boolAttr(recordStatus == "inactive"),
+				"deactivatable":    boolAttr(recordStatus == "active"),
+				"client_id":        clientID,
+				"job_template_id":  p.GetJobTemplateId(),
+				"plan-job-template-name": tplLabel,
 			},
 			Actions: actions,
 		})

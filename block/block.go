@@ -31,6 +31,7 @@ import (
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 	templateview "github.com/erniealice/hybra-golang/views/template"
@@ -1139,12 +1140,36 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 			}
 
+			// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — job
+			// template name lookup for the Job Template column on the plan
+			// list. Mirrors the listClientNames pattern; falls back to the
+			// bare job_template_id when the use case is unwired.
+			var listJobTemplateNames func(ctx context.Context) map[string]string
+			if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ListJobTemplates != nil {
+				ljt := useCases.Operation.JobTemplate.ListJobTemplates.Execute
+				listJobTemplateNames = func(fctx context.Context) map[string]string {
+					out := map[string]string{}
+					resp, err := ljt(fctx, &jobtemplatepb.ListJobTemplatesRequest{})
+					if err != nil {
+						return out
+					}
+					for _, t := range resp.GetData() {
+						if t == nil {
+							continue
+						}
+						out[t.GetId()] = t.GetName()
+					}
+					return out
+				}
+			}
+
 			planListDeps := &planlist.ListViewDeps{
-				Routes:          planRoutes,
-				Labels:          planLabels,
-				CommonLabels:    ctx.Common,
-				TableLabels:     centymoTableLabels,
-				ListClientNames: listClientNames,
+				Routes:               planRoutes,
+				Labels:               planLabels,
+				CommonLabels:         ctx.Common,
+				TableLabels:          centymoTableLabels,
+				ListClientNames:      listClientNames,
+				ListJobTemplateNames: listJobTemplateNames,
 			}
 			if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
 				planListDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
@@ -1394,11 +1419,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// onto the services mount, skip to avoid a ServeMux duplicate-route panic.
 			if cfg.wantPlan() && planBundleRoutes.ListURL != planRoutes.ListURL {
 				planBundleListDeps := &planlist.ListViewDeps{
-					Routes:          planBundleRoutes,
-					Labels:          planLabels,
-					CommonLabels:    ctx.Common,
-					TableLabels:     centymoTableLabels,
-					ListClientNames: listClientNames,
+					Routes:               planBundleRoutes,
+					Labels:               planLabels,
+					CommonLabels:         ctx.Common,
+					TableLabels:          centymoTableLabels,
+					ListClientNames:      listClientNames,
+					ListJobTemplateNames: listJobTemplateNames,
 				}
 				if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
 					planBundleListDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
