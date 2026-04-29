@@ -361,7 +361,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				Active:                pp.GetActive(),
 				// Wave 2: populate new billing fields.
 				BillingKind:         pp.GetBillingKind().String(),
-				BillingKindOptions:  buildBillingKindOptions(formLabels),
+				BillingKindOptions:  form.BuildBillingKindOptions(formLabels),
 				AmountBasis:         pp.GetAmountBasis().String(),
 				AmountBasisOptions:  buildAmountBasisOptions(formLabels),
 				BillingCycleValue:   billingCycleValue,
@@ -1481,16 +1481,6 @@ func labelFromOptions(opts []map[string]any, id string) string {
 // ---------------------------------------------------------------------------
 // Wave 2 option builder helpers (lyngua-fed, no hardcoded English strings)
 // ---------------------------------------------------------------------------
-
-// buildBillingKindOptions builds select options for the BillingKind enum.
-// Values match proto BillingKind.String() — e.g. "BILLING_KIND_ONE_TIME".
-func buildBillingKindOptions(labels centymo.PricePlanFormLabels) []types.SelectOption {
-	return []types.SelectOption{
-		{Value: "BILLING_KIND_ONE_TIME", Label: labels.BillingKindOneTime},
-		{Value: "BILLING_KIND_RECURRING", Label: labels.BillingKindRecurring},
-		{Value: "BILLING_KIND_CONTRACT", Label: labels.BillingKindContract},
-	}
-}
 
 // buildAmountBasisOptions builds select options for the AmountBasis enum.
 // Values match proto AmountBasis.String() — e.g. "AMOUNT_BASIS_PER_CYCLE".
