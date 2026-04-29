@@ -157,6 +157,12 @@ Data: .Code, .ClientID, .PricePlanID,
             {{if .SpawnJobsAvailable}}
             <section data-testid="subscription-spawn-jobs-section" class="form-section">
                 <h3 class="form-section-title">{{.Labels.SpawnJobsSectionTitle}}</h3>
+                {{/* Hidden marker so the POST handler can distinguish "section
+                     was rendered (operator made a decision)" from "section
+                     not rendered (no template detected — leave default-on
+                     behavior alone). See action.go POST branch and
+                     auto-spawn-jobs-from-subscription plan §5.1. */}}
+                <input type="hidden" name="spawn_jobs_field_present" value="1">
                 <div class="form-row single">
                     <label class="form-toggle">
                         <input type="checkbox"

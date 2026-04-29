@@ -670,7 +670,34 @@ func NewAddAction(deps *Deps) view.View {
 			name = planName + " [" + code + "]"
 		}
 
-		resp, err := deps.CreateSubscription(ctx, &subscriptionpb.CreateSubscriptionRequest{
+		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 — propagate the
+		// operator's "Spawn Jobs on Create" toggle decision through context so
+		// CreateSubscriptionUseCase → JobTemplateInstantiator can honor opt-out.
+		//
+		// Tri-state via the `spawn_jobs_field_present` hidden marker emitted
+		// by the form template only when the section was rendered (i.e. the
+		// selected Plan resolved to a JobTemplate):
+		//
+		//   - marker absent           → section not rendered → don't override
+		//                                 (espyna falls back to its legacy
+		//                                  default-on, which will short-circuit
+		//                                  with no_template_found anyway).
+		//   - marker present + spawn_jobs truthy → operator opted in.
+		//   - marker present + spawn_jobs absent  → operator unchecked the box.
+		//
+		// Plain-string key mirrors espyna's exported constant
+		// SpawnJobsOverrideKey (espyna's internal pkg is not importable from
+		// centymo, but a string-keyed context value crosses the module boundary
+		// the same way "businessType" already does).
+		spawnCtx := ctx
+		if r.Form.Get("spawn_jobs_field_present") != "" {
+			rawVal := strings.ToLower(strings.TrimSpace(r.FormValue("spawn_jobs")))
+			val := rawVal == "true" || rawVal == "on" || rawVal == "1" || rawVal == "yes"
+			v := val
+			spawnCtx = context.WithValue(ctx, "spawn_jobs_override", &v)
+		}
+
+		resp, err := deps.CreateSubscription(spawnCtx, &subscriptionpb.CreateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
 				Name:          name,
 				ClientId:      r.FormValue("client_id"),
