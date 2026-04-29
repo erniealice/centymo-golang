@@ -72,8 +72,14 @@
     </div>
 
     <div class="detail-actions detail-actions--spaced">
+        {{/* Edit Package CTA — routes through the plan-tab handler
+             (/action/plan/{id}/price-plans/edit/{ppid}) so the drawer opens
+             with Context: form.ContextPlan and reads the PricePlan via the
+             {ppid} path param. Pre-resolved in Go (PageData.EditURL) so
+             both the plan_id and price_plan_id path values are bound; the
+             template can't synthesize plan_id from `routeWith` alone. */}}
         <a class="btn btn-ghost btn-sm"
-           hx-get="{{routeWith "price_plan.edit" "id" .ID}}"
+           hx-get="{{.EditURL}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
            onclick="if(window.lf && lf.Sheet) lf.Sheet.open('{{.Labels.Buttons.Edit}}')">

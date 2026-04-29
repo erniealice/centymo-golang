@@ -101,6 +101,19 @@ type PageData struct {
 	CreatedDate          string
 	ModifiedDate         string
 	ProductPricesTable   *types.TableConfig
+
+	// EditURL is the resolved URL for the "Edit Package" CTA on the Info tab.
+	// Routed through the plan-tab handler (centymo.PricePlanEditURL,
+	// /action/plan/{id}/price-plans/edit/{ppid}) so the drawer renders with
+	// Context: form.ContextPlan and reads the PricePlan via the {ppid} path
+	// param. The standalone NewEditAction's URL pattern (/action/price-plan/edit/{id})
+	// only carries one path param and would have rendered correctly here too —
+	// but the plan-tab handler is the canonical entry point for editing a
+	// PricePlan within its parent Plan, keeping the form Context aligned with
+	// the entry point the operator used (Image-2 plan-scoped flow). Threaded
+	// through PageData rather than the template's routeWith so Go owns the
+	// {plan_id, ppid} resolution.
+	EditURL string
 }
 
 // ProductPricePlanFormData holds data for the add/edit drawer form.
@@ -564,6 +577,15 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	tabItems := buildTabItems(id, l, productPriceCount, deps.Routes)
 
+	// 2026-04-29 — route Edit Package CTA through the plan-tab handler at
+	// /action/plan/{id}/price-plans/edit/{ppid} so the drawer opens with
+	// form.ContextPlan and reads the PricePlan via {ppid}. This is the same
+	// handler the Plan detail's package-prices tab and the plan-scoped
+	// detail page use, ensuring a single edit code path for all three entry
+	// points (avoids the standalone-context branch silently overwriting
+	// fields like billing_kind on Update).
+	editURL := route.ResolveURL(centymo.PricePlanEditURL, "id", pp.GetPlanId(), "ppid", id)
+
 	pageData := &PageData{
 		PageData: types.PageData{
 			CacheVersion:   viewCtx.CacheVersion,
@@ -592,6 +614,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		StatusVariant:     statusVariant,
 		CreatedDate:       pp.GetDateCreatedString(),
 		ModifiedDate:      pp.GetDateModifiedString(),
+		EditURL:           editURL,
 	}
 
 	// Load tab-specific data
