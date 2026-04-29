@@ -123,6 +123,13 @@ const (
 	MilestoneMarkReadyURL = "/action/subscription/{id}/billing-event/{eventId}/mark-ready"
 	MilestoneWaiveURL     = "/action/subscription/{id}/billing-event/{eventId}/waive"
 
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — retroactive
+	// spawn drawer endpoint (GET = drawer, POST = spawn) and HTMX-driven
+	// partial that re-renders the Spawn Jobs section in the create drawer
+	// when the operator changes the selected Plan / PricePlan.
+	SubscriptionSpawnJobsURL        = "/action/subscription/{subscriptionId}/spawn-jobs"
+	SubscriptionSpawnJobsPartialURL = "/action/subscription/_partial/spawn-jobs-section"
+
 	// Collection (money IN) routes
 	CollectionListURL             = "/app/collections/list/{status}"
 	CollectionDetailURL           = "/app/collections/detail/{id}"

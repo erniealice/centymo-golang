@@ -3200,21 +3200,25 @@ type PlanConfirmLabels struct {
 
 // SubscriptionLabels holds all translatable strings for the subscription module.
 type SubscriptionLabels struct {
-	Page      SubscriptionPageLabels       `json:"page"`
-	Buttons   SubscriptionButtonLabels     `json:"buttons"`
-	Columns   SubscriptionColumnLabels     `json:"columns"`
-	Empty     SubscriptionEmptyLabels      `json:"empty"`
-	Form      SubscriptionFormLabels       `json:"form"`
-	Actions   SubscriptionActionLabels     `json:"actions"`
-	Bulk      SubscriptionBulkLabels       `json:"bulkActions"`
-	Status    SubscriptionStatusLabels     `json:"status"`
-	Detail    SubscriptionDetailLabels     `json:"detail"`
-	Tabs      SubscriptionTabLabels        `json:"tabs"`
-	Invoices  SubscriptionInvoicesLabels   `json:"invoices"`
-	Recognize SubscriptionRecognizeLabels  `json:"recognize"`
-	Milestone SubscriptionMilestoneLabels  `json:"milestone"`
-	Confirm   SubscriptionConfirmLabels    `json:"confirm"`
-	Errors    SubscriptionErrorLabels      `json:"errors"`
+	Page       SubscriptionPageLabels       `json:"page"`
+	Buttons    SubscriptionButtonLabels     `json:"buttons"`
+	Columns    SubscriptionColumnLabels     `json:"columns"`
+	Empty      SubscriptionEmptyLabels      `json:"empty"`
+	Form       SubscriptionFormLabels       `json:"form"`
+	Actions    SubscriptionActionLabels     `json:"actions"`
+	Bulk       SubscriptionBulkLabels       `json:"bulkActions"`
+	Status     SubscriptionStatusLabels     `json:"status"`
+	Detail     SubscriptionDetailLabels     `json:"detail"`
+	Tabs       SubscriptionTabLabels        `json:"tabs"`
+	Invoices   SubscriptionInvoicesLabels   `json:"invoices"`
+	Recognize  SubscriptionRecognizeLabels  `json:"recognize"`
+	Milestone  SubscriptionMilestoneLabels  `json:"milestone"`
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / §9 — Operations
+	// tab on the subscription detail page + retroactive spawn drawer copy.
+	Operations SubscriptionOperationsLabels `json:"operations"`
+	Spawn      SubscriptionSpawnLabels      `json:"spawn"`
+	Confirm    SubscriptionConfirmLabels    `json:"confirm"`
+	Errors     SubscriptionErrorLabels      `json:"errors"`
 }
 
 type SubscriptionPageLabels struct {
@@ -3328,6 +3332,14 @@ type SubscriptionFormLabels struct {
 	// drawer. Templated via {{.ClientName}} for the per-client group.
 	PlanGroupForClient string `json:"planGroupForClient"`
 	PlanGroupGeneral   string `json:"planGroupGeneral"`
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9 — Spawn
+	// Jobs toggle section on the subscription create drawer.
+	SpawnJobsSectionTitle string `json:"spawnJobsSectionTitle"`
+	SpawnJobsToggle       string `json:"spawnJobsToggle"`
+	SpawnJobsHelpText     string `json:"spawnJobsHelpText"`
+	SpawnJobsSummary      string `json:"spawnJobsSummary"`
+	SpawnJobsNone         string `json:"spawnJobsNone"`
 }
 
 type SubscriptionDetailLabels struct {
@@ -3345,6 +3357,7 @@ type SubscriptionDetailLabels struct {
 
 type SubscriptionTabLabels struct {
 	Info         string `json:"info"`
+	Operations   string `json:"operations"`
 	Invoices     string `json:"invoices"`
 	History      string `json:"history"`
 	Attachments  string `json:"attachments"`
@@ -3453,6 +3466,33 @@ type SubscriptionMilestoneLabels struct {
 	TotalInvoiced    string `json:"totalInvoiced"`
 	AmountFull       string `json:"amountFull"`
 	AmountPartial    string `json:"amountPartial"`
+}
+
+// SubscriptionOperationsLabels holds labels for the Subscription detail's
+// Operations tab. Lyngua key: `subscription.detail.operations.*`. See
+// auto-spawn-jobs-from-subscription plan §5.2 / §9.
+type SubscriptionOperationsLabels struct {
+	Title         string `json:"title"`
+	EmptyTitle    string `json:"emptyTitle"`
+	EmptyMessage  string `json:"emptyMessage"`
+	SpawnAction   string `json:"spawnAction"`
+	RootJob       string `json:"rootJob"`
+	ChildJob      string `json:"childJob"`
+	PhaseSummary  string `json:"phaseSummary"`
+	ViewJobLink   string `json:"viewJobLink"`
+}
+
+// SubscriptionSpawnLabels holds labels for the retroactive Spawn Jobs drawer.
+// Lyngua key: `subscription.spawn.*`. See auto-spawn-jobs-from-subscription
+// plan §5.3 / §9.
+type SubscriptionSpawnLabels struct {
+	Title             string `json:"title"`
+	DetectedTemplates string `json:"detectedTemplates"`
+	RootTemplate      string `json:"rootTemplate"`
+	Cancel            string `json:"cancel"`
+	Confirm           string `json:"confirm"`
+	SuccessToast      string `json:"successToast"`
+	Skipped           string `json:"skipped"`
 }
 
 type SubscriptionConfirmLabels struct {
@@ -4557,6 +4597,13 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			// 2026-04-27 plan-client-scope plan §5.1 / §7 — grouped picker headers.
 			PlanGroupForClient: "For {{.ClientName}}",
 			PlanGroupGeneral:   "General packages",
+			// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9 —
+			// Spawn Jobs toggle on subscription create drawer.
+			SpawnJobsSectionTitle: "Operations",
+			SpawnJobsToggle:       "Spawn Job(s) on Create",
+			SpawnJobsHelpText:     "Disable to start without operational tracking (e.g., advisory retainers).",
+			SpawnJobsSummary:      "Spawning {{.JobCount}} Job(s) from {{.TemplateNames}} — includes {{.PhaseCount}} phases, {{.TaskCount}} tasks.",
+			SpawnJobsNone:         "No JobTemplate is configured for this Plan. The engagement will start without operational tracking.",
 		},
 		Actions: SubscriptionActionLabels{
 			View:       "View Subscription",
@@ -4591,6 +4638,7 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 		},
 		Tabs: SubscriptionTabLabels{
 			Info:         "Information",
+			Operations:   "Operations",
 			Invoices:     "Invoices",
 			History:      "History",
 			Attachments:  "Attachments",
@@ -4669,6 +4717,26 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			TotalInvoiced:   "Total Invoiced",
 			AmountFull:      "Full amount",
 			AmountPartial:   "Partial — {{.Billed}} of {{.Full}}",
+		},
+		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 / §9.
+		Operations: SubscriptionOperationsLabels{
+			Title:        "Operational Jobs",
+			EmptyTitle:   "No operational tracking",
+			EmptyMessage: "This engagement has no Jobs. {{.SpawnAction}} to start tracking work.",
+			SpawnAction:  "Spawn Jobs",
+			RootJob:      "Root Job",
+			ChildJob:     "Child Job",
+			PhaseSummary: "{{.Complete}} / {{.Total}} phases complete",
+			ViewJobLink:  "View in Operations",
+		},
+		Spawn: SubscriptionSpawnLabels{
+			Title:             "Spawn Operational Jobs",
+			DetectedTemplates: "Detected templates",
+			RootTemplate:      "Root template",
+			Cancel:            "Cancel",
+			Confirm:           "Spawn Jobs",
+			SuccessToast:      "Spawned {{.JobCount}} Job(s).",
+			Skipped:           "Nothing to spawn — no JobTemplate is linked to this Plan.",
 		},
 		Confirm: SubscriptionConfirmLabels{
 			Cancel:                "Cancel Subscription",

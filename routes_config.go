@@ -1354,6 +1354,12 @@ type SubscriptionRoutes struct {
 	MilestoneMarkReadyURL string `json:"milestone_mark_ready_url"`
 	MilestoneWaiveURL     string `json:"milestone_waive_url"`
 
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / Phase D —
+	// retroactive spawn drawer URL + HTMX-driven partial URL for the
+	// Spawn Jobs section on the create form.
+	SpawnJobsURL        string `json:"spawn_jobs_url"`
+	SpawnJobsPartialURL string `json:"spawn_jobs_partial_url"`
+
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
@@ -1386,6 +1392,10 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		MilestoneMarkReadyURL: MilestoneMarkReadyURL,
 		MilestoneWaiveURL:     MilestoneWaiveURL,
 
+		// 2026-04-29 auto-spawn-jobs-from-subscription.
+		SpawnJobsURL:        SubscriptionSpawnJobsURL,
+		SpawnJobsPartialURL: SubscriptionSpawnJobsPartialURL,
+
 		AttachmentUploadURL: SubscriptionAttachmentUploadURL,
 		AttachmentDeleteURL: SubscriptionAttachmentDeleteURL,
 	}
@@ -1414,6 +1424,10 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		// 2026-04-29 milestone-billing routes.
 		"milestone.mark_ready": r.MilestoneMarkReadyURL,
 		"milestone.waive":      r.MilestoneWaiveURL,
+
+		// 2026-04-29 auto-spawn-jobs-from-subscription routes.
+		"subscription.spawn_jobs":         r.SpawnJobsURL,
+		"subscription.spawn_jobs_partial": r.SpawnJobsPartialURL,
 
 		"subscription.attachment.upload": r.AttachmentUploadURL,
 		"subscription.attachment.delete": r.AttachmentDeleteURL,

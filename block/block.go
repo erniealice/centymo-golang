@@ -111,6 +111,12 @@ type blockConfig struct {
 	// Centymo cannot import entydad (wrong dep direction); the consumer
 	// supplies it via WithClientDetailURL.
 	clientDetailURL string
+	// jobDetailURL is the absolute path template (e.g. "/app/jobs/detail/{id}")
+	// used by the subscription detail's Operations tab to deep-link to fayna
+	// Job detail. Centymo cannot import fayna; the consumer supplies it via
+	// WithJobDetailURL. Optional — Operations tab renders job rows without a
+	// link when unset.
+	jobDetailURL string
 }
 
 func WithInventory() BlockOption    { return func(c *blockConfig) { c.inventory = true } }
@@ -134,6 +140,15 @@ func WithResource() BlockOption     { return func(c *blockConfig) { c.resource =
 // joined client) but isn't a link.
 func WithClientDetailURL(url string) BlockOption {
 	return func(c *blockConfig) { c.clientDetailURL = url }
+}
+
+// WithJobDetailURL supplies the fayna job-detail path template (e.g.
+// "/app/jobs/detail/{id}") so the subscription detail's Operations tab can
+// render a deep link to each spawned Job. Optional — when unset rows render
+// without a link.
+// 2026-04-29 auto-spawn-jobs-from-subscription Phase D.
+func WithJobDetailURL(url string) BlockOption {
+	return func(c *blockConfig) { c.jobDetailURL = url }
 }
 
 func (c *blockConfig) wantInventory() bool    { return c.enableAll || c.inventory }
@@ -1660,6 +1675,40 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					subActionDeps.SetBillingEventStatus = be.SetStatus
 				}
 
+				// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / Phase D —
+				// wire the JobTemplate read deps that drive the Spawn Jobs
+				// section detection on the subscription create drawer + the
+				// retroactive spawn drawer. nil-safe.
+				if useCases.Operation != nil {
+					if uc := useCases.Operation.JobTemplate; uc != nil && uc.ReadJobTemplate != nil {
+						subActionDeps.ReadJobTemplate = uc.ReadJobTemplate.Execute
+					}
+					if uc := useCases.Operation.JobTemplatePhase; uc != nil && uc.ListByJobTemplate != nil {
+						subActionDeps.ListJobTemplatePhases = uc.ListByJobTemplate.Execute
+					}
+					if uc := useCases.Operation.JobTemplateTask; uc != nil && uc.ListByPhase != nil {
+						subActionDeps.ListJobTemplateTasks = uc.ListByPhase.Execute
+					}
+					if useCases.Operation.JobTemplateRelation != nil {
+						subActionDeps.ListJobTemplateRelations = useCases.Operation.JobTemplateRelation.ListByParent
+					}
+				}
+				if useCases.Subscription.MaterializeJobsForSubscription != nil {
+					subActionDeps.MaterializeJobsForSubscription = func(fctx context.Context, subID string, spawn bool) (int, string, error) {
+						resp, err := consumer.MaterializeJobsForSubscription(useCases, fctx, &consumer.MaterializeJobsForSubscriptionRequest{
+							SubscriptionID: subID,
+							SpawnJobs:      spawn,
+						})
+						if err != nil {
+							return 0, "", err
+						}
+						if resp == nil {
+							return 0, "", nil
+						}
+						return resp.JobCount, resp.SkippedReason, nil
+					}
+				}
+
 				ctx.Routes.GET(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.GET(subscriptionRoutes.EditURL, subscriptionaction.NewEditAction(subActionDeps))
@@ -1698,6 +1747,17 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 								subActionDeps.Labels.Errors))
 					}
 				}
+
+				// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / Phase D —
+				// HTMX partial that re-renders the Spawn Jobs section on Plan
+				// select change + the retroactive spawn drawer.
+				if subscriptionRoutes.SpawnJobsPartialURL != "" {
+					ctx.Routes.GET(subscriptionRoutes.SpawnJobsPartialURL, subscriptionaction.NewSpawnJobsPartialAction(subActionDeps))
+				}
+				if subscriptionRoutes.SpawnJobsURL != "" {
+					ctx.Routes.GET(subscriptionRoutes.SpawnJobsURL, subscriptionaction.NewSpawnJobsAction(subActionDeps))
+					ctx.Routes.POST(subscriptionRoutes.SpawnJobsURL, subscriptionaction.NewSpawnJobsAction(subActionDeps))
+				}
 				// Auto-complete search (http.HandlerFunc — uses HandleFunc, not GET)
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchClientURL, subscriptionaction.NewSearchClientsAction(subActionDeps))
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchPlanURL, subscriptionaction.NewSearchPlansAction(subActionDeps))
@@ -1733,6 +1793,18 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if useCases.Subscription.BillingEvent != nil {
 					subDetailDeps.ListBillingEventsBySubscription = useCases.Subscription.BillingEvent.ListBySubscription
 				}
+				// 2026-04-29 auto-spawn-jobs-from-subscription Phase D — wire
+				// the Operations tab data ops + spawn-jobs CTA URL.
+				if useCases.Operation != nil {
+					if uc := useCases.Operation.Job; uc != nil && uc.GetJobsByOrigin != nil {
+						subDetailDeps.GetJobsByOrigin = uc.GetJobsByOrigin.Execute
+					}
+					if uc := useCases.Operation.JobPhase; uc != nil && uc.ListByJob != nil {
+						subDetailDeps.ListJobPhasesByJob = uc.ListByJob.Execute
+					}
+				}
+				subDetailDeps.SpawnJobsURL = subscriptionRoutes.SpawnJobsURL
+				subDetailDeps.JobDetailURL = cfg.jobDetailURL
 				subDetailDeps.ClientDetailURL = cfg.clientDetailURL
 				ctx.Routes.GET(subscriptionRoutes.DetailURL, subscriptiondetail.NewView(subDetailDeps))
 				ctx.Routes.GET(subscriptionRoutes.TabActionURL, subscriptiondetail.NewTabAction(subDetailDeps))

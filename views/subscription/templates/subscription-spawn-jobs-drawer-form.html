@@ -1,0 +1,92 @@
+{{/*
+Retroactive Spawn Jobs drawer.
+2026-04-29 auto-spawn-jobs-from-subscription plan §5.3.
+
+Data: SubscriptionID, SubscriptionLabel, FormAction,
+      Templates [{TemplateID, TemplateName, IsRoot, PhaseCount, TaskCount}],
+      RootName, HasContent,
+      Labels {Title, DetectedTemplates, RootTemplate, Cancel, Confirm, Skipped},
+      CommonLabels.
+*/}}
+{{define "subscription-spawn-jobs-drawer-form"}}
+<form data-testid="spawn-jobs-drawer"
+      hx-post="{{.FormAction}}"
+      hx-swap="none"
+      hx-on::after-request="lf.Sheet.handleResponse(event)">
+    <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
+
+    <div class="sheet-body">
+        <h3 class="sheet-title">{{.Labels.Title}}</h3>
+        <p class="sheet-subtitle" data-testid="spawn-jobs-drawer-subscription">{{.SubscriptionLabel}}</p>
+
+        {{if .HasContent}}
+        <section class="form-section">
+            <h4 class="form-section-title">{{.Labels.DetectedTemplates}}</h4>
+            <ul class="form-list">
+                {{range .Templates}}
+                <li data-testid="spawn-jobs-template-row"
+                    data-template-id="{{.TemplateID}}"
+                    data-is-root="{{if .IsRoot}}true{{else}}false{{end}}"
+                    class="form-list-item">
+                    <label class="form-checkbox">
+                        <input type="checkbox"
+                               name="template_ids"
+                               value="{{.TemplateID}}"
+                               checked
+                               {{if .IsRoot}}data-spawn-jobs-root="true"{{end}}>
+                        <span>
+                            <strong>{{.TemplateName}}</strong>
+                            {{if .IsRoot}}<span class="badge badge--info">{{$.Labels.RootTemplate}}</span>{{end}}
+                        </span>
+                    </label>
+                </li>
+                {{end}}
+            </ul>
+        </section>
+        {{else}}
+        <p data-testid="spawn-jobs-skipped" class="form-info">{{.Labels.Skipped}}</p>
+        {{end}}
+    </div>
+
+    <div class="sheet-footer">
+        <button type="button"
+                class="btn btn--ghost"
+                data-action="cancel"
+                onclick="lf.Sheet.close()">
+            {{.Labels.Cancel}}
+        </button>
+        <button type="submit"
+                class="btn btn--primary"
+                data-testid="spawn-jobs-confirm"
+                {{if not .HasContent}}disabled{{end}}>
+            {{.Labels.Confirm}}
+        </button>
+    </div>
+</form>
+{{end}}
+
+{{/* Standalone partial used by /action/subscription/_partial/spawn-jobs-section.
+     Renders ONLY the inner content of #spawn-jobs-wrapper — the wrapper itself
+     stays in the DOM so HTMX swaps innerHTML. */}}
+{{define "subscription-spawn-jobs-section"}}
+{{if .SpawnJobsAvailable}}
+<section data-testid="subscription-spawn-jobs-section" class="form-section">
+    <h3 class="form-section-title">{{.Labels.SpawnJobsSectionTitle}}</h3>
+    <div class="form-row single">
+        <label class="form-toggle">
+            <input type="checkbox"
+                   name="spawn_jobs"
+                   id="spawn-jobs"
+                   data-testid="subscription-spawn-jobs-toggle"
+                   value="true"
+                   {{if .SpawnJobsDefault}}checked{{end}}>
+            <span>{{.Labels.SpawnJobsToggle}}</span>
+        </label>
+    </div>
+    {{if .SpawnJobsSummary}}
+    <p data-testid="subscription-spawn-jobs-summary" class="form-info">{{.SpawnJobsSummary}}</p>
+    {{end}}
+    <p class="form-help">{{.Labels.SpawnJobsHelpText}}</p>
+</section>
+{{end}}
+{{end}}

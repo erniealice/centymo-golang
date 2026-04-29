@@ -18,6 +18,9 @@ import (
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	enums "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/enums"
+	jobpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job"
+	jobphasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_phase"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
@@ -31,6 +34,18 @@ type DetailViewDeps struct {
 
 	// 2026-04-29 milestone-billing — list events for the Package tab. nil-safe.
 	ListBillingEventsBySubscription func(ctx context.Context, req *billingeventpb.ListBillingEventsBySubscriptionRequest) (*billingeventpb.ListBillingEventsBySubscriptionResponse, error)
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription Phase D — Operations tab
+	// data ops. nil-safe; tab degrades to empty state.
+	GetJobsByOrigin   func(ctx context.Context, req *jobpb.GetJobsByOriginRequest) (*jobpb.GetJobsByOriginResponse, error)
+	ListJobPhasesByJob func(ctx context.Context, req *jobphasepb.ListJobPhasesByJobRequest) (*jobphasepb.ListJobPhasesByJobResponse, error)
+	// JobDetailURL is the absolute URL pattern (e.g. /app/jobs/detail/{id})
+	// used to deep-link to fayna's Job detail page from the Operations tab.
+	// Empty means no link.
+	JobDetailURL string
+	// SpawnJobsURL is the centymo retroactive spawn drawer entry. Used by the
+	// Operations tab empty-state CTA. Empty disables the CTA.
+	SpawnJobsURL string
 	// GetSubscriptionItemPageData returns the subscription with its joined
 	// Client (+ User) and PricePlan (+ Plan) populated. Preferred over
 	// ReadSubscription for the detail view so customer + package fields render
@@ -118,6 +133,29 @@ type PageData struct {
 	Milestones             []MilestoneRow
 	TotalInvoicedDisplay   string // formatted "₱430,000.00"
 	MilestoneCurrency      string
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 / Phase D —
+	// Operations tab data. OperationsHasJobs flips the empty-state CTA;
+	// SpawnJobsURL drives the retroactive-spawn drawer.
+	OperationsHasJobs   bool
+	OperationsRootJobs  []OperationsJobRow
+	OperationsEmptyText string // pre-resolved {{.SpawnAction}} substitution
+	OperationsSpawnURL  string
+}
+
+// OperationsJobRow is one Job row rendered on the subscription detail's
+// Operations tab. Children are rendered inline via the Children slice.
+// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2.
+type OperationsJobRow struct {
+	JobID            string
+	JobName          string
+	IsRoot           bool
+	StatusKey        string // lowercase status, e.g. "planned"
+	StatusVariant    string // pyeza badge variant (success / warning / etc.)
+	BillingRuleKey   string // lowercase billing rule type for the badge
+	PhaseSummaryText string // resolved "{Complete} / {Total} phases complete"
+	JobDetailURL     string // empty when JobDetailURL dep is unwired
+	Children         []OperationsJobRow
 }
 
 // MilestoneRow is a single BillingEvent row rendered inside the Package tab's
@@ -292,6 +330,8 @@ func NewView(deps *DetailViewDeps) view.View {
 			pageData.PackagePricePlan = ppData
 			// 2026-04-29 milestone-billing — milestones list (only on MILESTONE plans).
 			applyMilestoneTabData(ctx, deps, sub, pageData, id)
+		case "operations":
+			applyOperationsTabData(ctx, deps, pageData, id)
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			pageData.Invoices = buildInvoicesTable(
@@ -408,6 +448,8 @@ func buildTabItems(l centymo.SubscriptionLabels, id string, routes centymo.Subsc
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		// 2026-04-27 plan-client-scope plan §6.5 — Package tab.
 		{Key: "package", Label: l.Detail.Plan, Href: base + "?tab=package", HxGet: action + "package", Icon: "icon-package"},
+		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 — Operations tab.
+		{Key: "operations", Label: l.Tabs.Operations, Href: base + "?tab=operations", HxGet: action + "operations", Icon: "icon-briefcase"},
 		{Key: "invoices", Label: l.Tabs.Invoices, Href: base + "?tab=invoices", HxGet: action + "invoices", Icon: "icon-file-text"},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
@@ -769,6 +811,8 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			pageData.PackagePricePlan = ppData
 			// 2026-04-29 milestone-billing — milestones list (only on MILESTONE plans).
 			applyMilestoneTabData(ctx, deps, sub, pageData, id)
+		case "operations":
+			applyOperationsTabData(ctx, deps, pageData, id)
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			pageData.Invoices = buildInvoicesTable(
@@ -819,6 +863,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		if tab == "package" {
 			templateName = "subscription-tab-package"
 		}
+		if tab == "operations" {
+			templateName = "subscription-tab-operations"
+		}
 		if tab == "attachments" {
 			templateName = "attachment-tab"
 		}
@@ -827,4 +874,184 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		}
 		return view.OK(templateName, pageData)
 	})
+}
+
+// applyOperationsTabData populates the Operations tab fields on PageData.
+// Reads spawned Jobs via GetJobsByOrigin (origin_type = SUBSCRIPTION,
+// origin_id = subscription.id), then enriches each Job with its phase rollup
+// from ListJobPhasesByJob. Jobs with parent_job_id are nested under their
+// parent. nil-safe: when deps are unwired the tab degrades to the empty
+// state.
+//
+// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2.
+func applyOperationsTabData(ctx context.Context, deps *DetailViewDeps, pageData *PageData, subscriptionID string) {
+	pageData.OperationsSpawnURL = strings.ReplaceAll(deps.SpawnJobsURL, "{subscriptionId}", subscriptionID)
+	pageData.OperationsEmptyText = strings.ReplaceAll(
+		deps.Labels.Operations.EmptyMessage,
+		"{{.SpawnAction}}",
+		deps.Labels.Operations.SpawnAction,
+	)
+	if deps.GetJobsByOrigin == nil {
+		return
+	}
+	resp, err := deps.GetJobsByOrigin(ctx, &jobpb.GetJobsByOriginRequest{
+		OriginType: enums.OriginType_ORIGIN_TYPE_SUBSCRIPTION,
+		OriginId:   subscriptionID,
+	})
+	if err != nil {
+		log.Printf("Failed to load spawned jobs for subscription %s: %v", subscriptionID, err)
+		return
+	}
+	jobs := []*jobpb.Job{}
+	if resp != nil {
+		jobs = resp.GetJobs()
+	}
+	if len(jobs) == 0 {
+		return
+	}
+	rows := buildOperationsRows(ctx, deps, jobs)
+	pageData.OperationsHasJobs = len(rows) > 0
+	pageData.OperationsRootJobs = rows
+}
+
+// buildOperationsRows converts a flat Job slice into a parent-child tree
+// suitable for the Operations tab template. Each row carries its phase
+// summary string already rendered.
+func buildOperationsRows(ctx context.Context, deps *DetailViewDeps, jobs []*jobpb.Job) []OperationsJobRow {
+	byID := map[string]*OperationsJobRow{}
+	roots := make([]OperationsJobRow, 0)
+	// First pass: build node map.
+	for _, j := range jobs {
+		row := jobToOperationsRow(ctx, deps, j)
+		byID[j.GetId()] = &row
+	}
+	// Second pass: link children, collect roots.
+	for _, j := range jobs {
+		row := byID[j.GetId()]
+		if row == nil {
+			continue
+		}
+		parentID := j.GetParentJobId()
+		if parentID == "" {
+			roots = append(roots, *row)
+			continue
+		}
+		parent, ok := byID[parentID]
+		if !ok {
+			// Orphan child — render at the root for visibility.
+			roots = append(roots, *row)
+			continue
+		}
+		parent.Children = append(parent.Children, *row)
+	}
+	// Re-link children from the byID map after the appends (we need the
+	// updated parent in the roots slice — Go maps store pointers but value
+	// receivers in roots copied. Recompute the roots' Children from byID).
+	for i := range roots {
+		if updated, ok := byID[roots[i].JobID]; ok {
+			roots[i].Children = updated.Children
+		}
+	}
+	return roots
+}
+
+func jobToOperationsRow(ctx context.Context, deps *DetailViewDeps, j *jobpb.Job) OperationsJobRow {
+	statusKey, statusVariant := operationsJobStatusInfo(j.GetStatus())
+	row := OperationsJobRow{
+		JobID:          j.GetId(),
+		JobName:        j.GetName(),
+		IsRoot:         j.GetParentJobId() == "",
+		StatusKey:      statusKey,
+		StatusVariant:  statusVariant,
+		BillingRuleKey: operationsBillingRuleKey(j.GetBillingRuleType()),
+	}
+	if deps.JobDetailURL != "" {
+		row.JobDetailURL = strings.ReplaceAll(deps.JobDetailURL, "{id}", j.GetId())
+	}
+	row.PhaseSummaryText = renderPhaseSummary(ctx, deps, j.GetId())
+	return row
+}
+
+func renderPhaseSummary(ctx context.Context, deps *DetailViewDeps, jobID string) string {
+	if deps.ListJobPhasesByJob == nil {
+		return ""
+	}
+	resp, err := deps.ListJobPhasesByJob(ctx, &jobphasepb.ListJobPhasesByJobRequest{JobId: jobID})
+	if err != nil || resp == nil {
+		return ""
+	}
+	phases := resp.GetJobPhases()
+	total := len(phases)
+	complete := 0
+	for _, p := range phases {
+		if p.GetStatus() == jobphasepb.PhaseStatus_PHASE_STATUS_COMPLETED {
+			complete++
+		}
+	}
+	tmpl := deps.Labels.Operations.PhaseSummary
+	r := strings.NewReplacer(
+		"{{.Complete}}", intStr(complete),
+		"{{.Total}}", intStr(total),
+	)
+	return r.Replace(tmpl)
+}
+
+func operationsJobStatusInfo(s enums.JobStatus) (string, string) {
+	switch s {
+	case enums.JobStatus_JOB_STATUS_DRAFT:
+		return "draft", "default"
+	case enums.JobStatus_JOB_STATUS_PENDING:
+		return "pending", "warning"
+	case enums.JobStatus_JOB_STATUS_PLANNED:
+		return "planned", "default"
+	case enums.JobStatus_JOB_STATUS_ACTIVE:
+		return "active", "success"
+	case enums.JobStatus_JOB_STATUS_PAUSED:
+		return "paused", "warning"
+	case enums.JobStatus_JOB_STATUS_COMPLETED:
+		return "completed", "info"
+	case enums.JobStatus_JOB_STATUS_CLOSED:
+		return "closed", "default"
+	default:
+		return "draft", "default"
+	}
+}
+
+func operationsBillingRuleKey(b enums.BillingRuleType) string {
+	switch b {
+	case enums.BillingRuleType_BILLING_RULE_TYPE_MILESTONE:
+		return "milestone"
+	case enums.BillingRuleType_BILLING_RULE_TYPE_T_AND_M:
+		return "t_and_m"
+	case enums.BillingRuleType_BILLING_RULE_TYPE_NON_BILLABLE:
+		return "non_billable"
+	case enums.BillingRuleType_BILLING_RULE_TYPE_FIXED_FEE:
+		return "fixed_fee"
+	case enums.BillingRuleType_BILLING_RULE_TYPE_INCLUDED:
+		return "included"
+	default:
+		return "unspecified"
+	}
+}
+
+func intStr(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	var b [20]byte
+	i := len(b)
+	for n > 0 {
+		i--
+		b[i] = byte('0' + n%10)
+		n /= 10
+	}
+	if neg {
+		i--
+		b[i] = '-'
+	}
+	return string(b[i:])
 }

@@ -17,6 +17,8 @@
         {{template "subscription-tab-info" .}}
         {{else if eq .ActiveTab "package"}}
         {{template "subscription-tab-package" .}}
+        {{else if eq .ActiveTab "operations"}}
+        {{template "subscription-tab-operations" .}}
         {{else if eq .ActiveTab "invoices"}}
         {{template "subscription-tab-invoices" .}}
         {{else if eq .ActiveTab "audit"}}
@@ -26,6 +28,86 @@
         {{end}}
     </div>
 </div>
+{{end}}
+
+{{/* Operations Tab — 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2.
+     Lists Jobs spawned for this subscription (Job.origin_type = SUBSCRIPTION,
+     Job.origin_id = subscription.id). Renders parent → children indented. */}}
+{{define "subscription-tab-operations"}}
+<div class="tab-scroll" data-testid="operations-tab" id="subscription-operations-tab"
+     hx-trigger="refresh-subscription-operations-tab from:body"
+     hx-get="{{index .Subscription "tab_invoices_url"}}"
+     hx-target="this"
+     hx-swap="outerHTML">
+  {{if .OperationsHasJobs}}
+  <h4 class="detail-section-title">{{.Labels.Operations.Title}}</h4>
+  <ul class="operations-job-list">
+    {{range .OperationsRootJobs}}
+    {{template "subscription-operations-job-row" (dict "Row" . "Labels" $.Labels)}}
+    {{end}}
+  </ul>
+  {{else}}
+  <div class="empty-state" data-testid="operations-empty">
+    <h4 class="empty-state-title">{{.Labels.Operations.EmptyTitle}}</h4>
+    <p class="empty-state-message">{{.OperationsEmptyText}}</p>
+    {{if .OperationsSpawnURL}}
+    <button type="button"
+            class="btn btn--primary"
+            data-testid="operations-spawn-jobs-cta"
+            hx-get="{{.OperationsSpawnURL}}"
+            hx-target="#sheetContent"
+            hx-swap="innerHTML">
+        {{.Labels.Operations.SpawnAction}}
+    </button>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+
+{{/* Recursive render helper for parent + child Jobs in the Operations tab. */}}
+{{define "subscription-operations-job-row"}}
+<li data-testid="operations-job-row"
+    data-job-id="{{.Row.JobID}}"
+    {{if not .Row.IsRoot}}data-job-child="true"{{end}}
+    class="operations-job-row{{if not .Row.IsRoot}} operations-job-row--child{{end}}">
+    <div class="operations-job-row-main">
+        <span class="operations-job-row-name">
+            {{if .Row.IsRoot}}
+            <span class="badge badge--info">{{.Labels.Operations.RootJob}}</span>
+            {{else}}
+            <span class="badge badge--default">{{.Labels.Operations.ChildJob}}</span>
+            {{end}}
+            {{.Row.JobName}}
+        </span>
+        <span class="badge badge--{{.Row.StatusVariant}}"
+              data-testid="operations-job-status-{{.Row.StatusKey}}">
+            {{.Row.StatusKey}}
+        </span>
+        <span class="badge badge--default"
+              data-testid="operations-job-billing-rule-{{.Row.BillingRuleKey}}">
+            {{.Row.BillingRuleKey}}
+        </span>
+        {{if .Row.PhaseSummaryText}}
+        <span class="operations-phase-summary"
+              data-testid="operations-phase-summary">{{.Row.PhaseSummaryText}}</span>
+        {{end}}
+        {{if .Row.JobDetailURL}}
+        <a href="{{.Row.JobDetailURL}}"
+           class="btn btn--link btn--sm"
+           data-testid="operations-view-job-link">
+            {{.Labels.Operations.ViewJobLink}}
+        </a>
+        {{end}}
+    </div>
+    {{if .Row.Children}}
+    <ul class="operations-job-list operations-job-list--children">
+        {{range .Row.Children}}
+        {{template "subscription-operations-job-row" (dict "Row" . "Labels" $.Labels)}}
+        {{end}}
+    </ul>
+    {{end}}
+</li>
 {{end}}
 
 {{/* Package Tab — 2026-04-27 plan-client-scope plan §6.5.

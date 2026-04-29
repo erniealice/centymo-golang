@@ -15,6 +15,10 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
+	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
+	jobtemplaterelationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_relation"
+	jobtemplatetaskpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_task"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
@@ -57,6 +61,13 @@ type FormLabels struct {
 	// grouped Plan / PricePlan auto-complete picker.
 	PlanGroupForClient string // "For {ClientName}" — pre-resolved with ClientName injected.
 	PlanGroupGeneral   string
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9.
+	SpawnJobsSectionTitle string
+	SpawnJobsToggle       string
+	SpawnJobsHelpText     string
+	SpawnJobsSummary      string // {{.JobCount}} / {{.TemplateNames}} / {{.PhaseCount}} / {{.TaskCount}}
+	SpawnJobsNone         string
 }
 
 // PlanOptionGroup is one optgroup in the grouped Plan/PricePlan auto-complete
@@ -108,8 +119,20 @@ type FormData struct {
 	// flat search auto-complete.
 	PlanOptionGroups []PlanOptionGroup
 
-	Labels                FormLabels
-	CommonLabels          any
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 — Spawn Jobs
+	// section state. SpawnJobsAvailable controls section visibility (true
+	// when the selected Plan resolves to one or more JobTemplates).
+	// SpawnJobsDefault controls the default checked state of the toggle.
+	// SpawnJobsSummary is the resolved summary string, or empty when no
+	// templates resolve. SpawnJobsPartialURL is the HTMX endpoint that
+	// re-renders the section on Plan select change.
+	SpawnJobsAvailable  bool
+	SpawnJobsDefault    bool
+	SpawnJobsSummary    string
+	SpawnJobsPartialURL string
+
+	Labels       FormLabels
+	CommonLabels any
 }
 
 // Deps holds dependencies for subscription action handlers.
@@ -170,6 +193,22 @@ type Deps struct {
 	// tab milestone section is skipped.
 	ListBillingEventsBySubscription func(ctx context.Context, req *billingeventpb.ListBillingEventsBySubscriptionRequest) (*billingeventpb.ListBillingEventsBySubscriptionResponse, error)
 	SetBillingEventStatus           func(ctx context.Context, req *billingeventpb.SetBillingEventStatusRequest) (*billingeventpb.SetBillingEventStatusResponse, error)
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / Phase D —
+	// JobTemplate read deps used by:
+	//   1. The Spawn Jobs section detection on the create form (resolves
+	//      Plan.job_template_id → JobTemplate + JobTemplateRelation rows
+	//      → phase + task counts).
+	//   2. The retroactive spawn drawer (lists detected templates).
+	// All are nil-safe — when unwired, the section/drawer hide.
+	ReadJobTemplate          func(ctx context.Context, req *jobtemplatepb.ReadJobTemplateRequest) (*jobtemplatepb.ReadJobTemplateResponse, error)
+	ListJobTemplatePhases    func(ctx context.Context, req *jobtemplatephasepb.ListByJobTemplateRequest) (*jobtemplatephasepb.ListByJobTemplateResponse, error)
+	ListJobTemplateTasks     func(ctx context.Context, req *jobtemplatetaskpb.ListJobTemplateTasksByPhaseRequest) (*jobtemplatetaskpb.ListJobTemplateTasksByPhaseResponse, error)
+	ListJobTemplateRelations func(ctx context.Context, req *jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest) (*jobtemplaterelationpb.ListJobTemplateRelationsByParentResponse, error)
+
+	// MaterializeJobsForSubscription is the espyna use case wired through
+	// the subscription block. Used by the retroactive spawn handler. nil-safe.
+	MaterializeJobsForSubscription func(ctx context.Context, subscriptionID string, spawnJobs bool) (jobCount int, skippedReason string, err error)
 }
 
 // CustomizePlanForClientRequest mirrors the espyna use-case request shape
@@ -224,6 +263,11 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 		NotesInfo:                 l.Form.NotesInfo,
 		PlanGroupForClient:        l.Form.PlanGroupForClient,
 		PlanGroupGeneral:          l.Form.PlanGroupGeneral,
+		SpawnJobsSectionTitle:     l.Form.SpawnJobsSectionTitle,
+		SpawnJobsToggle:           l.Form.SpawnJobsToggle,
+		SpawnJobsHelpText:         l.Form.SpawnJobsHelpText,
+		SpawnJobsSummary:          l.Form.SpawnJobsSummary,
+		SpawnJobsNone:             l.Form.SpawnJobsNone,
 	}
 }
 
@@ -578,8 +622,13 @@ func NewAddAction(deps *Deps) view.View {
 				DateStartISO:          defaultISO,
 				DefaultTZ:             tz.String(),
 				PlanOptionGroups:      loadPricePlanOptionGroups(ctx, deps.ListPricePlans, clientID, clientName, labels),
-				Labels:                labels,
-				CommonLabels:          nil, // injected by ViewAdapter
+				// Spawn Jobs section starts hidden on add (no PricePlan
+				// selected yet); the HTMX partial fills it after selection.
+				SpawnJobsAvailable:  false,
+				SpawnJobsDefault:    true,
+				SpawnJobsPartialURL: deps.Routes.SpawnJobsPartialURL,
+				Labels:              labels,
+				CommonLabels:        nil, // injected by ViewAdapter
 			})
 		}
 
@@ -734,8 +783,13 @@ func NewEditAction(deps *Deps) view.View {
 				ClientBillingCurrency: clientBillingCurrency,
 				PlanLabel:             planLabel,
 				PlanOptionGroups:      loadPricePlanOptionGroups(ctx, deps.ListPricePlans, record.GetClientId(), clientLabel, labels),
-				Labels:                labels,
-				CommonLabels:          nil, // injected by ViewAdapter
+				// Edit drawer never spawns Jobs — the toggle hides because
+				// SpawnJobsAvailable defaults false. Operators trigger
+				// retroactive spawn via the Operations tab CTA.
+				SpawnJobsAvailable:  false,
+				SpawnJobsPartialURL: deps.Routes.SpawnJobsPartialURL,
+				Labels:              labels,
+				CommonLabels:        nil, // injected by ViewAdapter
 			})
 		}
 
@@ -833,5 +887,144 @@ func NewDeleteAction(deps *Deps) view.View {
 // strPtr returns a pointer to a string.
 func strPtr(s string) *string {
 	return &s
+}
+
+// SpawnJobsDetection bundles the result of resolving a PricePlan → Plan →
+// JobTemplate (+ JobTemplateRelation) chain for the Spawn Jobs section.
+// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1.
+type SpawnJobsDetection struct {
+	Available     bool     // true when at least one JobTemplate resolves
+	TemplateNames []string // root + child template names (display order)
+	JobCount      int
+	PhaseCount    int
+	TaskCount     int
+}
+
+// detectSpawnJobs walks PricePlan → Plan → JobTemplate (+ relations) for the
+// drawer's Spawn Jobs section. Returns Available=false when any link is
+// missing or any read dep is unwired. Reads are best-effort — errors are
+// swallowed and surface as Available=false (the section is hidden).
+func detectSpawnJobs(ctx context.Context, deps *Deps, pricePlanID string) SpawnJobsDetection {
+	out := SpawnJobsDetection{}
+	if deps == nil || pricePlanID == "" || deps.ReadPricePlan == nil || deps.ReadPlan == nil || deps.ReadJobTemplate == nil {
+		return out
+	}
+	ppResp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
+		Data: &priceplanpb.PricePlan{Id: pricePlanID},
+	})
+	if err != nil || ppResp == nil || len(ppResp.GetData()) == 0 {
+		return out
+	}
+	planID := ppResp.GetData()[0].GetPlanId()
+	if planID == "" {
+		return out
+	}
+	planResp, err := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{Data: &planpb.Plan{Id: &planID}})
+	if err != nil || planResp == nil || len(planResp.GetData()) == 0 {
+		return out
+	}
+	rootTemplateID := planResp.GetData()[0].GetJobTemplateId()
+	if rootTemplateID == "" {
+		return out
+	}
+
+	// Collect root + active children via JobTemplateRelation.
+	templateIDs := []string{rootTemplateID}
+	if deps.ListJobTemplateRelations != nil {
+		relResp, err := deps.ListJobTemplateRelations(ctx, &jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest{
+			ParentTemplateId: rootTemplateID,
+		})
+		if err == nil && relResp != nil {
+			for _, rel := range relResp.GetJobTemplateRelations() {
+				if !rel.GetActive() {
+					continue
+				}
+				cid := rel.GetChildTemplateId()
+				if cid != "" && cid != rootTemplateID {
+					templateIDs = append(templateIDs, cid)
+				}
+			}
+		}
+	}
+
+	for _, tid := range templateIDs {
+		tplResp, err := deps.ReadJobTemplate(ctx, &jobtemplatepb.ReadJobTemplateRequest{
+			Data: &jobtemplatepb.JobTemplate{Id: tid},
+		})
+		if err != nil || tplResp == nil || len(tplResp.GetData()) == 0 {
+			continue
+		}
+		tpl := tplResp.GetData()[0]
+		if !tpl.GetActive() {
+			continue
+		}
+		out.TemplateNames = append(out.TemplateNames, tpl.GetName())
+		out.JobCount++
+		if deps.ListJobTemplatePhases == nil {
+			continue
+		}
+		phaseResp, err := deps.ListJobTemplatePhases(ctx, &jobtemplatephasepb.ListByJobTemplateRequest{JobTemplateId: tid})
+		if err != nil || phaseResp == nil {
+			continue
+		}
+		phases := phaseResp.GetJobTemplatePhases()
+		out.PhaseCount += len(phases)
+		if deps.ListJobTemplateTasks == nil {
+			continue
+		}
+		for _, ph := range phases {
+			tasksResp, err := deps.ListJobTemplateTasks(ctx, &jobtemplatetaskpb.ListJobTemplateTasksByPhaseRequest{
+				JobTemplatePhaseId: ph.GetId(),
+			})
+			if err != nil || tasksResp == nil {
+				continue
+			}
+			out.TaskCount += len(tasksResp.GetJobTemplateTasks())
+		}
+	}
+
+	out.Available = out.JobCount > 0
+	return out
+}
+
+// resolveSpawnJobsSummary renders the SpawnJobsSummary template
+// ("Spawning {{.JobCount}} Job(s) from {{.TemplateNames}} — includes
+// {{.PhaseCount}} phases, {{.TaskCount}} tasks.") with the detected counts.
+// Falls back to an empty string when the template is empty.
+func resolveSpawnJobsSummary(template string, det SpawnJobsDetection) string {
+	if template == "" || !det.Available {
+		return ""
+	}
+	names := strings.Join(det.TemplateNames, ", ")
+	r := strings.NewReplacer(
+		"{{.JobCount}}", itoa(det.JobCount),
+		"{{.TemplateNames}}", names,
+		"{{.PhaseCount}}", itoa(det.PhaseCount),
+		"{{.TaskCount}}", itoa(det.TaskCount),
+	)
+	return r.Replace(template)
+}
+
+func itoa(n int) string {
+	// fmt.Sprintf is fine but avoids importing fmt at this scope.
+	if n == 0 {
+		return "0"
+	}
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	var b [20]byte
+	i := len(b)
+	for n > 0 {
+		i--
+		b[i] = byte('0' + n%10)
+		n /= 10
+	}
+	if neg {
+		i--
+		b[i] = '-'
+	}
+	return string(b[i:])
 }
 

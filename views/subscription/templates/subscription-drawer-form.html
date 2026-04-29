@@ -143,6 +143,41 @@ Data: .Code, .ClientID, .PricePlanID,
             )}}
         </div>
 
+        {{/* --- Spawn Jobs (auto-spawn-jobs-from-subscription plan §5.1) ---
+             Section is visible only when the selected Plan/PricePlan has at
+             least one JobTemplate wired. The HTMX trigger on the plan
+             auto-complete updates this block when the operator changes the
+             selection. */}}
+        <div id="spawn-jobs-wrapper"
+             hx-get="{{.SpawnJobsPartialURL}}"
+             hx-trigger="auto-complete-change from:#plan-search"
+             hx-include="[name='price_plan_id']"
+             hx-target="this"
+             hx-swap="innerHTML">
+            {{if .SpawnJobsAvailable}}
+            <section data-testid="subscription-spawn-jobs-section" class="form-section">
+                <h3 class="form-section-title">{{.Labels.SpawnJobsSectionTitle}}</h3>
+                <div class="form-row single">
+                    <label class="form-toggle">
+                        <input type="checkbox"
+                               name="spawn_jobs"
+                               id="spawn-jobs"
+                               data-testid="subscription-spawn-jobs-toggle"
+                               value="true"
+                               {{if .SpawnJobsDefault}}checked{{end}}>
+                        <span>{{.Labels.SpawnJobsToggle}}</span>
+                    </label>
+                </div>
+                {{if .SpawnJobsSummary}}
+                <p data-testid="subscription-spawn-jobs-summary" class="form-info">{{.SpawnJobsSummary}}</p>
+                {{end}}
+                <p class="form-help">{{.Labels.SpawnJobsHelpText}}</p>
+            </section>
+            {{else}}
+            {{/* Section omitted entirely — input absent → POST defaults to no spawn override. */}}
+            {{end}}
+        </div>
+
         {{/* --- Notes --- */}}
         {{template "form-section" (dict "Title" .Labels.Notes)}}
 
