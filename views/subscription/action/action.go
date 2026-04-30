@@ -209,6 +209,13 @@ type Deps struct {
 	// MaterializeJobsForSubscription is the espyna use case wired through
 	// the subscription block. Used by the retroactive spawn handler. nil-safe.
 	MaterializeJobsForSubscription func(ctx context.Context, subscriptionID string, spawnJobs bool) (jobCount int, skippedReason string, err error)
+
+	// 2026-04-30 cyclic-subscription-jobs plan §5.3 / Phase D — adapter for
+	// espyna's MaterializeInstanceJobsForSubscription consumer. Wired by
+	// centymo block.go after both this Phase D and the parallel block.go-
+	// owning agent finish (main thread coordinates). nil-safe — the cycle-
+	// spawn / backfill action handlers gate on it explicitly.
+	MaterializeInstanceJobsForSubscription MaterializeInstanceJobsForSubscriptionAdapter
 }
 
 // CustomizePlanForClientRequest mirrors the espyna use-case request shape

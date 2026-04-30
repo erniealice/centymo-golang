@@ -1786,6 +1786,14 @@ type ExpenditureDetailLabels struct {
 	EmptyMessage        string `json:"emptyMessage"`
 	TabDetails          string `json:"tabDetails"`
 	TabPayments         string `json:"tabPayments"`
+	// SPS P10 — Recognition + Accrual tabs on expenditure detail
+	TabRecognition          string `json:"tabRecognition"`
+	TabAccrual              string `json:"tabAccrual"`
+	RecognitionEmptyTitle   string `json:"recognitionEmptyTitle"`
+	RecognitionEmptyMessage string `json:"recognitionEmptyMessage"`
+	RecognitionRecognizeCTA string `json:"recognitionRecognizeCta"`
+	AccrualEmptyTitle       string `json:"accrualEmptyTitle"`
+	AccrualEmptyMessage     string `json:"accrualEmptyMessage"`
 }
 
 // ExpenditurePaymentMethodLabels holds translatable strings for disbursement payment methods.
@@ -2920,6 +2928,11 @@ type PricePlanFormLabels struct {
 	// Both templated with {{.ClientName}}.
 	ScheduleAutoCreateHint string `json:"scheduleAutoCreateHint"`
 	ScheduleAutoReuseHint  string `json:"scheduleAutoReuseHint"`
+
+	// 2026-04-30 cyclic-subscription-jobs plan §9.4 — client-side block
+	// surfaced as a tooltip on the disabled MILESTONE option in the
+	// billing_kind dropdown when the parent Plan is cyclic.
+	MilestoneCyclicBlock string `json:"milestoneCyclicBlock"`
 }
 
 // ---------------------------------------------------------------------------
@@ -3136,6 +3149,12 @@ type PlanFormLabels struct {
 	JobTemplate     string `json:"jobTemplate"`
 	JobTemplateNone string `json:"jobTemplateNone"`
 	JobTemplateHint string `json:"jobTemplateHint"`
+
+	// 2026-04-30 cyclic-subscription-jobs plan §9.3 — visits_per_cycle field.
+	// Number of cycle Job instances spawned per billing cycle (default 1).
+	VisitsPerCycleLabel       string `json:"visitsPerCycleLabel"`
+	VisitsPerCyclePlaceholder string `json:"visitsPerCyclePlaceholder"`
+	VisitsPerCycleHint        string `json:"visitsPerCycleHint"`
 }
 
 type PlanDetailLabels struct {
@@ -3236,8 +3255,12 @@ type SubscriptionLabels struct {
 	// tab on the subscription detail page + retroactive spawn drawer copy.
 	Operations SubscriptionOperationsLabels `json:"operations"`
 	Spawn      SubscriptionSpawnLabels      `json:"spawn"`
-	Confirm    SubscriptionConfirmLabels    `json:"confirm"`
-	Errors     SubscriptionErrorLabels      `json:"errors"`
+	// 2026-04-30 cyclic-subscription-jobs plan §9.2 / §21.3 — Backfill cycle
+	// Jobs drawer + flat Jobs tab.
+	Backfill SubscriptionBackfillLabels  `json:"backfill"`
+	Jobs     SubscriptionJobsTabLabels   `json:"jobs"`
+	Confirm  SubscriptionConfirmLabels   `json:"confirm"`
+	Errors   SubscriptionErrorLabels     `json:"errors"`
 }
 
 type SubscriptionPageLabels struct {
@@ -3377,6 +3400,8 @@ type SubscriptionDetailLabels struct {
 type SubscriptionTabLabels struct {
 	Info         string `json:"info"`
 	Operations   string `json:"operations"`
+	// 2026-04-30 cyclic-subscription-jobs plan §21.2 — flat Jobs tab.
+	Jobs         string `json:"jobs"`
 	Invoices     string `json:"invoices"`
 	History      string `json:"history"`
 	Attachments  string `json:"attachments"`
@@ -3489,7 +3514,8 @@ type SubscriptionMilestoneLabels struct {
 
 // SubscriptionOperationsLabels holds labels for the Subscription detail's
 // Operations tab. Lyngua key: `subscription.detail.operations.*`. See
-// auto-spawn-jobs-from-subscription plan §5.2 / §9.
+// auto-spawn-jobs-from-subscription plan §5.2 / §9 and cyclic-subscription-jobs
+// plan §9.1 (cycle accordion + backfill keys).
 type SubscriptionOperationsLabels struct {
 	Title         string `json:"title"`
 	EmptyTitle    string `json:"emptyTitle"`
@@ -3499,6 +3525,60 @@ type SubscriptionOperationsLabels struct {
 	ChildJob      string `json:"childJob"`
 	PhaseSummary  string `json:"phaseSummary"`
 	ViewJobLink   string `json:"viewJobLink"`
+
+	// 2026-04-30 cyclic-subscription-jobs plan §9.1 — cycle accordion copy.
+	EngagementHeading     string `json:"engagementHeading"`
+	CycleHeading          string `json:"cycleHeading"`
+	CyclePlaceholder      string `json:"cyclePlaceholder"`
+	CycleSpawnNow         string `json:"cycleSpawnNow"`
+	CycleStatusPending    string `json:"cycleStatusPending"`
+	CycleStatusInProgress string `json:"cycleStatusInProgress"`
+	CycleStatusCompleted  string `json:"cycleStatusCompleted"`
+	CycleStatusOverdue    string `json:"cycleStatusOverdue"`
+	CycleInvoiceLinked    string `json:"cycleInvoiceLinked"`
+	CycleNoInvoice        string `json:"cycleNoInvoice"`
+	CycleEmpty            string `json:"cycleEmpty"`
+	BackfillBanner        string `json:"backfillBanner"`
+	BackfillCta           string `json:"backfillCta"`
+}
+
+// SubscriptionBackfillLabels holds labels for the Backfill cycle Jobs drawer.
+// Lyngua key: `subscription.detail.backfill.*`. See cyclic-subscription-jobs
+// plan §9.2.
+type SubscriptionBackfillLabels struct {
+	DrawerTitle       string `json:"drawerTitle"`
+	DrawerDescription string `json:"drawerDescription"`
+	PreviewLine       string `json:"previewLine"`
+	CountLabel        string `json:"countLabel"`
+	Confirm           string `json:"confirm"`
+	Cancel            string `json:"cancel"`
+	MaxWarning        string `json:"maxWarning"`
+}
+
+// SubscriptionJobsTabLabels holds labels for the new flat Jobs tab on the
+// Subscription detail page. Lyngua key: `subscription.detail.jobs.*`. See
+// cyclic-subscription-jobs plan §21.
+type SubscriptionJobsTabLabels struct {
+	Heading          string `json:"heading"`
+	Empty            string `json:"empty"`
+	FilterStatus     string `json:"filterStatus"`
+	FilterType       string `json:"filterType"`
+	FilterAll        string `json:"filterAll"`
+	SortBy           string `json:"sortBy"`
+	SortByCycle      string `json:"sortByCycle"`
+	ExportCsv        string `json:"exportCsv"`
+	Summary          string `json:"summary"`
+	ColumnNumber     string `json:"columnNumber"`
+	ColumnName       string `json:"columnName"`
+	ColumnType       string `json:"columnType"`
+	ColumnPhase      string `json:"columnPhase"`
+	ColumnStatus     string `json:"columnStatus"`
+	ColumnPeriod     string `json:"columnPeriod"`
+	TypeEngagement   string `json:"typeEngagement"`
+	TypeOnboarding   string `json:"typeOnboarding"`
+	TypeCycle        string `json:"typeCycle"`
+	TypeVisit        string `json:"typeVisit"`
+	SpawnFailedToast string `json:"spawnFailedToast"`
 }
 
 // SubscriptionSpawnLabels holds labels for the retroactive Spawn Jobs drawer.
@@ -3603,6 +3683,10 @@ func DefaultPlanLabels() PlanLabels {
 			JobTemplate:             "Job Template",
 			JobTemplateNone:         "(none — engagement has no operational tracking)",
 			JobTemplateHint:         "Select the operational template that defines the work for this engagement. Leave empty for advisory-only plans.",
+			// 2026-04-30 cyclic-subscription-jobs plan §9.3.
+			VisitsPerCycleLabel:       "Visits per billing cycle",
+			VisitsPerCyclePlaceholder: "1",
+			VisitsPerCycleHint:        "Number of cycle Job instances per billing cycle. Default 1. Use 2 for biweekly visits billed monthly, 4 for weekly visits billed monthly.",
 		},
 		Actions: PlanActionLabels{
 			View:       "View Plan",
@@ -3830,6 +3914,50 @@ type PricePlanDetailLabels2 struct {
 	DateModified  string `json:"dateModified"`
 	Edit          string `json:"edit"`
 	EditTitle     string `json:"editTitle"`
+
+	// 2026-04-30 cyclic-subscription-jobs plan §20 — Billing model summary
+	// rendered on the info tab. Lyngua key: `pricePlan.detail.summary*`.
+	SummaryHeading            string                       `json:"summaryHeading"`
+	CustomerHeading           string                       `json:"customerHeading"`
+	OperationsHeading         string                       `json:"operationsHeading"`
+	RevenueRecognitionHeading string                       `json:"revenueRecognitionHeading"`
+	Summary                   PricePlanBillingSummaryCopy  `json:"summary"`
+	Warning                   PricePlanBillingSummaryWarn  `json:"warning"`
+}
+
+// PricePlanBillingSummaryCopy carries the per-(kind × basis) lyngua copy that
+// `buildBillingModelSummary` projects into the info-sections grid.
+// Cyclic plan ships rows 1-6 (oneTime / recurring / contract / milestone);
+// AD_HOC plan adds adHoc.* in a follow-up. Each entry has 3 lines:
+// customer, operations, revenue.
+type PricePlanBillingSummaryCopy struct {
+	OneTime   PricePlanSummaryByBasis `json:"oneTime"`
+	Recurring PricePlanSummaryByBasis `json:"recurring"`
+	Contract  PricePlanSummaryByBasis `json:"contract"`
+	Milestone PricePlanSummaryByBasis `json:"milestone"`
+}
+
+// PricePlanSummaryByBasis groups the three text lines per basis. Empty
+// strings on a basis means "no copy for that combo" — view skips it.
+type PricePlanSummaryByBasis struct {
+	PerCycle         PricePlanSummaryLines `json:"perCycle"`
+	TotalPackage     PricePlanSummaryLines `json:"totalPackage"`
+	DerivedFromLines PricePlanSummaryLines `json:"derivedFromLines"`
+}
+
+// PricePlanSummaryLines holds the 3 lines for a kind × basis cell.
+type PricePlanSummaryLines struct {
+	Customer   string `json:"customer"`
+	Operations string `json:"operations"`
+	Revenue    string `json:"revenue"`
+}
+
+// PricePlanBillingSummaryWarn carries the warning-row copy keyed by symbol
+// per plan §20.3. View only renders entries whose preconditions trip.
+type PricePlanBillingSummaryWarn struct {
+	MilestoneNoTemplate       string `json:"milestoneNoTemplate"`
+	RecurringNoTemplate       string `json:"recurringNoTemplate"`
+	VisitsPerCycleInvalidKind string `json:"visitsPerCycleInvalidKind"`
 }
 
 type PricePlanTabLabels2 struct {
@@ -3980,6 +4108,8 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			ScheduleLockedTooltip:  "This price plan is bound to {{.ClientName}}'s price schedule.",
 			ScheduleAutoCreateHint: "No price schedule exists for {{.ClientName}} yet — one will be created automatically when you save.",
 			ScheduleAutoReuseHint:  "This price plan will be added to the existing price schedule for {{.ClientName}}.",
+			// 2026-04-30 cyclic-subscription-jobs plan §9.4.
+			MilestoneCyclicBlock: "Milestone billing is not supported on cyclic plans (RECURRING / CONTRACT × PER_CYCLE / multi-visit).",
 		},
 		Actions: PricePlanActionLabels{
 			CreateSuccess: "Rate card created successfully.",
@@ -4013,6 +4143,56 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			DateModified:   "Date Modified",
 			Edit:           "Edit Price Plan",
 			EditTitle:      "Edit Price Plan",
+			// 2026-04-30 cyclic-subscription-jobs plan §20.
+			SummaryHeading:            "Billing model summary",
+			CustomerHeading:           "Customer experience",
+			OperationsHeading:         "Operations impact",
+			RevenueRecognitionHeading: "Revenue recognition",
+			Summary: PricePlanBillingSummaryCopy{
+				OneTime: PricePlanSummaryByBasis{
+					TotalPackage: PricePlanSummaryLines{
+						Customer:   "Pays {{.Amount}} once at signup. No further charges.",
+						Operations: "Engagement spawns 1 lifetime Job with phases (if Plan has a JobTemplate).",
+						Revenue:    "One Revenue at Subscription.Create covering the full amount.",
+					},
+				},
+				Recurring: PricePlanSummaryByBasis{
+					PerCycle: PricePlanSummaryLines{
+						Customer:   "Charged {{.Amount}} every {{.CycleLabel}}. Subscription auto-renews until cancelled.",
+						Operations: "Each cycle spawns {{.VisitsPerCycle}} cycle Job(s) (if Plan has a JobTemplate). Operations tab shows cycle accordions.",
+						Revenue:    "One Revenue per cycle. Recognize Revenue creates the invoice and (via piggyback) spawns the cycle Job if missing.",
+					},
+					DerivedFromLines: PricePlanSummaryLines{
+						Customer:   "Charged the sum of itemised lines every {{.CycleLabel}}.",
+						Operations: "Each cycle spawns 1+ cycle Jobs. Operations tracking flows through Plan's JobTemplate.",
+						Revenue:    "Revenue total computed from ProductPricePlan rows; one Revenue per cycle.",
+					},
+				},
+				Contract: PricePlanSummaryByBasis{
+					PerCycle: PricePlanSummaryLines{
+						Customer:   "Charged {{.Amount}} every {{.CycleLabel}} for {{.TermLength}}. Auto-deactivates at term end.",
+						Operations: "Same as recurring + the engagement closes when the {{.TermLength}} term completes.",
+						Revenue:    "Same as recurring. Operator can extend the term to spawn additional cycles.",
+					},
+					TotalPackage: PricePlanSummaryLines{
+						Customer:   "Pays {{.Amount}} upfront for {{.TermLength}} of service.",
+						Operations: "Engagement spawns 1 lifetime Job (or cycle Jobs if cyclic — see Plan's visits_per_cycle).",
+						Revenue:    "One Revenue at signup; cycle Jobs are operational only.",
+					},
+				},
+				Milestone: PricePlanSummaryByBasis{
+					TotalPackage: PricePlanSummaryLines{
+						Customer:   "Pays {{.Amount}} total. Invoice fires per milestone (engagement phase) as work completes.",
+						Operations: "Lifetime engagement Job with phases. BillingEvent rows gate per-milestone invoicing.",
+						Revenue:    "Revenue per milestone trigger; sum across milestones equals the total package.",
+					},
+				},
+			},
+			Warning: PricePlanBillingSummaryWarn{
+				MilestoneNoTemplate:       "Milestone billing requires the Plan to have a JobTemplate. Configure it on the Plan first.",
+				RecurringNoTemplate:       "This subscription will not have operational tracking. Add a JobTemplate to the Plan to enable cycle Jobs.",
+				VisitsPerCycleInvalidKind: "visits_per_cycle is only valid for cyclic plans. Reset to 1 or change the billing kind.",
+			},
 		},
 		Tabs: PricePlanTabLabels2{
 			Info:        "Information",
@@ -4661,6 +4841,8 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 		Tabs: SubscriptionTabLabels{
 			Info:         "Information",
 			Operations:   "Operations",
+			// 2026-04-30 cyclic-subscription-jobs plan §21.2 — flat Jobs tab.
+			Jobs:         "Jobs",
 			Invoices:     "Invoices",
 			History:      "History",
 			Attachments:  "Attachments",
@@ -4740,7 +4922,8 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			AmountFull:      "Full amount",
 			AmountPartial:   "Partial — {{.Billed}} of {{.Full}}",
 		},
-		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 / §9.
+		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 / §9 +
+		// 2026-04-30 cyclic-subscription-jobs plan §9.1 — cycle accordion.
 		Operations: SubscriptionOperationsLabels{
 			Title:        "Operational Jobs",
 			EmptyTitle:   "No operational tracking",
@@ -4750,6 +4933,54 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			ChildJob:     "Child Job",
 			PhaseSummary: "{{.Complete}} / {{.Total}} phases complete",
 			ViewJobLink:  "View in Operations",
+
+			// Cycle accordion + backfill copy.
+			EngagementHeading:     "Engagement (since {{.Started}})",
+			CycleHeading:          "Cycle {{.CycleIndex}} — {{.PeriodLabel}}",
+			CyclePlaceholder:      "Cycle starts {{.PeriodStart}} — Jobs will spawn at cycle start, or click below to spawn now.",
+			CycleSpawnNow:         "Spawn this cycle now",
+			CycleStatusPending:    "Pending",
+			CycleStatusInProgress: "In progress",
+			CycleStatusCompleted:  "Completed",
+			CycleStatusOverdue:    "Overdue",
+			CycleInvoiceLinked:    "Invoice {{.RevenueCode}} · {{.Status}}",
+			CycleNoInvoice:        "Not yet invoiced",
+			CycleEmpty:            "No cycles yet",
+			BackfillBanner:        "{{.Count}} cycle(s) missing operational tracking. Spawn now to backfill.",
+			BackfillCta:           "Backfill missing cycles",
+		},
+		// 2026-04-30 cyclic-subscription-jobs plan §9.2 — backfill drawer.
+		Backfill: SubscriptionBackfillLabels{
+			DrawerTitle:       "Backfill cycle Jobs",
+			DrawerDescription: "Preview the cycles that will be spawned, then confirm to materialize them in one transaction.",
+			PreviewLine:       "Cycle {{.Index}} — {{.PeriodLabel}}",
+			CountLabel:        "Cycles to spawn",
+			Confirm:           "Spawn {{.Count}} cycle(s)",
+			Cancel:            "Cancel",
+			MaxWarning:        "Backfill is capped at 24 cycles per request. Reduce the range or run multiple backfills.",
+		},
+		// 2026-04-30 cyclic-subscription-jobs plan §21.3 — flat Jobs tab.
+		Jobs: SubscriptionJobsTabLabels{
+			Heading:          "Jobs",
+			Empty:            "No Jobs yet — this engagement has no operational tracking.",
+			FilterStatus:     "Status",
+			FilterType:       "Type",
+			FilterAll:        "All",
+			SortBy:           "Sort",
+			SortByCycle:      "Cycle #",
+			ExportCsv:        "Export CSV",
+			Summary:          "Showing {{.Visible}} of {{.Total}} Jobs",
+			ColumnNumber:     "#",
+			ColumnName:       "Job Name",
+			ColumnType:       "Type",
+			ColumnPhase:      "Phase",
+			ColumnStatus:     "Status",
+			ColumnPeriod:     "Period",
+			TypeEngagement:   "Engagement",
+			TypeOnboarding:   "Onboarding",
+			TypeCycle:        "Cycle",
+			TypeVisit:        "Visit",
+			SpawnFailedToast: "Cycle Job spawn failed for {{.Period}} — invoice was created but the operational Job will need a manual retry.",
 		},
 		Spawn: SubscriptionSpawnLabels{
 			Title:             "Spawn Operational Jobs",
@@ -5042,12 +5273,14 @@ type SupplierContractColumnLabels struct {
 }
 
 type SupplierContractTabLabels struct {
-	Info               string `json:"info"`
-	Lines              string `json:"lines"`
-	LinkedPOs          string `json:"linkedPos"`
-	LinkedExpenditures string `json:"linkedExpenditures"`
-	Activity           string `json:"activity"`
-	ActivityEmpty      string `json:"activityEmpty"`
+	Info                string `json:"info"`
+	Lines               string `json:"lines"`
+	LinkedPOs           string `json:"linkedPos"`
+	LinkedExpenditures  string `json:"linkedExpenditures"`
+	PriceSchedules      string `json:"priceSchedules"`
+	Activity            string `json:"activity"`
+	ActivityEmpty       string `json:"activityEmpty"`
+	PriceSchedulesEmpty string `json:"priceSchedulesEmpty"`
 }
 
 type SupplierContractDetailLabels struct {
@@ -5249,12 +5482,14 @@ func DefaultSupplierContractLabels() SupplierContractLabels {
 			Remaining: "Remaining",
 		},
 		Tabs: SupplierContractTabLabels{
-			Info:               "Info",
-			Lines:              "Lines",
-			LinkedPOs:          "Linked POs",
-			LinkedExpenditures: "Linked Expenditures",
-			Activity:           "Activity",
-			ActivityEmpty:      "No activity recorded yet.",
+			Info:                "Info",
+			Lines:               "Lines",
+			LinkedPOs:           "Linked POs",
+			LinkedExpenditures:  "Linked Expenditures",
+			PriceSchedules:      "Price Schedules",
+			Activity:            "Activity",
+			ActivityEmpty:       "No activity recorded yet.",
+			PriceSchedulesEmpty: "No price schedules yet. Add a schedule to layer multi-year pricing on this contract.",
 		},
 		Detail: SupplierContractDetailLabels{
 			InfoSection:     "Contract Information",
@@ -5418,6 +5653,78 @@ type ProcurementRequestLabels struct {
 	SpawnedPOs ProcurementRequestSpawnedPOLabels `json:"spawnedPos"`
 	Form       ProcurementRequestFormLabels      `json:"form"`
 	Empty      ProcurementRequestEmptyLabels     `json:"empty"`
+
+	// SPS Wave 3 — F1/F2/F3 + CRIT-3 spawn lifecycle
+	Filters              ProcurementRequestFilterLabels              `json:"filters"`
+	FulfillmentStrategy  ProcurementRequestFulfillmentStrategyLabels `json:"fulfillmentStrategy"`
+	FulfillmentMode      ProcurementRequestFulfillmentModeLabels     `json:"fulfillmentMode"`
+	FulfillmentModeHints ProcurementRequestFulfillmentModeHintLabels `json:"fulfillmentModeHints"`
+	Spawn                ProcurementRequestSpawnLabels               `json:"spawn"`
+	PolicyDecision       ProcurementRequestPolicyDecisionLabels      `json:"policyDecision"`
+}
+
+// ProcurementRequestFilterLabels — F3 filter chips on the list page.
+type ProcurementRequestFilterLabels struct {
+	All                    string `json:"all"`
+	Status                 string `json:"status"`
+	FulfillmentStrategy    string `json:"fulfillmentStrategy"`
+	FulfillmentMode        string `json:"fulfillmentMode"`
+	AnyStatus              string `json:"anyStatus"`
+	AnyFulfillmentStrategy string `json:"anyFulfillmentStrategy"`
+	AnyFulfillmentMode     string `json:"anyFulfillmentMode"`
+}
+
+// ProcurementRequestFulfillmentStrategyLabels — F3 strategy values for header-level rollup.
+type ProcurementRequestFulfillmentStrategyLabels struct {
+	UniformOutright  string `json:"uniformOutright"`
+	UniformStockable string `json:"uniformStockable"`
+	UniformRecurring string `json:"uniformRecurring"`
+	UniformPetty     string `json:"uniformPetty"`
+	Mixed            string `json:"mixed"`
+	Hint             string `json:"hint"`
+}
+
+// ProcurementRequestFulfillmentModeLabels — F1 line-level mode values.
+type ProcurementRequestFulfillmentModeLabels struct {
+	Outright  string `json:"outright"`
+	Stockable string `json:"stockable"`
+	Recurring string `json:"recurring"`
+	Petty     string `json:"petty"`
+}
+
+// ProcurementRequestFulfillmentModeHintLabels — F1 short hints rendered under each radio choice.
+type ProcurementRequestFulfillmentModeHintLabels struct {
+	Outright  string `json:"outright"`
+	Stockable string `json:"stockable"`
+	Recurring string `json:"recurring"`
+	Petty     string `json:"petty"`
+}
+
+// ProcurementRequestSpawnLabels — CRIT-3 spawn lifecycle UI strings.
+type ProcurementRequestSpawnLabels struct {
+	StatusColumn      string `json:"statusColumn"`
+	StatusPending     string `json:"statusPending"`
+	StatusSpawning    string `json:"statusSpawning"`
+	StatusSpawned     string `json:"statusSpawned"`
+	StatusFailed      string `json:"statusFailed"`
+	StatusUnspecified string `json:"statusUnspecified"`
+	ModeColumn        string `json:"modeColumn"`
+	SpawnedColumn     string `json:"spawnedColumn"`
+	LinkPO            string `json:"linkPo"`
+	LinkContract      string `json:"linkContract"`
+	LinkExpenditure   string `json:"linkExpenditure"`
+	NotApplicable     string `json:"notApplicable"`
+	ErrorPrefix       string `json:"errorPrefix"`
+	RetryButton       string `json:"retryButton"`
+	RetryConfirm      string `json:"retryConfirm"`
+}
+
+// ProcurementRequestPolicyDecisionLabels — policy_decision_log section on Info tab.
+type ProcurementRequestPolicyDecisionLabels struct {
+	SectionTitle string `json:"sectionTitle"`
+	Toggle       string `json:"toggle"`
+	EmptyMessage string `json:"emptyMessage"`
+	Info         string `json:"info"`
 }
 
 type ProcurementRequestPageLabels struct {
@@ -5500,6 +5807,28 @@ type ProcurementRequestLineLabels struct {
 	FormLocation                       string `json:"formLocation"`
 	FormLocationPlaceholder            string `json:"formLocationPlaceholder"`
 	FormLineNumber                     string `json:"formLineNumber"`
+
+	// SPS Wave 3 — F1 fulfillment_mode picker + RECURRING fields + PETTY hint
+	FormFulfillmentMode     string `json:"formFulfillmentMode"`
+	FormFulfillmentModeInfo string `json:"formFulfillmentModeInfo"`
+	FormFulfillmentModeHint string `json:"formFulfillmentModeHint"`
+
+	FormRecurringSection    string `json:"formRecurringSection"`
+	FormRecurringCycleValue string `json:"formRecurringCycleValue"`
+	FormRecurringCycleUnit  string `json:"formRecurringCycleUnit"`
+	FormRecurringTermValue  string `json:"formRecurringTermValue"`
+	FormRecurringTermUnit   string `json:"formRecurringTermUnit"`
+	FormRecurringCycleHint  string `json:"formRecurringCycleHint"`
+	FormRecurringTermHint   string `json:"formRecurringTermHint"`
+	FormRecurringUnitDay    string `json:"formRecurringUnitDay"`
+	FormRecurringUnitWeek   string `json:"formRecurringUnitWeek"`
+	FormRecurringUnitMonth  string `json:"formRecurringUnitMonth"`
+	FormRecurringUnitYear   string `json:"formRecurringUnitYear"`
+
+	FormPettyHint string `json:"formPettyHint"`
+
+	// CRIT-3 spawn lifecycle column on the lines table
+	ModeBadgeColumn string `json:"modeBadgeColumn"`
 }
 
 type ProcurementRequestSpawnedPOLabels struct {
@@ -5542,13 +5871,14 @@ type ProcurementRequestFormLabels struct {
 	NeededByDateInfo      string `json:"neededByDateInfo"`
 	Status                string `json:"status"`
 	StatusInfo            string `json:"statusInfo"`
-	StatusDraft           string `json:"statusDraft"`
-	StatusSubmitted       string `json:"statusSubmitted"`
-	StatusPendingApproval string `json:"statusPendingApproval"`
-	StatusApproved        string `json:"statusApproved"`
-	StatusRejected        string `json:"statusRejected"`
-	StatusFulfilled       string `json:"statusFulfilled"`
-	StatusCancelled       string `json:"statusCancelled"`
+	StatusDraft                string `json:"statusDraft"`
+	StatusSubmitted            string `json:"statusSubmitted"`
+	StatusPendingApproval      string `json:"statusPendingApproval"`
+	StatusApproved             string `json:"statusApproved"`
+	StatusApprovedPendingSpawn string `json:"statusApprovedPendingSpawn"`
+	StatusRejected             string `json:"statusRejected"`
+	StatusFulfilled            string `json:"statusFulfilled"`
+	StatusCancelled            string `json:"statusCancelled"`
 	ApprovedBy            string `json:"approvedBy"`
 
 	// §4 Others
@@ -5646,6 +5976,22 @@ func DefaultProcurementRequestLabels() ProcurementRequestLabels {
 			FormLocation:                       "Location",
 			FormLocationPlaceholder:            "Branch or cost center",
 			FormLineNumber:                     "Line Number",
+			FormFulfillmentMode:                "Fulfillment Mode",
+			FormFulfillmentModeInfo:            "How this line will be sourced after approval. Drives the downstream artifact created when the request is approved.",
+			FormFulfillmentModeHint:            "Pick one — the spawn cascade dispatches per-line based on this choice.",
+			FormRecurringSection:               "Recurring Schedule",
+			FormRecurringCycleValue:            "Cycle Every",
+			FormRecurringCycleUnit:             "Cycle Unit",
+			FormRecurringTermValue:             "Term Length",
+			FormRecurringTermUnit:               "Term Unit",
+			FormRecurringCycleHint:             "Billing/delivery cadence (e.g. every 1 month).",
+			FormRecurringTermHint:              "Total contract horizon (e.g. 24 months).",
+			FormRecurringUnitDay:               "Day",
+			FormRecurringUnitWeek:              "Week",
+			FormRecurringUnitMonth:             "Month",
+			FormRecurringUnitYear:              "Year",
+			FormPettyHint:                      "Petty mode auto-approves under threshold and posts a direct expenditure. No PO, no contract.",
+			ModeBadgeColumn:                    "Mode",
 		},
 		SpawnedPOs: ProcurementRequestSpawnedPOLabels{
 			PONumber:     "PO Number",
@@ -5678,13 +6024,14 @@ func DefaultProcurementRequestLabels() ProcurementRequestLabels {
 			NeededByDateInfo:         "When the goods or services are required.",
 			Status:                   "Status",
 			StatusInfo:               "Lifecycle stage. draft → submitted → pending_approval → approved/rejected → fulfilled/cancelled.",
-			StatusDraft:              "Draft",
-			StatusSubmitted:          "Submitted",
-			StatusPendingApproval:    "Pending Approval",
-			StatusApproved:           "Approved",
-			StatusRejected:           "Rejected",
-			StatusFulfilled:          "Fulfilled",
-			StatusCancelled:          "Cancelled",
+			StatusDraft:                "Draft",
+			StatusSubmitted:            "Submitted",
+			StatusPendingApproval:      "Pending Approval",
+			StatusApproved:             "Approved",
+			StatusApprovedPendingSpawn: "Approved — Pending Spawn",
+			StatusRejected:             "Rejected",
+			StatusFulfilled:            "Fulfilled",
+			StatusCancelled:            "Cancelled",
 			ApprovedBy:               "Approved By",
 			Justification:            "Justification",
 			JustificationPlaceholder: "Business reason for this request",
@@ -5701,6 +6048,58 @@ func DefaultProcurementRequestLabels() ProcurementRequestLabels {
 		Empty: ProcurementRequestEmptyLabels{
 			Title:   "No procurement requests",
 			Message: "Create a procurement request to start the approval workflow.",
+		},
+		Filters: ProcurementRequestFilterLabels{
+			All:                    "All",
+			Status:                 "Status",
+			FulfillmentStrategy:    "Fulfillment",
+			FulfillmentMode:        "Mode",
+			AnyStatus:              "Any Status",
+			AnyFulfillmentStrategy: "Any Fulfillment",
+			AnyFulfillmentMode:     "Any Mode",
+		},
+		FulfillmentStrategy: ProcurementRequestFulfillmentStrategyLabels{
+			UniformOutright:  "Uniform — Outright",
+			UniformStockable: "Uniform — Stockable",
+			UniformRecurring: "Uniform — Recurring",
+			UniformPetty:     "Uniform — Petty",
+			Mixed:            "Mixed Modes",
+			Hint:             "Auto-derived from per-line fulfillment modes. Mixed = lines split across multiple modes.",
+		},
+		FulfillmentMode: ProcurementRequestFulfillmentModeLabels{
+			Outright:  "Outright",
+			Stockable: "Stockable",
+			Recurring: "Recurring",
+			Petty:     "Petty",
+		},
+		FulfillmentModeHints: ProcurementRequestFulfillmentModeHintLabels{
+			Outright:  "One-shot purchase. Spawns a single purchase order on approval; no recurrence, no inventory side-effect.",
+			Stockable: "Replenishment buy. Spawns a purchase order; received goods credit inventory on receipt.",
+			Recurring: "Standing agreement. Spawns a supplier contract on approval; the recurrence engine emits cycle bills.",
+			Petty:     "Cash-out. Spawns an expenditure directly against petty cash. No PO, no contract.",
+		},
+		Spawn: ProcurementRequestSpawnLabels{
+			StatusColumn:      "Spawn Status",
+			StatusPending:     "Pending",
+			StatusSpawning:    "Spawning",
+			StatusSpawned:     "Spawned",
+			StatusFailed:      "Failed",
+			StatusUnspecified: "—",
+			ModeColumn:        "Mode",
+			SpawnedColumn:     "Spawned Artifact",
+			LinkPO:            "View PO line",
+			LinkContract:      "View contract",
+			LinkExpenditure:   "View expenditure",
+			NotApplicable:     "—",
+			ErrorPrefix:       "Error",
+			RetryButton:       "Retry spawn",
+			RetryConfirm:      "Retry spawning the downstream artifact for this line?",
+		},
+		PolicyDecision: ProcurementRequestPolicyDecisionLabels{
+			SectionTitle: "Approval Policy Log",
+			Toggle:       "Show / Hide",
+			EmptyMessage: "No policy decisions logged yet.",
+			Info:         "Audit trail of approval policy decisions taken on this request (auto-approve, escalation, override). Read-only.",
 		},
 	}
 }
@@ -5756,4 +6155,1090 @@ type ProcurementLabels struct {
 	DaysUntilExpiry       string `json:"days_until_expiry"`
 	UtilizationPercent    string `json:"utilization_percent"`
 	BudgetPressureLabel   string `json:"budget_pressure_label"`
+}
+
+// ---------------------------------------------------------------------------
+// SPS P7 — SupplierContractPriceSchedule labels
+// (mirrors lyngua/translations/en/general/supplier_contract_price_schedule.json
+//  root key "supplierContractPriceSchedule")
+// ---------------------------------------------------------------------------
+
+// SupplierContractPriceScheduleLabels holds all translatable strings for the
+// supplier_contract_price_schedule + child line views.
+type SupplierContractPriceScheduleLabels struct {
+	Labels  SupplierContractPriceScheduleNounLabels    `json:"labels"`
+	Page    SupplierContractPriceSchedulePageLabels    `json:"page"`
+	Buttons SupplierContractPriceScheduleButtonLabels  `json:"buttons"`
+	Filters SupplierContractPriceScheduleFilterLabels  `json:"filters"`
+	Columns SupplierContractPriceScheduleColumnLabels  `json:"columns"`
+	Empty   SupplierContractPriceScheduleEmptyLabels   `json:"empty"`
+	Form    SupplierContractPriceScheduleFormLabels    `json:"form"`
+	Status  SupplierContractPriceScheduleStatusLabels  `json:"status"`
+	Tabs    SupplierContractPriceScheduleTabLabels     `json:"tabs"`
+	Lines   SupplierContractPriceScheduleLinesLabels   `json:"lines"`
+	Detail  SupplierContractPriceScheduleDetailLabels  `json:"detail"`
+	Errors  SupplierContractPriceScheduleErrorLabels   `json:"errors"`
+}
+
+type SupplierContractPriceScheduleNounLabels struct {
+	Name       string `json:"name"`
+	NamePlural string `json:"namePlural"`
+	Line       string `json:"line"`
+	LinePlural string `json:"linePlural"`
+}
+
+type SupplierContractPriceSchedulePageLabels struct {
+	Heading           string `json:"heading"`
+	Caption           string `json:"caption"`
+	HeadingScheduled  string `json:"headingScheduled"`
+	HeadingActive     string `json:"headingActive"`
+	HeadingSuperseded string `json:"headingSuperseded"`
+	HeadingCancelled  string `json:"headingCancelled"`
+	TabTitle          string `json:"tabTitle"`
+}
+
+type SupplierContractPriceScheduleButtonLabels struct {
+	Add       string `json:"add"`
+	AddLine   string `json:"addLine"`
+	Activate  string `json:"activate"`
+	Supersede string `json:"supersede"`
+	Cancel    string `json:"cancel"`
+}
+
+type SupplierContractPriceScheduleFilterLabels struct {
+	All                 string `json:"all"`
+	Status              string `json:"status"`
+	AnyStatus           string `json:"anyStatus"`
+	SupplierContract    string `json:"supplierContract"`
+	AnySupplierContract string `json:"anySupplierContract"`
+	DateRange           string `json:"dateRange"`
+}
+
+type SupplierContractPriceScheduleColumnLabels struct {
+	InternalID       string `json:"internalId"`
+	Name             string `json:"name"`
+	SupplierContract string `json:"supplierContract"`
+	SequenceNumber   string `json:"sequenceNumber"`
+	DateStart        string `json:"dateStart"`
+	DateEnd          string `json:"dateEnd"`
+	Status           string `json:"status"`
+	Currency         string `json:"currency"`
+	LineCount        string `json:"lineCount"`
+	Total            string `json:"total"`
+}
+
+type SupplierContractPriceScheduleEmptyLabels struct {
+	Title              string `json:"title"`
+	Message            string `json:"message"`
+	ScheduledTitle     string `json:"scheduledTitle"`
+	ScheduledMessage   string `json:"scheduledMessage"`
+	ActiveTitle        string `json:"activeTitle"`
+	ActiveMessage      string `json:"activeMessage"`
+	SupersededTitle    string `json:"supersededTitle"`
+	SupersededMessage  string `json:"supersededMessage"`
+	CancelledTitle     string `json:"cancelledTitle"`
+	CancelledMessage   string `json:"cancelledMessage"`
+}
+
+type SupplierContractPriceScheduleFormLabels struct {
+	// Section headers
+	SectionIdentity  string `json:"sectionIdentity"`
+	SectionValidity  string `json:"sectionValidity"`
+	SectionScoping   string `json:"sectionScoping"`
+	SectionLifecycle string `json:"sectionLifecycle"`
+	SectionNotes     string `json:"sectionNotes"`
+
+	// Identity
+	Name                  string `json:"name"`
+	NamePlaceholder       string `json:"namePlaceholder"`
+	NameInfo              string `json:"nameInfo"`
+	Description           string `json:"description"`
+	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
+	InternalID            string `json:"internalId"`
+	InternalIDPlaceholder string `json:"internalIdPlaceholder"`
+	InternalIDInfo        string `json:"internalIdInfo"`
+
+	// Scoping
+	SupplierContract       string `json:"supplierContract"`
+	SelectSupplierContract string `json:"selectSupplierContract"`
+	SupplierContractInfo   string `json:"supplierContractInfo"`
+
+	// Validity
+	DateStart          string `json:"dateStart"`
+	DateStartInfo      string `json:"dateStartInfo"`
+	DateEnd            string `json:"dateEnd"`
+	DateEndPlaceholder string `json:"dateEndPlaceholder"`
+	DateEndInfo        string `json:"dateEndInfo"`
+
+	// Currency / location
+	Currency           string `json:"currency"`
+	CurrencyPlaceholder string `json:"currencyPlaceholder"`
+	CurrencyInfo       string `json:"currencyInfo"`
+	Location           string `json:"location"`
+	SelectLocation     string `json:"selectLocation"`
+	LocationInfo       string `json:"locationInfo"`
+
+	// Lifecycle
+	Status                    string `json:"status"`
+	SelectStatus              string `json:"selectStatus"`
+	StatusInfo                string `json:"statusInfo"`
+	SequenceNumber            string `json:"sequenceNumber"`
+	SequenceNumberPlaceholder string `json:"sequenceNumberPlaceholder"`
+	SequenceNumberInfo        string `json:"sequenceNumberInfo"`
+
+	// Notes
+	Notes            string `json:"notes"`
+	NotesPlaceholder string `json:"notesPlaceholder"`
+	NotesInfo        string `json:"notesInfo"`
+}
+
+type SupplierContractPriceScheduleStatusLabels struct {
+	Scheduled  string `json:"scheduled"`
+	Active     string `json:"active"`
+	Superseded string `json:"superseded"`
+	Cancelled  string `json:"cancelled"`
+}
+
+type SupplierContractPriceScheduleTabLabels struct {
+	Info     string `json:"info"`
+	Lines    string `json:"lines"`
+	Activity string `json:"activity"`
+}
+
+type SupplierContractPriceScheduleLinesLabels struct {
+	Title              string                                          `json:"title"`
+	Empty              string                                          `json:"empty"`
+	AddLine            string                                          `json:"addLine"`
+	ColumnContractLine string                                          `json:"columnContractLine"`
+	ColumnUnitPrice    string                                          `json:"columnUnitPrice"`
+	ColumnQuantity     string                                          `json:"columnQuantity"`
+	ColumnMinimumAmount string                                         `json:"columnMinimumAmount"`
+	ColumnCurrency     string                                          `json:"columnCurrency"`
+	ColumnCycleOverride string                                         `json:"columnCycleOverride"`
+	LineForm           SupplierContractPriceScheduleLineFormLabels     `json:"lineForm"`
+}
+
+type SupplierContractPriceScheduleLineFormLabels struct {
+	SectionLink                  string `json:"sectionLink"`
+	SectionPricing               string `json:"sectionPricing"`
+	SectionCycle                 string `json:"sectionCycle"`
+	SupplierContractLine         string `json:"supplierContractLine"`
+	SelectSupplierContractLine   string `json:"selectSupplierContractLine"`
+	SupplierContractLineInfo     string `json:"supplierContractLineInfo"`
+	UnitPrice                    string `json:"unitPrice"`
+	UnitPricePlaceholder         string `json:"unitPricePlaceholder"`
+	UnitPriceInfo                string `json:"unitPriceInfo"`
+	MinimumAmount                string `json:"minimumAmount"`
+	MinimumAmountPlaceholder     string `json:"minimumAmountPlaceholder"`
+	MinimumAmountInfo            string `json:"minimumAmountInfo"`
+	Quantity                     string `json:"quantity"`
+	QuantityPlaceholder          string `json:"quantityPlaceholder"`
+	QuantityInfo                 string `json:"quantityInfo"`
+	Currency                     string `json:"currency"`
+	CurrencyPlaceholder          string `json:"currencyPlaceholder"`
+	CycleValueOverride           string `json:"cycleValueOverride"`
+	CycleValueOverridePlaceholder string `json:"cycleValueOverridePlaceholder"`
+	CycleValueOverrideInfo       string `json:"cycleValueOverrideInfo"`
+	CycleUnitOverride            string `json:"cycleUnitOverride"`
+	CycleUnitOverridePlaceholder string `json:"cycleUnitOverridePlaceholder"`
+	CycleUnitOverrideInfo        string `json:"cycleUnitOverrideInfo"`
+}
+
+type SupplierContractPriceScheduleDetailLabels struct {
+	PageTitle             string `json:"pageTitle"`
+	Title                 string `json:"title"`
+	InfoSection           string `json:"infoSection"`
+	LinesSection          string `json:"linesSection"`
+	AuditTrailComingSoon  string `json:"auditTrailComingSoon"`
+	AuditEmptyTitle       string `json:"auditEmptyTitle"`
+	AuditEmptyMessage     string `json:"auditEmptyMessage"`
+}
+
+type SupplierContractPriceScheduleErrorLabels struct {
+	PermissionDenied    string `json:"permissionDenied"`
+	InvalidFormData     string `json:"invalidFormData"`
+	NotFound            string `json:"notFound"`
+	IDRequired          string `json:"idRequired"`
+	NoPermission        string `json:"noPermission"`
+	CannotDelete        string `json:"cannotDelete"`
+	InUse               string `json:"inUse"`
+	CreationFailed      string `json:"creation_failed"`
+	UpdateFailed        string `json:"update_failed"`
+	DeletionFailed      string `json:"deletion_failed"`
+	ListFailed          string `json:"list_failed"`
+	AuthorizationFailed string `json:"authorization_failed"`
+	ActivationFailed    string `json:"activation_failed"`
+	SupersedeFailed     string `json:"supersede_failed"`
+	OverlapDetected     string `json:"overlap_detected"`
+	LoadFailed          string `json:"loadFailed"`
+}
+
+// DefaultSupplierContractPriceScheduleLabels returns English fallback labels.
+// Uses proto-generic naming — tier overrides belong in lyngua JSON.
+func DefaultSupplierContractPriceScheduleLabels() SupplierContractPriceScheduleLabels {
+	return SupplierContractPriceScheduleLabels{
+		Labels: SupplierContractPriceScheduleNounLabels{
+			Name:       "Price Schedule",
+			NamePlural: "Price Schedules",
+			Line:       "Schedule Line",
+			LinePlural: "Schedule Lines",
+		},
+		Page: SupplierContractPriceSchedulePageLabels{
+			Heading:           "Contract Price Schedules",
+			Caption:           "Date-windowed pricing layered on top of a supplier contract for multi-year escalation",
+			HeadingScheduled:  "Scheduled Periods",
+			HeadingActive:     "Active Periods",
+			HeadingSuperseded: "Superseded Periods",
+			HeadingCancelled:  "Cancelled Periods",
+			TabTitle:          "Price Schedules",
+		},
+		Buttons: SupplierContractPriceScheduleButtonLabels{
+			Add:       "New Schedule",
+			AddLine:   "Add Schedule Line",
+			Activate:  "Activate",
+			Supersede: "Supersede",
+			Cancel:    "Cancel Schedule",
+		},
+		Filters: SupplierContractPriceScheduleFilterLabels{
+			All:                 "All",
+			Status:              "Status",
+			AnyStatus:           "Any Status",
+			SupplierContract:    "Contract",
+			AnySupplierContract: "Any Contract",
+			DateRange:           "Effective Window",
+		},
+		Columns: SupplierContractPriceScheduleColumnLabels{
+			InternalID:       "ID",
+			Name:             "Schedule Name",
+			SupplierContract: "Contract",
+			SequenceNumber:   "Seq.",
+			DateStart:        "Start",
+			DateEnd:          "End",
+			Status:           "Status",
+			Currency:         "Currency",
+			LineCount:        "Lines",
+			Total:            "Total",
+		},
+		Empty: SupplierContractPriceScheduleEmptyLabels{
+			Title:             "No price schedules yet",
+			Message:           "Add a schedule period to layer multi-year pricing onto this contract.",
+			ScheduledTitle:    "No upcoming schedules",
+			ScheduledMessage:  "Future-dated schedules will appear here once added.",
+			ActiveTitle:       "No active schedule",
+			ActiveMessage:     "The contract is using header pricing — no schedule is in effect right now.",
+			SupersededTitle:   "No past schedules",
+			SupersededMessage: "Schedules whose window has passed will be archived here.",
+			CancelledTitle:    "No cancelled schedules",
+			CancelledMessage:  "Schedules cancelled before activation will appear here.",
+		},
+		Form: SupplierContractPriceScheduleFormLabels{
+			SectionIdentity:           "Schedule Identity",
+			SectionValidity:           "Validity Window",
+			SectionScoping:            "Scoping",
+			SectionLifecycle:          "Lifecycle",
+			SectionNotes:              "Notes",
+			Name:                      "Schedule Name",
+			NamePlaceholder:           "e.g. Year 1 (2026)",
+			NameInfo:                  "Human-readable label for this pricing window. Often a year or renewal label.",
+			Description:               "Description",
+			DescriptionPlaceholder:    "Optional details about this pricing window...",
+			InternalID:                "Internal ID",
+			InternalIDPlaceholder:     "Auto-generated",
+			InternalIDInfo:            "Auto-generated unique identifier.",
+			SupplierContract:          "Contract",
+			SelectSupplierContract:    "Select contract...",
+			SupplierContractInfo:      "The supplier contract this pricing window applies to. Schedules are scoped to a single contract.",
+			DateStart:                 "Start Date",
+			DateStartInfo:             "When this pricing window takes effect. Window is half-open: start is inclusive.",
+			DateEnd:                   "End Date",
+			DateEndPlaceholder:        "Leave empty for open-ended",
+			DateEndInfo:               "When this pricing window ends. Leave blank for the open-ended last bucket. Window is half-open: end is exclusive.",
+			Currency:                  "Currency",
+			CurrencyPlaceholder:       "PHP",
+			CurrencyInfo:              "ISO 4217 currency for prices in this schedule.",
+			Location:                  "Location",
+			SelectLocation:            "Select location...",
+			LocationInfo:              "Optional location override. Defaults to the parent contract's location.",
+			Status:                    "Status",
+			SelectStatus:              "Select status...",
+			StatusInfo:                "Lifecycle state. New schedules default to Scheduled and progress to Active when their window arrives.",
+			SequenceNumber:            "Sequence",
+			SequenceNumberPlaceholder: "1",
+			SequenceNumberInfo:        "Ordering position within the contract (1, 2, 3...).",
+			Notes:                     "Notes",
+			NotesPlaceholder:          "Internal notes about this pricing window...",
+			NotesInfo:                 "Internal remarks only. Not visible to the supplier.",
+		},
+		Status: SupplierContractPriceScheduleStatusLabels{
+			Scheduled:  "Scheduled",
+			Active:     "Active",
+			Superseded: "Superseded",
+			Cancelled:  "Cancelled",
+		},
+		Tabs: SupplierContractPriceScheduleTabLabels{
+			Info:     "Information",
+			Lines:    "Schedule Lines",
+			Activity: "Activity",
+		},
+		Lines: SupplierContractPriceScheduleLinesLabels{
+			Title:               "Schedule Lines",
+			Empty:               "No schedule lines yet. Add lines to override per-line pricing for this window.",
+			AddLine:             "Add Line",
+			ColumnContractLine:  "Contract Line",
+			ColumnUnitPrice:     "Unit Price",
+			ColumnQuantity:      "Qty",
+			ColumnMinimumAmount: "Minimum",
+			ColumnCurrency:      "Currency",
+			ColumnCycleOverride: "Cycle Override",
+			LineForm: SupplierContractPriceScheduleLineFormLabels{
+				SectionLink:                   "Contract Line",
+				SectionPricing:                "Pricing",
+				SectionCycle:                  "Cycle Override",
+				SupplierContractLine:          "Contract Line",
+				SelectSupplierContractLine:    "Select contract line...",
+				SupplierContractLineInfo:      "The line whose unit price is overridden during this window.",
+				UnitPrice:                     "Unit Price",
+				UnitPricePlaceholder:          "0.00",
+				UnitPriceInfo:                 "Per-unit price during this window, in the schedule's currency.",
+				MinimumAmount:                 "Minimum Amount",
+				MinimumAmountPlaceholder:      "0.00",
+				MinimumAmountInfo:             "For Minimum Commitment lines: the floor charged per cycle.",
+				Quantity:                      "Quantity",
+				QuantityPlaceholder:           "0",
+				QuantityInfo:                  "Optional committed quantity for blanket or minimum-commitment lines.",
+				Currency:                      "Currency",
+				CurrencyPlaceholder:           "PHP",
+				CycleValueOverride:            "Cycle Value Override",
+				CycleValueOverridePlaceholder: "e.g. 1",
+				CycleValueOverrideInfo:        "Optional cycle-length override. Most lines inherit the contract cycle.",
+				CycleUnitOverride:             "Cycle Unit Override",
+				CycleUnitOverridePlaceholder:  "month",
+				CycleUnitOverrideInfo:         "Optional cycle-unit override (day, week, month, year).",
+			},
+		},
+		Detail: SupplierContractPriceScheduleDetailLabels{
+			PageTitle:            "Schedule Details",
+			Title:                "Schedule Detail",
+			InfoSection:          "Schedule Information",
+			LinesSection:         "Per-Line Pricing",
+			AuditTrailComingSoon: "Activity log feature coming soon.",
+			AuditEmptyTitle:      "No activity entries",
+			AuditEmptyMessage:    "Activity logs for this schedule will appear here.",
+		},
+		Errors: SupplierContractPriceScheduleErrorLabels{
+			PermissionDenied:    "You do not have permission to perform this action.",
+			InvalidFormData:     "Invalid form data. Please check your inputs and try again.",
+			NotFound:            "Price schedule not found.",
+			IDRequired:          "Schedule ID is required.",
+			NoPermission:        "No permission.",
+			CannotDelete:        "Cannot delete — this schedule is currently active or has dependent lines.",
+			InUse:               "Cannot delete — this schedule is referenced by existing records.",
+			CreationFailed:      "Schedule creation failed",
+			UpdateFailed:        "Schedule update failed",
+			DeletionFailed:      "Schedule deletion failed",
+			ListFailed:          "Failed to retrieve price schedules",
+			AuthorizationFailed: "Authorization failed for price schedules",
+			ActivationFailed:    "Schedule activation failed",
+			SupersedeFailed:     "Schedule supersede failed",
+			OverlapDetected:     "Schedule windows overlap; adjust dates and retry",
+			LoadFailed:          "Failed to load price schedule",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ExpenseRecognition labels  (SPS P10)
+// ---------------------------------------------------------------------------
+
+// ExpenseRecognitionLabels holds all translatable strings for the
+// expense_recognition module. Loaded from lyngua key root "expenseRecognition".
+type ExpenseRecognitionLabels struct {
+	Page    ExpenseRecognitionPageLabels    `json:"page"`
+	Buttons ExpenseRecognitionButtonLabels  `json:"buttons"`
+	Columns ExpenseRecognitionColumnLabels  `json:"columns"`
+	Tabs    ExpenseRecognitionTabLabels     `json:"tabs"`
+	Detail  ExpenseRecognitionDetailLabels  `json:"detail"`
+	Lines   ExpenseRecognitionLineLabels    `json:"lines"`
+	Source  ExpenseRecognitionSourceLabels  `json:"source"`
+	Status  ExpenseRecognitionStatusLabels  `json:"status"`
+	Actions ExpenseRecognitionActionLabels  `json:"actions"`
+	Confirm ExpenseRecognitionConfirmLabels `json:"confirm"`
+	Empty   ExpenseRecognitionEmptyLabels   `json:"empty"`
+	Errors  ExpenseRecognitionErrorLabels   `json:"errors"`
+}
+
+type ExpenseRecognitionPageLabels struct {
+	Heading         string `json:"heading"`
+	Caption         string `json:"caption"`
+	HeadingDraft    string `json:"headingDraft"`
+	HeadingPosted   string `json:"headingPosted"`
+	HeadingReversed string `json:"headingReversed"`
+	Dashboard       string `json:"dashboard"`
+}
+
+type ExpenseRecognitionButtonLabels struct {
+	Add                      string `json:"add"`
+	RecognizeFromExpenditure string `json:"recognizeFromExpenditure"`
+	RecognizeFromContract    string `json:"recognizeFromContract"`
+	Reverse                  string `json:"reverse"`
+}
+
+type ExpenseRecognitionColumnLabels struct {
+	InternalID       string `json:"internalId"`
+	Name             string `json:"name"`
+	RecognitionDate  string `json:"recognitionDate"`
+	PeriodStart      string `json:"periodStart"`
+	PeriodEnd        string `json:"periodEnd"`
+	CycleDate        string `json:"cycleDate"`
+	Supplier         string `json:"supplier"`
+	SupplierContract string `json:"supplierContract"`
+	Expenditure      string `json:"expenditure"`
+	Currency         string `json:"currency"`
+	TotalAmount      string `json:"totalAmount"`
+	Status           string `json:"status"`
+	Source           string `json:"source"`
+	IdempotencyKey   string `json:"idempotencyKey"`
+}
+
+type ExpenseRecognitionTabLabels struct {
+	Info     string `json:"info"`
+	Lines    string `json:"lines"`
+	Source   string `json:"source"`
+	Activity string `json:"activity"`
+}
+
+type ExpenseRecognitionDetailLabels struct {
+	PageTitle             string `json:"pageTitle"`
+	Title                 string `json:"title"`
+	InfoSection           string `json:"infoSection"`
+	SourceSection         string `json:"sourceSection"`
+	AuditTrailComingSoon  string `json:"auditTrailComingSoon"`
+	AuditEmptyTitle       string `json:"auditEmptyTitle"`
+	AuditEmptyMessage     string `json:"auditEmptyMessage"`
+}
+
+type ExpenseRecognitionLineLabels struct {
+	Description    string `json:"description"`
+	Quantity       string `json:"quantity"`
+	UnitAmount     string `json:"unitAmount"`
+	Amount         string `json:"amount"`
+	Currency       string `json:"currency"`
+	Product        string `json:"product"`
+	ExpenseAccount string `json:"expenseAccount"`
+	EmptyTitle     string `json:"emptyTitle"`
+	EmptyMessage   string `json:"emptyMessage"`
+	AddLine        string `json:"addLine"`
+
+	// Drawer form labels
+	FormDescription            string `json:"formDescription"`
+	FormDescriptionPlaceholder string `json:"formDescriptionPlaceholder"`
+	FormQuantity               string `json:"formQuantity"`
+	FormUnitAmount             string `json:"formUnitAmount"`
+	FormAmount                 string `json:"formAmount"`
+	FormCurrency               string `json:"formCurrency"`
+}
+
+type ExpenseRecognitionSourceLabels struct {
+	Recurrence  string `json:"recurrence"`
+	Expenditure string `json:"expenditure"`
+	Manual      string `json:"manual"`
+	Reversal    string `json:"reversal"`
+}
+
+type ExpenseRecognitionStatusLabels struct {
+	Draft    string `json:"draft"`
+	Posted   string `json:"posted"`
+	Reversed string `json:"reversed"`
+}
+
+type ExpenseRecognitionActionLabels struct {
+	View                     string `json:"view"`
+	Edit                     string `json:"edit"`
+	Delete                   string `json:"delete"`
+	Reverse                  string `json:"reverse"`
+	RecognizeFromExpenditure string `json:"recognizeFromExpenditure"`
+	RecognizeFromContract    string `json:"recognizeFromContract"`
+	NoPermission             string `json:"noPermission"`
+}
+
+type ExpenseRecognitionConfirmLabels struct {
+	Delete         string `json:"delete"`
+	DeleteMessage  string `json:"deleteMessage"`
+	Reverse        string `json:"reverse"`
+	ReverseMessage string `json:"reverseMessage"`
+}
+
+type ExpenseRecognitionEmptyLabels struct {
+	Title           string `json:"title"`
+	Message         string `json:"message"`
+	DraftTitle      string `json:"draftTitle"`
+	DraftMessage    string `json:"draftMessage"`
+	PostedTitle     string `json:"postedTitle"`
+	PostedMessage   string `json:"postedMessage"`
+	ReversedTitle   string `json:"reversedTitle"`
+	ReversedMessage string `json:"reversedMessage"`
+}
+
+type ExpenseRecognitionErrorLabels struct {
+	PermissionDenied      string `json:"permissionDenied"`
+	InvalidFormData       string `json:"invalidFormData"`
+	NotFound              string `json:"notFound"`
+	IDRequired            string `json:"idRequired"`
+	NoPermission          string `json:"noPermission"`
+	CreationFailed        string `json:"creation_failed"`
+	UpdateFailed          string `json:"update_failed"`
+	DeletionFailed        string `json:"deletion_failed"`
+	ListFailed            string `json:"list_failed"`
+	ReverseFailed         string `json:"reverse_failed"`
+	IdempotencyCollision  string `json:"idempotency_collision"`
+	LoadFailed            string `json:"load_failed"`
+}
+
+// DefaultExpenseRecognitionLabels returns English fallback labels.
+// Tier overrides belong in lyngua JSON.
+func DefaultExpenseRecognitionLabels() ExpenseRecognitionLabels {
+	return ExpenseRecognitionLabels{
+		Page: ExpenseRecognitionPageLabels{
+			Heading:         "Expense Recognition",
+			Caption:         "Period in which a supplier cost is recognized",
+			HeadingDraft:    "Draft Recognitions",
+			HeadingPosted:   "Posted Recognitions",
+			HeadingReversed: "Reversed Recognitions",
+			Dashboard:       "Expense Recognition Dashboard",
+		},
+		Buttons: ExpenseRecognitionButtonLabels{
+			Add:                      "New Recognition",
+			RecognizeFromExpenditure: "Recognize from Bill",
+			RecognizeFromContract:    "Recognize from Contract",
+			Reverse:                  "Reverse Recognition",
+		},
+		Columns: ExpenseRecognitionColumnLabels{
+			InternalID:       "ID",
+			Name:             "Name",
+			RecognitionDate:  "Recognition Date",
+			PeriodStart:      "Period Start",
+			PeriodEnd:        "Period End",
+			CycleDate:        "Cycle",
+			Supplier:         "Supplier",
+			SupplierContract: "Contract",
+			Expenditure:      "Source Bill",
+			Currency:         "Currency",
+			TotalAmount:      "Amount",
+			Status:           "Status",
+			Source:           "Source",
+			IdempotencyKey:   "Idempotency Key",
+		},
+		Tabs: ExpenseRecognitionTabLabels{
+			Info:     "Information",
+			Lines:    "Recognition Lines",
+			Source:   "Source",
+			Activity: "Activity",
+		},
+		Detail: ExpenseRecognitionDetailLabels{
+			PageTitle:            "Recognition Details",
+			Title:                "Recognition Detail",
+			InfoSection:          "Recognition Information",
+			SourceSection:        "Source",
+			AuditTrailComingSoon: "Activity log feature coming soon.",
+			AuditEmptyTitle:      "No activity entries",
+			AuditEmptyMessage:    "Activity logs for this recognition will appear here.",
+		},
+		Lines: ExpenseRecognitionLineLabels{
+			Description:                "Description",
+			Quantity:                   "Quantity",
+			UnitAmount:                 "Unit Amount",
+			Amount:                     "Amount",
+			Currency:                   "Currency",
+			Product:                    "Product",
+			ExpenseAccount:             "Expense Account",
+			EmptyTitle:                 "No recognition lines",
+			EmptyMessage:               "Lines breaking down this recognition will appear here.",
+			AddLine:                    "Add Line",
+			FormDescription:            "Description",
+			FormDescriptionPlaceholder: "e.g. Cloud hosting — May 2026",
+			FormQuantity:               "Quantity",
+			FormUnitAmount:             "Unit Amount",
+			FormAmount:                 "Amount",
+			FormCurrency:               "Currency",
+		},
+		Source: ExpenseRecognitionSourceLabels{
+			Recurrence:  "Recurrence Engine",
+			Expenditure: "From Bill",
+			Manual:      "Manual",
+			Reversal:    "Reversal",
+		},
+		Status: ExpenseRecognitionStatusLabels{
+			Draft:    "Draft",
+			Posted:   "Posted",
+			Reversed: "Reversed",
+		},
+		Actions: ExpenseRecognitionActionLabels{
+			View:                     "View Recognition",
+			Edit:                     "Edit Recognition",
+			Delete:                   "Delete Recognition",
+			Reverse:                  "Reverse",
+			RecognizeFromExpenditure: "Recognize from Bill",
+			RecognizeFromContract:    "Recognize from Contract",
+			NoPermission:             "No permission",
+		},
+		Confirm: ExpenseRecognitionConfirmLabels{
+			Delete:         "Delete Recognition",
+			DeleteMessage:  "Are you sure you want to delete this recognition? Only Draft recognitions can be deleted.",
+			Reverse:        "Reverse Recognition",
+			ReverseMessage: "Reversing creates a counter-entry and marks this recognition as Reversed. Continue?",
+		},
+		Empty: ExpenseRecognitionEmptyLabels{
+			Title:           "No recognitions yet",
+			Message:         "Recognize an expense from a posted bill or directly from a contract cycle.",
+			DraftTitle:      "No draft recognitions",
+			DraftMessage:    "Draft recognitions will appear here.",
+			PostedTitle:     "No posted recognitions",
+			PostedMessage:   "Posted recognitions will appear here.",
+			ReversedTitle:   "No reversed recognitions",
+			ReversedMessage: "Reversed recognitions will appear here.",
+		},
+		Errors: ExpenseRecognitionErrorLabels{
+			PermissionDenied:     "You do not have permission to perform this action.",
+			InvalidFormData:      "Invalid form data. Please check your inputs and try again.",
+			NotFound:             "Recognition not found.",
+			IDRequired:           "Recognition ID is required.",
+			NoPermission:         "No permission.",
+			CreationFailed:       "Recognition creation failed",
+			UpdateFailed:         "Recognition update failed",
+			DeletionFailed:       "Recognition deletion failed",
+			ListFailed:           "Failed to retrieve recognitions",
+			ReverseFailed:        "Recognition reversal failed",
+			IdempotencyCollision: "A recognition for this source and period already exists",
+			LoadFailed:           "Failed to load recognition",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// AccruedExpense labels  (SPS P10)
+// ---------------------------------------------------------------------------
+
+// AccruedExpenseLabels holds all translatable strings for the accrued_expense
+// + accrued_expense_settlement modules. Loaded from lyngua key root
+// "accruedExpense" with settlement subkeys merged in via composition.
+type AccruedExpenseLabels struct {
+	Page        AccruedExpensePageLabels        `json:"page"`
+	Buttons     AccruedExpenseButtonLabels      `json:"buttons"`
+	Columns     AccruedExpenseColumnLabels      `json:"columns"`
+	Tabs        AccruedExpenseTabLabels         `json:"tabs"`
+	Detail      AccruedExpenseDetailLabels      `json:"detail"`
+	Settlements AccruedExpenseSettlementLabels  `json:"settlements"`
+	Form        AccruedExpenseFormLabels        `json:"form"`
+	Status      AccruedExpenseStatusLabels      `json:"status"`
+	Actions     AccruedExpenseActionLabels      `json:"actions"`
+	Confirm     AccruedExpenseConfirmLabels     `json:"confirm"`
+	Balances    AccruedExpenseBalanceLabels     `json:"balances"`
+	Empty       AccruedExpenseEmptyLabels       `json:"empty"`
+	Errors      AccruedExpenseErrorLabels       `json:"errors"`
+}
+
+type AccruedExpensePageLabels struct {
+	Heading            string `json:"heading"`
+	Caption            string `json:"caption"`
+	HeadingOutstanding string `json:"headingOutstanding"`
+	HeadingPartial     string `json:"headingPartial"`
+	HeadingSettled     string `json:"headingSettled"`
+	HeadingReversed    string `json:"headingReversed"`
+	Dashboard          string `json:"dashboard"`
+}
+
+type AccruedExpenseButtonLabels struct {
+	Add                string `json:"add"`
+	AccrueFromContract string `json:"accrueFromContract"`
+	Settle             string `json:"settle"`
+	Reverse            string `json:"reverse"`
+	AddSettlement      string `json:"addSettlement"`
+}
+
+type AccruedExpenseColumnLabels struct {
+	InternalID       string `json:"internalId"`
+	Name             string `json:"name"`
+	Supplier         string `json:"supplier"`
+	SupplierContract string `json:"supplierContract"`
+	RecognitionDate  string `json:"recognitionDate"`
+	PeriodStart      string `json:"periodStart"`
+	PeriodEnd        string `json:"periodEnd"`
+	CycleDate        string `json:"cycleDate"`
+	Currency         string `json:"currency"`
+	AccruedAmount    string `json:"accruedAmount"`
+	SettledAmount    string `json:"settledAmount"`
+	RemainingAmount  string `json:"remainingAmount"`
+	Status           string `json:"status"`
+}
+
+type AccruedExpenseTabLabels struct {
+	Info        string `json:"info"`
+	Settlements string `json:"settlements"`
+	Source      string `json:"source"`
+	Activity    string `json:"activity"`
+}
+
+type AccruedExpenseDetailLabels struct {
+	PageTitle            string `json:"pageTitle"`
+	Title                string `json:"title"`
+	InfoSection          string `json:"infoSection"`
+	SettlementsSection   string `json:"settlementsSection"`
+	SourceSection        string `json:"sourceSection"`
+	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+	AuditEmptyTitle      string `json:"auditEmptyTitle"`
+	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+}
+
+type AccruedExpenseSettlementLabels struct {
+	Expenditure        string `json:"expenditure"`
+	AmountSettled      string `json:"amountSettled"`
+	Currency           string `json:"currency"`
+	FxRate             string `json:"fxRate"`
+	FxAdjustmentAmount string `json:"fxAdjustmentAmount"`
+	SettledAt          string `json:"settledAt"`
+	Reversal           string `json:"reversal"`
+	EmptyTitle         string `json:"emptyTitle"`
+	EmptyMessage       string `json:"emptyMessage"`
+	AddSettlement      string `json:"addSettlement"`
+
+	// Drawer form labels
+	FormExpenditure        string `json:"formExpenditure"`
+	FormExpenditurePlaceholder string `json:"formExpenditurePlaceholder"`
+	FormAmountSettled      string `json:"formAmountSettled"`
+	FormCurrency           string `json:"formCurrency"`
+	FormFxRate             string `json:"formFxRate"`
+	FormFxRateInfo         string `json:"formFxRateInfo"`
+	FormReversalReason     string `json:"formReversalReason"`
+}
+
+type AccruedExpenseFormLabels struct {
+	// Section headers
+	SectionIdentity   string `json:"sectionIdentity"`
+	SectionSource     string `json:"sectionSource"`
+	SectionPeriod     string `json:"sectionPeriod"`
+	SectionMoney      string `json:"sectionMoney"`
+	SectionAccounting string `json:"sectionAccounting"`
+	SectionLifecycle  string `json:"sectionLifecycle"`
+	SectionNotes      string `json:"sectionNotes"`
+
+	// §1 Identity
+	Name                  string `json:"name"`
+	NamePlaceholder       string `json:"namePlaceholder"`
+	NameInfo              string `json:"nameInfo"`
+	Description           string `json:"description"`
+	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
+	InternalID            string `json:"internalId"`
+	InternalIDPlaceholder string `json:"internalIdPlaceholder"`
+
+	// §2 Source
+	SupplierContract        string `json:"supplierContract"`
+	SelectSupplierContract  string `json:"selectSupplierContract"`
+	SupplierContractInfo    string `json:"supplierContractInfo"`
+	Supplier                string `json:"supplier"`
+	SelectSupplier          string `json:"selectSupplier"`
+	SupplierInfo            string `json:"supplierInfo"`
+
+	// §3 Period
+	RecognitionDate     string `json:"recognitionDate"`
+	RecognitionDateInfo string `json:"recognitionDateInfo"`
+	PeriodStart         string `json:"periodStart"`
+	PeriodStartInfo     string `json:"periodStartInfo"`
+	PeriodEnd           string `json:"periodEnd"`
+	PeriodEndInfo       string `json:"periodEndInfo"`
+	CycleDate           string `json:"cycleDate"`
+	CycleDatePlaceholder string `json:"cycleDatePlaceholder"`
+	CycleDateInfo       string `json:"cycleDateInfo"`
+
+	// §4 Money
+	Currency             string `json:"currency"`
+	CurrencyPlaceholder  string `json:"currencyPlaceholder"`
+	CurrencyInfo         string `json:"currencyInfo"`
+	AccruedAmount        string `json:"accruedAmount"`
+	AccruedAmountPlaceholder string `json:"accruedAmountPlaceholder"`
+	AccruedAmountInfo    string `json:"accruedAmountInfo"`
+	SettledAmount        string `json:"settledAmount"`
+	SettledAmountInfo    string `json:"settledAmountInfo"`
+	RemainingAmount      string `json:"remainingAmount"`
+	RemainingAmountInfo  string `json:"remainingAmountInfo"`
+
+	// §5 Lifecycle
+	Status              string `json:"status"`
+	SelectStatus        string `json:"selectStatus"`
+	StatusInfo          string `json:"statusInfo"`
+	StatusOutstanding   string `json:"statusOutstanding"`
+	StatusPartial       string `json:"statusPartial"`
+	StatusSettled       string `json:"statusSettled"`
+	StatusReversed      string `json:"statusReversed"`
+
+	// §6 Accounting
+	ExpenseAccount       string `json:"expenseAccount"`
+	SelectExpenseAccount string `json:"selectExpenseAccount"`
+	ExpenseAccountInfo   string `json:"expenseAccountInfo"`
+	AccrualAccount       string `json:"accrualAccount"`
+	SelectAccrualAccount string `json:"selectAccrualAccount"`
+	AccrualAccountInfo   string `json:"accrualAccountInfo"`
+
+	// §7 Notes
+	Notes            string `json:"notes"`
+	NotesPlaceholder string `json:"notesPlaceholder"`
+	NotesInfo        string `json:"notesInfo"`
+
+	// Buttons
+	Edit      string `json:"edit"`
+	EditTitle string `json:"editTitle"`
+	Active    string `json:"active"`
+}
+
+type AccruedExpenseStatusLabels struct {
+	Outstanding string `json:"outstanding"`
+	Partial     string `json:"partial"`
+	Settled     string `json:"settled"`
+	Reversed    string `json:"reversed"`
+}
+
+type AccruedExpenseActionLabels struct {
+	View               string `json:"view"`
+	Edit               string `json:"edit"`
+	Delete             string `json:"delete"`
+	AccrueFromContract string `json:"accrueFromContract"`
+	Settle             string `json:"settle"`
+	Reverse            string `json:"reverse"`
+	AddSettlement      string `json:"addSettlement"`
+	NoPermission       string `json:"noPermission"`
+}
+
+type AccruedExpenseConfirmLabels struct {
+	Delete         string `json:"delete"`
+	DeleteMessage  string `json:"deleteMessage"`
+	Settle         string `json:"settle"`
+	SettleMessage  string `json:"settleMessage"`
+	Reverse        string `json:"reverse"`
+	ReverseMessage string `json:"reverseMessage"`
+}
+
+type AccruedExpenseBalanceLabels struct {
+	Title       string `json:"title"`
+	Accrued     string `json:"accrued"`
+	Settled     string `json:"settled"`
+	Remaining   string `json:"remaining"`
+	Utilization string `json:"utilization"`
+}
+
+type AccruedExpenseEmptyLabels struct {
+	Title              string `json:"title"`
+	Message            string `json:"message"`
+	OutstandingTitle   string `json:"outstandingTitle"`
+	OutstandingMessage string `json:"outstandingMessage"`
+	PartialTitle       string `json:"partialTitle"`
+	PartialMessage     string `json:"partialMessage"`
+	SettledTitle       string `json:"settledTitle"`
+	SettledMessage     string `json:"settledMessage"`
+	ReversedTitle      string `json:"reversedTitle"`
+	ReversedMessage    string `json:"reversedMessage"`
+}
+
+type AccruedExpenseErrorLabels struct {
+	PermissionDenied      string `json:"permissionDenied"`
+	InvalidFormData       string `json:"invalidFormData"`
+	NotFound              string `json:"notFound"`
+	IDRequired            string `json:"idRequired"`
+	NoPermission          string `json:"noPermission"`
+	CreationFailed        string `json:"creation_failed"`
+	UpdateFailed          string `json:"update_failed"`
+	DeletionFailed        string `json:"deletion_failed"`
+	ListFailed            string `json:"list_failed"`
+	SettleFailed          string `json:"settle_failed"`
+	ReverseFailed         string `json:"reverse_failed"`
+	BalanceDrift          string `json:"balance_drift"`
+	LoadFailed            string `json:"load_failed"`
+}
+
+// DefaultAccruedExpenseLabels returns English fallback labels.
+func DefaultAccruedExpenseLabels() AccruedExpenseLabels {
+	return AccruedExpenseLabels{
+		Page: AccruedExpensePageLabels{
+			Heading:            "Accrued Expenses",
+			Caption:            "Recognized supplier obligations awaiting the actual bill",
+			HeadingOutstanding: "Outstanding Accruals",
+			HeadingPartial:     "Partially Settled",
+			HeadingSettled:     "Settled Accruals",
+			HeadingReversed:    "Reversed Accruals",
+			Dashboard:          "Accrued Expense Dashboard",
+		},
+		Buttons: AccruedExpenseButtonLabels{
+			Add:                "New Accrual",
+			AccrueFromContract: "Accrue from Contract",
+			Settle:             "Settle",
+			Reverse:            "Reverse",
+			AddSettlement:      "Record Settlement",
+		},
+		Columns: AccruedExpenseColumnLabels{
+			InternalID:       "ID",
+			Name:             "Name",
+			Supplier:         "Supplier",
+			SupplierContract: "Contract",
+			RecognitionDate:  "Recognition Date",
+			PeriodStart:      "Period Start",
+			PeriodEnd:        "Period End",
+			CycleDate:        "Cycle",
+			Currency:         "Currency",
+			AccruedAmount:    "Accrued",
+			SettledAmount:    "Settled",
+			RemainingAmount:  "Remaining",
+			Status:           "Status",
+		},
+		Tabs: AccruedExpenseTabLabels{
+			Info:        "Information",
+			Settlements: "Settlements",
+			Source:      "Source",
+			Activity:    "Activity",
+		},
+		Detail: AccruedExpenseDetailLabels{
+			PageTitle:            "Accrual Details",
+			Title:                "Accrual Detail",
+			InfoSection:          "Accrual Information",
+			SettlementsSection:   "Settlements",
+			SourceSection:        "Source",
+			AuditTrailComingSoon: "Activity log feature coming soon.",
+			AuditEmptyTitle:      "No activity entries",
+			AuditEmptyMessage:    "Activity logs for this accrual will appear here.",
+		},
+		Settlements: AccruedExpenseSettlementLabels{
+			Expenditure:                "Bill",
+			AmountSettled:              "Amount Settled",
+			Currency:                   "Currency",
+			FxRate:                     "FX Rate",
+			FxAdjustmentAmount:         "FX Adjustment",
+			SettledAt:                  "Settled At",
+			Reversal:                   "Reversal",
+			EmptyTitle:                 "No settlements yet",
+			EmptyMessage:               "Settlements applied against this accrual will appear here.",
+			AddSettlement:              "Record Settlement",
+			FormExpenditure:            "Bill",
+			FormExpenditurePlaceholder: "Select bill...",
+			FormAmountSettled:          "Amount Settled",
+			FormCurrency:               "Currency",
+			FormFxRate:                 "FX Rate",
+			FormFxRateInfo:             "Bill currency to accrual currency conversion rate.",
+			FormReversalReason:         "Reversal Reason",
+		},
+		Form: AccruedExpenseFormLabels{
+			SectionIdentity:          "Accrual Identity",
+			SectionSource:            "Source",
+			SectionPeriod:            "Period",
+			SectionMoney:             "Money",
+			SectionAccounting:        "Accounting",
+			SectionLifecycle:         "Lifecycle",
+			SectionNotes:             "Notes",
+			Name:                     "Accrual Name",
+			NamePlaceholder:          "e.g. Utilities — May 2026 (estimate)",
+			NameInfo:                 "Descriptive label for the accrued obligation.",
+			Description:              "Description",
+			DescriptionPlaceholder:   "Optional details about this accrual...",
+			InternalID:               "Internal ID",
+			InternalIDPlaceholder:    "Auto-generated",
+			SupplierContract:         "Source Contract",
+			SelectSupplierContract:   "Select contract...",
+			SupplierContractInfo:     "The contract whose cycle is being accrued.",
+			Supplier:                 "Supplier",
+			SelectSupplier:           "Select supplier...",
+			SupplierInfo:             "Supplier the obligation is owed to.",
+			RecognitionDate:          "Recognition Date",
+			RecognitionDateInfo:      "Date the obligation is booked into the period.",
+			PeriodStart:              "Period Start",
+			PeriodStartInfo:          "Start of the period the accrual covers.",
+			PeriodEnd:                "Period End",
+			PeriodEndInfo:            "End of the period the accrual covers.",
+			CycleDate:                "Cycle Date",
+			CycleDatePlaceholder:     "YYYY-MM-DD",
+			CycleDateInfo:            "Cycle bucket used for idempotency.",
+			Currency:                 "Currency",
+			CurrencyPlaceholder:      "PHP",
+			CurrencyInfo:             "ISO 4217 currency for the accrual.",
+			AccruedAmount:            "Accrued Amount",
+			AccruedAmountPlaceholder: "0.00",
+			AccruedAmountInfo:        "Estimated obligation for the period.",
+			SettledAmount:            "Settled Amount",
+			SettledAmountInfo:        "Sum of settlements applied so far. Read-only.",
+			RemainingAmount:          "Remaining",
+			RemainingAmountInfo:      "Accrued minus settled. Read-only.",
+			Status:                   "Status",
+			SelectStatus:             "Select status...",
+			StatusInfo:               "Lifecycle state.",
+			StatusOutstanding:        "Outstanding",
+			StatusPartial:            "Partially Settled",
+			StatusSettled:            "Settled",
+			StatusReversed:           "Reversed",
+			ExpenseAccount:           "Expense Account",
+			SelectExpenseAccount:     "Select expense account...",
+			ExpenseAccountInfo:       "GL account to debit on recognition.",
+			AccrualAccount:           "Accrual Account",
+			SelectAccrualAccount:     "Select accrual account...",
+			AccrualAccountInfo:       "GL account to credit while outstanding.",
+			Notes:                    "Notes",
+			NotesPlaceholder:         "Internal notes about this accrual...",
+			NotesInfo:                "Internal remarks only.",
+			Edit:                     "Edit",
+			EditTitle:                "Edit Accrual",
+			Active:                   "Active",
+		},
+		Status: AccruedExpenseStatusLabels{
+			Outstanding: "Outstanding",
+			Partial:     "Partially Settled",
+			Settled:     "Settled",
+			Reversed:    "Reversed",
+		},
+		Actions: AccruedExpenseActionLabels{
+			View:               "View Accrual",
+			Edit:               "Edit Accrual",
+			Delete:             "Delete Accrual",
+			AccrueFromContract: "Accrue from Contract",
+			Settle:             "Settle Accrual",
+			Reverse:            "Reverse Accrual",
+			AddSettlement:      "Record Settlement",
+			NoPermission:       "No permission",
+		},
+		Confirm: AccruedExpenseConfirmLabels{
+			Delete:         "Delete Accrual",
+			DeleteMessage:  "Are you sure you want to delete this accrual?",
+			Settle:         "Settle Accrual",
+			SettleMessage:  "Apply a settlement against this accrual?",
+			Reverse:        "Reverse Accrual",
+			ReverseMessage: "Reversing flips this accrual to Reversed and posts a reversing journal. Continue?",
+		},
+		Balances: AccruedExpenseBalanceLabels{
+			Title:       "Settlement Progress",
+			Accrued:     "Accrued",
+			Settled:     "Settled",
+			Remaining:   "Remaining",
+			Utilization: "Settlement Progress",
+		},
+		Empty: AccruedExpenseEmptyLabels{
+			Title:              "No accrued expenses yet",
+			Message:            "Accrue from a contract cycle when the period closes before the supplier bill arrives.",
+			OutstandingTitle:   "No outstanding accruals",
+			OutstandingMessage: "Outstanding accruals waiting for a supplier bill will appear here.",
+			PartialTitle:       "No partially settled accruals",
+			PartialMessage:     "Accruals with at least one settlement will appear here.",
+			SettledTitle:       "No settled accruals",
+			SettledMessage:     "Fully reconciled accruals will appear here.",
+			ReversedTitle:      "No reversed accruals",
+			ReversedMessage:    "Reversed accruals will appear here.",
+		},
+		Errors: AccruedExpenseErrorLabels{
+			PermissionDenied: "You do not have permission to perform this action.",
+			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
+			NotFound:         "Accrued expense not found.",
+			IDRequired:       "Accrual ID is required.",
+			NoPermission:     "No permission.",
+			CreationFailed:   "Accrual creation failed",
+			UpdateFailed:     "Accrual update failed",
+			DeletionFailed:   "Accrual deletion failed",
+			ListFailed:       "Failed to retrieve accruals",
+			SettleFailed:     "Settlement recording failed",
+			ReverseFailed:    "Accrual reversal failed",
+			BalanceDrift:     "Accrual balance drift detected; recompute required",
+			LoadFailed:       "Failed to load accrual",
+		},
+	}
 }

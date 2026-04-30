@@ -1,0 +1,59 @@
+{{/*
+AccruedExpenseSettlement drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+
+The settle drawer also reuses this template via the parent's
+"Settle" button (NewSettleAction posts to a different URL).
+*/}}
+{{define "accrued-expense-settlement-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="accrued_expense_id" value="{{.AccruedExpenseID}}">
+
+    <div class="sheet-body">
+        <div class="form-section">
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "expenditure_id"
+                    "Label" .Labels.FormExpenditure
+                    "Value" .ExpenditureID
+                    "Required" true
+                    "Options" .Expenditures
+                    "Placeholder" .Labels.FormExpenditurePlaceholder
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "amount_settled"
+                    "Label" .Labels.FormAmountSettled
+                    "Value" .AmountSettled
+                    "Required" true
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "currency"
+                    "Label" .Labels.FormCurrency
+                    "Value" .Currency
+                    "Required" true
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "fx_rate"
+                    "Label" .Labels.FormFxRate
+                    "Value" .FxRate
+                    "Info" .Labels.FormFxRateInfo
+                )}}
+            </div>
+        </div>
+    </div>
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">Cancel</button>
+        <button type="submit" class="btn btn-primary">{{if .IsEdit}}Save{{else}}Add{{end}}</button>
+    </div>
+</form>
+{{end}}

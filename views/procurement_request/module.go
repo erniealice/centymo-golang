@@ -41,6 +41,12 @@ type ModuleDeps struct {
 	// Related entities
 	ListSuppliers      func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)
 	ListPurchaseOrders func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error)
+
+	// Workflow invocations (block.go injects use-case-backed closures)
+	SubmitProcurementRequest  func(ctx context.Context, id string) error
+	ApproveProcurementRequest func(ctx context.Context, id string) error
+	RejectProcurementRequest  func(ctx context.Context, id string, reason string) error
+	SpawnPurchaseOrder        func(ctx context.Context, id string) (newPOID string, err error)
 }
 
 // Module holds all constructed procurement_request views.
@@ -82,6 +88,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		ReadProcurementRequest:      deps.ReadProcurementRequest,
 		ListProcurementRequestLines: deps.ListProcurementRequestLines,
 		ListPurchaseOrders:          deps.ListPurchaseOrders,
+		SubmitProcurementRequest:    deps.SubmitProcurementRequest,
+		ApproveProcurementRequest:   deps.ApproveProcurementRequest,
+		RejectProcurementRequest:    deps.RejectProcurementRequest,
+		SpawnPurchaseOrder:          deps.SpawnPurchaseOrder,
 	}
 
 	listDeps := &procurementrequestlist.ListViewDeps{

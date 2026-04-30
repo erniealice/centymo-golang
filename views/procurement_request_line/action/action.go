@@ -19,10 +19,10 @@ import (
 
 // LineFormData is the template data for the procurement request line drawer form.
 type LineFormData struct {
-	FormAction             string
-	IsEdit                 bool
-	ID                     string
-	ProcurementRequestID   string
+	FormAction           string
+	IsEdit               bool
+	ID                   string
+	ProcurementRequestID string
 
 	// Core fields
 	Description           string
@@ -34,6 +34,18 @@ type LineFormData struct {
 	ExpenditureCategoryID string
 	LocationID            string
 	LineNumber            string
+
+	// SPS Wave 3 — F1 fulfillment_mode picker + RECURRING fields
+	// FulfillmentMode is the short canonical token: "outright" | "stockable" | "recurring" | "petty"
+	FulfillmentMode      string
+	FulfillmentModeOptions []types.RadioOption
+
+	// RECURRING-only fields (rendered conditionally when FulfillmentMode == "recurring")
+	RecurringCycleValue string
+	RecurringCycleUnit  string
+	RecurringTermValue  string
+	RecurringTermUnit   string
+	RecurringUnitOptions []types.SelectOption
 
 	// Options
 	Products []types.SelectOption
@@ -81,6 +93,13 @@ func NewAddAction(deps *Deps) view.View {
 		unitPrice := parseCentavos(r.FormValue("estimated_unit_price"))
 		totalPrice := parseCentavos(r.FormValue("estimated_total_price"))
 
+		mode := r.FormValue("fulfillment_mode")
+		if mode == "" {
+			return centymo.HTMXError(deps.Labels.Lines.FormFulfillmentMode + " is required")
+		}
+		modeEnumValue := parseFulfillmentMode(mode)
+		modeEnum := &modeEnumValue
+
 		req := &procurementrequestlinepb.CreateProcurementRequestLineRequest{
 			Data: &procurementrequestlinepb.ProcurementRequestLine{
 				ProcurementRequestId:  requestID,
@@ -93,7 +112,22 @@ func NewAddAction(deps *Deps) view.View {
 				ExpenditureCategoryId: optionalString(r.FormValue("expenditure_category_id")),
 				LocationId:            optionalString(r.FormValue("location_id")),
 				LineNumber:            int32(lineNum),
+				FulfillmentMode:       modeEnum,
 			},
+		}
+
+		// RECURRING — required cycle/term fields
+		if mode == "recurring" {
+			cycleValue, termValue, err := parseRecurringFields(r)
+			if err != nil {
+				return centymo.HTMXError(err.Error())
+			}
+			cycleUnit := r.FormValue("recurring_cycle_unit")
+			termUnit := r.FormValue("recurring_term_unit")
+			req.Data.RecurringCycleValue = &cycleValue
+			req.Data.RecurringCycleUnit = optionalString(cycleUnit)
+			req.Data.RecurringTermValue = &termValue
+			req.Data.RecurringTermUnit = optionalString(termUnit)
 		}
 
 		_, err := deps.CreateProcurementRequestLine(ctx, req)
@@ -143,6 +177,15 @@ func NewEditAction(deps *Deps) view.View {
 			fd.ExpenditureCategoryID = line.GetExpenditureCategoryId()
 			fd.LocationID = line.GetLocationId()
 			fd.LineNumber = strconv.Itoa(int(line.GetLineNumber()))
+			fd.FulfillmentMode = fulfillmentModeToToken(line.GetFulfillmentMode())
+			if v := line.GetRecurringCycleValue(); v != 0 {
+				fd.RecurringCycleValue = strconv.Itoa(int(v))
+			}
+			fd.RecurringCycleUnit = line.GetRecurringCycleUnit()
+			if v := line.GetRecurringTermValue(); v != 0 {
+				fd.RecurringTermValue = strconv.Itoa(int(v))
+			}
+			fd.RecurringTermUnit = line.GetRecurringTermUnit()
 			return view.OK("procurement-request-line-drawer-form", fd)
 		}
 
@@ -157,6 +200,13 @@ func NewEditAction(deps *Deps) view.View {
 		unitPrice := parseCentavos(r.FormValue("estimated_unit_price"))
 		totalPrice := parseCentavos(r.FormValue("estimated_total_price"))
 
+		mode := r.FormValue("fulfillment_mode")
+		if mode == "" {
+			return centymo.HTMXError(deps.Labels.Lines.FormFulfillmentMode + " is required")
+		}
+		modeEnumValue := parseFulfillmentMode(mode)
+		modeEnum := &modeEnumValue
+
 		req := &procurementrequestlinepb.UpdateProcurementRequestLineRequest{
 			Data: &procurementrequestlinepb.ProcurementRequestLine{
 				Id:                    lineID,
@@ -170,7 +220,22 @@ func NewEditAction(deps *Deps) view.View {
 				ExpenditureCategoryId: optionalString(r.FormValue("expenditure_category_id")),
 				LocationId:            optionalString(r.FormValue("location_id")),
 				LineNumber:            int32(lineNum),
+				FulfillmentMode:       modeEnum,
 			},
+		}
+
+		// RECURRING — required cycle/term fields
+		if mode == "recurring" {
+			cycleValue, termValue, err := parseRecurringFields(r)
+			if err != nil {
+				return centymo.HTMXError(err.Error())
+			}
+			cycleUnit := r.FormValue("recurring_cycle_unit")
+			termUnit := r.FormValue("recurring_term_unit")
+			req.Data.RecurringCycleValue = &cycleValue
+			req.Data.RecurringCycleUnit = optionalString(cycleUnit)
+			req.Data.RecurringTermValue = &termValue
+			req.Data.RecurringTermUnit = optionalString(termUnit)
 		}
 
 		_, err := deps.UpdateProcurementRequestLine(ctx, req)
@@ -204,12 +269,47 @@ func NewDeleteAction(deps *Deps) view.View {
 	})
 }
 
+// NewRetrySpawnAction is the SPS Wave 3 CRIT-3 retry placeholder. The actual
+// per-line spawn-retry use case ships in a later wave; for now this handler
+// logs the intent and refreshes the lines table so the failed-status indicator
+// is re-rendered. Wired so the operator-facing button works end-to-end UX-wise.
+func NewRetrySpawnAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		if viewCtx.Request.Method != http.MethodPost {
+			return view.Error(fmt.Errorf("method not allowed"))
+		}
+		lineID := viewCtx.Request.PathValue("lid")
+		requestID := viewCtx.Request.PathValue("id")
+		if lineID == "" || requestID == "" {
+			return view.Error(fmt.Errorf("missing id or lid"))
+		}
+		log.Printf("RetrySpawn placeholder: pr=%s line=%s — actual retry use case is out of SPS Wave 3 scope", requestID, lineID)
+		return centymo.HTMXSuccess("pr-lines-table")
+	})
+}
+
 // --- helpers -----------------------------------------------------------------
 
 func buildEmptyLineFormData(ctx context.Context, deps *Deps, l centymo.ProcurementRequestLabels) *LineFormData {
 	fd := &LineFormData{
 		Labels:       l,
 		CommonLabels: deps.CommonLabels,
+	}
+
+	// SPS Wave 3 — F1 fulfillment_mode picker (4 radio options + per-mode hint).
+	fd.FulfillmentModeOptions = []types.RadioOption{
+		{Value: "outright", Label: l.FulfillmentMode.Outright, Description: l.FulfillmentModeHints.Outright},
+		{Value: "stockable", Label: l.FulfillmentMode.Stockable, Description: l.FulfillmentModeHints.Stockable},
+		{Value: "recurring", Label: l.FulfillmentMode.Recurring, Description: l.FulfillmentModeHints.Recurring},
+		{Value: "petty", Label: l.FulfillmentMode.Petty, Description: l.FulfillmentModeHints.Petty},
+	}
+
+	// RECURRING — cycle/term unit dropdowns share the same vocabulary.
+	fd.RecurringUnitOptions = []types.SelectOption{
+		{Value: "day", Label: l.Lines.FormRecurringUnitDay},
+		{Value: "week", Label: l.Lines.FormRecurringUnitWeek},
+		{Value: "month", Label: l.Lines.FormRecurringUnitMonth},
+		{Value: "year", Label: l.Lines.FormRecurringUnitYear},
 	}
 
 	if deps.ListProducts != nil {
@@ -225,6 +325,60 @@ func buildEmptyLineFormData(ctx context.Context, deps *Deps, l centymo.Procureme
 	}
 
 	return fd
+}
+
+// parseFulfillmentMode maps the form's short token into the proto enum value.
+// Falls back to UNSPECIFIED on unknown tokens; caller is expected to validate
+// non-empty mode upstream.
+func parseFulfillmentMode(token string) procurementrequestlinepb.ProcurementRequestLineFulfillmentMode {
+	switch token {
+	case "outright":
+		return procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_OUTRIGHT
+	case "stockable":
+		return procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_STOCKABLE
+	case "recurring":
+		return procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_RECURRING
+	case "petty":
+		return procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_PETTY
+	}
+	return procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_UNSPECIFIED
+}
+
+// fulfillmentModeToToken is the inverse of parseFulfillmentMode for edit-form
+// pre-population — returns the short canonical token used in the radio group.
+func fulfillmentModeToToken(mode procurementrequestlinepb.ProcurementRequestLineFulfillmentMode) string {
+	switch mode {
+	case procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_OUTRIGHT:
+		return "outright"
+	case procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_STOCKABLE:
+		return "stockable"
+	case procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_RECURRING:
+		return "recurring"
+	case procurementrequestlinepb.ProcurementRequestLineFulfillmentMode_PROCUREMENT_REQUEST_LINE_FULFILLMENT_MODE_PETTY:
+		return "petty"
+	}
+	return ""
+}
+
+// parseRecurringFields validates and extracts the 2 numeric inputs of the
+// RECURRING-mode form. Returns a translated error message when either is
+// missing or non-positive (matching plan validation requirement).
+func parseRecurringFields(r *http.Request) (cycleValue int32, termValue int32, err error) {
+	cv, errC := strconv.Atoi(r.FormValue("recurring_cycle_value"))
+	if errC != nil || cv <= 0 {
+		return 0, 0, fmt.Errorf("recurring_cycle_value must be a positive integer")
+	}
+	tv, errT := strconv.Atoi(r.FormValue("recurring_term_value"))
+	if errT != nil || tv <= 0 {
+		return 0, 0, fmt.Errorf("recurring_term_value must be a positive integer")
+	}
+	if r.FormValue("recurring_cycle_unit") == "" {
+		return 0, 0, fmt.Errorf("recurring_cycle_unit is required")
+	}
+	if r.FormValue("recurring_term_unit") == "" {
+		return 0, 0, fmt.Errorf("recurring_term_unit is required")
+	}
+	return int32(cv), int32(tv), nil
 }
 
 func parseCentavos(s string) int64 {

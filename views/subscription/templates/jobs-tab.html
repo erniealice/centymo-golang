@@ -1,0 +1,102 @@
+{{/*
+Subscription detail — flat Jobs tab.
+2026-04-30 cyclic-subscription-jobs plan §21.3-§21.5.
+
+Renders ALL Jobs for a subscription (engagement shell, cycle Jobs,
+once-at-engagement-start onboarding) as a flat sortable/filterable list. Tab
+is hidden upstream (page.go) when `Jobs.HasJobs == false`.
+
+Filter chips: All / Engagement / Onboarding / Cycle.
+Columns: # · Name · Type · Status · Period.
+
+Data: PageData with .Jobs == *SubscriptionJobsTabData and .Labels for i18n.
+*/}}
+{{define "subscription-tab-jobs"}}
+<div class="tab-scroll" data-testid="subscription-jobs-tab" id="subscription-jobs-tab">
+    {{if and .Jobs .Jobs.HasJobs}}
+    <header class="subscription-jobs-tab__header">
+        <h4 class="detail-section-title">{{.Labels.Jobs.Heading}}</h4>
+    </header>
+
+    {{/* Filter chips — wired to data-job-type attribute on each row via
+         a small client-side filter (CSS-only [data-active]). */}}
+    <nav class="subscription-jobs-tab__filters" aria-label="{{.Labels.Jobs.FilterType}}">
+        <button type="button"
+                class="chip chip--filter is-active"
+                data-testid="subscription-jobs-filter-all"
+                data-filter-type="all">
+            {{.Labels.Jobs.FilterAll}}
+        </button>
+        <button type="button"
+                class="chip chip--filter"
+                data-testid="subscription-jobs-filter-engagement"
+                data-filter-type="engagement">
+            {{.Labels.Jobs.TypeEngagement}}
+        </button>
+        <button type="button"
+                class="chip chip--filter"
+                data-testid="subscription-jobs-filter-onboarding"
+                data-filter-type="onboarding">
+            {{.Labels.Jobs.TypeOnboarding}}
+        </button>
+        <button type="button"
+                class="chip chip--filter"
+                data-testid="subscription-jobs-filter-cycle"
+                data-filter-type="cycle">
+            {{.Labels.Jobs.TypeCycle}}
+        </button>
+    </nav>
+
+    <table class="data-table data-table--compact subscription-jobs-table"
+           data-testid="subscription-jobs-flat-list">
+        <thead>
+            <tr>
+                <th>{{.Labels.Jobs.ColumnNumber}}</th>
+                <th>{{.Labels.Jobs.ColumnName}}</th>
+                <th>{{.Labels.Jobs.ColumnType}}</th>
+                <th>{{.Labels.Jobs.ColumnStatus}}</th>
+                <th>{{.Labels.Jobs.ColumnPeriod}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Jobs.Rows}}
+            <tr data-testid="subscription-jobs-row"
+                data-job-id="{{.JobID}}"
+                data-job-type="{{.JobType}}"
+                data-job-status="{{.Status}}">
+                <td>
+                    {{if eq .JobType "engagement"}}—{{else if eq .JobType "onboarding"}}⚙{{else}}{{.CycleIndex}}{{end}}
+                </td>
+                <td>
+                    {{if .DetailURL}}
+                    <a href="{{.DetailURL}}" data-testid="subscription-jobs-row-name-link">{{.JobName}}</a>
+                    {{else}}
+                    {{.JobName}}
+                    {{end}}
+                </td>
+                <td>
+                    <span class="badge badge--default"
+                          data-testid="subscription-jobs-row-type">
+                        {{.JobTypeLabel}}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge badge--{{.StatusVariant}}"
+                          data-testid="subscription-jobs-row-status">
+                        {{.StatusLabel}}
+                    </span>
+                </td>
+                <td data-testid="subscription-jobs-row-period">
+                    {{if .PeriodLabel}}{{.PeriodLabel}}{{else}}—{{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <div class="empty-state" data-testid="subscription-jobs-empty">
+        <p class="empty-state-message">{{.Labels.Jobs.Empty}}</p>
+    </div>
+    {{end}}
+</div>
+{{end}}

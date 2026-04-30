@@ -94,10 +94,19 @@
         </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
-            <span class="detail-info-value">
-                {{template "status-badge" (dict "Status" (index .Request "status") "Variant" .StatusVariant)}}
+            <span class="detail-info-value" data-testid="procurement-request-status-badge" data-status="{{index .Request "status"}}">
+                {{template "status-badge" (dict "Label" (index .Request "status_label") "Status" .StatusVariant)}}
             </span>
         </div>
+        {{/* SPS Wave 3 — F3 fulfillment_strategy badge on Info tab */}}
+        {{if index .Request "fulfillment_strategy_label"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Filters.FulfillmentStrategy}}</span>
+            <span class="detail-info-value" data-testid="procurement-request-strategy-badge" data-strategy="{{index .Request "fulfillment_strategy"}}">
+                {{template "badge" (dict "Label" (index .Request "fulfillment_strategy_label") "Variant" "tag")}}
+            </span>
+        </div>
+        {{end}}
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Requester}}</span>
             <span class="detail-info-value">{{index .Request "requester_user_id"}}</span>
@@ -135,6 +144,29 @@
         </div>
         {{end}}
     </div>
+
+    {{/* SPS Wave 3 — policy_decision_log collapsible section. Renders the JSON
+         audit trail captured during approval or "no decisions logged yet" if
+         empty. Native <details> for zero-JS toggle. */}}
+    <details class="detail-policy-log" data-testid="procurement-request-policy-log">
+        <summary class="detail-section-title">
+            {{.Labels.PolicyDecision.SectionTitle}}
+            <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                    {{template "icon-info"}}
+                </button>
+                <div class="popover-panel form-label-info-panel" role="tooltip">
+                    <div class="popover-arrow"></div>
+                    {{.Labels.PolicyDecision.Info}}
+                </div>
+            </span>
+        </summary>
+        {{if index .Request "policy_decision_log"}}
+        <pre class="detail-policy-log-body" data-testid="procurement-request-policy-log-body">{{index .Request "policy_decision_log"}}</pre>
+        {{else}}
+        <p class="text-muted" data-testid="procurement-request-policy-log-empty">{{.Labels.PolicyDecision.EmptyMessage}}</p>
+        {{end}}
+    </details>
 </div>
 {{end}}
 

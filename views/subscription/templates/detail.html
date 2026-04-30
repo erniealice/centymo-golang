@@ -19,6 +19,8 @@
         {{template "subscription-tab-package" .}}
         {{else if eq .ActiveTab "operations"}}
         {{template "subscription-tab-operations" .}}
+        {{else if eq .ActiveTab "jobs"}}
+        {{template "subscription-tab-jobs" .}}
         {{else if eq .ActiveTab "invoices"}}
         {{template "subscription-tab-invoices" .}}
         {{else if eq .ActiveTab "audit"}}
@@ -30,16 +32,22 @@
 </div>
 {{end}}
 
-{{/* Operations Tab — 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2.
+{{/* Operations Tab — 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 +
+     2026-04-30 cyclic-subscription-jobs plan §7.1 (cycle accordion branch).
      Lists Jobs spawned for this subscription (Job.origin_type = SUBSCRIPTION,
-     Job.origin_id = subscription.id). Renders parent → children indented. */}}
+     Job.origin_id = subscription.id). For non-cyclic engagements, renders the
+     legacy parent → children flat layout. For cyclic engagements (RECURRING /
+     CONTRACT-with-cycle), renders the engagement shell + cycle accordions. */}}
 {{define "subscription-tab-operations"}}
 <div class="tab-scroll" data-testid="operations-tab" id="subscription-operations-tab"
+     data-is-cyclic="{{if .IsCyclic}}true{{else}}false{{end}}"
      hx-trigger="refresh-subscription-operations-tab from:body"
      hx-get="{{index .Subscription "tab_invoices_url"}}"
      hx-target="this"
      hx-swap="outerHTML">
-  {{if .OperationsHasJobs}}
+  {{if .IsCyclic}}
+    {{template "subscription-tab-operations-cyclic" .}}
+  {{else if .OperationsHasJobs}}
   <h4 class="detail-section-title">{{.Labels.Operations.Title}}</h4>
   <ul class="operations-job-list">
     {{range .OperationsRootJobs}}
@@ -62,6 +70,106 @@
     {{end}}
   </div>
   {{end}}
+</div>
+{{end}}
+
+{{/* Cyclic Operations branch — engagement shell header, optional onboarding
+     children, then per-cycle pyeza-accordion items sorted DESC. Spawn this
+     cycle / Backfill CTAs surface above the accordion stack. Composes the
+     promoted pyeza-accordion primitive (ui-component-audit §3.3.1). */}}
+{{define "subscription-tab-operations-cyclic"}}
+<div class="subscription-operations-cyclic"
+     data-testid="subscription-operations-cyclic-shell">
+
+    {{if .OperationsCyclic.EngagementHeading}}
+    <header class="subscription-operations-cyclic__engagement"
+            data-testid="subscription-operations-engagement-header">
+        <h4 class="detail-section-title">{{.OperationsCyclic.EngagementHeading}}</h4>
+    </header>
+    {{end}}
+
+    {{/* Spawn / Backfill CTAs — primary spawn-this-cycle is always-visible
+         when SpawnCycleJobsURL is wired; backfill banner surfaces only when
+         the view layer detected missing cycles. */}}
+    <div class="subscription-operations-cyclic__actions">
+        {{if .SpawnCycleJobsURL}}
+        <button type="button"
+                class="btn btn--primary"
+                data-testid="subscription-cycle-spawn-now-cta"
+                hx-post="{{.SpawnCycleJobsURL}}"
+                hx-swap="none"
+                hx-on::after-request="lf.Sheet.handleResponse(event)">
+            {{.Labels.Operations.CycleSpawnNow}}
+        </button>
+        {{end}}
+        {{if .BackfillCycleJobsDrawerURL}}
+        <button type="button"
+                class="btn btn--secondary"
+                data-testid="subscription-backfill-cycles-cta"
+                hx-get="{{.BackfillCycleJobsDrawerURL}}"
+                hx-target="#sheetContent"
+                hx-swap="innerHTML">
+            {{.Labels.Operations.BackfillCta}}
+        </button>
+        {{end}}
+    </div>
+
+    {{/* Once-at-engagement-start child Jobs (e.g. onboarding). */}}
+    {{if .OperationsCyclic.OnceAtStartJobs}}
+    <ul class="operations-job-list operations-job-list--once-at-start"
+        data-testid="subscription-operations-once-at-start">
+        {{range .OperationsCyclic.OnceAtStartJobs}}
+        {{template "subscription-operations-job-row" (dict "Row" . "Labels" $.Labels)}}
+        {{end}}
+    </ul>
+    {{end}}
+
+    {{/* Cycle accordions — composes pyeza-accordion's BEM class system
+         inline (the per-cycle Body needs templated content from a `range`
+         loop that can't pass through the pyeza-accordion dict slot without
+         a `renderTemplate` helper, so we re-use the BEM chrome here and
+         get the same styling + a11y for free). */}}
+    {{if .OperationsCyclic.Cycles}}
+    <div class="subscription-operations-cyclic__cycles">
+        {{range .OperationsCyclic.Cycles}}
+        <details class="pyeza-accordion subscription-cycle-accordion"
+                 {{if .OpenByDefault}}open{{end}}
+                 data-testid="subscription-cycle-accordion"
+                 data-cycle-index="{{.CycleIndex}}"
+                 data-cycle-period-start="{{.PeriodStart}}">
+            <summary class="pyeza-accordion__header">
+                <span class="pyeza-accordion__chevron" aria-hidden="true"></span>
+                <span class="pyeza-accordion__title">{{.HeadingText}}</span>
+                <span class="pyeza-accordion__meta">
+                    <span class="badge badge--{{.StatusVariant}}"
+                          data-testid="subscription-cycle-status-rollup">
+                        {{.StatusLabel}}
+                    </span>
+                </span>
+            </summary>
+            <div class="pyeza-accordion__body" id="cycle-{{.CycleIndex}}-body">
+                {{if .Jobs}}
+                <ul class="operations-job-list operations-job-list--cycle-jobs">
+                    {{range .Jobs}}
+                    {{template "subscription-operations-job-row" (dict "Row" . "Labels" $.Labels)}}
+                    {{end}}
+                </ul>
+                {{end}}
+                <p class="subscription-cycle-body__invoice"
+                   data-testid="subscription-cycle-period-label"
+                   data-cycle-period-start="{{.PeriodStart}}">
+                    {{.InvoiceLabel}}
+                </p>
+            </div>
+        </details>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="subscription-operations-cyclic__empty"
+       data-testid="subscription-cycles-empty">
+        {{.OperationsCyclic.CycleEmpty}}
+    </p>
+    {{end}}
 </div>
 {{end}}
 

@@ -135,6 +135,15 @@ const (
 	SubscriptionSpawnJobsURL        = "/action/subscription/spawn-jobs/{subscriptionId}"
 	SubscriptionSpawnJobsPartialURL = "/action/subscription/_partial/spawn-jobs-section"
 
+	// 2026-04-30 cyclic-subscription-jobs plan §5.3 / Phase D — manual cycle
+	// spawn + backfill triggers. Both routes call into espyna's
+	// MaterializeInstanceJobsForSubscription consumer (single-cycle vs.
+	// multi-cycle modes). Verb-first ("spawn-cycle-jobs", "backfill-cycle-jobs")
+	// to keep ServeMux disambiguation consistent with existing
+	// SubscriptionRecognizeURL / SubscriptionSpawnJobsURL.
+	SubscriptionSpawnCycleJobsURL    = "/action/subscription/spawn-cycle-jobs/{subscriptionId}"
+	SubscriptionBackfillCycleJobsURL = "/action/subscription/backfill-cycle-jobs/{subscriptionId}"
+
 	// Collection (money IN) routes
 	CollectionListURL             = "/app/collections/list/{status}"
 	CollectionDetailURL           = "/app/collections/detail/{id}"
@@ -479,6 +488,13 @@ const (
 	ProcurementRequestLineEditURL   = "/action/procurement-request/{id}/lines/edit/{lid}"
 	ProcurementRequestLineDeleteURL = "/action/procurement-request/{id}/lines/delete"
 
+	// SPS Wave 3 — CRIT-3 spawn-retry placeholder route. Wired into the line-row
+	// "Retry" button; the actual retry use case lands in a later wave so the
+	// handler is currently a no-op redirect (see action/action.go::NewRetrySpawnAction).
+	// NOTE: pattern uses `/retry-spawn/{lid}` (not `/{lid}/retry-spawn`) to avoid
+	// stdlib ServeMux conflict with the existing `/lines/edit/{lid}` pattern.
+	ProcurementRequestLineRetrySpawnURL = "/action/procurement-request/{id}/lines/retry-spawn/{lid}"
+
 	// ---------------------------------------------------------------------------
 	// P3b — Procurement Operations app route constants
 	// (composition surface; no proto entity)
@@ -490,4 +506,65 @@ const (
 	ProcurementVarianceURL         = "/app/procurement/variance"
 	ProcurementUtilizationURL      = "/app/procurement/utilization"
 	ProcurementRecurrenceDraftsURL = "/app/procurement/recurrence-drafts/list/{status}"
+
+	// ---------------------------------------------------------------------------
+	// SPS P7 — SupplierContractPriceSchedule + SupplierContractPriceScheduleLine
+	// ---------------------------------------------------------------------------
+
+	// SupplierContractPriceSchedule master routes
+	SupplierContractPriceScheduleListURL          = "/app/supplier-contract-price-schedules/list/{status}"
+	SupplierContractPriceScheduleDetailURL        = "/app/supplier-contract-price-schedules/detail/{id}"
+	SupplierContractPriceScheduleAddURL           = "/action/supplier-contract-price-schedule/add"
+	SupplierContractPriceScheduleEditURL          = "/action/supplier-contract-price-schedule/edit/{id}"
+	SupplierContractPriceScheduleDeleteURL        = "/action/supplier-contract-price-schedule/delete"
+	SupplierContractPriceScheduleSetStatusURL     = "/action/supplier-contract-price-schedule/set-status"
+	SupplierContractPriceScheduleBulkSetStatusURL = "/action/supplier-contract-price-schedule/bulk-set-status"
+	SupplierContractPriceScheduleTabActionURL     = "/action/supplier-contract-price-schedule/detail/{id}/tab/{tab}"
+	SupplierContractPriceScheduleActivateURL      = "/action/supplier-contract-price-schedule/activate/{id}"
+	SupplierContractPriceScheduleSupersedeURL     = "/action/supplier-contract-price-schedule/supersede/{id}"
+
+	// SupplierContractPriceScheduleLine routes (child of schedule detail)
+	SupplierContractPriceScheduleLineAddURL    = "/action/supplier-contract-price-schedule/{id}/lines/add"
+	SupplierContractPriceScheduleLineEditURL   = "/action/supplier-contract-price-schedule/{id}/lines/edit/{lid}"
+	SupplierContractPriceScheduleLineDeleteURL = "/action/supplier-contract-price-schedule/{id}/lines/delete"
+
+	// ---------------------------------------------------------------------------
+	// SPS P10 — ExpenseRecognition + ExpenseRecognitionLine route constants
+	// ---------------------------------------------------------------------------
+
+	// ExpenseRecognition master routes (no add/edit drawer — created BY use case)
+	ExpenseRecognitionListURL                    = "/app/expense-recognitions/list/{status}"
+	ExpenseRecognitionDetailURL                  = "/app/expense-recognitions/detail/{id}"
+	ExpenseRecognitionDeleteURL                  = "/action/expense-recognition/delete"
+	ExpenseRecognitionTabActionURL               = "/action/expense-recognition/detail/{id}/tab/{tab}"
+	ExpenseRecognitionReverseURL                 = "/action/expense-recognition/reverse/{id}"
+	ExpenseRecognitionRecognizeFromExpenditureURL = "/action/expense-recognition/recognize-from-expenditure"
+	ExpenseRecognitionRecognizeFromContractURL    = "/action/expense-recognition/recognize-from-contract"
+
+	// ExpenseRecognitionLine routes (child of recognition detail — inline CRUD)
+	ExpenseRecognitionLineAddURL    = "/action/expense-recognition/{id}/lines/add"
+	ExpenseRecognitionLineEditURL   = "/action/expense-recognition/{id}/lines/edit/{lid}"
+	ExpenseRecognitionLineDeleteURL = "/action/expense-recognition/{id}/lines/delete"
+
+	// ---------------------------------------------------------------------------
+	// SPS P10 — AccruedExpense + AccruedExpenseSettlement route constants
+	// ---------------------------------------------------------------------------
+
+	// AccruedExpense master routes (manual create drawer is secondary — primary path is AccrueFromContract use case)
+	AccruedExpenseListURL          = "/app/accrued-expenses/list/{status}"
+	AccruedExpenseDetailURL        = "/app/accrued-expenses/detail/{id}"
+	AccruedExpenseAddURL           = "/action/accrued-expense/add"
+	AccruedExpenseEditURL          = "/action/accrued-expense/edit/{id}"
+	AccruedExpenseDeleteURL        = "/action/accrued-expense/delete"
+	AccruedExpenseSetStatusURL     = "/action/accrued-expense/set-status"
+	AccruedExpenseBulkSetStatusURL = "/action/accrued-expense/bulk-set-status"
+	AccruedExpenseTabActionURL     = "/action/accrued-expense/detail/{id}/tab/{tab}"
+	AccruedExpenseSettleURL            = "/action/accrued-expense/settle/{id}"
+	AccruedExpenseReverseURL           = "/action/accrued-expense/reverse/{id}"
+	AccruedExpenseAccrueFromContractURL = "/action/accrued-expense/accrue-from-contract"
+
+	// AccruedExpenseSettlement routes (child of accrual detail — inline CRUD)
+	AccruedExpenseSettlementAddURL    = "/action/accrued-expense/{id}/settlements/add"
+	AccruedExpenseSettlementEditURL   = "/action/accrued-expense/{id}/settlements/edit/{sid}"
+	AccruedExpenseSettlementDeleteURL = "/action/accrued-expense/{id}/settlements/delete"
 )

@@ -50,11 +50,30 @@ import (
 	priceplanmod "github.com/erniealice/centymo-golang/views/price_plan"
 	priceschedulemod "github.com/erniealice/centymo-golang/views/price_schedule"
 	priceschedulepricepldetail "github.com/erniealice/centymo-golang/views/price_schedule/detail/plan"
+	procurementmod "github.com/erniealice/centymo-golang/views/procurement"
+	procurementrequestmod "github.com/erniealice/centymo-golang/views/procurement_request"
+	procurementrequestlinemod "github.com/erniealice/centymo-golang/views/procurement_request_line"
 	resourcemod "github.com/erniealice/centymo-golang/views/resource"
 	revenuemod "github.com/erniealice/centymo-golang/views/revenue"
 	subscriptionaction "github.com/erniealice/centymo-golang/views/subscription/action"
 	subscriptiondetail "github.com/erniealice/centymo-golang/views/subscription/detail"
 	subscriptionlist "github.com/erniealice/centymo-golang/views/subscription/list"
+	suppliercontractmod "github.com/erniealice/centymo-golang/views/supplier_contract"
+	suppliercontractlinemod "github.com/erniealice/centymo-golang/views/supplier_contract_line"
+	// SPS Wave 4 — six new view modules (price-schedule master + line, recognition + line, accrued + settlement).
+	accruedexpensemod "github.com/erniealice/centymo-golang/views/accrued_expense"
+	accruedexpensesettlementmod "github.com/erniealice/centymo-golang/views/accrued_expense_settlement"
+	expenserecognitionmod "github.com/erniealice/centymo-golang/views/expense_recognition"
+	expenserecognitionlinemod "github.com/erniealice/centymo-golang/views/expense_recognition_line"
+	suppliercontractpriceschedulemod "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule"
+	suppliercontractpricescheduleinemod "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule_line"
+
+	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
+	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
+	// SPS Wave 4 — proto packages for the six new view modules.
+	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
+	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
+	scpspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
 )
 
 // ---------------------------------------------------------------------------
@@ -106,6 +125,19 @@ type blockConfig struct {
 	disbursement bool
 	expenditure  bool
 	resource     bool
+	// 20260427-supplier-commitments P3a/P3b — five new modules wired by Block.
+	supplierContract       bool
+	supplierContractLine   bool
+	procurementRequest     bool
+	procurementRequestLine bool
+	procurement            bool
+	// SPS Wave 4 — six new modules wired by Block.
+	supplierContractPriceSchedule     bool
+	supplierContractPriceScheduleLine bool
+	expenseRecognition                bool
+	expenseRecognitionLine            bool
+	accruedExpense                    bool
+	accruedExpenseSettlement          bool
 	// clientDetailURL is the absolute path template (e.g.
 	// "/app/clients/detail/{id}") used for the subscription detail's
 	// page-header breadcrumb when accessed via the under-client nested route.
@@ -133,6 +165,33 @@ func WithCollection() BlockOption   { return func(c *blockConfig) { c.collection
 func WithDisbursement() BlockOption { return func(c *blockConfig) { c.disbursement = true } }
 func WithExpenditure() BlockOption  { return func(c *blockConfig) { c.expenditure = true } }
 func WithResource() BlockOption     { return func(c *blockConfig) { c.resource = true } }
+
+// 20260427-supplier-commitments — five new module toggles.
+func WithSupplierContract() BlockOption       { return func(c *blockConfig) { c.supplierContract = true } }
+func WithSupplierContractLine() BlockOption   { return func(c *blockConfig) { c.supplierContractLine = true } }
+func WithProcurementRequest() BlockOption     { return func(c *blockConfig) { c.procurementRequest = true } }
+func WithProcurementRequestLine() BlockOption { return func(c *blockConfig) { c.procurementRequestLine = true } }
+func WithProcurement() BlockOption            { return func(c *blockConfig) { c.procurement = true } }
+
+// SPS Wave 4 — six new module toggles (supplier-side pricing graph + accrual layer).
+func WithSupplierContractPriceSchedule() BlockOption {
+	return func(c *blockConfig) { c.supplierContractPriceSchedule = true }
+}
+func WithSupplierContractPriceScheduleLine() BlockOption {
+	return func(c *blockConfig) { c.supplierContractPriceScheduleLine = true }
+}
+func WithExpenseRecognition() BlockOption {
+	return func(c *blockConfig) { c.expenseRecognition = true }
+}
+func WithExpenseRecognitionLine() BlockOption {
+	return func(c *blockConfig) { c.expenseRecognitionLine = true }
+}
+func WithAccruedExpense() BlockOption {
+	return func(c *blockConfig) { c.accruedExpense = true }
+}
+func WithAccruedExpenseSettlement() BlockOption {
+	return func(c *blockConfig) { c.accruedExpenseSettlement = true }
+}
 
 // WithClientDetailURL supplies the entydad client-detail path template (e.g.
 // "/app/clients/detail/{id}") so the subscription detail page can render a
@@ -166,6 +225,33 @@ func (c *blockConfig) wantDisbursement() bool { return c.enableAll || c.disburse
 func (c *blockConfig) wantExpenditure() bool  { return c.enableAll || c.expenditure }
 func (c *blockConfig) wantResource() bool     { return c.enableAll || c.resource }
 
+// 20260427-supplier-commitments — five new module toggles.
+func (c *blockConfig) wantSupplierContract() bool       { return c.enableAll || c.supplierContract }
+func (c *blockConfig) wantSupplierContractLine() bool   { return c.enableAll || c.supplierContractLine }
+func (c *blockConfig) wantProcurementRequest() bool     { return c.enableAll || c.procurementRequest }
+func (c *blockConfig) wantProcurementRequestLine() bool { return c.enableAll || c.procurementRequestLine }
+func (c *blockConfig) wantProcurement() bool            { return c.enableAll || c.procurement }
+
+// SPS Wave 4 — six new module want() helpers.
+func (c *blockConfig) wantSupplierContractPriceSchedule() bool {
+	return c.enableAll || c.supplierContractPriceSchedule
+}
+func (c *blockConfig) wantSupplierContractPriceScheduleLine() bool {
+	return c.enableAll || c.supplierContractPriceScheduleLine
+}
+func (c *blockConfig) wantExpenseRecognition() bool {
+	return c.enableAll || c.expenseRecognition
+}
+func (c *blockConfig) wantExpenseRecognitionLine() bool {
+	return c.enableAll || c.expenseRecognitionLine
+}
+func (c *blockConfig) wantAccruedExpense() bool {
+	return c.enableAll || c.accruedExpense
+}
+func (c *blockConfig) wantAccruedExpenseSettlement() bool {
+	return c.enableAll || c.accruedExpenseSettlement
+}
+
 // ---------------------------------------------------------------------------
 // Block — the main Lego entry point
 // ---------------------------------------------------------------------------
@@ -186,7 +272,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 	moduleSelected := cfg.inventory || cfg.revenue || cfg.product || cfg.productLine ||
 		cfg.pricePlan || cfg.priceSchedule || cfg.priceList || cfg.plan ||
 		cfg.subscription || cfg.collection || cfg.disbursement || cfg.expenditure ||
-		cfg.resource
+		cfg.resource ||
+		cfg.supplierContract || cfg.supplierContractLine ||
+		cfg.procurementRequest || cfg.procurementRequestLine || cfg.procurement ||
+		cfg.supplierContractPriceSchedule || cfg.supplierContractPriceScheduleLine ||
+		cfg.expenseRecognition || cfg.expenseRecognitionLine ||
+		cfg.accruedExpense || cfg.accruedExpenseSettlement
 	cfg.enableAll = !moduleSelected
 
 	return func(ctx *pyeza.AppContext) error {
@@ -378,6 +469,41 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		resourceLabels := centymo.DefaultResourceLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "resource.json", "resource", &resourceLabels)
+
+		// 20260427-supplier-commitments — load routes + labels for the five new view modules.
+		supplierContractRoutes := centymo.DefaultSupplierContractRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_contract", &supplierContractRoutes)
+		supplierContractLabels := centymo.DefaultSupplierContractLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_contract.json", "supplierContract", &supplierContractLabels)
+
+		procurementRequestRoutes := centymo.DefaultProcurementRequestRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "procurement_request", &procurementRequestRoutes)
+		procurementRequestLabels := centymo.DefaultProcurementRequestLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "procurement_request.json", "procurementRequest", &procurementRequestLabels)
+
+		procurementRoutes := centymo.DefaultProcurementRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "procurement", &procurementRoutes)
+		// Procurement Operations composition app — no Default*Labels factory
+		// yet (P4 lyngua wiring deferred); zero-value struct is fine until
+		// translations land. LoadPathIfExists is a no-op if the file is absent.
+		var procurementLabels centymo.ProcurementLabels
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "procurement.json", "procurement", &procurementLabels)
+
+		// SPS Wave 4 — Routes + Labels for the six new view modules.
+		supplierContractPriceScheduleRoutes := centymo.DefaultSupplierContractPriceScheduleRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_contract_price_schedule", &supplierContractPriceScheduleRoutes)
+		supplierContractPriceScheduleLabels := centymo.DefaultSupplierContractPriceScheduleLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_contract_price_schedule.json", "supplierContractPriceSchedule", &supplierContractPriceScheduleLabels)
+
+		expenseRecognitionRoutes := centymo.DefaultExpenseRecognitionRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "expense_recognition", &expenseRecognitionRoutes)
+		expenseRecognitionLabels := centymo.DefaultExpenseRecognitionLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expense_recognition.json", "expenseRecognition", &expenseRecognitionLabels)
+
+		accruedExpenseRoutes := centymo.DefaultAccruedExpenseRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "accrued_expense", &accruedExpenseRoutes)
+		accruedExpenseLabels := centymo.DefaultAccruedExpenseLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "accrued_expense.json", "accruedExpense", &accruedExpenseLabels)
 
 		// =====================================================================
 		// Inventory module
@@ -1763,6 +1889,38 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						return resp.JobCount, resp.SkippedReason, nil
 					}
 				}
+				// 2026-04-30 cyclic-subscription-jobs plan §5.3 / Phase D —
+				// wire espyna's MaterializeInstanceJobsForSubscription through
+				// a centymo-side adapter so the Operations tab "Spawn this
+				// cycle now" + "Backfill missing cycles" handlers can call it
+				// without importing espyna directly. nil-safe: the cycle-spawn
+				// and backfill action handlers gate on the adapter pointer.
+				if useCases.Subscription.MaterializeInstanceJobsForSubscription != nil {
+					subActionDeps.MaterializeInstanceJobsForSubscription = func(fctx context.Context, req *subscriptionaction.MaterializeInstanceJobsRequest) (*subscriptionaction.MaterializeInstanceJobsResponse, error) {
+						if req == nil {
+							return nil, nil
+						}
+						resp, err := consumer.MaterializeInstanceJobsForSubscription(useCases, fctx, &consumer.MaterializeInstanceJobsForSubscriptionRequest{
+							SubscriptionID:   req.SubscriptionID,
+							CyclePeriodStart: req.CyclePeriodStart,
+							Backfill:         req.Backfill,
+						})
+						if err != nil {
+							return nil, err
+						}
+						if resp == nil {
+							return &subscriptionaction.MaterializeInstanceJobsResponse{}, nil
+						}
+						return &subscriptionaction.MaterializeInstanceJobsResponse{
+							SpawnedCycleCount:         resp.SpawnedCycleCount,
+							SpawnedJobCount:           resp.SpawnedJobCount,
+							OnceAtStartJobCount:       resp.OnceAtStartJobCount,
+							EngagementWasNewlyCreated: resp.EngagementWasNewlyCreated,
+							SkippedReason:             resp.SkippedReason,
+							BackfillCappedAt:          resp.BackfillCappedAt,
+						}, nil
+					}
+				}
 
 				ctx.Routes.GET(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
 				ctx.Routes.POST(subscriptionRoutes.AddURL, subscriptionaction.NewAddAction(subActionDeps))
@@ -1812,6 +1970,19 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if subscriptionRoutes.SpawnJobsURL != "" {
 					ctx.Routes.GET(subscriptionRoutes.SpawnJobsURL, subscriptionaction.NewSpawnJobsAction(subActionDeps))
 					ctx.Routes.POST(subscriptionRoutes.SpawnJobsURL, subscriptionaction.NewSpawnJobsAction(subActionDeps))
+				}
+				// 2026-04-30 cyclic-subscription-jobs plan §5.3 — Operations
+				// tab CTAs: "Spawn this cycle now" (POST) + "Backfill missing
+				// cycles" (GET drawer / POST commit). Both gate on the adapter
+				// being wired (handlers also re-check internally). The detail
+				// page tab template hides the buttons when the URL fields are
+				// empty, so nil-safety is double-bottomed.
+				if subscriptionRoutes.SpawnCycleJobsURL != "" {
+					ctx.Routes.POST(subscriptionRoutes.SpawnCycleJobsURL, subscriptionaction.NewSpawnCycleJobsAction(subActionDeps))
+				}
+				if subscriptionRoutes.BackfillCycleJobsURL != "" {
+					ctx.Routes.GET(subscriptionRoutes.BackfillCycleJobsURL, subscriptionaction.NewBackfillCyclesAction(subActionDeps))
+					ctx.Routes.POST(subscriptionRoutes.BackfillCycleJobsURL, subscriptionaction.NewBackfillCyclesAction(subActionDeps))
 				}
 				// Auto-complete search (http.HandlerFunc — uses HandleFunc, not GET)
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchClientURL, subscriptionaction.NewSearchClientsAction(subActionDeps))
@@ -2010,6 +2181,26 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				expDeps.DisbursementLabels = disbursementLabels
 				expDeps.CreateDisbursement = useCases.Treasury.Disbursement.CreateDisbursement.Execute
 			}
+			// SPS Wave 4 — Recognition + Accrual tabs on the expense detail page.
+			// Nil-safe — when the use case is missing, the tab renders an empty state.
+			if useCases.Expenditure != nil && useCases.Expenditure.ExpenseRecognition != nil {
+				if uc := useCases.Expenditure.ExpenseRecognition.ReadExpenseRecognition; uc != nil {
+					expDeps.ReadExpenseRecognition = uc.Execute
+				}
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.AccruedExpense != nil {
+				if uc := useCases.Expenditure.AccruedExpense.ListAccruedExpenses; uc != nil {
+					expDeps.ListAccruedExpenses = uc.Execute
+				}
+			}
+			expDeps.ExpenseRecognitionDetailURL = expenseRecognitionRoutes.DetailURL
+			expDeps.AccruedExpenseDetailURL = accruedExpenseRoutes.DetailURL
+			// RecognizeFromExpenditureURL is the espyna trigger surfaced as the
+			// empty-state CTA. The espyna RecognizeFromExpenditure use case is
+			// exposed on the API surface; the centymo route_config does not
+			// expose a /action/* mirror because recognition is created by use
+			// case (no UI form). Leaving empty by default; verticals can wire
+			// a custom trigger URL via lyngua override.
 			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
 		}
 
@@ -2043,6 +2234,568 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				}
 			}
 			resourcemod.NewModule(resourceDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// 20260427-supplier-commitments — five new modules (P3a + P3b)
+		//
+		// Mirrors the expendituremod pattern (lines ~1937 above): construct
+		// ModuleDeps, plumb each available use case through, register routes.
+		// All use-case threading is nil-safe — when the espyna composition
+		// layer didn't initialize a use case, the corresponding view falls back
+		// to its empty/disabled state instead of panicking.
+		//
+		// Workflow action closures (Submit/Approve/Reject/SpawnPO and
+		// Approve/Terminate) source ApprovedBy from the request context via
+		// consumer.ExtractUserIDFromContext so the centymo views package stays
+		// free of espyna ctx imports.
+		// =====================================================================
+
+		// SupplierContract module
+		if cfg.wantSupplierContract() {
+			scDeps := &suppliercontractmod.ModuleDeps{
+				Routes:       supplierContractRoutes,
+				Labels:       supplierContractLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContract != nil {
+				uc := useCases.Expenditure.SupplierContract
+				if uc.CreateSupplierContract != nil {
+					scDeps.CreateSupplierContract = uc.CreateSupplierContract.Execute
+				}
+				if uc.ReadSupplierContract != nil {
+					scDeps.ReadSupplierContract = uc.ReadSupplierContract.Execute
+				}
+				if uc.UpdateSupplierContract != nil {
+					scDeps.UpdateSupplierContract = uc.UpdateSupplierContract.Execute
+				}
+				if uc.DeleteSupplierContract != nil {
+					scDeps.DeleteSupplierContract = uc.DeleteSupplierContract.Execute
+				}
+				if uc.ListSupplierContracts != nil {
+					scDeps.ListSupplierContracts = uc.ListSupplierContracts.Execute
+				}
+				// Workflow actions — wrap Execute with closures that source
+				// the approver/user identity from ctx (set by the session
+				// middleware in the composition layer).
+				if uc.ApproveSupplierContract != nil {
+					approveUC := uc.ApproveSupplierContract
+					scDeps.ApproveSupplierContract = func(fctx context.Context, id string) error {
+						userID := consumer.ExtractUserIDFromContext(fctx)
+						_, err := approveUC.Execute(fctx, &suppliercontractpb.ApproveSupplierContractRequest{
+							SupplierContractId: id,
+							ApprovedBy:         userID,
+						})
+						return err
+					}
+				}
+				if uc.TerminateSupplierContract != nil {
+					terminateUC := uc.TerminateSupplierContract
+					scDeps.TerminateSupplierContract = func(fctx context.Context, id, reason string) error {
+						req := &suppliercontractpb.TerminateSupplierContractRequest{
+							SupplierContractId: id,
+						}
+						if reason != "" {
+							req.Reason = &reason
+						}
+						_, err := terminateUC.Execute(fctx, req)
+						return err
+					}
+				}
+			}
+			// Lines query for the Lines tab on the contract detail page.
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractLine != nil {
+				if uc := useCases.Expenditure.SupplierContractLine.ListSupplierContractLines; uc != nil {
+					scDeps.ListSupplierContractLines = uc.Execute
+				}
+			}
+			// Suppliers dropdown.
+			if useCases.Entity != nil && useCases.Entity.Supplier != nil &&
+				useCases.Entity.Supplier.ListSuppliers != nil {
+				scDeps.ListSuppliers = useCases.Entity.Supplier.ListSuppliers.Execute
+			}
+			// Linked POs and Linked Expenditures tabs on the detail page.
+			if useCases.Expenditure != nil && useCases.Expenditure.PurchaseOrder != nil &&
+				useCases.Expenditure.PurchaseOrder.ListPurchaseOrders != nil {
+				scDeps.ListPurchaseOrders = useCases.Expenditure.PurchaseOrder.ListPurchaseOrders.Execute
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.Expenditure != nil &&
+				useCases.Expenditure.Expenditure.ListExpenditures != nil {
+				scDeps.ListExpenditures = useCases.Expenditure.Expenditure.ListExpenditures.Execute
+			}
+			// SPS Wave 4 — Price Schedules tab on the contract detail page.
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractPriceSchedule != nil {
+				if uc := useCases.Expenditure.SupplierContractPriceSchedule.ListSupplierContractPriceSchedules; uc != nil {
+					scDeps.ListSupplierContractPriceSchedules = uc.Execute
+				}
+			}
+			scDeps.PriceScheduleListURL = supplierContractPriceScheduleRoutes.ListURL
+			scDeps.PriceScheduleDetailURL = supplierContractPriceScheduleRoutes.DetailURL
+			scDeps.PriceScheduleAddURL = supplierContractPriceScheduleRoutes.AddURL
+			suppliercontractmod.NewModule(scDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// SupplierContractLine module — child rows of SupplierContract.
+		if cfg.wantSupplierContractLine() {
+			sclDeps := &suppliercontractlinemod.ModuleDeps{
+				Routes:       supplierContractRoutes,
+				Labels:       supplierContractLabels,
+				CommonLabels: ctx.Common,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractLine != nil {
+				uc := useCases.Expenditure.SupplierContractLine
+				if uc.CreateSupplierContractLine != nil {
+					sclDeps.CreateSupplierContractLine = uc.CreateSupplierContractLine.Execute
+				}
+				if uc.ReadSupplierContractLine != nil {
+					sclDeps.ReadSupplierContractLine = uc.ReadSupplierContractLine.Execute
+				}
+				if uc.UpdateSupplierContractLine != nil {
+					sclDeps.UpdateSupplierContractLine = uc.UpdateSupplierContractLine.Execute
+				}
+				if uc.DeleteSupplierContractLine != nil {
+					sclDeps.DeleteSupplierContractLine = uc.DeleteSupplierContractLine.Execute
+				}
+			}
+			// Product picker for the line drawer form.
+			if useCases.Product != nil && useCases.Product.Product != nil &&
+				useCases.Product.Product.ListProducts != nil {
+				sclDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+			}
+			suppliercontractlinemod.NewModule(sclDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// ProcurementRequest module
+		if cfg.wantProcurementRequest() {
+			prDeps := &procurementrequestmod.ModuleDeps{
+				Routes:       procurementRequestRoutes,
+				Labels:       procurementRequestLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.ProcurementRequest != nil {
+				uc := useCases.Expenditure.ProcurementRequest
+				if uc.CreateProcurementRequest != nil {
+					prDeps.CreateProcurementRequest = uc.CreateProcurementRequest.Execute
+				}
+				if uc.ReadProcurementRequest != nil {
+					prDeps.ReadProcurementRequest = uc.ReadProcurementRequest.Execute
+				}
+				if uc.UpdateProcurementRequest != nil {
+					prDeps.UpdateProcurementRequest = uc.UpdateProcurementRequest.Execute
+				}
+				if uc.DeleteProcurementRequest != nil {
+					prDeps.DeleteProcurementRequest = uc.DeleteProcurementRequest.Execute
+				}
+				if uc.ListProcurementRequests != nil {
+					prDeps.ListProcurementRequests = uc.ListProcurementRequests.Execute
+				}
+				// Workflow action closures — sourced ApprovedBy from ctx.
+				if uc.SubmitProcurementRequest != nil {
+					submitUC := uc.SubmitProcurementRequest
+					prDeps.SubmitProcurementRequest = func(fctx context.Context, id string) error {
+						_, err := submitUC.Execute(fctx, &procurementrequestpb.SubmitProcurementRequestRequest{
+							ProcurementRequestId: id,
+						})
+						return err
+					}
+				}
+				if uc.ApproveProcurementRequest != nil {
+					approveUC := uc.ApproveProcurementRequest
+					prDeps.ApproveProcurementRequest = func(fctx context.Context, id string) error {
+						userID := consumer.ExtractUserIDFromContext(fctx)
+						_, err := approveUC.Execute(fctx, &procurementrequestpb.ApproveProcurementRequestRequest{
+							ProcurementRequestId: id,
+							ApprovedBy:           userID,
+						})
+						return err
+					}
+				}
+				if uc.RejectProcurementRequest != nil {
+					rejectUC := uc.RejectProcurementRequest
+					prDeps.RejectProcurementRequest = func(fctx context.Context, id, reason string) error {
+						req := &procurementrequestpb.RejectProcurementRequestRequest{
+							ProcurementRequestId: id,
+						}
+						if reason != "" {
+							req.RejectionReason = &reason
+						}
+						_, err := rejectUC.Execute(fctx, req)
+						return err
+					}
+				}
+				if uc.SpawnPurchaseOrder != nil {
+					spawnUC := uc.SpawnPurchaseOrder
+					prDeps.SpawnPurchaseOrder = func(fctx context.Context, id string) (string, error) {
+						resp, err := spawnUC.Execute(fctx, &procurementrequestpb.SpawnPurchaseOrderRequest{
+							ProcurementRequestId: id,
+						})
+						if err != nil {
+							return "", err
+						}
+						return resp.GetPurchaseOrderId(), nil
+					}
+				}
+			}
+			// Lines query for the Lines tab on the request detail page.
+			if useCases.Expenditure != nil && useCases.Expenditure.ProcurementRequestLine != nil {
+				if uc := useCases.Expenditure.ProcurementRequestLine.ListProcurementRequestLines; uc != nil {
+					prDeps.ListProcurementRequestLines = uc.Execute
+				}
+			}
+			// Suppliers dropdown (nullable for RFQ flow).
+			if useCases.Entity != nil && useCases.Entity.Supplier != nil &&
+				useCases.Entity.Supplier.ListSuppliers != nil {
+				prDeps.ListSuppliers = useCases.Entity.Supplier.ListSuppliers.Execute
+			}
+			// Spawned POs tab.
+			if useCases.Expenditure != nil && useCases.Expenditure.PurchaseOrder != nil &&
+				useCases.Expenditure.PurchaseOrder.ListPurchaseOrders != nil {
+				prDeps.ListPurchaseOrders = useCases.Expenditure.PurchaseOrder.ListPurchaseOrders.Execute
+			}
+			procurementrequestmod.NewModule(prDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// ProcurementRequestLine module — child rows of ProcurementRequest.
+		if cfg.wantProcurementRequestLine() {
+			prlDeps := &procurementrequestlinemod.ModuleDeps{
+				Routes:       procurementRequestRoutes,
+				Labels:       procurementRequestLabels,
+				CommonLabels: ctx.Common,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.ProcurementRequestLine != nil {
+				uc := useCases.Expenditure.ProcurementRequestLine
+				if uc.CreateProcurementRequestLine != nil {
+					prlDeps.CreateProcurementRequestLine = uc.CreateProcurementRequestLine.Execute
+				}
+				if uc.ReadProcurementRequestLine != nil {
+					prlDeps.ReadProcurementRequestLine = uc.ReadProcurementRequestLine.Execute
+				}
+				if uc.UpdateProcurementRequestLine != nil {
+					prlDeps.UpdateProcurementRequestLine = uc.UpdateProcurementRequestLine.Execute
+				}
+				if uc.DeleteProcurementRequestLine != nil {
+					prlDeps.DeleteProcurementRequestLine = uc.DeleteProcurementRequestLine.Execute
+				}
+			}
+			// Product picker for the line drawer form.
+			if useCases.Product != nil && useCases.Product.Product != nil &&
+				useCases.Product.Product.ListProducts != nil {
+				prlDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+			}
+			procurementrequestlinemod.NewModule(prlDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// Procurement Operations composition app (read-only — no proto entity).
+		// Nil-safe: missing list closures render empty states in each view.
+		if cfg.wantProcurement() {
+			procDeps := &procurementmod.ModuleDeps{
+				Routes:       procurementRoutes,
+				Labels:       procurementLabels,
+				CommonLabels: ctx.Common,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContract != nil &&
+				useCases.Expenditure.SupplierContract.ListSupplierContracts != nil {
+				procDeps.ListSupplierContracts = useCases.Expenditure.SupplierContract.ListSupplierContracts.Execute
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.ProcurementRequest != nil &&
+				useCases.Expenditure.ProcurementRequest.ListProcurementRequests != nil {
+				procDeps.ListProcurementRequests = useCases.Expenditure.ProcurementRequest.ListProcurementRequests.Execute
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.Expenditure != nil &&
+				useCases.Expenditure.Expenditure.ListExpenditures != nil {
+				procDeps.ListExpenditures = useCases.Expenditure.Expenditure.ListExpenditures.Execute
+			}
+			procurementmod.NewModule(procDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// SPS Wave 4 — supplier-side pricing graph + accrual layer.
+		//
+		// Six new view modules wired in dependency order:
+		//   1. SupplierContractPriceSchedule (master, mirrors price_schedule)
+		//   2. SupplierContractPriceScheduleLine (inline child of #1)
+		//   3. ExpenseRecognition (master, no add/edit drawer — created BY use case)
+		//   4. ExpenseRecognitionLine (inline child of #3)
+		//   5. AccruedExpense (master, manual create + AccrueFromContract)
+		//   6. AccruedExpenseSettlement (inline child of #5, shares parent routes)
+		//
+		// Mirrors the supplier_contract / supplier_contract_line wiring pattern
+		// above. All use-case threading is nil-safe — missing use cases fall back
+		// to the empty/disabled view state instead of panicking.
+		// =====================================================================
+
+		// SupplierContractPriceSchedule module
+		if cfg.wantSupplierContractPriceSchedule() {
+			scpsDeps := &suppliercontractpriceschedulemod.ModuleDeps{
+				Routes:       supplierContractPriceScheduleRoutes,
+				Labels:       supplierContractPriceScheduleLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractPriceSchedule != nil {
+				uc := useCases.Expenditure.SupplierContractPriceSchedule
+				if uc.ListSupplierContractPriceSchedules != nil {
+					scpsDeps.ListSupplierContractPriceSchedules = uc.ListSupplierContractPriceSchedules.Execute
+				}
+				if uc.ReadSupplierContractPriceSchedule != nil {
+					scpsDeps.ReadSupplierContractPriceSchedule = uc.ReadSupplierContractPriceSchedule.Execute
+				}
+				if uc.CreateSupplierContractPriceSchedule != nil {
+					scpsDeps.CreateSupplierContractPriceSchedule = uc.CreateSupplierContractPriceSchedule.Execute
+				}
+				if uc.UpdateSupplierContractPriceSchedule != nil {
+					scpsDeps.UpdateSupplierContractPriceSchedule = uc.UpdateSupplierContractPriceSchedule.Execute
+				}
+				if uc.DeleteSupplierContractPriceSchedule != nil {
+					scpsDeps.DeleteSupplierContractPriceSchedule = uc.DeleteSupplierContractPriceSchedule.Execute
+				}
+				// Workflow — wrap Execute() with the closure shapes the view expects.
+				if uc.ActivateSupplierContractPriceSchedule != nil {
+					activateUC := uc.ActivateSupplierContractPriceSchedule
+					scpsDeps.ActivateSupplierContractPriceSchedule = func(fctx context.Context, id string) error {
+						userID := consumer.ExtractUserIDFromContext(fctx)
+						_, err := activateUC.Execute(fctx, &scpspb.ActivateSupplierContractPriceScheduleRequest{
+							SupplierContractPriceScheduleId: id,
+							ActivatedBy:                     userID,
+						})
+						return err
+					}
+				}
+				if uc.SupersedeSupplierContractPriceSchedule != nil {
+					supersedeUC := uc.SupersedeSupplierContractPriceSchedule
+					scpsDeps.SupersedeSupplierContractPriceSchedule = func(fctx context.Context, id, reason string) error {
+						req := &scpspb.SupersedeSupplierContractPriceScheduleRequest{SupplierContractPriceScheduleId: id}
+						if reason != "" {
+							req.Reason = &reason
+						}
+						_, err := supersedeUC.Execute(fctx, req)
+						return err
+					}
+				}
+			}
+			// Schedule lines — list query for the schedule detail's Lines tab.
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractPriceScheduleLine != nil {
+				if uc := useCases.Expenditure.SupplierContractPriceScheduleLine.ListSupplierContractPriceScheduleLines; uc != nil {
+					scpsDeps.ListSupplierContractPriceScheduleLines = uc.Execute
+				}
+			}
+			// Parent contract picker for the drawer form + line picker on detail.
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContract != nil &&
+				useCases.Expenditure.SupplierContract.ListSupplierContracts != nil {
+				scpsDeps.ListSupplierContracts = useCases.Expenditure.SupplierContract.ListSupplierContracts.Execute
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractLine != nil &&
+				useCases.Expenditure.SupplierContractLine.ListSupplierContractLines != nil {
+				scpsDeps.ListSupplierContractLines = useCases.Expenditure.SupplierContractLine.ListSupplierContractLines.Execute
+			}
+			suppliercontractpriceschedulemod.NewModule(scpsDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// SupplierContractPriceScheduleLine module — child rows of SupplierContractPriceSchedule.
+		if cfg.wantSupplierContractPriceScheduleLine() {
+			scpslDeps := &suppliercontractpricescheduleinemod.ModuleDeps{
+				Routes:       supplierContractPriceScheduleRoutes,
+				Labels:       supplierContractPriceScheduleLabels,
+				CommonLabels: ctx.Common,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractPriceScheduleLine != nil {
+				uc := useCases.Expenditure.SupplierContractPriceScheduleLine
+				if uc.CreateSupplierContractPriceScheduleLine != nil {
+					scpslDeps.CreateSupplierContractPriceScheduleLine = uc.CreateSupplierContractPriceScheduleLine.Execute
+				}
+				if uc.ReadSupplierContractPriceScheduleLine != nil {
+					scpslDeps.ReadSupplierContractPriceScheduleLine = uc.ReadSupplierContractPriceScheduleLine.Execute
+				}
+				if uc.UpdateSupplierContractPriceScheduleLine != nil {
+					scpslDeps.UpdateSupplierContractPriceScheduleLine = uc.UpdateSupplierContractPriceScheduleLine.Execute
+				}
+				if uc.DeleteSupplierContractPriceScheduleLine != nil {
+					scpslDeps.DeleteSupplierContractPriceScheduleLine = uc.DeleteSupplierContractPriceScheduleLine.Execute
+				}
+			}
+			// Parent contract-line picker for the drawer form (line drawer needs a contract-line FK).
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractLine != nil &&
+				useCases.Expenditure.SupplierContractLine.ListSupplierContractLines != nil {
+				scpslDeps.ListSupplierContractLines = useCases.Expenditure.SupplierContractLine.ListSupplierContractLines.Execute
+			}
+			suppliercontractpricescheduleinemod.NewModule(scpslDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// ExpenseRecognition module — no Add/Edit drawer (created BY use case).
+		if cfg.wantExpenseRecognition() {
+			erDeps := &expenserecognitionmod.ModuleDeps{
+				Routes:       expenseRecognitionRoutes,
+				Labels:       expenseRecognitionLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.ExpenseRecognition != nil {
+				uc := useCases.Expenditure.ExpenseRecognition
+				if uc.ListExpenseRecognitions != nil {
+					erDeps.ListExpenseRecognitions = uc.ListExpenseRecognitions.Execute
+				}
+				if uc.ReadExpenseRecognition != nil {
+					erDeps.ReadExpenseRecognition = uc.ReadExpenseRecognition.Execute
+				}
+				if uc.DeleteExpenseRecognition != nil {
+					erDeps.DeleteExpenseRecognition = uc.DeleteExpenseRecognition.Execute
+				}
+				if uc.ReverseExpenseRecognition != nil {
+					reverseUC := uc.ReverseExpenseRecognition
+					erDeps.ReverseExpenseRecognition = func(fctx context.Context, id, reason string) error {
+						req := &expenserecognitionpb.ReverseExpenseRecognitionRequest{ExpenseRecognitionId: id}
+						if reason != "" {
+							req.Reason = &reason
+						}
+						_, err := reverseUC.Execute(fctx, req)
+						return err
+					}
+				}
+				if uc.RecognizeFromExpenditure != nil {
+					rfeUC := uc.RecognizeFromExpenditure
+					erDeps.RecognizeFromExpenditure = func(fctx context.Context, req *expenserecognitionpb.RecognizeFromExpenditureRequest) (*expenserecognitionpb.RecognizeFromExpenditureResponse, error) {
+						return rfeUC.Execute(fctx, req)
+					}
+				}
+				if uc.RecognizeFromContract != nil {
+					rfcUC := uc.RecognizeFromContract
+					erDeps.RecognizeFromContract = func(fctx context.Context, req *expenserecognitionpb.RecognizeFromContractRequest) (*expenserecognitionpb.RecognizeFromContractResponse, error) {
+						return rfcUC.Execute(fctx, req)
+					}
+				}
+			}
+			// Inline child — recognition lines.
+			if useCases.Expenditure != nil && useCases.Expenditure.ExpenseRecognitionLine != nil {
+				if uc := useCases.Expenditure.ExpenseRecognitionLine.ListExpenseRecognitionLines; uc != nil {
+					erDeps.ListExpenseRecognitionLines = uc.Execute
+				}
+			}
+			expenserecognitionmod.NewModule(erDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// ExpenseRecognitionLine module — inline child of ExpenseRecognition.
+		if cfg.wantExpenseRecognitionLine() {
+			erlDeps := &expenserecognitionlinemod.ModuleDeps{
+				Routes:       expenseRecognitionRoutes,
+				Labels:       expenseRecognitionLabels,
+				CommonLabels: ctx.Common,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.ExpenseRecognitionLine != nil {
+				uc := useCases.Expenditure.ExpenseRecognitionLine
+				if uc.CreateExpenseRecognitionLine != nil {
+					erlDeps.CreateExpenseRecognitionLine = uc.CreateExpenseRecognitionLine.Execute
+				}
+				if uc.ReadExpenseRecognitionLine != nil {
+					erlDeps.ReadExpenseRecognitionLine = uc.ReadExpenseRecognitionLine.Execute
+				}
+				if uc.UpdateExpenseRecognitionLine != nil {
+					erlDeps.UpdateExpenseRecognitionLine = uc.UpdateExpenseRecognitionLine.Execute
+				}
+				if uc.DeleteExpenseRecognitionLine != nil {
+					erlDeps.DeleteExpenseRecognitionLine = uc.DeleteExpenseRecognitionLine.Execute
+				}
+			}
+			expenserecognitionlinemod.NewModule(erlDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// AccruedExpense module
+		if cfg.wantAccruedExpense() {
+			aeDeps := &accruedexpensemod.ModuleDeps{
+				Routes:       accruedExpenseRoutes,
+				Labels:       accruedExpenseLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.AccruedExpense != nil {
+				uc := useCases.Expenditure.AccruedExpense
+				if uc.ListAccruedExpenses != nil {
+					aeDeps.ListAccruedExpenses = uc.ListAccruedExpenses.Execute
+				}
+				if uc.ReadAccruedExpense != nil {
+					aeDeps.ReadAccruedExpense = uc.ReadAccruedExpense.Execute
+				}
+				if uc.CreateAccruedExpense != nil {
+					aeDeps.CreateAccruedExpense = uc.CreateAccruedExpense.Execute
+				}
+				if uc.UpdateAccruedExpense != nil {
+					aeDeps.UpdateAccruedExpense = uc.UpdateAccruedExpense.Execute
+				}
+				if uc.DeleteAccruedExpense != nil {
+					aeDeps.DeleteAccruedExpense = uc.DeleteAccruedExpense.Execute
+				}
+				if uc.SettleAccrual != nil {
+					settleUC := uc.SettleAccrual
+					aeDeps.SettleAccrual = func(fctx context.Context, req *accruedexpensepb.SettleAccrualRequest) error {
+						_, err := settleUC.SettleAccrual(fctx, req)
+						return err
+					}
+				}
+				if uc.ReverseAccrual != nil {
+					reverseUC := uc.ReverseAccrual
+					aeDeps.ReverseAccrual = func(fctx context.Context, id, reason string) error {
+						req := &accruedexpensepb.ReverseAccrualRequest{AccruedExpenseId: id}
+						if reason != "" {
+							req.Reason = &reason
+						}
+						_, err := reverseUC.Execute(fctx, req)
+						return err
+					}
+				}
+				if uc.AccrueFromContract != nil {
+					afcUC := uc.AccrueFromContract
+					aeDeps.AccrueFromContract = func(fctx context.Context, req *accruedexpensepb.AccrueFromContractRequest) (*accruedexpensepb.AccrueFromContractResponse, error) {
+						return afcUC.Execute(fctx, req)
+					}
+				}
+			}
+			// Inline child — settlements.
+			if useCases.Expenditure != nil && useCases.Expenditure.AccruedExpenseSettlement != nil {
+				if uc := useCases.Expenditure.AccruedExpenseSettlement.ListAccruedExpenseSettlements; uc != nil {
+					aeDeps.ListAccruedExpenseSettlements = uc.Execute
+				}
+			}
+			// Dropdowns for the manual-create drawer + filter pickers.
+			if useCases.Entity != nil && useCases.Entity.Supplier != nil &&
+				useCases.Entity.Supplier.ListSuppliers != nil {
+				aeDeps.ListSuppliers = useCases.Entity.Supplier.ListSuppliers.Execute
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.SupplierContract != nil &&
+				useCases.Expenditure.SupplierContract.ListSupplierContracts != nil {
+				aeDeps.ListSupplierContracts = useCases.Expenditure.SupplierContract.ListSupplierContracts.Execute
+			}
+			accruedexpensemod.NewModule(aeDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// AccruedExpenseSettlement module — inline child of AccruedExpense (shares parent routes).
+		if cfg.wantAccruedExpenseSettlement() {
+			aesDeps := &accruedexpensesettlementmod.ModuleDeps{
+				Routes:       accruedExpenseRoutes,
+				Labels:       accruedExpenseLabels,
+				CommonLabels: ctx.Common,
+			}
+			if useCases.Expenditure != nil && useCases.Expenditure.AccruedExpenseSettlement != nil {
+				uc := useCases.Expenditure.AccruedExpenseSettlement
+				if uc.CreateAccruedExpenseSettlement != nil {
+					aesDeps.CreateAccruedExpenseSettlement = uc.CreateAccruedExpenseSettlement.Execute
+				}
+				if uc.ReadAccruedExpenseSettlement != nil {
+					aesDeps.ReadAccruedExpenseSettlement = uc.ReadAccruedExpenseSettlement.Execute
+				}
+				if uc.UpdateAccruedExpenseSettlement != nil {
+					aesDeps.UpdateAccruedExpenseSettlement = uc.UpdateAccruedExpenseSettlement.Execute
+				}
+				if uc.DeleteAccruedExpenseSettlement != nil {
+					aesDeps.DeleteAccruedExpenseSettlement = uc.DeleteAccruedExpenseSettlement.Execute
+				}
+			}
+			// Settling-Expenditure picker for the settlement drawer form.
+			if useCases.Expenditure != nil && useCases.Expenditure.Expenditure != nil &&
+				useCases.Expenditure.Expenditure.ListExpenditures != nil {
+				aesDeps.ListExpenditures = useCases.Expenditure.Expenditure.ListExpenditures.Execute
+			}
+			accruedexpensesettlementmod.NewModule(aesDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		log.Println("  centymo commerce domain initialized")

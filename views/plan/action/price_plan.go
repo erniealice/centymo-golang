@@ -379,8 +379,12 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 				ScheduleLabel:            scheduleLockLabel,
 				ScheduleLockedClientName: scheduleLockClient,
 				ScheduleAutoHint:         scheduleAutoHint,
-				Labels:                   labels,
-				CommonLabels:             deps.CommonLabels,
+				// 2026-04-30 cyclic-subscription-jobs plan §7.4 — surface the
+				// parent Plan's cyclic flag so the drawer's
+				// applyBasisOptionGuards() can disable MILESTONE.
+				ParentPlanIsCyclic: parentPlan != nil && parentPlan.GetVisitsPerCycle() > 1,
+				Labels:             labels,
+				CommonLabels:       deps.CommonLabels,
 			})
 		}
 
@@ -549,8 +553,12 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				ScheduleAutoHint:         editScheduleAutoHint,
 				InUse:                    inUse,
 				LockMessage:              lockMsg,
-				Labels:                   editLabels,
-				CommonLabels:             deps.CommonLabels,
+				// 2026-04-30 cyclic-subscription-jobs plan §7.4 — surface the
+				// parent Plan's cyclic flag so the drawer's
+				// applyBasisOptionGuards() can disable MILESTONE.
+				ParentPlanIsCyclic: parentPlan != nil && parentPlan.GetVisitsPerCycle() > 1,
+				Labels:             editLabels,
+				CommonLabels:       deps.CommonLabels,
 			})
 		}
 

@@ -86,6 +86,47 @@
             {{.Labels.Buttons.Edit}}
         </a>
     </div>
+
+    {{/* 2026-04-30 cyclic-subscription-jobs plan §20 — Billing model summary.
+         Hidden when the (kind × basis) cell carries no copy. */}}
+    {{if .BillingModelSummary}}
+    <section class="price-plan-billing-summary"
+             data-testid="price-plan-billing-summary-section"
+             style="margin-top: 1.5rem;">
+        <h3 class="pyeza-info-sections__heading">{{.BillingModelSummary.Heading}}</h3>
+        <div class="pyeza-info-sections__grid">
+            {{if .BillingModelSummary.CustomerLine}}
+            <div class="pyeza-info-sections__section"
+                 data-testid="price-plan-billing-summary-customer">
+                <h4 class="pyeza-info-sections__section-title">{{.BillingModelSummary.CustomerHeading}}</h4>
+                <p>{{.BillingModelSummary.CustomerLine}}</p>
+            </div>
+            {{end}}
+            {{if .BillingModelSummary.OperationsLine}}
+            <div class="pyeza-info-sections__section"
+                 data-testid="price-plan-billing-summary-operations">
+                <h4 class="pyeza-info-sections__section-title">{{.BillingModelSummary.OperationsHeading}}</h4>
+                <p>{{.BillingModelSummary.OperationsLine}}</p>
+            </div>
+            {{end}}
+            {{if .BillingModelSummary.RevenueLine}}
+            <div class="pyeza-info-sections__section"
+                 data-testid="price-plan-billing-summary-revenue">
+                <h4 class="pyeza-info-sections__section-title">{{.BillingModelSummary.RevenueHeading}}</h4>
+                <p>{{.BillingModelSummary.RevenueLine}}</p>
+            </div>
+            {{end}}
+        </div>
+        {{range .BillingModelSummary.Warnings}}
+        <div class="alert alert--{{.Severity}}"
+             data-testid="price-plan-billing-summary-warning"
+             data-warning-key="{{.Key}}"
+             style="margin-top: 0.75rem;">
+            {{.Message}}
+        </div>
+        {{end}}
+    </section>
+    {{end}}
 </div>
 {{end}}
 

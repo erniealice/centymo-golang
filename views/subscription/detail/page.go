@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
+	"time"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
@@ -141,6 +143,90 @@ type PageData struct {
 	OperationsRootJobs  []OperationsJobRow
 	OperationsEmptyText string // pre-resolved {{.SpawnAction}} substitution
 	OperationsSpawnURL  string
+
+	// 2026-04-30 cyclic-subscription-jobs plan §7 / Phase D — branch the
+	// Operations tab when the subscription's PricePlan is cyclic
+	// (RECURRING or CONTRACT-with-cycle). When IsCyclic is true the tab
+	// renders the cycle accordion + spawn / backfill CTAs; the legacy flat
+	// rendering above stays for non-cyclic engagements (regression guard
+	// per progress.md "key gotchas").
+	IsCyclic                  bool
+	OperationsCyclic          *SubscriptionCyclesData
+	SpawnCycleJobsURL         string // POST endpoint for "Spawn this cycle now"
+	BackfillCycleJobsDrawerURL string // GET endpoint for the backfill drawer
+
+	// 2026-04-30 cyclic-subscription-jobs plan §21 / Phase D — flat Jobs
+	// tab. Hidden when no Jobs exist (Jobs.HasJobs == false).
+	Jobs *SubscriptionJobsTabData
+}
+
+// SubscriptionCyclesData carries the cycle-accordion view rows for a cyclic
+// subscription's Operations tab. Built by buildSubscriptionCyclesData per
+// cyclic-subscription-jobs plan §7.1.
+type SubscriptionCyclesData struct {
+	// EngagementJob is the parent shell Job (parent_job_id == NULL for cyclic
+	// subscriptions). Empty struct when the engagement hasn't been spawned
+	// yet (legacy subscriptions created pre-this-plan).
+	EngagementJobID   string
+	EngagementName    string
+	EngagementHeading string // pre-resolved {{.Started}} / {{.Name}}
+
+	// OnceAtStartJobs are children of the engagement with cycle_index=NULL
+	// (e.g. onboarding fired by JOB_TEMPLATE_RELATION_TYPE_ONCE_AT_ENGAGEMENT_START).
+	OnceAtStartJobs []OperationsJobRow
+
+	// Cycles holds one entry per cycle (sorted descending by CycleIndex so
+	// the most-recent cycle is on top). Empty when no cycle Jobs exist yet.
+	Cycles []SubscriptionCycleView
+
+	// CycleEmpty is the lyngua-resolved "No cycles yet" string surfaced when
+	// Cycles is empty.
+	CycleEmpty string
+
+	// MissingCycleCount is the number of cycle windows from sub.date_time_start
+	// → today that have no Jobs yet. > 0 surfaces the backfill banner.
+	MissingCycleCount int
+	BackfillBannerText string // pre-resolved {{.Count}} substitution
+}
+
+// SubscriptionCycleView is one cycle accordion row. View-side only — no
+// proto changes (cycle metadata read from Job.cycle_* nullable fields).
+type SubscriptionCycleView struct {
+	CycleIndex   int32
+	PeriodStart  string                 // ISO 8601 (YYYY-MM-DD)
+	PeriodEnd    string
+	PeriodLabel  string                 // human-readable, "May 2026"
+	HeadingText  string                 // pre-resolved cycleHeading template
+	StatusKey    string                 // pending | inProgress | completed | overdue
+	StatusLabel  string                 // lyngua-resolved
+	StatusVariant string                // pyeza badge variant (success / warning / etc.)
+	Jobs         []OperationsJobRow     // cycle Jobs (1 or N for multi-visit)
+	InvoiceID    string                 // matched Revenue.id (empty if not yet recognized)
+	InvoiceLabel string                 // pre-resolved cycleInvoiceLinked OR cycleNoInvoice
+	IsPlaceholder bool                  // true for the next-un-spawned cycle (operator click → spawn)
+	OpenByDefault bool                  // current cycle expanded; past cycles collapsed
+}
+
+// SubscriptionJobsTabData backs the new flat Jobs tab (plan §21.5).
+type SubscriptionJobsTabData struct {
+	Rows         []SubscriptionJobRow
+	HasJobs      bool                   // tab hidden when false
+	StatusCounts map[string]int         // for filter pill counts (by status key)
+	TypeCounts   map[string]int         // for filter pill counts (by type key)
+}
+
+// SubscriptionJobRow is one row in the flat Jobs tab table.
+type SubscriptionJobRow struct {
+	JobID         string
+	JobName       string
+	JobType       string // engagement | cycle | onboarding | visit
+	JobTypeLabel  string // lyngua-resolved
+	Status        string
+	StatusLabel   string
+	StatusVariant string
+	PeriodLabel   string // empty for engagement / onboarding
+	CycleIndex    int32  // 0 for engagement / onboarding
+	DetailURL     string // deep link to Job detail in fayna
 }
 
 // OperationsJobRow is one Job row rendered on the subscription detail's
@@ -284,7 +370,21 @@ func NewView(deps *DetailViewDeps) view.View {
 		if activeTab == "" {
 			activeTab = "info"
 		}
-		tabItems := buildTabItems(l, id, deps.Routes)
+
+		// 2026-04-30 cyclic-subscription-jobs plan §7 — branch the Operations
+		// tab on the subscription's PricePlan billing kind. IsCyclic mirrors
+		// espyna's eligibleForInstanceSpawn predicate (RECURRING OR
+		// CONTRACT-with-cycle).
+		isCyclic := computeIsCyclic(sub)
+
+		// 2026-04-30 cyclic-subscription-jobs plan §21.3 — Jobs tab visibility
+		// gate: shown only when at least one Job exists for this subscription.
+		// One-shot upfront load so the gate matches what the tab itself will
+		// render (no flicker when the operator navigates from Operations →
+		// Jobs).
+		allJobs := loadSubscriptionJobs(ctx, deps, id)
+		jobsTabVisible := len(allJobs) > 0
+		tabItems := buildTabItems(l, id, deps.Routes, jobsTabVisible)
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -305,6 +405,11 @@ func NewView(deps *DetailViewDeps) view.View {
 			Labels:          l,
 			ActiveTab:       activeTab,
 			TabItems:        tabItems,
+			IsCyclic:        isCyclic,
+			SpawnCycleJobsURL: strings.ReplaceAll(
+				deps.Routes.SpawnCycleJobsURL, "{subscriptionId}", id),
+			BackfillCycleJobsDrawerURL: strings.ReplaceAll(
+				deps.Routes.BackfillCycleJobsURL, "{subscriptionId}", id),
 		}
 
 		// Inject the tab-content URL into the subscription map so the invoices
@@ -331,7 +436,9 @@ func NewView(deps *DetailViewDeps) view.View {
 			// 2026-04-29 milestone-billing — milestones list (only on MILESTONE plans).
 			applyMilestoneTabData(ctx, deps, sub, pageData, id)
 		case "operations":
-			applyOperationsTabData(ctx, deps, pageData, id)
+			applyOperationsTabData(ctx, deps, pageData, id, sub, allJobs, isCyclic)
+		case "jobs":
+			applyJobsTabData(ctx, deps, pageData, allJobs)
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			pageData.Invoices = buildInvoicesTable(
@@ -441,20 +548,30 @@ func resolveClientBreadcrumb(ctx context.Context, deps *DetailViewDeps, clientID
 	return label, href
 }
 
-func buildTabItems(l centymo.SubscriptionLabels, id string, routes centymo.SubscriptionRoutes) []pyeza.TabItem {
+func buildTabItems(l centymo.SubscriptionLabels, id string, routes centymo.SubscriptionRoutes, jobsTabVisible bool) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
-	return []pyeza.TabItem{
+	items := []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		// 2026-04-27 plan-client-scope plan §6.5 — Package tab.
 		{Key: "package", Label: l.Detail.Plan, Href: base + "?tab=package", HxGet: action + "package", Icon: "icon-package"},
 		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 — Operations tab.
 		{Key: "operations", Label: l.Tabs.Operations, Href: base + "?tab=operations", HxGet: action + "operations", Icon: "icon-briefcase"},
-		{Key: "invoices", Label: l.Tabs.Invoices, Href: base + "?tab=invoices", HxGet: action + "invoices", Icon: "icon-file-text"},
-		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
-		{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
-		{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
+	// 2026-04-30 cyclic-subscription-jobs plan §21.3 — flat Jobs tab; hidden
+	// when COUNT(jobs) == 0 (SaaS / advisory subscriptions).
+	if jobsTabVisible {
+		items = append(items, pyeza.TabItem{
+			Key: "jobs", Label: l.Tabs.Jobs, Href: base + "?tab=jobs", HxGet: action + "jobs", Icon: "icon-list",
+		})
+	}
+	items = append(items,
+		pyeza.TabItem{Key: "invoices", Label: l.Tabs.Invoices, Href: base + "?tab=invoices", HxGet: action + "invoices", Icon: "icon-file-text"},
+		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
+		pyeza.TabItem{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
+		pyeza.TabItem{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+	)
+	return items
 }
 
 // buildPackageTabData populates the per-tab fields used by the Package tab
@@ -778,6 +895,13 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		subscription := subscriptionToMap(ctx, sub)
 
 		l := deps.Labels
+
+		// 2026-04-30 cyclic-subscription-jobs plan — pre-load the Job set so
+		// the tab handler shares the same fan-out as the full-page handler.
+		isCyclic := computeIsCyclic(sub)
+		allJobs := loadSubscriptionJobs(ctx, deps, id)
+		jobsTabVisible := len(allJobs) > 0
+
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion: viewCtx.CacheVersion,
@@ -786,7 +910,12 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			Subscription: subscription,
 			Labels:       l,
 			ActiveTab:    tab,
-			TabItems:     buildTabItems(l, id, deps.Routes),
+			TabItems:     buildTabItems(l, id, deps.Routes, jobsTabVisible),
+			IsCyclic:     isCyclic,
+			SpawnCycleJobsURL: strings.ReplaceAll(
+				deps.Routes.SpawnCycleJobsURL, "{subscriptionId}", id),
+			BackfillCycleJobsDrawerURL: strings.ReplaceAll(
+				deps.Routes.BackfillCycleJobsURL, "{subscriptionId}", id),
 		}
 
 		// Same tab_invoices_url + perms gating as the full-page handler so a
@@ -812,7 +941,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			// 2026-04-29 milestone-billing — milestones list (only on MILESTONE plans).
 			applyMilestoneTabData(ctx, deps, sub, pageData, id)
 		case "operations":
-			applyOperationsTabData(ctx, deps, pageData, id)
+			applyOperationsTabData(ctx, deps, pageData, id, sub, allJobs, isCyclic)
+		case "jobs":
+			applyJobsTabData(ctx, deps, pageData, allJobs)
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			pageData.Invoices = buildInvoicesTable(
@@ -883,35 +1014,366 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 // parent. nil-safe: when deps are unwired the tab degrades to the empty
 // state.
 //
-// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2.
-func applyOperationsTabData(ctx context.Context, deps *DetailViewDeps, pageData *PageData, subscriptionID string) {
+// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 +
+// 2026-04-30 cyclic-subscription-jobs plan §7.1 — branches on isCyclic.
+//
+// jobs slice is pre-loaded by the page handler (single fan-out so the Jobs
+// tab + Operations tab + visibility gate share one read). When non-cyclic
+// the legacy parent-child rendering is preserved verbatim (regression
+// guard: `09-non-cyclic-unaffected.spec.ts` is the canary).
+func applyOperationsTabData(
+	ctx context.Context,
+	deps *DetailViewDeps,
+	pageData *PageData,
+	subscriptionID string,
+	sub *subscriptionpb.Subscription,
+	jobs []*jobpb.Job,
+	isCyclic bool,
+) {
 	pageData.OperationsSpawnURL = strings.ReplaceAll(deps.SpawnJobsURL, "{subscriptionId}", subscriptionID)
 	pageData.OperationsEmptyText = strings.ReplaceAll(
 		deps.Labels.Operations.EmptyMessage,
 		"{{.SpawnAction}}",
 		deps.Labels.Operations.SpawnAction,
 	)
-	if deps.GetJobsByOrigin == nil {
+	if isCyclic {
+		// Cyclic branch — render the cycle accordion. Legacy fields stay
+		// zero-valued so the template's IsCyclic-gated section takes over.
+		pageData.OperationsCyclic = buildSubscriptionCyclesData(ctx, deps, sub, jobs)
+		// HasJobs stays true when ANY job exists (engagement shell counts).
+		// The template falls back to the empty-state CTA only when the
+		// cyclic data block has no engagement and no cycles AND no Jobs.
+		pageData.OperationsHasJobs = len(jobs) > 0
 		return
 	}
-	resp, err := deps.GetJobsByOrigin(ctx, &jobpb.GetJobsByOriginRequest{
-		OriginType: enums.OriginType_ORIGIN_TYPE_SUBSCRIPTION,
-		OriginId:   subscriptionID,
-	})
-	if err != nil {
-		log.Printf("Failed to load spawned jobs for subscription %s: %v", subscriptionID, err)
-		return
-	}
-	jobs := []*jobpb.Job{}
-	if resp != nil {
-		jobs = resp.GetJobs()
-	}
+	// Non-cyclic — preserve existing rendering path verbatim.
 	if len(jobs) == 0 {
 		return
 	}
 	rows := buildOperationsRows(ctx, deps, jobs)
 	pageData.OperationsHasJobs = len(rows) > 0
 	pageData.OperationsRootJobs = rows
+}
+
+// loadSubscriptionJobs reads ALL Jobs for a subscription (origin_type =
+// SUBSCRIPTION, origin_id = subscription.id). Cached at the page-handler
+// level so Operations tab + Jobs tab + visibility gate share one round-trip.
+//
+// 2026-04-30 cyclic-subscription-jobs plan §21.5.
+func loadSubscriptionJobs(ctx context.Context, deps *DetailViewDeps, subscriptionID string) []*jobpb.Job {
+	if deps.GetJobsByOrigin == nil || subscriptionID == "" {
+		return nil
+	}
+	resp, err := deps.GetJobsByOrigin(ctx, &jobpb.GetJobsByOriginRequest{
+		OriginType: enums.OriginType_ORIGIN_TYPE_SUBSCRIPTION,
+		OriginId:   subscriptionID,
+	})
+	if err != nil {
+		log.Printf("Failed to load jobs for subscription %s: %v", subscriptionID, err)
+		return nil
+	}
+	if resp == nil {
+		return nil
+	}
+	return resp.GetJobs()
+}
+
+// computeIsCyclic mirrors espyna's `eligibleForInstanceSpawn` predicate:
+// RECURRING OR (CONTRACT AND billing_cycle_value > 0). See
+// cyclic-subscription-jobs plan §3.1 / §19.3 (eligibility-gate refactor for
+// AD_HOC forward-compat).
+func computeIsCyclic(sub *subscriptionpb.Subscription) bool {
+	if sub == nil {
+		return false
+	}
+	pp := sub.GetPricePlan()
+	if pp == nil {
+		return false
+	}
+	kind := pp.GetBillingKind()
+	if kind == priceplanpb.BillingKind_BILLING_KIND_RECURRING {
+		return true
+	}
+	if kind == priceplanpb.BillingKind_BILLING_KIND_CONTRACT && pp.GetBillingCycleValue() > 0 {
+		return true
+	}
+	return false
+}
+
+// buildSubscriptionCyclesData partitions the Job list into engagement shell
+// + once-at-start children + cycle accordions per cyclic-subscription-jobs
+// plan §7.1. Sorted descending by CycleIndex (most-recent on top).
+func buildSubscriptionCyclesData(
+	ctx context.Context,
+	deps *DetailViewDeps,
+	sub *subscriptionpb.Subscription,
+	jobs []*jobpb.Job,
+) *SubscriptionCyclesData {
+	data := &SubscriptionCyclesData{
+		CycleEmpty: deps.Labels.Operations.CycleEmpty,
+	}
+
+	// Pass 1 — find engagement shell (parent_job_id == "").
+	var engagementJob *jobpb.Job
+	for _, j := range jobs {
+		if j.GetParentJobId() == "" {
+			engagementJob = j
+			break
+		}
+	}
+	if engagementJob != nil {
+		data.EngagementJobID = engagementJob.GetId()
+		data.EngagementName = engagementJob.GetName()
+		started := ""
+		if ts := sub.GetDateTimeStart(); ts != nil && ts.IsValid() {
+			started = ts.AsTime().Format("2006-01-02")
+		}
+		r := strings.NewReplacer(
+			"{{.Started}}", started,
+			"{{.Name}}", engagementJob.GetName(),
+		)
+		data.EngagementHeading = r.Replace(deps.Labels.Operations.EngagementHeading)
+	}
+
+	// Pass 2 — bucket children: cycle Jobs (have cycle_index) vs onboarding
+	// (parent_job_id set but cycle_index == 0 / nil).
+	cyclesByIndex := map[int32][]*jobpb.Job{}
+	cycleIndices := []int32{}
+	for _, j := range jobs {
+		parentID := j.GetParentJobId()
+		if parentID == "" {
+			continue
+		}
+		if j.GetCycleIndex() == 0 {
+			// Onboarding / once-at-start — cycle_index is NULL on the proto
+			// so the getter returns 0.
+			data.OnceAtStartJobs = append(data.OnceAtStartJobs, jobToOperationsRow(ctx, deps, j))
+			continue
+		}
+		idx := j.GetCycleIndex()
+		if _, exists := cyclesByIndex[idx]; !exists {
+			cycleIndices = append(cycleIndices, idx)
+		}
+		cyclesByIndex[idx] = append(cyclesByIndex[idx], j)
+	}
+
+	// Sort indices descending (most recent on top).
+	sort.Slice(cycleIndices, func(i, j int) bool {
+		return cycleIndices[i] > cycleIndices[j]
+	})
+
+	for i, idx := range cycleIndices {
+		group := cyclesByIndex[idx]
+		view := buildSubscriptionCycleView(ctx, deps, idx, group)
+		// Most-recent cycle expanded by default; older cycles collapsed.
+		view.OpenByDefault = (i == 0)
+		data.Cycles = append(data.Cycles, view)
+	}
+	return data
+}
+
+// buildSubscriptionCycleView constructs one cycle accordion entry from the
+// Jobs in that cycle (1 for visits_per_cycle=1, N for multi-visit). The first
+// Job's cycle_period_* fields represent the cycle's overall window.
+func buildSubscriptionCycleView(
+	ctx context.Context,
+	deps *DetailViewDeps,
+	cycleIndex int32,
+	group []*jobpb.Job,
+) SubscriptionCycleView {
+	v := SubscriptionCycleView{
+		CycleIndex: cycleIndex,
+	}
+	if len(group) == 0 {
+		return v
+	}
+	first := group[0]
+	v.PeriodStart = first.GetCyclePeriodStart()
+	v.PeriodEnd = first.GetCyclePeriodEnd()
+	v.PeriodLabel = formatCyclePeriodLabel(v.PeriodStart, v.PeriodEnd)
+
+	// Heading template is "Cycle {{.CycleIndex}} — {{.PeriodLabel}}".
+	r := strings.NewReplacer(
+		"{{.CycleIndex}}", intStr(int(cycleIndex)),
+		"{{.PeriodLabel}}", v.PeriodLabel,
+	)
+	v.HeadingText = r.Replace(deps.Labels.Operations.CycleHeading)
+
+	// Status rollup — view-side aggregation per plan §7.1.
+	v.StatusKey, v.StatusLabel, v.StatusVariant = rollupCycleStatus(group, deps.Labels.Operations)
+
+	// Per-Job rows (operations rendering — phase summary etc).
+	v.Jobs = make([]OperationsJobRow, 0, len(group))
+	for _, j := range group {
+		v.Jobs = append(v.Jobs, jobToOperationsRow(ctx, deps, j))
+	}
+
+	// InvoiceLabel — cycleNoInvoice when no Revenue is matched yet. The
+	// matched-revenue path requires a separate Revenue lookup by date join
+	// (plan §2.2 — no proto FK in v1); v1 surfaces "Not yet invoiced" until
+	// the Revenue lookup is wired through.
+	v.InvoiceLabel = deps.Labels.Operations.CycleNoInvoice
+	return v
+}
+
+// formatCyclePeriodLabel renders a "May 2026"-style label from ISO date
+// strings. Falls back to the raw start string if parsing fails.
+func formatCyclePeriodLabel(start, _ string) string {
+	if start == "" {
+		return ""
+	}
+	// Use a stable format key recognised by Go's time package. Keep parsing
+	// loose — operators may store DateTime values too.
+	for _, layout := range []string{"2006-01-02", "2006-01-02T15:04:05Z07:00", time.RFC3339} {
+		if t, err := time.Parse(layout, start); err == nil {
+			return t.Format("Jan 2006")
+		}
+	}
+	return start
+}
+
+// rollupCycleStatus aggregates per-Job statuses into a cycle-level rollup.
+// Pending if all Jobs are PLANNED/PENDING/DRAFT; In progress if any ACTIVE;
+// Completed when all CLOSED/COMPLETED; Overdue when at least one is past-due
+// (proxy: PAUSED). Lyngua-resolved labels.
+func rollupCycleStatus(group []*jobpb.Job, l centymo.SubscriptionOperationsLabels) (string, string, string) {
+	hasActive := false
+	hasOverdue := false
+	allDone := true
+	for _, j := range group {
+		switch j.GetStatus() {
+		case enums.JobStatus_JOB_STATUS_ACTIVE:
+			hasActive = true
+			allDone = false
+		case enums.JobStatus_JOB_STATUS_PAUSED:
+			hasOverdue = true
+			allDone = false
+		case enums.JobStatus_JOB_STATUS_COMPLETED, enums.JobStatus_JOB_STATUS_CLOSED:
+			// done
+		default:
+			allDone = false
+		}
+	}
+	switch {
+	case hasOverdue:
+		return "overdue", l.CycleStatusOverdue, "danger"
+	case hasActive:
+		return "inProgress", l.CycleStatusInProgress, "success"
+	case allDone && len(group) > 0:
+		return "completed", l.CycleStatusCompleted, "info"
+	default:
+		return "pending", l.CycleStatusPending, "warning"
+	}
+}
+
+// applyJobsTabData populates the new flat Jobs tab. Hidden (HasJobs=false)
+// when no Jobs exist; the page handler also gates the tab nav item upstream.
+//
+// 2026-04-30 cyclic-subscription-jobs plan §21.5.
+func applyJobsTabData(
+	ctx context.Context,
+	deps *DetailViewDeps,
+	pageData *PageData,
+	jobs []*jobpb.Job,
+) {
+	if pageData.Jobs == nil {
+		pageData.Jobs = &SubscriptionJobsTabData{
+			HasJobs:      len(jobs) > 0,
+			StatusCounts: map[string]int{},
+			TypeCounts:   map[string]int{},
+		}
+	}
+	if len(jobs) == 0 {
+		return
+	}
+	l := deps.Labels.Jobs
+	rows := make([]SubscriptionJobRow, 0, len(jobs))
+	for _, j := range jobs {
+		jobType := jobTypeKey(j)
+		typeLabel := jobTypeLabel(jobType, l)
+		statusKey, statusVariant := operationsJobStatusInfo(j.GetStatus())
+		statusLabel := statusLabelForJobStatus(j.GetStatus(), deps.Labels.Operations)
+		periodLabel := ""
+		if j.GetCycleIndex() != 0 {
+			periodLabel = formatCyclePeriodLabel(j.GetCyclePeriodStart(), j.GetCyclePeriodEnd())
+		}
+		row := SubscriptionJobRow{
+			JobID:         j.GetId(),
+			JobName:       j.GetName(),
+			JobType:       jobType,
+			JobTypeLabel:  typeLabel,
+			Status:        statusKey,
+			StatusLabel:   statusLabel,
+			StatusVariant: statusVariant,
+			PeriodLabel:   periodLabel,
+			CycleIndex:    j.GetCycleIndex(),
+		}
+		if deps.JobDetailURL != "" {
+			row.DetailURL = strings.ReplaceAll(deps.JobDetailURL, "{id}", j.GetId())
+		}
+		rows = append(rows, row)
+		pageData.Jobs.StatusCounts[statusKey]++
+		pageData.Jobs.TypeCounts[jobType]++
+	}
+	// Sort by cycle_index descending (engagement first, then most-recent
+	// cycles); ties broken by name. Engagement shell has cycle_index=0 and
+	// parent_job_id="" — pin it to top by giving it a sentinel.
+	sort.SliceStable(rows, func(i, jj int) bool {
+		if rows[i].JobType == "engagement" {
+			return true
+		}
+		if rows[jj].JobType == "engagement" {
+			return false
+		}
+		if rows[i].CycleIndex != rows[jj].CycleIndex {
+			return rows[i].CycleIndex > rows[jj].CycleIndex
+		}
+		return rows[i].JobName < rows[jj].JobName
+	})
+	pageData.Jobs.Rows = rows
+}
+
+// jobTypeKey classifies a Job for the Jobs tab Type column / filter chips.
+// engagement = parent_job_id empty (shell);
+// onboarding = parent_job_id set AND cycle_index == 0 (ONCE_AT_ENGAGEMENT_START);
+// cycle      = parent_job_id set AND cycle_index > 0.
+// AD_HOC plan reinterprets "cycle" as "visit" — that override lives in the
+// downstream plan, not here.
+func jobTypeKey(j *jobpb.Job) string {
+	if j.GetParentJobId() == "" {
+		return "engagement"
+	}
+	if j.GetCycleIndex() == 0 {
+		return "onboarding"
+	}
+	return "cycle"
+}
+
+func jobTypeLabel(key string, l centymo.SubscriptionJobsTabLabels) string {
+	switch key {
+	case "engagement":
+		return l.TypeEngagement
+	case "onboarding":
+		return l.TypeOnboarding
+	case "cycle":
+		return l.TypeCycle
+	case "visit":
+		return l.TypeVisit
+	}
+	return key
+}
+
+func statusLabelForJobStatus(s enums.JobStatus, l centymo.SubscriptionOperationsLabels) string {
+	switch s {
+	case enums.JobStatus_JOB_STATUS_ACTIVE:
+		return l.CycleStatusInProgress
+	case enums.JobStatus_JOB_STATUS_COMPLETED, enums.JobStatus_JOB_STATUS_CLOSED:
+		return l.CycleStatusCompleted
+	case enums.JobStatus_JOB_STATUS_PAUSED:
+		return l.CycleStatusOverdue
+	default:
+		return l.CycleStatusPending
+	}
 }
 
 // buildOperationsRows converts a flat Job slice into a parent-child tree

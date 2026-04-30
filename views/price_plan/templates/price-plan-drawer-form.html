@@ -209,7 +209,14 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     </span>
                     {{end}}
                 </label>
-                <select id="billing_kind" name="billing_kind" class="form-select" required aria-required="true" {{if and .IsEdit .InUse}}disabled{{end}}>
+                <select id="billing_kind"
+                        name="billing_kind"
+                        class="form-select"
+                        required
+                        aria-required="true"
+                        {{if and .IsEdit .InUse}}disabled{{end}}
+                        data-parent-plan-cyclic="{{if .ParentPlanIsCyclic}}true{{else}}false{{end}}"
+                        data-milestone-cyclic-block="{{.Labels.MilestoneCyclicBlock}}">
                     <option value="BILLING_KIND_ONE_TIME"  {{if eq .BillingKind "BILLING_KIND_ONE_TIME"}}selected{{end}}>{{.Labels.BillingKindOneTime}}</option>
                     <option value="BILLING_KIND_RECURRING" {{if eq .BillingKind "BILLING_KIND_RECURRING"}}selected{{end}}>{{.Labels.BillingKindRecurring}}</option>
                     <option value="BILLING_KIND_CONTRACT"  {{if eq .BillingKind "BILLING_KIND_CONTRACT"}}selected{{end}}>{{.Labels.BillingKindContract}}</option>
@@ -422,6 +429,12 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     //   RECURRING × TOTAL_PACKAGE → PER_CYCLE;
     //   MILESTONE × PER_CYCLE → TOTAL_PACKAGE (PER_CYCLE rejected for milestones).
     //   CONTRACT accepts all three.
+    //
+    // 2026-04-30 cyclic-subscription-jobs plan §7.4 / §9.4 — also disable
+    // the MILESTONE option in the kind select when the parent Plan is
+    // cyclic (data-parent-plan-cyclic="true"). Server-side rejection
+    // already shipped in espyna Phase C; this is the UX guard so the
+    // operator sees the block before submit.
     function applyBasisOptionGuards() {
         if (!basisSel || !kindSel) return;
         var kind = kindSel.value;
@@ -435,6 +448,28 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
             basisSel.value = 'AMOUNT_BASIS_TOTAL_PACKAGE';
         } else if (kind === 'BILLING_KIND_RECURRING' && basisSel.value === 'AMOUNT_BASIS_TOTAL_PACKAGE') {
             basisSel.value = 'AMOUNT_BASIS_PER_CYCLE';
+        }
+
+        // 2026-04-30 cyclic-subscription-jobs plan §7.4 — MILESTONE × cyclic
+        // block. When the parent Plan is cyclic (visits_per_cycle > 1 OR
+        // RECURRING / CONTRACT-with-cycle), disable the MILESTONE option in
+        // the kind dropdown with a tooltip pointing at the rule.
+        var parentCyclic = kindSel.getAttribute('data-parent-plan-cyclic') === 'true';
+        var milestoneOpt = kindSel.querySelector('option[value="BILLING_KIND_MILESTONE"]');
+        if (milestoneOpt) {
+            if (parentCyclic) {
+                milestoneOpt.disabled = true;
+                milestoneOpt.title = kindSel.getAttribute('data-milestone-cyclic-block') || '';
+                // If MILESTONE was the current value, snap to ONE_TIME (the
+                // closest non-cyclic alternative — RECURRING/CONTRACT would
+                // re-trip the cyclic guard from the other direction).
+                if (kindSel.value === 'BILLING_KIND_MILESTONE') {
+                    kindSel.value = 'BILLING_KIND_ONE_TIME';
+                }
+            } else {
+                milestoneOpt.disabled = false;
+                milestoneOpt.title = '';
+            }
         }
     }
 

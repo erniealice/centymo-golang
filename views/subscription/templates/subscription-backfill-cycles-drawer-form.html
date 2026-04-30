@@ -1,0 +1,74 @@
+{{/*
+Backfill cycle Jobs drawer.
+2026-04-30 cyclic-subscription-jobs plan §7.1 / §5.3 / Phase D.
+
+Surfaces the operator-facing flow for spawning N missing cycle Jobs at once,
+capped at 24 per request (plan §15 risk mitigation). Espyna's
+MaterializeInstanceJobsForSubscription cap is the source of truth; the form
+input cap is purely UX.
+
+Data: BackfillDrawerData
+  FormAction        — POST endpoint
+  SubscriptionID    — for hidden input
+  SubscriptionLabel — header subtitle (code · name)
+  MaxCycles         — input max attribute (24)
+  DefaultCycles     — input default value (1)
+  Labels            — flat BackfillDrawerLabels struct
+*/}}
+{{define "subscription-backfill-cycles-drawer-form"}}
+<form data-testid="subscription-backfill-drawer"
+      hx-post="{{.FormAction}}"
+      hx-swap="none"
+      hx-on::after-request="lf.Sheet.handleResponse(event)">
+    <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
+
+    <div class="sheet-body">
+        <h3 class="sheet-title">{{.Labels.Title}}</h3>
+        <p class="sheet-subtitle"
+           data-testid="subscription-backfill-drawer-subscription">
+            {{.SubscriptionLabel}}
+        </p>
+
+        <p class="form-help">{{.Labels.Description}}</p>
+
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label" for="subscription-backfill-count">
+                    {{.Labels.CountLabel}}
+                </label>
+                <input type="number"
+                       id="subscription-backfill-count"
+                       name="count"
+                       class="form-input"
+                       min="1"
+                       max="{{.MaxCycles}}"
+                       value="{{.DefaultCycles}}"
+                       data-testid="subscription-backfill-count-input">
+            </div>
+        </div>
+
+        {{if .Labels.MaxWarning}}
+        <div class="form-row single">
+            <p class="form-info"
+               data-testid="subscription-backfill-max-warning">
+                {{.Labels.MaxWarning}}
+            </p>
+        </div>
+        {{end}}
+    </div>
+
+    <div class="sheet-footer">
+        <button type="button"
+                class="btn btn--ghost"
+                data-action="cancel"
+                onclick="lf.Sheet.close()">
+            {{.Labels.Cancel}}
+        </button>
+        <button type="submit"
+                class="btn btn--primary"
+                data-testid="subscription-backfill-confirm">
+            {{.Labels.Confirm}}
+        </button>
+    </div>
+</form>
+{{end}}

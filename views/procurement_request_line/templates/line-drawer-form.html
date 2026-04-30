@@ -2,9 +2,14 @@
 Procurement Request Line drawer form — child of procurement request detail Lines tab.
 Single-section line form: description, line_type, product_id, quantity,
 estimated_unit_price, estimated_total_price, expenditure_category_id, location_id.
+
+SPS Wave 3 additions:
+  - F1 fulfillment_mode picker (4 radio options) with per-option hint.
+  - RECURRING-only fields revealed via small client-side toggle (data-prl-recurring).
+  - PETTY hint paragraph shown when mode = petty.
 */}}
 {{define "procurement-request-line-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)" data-prl-form>
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="procurement_request_id" value="{{.ProcurementRequestID}}">
 
@@ -37,6 +42,65 @@ estimated_unit_price, estimated_total_price, expenditure_category_id, location_i
                 )
                 "Info" .Labels.Lines.FormLineTypeInfo
             )}}
+        </div>
+
+        {{/* SPS Wave 3 — F1 fulfillment_mode picker (radio group, single-select).
+             Drives the spawn cascade: outright→PO line, stockable→PO+GR,
+             recurring→supplier contract, petty→direct expenditure. */}}
+        <div class="form-row single" data-prl-mode-group>
+            {{template "form-radio-group" (dict
+                "Name" "fulfillment_mode"
+                "Label" .Labels.Lines.FormFulfillmentMode
+                "Hint" .Labels.Lines.FormFulfillmentModeHint
+                "Info" .Labels.Lines.FormFulfillmentModeInfo
+                "Direction" "vertical"
+                "Selected" .FulfillmentMode
+                "Options" .FulfillmentModeOptions
+            )}}
+        </div>
+
+        {{/* RECURRING — cycle + term fields (revealed when fulfillment_mode=recurring). */}}
+        <div class="form-section" data-prl-recurring-section style="display:none">
+            <h3 class="form-section-title">{{.Labels.Lines.FormRecurringSection}}</h3>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "recurring_cycle_value"
+                    "Label" .Labels.Lines.FormRecurringCycleValue
+                    "Value" .RecurringCycleValue
+                    "Placeholder" "1"
+                    "Hint" .Labels.Lines.FormRecurringCycleHint
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "recurring_cycle_unit"
+                    "Label" .Labels.Lines.FormRecurringCycleUnit
+                    "Value" .RecurringCycleUnit
+                    "Options" .RecurringUnitOptions
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "recurring_term_value"
+                    "Label" .Labels.Lines.FormRecurringTermValue
+                    "Value" .RecurringTermValue
+                    "Placeholder" "12"
+                    "Hint" .Labels.Lines.FormRecurringTermHint
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "recurring_term_unit"
+                    "Label" .Labels.Lines.FormRecurringTermUnit
+                    "Value" .RecurringTermUnit
+                    "Options" .RecurringUnitOptions
+                )}}
+            </div>
+        </div>
+
+        {{/* PETTY — friendly hint about auto-approve thresholds. */}}
+        <div class="form-row single" data-prl-petty-hint style="display:none">
+            <p class="form-hint" data-testid="prl-petty-hint">{{.Labels.Lines.FormPettyHint}}</p>
         </div>
 
         {{/* Product picker — optional */}}
@@ -118,11 +182,32 @@ estimated_unit_price, estimated_total_price, expenditure_category_id, location_i
 
     <div class="sheet-footer">
         <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
-            {{.CommonLabels.Actions.Cancel}}
+            {{.CommonLabels.Buttons.Cancel}}
         </button>
         <button type="submit" class="btn btn-primary" data-testid="pr-line-save-btn">
-            {{.CommonLabels.Actions.Save}}
+            {{.CommonLabels.Buttons.Save}}
         </button>
     </div>
 </form>
+
+{{/* SPS Wave 3 — client-side toggle for F1 RECURRING / PETTY conditional fields.
+     Native form-radio inputs fire change events; we simply show/hide the two
+     conditional sections. No HTMX round-trip — purely visual reveal. */}}
+<script>
+(function () {
+    var form = document.querySelector('[data-prl-form]');
+    if (!form) return;
+    var recurring = form.querySelector('[data-prl-recurring-section]');
+    var petty = form.querySelector('[data-prl-petty-hint]');
+    var radios = form.querySelectorAll('input[type="radio"][name="fulfillment_mode"]');
+    function sync() {
+        var selected = '';
+        radios.forEach(function (r) { if (r.checked) selected = r.value; });
+        if (recurring) recurring.style.display = (selected === 'recurring') ? '' : 'none';
+        if (petty) petty.style.display = (selected === 'petty') ? '' : 'none';
+    }
+    radios.forEach(function (r) { r.addEventListener('change', sync); });
+    sync();
+})();
+</script>
 {{end}}

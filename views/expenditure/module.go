@@ -19,9 +19,11 @@ import (
 	expendituresettings "github.com/erniealice/centymo-golang/views/expenditure/settings"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
+	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
+	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 	disbursementschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement_schedule"
@@ -85,6 +87,13 @@ type ModuleDeps struct {
 	DisbursementLabels centymo.DisbursementLabels
 	CreateDisbursement func(ctx context.Context, req *disbursementpb.CreateDisbursementRequest) (*disbursementpb.CreateDisbursementResponse, error)
 
+	// SPS Wave 4 — Recognition + Accrual tabs on the expense detail page.
+	// All optional; nil-safe — when missing, the tabs render empty states.
+	ReadExpenseRecognition      func(ctx context.Context, req *expenserecognitionpb.ReadExpenseRecognitionRequest) (*expenserecognitionpb.ReadExpenseRecognitionResponse, error)
+	ListAccruedExpenses         func(ctx context.Context, req *accruedexpensepb.ListAccruedExpensesRequest) (*accruedexpensepb.ListAccruedExpensesResponse, error)
+	ExpenseRecognitionDetailURL string // /app/expense-recognitions/detail/{id}
+	AccruedExpenseDetailURL     string // /app/accrued-expenses/detail/{id}
+	RecognizeFromExpenditureURL string // /action/expense-recognition/recognize-from-expenditure (POST trigger)
 }
 
 // Module holds all constructed expenditure views.
@@ -216,11 +225,16 @@ func NewModule(deps *ModuleDeps) *Module {
 	// Expense detail page (nil-guarded — only built when ReadExpenditure is provided)
 	if deps.ReadExpenditure != nil {
 		detailDeps := &expendituredetail.DetailViewDeps{
-			Routes:          deps.Routes,
-			Labels:          deps.Labels,
-			CommonLabels:    deps.CommonLabels,
-			TableLabels:     deps.TableLabels,
-			ReadExpenditure: deps.ReadExpenditure,
+			Routes:                      deps.Routes,
+			Labels:                      deps.Labels,
+			CommonLabels:                deps.CommonLabels,
+			TableLabels:                 deps.TableLabels,
+			ReadExpenditure:             deps.ReadExpenditure,
+			ReadExpenseRecognition:      deps.ReadExpenseRecognition,
+			ListAccruedExpenses:         deps.ListAccruedExpenses,
+			ExpenseRecognitionDetailURL: deps.ExpenseRecognitionDetailURL,
+			AccruedExpenseDetailURL:     deps.AccruedExpenseDetailURL,
+			RecognizeFromExpenditureURL: deps.RecognizeFromExpenditureURL,
 		}
 		if deps.ListExpenditureLineItems != nil {
 			detailDeps.ListExpenditureLineItems = deps.ListExpenditureLineItems

@@ -1360,6 +1360,13 @@ type SubscriptionRoutes struct {
 	SpawnJobsURL        string `json:"spawn_jobs_url"`
 	SpawnJobsPartialURL string `json:"spawn_jobs_partial_url"`
 
+	// 2026-04-30 cyclic-subscription-jobs plan §5.3 / Phase D — manual cycle
+	// spawn + backfill triggers. Both POST through espyna's
+	// MaterializeInstanceJobsForSubscription consumer. Backfill GET renders
+	// a preview drawer; POST commits the spawn.
+	SpawnCycleJobsURL    string `json:"spawn_cycle_jobs_url"`
+	BackfillCycleJobsURL string `json:"backfill_cycle_jobs_url"`
+
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
@@ -1396,6 +1403,10 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		SpawnJobsURL:        SubscriptionSpawnJobsURL,
 		SpawnJobsPartialURL: SubscriptionSpawnJobsPartialURL,
 
+		// 2026-04-30 cyclic-subscription-jobs.
+		SpawnCycleJobsURL:    SubscriptionSpawnCycleJobsURL,
+		BackfillCycleJobsURL: SubscriptionBackfillCycleJobsURL,
+
 		AttachmentUploadURL: SubscriptionAttachmentUploadURL,
 		AttachmentDeleteURL: SubscriptionAttachmentDeleteURL,
 	}
@@ -1428,6 +1439,10 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		// 2026-04-29 auto-spawn-jobs-from-subscription routes.
 		"subscription.spawn_jobs":         r.SpawnJobsURL,
 		"subscription.spawn_jobs_partial": r.SpawnJobsPartialURL,
+
+		// 2026-04-30 cyclic-subscription-jobs routes.
+		"subscription.spawn_cycle_jobs":    r.SpawnCycleJobsURL,
+		"subscription.backfill_cycle_jobs": r.BackfillCycleJobsURL,
 
 		"subscription.attachment.upload": r.AttachmentUploadURL,
 		"subscription.attachment.delete": r.AttachmentDeleteURL,
@@ -1713,6 +1728,10 @@ type ProcurementRequestRoutes struct {
 	LineAddURL    string `json:"line_add_url"`
 	LineEditURL   string `json:"line_edit_url"`
 	LineDeleteURL string `json:"line_delete_url"`
+
+	// SPS Wave 3 — CRIT-3 retry placeholder. Wired but the action use case
+	// itself is intentionally out-of-scope; handler currently logs + redirects.
+	LineRetrySpawnURL string `json:"line_retry_spawn_url"`
 }
 
 // DefaultProcurementRequestRoutes returns a ProcurementRequestRoutes using the
@@ -1733,9 +1752,10 @@ func DefaultProcurementRequestRoutes() ProcurementRequestRoutes {
 		ApproveURL:       ProcurementRequestApproveURL,
 		RejectURL:        ProcurementRequestRejectURL,
 		SpawnPOURL:       ProcurementRequestSpawnPOURL,
-		LineAddURL:       ProcurementRequestLineAddURL,
-		LineEditURL:      ProcurementRequestLineEditURL,
-		LineDeleteURL:    ProcurementRequestLineDeleteURL,
+		LineAddURL:        ProcurementRequestLineAddURL,
+		LineEditURL:       ProcurementRequestLineEditURL,
+		LineDeleteURL:     ProcurementRequestLineDeleteURL,
+		LineRetrySpawnURL: ProcurementRequestLineRetrySpawnURL,
 	}
 }
 
@@ -1752,9 +1772,10 @@ func (r ProcurementRequestRoutes) RouteMap() map[string]string {
 		"procurement_request.approve":     r.ApproveURL,
 		"procurement_request.reject":      r.RejectURL,
 		"procurement_request.spawn_po":    r.SpawnPOURL,
-		"procurement_request.line.add":    r.LineAddURL,
-		"procurement_request.line.edit":   r.LineEditURL,
-		"procurement_request.line.delete": r.LineDeleteURL,
+		"procurement_request.line.add":          r.LineAddURL,
+		"procurement_request.line.edit":         r.LineEditURL,
+		"procurement_request.line.delete":       r.LineDeleteURL,
+		"procurement_request.line.retry_spawn":  r.LineRetrySpawnURL,
 	}
 }
 
@@ -1800,5 +1821,204 @@ func (r ProcurementRoutes) RouteMap() map[string]string {
 		"procurement.variance":         r.VarianceURL,
 		"procurement.utilization":      r.UtilizationURL,
 		"procurement.recurrence_drafts": r.RecurrenceDraftsURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SupplierContractPriceScheduleRoutes — SPS P7
+// ---------------------------------------------------------------------------
+
+// SupplierContractPriceScheduleRoutes holds all route paths for
+// supplier_contract_price_schedule + child line views.
+type SupplierContractPriceScheduleRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+
+	// Workflow
+	ActivateURL  string `json:"activate_url"`
+	SupersedeURL string `json:"supersede_url"`
+
+	// Schedule line actions (child entity)
+	LineAddURL    string `json:"line_add_url"`
+	LineEditURL   string `json:"line_edit_url"`
+	LineDeleteURL string `json:"line_delete_url"`
+}
+
+// DefaultSupplierContractPriceScheduleRoutes returns a
+// SupplierContractPriceScheduleRoutes using the package-level URL constants.
+func DefaultSupplierContractPriceScheduleRoutes() SupplierContractPriceScheduleRoutes {
+	return SupplierContractPriceScheduleRoutes{
+		ActiveNav:        "supplier-contract-price-schedules",
+		ActiveSubNav:     "active",
+		ListURL:          SupplierContractPriceScheduleListURL,
+		DetailURL:        SupplierContractPriceScheduleDetailURL,
+		AddURL:           SupplierContractPriceScheduleAddURL,
+		EditURL:          SupplierContractPriceScheduleEditURL,
+		DeleteURL:        SupplierContractPriceScheduleDeleteURL,
+		SetStatusURL:     SupplierContractPriceScheduleSetStatusURL,
+		BulkSetStatusURL: SupplierContractPriceScheduleBulkSetStatusURL,
+		TabActionURL:     SupplierContractPriceScheduleTabActionURL,
+		ActivateURL:      SupplierContractPriceScheduleActivateURL,
+		SupersedeURL:     SupplierContractPriceScheduleSupersedeURL,
+		LineAddURL:       SupplierContractPriceScheduleLineAddURL,
+		LineEditURL:      SupplierContractPriceScheduleLineEditURL,
+		LineDeleteURL:    SupplierContractPriceScheduleLineDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r SupplierContractPriceScheduleRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"supplier_contract_price_schedule.list":        r.ListURL,
+		"supplier_contract_price_schedule.detail":      r.DetailURL,
+		"supplier_contract_price_schedule.add":         r.AddURL,
+		"supplier_contract_price_schedule.edit":        r.EditURL,
+		"supplier_contract_price_schedule.delete":      r.DeleteURL,
+		"supplier_contract_price_schedule.set_status":  r.SetStatusURL,
+		"supplier_contract_price_schedule.activate":    r.ActivateURL,
+		"supplier_contract_price_schedule.supersede":   r.SupersedeURL,
+		"supplier_contract_price_schedule.line.add":    r.LineAddURL,
+		"supplier_contract_price_schedule.line.edit":   r.LineEditURL,
+		"supplier_contract_price_schedule.line.delete": r.LineDeleteURL,
+	}
+}
+
+
+// ---------------------------------------------------------------------------
+// ExpenseRecognitionRoutes — SPS P10
+// ---------------------------------------------------------------------------
+
+// ExpenseRecognitionRoutes holds all route paths for expense_recognition views.
+// Note: no Add/Edit URLs — recognitions are created BY use case, not by user.
+type ExpenseRecognitionRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL      string `json:"list_url"`
+	DetailURL    string `json:"detail_url"`
+	DeleteURL    string `json:"delete_url"`
+	TabActionURL string `json:"tab_action_url"`
+
+	// Workflow
+	ReverseURL                  string `json:"reverse_url"`
+	RecognizeFromExpenditureURL string `json:"recognize_from_expenditure_url"`
+	RecognizeFromContractURL    string `json:"recognize_from_contract_url"`
+
+	// Recognition line actions (child entity — inline CRUD)
+	LineAddURL    string `json:"line_add_url"`
+	LineEditURL   string `json:"line_edit_url"`
+	LineDeleteURL string `json:"line_delete_url"`
+}
+
+// DefaultExpenseRecognitionRoutes returns an ExpenseRecognitionRoutes using the
+// package-level URL constants.
+func DefaultExpenseRecognitionRoutes() ExpenseRecognitionRoutes {
+	return ExpenseRecognitionRoutes{
+		ActiveNav:     "expense-recognitions",
+		ActiveSubNav:  "posted",
+		ListURL:                     ExpenseRecognitionListURL,
+		DetailURL:                   ExpenseRecognitionDetailURL,
+		DeleteURL:                   ExpenseRecognitionDeleteURL,
+		TabActionURL:                ExpenseRecognitionTabActionURL,
+		ReverseURL:                  ExpenseRecognitionReverseURL,
+		RecognizeFromExpenditureURL: ExpenseRecognitionRecognizeFromExpenditureURL,
+		RecognizeFromContractURL:    ExpenseRecognitionRecognizeFromContractURL,
+		LineAddURL:                  ExpenseRecognitionLineAddURL,
+		LineEditURL:                 ExpenseRecognitionLineEditURL,
+		LineDeleteURL:               ExpenseRecognitionLineDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r ExpenseRecognitionRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"expense_recognition.list":                       r.ListURL,
+		"expense_recognition.detail":                     r.DetailURL,
+		"expense_recognition.delete":                     r.DeleteURL,
+		"expense_recognition.reverse":                    r.ReverseURL,
+		"expense_recognition.recognize_from_expenditure": r.RecognizeFromExpenditureURL,
+		"expense_recognition.recognize_from_contract":    r.RecognizeFromContractURL,
+		"expense_recognition.line.add":                   r.LineAddURL,
+		"expense_recognition.line.edit":                  r.LineEditURL,
+		"expense_recognition.line.delete":                r.LineDeleteURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// AccruedExpenseRoutes — SPS P10
+// ---------------------------------------------------------------------------
+
+// AccruedExpenseRoutes holds all route paths for accrued_expense views.
+type AccruedExpenseRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+
+	// Workflow
+	SettleURL              string `json:"settle_url"`
+	ReverseURL             string `json:"reverse_url"`
+	AccrueFromContractURL  string `json:"accrue_from_contract_url"`
+
+	// Settlement actions (child entity — inline CRUD)
+	SettlementAddURL    string `json:"settlement_add_url"`
+	SettlementEditURL   string `json:"settlement_edit_url"`
+	SettlementDeleteURL string `json:"settlement_delete_url"`
+}
+
+// DefaultAccruedExpenseRoutes returns an AccruedExpenseRoutes using the
+// package-level URL constants.
+func DefaultAccruedExpenseRoutes() AccruedExpenseRoutes {
+	return AccruedExpenseRoutes{
+		ActiveNav:           "accrued-expenses",
+		ActiveSubNav:        "outstanding",
+		ListURL:             AccruedExpenseListURL,
+		DetailURL:           AccruedExpenseDetailURL,
+		AddURL:              AccruedExpenseAddURL,
+		EditURL:             AccruedExpenseEditURL,
+		DeleteURL:           AccruedExpenseDeleteURL,
+		SetStatusURL:        AccruedExpenseSetStatusURL,
+		BulkSetStatusURL:    AccruedExpenseBulkSetStatusURL,
+		TabActionURL:        AccruedExpenseTabActionURL,
+		SettleURL:             AccruedExpenseSettleURL,
+		ReverseURL:            AccruedExpenseReverseURL,
+		AccrueFromContractURL: AccruedExpenseAccrueFromContractURL,
+		SettlementAddURL:      AccruedExpenseSettlementAddURL,
+		SettlementEditURL:     AccruedExpenseSettlementEditURL,
+		SettlementDeleteURL:   AccruedExpenseSettlementDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r AccruedExpenseRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"accrued_expense.list":              r.ListURL,
+		"accrued_expense.detail":            r.DetailURL,
+		"accrued_expense.add":               r.AddURL,
+		"accrued_expense.edit":              r.EditURL,
+		"accrued_expense.delete":            r.DeleteURL,
+		"accrued_expense.set_status":        r.SetStatusURL,
+		"accrued_expense.settle":              r.SettleURL,
+		"accrued_expense.reverse":             r.ReverseURL,
+		"accrued_expense.accrue_from_contract": r.AccrueFromContractURL,
+		"accrued_expense.settlement.add":      r.SettlementAddURL,
+		"accrued_expense.settlement.edit":   r.SettlementEditURL,
+		"accrued_expense.settlement.delete": r.SettlementDeleteURL,
 	}
 }

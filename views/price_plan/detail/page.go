@@ -114,6 +114,42 @@ type PageData struct {
 	// through PageData rather than the template's routeWith so Go owns the
 	// {plan_id, ppid} resolution.
 	EditURL string
+
+	// 2026-04-30 cyclic-subscription-jobs plan §20 / Phase D — Billing model
+	// summary section rendered on the info tab. Composes pyeza-info-sections.
+	// nil when not applicable (kind × basis cell empty).
+	BillingModelSummary *PricePlanBillingModelSummary
+}
+
+// PricePlanBillingModelSummary is the centymo-side projection of the
+// (kind × basis) summary copy from PricePlanDetailLabels2.Summary. Built by
+// `buildBillingModelSummary` per cyclic-subscription-jobs plan §20.2.
+type PricePlanBillingModelSummary struct {
+	// Heading is the section title ("Billing model summary"), pre-resolved
+	// from PricePlanDetailLabels2.SummaryHeading.
+	Heading string
+
+	// CustomerHeading / OperationsHeading / RevenueHeading are sub-section
+	// titles for the 3-column info-sections layout.
+	CustomerHeading   string
+	OperationsHeading string
+	RevenueHeading    string
+
+	// Lines are the three lyngua-resolved narrative lines.
+	CustomerLine   string
+	OperationsLine string
+	RevenueLine    string
+
+	// Warnings holds the per-condition warning rows that are tripped for
+	// this PricePlan + parent Plan. Empty slice = no warnings.
+	Warnings []PricePlanBillingSummaryWarning
+}
+
+// PricePlanBillingSummaryWarning is one warning row in the summary block.
+type PricePlanBillingSummaryWarning struct {
+	Key      string // stable identifier for data-testid + selector targeting
+	Message  string
+	Severity string // "warning" | "info"
 }
 
 // ProductPricePlanFormData holds data for the add/edit drawer form.
@@ -587,6 +623,17 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	// fields like billing_kind on Update).
 	editURL := route.ResolveURL(centymo.PricePlanEditURL, "id", pp.GetPlanId(), "ppid", id)
 
+	// 2026-04-30 cyclic-subscription-jobs plan §20 — Billing model summary
+	// loads the parent Plan (for visits_per_cycle + job_template_id) so the
+	// summary helper can render the right copy + warnings.
+	var parentPlan *planpb.Plan
+	if planID := pp.GetPlanId(); planID != "" && deps.ReadPlan != nil {
+		if planResp, err := deps.ReadPlan(ctx, &planpb.ReadPlanRequest{Data: &planpb.Plan{Id: &planID}}); err == nil && len(planResp.GetData()) > 0 {
+			parentPlan = planResp.GetData()[0]
+		}
+	}
+	billingSummary := buildBillingModelSummary(pp, parentPlan, deps.Labels.Detail, currency, duration)
+
 	pageData := &PageData{
 		PageData: types.PageData{
 			CacheVersion:   viewCtx.CacheVersion,
@@ -599,23 +646,24 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 			HeaderIcon:     "icon-tag",
 			CommonLabels:   deps.CommonLabels,
 		},
-		ContentTemplate:   "price-plan-detail-content",
-		PricePlan:         pp,
-		Labels:            l,
-		ActiveTab:         activeTab,
-		TabItems:          tabItems,
-		ID:                id,
-		PricePlanName:     name,
-		PricePlanDesc:     description,
-		PricePlanAmount:   amountFormatted,
-		PricePlanCurrency: currency,
-		PricePlanLocation: pp.GetPriceScheduleId(),
-		PricePlanDuration: duration,
-		PricePlanStatus:   status,
-		StatusVariant:     statusVariant,
-		CreatedDate:       pp.GetDateCreatedString(),
-		ModifiedDate:      pp.GetDateModifiedString(),
-		EditURL:           editURL,
+		ContentTemplate:     "price-plan-detail-content",
+		PricePlan:           pp,
+		Labels:              l,
+		ActiveTab:           activeTab,
+		TabItems:            tabItems,
+		ID:                  id,
+		PricePlanName:       name,
+		PricePlanDesc:       description,
+		PricePlanAmount:     amountFormatted,
+		PricePlanCurrency:   currency,
+		PricePlanLocation:   pp.GetPriceScheduleId(),
+		PricePlanDuration:   duration,
+		PricePlanStatus:     status,
+		StatusVariant:       statusVariant,
+		CreatedDate:         pp.GetDateCreatedString(),
+		ModifiedDate:        pp.GetDateModifiedString(),
+		EditURL:             editURL,
+		BillingModelSummary: billingSummary,
 	}
 
 	// Load tab-specific data
@@ -1020,10 +1068,18 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, p
 	if deps.ListProductPlans == nil || planID == "" {
 		return nil
 	}
-	// Build product ID → name map.
+	// Build product ID → name map. We push the max page size so workspaces with
+	// >20 products don't silently drop names from the lookup — when that
+	// happened, the optgroup label fell through to the product UUID and the
+	// picker rendered with unidentifiable groups (S-3/S-5 tests caught this
+	// 2026-04-30: a multi-product DERIVED_FROM_LINES plan had its newest
+	// product's catalog line orphaned because the unfiltered first page
+	// dropped that product from `productNames`).
 	productNames := map[string]string{}
 	if deps.ListProducts != nil {
-		prodResp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
+		prodResp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{
+			Pagination: &commonpb.PaginationRequest{Limit: 100},
+		})
 		if err == nil {
 			for _, p := range prodResp.GetData() {
 				if p != nil {
@@ -1032,13 +1088,16 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, p
 			}
 		}
 	}
-	// Build variant ID → SKU + active map. We track active state alongside SKU
-	// so the picker can filter out catalog lines pinned to deactivated variants
-	// (with an edit-mode exception so the previously-selected line round-trips).
+	// Build variant ID → SKU + active map. Same pagination treatment as products
+	// — variants drift behind page 1 fast in workspaces with many configurable
+	// products, and a missing SKU label collapses the variant disambiguator to
+	// the bare product name.
 	variantSKUs := map[string]string{}
 	variantActive := map[string]bool{}
 	if deps.ListProductVariants != nil {
-		vResp, err := deps.ListProductVariants(ctx, &productvariantpb.ListProductVariantsRequest{})
+		vResp, err := deps.ListProductVariants(ctx, &productvariantpb.ListProductVariantsRequest{
+			Pagination: &commonpb.PaginationRequest{Limit: 100},
+		})
 		if err == nil {
 			for _, v := range vResp.GetData() {
 				if v == nil {
@@ -1157,6 +1216,7 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, p
 				},
 			}},
 		},
+		Pagination: &commonpb.PaginationRequest{Limit: 100},
 	})
 	if err != nil {
 		log.Printf("Failed to list product plans for plan %s: %v", planID, err)
@@ -1169,6 +1229,7 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, p
 	byProduct := map[string]*ProductPlanGroup{}
 	for _, pp := range ppResp.GetData() {
 		if pp == nil || pp.GetPlanId() != planID {
+			log.Printf("[O2C-DBG] skip pp.id=%v (nil=%v plan_id_mismatch ppPlanId=%q vs %q)", pp.GetId(), pp == nil, pp.GetPlanId(), planID)
 			continue
 		}
 		ppID := pp.GetId()
@@ -1375,4 +1436,130 @@ func loadJobTemplatePhaseOptions(ctx context.Context, deps *DetailViewDeps, pare
 // 2026-04-30 enum-select-canonicalize — buildBillingTreatmentOptions removed.
 // The drawer template (_ppp-fields.html) hardcodes the option list; a checked-in
 // drift test ensures it stays in lockstep with the proto enum.
+
+// buildBillingModelSummary projects the (kind × basis) summary copy from
+// PricePlanDetailLabels2.Summary into the centymo-side render shape used by
+// the price-plan info tab. cyclic-subscription-jobs plan §20.2 — rows 1-6
+// (oneTime / recurring / contract / milestone). AD_HOC plan ships rows 7-8
+// in a follow-up.
+//
+// `currency`, `cycleLabel` flow into the {{.Amount}} / {{.CycleLabel}} /
+// {{.TermLength}} substitutions so the operator sees the price plan's actual
+// numbers, not the raw template tokens.
+//
+// Returns nil when the (kind × basis) cell carries no copy — the caller
+// hides the section instead of rendering an empty info-grid.
+func buildBillingModelSummary(
+	pp *priceplanpb.PricePlan,
+	parentPlan *planpb.Plan,
+	l centymo.PricePlanDetailLabels2,
+	currencyDisplay string,
+	cycleLabel string,
+) *PricePlanBillingModelSummary {
+	if pp == nil {
+		return nil
+	}
+	kind := pp.GetBillingKind().String()
+	basis := pp.GetAmountBasis().String()
+
+	cell := pickSummaryCell(kind, basis, l.Summary)
+	// All-empty cell = no summary shown (e.g. RECURRING × TOTAL_PACKAGE,
+	// MILESTONE × PER_CYCLE, etc.).
+	if cell.Customer == "" && cell.Operations == "" && cell.Revenue == "" {
+		return nil
+	}
+
+	// Build the substitution map for the lyngua templates. Amount renders
+	// as the currency-prefixed display string; visitsPerCycle defaults to 1.
+	amountDisplay := fmt.Sprintf("%s %.2f", currencyDisplay, float64(pp.GetBillingAmount())/100.0)
+	visitsPerCycle := "1"
+	if parentPlan != nil && parentPlan.GetVisitsPerCycle() > 1 {
+		visitsPerCycle = fmt.Sprintf("%d", parentPlan.GetVisitsPerCycle())
+	}
+	termLength := ""
+	if v := pp.GetDefaultTermValue(); v > 0 {
+		termLength = fmt.Sprintf("%d %s", v, pp.GetDefaultTermUnit())
+	}
+	r := strings.NewReplacer(
+		"{{.Amount}}", amountDisplay,
+		"{{.CycleLabel}}", cycleLabel,
+		"{{.VisitsPerCycle}}", visitsPerCycle,
+		"{{.TermLength}}", termLength,
+	)
+
+	out := &PricePlanBillingModelSummary{
+		Heading:           l.SummaryHeading,
+		CustomerHeading:   l.CustomerHeading,
+		OperationsHeading: l.OperationsHeading,
+		RevenueHeading:    l.RevenueRecognitionHeading,
+		CustomerLine:      r.Replace(cell.Customer),
+		OperationsLine:    r.Replace(cell.Operations),
+		RevenueLine:       r.Replace(cell.Revenue),
+	}
+
+	// Warnings — see plan §20.3.
+	out.Warnings = collectBillingSummaryWarnings(pp, parentPlan, kind, l)
+	return out
+}
+
+// pickSummaryCell maps the proto enum strings onto the lyngua-resolved
+// summary copy struct. Falls through to an empty PricePlanSummaryLines for
+// uncovered combos (e.g. ONE_TIME × DERIVED_FROM_LINES).
+func pickSummaryCell(kind, basis string, s centymo.PricePlanBillingSummaryCopy) centymo.PricePlanSummaryLines {
+	var byBasis centymo.PricePlanSummaryByBasis
+	switch kind {
+	case "BILLING_KIND_ONE_TIME":
+		byBasis = s.OneTime
+	case "BILLING_KIND_RECURRING":
+		byBasis = s.Recurring
+	case "BILLING_KIND_CONTRACT":
+		byBasis = s.Contract
+	case "BILLING_KIND_MILESTONE":
+		byBasis = s.Milestone
+	default:
+		return centymo.PricePlanSummaryLines{}
+	}
+	switch basis {
+	case "AMOUNT_BASIS_PER_CYCLE":
+		return byBasis.PerCycle
+	case "AMOUNT_BASIS_TOTAL_PACKAGE":
+		return byBasis.TotalPackage
+	case "AMOUNT_BASIS_DERIVED_FROM_LINES":
+		return byBasis.DerivedFromLines
+	}
+	return centymo.PricePlanSummaryLines{}
+}
+
+// collectBillingSummaryWarnings returns the warning rows that are tripped
+// for this (PricePlan, Plan) combo per plan §20.3.
+func collectBillingSummaryWarnings(
+	pp *priceplanpb.PricePlan,
+	parentPlan *planpb.Plan,
+	kind string,
+	l centymo.PricePlanDetailLabels2,
+) []PricePlanBillingSummaryWarning {
+	var out []PricePlanBillingSummaryWarning
+	hasTemplate := parentPlan != nil && parentPlan.GetJobTemplateId() != ""
+	visitsPerCycle := int32(0)
+	if parentPlan != nil {
+		visitsPerCycle = parentPlan.GetVisitsPerCycle()
+	}
+
+	if kind == "BILLING_KIND_MILESTONE" && !hasTemplate {
+		out = append(out, PricePlanBillingSummaryWarning{
+			Key: "milestoneNoTemplate", Message: l.Warning.MilestoneNoTemplate, Severity: "warning",
+		})
+	}
+	if (kind == "BILLING_KIND_RECURRING" || kind == "BILLING_KIND_CONTRACT") && !hasTemplate {
+		out = append(out, PricePlanBillingSummaryWarning{
+			Key: "recurringNoTemplate", Message: l.Warning.RecurringNoTemplate, Severity: "info",
+		})
+	}
+	if visitsPerCycle > 1 && (kind == "BILLING_KIND_MILESTONE" || kind == "BILLING_KIND_ONE_TIME") {
+		out = append(out, PricePlanBillingSummaryWarning{
+			Key: "visitsPerCycleInvalidKind", Message: l.Warning.VisitsPerCycleInvalidKind, Severity: "warning",
+		})
+	}
+	return out
+}
 

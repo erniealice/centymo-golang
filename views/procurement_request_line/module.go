@@ -30,10 +30,11 @@ type ModuleDeps struct {
 
 // Module holds all constructed procurement_request_line views.
 type Module struct {
-	routes centymo.ProcurementRequestRoutes
-	Add    view.View
-	Edit   view.View
-	Delete view.View
+	routes      centymo.ProcurementRequestRoutes
+	Add         view.View
+	Edit        view.View
+	Delete      view.View
+	RetrySpawn  view.View // SPS Wave 3 — CRIT-3 retry placeholder
 }
 
 // NewModule creates the procurement_request_line module.
@@ -50,10 +51,11 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	return &Module{
-		routes: deps.Routes,
-		Add:    procurementrequestlineaction.NewAddAction(actionDeps),
-		Edit:   procurementrequestlineaction.NewEditAction(actionDeps),
-		Delete: procurementrequestlineaction.NewDeleteAction(actionDeps),
+		routes:     deps.Routes,
+		Add:        procurementrequestlineaction.NewAddAction(actionDeps),
+		Edit:       procurementrequestlineaction.NewEditAction(actionDeps),
+		Delete:     procurementrequestlineaction.NewDeleteAction(actionDeps),
+		RetrySpawn: procurementrequestlineaction.NewRetrySpawnAction(actionDeps),
 	}
 }
 
@@ -69,5 +71,8 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.Delete != nil {
 		r.POST(m.routes.LineDeleteURL, m.Delete)
+	}
+	if m.RetrySpawn != nil && m.routes.LineRetrySpawnURL != "" {
+		r.POST(m.routes.LineRetrySpawnURL, m.RetrySpawn)
 	}
 }

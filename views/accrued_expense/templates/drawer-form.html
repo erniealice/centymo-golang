@@ -1,0 +1,221 @@
+{{/*
+Accrued Expense drawer form — loaded into #sheetContent via HTMX.
+Used by both Add (manual one-off accrual) and Edit actions.
+
+Note: settled_amount and remaining_amount fields are READ-ONLY here — they
+are written ONLY through the SettleAccrual / ReverseAccrual use cases
+(single-write boundary, plan §6.4a HIGH-3).
+*/}}
+{{define "accrued-expense-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+
+        {{/* §1 Identity */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionIdentity}}</h3>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "name"
+                    "Label" .Labels.Name
+                    "Value" .Name
+                    "Required" true
+                    "Placeholder" .Labels.NamePlaceholder
+                    "Info" .Labels.NameInfo
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "description"
+                    "Label" .Labels.Description
+                    "Value" .Description
+                    "Placeholder" .Labels.DescriptionPlaceholder
+                )}}
+            </div>
+        </div>
+
+        {{/* §2 Source */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionSource}}</h3>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "supplier_contract_id"
+                    "Label" .Labels.SupplierContract
+                    "Value" .SupplierContractID
+                    "Required" true
+                    "Options" .SupplierContracts
+                    "Placeholder" .Labels.SelectSupplierContract
+                    "Info" .Labels.SupplierContractInfo
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "supplier_id"
+                    "Label" .Labels.Supplier
+                    "Value" .SupplierID
+                    "Options" .Suppliers
+                    "Placeholder" .Labels.SelectSupplier
+                    "Info" .Labels.SupplierInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* §3 Period */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionPeriod}}</h3>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "recognition_date"
+                    "Label" .Labels.RecognitionDate
+                    "Value" .RecognitionDate
+                    "Required" true
+                    "Info" .Labels.RecognitionDateInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "cycle_date"
+                    "Label" .Labels.CycleDate
+                    "Value" .CycleDate
+                    "Placeholder" .Labels.CycleDatePlaceholder
+                    "Info" .Labels.CycleDateInfo
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "period_start"
+                    "Label" .Labels.PeriodStart
+                    "Value" .PeriodStart
+                    "Info" .Labels.PeriodStartInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "period_end"
+                    "Label" .Labels.PeriodEnd
+                    "Value" .PeriodEnd
+                    "Info" .Labels.PeriodEndInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* §4 Money */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionMoney}}</h3>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "currency"
+                    "Label" .Labels.Currency
+                    "Value" .Currency
+                    "Required" true
+                    "Placeholder" .Labels.CurrencyPlaceholder
+                    "Info" .Labels.CurrencyInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "accrued_amount"
+                    "Label" .Labels.AccruedAmount
+                    "Value" .AccruedAmount
+                    "Required" true
+                    "Placeholder" .Labels.AccruedAmountPlaceholder
+                    "Info" .Labels.AccruedAmountInfo
+                )}}
+            </div>
+            {{if .IsEdit}}
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "settled_amount"
+                    "Label" .Labels.SettledAmount
+                    "Value" .SettledAmount
+                    "Disabled" true
+                    "Info" .Labels.SettledAmountInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "remaining_amount"
+                    "Label" .Labels.RemainingAmount
+                    "Value" .RemainingAmount
+                    "Disabled" true
+                    "Info" .Labels.RemainingAmountInfo
+                )}}
+            </div>
+            {{end}}
+        </div>
+
+        {{/* §5 Lifecycle */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionLifecycle}}</h3>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "status"
+                    "Label" .Labels.Status
+                    "Value" .Status
+                    "Options" .StatusOptions
+                    "Placeholder" .Labels.SelectStatus
+                    "Info" .Labels.StatusInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* §6 Accounting */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionAccounting}}</h3>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "expense_account_id"
+                    "Label" .Labels.ExpenseAccount
+                    "Value" .ExpenseAccountID
+                    "Placeholder" .Labels.SelectExpenseAccount
+                    "Info" .Labels.ExpenseAccountInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "accrual_account_id"
+                    "Label" .Labels.AccrualAccount
+                    "Value" .AccrualAccountID
+                    "Placeholder" .Labels.SelectAccrualAccount
+                    "Info" .Labels.AccrualAccountInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* §7 Notes */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionNotes}}</h3>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "notes"
+                    "Label" .Labels.Notes
+                    "Value" .Notes
+                    "Placeholder" .Labels.NotesPlaceholder
+                    "Info" .Labels.NotesInfo
+                )}}
+            </div>
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "checkbox"
+                "Name" "active"
+                "Label" .Labels.Active
+                "Checked" .Active
+            )}}
+        </div>
+    </div>
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">Cancel</button>
+        <button type="submit" class="btn btn-primary">{{if .IsEdit}}Save{{else}}{{.Labels.Edit}}{{end}}</button>
+    </div>
+</form>
+{{end}}

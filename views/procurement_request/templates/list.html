@@ -6,6 +6,23 @@
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "procurement-request-list-content"}}
 <div class="page-content page-content--table">
+    {{/* SPS Wave 3 — F3 fulfillment_strategy filter chip row.
+         Single-select; clicking a chip navigates (full GET) so the active state
+         survives reload and bookmarks. The chip set already includes the "any"
+         catch-all as its first entry. */}}
+    {{if .StrategyChips}}
+    <div class="filter-chip-row" data-testid="procurement-request-strategy-filters" role="group" aria-label="{{.StrategyLabel}}">
+        {{range .StrategyChips}}
+        <a href="{{.Href}}"
+           class="chip{{if .Active}} chip-active{{end}}"
+           data-strategy="{{.Value}}"
+           data-testid="procurement-request-strategy-chip-{{.Value}}"
+           aria-pressed="{{if .Active}}true{{else}}false{{end}}">
+            {{.Label}}
+        </a>
+        {{end}}
+    </div>
+    {{end}}
     {{template "table-card" .Table}}
 </div>
 {{end}}

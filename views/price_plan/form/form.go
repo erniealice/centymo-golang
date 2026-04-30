@@ -83,6 +83,17 @@ type Data struct {
 	InUse       bool
 	LockMessage string
 
+	// 2026-04-30 cyclic-subscription-jobs plan §7.4 — client-side block
+	// for the MILESTONE × cyclic combo. ParentPlanIsCyclic is true when
+	// the parent Plan has visits_per_cycle > 1 (multi-visit cyclic). The
+	// drawer's applyBasisOptionGuards() reads data-parent-plan-cyclic
+	// attribute and disables the MILESTONE option in the billing_kind
+	// dropdown when set, surfacing MilestoneCyclicBlock as a tooltip.
+	//
+	// Server-side validation already shipped in espyna Phase C — this
+	// is the client-side guard for UX symmetry.
+	ParentPlanIsCyclic bool
+
 	// 2026-04-27 plan-client-scope plan §6.7 — surfaced when the parent
 	// PriceSchedule is client-scoped. The template renders an info banner
 	// "{ClientName} owns this rate card..." above the first form section
@@ -192,6 +203,10 @@ type Labels struct {
 	// Schedule field when the parent Plan is client-scoped. Templated via
 	// {{.ClientName}}. Blank means "no tooltip".
 	ScheduleLockedTooltip string
+
+	// 2026-04-30 cyclic-subscription-jobs plan §9.4 — tooltip surfaced on
+	// the disabled MILESTONE option when the parent Plan is cyclic.
+	MilestoneCyclicBlock string
 }
 
 // LabelsFromPriceSchedule maps the price-schedule-side PlanForm labels into
@@ -289,6 +304,8 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		// 2026-04-27 plan-client-scope plan §6.7.
 		ParentScheduleClientNotice: pp.ParentScheduleClientNotice,
 		ScheduleLockedTooltip:      pp.ScheduleLockedTooltip,
+		// 2026-04-30 cyclic-subscription-jobs plan §9.4.
+		MilestoneCyclicBlock: pp.MilestoneCyclicBlock,
 	}
 }
 

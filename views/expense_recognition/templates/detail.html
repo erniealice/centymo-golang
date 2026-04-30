@@ -1,0 +1,173 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "expense-recognition-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "expense-recognition-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Title}}">
+    <div class="detail-header-actions">
+        {{if .ReverseURL}}
+        <button type="button" class="btn btn-danger"
+            aria-haspopup="dialog"
+            data-testid="expense-recognition-reverse-btn"
+            hx-post="{{.ReverseURL}}" hx-swap="none"
+            hx-on::after-request="lf.Sheet.handleResponse(event)">
+            {{.Labels.Buttons.Reverse}}
+        </button>
+        {{end}}
+    </div>
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "er-tabs")}}
+    </div>
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+        {{template "expense-recognition-tab-info" .}}
+        {{else if eq .ActiveTab "lines"}}
+        {{template "expense-recognition-tab-lines" .}}
+        {{else if eq .ActiveTab "source"}}
+        {{template "expense-recognition-tab-source" .}}
+        {{else if eq .ActiveTab "activity"}}
+        {{template "expense-recognition-tab-activity" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* Tab content partial for HTMX tab switches */}}
+{{define "expense-recognition-tab-content"}}
+{{if eq .ActiveTab "info"}}
+{{template "expense-recognition-tab-info" .}}
+{{else if eq .ActiveTab "lines"}}
+{{template "expense-recognition-tab-lines" .}}
+{{else if eq .ActiveTab "source"}}
+{{template "expense-recognition-tab-source" .}}
+{{else if eq .ActiveTab "activity"}}
+{{template "expense-recognition-tab-activity" .}}
+{{end}}
+{{end}}
+
+{{/* Info tab */}}
+{{define "expense-recognition-tab-info"}}
+<div class="tab-scroll">
+    <h3 class="detail-section-title">{{.Labels.Detail.InfoSection}}</h3>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Name}}</span>
+            <span class="detail-info-value">{{index .Recognition "name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span class="detail-info-value">
+                {{template "status-badge" (dict "Status" (index .Recognition "status") "Variant" .StatusVariant)}}
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.RecognitionDate}}</span>
+            <span class="detail-info-value">{{index .Recognition "recognition_date"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.PeriodStart}}</span>
+            <span class="detail-info-value">{{index .Recognition "period_start"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.PeriodEnd}}</span>
+            <span class="detail-info-value">{{index .Recognition "period_end"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.CycleDate}}</span>
+            <span class="detail-info-value">{{index .Recognition "cycle_date"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Currency}}</span>
+            <span class="detail-info-value">{{index .Recognition "currency"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.TotalAmount}}</span>
+            <span class="detail-info-value mono">{{template "table-cell-money" (index .Recognition "total_amount")}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.IdempotencyKey}}</span>
+            <span class="detail-info-value mono">{{index .Recognition "idempotency_key"}}</span>
+        </div>
+        {{if index .Recognition "notes"}}
+        <div class="detail-info-item detail-info-item--full">
+            <span class="detail-info-label">Notes</span>
+            <span class="detail-info-value">{{index .Recognition "notes"}}</span>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* Lines tab — inline CRUD child */}}
+{{define "expense-recognition-tab-lines"}}
+<div class="transaction-items-toolbar">
+    {{if .LineItemAddURL}}
+    <div class="transaction-items-actions">
+        <button type="button" class="btn btn-primary toolbar-primary-action"
+            aria-haspopup="dialog"
+            data-testid="expense-recognition-add-line-btn"
+            hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Lines.AddLine}}')">
+            {{.Labels.Lines.AddLine}}
+        </button>
+    </div>
+    {{end}}
+</div>
+{{if .LineItemTable}}
+<div class="tab-scroll">
+    {{template "table-card" .LineItemTable}}
+</div>
+{{else}}
+<div class="tab-scroll">
+    <p class="text-muted">{{.Labels.Lines.EmptyMessage}}</p>
+</div>
+{{end}}
+{{end}}
+
+{{/* Source tab — links to expenditure or contract that triggered the recognition */}}
+{{define "expense-recognition-tab-source"}}
+<div class="tab-scroll">
+    <h3 class="detail-section-title">{{.Labels.Detail.SourceSection}}</h3>
+    <div class="detail-info-grid">
+        {{if index .Recognition "supplier_contract_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Source Contract</span>
+            <span class="detail-info-value mono">{{index .Recognition "supplier_contract_id"}}</span>
+        </div>
+        {{end}}
+        {{if index .Recognition "expenditure_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Source Bill</span>
+            <span class="detail-info-value mono">{{index .Recognition "expenditure_id"}}</span>
+        </div>
+        {{end}}
+        {{if index .Recognition "deferred_expense_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Deferred Expense</span>
+            <span class="detail-info-value mono">{{index .Recognition "deferred_expense_id"}}</span>
+        </div>
+        {{end}}
+        {{if index .Recognition "accrued_expense_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Source Accrual</span>
+            <span class="detail-info-value mono">{{index .Recognition "accrued_expense_id"}}</span>
+        </div>
+        {{end}}
+        {{if index .Recognition "reversal_of_recognition_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Reversal Of</span>
+            <span class="detail-info-value mono">{{index .Recognition "reversal_of_recognition_id"}}</span>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* Activity tab */}}
+{{define "expense-recognition-tab-activity"}}
+<div class="tab-scroll">
+    <p class="text-muted">{{.Labels.Detail.AuditTrailComingSoon}}</p>
+</div>
+{{end}}

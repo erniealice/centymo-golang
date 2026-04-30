@@ -20,6 +20,10 @@
         {{template "expense-tab-items" .}}
         {{else if eq .ActiveTab "payments"}}
         {{template "expense-tab-payments" .}}
+        {{else if eq .ActiveTab "recognition"}}
+        {{template "expense-tab-recognition" .}}
+        {{else if eq .ActiveTab "accrual"}}
+        {{template "expense-tab-accrual" .}}
         {{end}}
     </div>
 </div>
@@ -334,4 +338,85 @@
         <button type="button" class="btn btn-ghost" onclick="lf.Sheet.close()">{{.Labels.LineItemForm.Cancel}}</button>
     </div>
 </form>
+{{end}}
+
+{{/* ─── Recognition Tab (SPS P10) ──────────────────────────────────────── */}}
+{{define "expense-tab-recognition"}}
+<div class="tab-scroll">
+    {{if .Recognition}}
+        <h3 class="detail-section-title">Recognition</h3>
+        <div class="detail-info-grid">
+            <div class="detail-info-item">
+                <span class="detail-info-label">Name</span>
+                <span class="detail-info-value">
+                    {{if .RecognitionDetailURL}}
+                    <a href="{{.RecognitionDetailURL}}">{{index .Recognition "name"}}</a>
+                    {{else}}
+                    {{index .Recognition "name"}}
+                    {{end}}
+                </span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Status</span>
+                <span class="detail-info-value">{{index .Recognition "status"}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Recognition Date</span>
+                <span class="detail-info-value">{{index .Recognition "recognition_date"}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Period Start</span>
+                <span class="detail-info-value">{{index .Recognition "period_start"}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Period End</span>
+                <span class="detail-info-value">{{index .Recognition "period_end"}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Cycle</span>
+                <span class="detail-info-value">{{index .Recognition "cycle_date"}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Currency</span>
+                <span class="detail-info-value">{{index .Recognition "currency"}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">Total Amount</span>
+                <span class="detail-info-value mono">{{template "table-cell-money" (index .Recognition "total_amount")}}</span>
+            </div>
+            <div class="detail-info-item detail-info-item--full">
+                <span class="detail-info-label">Idempotency Key</span>
+                <span class="detail-info-value mono">{{index .Recognition "idempotency_key"}}</span>
+            </div>
+        </div>
+    {{else}}
+        <div class="empty-state">
+            <h3 class="empty-state-title">{{if .Labels.Detail.RecognitionEmptyTitle}}{{.Labels.Detail.RecognitionEmptyTitle}}{{else}}Not yet recognized{{end}}</h3>
+            <p class="empty-state-message">{{if .Labels.Detail.RecognitionEmptyMessage}}{{.Labels.Detail.RecognitionEmptyMessage}}{{else}}This bill has no linked expense recognition yet. Recognize it to assign the cost to a period.{{end}}</p>
+            {{if .RecognizeFromExpenditureURL}}
+            <button type="button" class="btn btn-primary"
+                aria-haspopup="dialog"
+                data-testid="expense-recognize-btn"
+                hx-post="{{.RecognizeFromExpenditureURL}}" hx-swap="none"
+                hx-on::after-request="lf.Sheet.handleResponse(event)">
+                {{if .Labels.Detail.RecognitionRecognizeCTA}}{{.Labels.Detail.RecognitionRecognizeCTA}}{{else}}Recognize{{end}}
+            </button>
+            {{end}}
+        </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* ─── Accrual Tab (SPS P10) ──────────────────────────────────────────── */}}
+{{define "expense-tab-accrual"}}
+<div class="tab-scroll">
+    {{if .AccrualTable}}
+        {{template "table-card" .AccrualTable}}
+    {{else}}
+        <div class="empty-state">
+            <h3 class="empty-state-title">{{if .Labels.Detail.AccrualEmptyTitle}}{{.Labels.Detail.AccrualEmptyTitle}}{{else}}No accruals{{end}}</h3>
+            <p class="empty-state-message">{{if .Labels.Detail.AccrualEmptyMessage}}{{.Labels.Detail.AccrualEmptyMessage}}{{else}}Accruals tied to this bill or its supplier contract will appear here.{{end}}</p>
+        </div>
+    {{end}}
+</div>
 {{end}}

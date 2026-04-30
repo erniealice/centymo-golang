@@ -1,0 +1,109 @@
+{{/*
+SupplierContractPriceScheduleLine drawer form — child of schedule detail Lines tab.
+Three-section line form: contract-line link, pricing, optional cycle override.
+*/}}
+{{define "supplier-contract-price-schedule-line-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="supplier_contract_price_schedule_id" value="{{.SupplierContractPriceScheduleID}}">
+
+    <div class="sheet-body">
+
+        {{/* ── §1 Link ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionLink}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "supplier_contract_line_id"
+                    "Label" .Labels.SupplierContractLine
+                    "Value" .SupplierContractLineID
+                    "Required" true
+                    "Options" .ContractLines
+                    "Placeholder" .Labels.SelectSupplierContractLine
+                    "Info" .Labels.SupplierContractLineInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §2 Pricing ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionPricing}}</h3>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "unit_price"
+                    "Label" .Labels.UnitPrice
+                    "Value" .UnitPrice
+                    "Required" true
+                    "Placeholder" .Labels.UnitPricePlaceholder
+                    "Info" .Labels.UnitPriceInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "currency"
+                    "Label" .Labels.Currency
+                    "Value" .Currency
+                    "Required" true
+                    "Placeholder" .Labels.CurrencyPlaceholder
+                )}}
+            </div>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "minimum_amount"
+                    "Label" .Labels.MinimumAmount
+                    "Value" .MinimumAmount
+                    "Placeholder" .Labels.MinimumAmountPlaceholder
+                    "Info" .Labels.MinimumAmountInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "quantity"
+                    "Label" .Labels.Quantity
+                    "Value" .Quantity
+                    "Placeholder" .Labels.QuantityPlaceholder
+                    "Info" .Labels.QuantityInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §3 Cycle Override (optional) ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionCycle}}</h3>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "cycle_value_override"
+                    "Label" .Labels.CycleValueOverride
+                    "Value" .CycleValueOverride
+                    "Placeholder" .Labels.CycleValueOverridePlaceholder
+                    "Info" .Labels.CycleValueOverrideInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "cycle_unit_override"
+                    "Label" .Labels.CycleUnitOverride
+                    "Value" .CycleUnitOverride
+                    "Placeholder" .Labels.CycleUnitOverridePlaceholder
+                    "Info" .Labels.CycleUnitOverrideInfo
+                )}}
+            </div>
+        </div>
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
+            {{.CommonLabels.Buttons.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary" data-testid="schedule-line-save-btn">
+            {{.CommonLabels.Buttons.Save}}
+        </button>
+    </div>
+</form>
+{{end}}

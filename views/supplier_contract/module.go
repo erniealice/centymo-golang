@@ -13,6 +13,7 @@ import (
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
+	scpspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -43,6 +44,18 @@ type ModuleDeps struct {
 	ListSuppliers      func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)
 	ListPurchaseOrders func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error)
 	ListExpenditures   func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
+
+	// SPS Wave 4 — Price Schedules tab on the contract detail page.
+	// Surfaces SupplierContractPriceSchedule rows linked via supplier_contract_id.
+	// All optional — nil-safe; when missing, the tab renders an empty state.
+	ListSupplierContractPriceSchedules func(ctx context.Context, req *scpspb.ListSupplierContractPriceSchedulesRequest) (*scpspb.ListSupplierContractPriceSchedulesResponse, error)
+	PriceScheduleListURL               string // /app/supplier-contract-price-schedules/list/{status}
+	PriceScheduleDetailURL             string // /app/supplier-contract-price-schedules/detail/{id}
+	PriceScheduleAddURL                string // /action/supplier-contract-price-schedule/add (with ?supplier_contract_id=)
+
+	// Workflow invocations (block.go injects use-case-backed closures)
+	ApproveSupplierContract   func(ctx context.Context, id string) error
+	TerminateSupplierContract func(ctx context.Context, id string, reason string) error
 }
 
 // Module holds all constructed supplier_contract views.
@@ -75,14 +88,20 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	detailDeps := &suppliercontractdetail.DetailViewDeps{
-		Routes:                    deps.Routes,
-		Labels:                    deps.Labels,
-		CommonLabels:              deps.CommonLabels,
-		TableLabels:               deps.TableLabels,
-		ReadSupplierContract:      deps.ReadSupplierContract,
-		ListSupplierContractLines: deps.ListSupplierContractLines,
-		ListPurchaseOrders:        deps.ListPurchaseOrders,
-		ListExpenditures:          deps.ListExpenditures,
+		Routes:                             deps.Routes,
+		Labels:                             deps.Labels,
+		CommonLabels:                       deps.CommonLabels,
+		TableLabels:                        deps.TableLabels,
+		ReadSupplierContract:               deps.ReadSupplierContract,
+		ListSupplierContractLines:          deps.ListSupplierContractLines,
+		ListPurchaseOrders:                 deps.ListPurchaseOrders,
+		ListExpenditures:                   deps.ListExpenditures,
+		ListSupplierContractPriceSchedules: deps.ListSupplierContractPriceSchedules,
+		PriceScheduleListURL:               deps.PriceScheduleListURL,
+		PriceScheduleDetailURL:             deps.PriceScheduleDetailURL,
+		PriceScheduleAddURL:                deps.PriceScheduleAddURL,
+		ApproveSupplierContract:            deps.ApproveSupplierContract,
+		TerminateSupplierContract:          deps.TerminateSupplierContract,
 	}
 
 	listDeps := &suppliercontractlist.ListViewDeps{

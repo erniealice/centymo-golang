@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/erniealice/pyeza-golang/route"
@@ -15,6 +16,26 @@ import (
 	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 )
+
+// parseVisitsPerCycle parses the visits_per_cycle form value (defaults to 0
+// on parse error or empty), clamps to [1, 100]. Returns 0 when the input
+// is empty so the caller can omit the field entirely (saves NULL).
+//
+// 2026-04-30 cyclic-subscription-jobs plan §7.3 / §15 risk mitigation.
+func parseVisitsPerCycle(raw string) int32 {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 1 {
+		return 0
+	}
+	if n > 100 {
+		n = 100
+	}
+	return int32(n)
+}
 
 // FormLabels holds i18n labels for the drawer form template.
 type FormLabels struct {
@@ -43,6 +64,11 @@ type FormLabels struct {
 	JobTemplate     string
 	JobTemplateNone string
 	JobTemplateHint string
+
+	// 2026-04-30 cyclic-subscription-jobs plan §9.3 — visits_per_cycle field.
+	VisitsPerCycleLabel       string
+	VisitsPerCyclePlaceholder string
+	VisitsPerCycleHint        string
 }
 
 // ClientFieldMode selects how the Client field renders on the drawer per
@@ -88,6 +114,12 @@ type FormData struct {
 	// drawer's <select>.
 	JobTemplateID      string
 	JobTemplateOptions []JobTemplateOption
+
+	// 2026-04-30 cyclic-subscription-jobs plan §7.3 / §9.3 — Plan.visits_per_cycle.
+	// Number of cycle Job instances spawned per billing cycle. Default 1
+	// when unset; the drawer template renders 1 in the input either way.
+	// Visible only when JobTemplateID is set (template-side JS gate).
+	VisitsPerCycle int32
 
 	Labels       FormLabels
 	CommonLabels any
@@ -148,6 +180,10 @@ func formLabels(l centymo.PlanLabels) FormLabels {
 		JobTemplate:     l.Form.JobTemplate,
 		JobTemplateNone: l.Form.JobTemplateNone,
 		JobTemplateHint: l.Form.JobTemplateHint,
+		// 2026-04-30 cyclic-subscription-jobs plan §9.3.
+		VisitsPerCycleLabel:       l.Form.VisitsPerCycleLabel,
+		VisitsPerCyclePlaceholder: l.Form.VisitsPerCyclePlaceholder,
+		VisitsPerCycleHint:        l.Form.VisitsPerCycleHint,
 	}
 }
 
@@ -298,6 +334,12 @@ func NewAddAction(deps *Deps) view.View {
 		if jobTemplateID != "" {
 			planData.JobTemplateId = strPtr(jobTemplateID)
 		}
+		// 2026-04-30 cyclic-subscription-jobs plan §7.3 — visits_per_cycle.
+		// Reset to 1 (or NULL) when JobTemplate is cleared per plan §15
+		// risk mitigation.
+		if vpc := parseVisitsPerCycle(r.FormValue("visits_per_cycle")); jobTemplateID != "" && vpc > 0 {
+			planData.VisitsPerCycle = &vpc
+		}
 		resp, err := deps.CreatePlan(ctx, &planpb.CreatePlanRequest{
 			Data: planData,
 		})
@@ -402,8 +444,10 @@ func NewEditAction(deps *Deps) view.View {
 				SearchClientURL:    deps.SearchClientsURL,
 				JobTemplateID:      record.GetJobTemplateId(),
 				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
-				Labels:             formLabels(deps.Labels),
-				CommonLabels:       nil, // injected by ViewAdapter
+				// 2026-04-30 cyclic-subscription-jobs plan §7.3.
+				VisitsPerCycle: record.GetVisitsPerCycle(),
+				Labels:         formLabels(deps.Labels),
+				CommonLabels:   nil, // injected by ViewAdapter
 			})
 		}
 
@@ -421,6 +465,13 @@ func NewEditAction(deps *Deps) view.View {
 			Id:          &id,
 			Name:        r.FormValue("name"),
 			Description: strPtr(r.FormValue("description")),
+		}
+		// 2026-04-30 cyclic-subscription-jobs plan §7.3 — visits_per_cycle.
+		if vpc := parseVisitsPerCycle(r.FormValue("visits_per_cycle")); jobTemplateID != "" && vpc > 0 {
+			updateData.VisitsPerCycle = &vpc
+		} else {
+			// Reset to NULL when JobTemplate cleared.
+			updateData.VisitsPerCycle = nil
 		}
 		// Always send the client_id (empty → nil so postgres writes NULL,
 		// otherwise the empty string trips plan_client_id_fkey) so the espyna

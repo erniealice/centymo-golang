@@ -87,7 +87,7 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels,
              (deps.ListJobTemplates wired). Empty value saves NULL = advisory
              plan, spawn use case skips silently. */}}
         {{if .JobTemplateOptions}}
-        <div class="form-row single">
+        <div class="form-row single" id="plan-job-template-row">
             <div class="form-group">
                 <label class="form-label" for="plan-job-template-select">
                     {{.Labels.JobTemplate}}
@@ -106,6 +106,51 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels,
                 {{end}}
             </div>
         </div>
+
+        {{/* 2026-04-30 cyclic-subscription-jobs plan §7.3 / §9.3 — Plan.visits_per_cycle.
+             Visible only when a JobTemplate is selected (JS gates display).
+             Defaults to 1; min 1, max 100. Hidden + reset when JobTemplate
+             cleared (matches plan §7.3 behaviour). */}}
+        <div class="form-row single" id="plan-visits-per-cycle-row">
+            <div class="form-group">
+                <label class="form-label" for="plan-visits-per-cycle-input">
+                    {{.Labels.VisitsPerCycleLabel}}
+                </label>
+                <input type="number"
+                       id="plan-visits-per-cycle-input"
+                       name="visits_per_cycle"
+                       class="form-input"
+                       min="1"
+                       max="100"
+                       value="{{if gt .VisitsPerCycle 0}}{{.VisitsPerCycle}}{{else}}1{{end}}"
+                       placeholder="{{.Labels.VisitsPerCyclePlaceholder}}"
+                       data-testid="plan-visits-per-cycle-input">
+                {{if .Labels.VisitsPerCycleHint}}
+                <p class="form-hint">{{.Labels.VisitsPerCycleHint}}</p>
+                {{end}}
+            </div>
+        </div>
+
+        <script>
+        (function() {
+            // Show / hide the visits_per_cycle row based on JobTemplate
+            // selection. When JobTemplate is cleared, reset visits to 1
+            // (cyclic-subscription-jobs plan §7.3 / §15 risk mitigation).
+            var jtSel = document.getElementById('plan-job-template-select');
+            var visitsRow = document.getElementById('plan-visits-per-cycle-row');
+            var visitsInput = document.getElementById('plan-visits-per-cycle-input');
+            function applyVisibility() {
+                if (!jtSel || !visitsRow) return;
+                var hasTemplate = !!jtSel.value;
+                visitsRow.style.display = hasTemplate ? '' : 'none';
+                if (!hasTemplate && visitsInput) {
+                    visitsInput.value = '1';
+                }
+            }
+            if (jtSel) jtSel.addEventListener('change', applyVisibility);
+            applyVisibility();
+        })();
+        </script>
         {{end}}
 
         <div class="form-row single">

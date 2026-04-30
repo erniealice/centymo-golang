@@ -1,0 +1,194 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "accrued-expense-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "accrued-expense-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Title}}">
+    <div class="detail-header-actions">
+        {{if .SettleURL}}
+        <button type="button" class="btn btn-primary"
+            aria-haspopup="dialog"
+            data-testid="accrued-expense-settle-btn"
+            hx-get="{{.SettleURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Actions.Settle}}')">
+            {{.Labels.Buttons.Settle}}
+        </button>
+        {{end}}
+        {{if .ReverseURL}}
+        <button type="button" class="btn btn-danger"
+            aria-haspopup="dialog"
+            data-testid="accrued-expense-reverse-btn"
+            hx-post="{{.ReverseURL}}" hx-swap="none"
+            hx-on::after-request="lf.Sheet.handleResponse(event)">
+            {{.Labels.Buttons.Reverse}}
+        </button>
+        {{end}}
+        {{if .EditURL}}
+        <button type="button" class="btn btn-secondary"
+            aria-haspopup="dialog"
+            data-testid="accrued-expense-edit-btn"
+            hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Form.EditTitle}}')">
+            {{.Labels.Form.Edit}}
+        </button>
+        {{end}}
+    </div>
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "ae-tabs")}}
+    </div>
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+        {{template "accrued-expense-tab-info" .}}
+        {{else if eq .ActiveTab "settlements"}}
+        {{template "accrued-expense-tab-settlements" .}}
+        {{else if eq .ActiveTab "source"}}
+        {{template "accrued-expense-tab-source" .}}
+        {{else if eq .ActiveTab "activity"}}
+        {{template "accrued-expense-tab-activity" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* Tab content partial for HTMX tab switches */}}
+{{define "accrued-expense-tab-content"}}
+{{if eq .ActiveTab "info"}}
+{{template "accrued-expense-tab-info" .}}
+{{else if eq .ActiveTab "settlements"}}
+{{template "accrued-expense-tab-settlements" .}}
+{{else if eq .ActiveTab "source"}}
+{{template "accrued-expense-tab-source" .}}
+{{else if eq .ActiveTab "activity"}}
+{{template "accrued-expense-tab-activity" .}}
+{{end}}
+{{end}}
+
+{{/* Info tab */}}
+{{define "accrued-expense-tab-info"}}
+<div class="tab-scroll">
+    <h3 class="detail-section-title">{{.Labels.Detail.InfoSection}}</h3>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Name}}</span>
+            <span class="detail-info-value">{{index .Accrual "name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span class="detail-info-value">
+                {{template "status-badge" (dict "Status" (index .Accrual "status") "Variant" .StatusVariant)}}
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.RecognitionDate}}</span>
+            <span class="detail-info-value">{{index .Accrual "recognition_date"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.PeriodStart}}</span>
+            <span class="detail-info-value">{{index .Accrual "period_start"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.PeriodEnd}}</span>
+            <span class="detail-info-value">{{index .Accrual "period_end"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.CycleDate}}</span>
+            <span class="detail-info-value">{{index .Accrual "cycle_date"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Currency}}</span>
+            <span class="detail-info-value">{{index .Accrual "currency"}}</span>
+        </div>
+    </div>
+    <div class="transaction-section-spacer">
+        <h3 class="detail-section-title">{{.Labels.Balances.Title}}</h3>
+        <div class="detail-info-grid">
+            <div class="detail-info-item">
+                <span class="detail-info-label">{{.Labels.Balances.Accrued}}</span>
+                <span class="detail-info-value mono">{{template "table-cell-money" (index .Accrual "accrued_amount")}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">{{.Labels.Balances.Settled}}</span>
+                <span class="detail-info-value mono">{{template "table-cell-money" (index .Accrual "settled_amount")}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">{{.Labels.Balances.Remaining}}</span>
+                <span class="detail-info-value mono">{{template "table-cell-money" (index .Accrual "remaining_amount")}}</span>
+            </div>
+        </div>
+    </div>
+    {{if index .Accrual "notes"}}
+    <div class="transaction-section-spacer">
+        <h3 class="detail-section-title">Notes</h3>
+        <p>{{index .Accrual "notes"}}</p>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Settlements tab — inline list of AccruedExpenseSettlement rows */}}
+{{define "accrued-expense-tab-settlements"}}
+<div class="transaction-items-toolbar">
+    {{if .SettlementAddURL}}
+    <div class="transaction-items-actions">
+        <button type="button" class="btn btn-primary toolbar-primary-action"
+            aria-haspopup="dialog"
+            data-testid="accrued-expense-add-settlement-btn"
+            hx-get="{{.SettlementAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Settlements.AddSettlement}}')">
+            {{.Labels.Settlements.AddSettlement}}
+        </button>
+    </div>
+    {{end}}
+</div>
+{{if .SettlementTable}}
+<div class="tab-scroll">
+    {{template "table-card" .SettlementTable}}
+</div>
+{{else}}
+<div class="tab-scroll">
+    <p class="text-muted">{{.Labels.Settlements.EmptyMessage}}</p>
+</div>
+{{end}}
+{{end}}
+
+{{/* Source tab */}}
+{{define "accrued-expense-tab-source"}}
+<div class="tab-scroll">
+    <h3 class="detail-section-title">{{.Labels.Detail.SourceSection}}</h3>
+    <div class="detail-info-grid">
+        {{if index .Accrual "supplier_contract_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Source Contract</span>
+            <span class="detail-info-value mono">{{index .Accrual "supplier_contract_id"}}</span>
+        </div>
+        {{end}}
+        {{if index .Accrual "supplier_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Supplier</span>
+            <span class="detail-info-value mono">{{index .Accrual "supplier_id"}}</span>
+        </div>
+        {{end}}
+        {{if index .Accrual "expense_account_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Expense Account</span>
+            <span class="detail-info-value mono">{{index .Accrual "expense_account_id"}}</span>
+        </div>
+        {{end}}
+        {{if index .Accrual "accrual_account_id"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">Accrual Account</span>
+            <span class="detail-info-value mono">{{index .Accrual "accrual_account_id"}}</span>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* Activity tab */}}
+{{define "accrued-expense-tab-activity"}}
+<div class="tab-scroll">
+    <p class="text-muted">{{.Labels.Detail.AuditTrailComingSoon}}</p>
+</div>
+{{end}}

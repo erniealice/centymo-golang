@@ -43,6 +43,8 @@
         {{template "supplier-contract-tab-info" .}}
         {{else if eq .ActiveTab "lines"}}
         {{template "supplier-contract-tab-lines" .}}
+        {{else if eq .ActiveTab "price-schedules"}}
+        {{template "supplier-contract-tab-price-schedules" .}}
         {{else if eq .ActiveTab "linked-pos"}}
         {{template "supplier-contract-tab-linked-pos" .}}
         {{else if eq .ActiveTab "linked-expenditures"}}
@@ -60,6 +62,8 @@
 {{template "supplier-contract-tab-info" .}}
 {{else if eq .ActiveTab "lines"}}
 {{template "supplier-contract-tab-lines" .}}
+{{else if eq .ActiveTab "price-schedules"}}
+{{template "supplier-contract-tab-price-schedules" .}}
 {{else if eq .ActiveTab "linked-pos"}}
 {{template "supplier-contract-tab-linked-pos" .}}
 {{else if eq .ActiveTab "linked-expenditures"}}
@@ -180,6 +184,32 @@
     <p class="text-muted">{{.Labels.LinkedExpenditures.EmptyMessage}}</p>
     {{end}}
 </div>
+{{end}}
+
+{{/* Price Schedules tab — SPS P7 */}}
+{{define "supplier-contract-tab-price-schedules"}}
+<div class="transaction-items-toolbar">
+    {{if .PriceScheduleAddURL}}
+    <div class="transaction-items-actions">
+        <button type="button" class="btn btn-primary toolbar-primary-action"
+            aria-haspopup="dialog"
+            data-testid="contract-add-price-schedule-btn"
+            hx-get="{{.PriceScheduleAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Tabs.PriceSchedules}}')">
+            {{.Labels.Tabs.PriceSchedules}}
+        </button>
+    </div>
+    {{end}}
+</div>
+{{if .PriceScheduleTable}}
+<div class="tab-scroll">
+    {{template "table-card" .PriceScheduleTable}}
+</div>
+{{else}}
+<div class="tab-scroll">
+    <p class="text-muted">{{.Labels.Tabs.PriceSchedulesEmpty}}</p>
+</div>
+{{end}}
 {{end}}
 
 {{/* Activity tab */}}

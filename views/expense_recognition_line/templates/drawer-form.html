@@ -1,0 +1,55 @@
+{{/*
+ExpenseRecognitionLine drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions.
+*/}}
+{{define "expense-recognition-line-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="expense_recognition_id" value="{{.ExpenseRecognitionID}}">
+
+    <div class="sheet-body">
+        <div class="form-section">
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "description"
+                    "Label" .Labels.FormDescription
+                    "Value" .Description
+                    "Required" true
+                    "Placeholder" .Labels.FormDescriptionPlaceholder
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "quantity"
+                    "Label" .Labels.FormQuantity
+                    "Value" .Quantity
+                    "Required" true
+                )}}
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "unit_amount"
+                    "Label" .Labels.FormUnitAmount
+                    "Value" .UnitAmount
+                    "Required" true
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "currency"
+                    "Label" .Labels.FormCurrency
+                    "Value" .Currency
+                    "Required" true
+                )}}
+            </div>
+        </div>
+    </div>
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">Cancel</button>
+        <button type="submit" class="btn btn-primary">{{if .IsEdit}}Save{{else}}Add{{end}}</button>
+    </div>
+</form>
+{{end}}

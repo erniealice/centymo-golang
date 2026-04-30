@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -27,6 +28,20 @@ type PageData struct {
 	types.PageData
 	ContentTemplate string
 	Table           *types.TableConfig
+
+	// SPS Wave 3 — F3 fulfillment_strategy filter chips. Rendered above the
+	// table; current selection echoed back as `ActiveStrategy`.
+	StrategyChips   []StrategyChip
+	ActiveStrategy  string
+	StrategyLabel   string
+}
+
+// StrategyChip describes a single F3 fulfillment-strategy filter chip.
+type StrategyChip struct {
+	Value  string // "any" | UNIFORM_OUTRIGHT | UNIFORM_STOCKABLE | … | MIXED
+	Label  string
+	Href   string // list URL pre-bound with the right ?strategy= param
+	Active bool
 }
 
 // NewView creates the procurement request list view.
@@ -48,6 +63,19 @@ func NewView(deps *ListViewDeps) view.View {
 			var filtered []*procurementrequestpb.ProcurementRequest
 			for _, r := range requests {
 				if r.GetStatus().String() == status {
+					filtered = append(filtered, r)
+				}
+			}
+			requests = filtered
+		}
+
+		// SPS Wave 3 — F3 fulfillment_strategy filter (additional filter on top
+		// of the status path-segment). "any" or empty = no filter.
+		strategy := viewCtx.Request.URL.Query().Get("strategy")
+		if strategy != "" && strategy != "any" {
+			var filtered []*procurementrequestpb.ProcurementRequest
+			for _, r := range requests {
+				if r.GetFulfillmentStrategy().String() == strategy {
 					filtered = append(filtered, r)
 				}
 			}
@@ -106,6 +134,9 @@ func NewView(deps *ListViewDeps) view.View {
 			},
 			ContentTemplate: "procurement-request-list-content",
 			Table:           tableConfig,
+			StrategyChips:   buildStrategyChips(deps, status, strategy),
+			ActiveStrategy:  strategy,
+			StrategyLabel:   l.Filters.FulfillmentStrategy,
 		}
 
 		return view.OK("procurement-request-list", pageData)
@@ -116,6 +147,8 @@ func procurementRequestColumns(l centymo.ProcurementRequestLabels) []types.Table
 	return []types.TableColumn{
 		{Key: "request_number", Label: l.Columns.RequestNumber, Sortable: true},
 		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		// SPS Wave 3 — F3 strategy column (header-level rollup).
+		{Key: "strategy", Label: l.Filters.FulfillmentStrategy, Sortable: true, WidthClass: "col-2xl"},
 		{Key: "requester", Label: l.Columns.Requester, Sortable: true},
 		{Key: "supplier", Label: l.Columns.Supplier, Sortable: true},
 		{Key: "estimated_total", Label: l.Columns.EstimatedTotal, Sortable: true, WidthClass: "col-3xl", Align: "right"},
@@ -139,11 +172,15 @@ func buildTableRows(requests []*procurementrequestpb.ProcurementRequest, l centy
 
 		requesterName := req.GetRequesterUserId() // P4 will resolve to a display name
 
+		strategyStr := req.GetFulfillmentStrategy().String()
+		strategyLabel := strategyDisplayLabel(l, strategyStr)
+
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: requestNumber},
-				{Type: "badge", Value: statusStr, Variant: requestStatusVariant(statusStr)},
+				{Type: "badge", Value: statusBadgeLabel(l, statusStr), Variant: requestStatusVariant(statusStr)},
+				{Type: "badge", Value: strategyLabel, Variant: "default"},
 				{Type: "text", Value: requesterName},
 				{Type: "text", Value: supplierName},
 				types.MoneyCell(float64(req.GetEstimatedTotalAmount()), currency, true),
@@ -153,12 +190,53 @@ func buildTableRows(requests []*procurementrequestpb.ProcurementRequest, l centy
 			DataAttrs: map[string]string{
 				"request_number": requestNumber,
 				"status":         statusStr,
+				"strategy":       strategyStr,
 				"requester":      requesterName,
 				"supplier":       supplierName,
 			},
 		})
 	}
 	return rows
+}
+
+// statusBadgeLabel maps the proto status enum string to the localized label.
+func statusBadgeLabel(l centymo.ProcurementRequestLabels, status string) string {
+	switch status {
+	case "PROCUREMENT_REQUEST_STATUS_DRAFT":
+		return l.Form.StatusDraft
+	case "PROCUREMENT_REQUEST_STATUS_SUBMITTED":
+		return l.Form.StatusSubmitted
+	case "PROCUREMENT_REQUEST_STATUS_PENDING_APPROVAL":
+		return l.Form.StatusPendingApproval
+	case "PROCUREMENT_REQUEST_STATUS_APPROVED":
+		return l.Form.StatusApproved
+	case "PROCUREMENT_REQUEST_STATUS_APPROVED_PENDING_SPAWN":
+		return l.Form.StatusApprovedPendingSpawn
+	case "PROCUREMENT_REQUEST_STATUS_REJECTED":
+		return l.Form.StatusRejected
+	case "PROCUREMENT_REQUEST_STATUS_FULFILLED":
+		return l.Form.StatusFulfilled
+	case "PROCUREMENT_REQUEST_STATUS_CANCELLED":
+		return l.Form.StatusCancelled
+	}
+	return status
+}
+
+// strategyDisplayLabel maps the proto strategy enum string to the localized label.
+func strategyDisplayLabel(l centymo.ProcurementRequestLabels, strategy string) string {
+	switch strategy {
+	case "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_UNIFORM_OUTRIGHT":
+		return l.FulfillmentStrategy.UniformOutright
+	case "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_UNIFORM_STOCKABLE":
+		return l.FulfillmentStrategy.UniformStockable
+	case "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_UNIFORM_RECURRING":
+		return l.FulfillmentStrategy.UniformRecurring
+	case "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_UNIFORM_PETTY":
+		return l.FulfillmentStrategy.UniformPetty
+	case "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_MIXED":
+		return l.FulfillmentStrategy.Mixed
+	}
+	return "—"
 }
 
 func optionalStrVal(p *string) string {
@@ -174,7 +252,10 @@ func requestStatusVariant(status string) string {
 		return "default"
 	case "PROCUREMENT_REQUEST_STATUS_SUBMITTED":
 		return "info"
-	case "PROCUREMENT_REQUEST_STATUS_PENDING_APPROVAL":
+	case "PROCUREMENT_REQUEST_STATUS_PENDING_APPROVAL",
+		"PROCUREMENT_REQUEST_STATUS_APPROVED_PENDING_SPAWN":
+		// CRIT-3: APPROVED_PENDING_SPAWN is in-progress (saga still running or
+		// at least one line FAILED awaiting retry). Reuse the warning palette.
 		return "warning"
 	case "PROCUREMENT_REQUEST_STATUS_APPROVED", "PROCUREMENT_REQUEST_STATUS_FULFILLED":
 		return "success"
@@ -185,6 +266,36 @@ func requestStatusVariant(status string) string {
 	}
 }
 
+// buildStrategyChips builds the F3 fulfillment-strategy chip set. Order:
+// "any" first, then 4 uniform values, then MIXED. Hrefs preserve the current
+// status path segment so the chip click only changes the strategy filter.
+func buildStrategyChips(deps *ListViewDeps, status, active string) []StrategyChip {
+	if active == "" {
+		active = "any"
+	}
+	l := deps.Labels
+	base := strings.Replace(deps.Routes.ListURL, "{status}", status, 1)
+	withQuery := func(value string) string {
+		if value == "any" {
+			return base
+		}
+		return base + "?strategy=" + value
+	}
+	chips := []StrategyChip{
+		{Value: "any", Label: l.Filters.AnyFulfillmentStrategy},
+		{Value: "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_UNIFORM_OUTRIGHT", Label: l.FulfillmentStrategy.UniformOutright},
+		{Value: "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_UNIFORM_STOCKABLE", Label: l.FulfillmentStrategy.UniformStockable},
+		{Value: "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_UNIFORM_RECURRING", Label: l.FulfillmentStrategy.UniformRecurring},
+		{Value: "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_UNIFORM_PETTY", Label: l.FulfillmentStrategy.UniformPetty},
+		{Value: "PROCUREMENT_REQUEST_FULFILLMENT_STRATEGY_MIXED", Label: l.FulfillmentStrategy.Mixed},
+	}
+	for i := range chips {
+		chips[i].Href = withQuery(chips[i].Value)
+		chips[i].Active = chips[i].Value == active
+	}
+	return chips
+}
+
 func statusPageTitle(l centymo.ProcurementRequestLabels, status string) string {
 	switch status {
 	case "PROCUREMENT_REQUEST_STATUS_DRAFT":
@@ -193,7 +304,8 @@ func statusPageTitle(l centymo.ProcurementRequestLabels, status string) string {
 		return l.Page.HeadingSubmitted
 	case "PROCUREMENT_REQUEST_STATUS_PENDING_APPROVAL":
 		return l.Page.HeadingPendingApproval
-	case "PROCUREMENT_REQUEST_STATUS_APPROVED":
+	case "PROCUREMENT_REQUEST_STATUS_APPROVED",
+		"PROCUREMENT_REQUEST_STATUS_APPROVED_PENDING_SPAWN":
 		return l.Page.HeadingApproved
 	case "PROCUREMENT_REQUEST_STATUS_REJECTED":
 		return l.Page.HeadingRejected

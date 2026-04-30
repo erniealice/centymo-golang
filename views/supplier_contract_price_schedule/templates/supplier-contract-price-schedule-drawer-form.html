@@ -1,0 +1,178 @@
+{{/*
+SupplierContractPriceSchedule drawer form — loaded into #sheetContent via HTMX.
+Used by both Add and Edit actions. Five sections per drawer parity convention:
+
+  §1 Identity      — name, description, internal_id, sequence_number
+  §2 Validity      — date_start, date_end (with open-ended checkbox)
+  §3 Scoping       — supplier_contract_id, currency, location_id
+  §4 Lifecycle     — status
+  §5 Notes         — free-text notes
+*/}}
+{{define "supplier-contract-price-schedule-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+
+        {{/* ── §1 Identity ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionIdentity}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "name"
+                    "Label" .Labels.Name
+                    "Value" .Name
+                    "Required" true
+                    "Placeholder" .Labels.NamePlaceholder
+                    "Info" .Labels.NameInfo
+                )}}
+            </div>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "sequence_number"
+                    "Label" .Labels.SequenceNumber
+                    "Value" .SequenceNumber
+                    "Placeholder" .Labels.SequenceNumberPlaceholder
+                    "Info" .Labels.SequenceNumberInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "internal_id"
+                    "Label" .Labels.InternalID
+                    "Value" .InternalID
+                    "Placeholder" .Labels.InternalIDPlaceholder
+                    "Info" .Labels.InternalIDInfo
+                )}}
+            </div>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "description"
+                    "Label" .Labels.Description
+                    "Value" .Description
+                    "Placeholder" .Labels.DescriptionPlaceholder
+                    "Rows" 2
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §2 Validity Window ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionValidity}}</h3>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "date_start"
+                    "Label" .Labels.DateStart
+                    "Value" .DateStart
+                    "Required" true
+                    "Info" .Labels.DateStartInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "date_end"
+                    "Label" .Labels.DateEnd
+                    "Value" .DateEnd
+                    "Placeholder" .Labels.DateEndPlaceholder
+                    "Info" .Labels.DateEndInfo
+                )}}
+            </div>
+
+            <div class="form-row single">
+                <div class="form-group form-group-toggle">
+                    <label class="form-label" for="open_ended">{{.Labels.DateEndPlaceholder}}</label>
+                    {{template "toggle" (dict "Name" "open_ended" "Checked" .OpenEnded "Value" "true")}}
+                </div>
+            </div>
+        </div>
+
+        {{/* ── §3 Scoping ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionScoping}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "supplier_contract_id"
+                    "Label" .Labels.SupplierContract
+                    "Value" .SupplierContractID
+                    "Required" true
+                    "Options" .SupplierContracts
+                    "Placeholder" .Labels.SelectSupplierContract
+                    "Info" .Labels.SupplierContractInfo
+                )}}
+            </div>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "currency"
+                    "Label" .Labels.Currency
+                    "Value" .Currency
+                    "Required" true
+                    "Placeholder" .Labels.CurrencyPlaceholder
+                    "Info" .Labels.CurrencyInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "location_id"
+                    "Label" .Labels.Location
+                    "Value" .LocationID
+                    "Placeholder" .Labels.SelectLocation
+                    "Info" .Labels.LocationInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §4 Lifecycle ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionLifecycle}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "status"
+                    "Label" .Labels.Status
+                    "Value" .Status
+                    "Options" .StatusOptions
+                    "Placeholder" .Labels.SelectStatus
+                    "Info" .Labels.StatusInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §5 Notes ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionNotes}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "notes"
+                    "Label" .Labels.Notes
+                    "Value" .Notes
+                    "Placeholder" .Labels.NotesPlaceholder
+                    "Info" .Labels.NotesInfo
+                    "Rows" 3
+                )}}
+            </div>
+        </div>
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
+            {{.CommonLabels.Buttons.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary" data-testid="schedule-save-btn">
+            {{.CommonLabels.Buttons.Save}}
+        </button>
+    </div>
+</form>
+{{end}}

@@ -16,8 +16,10 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
+	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	disbursementschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement_schedule"
 )
 
@@ -36,6 +38,30 @@ type DetailViewDeps struct {
 
 	// ListDisbursementSchedules lists payment schedule installments for an expenditure (optional).
 	ListDisbursementSchedules func(ctx context.Context, expenditureID string) ([]*disbursementschedulepb.DisbursementSchedule, error)
+
+	// SPS P10 — Recognition tab. ReadExpenseRecognition returns the (optional)
+	// 1:1-linked recognition row for this expenditure. When ExpenseRecognitionId
+	// on the expenditure is empty, render the empty-state with a "Recognize" CTA.
+	ReadExpenseRecognition func(ctx context.Context, req *expenserecognitionpb.ReadExpenseRecognitionRequest) (*expenserecognitionpb.ReadExpenseRecognitionResponse, error)
+
+	// ExpenseRecognitionDetailURL is the resolved URL template for linking from
+	// the Recognition tab to the recognition's own detail page.
+	ExpenseRecognitionDetailURL string
+
+	// SPS P10 — Accrual tab. ListAccruedExpenses surfaces all AccruedExpense
+	// rows linked either via expenditure.accrued_expense_id (the bill that
+	// settled an accrual) or via supplier_contract_id (sibling accruals on the
+	// same contract). Implementations should filter by both criteria.
+	ListAccruedExpenses func(ctx context.Context, req *accruedexpensepb.ListAccruedExpensesRequest) (*accruedexpensepb.ListAccruedExpensesResponse, error)
+
+	// AccruedExpenseDetailURL is the resolved URL template for linking from
+	// the Accrual tab to an accrual's detail page.
+	AccruedExpenseDetailURL string
+
+	// RecognizeFromExpenditureURL is the URL of the espyna RecognizeFromExpenditure
+	// trigger — surfaced as the empty-state CTA when an expenditure has no
+	// linked recognition. Optional; when empty no CTA is shown.
+	RecognizeFromExpenditureURL string
 }
 
 // LineItemDeps holds dependencies for line item action handlers.
@@ -106,23 +132,35 @@ type PageData struct {
 	PaymentStatus     string
 	PayURL            string
 	PaymentsSchedule  *PaymentsScheduleData
+
+	// SPS P10 — Recognition tab data
+	Recognition                 map[string]any
+	RecognitionDetailURL        string
+	RecognizeFromExpenditureURL string
+
+	// SPS P10 — Accrual tab data
+	AccrualTable        *types.TableConfig
+	AccrualDetailURL    string
 }
 
 // expenditureToMap converts an Expenditure proto to a map for template use.
 func expenditureToMap(e *expenditurepb.Expenditure) map[string]any {
 	currency := e.GetCurrency()
 	return map[string]any{
-		"id":                   e.GetId(),
-		"name":                 e.GetName(),
-		"reference_number":     e.GetReferenceNumber(),
-		"expenditure_type":     e.GetExpenditureType(),
-		"total_amount":         types.MoneyCell(float64(e.GetTotalAmount()), currency, true),
-		"currency":             currency,
-		"status":               e.GetStatus(),
-		"notes":                e.GetNotes(),
-		"active":               e.GetActive(),
-		"date_created_string":  e.GetDateCreatedString(),
-		"date_modified_string": e.GetDateModifiedString(),
+		"id":                      e.GetId(),
+		"name":                    e.GetName(),
+		"reference_number":        e.GetReferenceNumber(),
+		"expenditure_type":        e.GetExpenditureType(),
+		"total_amount":            types.MoneyCell(float64(e.GetTotalAmount()), currency, true),
+		"currency":                currency,
+		"status":                  e.GetStatus(),
+		"notes":                   e.GetNotes(),
+		"active":                  e.GetActive(),
+		"date_created_string":     e.GetDateCreatedString(),
+		"date_modified_string":    e.GetDateModifiedString(),
+		"supplier_contract_id":    e.GetSupplierContractId(),
+		"expense_recognition_id":  e.GetExpenseRecognitionId(),
+		"accrued_expense_id":      e.GetAccruedExpenseId(),
 	}
 }
 
@@ -194,6 +232,10 @@ func NewView(deps *DetailViewDeps) view.View {
 		case "payments":
 			currency, _ := expense["currency"].(string)
 			pageData.PaymentsSchedule = buildPaymentsSchedule(ctx, deps, id, currency)
+		case "recognition":
+			populateRecognition(ctx, deps, data[0], pageData)
+		case "accrual":
+			populateAccruals(ctx, deps, data[0], pageData)
 		}
 
 		return view.OK("expense-detail", pageData)
@@ -252,6 +294,10 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		case "payments":
 			currency, _ := expense["currency"].(string)
 			pageData.PaymentsSchedule = buildPaymentsSchedule(ctx, deps, id, currency)
+		case "recognition":
+			populateRecognition(ctx, deps, data[0], pageData)
+		case "accrual":
+			populateAccruals(ctx, deps, data[0], pageData)
 		}
 
 		templateName := "expense-tab-" + tab
@@ -548,6 +594,11 @@ func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditur
 }
 
 // buildTabItems builds the tab navigation for the expense detail page.
+//
+// SPS P10 (2026-04-30): added "recognition" + "accrual" tabs after the
+// existing payments tab. Both tabs are nil-guarded — they render with
+// empty-state messaging when their corresponding closures on
+// DetailViewDeps are unset.
 func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.ExpenditureRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
@@ -563,10 +614,20 @@ func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.Expend
 	if tabPayments == "" {
 		tabPayments = "Payments"
 	}
+	tabRecognition := l.Detail.TabRecognition
+	if tabRecognition == "" {
+		tabRecognition = "Recognition"
+	}
+	tabAccrual := l.Detail.TabAccrual
+	if tabAccrual == "" {
+		tabAccrual = "Accrual"
+	}
 	return []pyeza.TabItem{
 		{Key: "info", Label: tabDetails, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "items", Label: tabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
 		{Key: "payments", Label: tabPayments, Href: base + "?tab=payments", HxGet: action + "payments", Icon: "icon-credit-card"},
+		{Key: "recognition", Label: tabRecognition, Href: base + "?tab=recognition", HxGet: action + "recognition", Icon: "icon-file-text"},
+		{Key: "accrual", Label: tabAccrual, Href: base + "?tab=accrual", HxGet: action + "accrual", Icon: "icon-clock"},
 	}
 }
 
@@ -713,5 +774,201 @@ func lineItemHTMXError(message string) view.ViewResult {
 		Headers: map[string]string{
 			"HX-Error-Message": message,
 		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SPS P10 — Recognition + Accrual tab data loaders
+// ---------------------------------------------------------------------------
+
+// populateRecognition loads the (optional) 1:1-linked ExpenseRecognition for
+// this expenditure. When ExpenseRecognitionId is empty, surfaces an empty
+// state with a "Recognize" CTA pointing to RecognizeFromExpenditureURL (if
+// configured by the integrator).
+//
+// SPS plan §6.3 — expenditure.expense_recognition_id is the canonical 1:1
+// link. Reads return up to 1 row. If the recognition was created BY use case
+// (RecognizeFromExpenditure) the link is established at use case completion.
+func populateRecognition(ctx context.Context, deps *DetailViewDeps, exp *expenditurepb.Expenditure, pageData *PageData) {
+	pageData.RecognizeFromExpenditureURL = deps.RecognizeFromExpenditureURL
+
+	recognitionID := exp.GetExpenseRecognitionId()
+	if recognitionID == "" || deps.ReadExpenseRecognition == nil {
+		// Empty state — Recognition tab will render the "Recognize" CTA
+		return
+	}
+
+	resp, err := deps.ReadExpenseRecognition(ctx, &expenserecognitionpb.ReadExpenseRecognitionRequest{
+		Data: &expenserecognitionpb.ExpenseRecognition{Id: recognitionID},
+	})
+	if err != nil {
+		log.Printf("ReadExpenseRecognition %s for expenditure %s: %v", recognitionID, exp.GetId(), err)
+		return
+	}
+	data := resp.GetData()
+	if len(data) == 0 {
+		return
+	}
+	r := data[0]
+	currency := r.GetCurrency()
+
+	periodStart := ""
+	if r.PeriodStart != nil {
+		periodStart = r.GetPeriodStart().AsTime().Format("2006-01-02")
+	}
+	periodEnd := ""
+	if r.PeriodEnd != nil {
+		periodEnd = r.GetPeriodEnd().AsTime().Format("2006-01-02")
+	}
+	recognitionDate := ""
+	if r.RecognitionDate != nil {
+		recognitionDate = r.GetRecognitionDate().AsTime().Format("2006-01-02")
+	}
+
+	pageData.Recognition = map[string]any{
+		"id":               r.GetId(),
+		"name":             r.GetName(),
+		"status":           r.GetStatus().String(),
+		"currency":         currency,
+		"total_amount":     types.MoneyCell(float64(r.GetTotalAmount()), currency, true),
+		"recognition_date": recognitionDate,
+		"period_start":     periodStart,
+		"period_end":       periodEnd,
+		"cycle_date":       r.GetCycleDate(),
+		"idempotency_key":  r.GetIdempotencyKey(),
+	}
+
+	if deps.ExpenseRecognitionDetailURL != "" {
+		pageData.RecognitionDetailURL = route.ResolveURL(deps.ExpenseRecognitionDetailURL, "id", r.GetId())
+	}
+}
+
+// populateAccruals loads AccruedExpense rows linked to this expenditure.
+// Two link paths are merged:
+//   1. expenditure.accrued_expense_id — bills that settled an accrual.
+//   2. accrued_expense.supplier_contract_id == expenditure.supplier_contract_id
+//      — sibling accruals on the same contract (helpful read-side context).
+//
+// When both are empty, the Accrual tab renders an empty state.
+func populateAccruals(ctx context.Context, deps *DetailViewDeps, exp *expenditurepb.Expenditure, pageData *PageData) {
+	if deps.ListAccruedExpenses == nil {
+		return
+	}
+
+	contractID := exp.GetSupplierContractId()
+	directAccrualID := exp.GetAccruedExpenseId()
+	if contractID == "" && directAccrualID == "" {
+		return
+	}
+
+	req := &accruedexpensepb.ListAccruedExpensesRequest{}
+	if contractID != "" {
+		req.SupplierContractId = &contractID
+	}
+	resp, err := deps.ListAccruedExpenses(ctx, req)
+	if err != nil {
+		log.Printf("ListAccruedExpenses for expenditure %s: %v", exp.GetId(), err)
+		return
+	}
+
+	// Filter: keep only those linked to this expenditure (directly or via contract).
+	// When supplier_contract_id was provided as a request filter the response is
+	// already scoped; this loop additionally surfaces the directly-linked accrual
+	// even when its contract is missing.
+	all := resp.GetData()
+	if directAccrualID != "" {
+		// Pull the direct accrual via Read if not already in the list.
+		found := false
+		for _, a := range all {
+			if a.GetId() == directAccrualID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			directReq := &accruedexpensepb.ListAccruedExpensesRequest{}
+			if directResp, err2 := deps.ListAccruedExpenses(ctx, directReq); err2 == nil {
+				for _, a := range directResp.GetData() {
+					if a.GetId() == directAccrualID {
+						all = append(all, a)
+						break
+					}
+				}
+			}
+		}
+	}
+
+	if len(all) == 0 {
+		return
+	}
+
+	pageData.AccrualTable = buildExpenditureAccrualTable(all, exp.GetCurrency())
+	if deps.AccruedExpenseDetailURL != "" {
+		pageData.AccrualDetailURL = deps.AccruedExpenseDetailURL
+	}
+}
+
+// buildExpenditureAccrualTable builds a table-card config for the Accrual tab.
+func buildExpenditureAccrualTable(items []*accruedexpensepb.AccruedExpense, fallbackCurrency string) *types.TableConfig {
+	columns := []types.TableColumn{
+		{Key: "name", Label: "Accrual"},
+		{Key: "status", Label: "Status", WidthClass: "col-2xl"},
+		{Key: "period", Label: "Period", WidthClass: "col-3xl"},
+		{Key: "accrued", Label: "Accrued", Align: "right", WidthClass: "col-3xl"},
+		{Key: "settled", Label: "Settled", Align: "right", WidthClass: "col-3xl"},
+		{Key: "remaining", Label: "Remaining", Align: "right", WidthClass: "col-3xl"},
+	}
+
+	rows := []types.TableRow{}
+	for _, a := range items {
+		currency := a.GetCurrency()
+		if currency == "" {
+			currency = fallbackCurrency
+		}
+		period := ""
+		if a.PeriodStart != nil {
+			period = a.GetPeriodStart().AsTime().Format("2006-01-02")
+		}
+		if a.PeriodEnd != nil {
+			period += " → " + a.GetPeriodEnd().AsTime().Format("2006-01-02")
+		}
+		statusStr := a.GetStatus().String()
+		rows = append(rows, types.TableRow{
+			ID: a.GetId(),
+			Cells: []types.TableCell{
+				{Type: "text", Value: a.GetName()},
+				{Type: "badge", Value: statusStr, Variant: expenditureAccrualStatusVariant(statusStr)},
+				{Type: "text", Value: period},
+				types.MoneyCell(float64(a.GetAccruedAmount()), currency, true),
+				types.MoneyCell(float64(a.GetSettledAmount()), currency, true),
+				types.MoneyCell(float64(a.GetRemainingAmount()), currency, true),
+			},
+		})
+	}
+	types.ApplyColumnStyles(columns, rows)
+
+	return &types.TableConfig{
+		ID:      "expenditure-accruals-table",
+		Columns: columns,
+		Rows:    rows,
+		EmptyState: types.TableEmptyState{
+			Title:   "No accruals",
+			Message: "Accruals tied to this bill or its contract will appear here.",
+		},
+	}
+}
+
+func expenditureAccrualStatusVariant(status string) string {
+	switch status {
+	case "ACCRUED_EXPENSE_STATUS_OUTSTANDING":
+		return "warning"
+	case "ACCRUED_EXPENSE_STATUS_PARTIAL":
+		return "info"
+	case "ACCRUED_EXPENSE_STATUS_SETTLED":
+		return "success"
+	case "ACCRUED_EXPENSE_STATUS_REVERSED":
+		return "danger"
+	default:
+		return "default"
 	}
 }
