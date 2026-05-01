@@ -2887,11 +2887,24 @@ type PricePlanFormLabels struct {
 	BillingKindContract        string `json:"billingKindContract"`
 	BillingKindMilestone       string `json:"billingKindMilestone"`
 	BillingKindAdHoc           string `json:"billingKindAdHoc"`
+	// Per-option hint copy surfaced inline below the billing_kind select as the
+	// operator picks. Matches the multi-vertical convention — general/ tier ships
+	// neutral phrasing, professional/ overrides with engagement vocabulary.
+	BillingKindOneTimeHint   string `json:"billingKindOneTimeHint"`
+	BillingKindRecurringHint string `json:"billingKindRecurringHint"`
+	BillingKindContractHint  string `json:"billingKindContractHint"`
+	BillingKindMilestoneHint string `json:"billingKindMilestoneHint"`
+	BillingKindAdHocHint     string `json:"billingKindAdHocHint"`
 	AmountBasisLabel           string `json:"amountBasisLabel"`
 	AmountBasisPerCycle        string `json:"amountBasisPerCycle"`
 	AmountBasisTotalPackage    string `json:"amountBasisTotalPackage"`
 	AmountBasisDerivedFromLines string `json:"amountBasisDerivedFromLines"`
 	AmountBasisPerOccurrence   string `json:"amountBasisPerOccurrence"`
+	// Per-option hint copy for amount_basis (mirrors billing_kind pattern).
+	AmountBasisPerCycleHint         string `json:"amountBasisPerCycleHint"`
+	AmountBasisTotalPackageHint     string `json:"amountBasisTotalPackageHint"`
+	AmountBasisDerivedFromLinesHint string `json:"amountBasisDerivedFromLinesHint"`
+	AmountBasisPerOccurrenceHint    string `json:"amountBasisPerOccurrenceHint"`
 	EntitledOccurrencesLabel       string `json:"entitledOccurrencesLabel"`
 	EntitledOccurrencesPlaceholder string `json:"entitledOccurrencesPlaceholder"`
 	EntitledOccurrencesInfo        string `json:"entitledOccurrencesInfo"`

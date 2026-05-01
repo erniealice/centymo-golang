@@ -221,13 +221,24 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                         aria-required="true"
                         {{if and .IsEdit .InUse}}disabled{{end}}
                         data-parent-plan-cyclic="{{if .ParentPlanIsCyclic}}true{{else}}false{{end}}"
-                        data-milestone-cyclic-block="{{.Labels.MilestoneCyclicBlock}}">
+                        data-milestone-cyclic-block="{{.Labels.MilestoneCyclicBlock}}"
+                        data-hint-one-time="{{.Labels.BillingKindOneTimeHint}}"
+                        data-hint-recurring="{{.Labels.BillingKindRecurringHint}}"
+                        data-hint-contract="{{.Labels.BillingKindContractHint}}"
+                        data-hint-milestone="{{.Labels.BillingKindMilestoneHint}}"
+                        data-hint-ad-hoc="{{.Labels.BillingKindAdHocHint}}">
                     <option value="BILLING_KIND_ONE_TIME"  {{if eq .BillingKind "BILLING_KIND_ONE_TIME"}}selected{{end}}>{{.Labels.BillingKindOneTime}}</option>
                     <option value="BILLING_KIND_RECURRING" {{if eq .BillingKind "BILLING_KIND_RECURRING"}}selected{{end}}>{{.Labels.BillingKindRecurring}}</option>
                     <option value="BILLING_KIND_CONTRACT"  {{if eq .BillingKind "BILLING_KIND_CONTRACT"}}selected{{end}}>{{.Labels.BillingKindContract}}</option>
                     <option value="BILLING_KIND_MILESTONE" {{if eq .BillingKind "BILLING_KIND_MILESTONE"}}selected{{end}}>{{.Labels.BillingKindMilestone}}</option>
                     <option value="BILLING_KIND_AD_HOC"    {{if eq .BillingKind "BILLING_KIND_AD_HOC"}}selected{{end}}>{{.Labels.BillingKindAdHoc}}</option>
                 </select>
+                {{/* Dynamic hint — JS updates the text based on the current selection
+                     so operators see what each choice will mean before they commit. */}}
+                <span class="form-hint"
+                      id="billing_kind-hint"
+                      data-testid="billing-kind-hint"
+                      aria-live="polite"></span>
             </div>
         </div>
         <div class="form-row single">
@@ -246,12 +257,25 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     </span>
                     {{end}}
                 </label>
-                <select id="amount_basis" name="amount_basis" class="form-select" required aria-required="true" {{if and .IsEdit .InUse}}disabled{{end}}>
+                <select id="amount_basis"
+                        name="amount_basis"
+                        class="form-select"
+                        required
+                        aria-required="true"
+                        {{if and .IsEdit .InUse}}disabled{{end}}
+                        data-hint-per-cycle="{{.Labels.AmountBasisPerCycleHint}}"
+                        data-hint-total-package="{{.Labels.AmountBasisTotalPackageHint}}"
+                        data-hint-derived-from-lines="{{.Labels.AmountBasisDerivedFromLinesHint}}"
+                        data-hint-per-occurrence="{{.Labels.AmountBasisPerOccurrenceHint}}">
                     <option value="AMOUNT_BASIS_PER_CYCLE"          {{if eq .AmountBasis "AMOUNT_BASIS_PER_CYCLE"}}selected{{end}}>{{.Labels.AmountBasisPerCycle}}</option>
                     <option value="AMOUNT_BASIS_TOTAL_PACKAGE"      {{if eq .AmountBasis "AMOUNT_BASIS_TOTAL_PACKAGE"}}selected{{end}}>{{.Labels.AmountBasisTotalPackage}}</option>
                     <option value="AMOUNT_BASIS_DERIVED_FROM_LINES" {{if eq .AmountBasis "AMOUNT_BASIS_DERIVED_FROM_LINES"}}selected{{end}}>{{.Labels.AmountBasisDerivedFromLines}}</option>
                     <option value="AMOUNT_BASIS_PER_OCCURRENCE"     {{if eq .AmountBasis "AMOUNT_BASIS_PER_OCCURRENCE"}}selected{{end}}>{{.Labels.AmountBasisPerOccurrence}}</option>
                 </select>
+                <span class="form-hint"
+                      id="amount_basis-hint"
+                      data-testid="amount-basis-hint"
+                      aria-live="polite"></span>
             </div>
         </div>
 
@@ -550,11 +574,44 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
         }
     }
 
+    // Dynamic per-selection hints. The two selects (billing_kind, amount_basis)
+    // carry data-hint-{value} attributes per option (rendered server-side from
+    // lyngua); applySelectHints reads the current value, looks up the matching
+    // attribute, and sets the hint span's text. Operator sees what each choice
+    // actually means without having to open the (i) popover.
+    var kindHint = document.getElementById('billing_kind-hint');
+    var basisHint = document.getElementById('amount_basis-hint');
+
+    function attrForValue(value) {
+        // BILLING_KIND_AD_HOC → data-hint-ad-hoc
+        // AMOUNT_BASIS_PER_OCCURRENCE → data-hint-per-occurrence
+        if (!value) return '';
+        var stripped = value
+            .replace(/^BILLING_KIND_/, '')
+            .replace(/^AMOUNT_BASIS_/, '');
+        return 'data-hint-' + stripped.toLowerCase().replace(/_/g, '-');
+    }
+
+    function applySelectHints() {
+        if (kindSel && kindHint) {
+            var attr = attrForValue(kindSel.value);
+            kindHint.textContent = attr ? (kindSel.getAttribute(attr) || '') : '';
+        }
+        if (basisSel && basisHint) {
+            var attr = attrForValue(basisSel.value);
+            basisHint.textContent = attr ? (basisSel.getAttribute(attr) || '') : '';
+        }
+    }
+
     if (kindSel) kindSel.addEventListener('change', function() {
         applyBasisOptionGuards();
         apply();
+        applySelectHints();
     });
-    if (basisSel) basisSel.addEventListener('change', apply);
+    if (basisSel) basisSel.addEventListener('change', function() {
+        apply();
+        applySelectHints();
+    });
     // Keep legacy duration_* inputs in sync when the user types in the cycle field.
     if (cycleRow) {
         cycleRow.addEventListener('input', apply);
@@ -562,6 +619,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     }
     applyBasisOptionGuards();
     apply();
+    applySelectHints();
 })();
 </script>
 {{end}}

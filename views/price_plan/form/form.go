@@ -188,6 +188,18 @@ type Labels struct {
 	AmountBasisDerivedFromLines string
 	AmountBasisPerOccurrence    string
 
+	// Per-option hint copy. Surfaced inline below each select via JS that reads
+	// data-hint-{value} attributes on the option matching the current selection.
+	BillingKindOneTimeHint          string
+	BillingKindRecurringHint        string
+	BillingKindContractHint         string
+	BillingKindMilestoneHint        string
+	BillingKindAdHocHint            string
+	AmountBasisPerCycleHint         string
+	AmountBasisTotalPackageHint     string
+	AmountBasisDerivedFromLinesHint string
+	AmountBasisPerOccurrenceHint    string
+
 	// 2026-05-01 ad-hoc-subscription-billing plan §5.5 — entitled_occurrences
 	// surfaced only on (AD_HOC × TOTAL_PACKAGE).
 	EntitledOccurrencesLabel       string
@@ -311,6 +323,16 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		AmountBasisTotalPackage:     pp.AmountBasisTotalPackage,
 		AmountBasisDerivedFromLines: pp.AmountBasisDerivedFromLines,
 		AmountBasisPerOccurrence:    pp.AmountBasisPerOccurrence,
+
+		BillingKindOneTimeHint:          pp.BillingKindOneTimeHint,
+		BillingKindRecurringHint:        pp.BillingKindRecurringHint,
+		BillingKindContractHint:         pp.BillingKindContractHint,
+		BillingKindMilestoneHint:        pp.BillingKindMilestoneHint,
+		BillingKindAdHocHint:            pp.BillingKindAdHocHint,
+		AmountBasisPerCycleHint:         pp.AmountBasisPerCycleHint,
+		AmountBasisTotalPackageHint:     pp.AmountBasisTotalPackageHint,
+		AmountBasisDerivedFromLinesHint: pp.AmountBasisDerivedFromLinesHint,
+		AmountBasisPerOccurrenceHint:    pp.AmountBasisPerOccurrenceHint,
 		EntitledOccurrencesLabel:       pp.EntitledOccurrencesLabel,
 		EntitledOccurrencesPlaceholder: pp.EntitledOccurrencesPlaceholder,
 		EntitledOccurrencesInfo:        pp.EntitledOccurrencesInfo,
