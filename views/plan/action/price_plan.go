@@ -539,6 +539,12 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				BillingCycleUnit:      pp.GetBillingCycleUnit(),
 				TermValue:             defaultTermStr,
 				TermUnit:              pp.GetDefaultTermUnit(),
+				EntitledOccurrences: func() string {
+					if pp.GetEntitledOccurrences() > 0 {
+						return strconv.FormatInt(int64(pp.GetEntitledOccurrences()), 10)
+					}
+					return ""
+				}(),
 				DurationUnitOptions:   form.BuildDurationUnitOptions(deps.CommonLabels),
 				ScheduleOptions:       form.BuildOptions(schedules, selectedScheduleID),
 				SelectedScheduleID:    selectedScheduleID,
@@ -673,6 +679,17 @@ func applyBillingFields(pp *priceplanpb.PricePlan, r *http.Request) {
 	}
 	if u := r.FormValue("default_term_unit"); u != "" {
 		pp.DefaultTermUnit = &u
+	}
+	// 2026-05-01 ad-hoc-subscription-billing plan §2.3 — entitled_occurrences
+	// only meaningful on AD_HOC × TOTAL_PACKAGE; the drawer JS clears the
+	// input on every other (kind × basis) so r.FormValue is empty for those
+	// combos and the field stays nil. Server-side validate_ad_hoc.go
+	// enforces the same rule (codex MAJ-1 + MAJ-4).
+	if s := r.FormValue("entitled_occurrences"); s != "" {
+		if n, err := strconv.ParseInt(s, 10, 32); err == nil {
+			v32 := int32(n)
+			pp.EntitledOccurrences = &v32
+		}
 	}
 }
 

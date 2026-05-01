@@ -193,7 +193,12 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
              values below against priceplanpb.BillingKind_name /
              AmountBasis_name to catch the next time someone adds a proto
              enum value without updating this template. */}}
-        <div class="form-row">
+        {{/* Billing model + Amount basis are split into two single-column rows
+             so each select gets the full drawer width — gives the info-hint
+             popover (which now mentions all 5 kinds / 4 bases including
+             Pay-as-you-go × Per occurrence) horizontal real estate to wrap
+             cleanly without truncating. */}}
+        <div class="form-row single">
             <div class="form-group">
                 <label class="form-label" for="billing_kind">
                     {{.Labels.BillingKindLabel}} <span class="form-required" aria-hidden="true">*</span>
@@ -221,8 +226,11 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     <option value="BILLING_KIND_RECURRING" {{if eq .BillingKind "BILLING_KIND_RECURRING"}}selected{{end}}>{{.Labels.BillingKindRecurring}}</option>
                     <option value="BILLING_KIND_CONTRACT"  {{if eq .BillingKind "BILLING_KIND_CONTRACT"}}selected{{end}}>{{.Labels.BillingKindContract}}</option>
                     <option value="BILLING_KIND_MILESTONE" {{if eq .BillingKind "BILLING_KIND_MILESTONE"}}selected{{end}}>{{.Labels.BillingKindMilestone}}</option>
+                    <option value="BILLING_KIND_AD_HOC"    {{if eq .BillingKind "BILLING_KIND_AD_HOC"}}selected{{end}}>{{.Labels.BillingKindAdHoc}}</option>
                 </select>
             </div>
+        </div>
+        <div class="form-row single">
             <div class="form-group">
                 <label class="form-label" for="amount_basis">
                     {{.Labels.AmountBasisLabel}} <span class="form-required" aria-hidden="true">*</span>
@@ -242,6 +250,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     <option value="AMOUNT_BASIS_PER_CYCLE"          {{if eq .AmountBasis "AMOUNT_BASIS_PER_CYCLE"}}selected{{end}}>{{.Labels.AmountBasisPerCycle}}</option>
                     <option value="AMOUNT_BASIS_TOTAL_PACKAGE"      {{if eq .AmountBasis "AMOUNT_BASIS_TOTAL_PACKAGE"}}selected{{end}}>{{.Labels.AmountBasisTotalPackage}}</option>
                     <option value="AMOUNT_BASIS_DERIVED_FROM_LINES" {{if eq .AmountBasis "AMOUNT_BASIS_DERIVED_FROM_LINES"}}selected{{end}}>{{.Labels.AmountBasisDerivedFromLines}}</option>
+                    <option value="AMOUNT_BASIS_PER_OCCURRENCE"     {{if eq .AmountBasis "AMOUNT_BASIS_PER_OCCURRENCE"}}selected{{end}}>{{.Labels.AmountBasisPerOccurrence}}</option>
                 </select>
             </div>
         </div>
@@ -271,6 +280,24 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     (dict "Value" "USD" "Label" .Labels.CurrencyUSD)
                 )
                 "Info" .Labels.CurrencyInfo
+            )}}
+        </div>
+
+        {{/* AD_HOC × TOTAL_PACKAGE: entitled occurrences (visits/calls/etc. included in the prepaid pool).
+             Hidden for every other (kind × basis) combo by the JS below; the input clears on hide
+             so the use case sees NULL on non-pool plans. */}}
+        <div class="form-row single" id="entitled-occurrences-row" style="display:none;">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "entitled_occurrences"
+                "TestId" "price-plan-entitled-occurrences"
+                "Label" .Labels.EntitledOccurrencesLabel
+                "Value" .EntitledOccurrences
+                "Min" "1"
+                "Step" "1"
+                "Placeholder" .Labels.EntitledOccurrencesPlaceholder
+                "Info" .Labels.EntitledOccurrencesInfo
+                "Disabled" (and .IsEdit .InUse)
             )}}
         </div>
 
@@ -358,6 +385,8 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     var basisSel = document.querySelector('select[name="amount_basis"]');
     var cycleRow = document.getElementById('billing-cycle-row');
     var termRow = document.getElementById('default-term-row');
+    var entitledRow = document.getElementById('entitled-occurrences-row');
+    var entitledInput = entitledRow ? entitledRow.querySelector('input[name="entitled_occurrences"]') : null;
     var amountInput = document.querySelector('input[name="amount"]');
     var legacyDurationValue = document.querySelector('input[name="duration_value"][type="hidden"]');
     var legacyDurationUnit = document.querySelector('input[name="duration_unit"][type="hidden"]');
@@ -385,21 +414,25 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     function apply() {
         var kind = kindSel ? kindSel.value : '';
         var basis = basisSel ? basisSel.value : '';
+        var isAdHoc = (kind === 'BILLING_KIND_AD_HOC');
         // billing_cycle is only meaningful when the parent prices per cycle.
         // Hide for ONE_TIME (no cycles), MILESTONE (event-based not periodic),
-        // and TOTAL_PACKAGE / DERIVED_FROM_LINES (cycle is irrelevant — see
-        // docs/plan/20260421-pricing-unification/plan.md §scenarios; and
-        // milestone-billing plan §2.2 for MILESTONE.)
+        // AD_HOC (event-driven not calendar-driven — ad-hoc plan §6 server-rejects
+        // billing_cycle_value > 0), and TOTAL_PACKAGE / DERIVED_FROM_LINES /
+        // PER_OCCURRENCE (cycle irrelevant). See plan refs in inline comments above.
         var cycleVisible = kind !== 'BILLING_KIND_ONE_TIME' &&
                            kind !== 'BILLING_KIND_MILESTONE' &&
+                           !isAdHoc &&
                            basis !== 'AMOUNT_BASIS_TOTAL_PACKAGE' &&
-                           basis !== 'AMOUNT_BASIS_DERIVED_FROM_LINES';
+                           basis !== 'AMOUNT_BASIS_DERIVED_FROM_LINES' &&
+                           basis !== 'AMOUNT_BASIS_PER_OCCURRENCE';
         setRow(cycleRow, cycleVisible, ['billing_cycle_value', 'billing_cycle_unit']);
 
         // Term hides for open-ended RECURRING + PER_CYCLE; visible for everything else
         // (ONE_TIME validity, CONTRACT length, DERIVED_FROM_LINES window, MILESTONE
-        // outer bound for milestone due-date computation).
-        var termVisible = !(kind === 'BILLING_KIND_RECURRING' && basis === 'AMOUNT_BASIS_PER_CYCLE');
+        // outer bound). AD_HOC has no fixed term — pool exhausts on entitlement,
+        // per-call has no term concept.
+        var termVisible = !(kind === 'BILLING_KIND_RECURRING' && basis === 'AMOUNT_BASIS_PER_CYCLE') && !isAdHoc;
         setRow(termRow, termVisible, ['default_term_value', 'default_term_unit']);
 
         // amount_basis=DERIVED_FROM_LINES hides the amount input (it's ignored).
@@ -407,6 +440,22 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
             var amountGroup = amountInput.closest('.form-group');
             if (amountGroup) amountGroup.style.display =
                 (basis === 'AMOUNT_BASIS_DERIVED_FROM_LINES') ? 'none' : '';
+        }
+
+        // Entitled occurrences input — required for AD_HOC × TOTAL_PACKAGE,
+        // hidden + cleared otherwise. Server resets to NULL on kind/basis change
+        // so leftover values can't leak (validate_ad_hoc.go enforces).
+        if (entitledRow) {
+            var entitledVisible = isAdHoc && basis === 'AMOUNT_BASIS_TOTAL_PACKAGE';
+            entitledRow.style.display = entitledVisible ? '' : 'none';
+            if (entitledInput) {
+                if (entitledVisible) {
+                    entitledInput.required = true;
+                } else {
+                    entitledInput.required = false;
+                    entitledInput.value = '';
+                }
+            }
         }
 
         // Mirror the cleared cycle into the legacy dual-write inputs so the
@@ -438,12 +487,30 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     function applyBasisOptionGuards() {
         if (!basisSel || !kindSel) return;
         var kind = kindSel.value;
+        var isAdHoc = (kind === 'BILLING_KIND_AD_HOC');
         var perCycleOpt = basisSel.querySelector('option[value="AMOUNT_BASIS_PER_CYCLE"]');
         var totalPackageOpt = basisSel.querySelector('option[value="AMOUNT_BASIS_TOTAL_PACKAGE"]');
+        var derivedOpt = basisSel.querySelector('option[value="AMOUNT_BASIS_DERIVED_FROM_LINES"]');
+        var perOccurrenceOpt = basisSel.querySelector('option[value="AMOUNT_BASIS_PER_OCCURRENCE"]');
+        // PER_OCCURRENCE is AD_HOC-only — disabled on every other kind. AD_HOC
+        // disables PER_CYCLE + DERIVED_FROM_LINES (codex CRIT-2 / plan §6).
         if (perCycleOpt) perCycleOpt.disabled =
-            (kind === 'BILLING_KIND_ONE_TIME' || kind === 'BILLING_KIND_MILESTONE');
+            (kind === 'BILLING_KIND_ONE_TIME' || kind === 'BILLING_KIND_MILESTONE' || isAdHoc);
         if (totalPackageOpt) totalPackageOpt.disabled = (kind === 'BILLING_KIND_RECURRING');
-        if ((kind === 'BILLING_KIND_ONE_TIME' || kind === 'BILLING_KIND_MILESTONE') &&
+        if (derivedOpt) derivedOpt.disabled = isAdHoc;
+        if (perOccurrenceOpt) perOccurrenceOpt.disabled = !isAdHoc;
+        // Snap currently-selected basis when the new kind makes it incoherent.
+        if (isAdHoc) {
+            if (basisSel.value !== 'AMOUNT_BASIS_TOTAL_PACKAGE' &&
+                basisSel.value !== 'AMOUNT_BASIS_PER_OCCURRENCE') {
+                basisSel.value = 'AMOUNT_BASIS_TOTAL_PACKAGE';
+            }
+        } else if (basisSel.value === 'AMOUNT_BASIS_PER_OCCURRENCE') {
+            // PER_OCCURRENCE only valid on AD_HOC — snap to TOTAL_PACKAGE for
+            // ONE_TIME/MILESTONE, or PER_CYCLE for RECURRING.
+            basisSel.value = (kind === 'BILLING_KIND_RECURRING')
+                ? 'AMOUNT_BASIS_PER_CYCLE' : 'AMOUNT_BASIS_TOTAL_PACKAGE';
+        } else if ((kind === 'BILLING_KIND_ONE_TIME' || kind === 'BILLING_KIND_MILESTONE') &&
             basisSel.value === 'AMOUNT_BASIS_PER_CYCLE') {
             basisSel.value = 'AMOUNT_BASIS_TOTAL_PACKAGE';
         } else if (kind === 'BILLING_KIND_RECURRING' && basisSel.value === 'AMOUNT_BASIS_TOTAL_PACKAGE') {

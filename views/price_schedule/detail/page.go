@@ -674,4 +674,10 @@ func applyBillingFieldsFromRequest(pp *priceplanpb.PricePlan, r *http.Request) {
 	if u := r.FormValue("default_term_unit"); u != "" {
 		pp.DefaultTermUnit = &u
 	}
+	if s := r.FormValue("entitled_occurrences"); s != "" {
+		if n, err := strconv.ParseInt(s, 10, 32); err == nil {
+			v32 := int32(n)
+			pp.EntitledOccurrences = &v32
+		}
+	}
 }

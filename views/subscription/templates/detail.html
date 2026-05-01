@@ -41,12 +41,16 @@
 {{define "subscription-tab-operations"}}
 <div class="tab-scroll" data-testid="operations-tab" id="subscription-operations-tab"
      data-is-cyclic="{{if .IsCyclic}}true{{else}}false{{end}}"
+     data-is-ad-hoc="{{if .IsAdHoc}}true{{else}}false{{end}}"
+     data-ad-hoc-basis="{{.AdHocBasis}}"
      hx-trigger="refresh-subscription-operations-tab from:body"
      hx-get="{{index .Subscription "tab_invoices_url"}}"
      hx-target="this"
      hx-swap="outerHTML">
   {{if .IsCyclic}}
     {{template "subscription-tab-operations-cyclic" .}}
+  {{else if .IsAdHoc}}
+    {{template "subscription-tab-operations-ad-hoc" .}}
   {{else if .OperationsHasJobs}}
   <h4 class="detail-section-title">{{.Labels.Operations.Title}}</h4>
   <ul class="operations-job-list">
@@ -169,6 +173,80 @@
        data-testid="subscription-cycles-empty">
         {{.OperationsCyclic.CycleEmpty}}
     </p>
+    {{end}}
+</div>
+{{end}}
+
+{{/* AD_HOC Operations branch — engagement shell + entitlement banner (pool only)
+     + flat usage list. Each usage Job is rendered as a single accordion-style
+     row keyed on usage_ordinal == cycle_index. Phase D MVP — v1.5 will replace
+     the accordion with a dedicated visit-list partial + Request-Usage CTA per
+     ad-hoc plan §5.2. */}}
+{{define "subscription-tab-operations-ad-hoc"}}
+<div class="subscription-operations-ad-hoc"
+     data-testid="subscription-operations-ad-hoc-shell"
+     data-ad-hoc-basis="{{.AdHocBasis}}">
+
+    {{if .OperationsCyclic.EngagementHeading}}
+    <header class="subscription-operations-cyclic__engagement"
+            data-testid="subscription-operations-engagement-header">
+        <h4 class="detail-section-title">{{.OperationsCyclic.EngagementHeading}}</h4>
+    </header>
+    {{end}}
+
+    {{/* Entitlement banner — pool only ("3 of 5 used"); per-call shows the
+         per-occurrence amount in the heading. */}}
+    <div class="subscription-operations-ad-hoc__entitlement"
+         data-testid="subscription-entitlement-banner">
+        <h5 class="detail-subsection-title"
+            data-testid="subscription-ad-hoc-heading">{{.EntitlementHeadingText}}</h5>
+        {{if eq .AdHocBasis "AMOUNT_BASIS_TOTAL_PACKAGE"}}
+        <p class="entitlement-counter"
+           data-testid="subscription-entitlement-counter"
+           data-used="{{.EntitlementUsed}}"
+           data-total="{{.EntitlementTotal}}">
+            {{.EntitlementBannerText}}
+        </p>
+        {{end}}
+    </div>
+
+    {{/* Once-at-engagement-start child Jobs (e.g. onboarding). */}}
+    {{if .OperationsCyclic.OnceAtStartJobs}}
+    <ul class="operations-job-list operations-job-list--once-at-start"
+        data-testid="subscription-operations-once-at-start">
+        {{range .OperationsCyclic.OnceAtStartJobs}}
+        {{template "subscription-operations-job-row" (dict "Row" . "Labels" $.Labels)}}
+        {{end}}
+    </ul>
+    {{end}}
+
+    {{/* Usage list — reuses the cycle accordion shape. CycleIndex == usage_ordinal,
+         CyclePeriodStart == composite "YYYY-MM-DD#NNNN" key. */}}
+    {{if .OperationsCyclic.Cycles}}
+    <ul class="subscription-operations-ad-hoc__usages"
+        data-testid="subscription-usage-list">
+        {{range .OperationsCyclic.Cycles}}
+        <li class="subscription-usage-row"
+            data-testid="subscription-usage-row"
+            data-usage-ordinal="{{.CycleIndex}}"
+            data-cycle-period-start="{{.PeriodStart}}">
+            <header class="subscription-usage-row__header">
+                <span class="usage-ordinal" data-testid="subscription-usage-ordinal">{{.CycleIndex}}</span>
+                <span class="usage-period" data-testid="subscription-usage-period">{{.PeriodStart}}{{if .PeriodEnd}} → {{.PeriodEnd}}{{end}}</span>
+            </header>
+            {{if .Jobs}}
+            <ul class="operations-job-list operations-job-list--usage">
+                {{range .Jobs}}
+                {{template "subscription-operations-job-row" (dict "Row" . "Labels" $.Labels)}}
+                {{end}}
+            </ul>
+            {{end}}
+        </li>
+        {{end}}
+    </ul>
+    {{else}}
+    <p class="empty-state-message"
+       data-testid="subscription-usage-list-empty">{{.OperationsCyclic.CycleEmpty}}</p>
     {{end}}
 </div>
 {{end}}

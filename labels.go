@@ -2886,10 +2886,15 @@ type PricePlanFormLabels struct {
 	BillingKindRecurring       string `json:"billingKindRecurring"`
 	BillingKindContract        string `json:"billingKindContract"`
 	BillingKindMilestone       string `json:"billingKindMilestone"`
+	BillingKindAdHoc           string `json:"billingKindAdHoc"`
 	AmountBasisLabel           string `json:"amountBasisLabel"`
 	AmountBasisPerCycle        string `json:"amountBasisPerCycle"`
 	AmountBasisTotalPackage    string `json:"amountBasisTotalPackage"`
 	AmountBasisDerivedFromLines string `json:"amountBasisDerivedFromLines"`
+	AmountBasisPerOccurrence   string `json:"amountBasisPerOccurrence"`
+	EntitledOccurrencesLabel       string `json:"entitledOccurrencesLabel"`
+	EntitledOccurrencesPlaceholder string `json:"entitledOccurrencesPlaceholder"`
+	EntitledOccurrencesInfo        string `json:"entitledOccurrencesInfo"`
 	BillingCycleLabel       string `json:"billingCycleLabel"`
 	BillingCyclePlaceholder string `json:"billingCyclePlaceholder"`
 	TermLabel               string `json:"termLabel"`
@@ -2933,6 +2938,15 @@ type PricePlanFormLabels struct {
 	// surfaced as a tooltip on the disabled MILESTONE option in the
 	// billing_kind dropdown when the parent Plan is cyclic.
 	MilestoneCyclicBlock string `json:"milestoneCyclicBlock"`
+
+	// 2026-05-01 ad-hoc-subscription-billing plan §6 — client-side guards
+	// surfaced as drawer warnings / tooltips on the disabled options. The
+	// server enforces the same rules in validate_ad_hoc.go.
+	AdHocPoolNoTemplate          string `json:"adHocPoolNoTemplate"`
+	AdHocPerCallNoTemplate       string `json:"adHocPerCallNoTemplate"`
+	AdHocNoEntitlement           string `json:"adHocNoEntitlement"`
+	AdHocBillingCycleNotAllowed  string `json:"adHocBillingCycleNotAllowed"`
+	AdHocVisitsPerCycleNotAllowed string `json:"adHocVisitsPerCycleNotAllowed"`
 }
 
 // ---------------------------------------------------------------------------
@@ -3540,6 +3554,27 @@ type SubscriptionOperationsLabels struct {
 	CycleEmpty            string `json:"cycleEmpty"`
 	BackfillBanner        string `json:"backfillBanner"`
 	BackfillCta           string `json:"backfillCta"`
+
+	// 2026-05-01 ad-hoc-subscription-billing plan §5.2 — Operations tab
+	// AD_HOC mode keys. Vertical-neutral defaults ("usage", "occurrence")
+	// with professional-tier overrides ("service call", "retainer", etc.).
+	AdHocPoolHeading        string `json:"adHocPoolHeading"`
+	AdHocPerCallHeading     string `json:"adHocPerCallHeading"`
+	EntitlementUsed         string `json:"entitlementUsed"`
+	EntitlementRemaining    string `json:"entitlementRemaining"`
+	EntitlementExhausted    string `json:"entitlementExhausted"`
+	RequestUsageCta         string `json:"requestUsageCta"`
+	ExtendEntitlementCta    string `json:"extendEntitlementCta"`
+	UsageRequestedDate      string `json:"usageRequestedDate"`
+	UsageDeliveredDate      string `json:"usageDeliveredDate"`
+	UsageOrdinalLabel       string `json:"usageOrdinalLabel"`
+	UsageNotDelivered       string `json:"usageNotDelivered"`
+	PoolInvoiceLink         string `json:"poolInvoiceLink"`
+	PoolInvoicePending      string `json:"poolInvoicePending"`
+	PoolGenerateInvoiceCta  string `json:"poolGenerateInvoiceCta"`
+	PerCallRecognizeCta     string `json:"perCallRecognizeCta"`
+	PerCallInvoiceLink      string `json:"perCallInvoiceLink"`
+	PerCallNotReady         string `json:"perCallNotReady"`
 }
 
 // SubscriptionBackfillLabels holds labels for the Backfill cycle Jobs drawer.
@@ -3935,14 +3970,16 @@ type PricePlanBillingSummaryCopy struct {
 	Recurring PricePlanSummaryByBasis `json:"recurring"`
 	Contract  PricePlanSummaryByBasis `json:"contract"`
 	Milestone PricePlanSummaryByBasis `json:"milestone"`
+	AdHoc     PricePlanSummaryByBasis `json:"adHoc"`
 }
 
-// PricePlanSummaryByBasis groups the three text lines per basis. Empty
+// PricePlanSummaryByBasis groups the text lines per basis. Empty
 // strings on a basis means "no copy for that combo" — view skips it.
 type PricePlanSummaryByBasis struct {
 	PerCycle         PricePlanSummaryLines `json:"perCycle"`
 	TotalPackage     PricePlanSummaryLines `json:"totalPackage"`
 	DerivedFromLines PricePlanSummaryLines `json:"derivedFromLines"`
+	PerOccurrence    PricePlanSummaryLines `json:"perOccurrence"`
 }
 
 // PricePlanSummaryLines holds the 3 lines for a kind × basis cell.
@@ -3955,9 +3992,14 @@ type PricePlanSummaryLines struct {
 // PricePlanBillingSummaryWarn carries the warning-row copy keyed by symbol
 // per plan §20.3. View only renders entries whose preconditions trip.
 type PricePlanBillingSummaryWarn struct {
-	MilestoneNoTemplate       string `json:"milestoneNoTemplate"`
-	RecurringNoTemplate       string `json:"recurringNoTemplate"`
-	VisitsPerCycleInvalidKind string `json:"visitsPerCycleInvalidKind"`
+	MilestoneNoTemplate           string `json:"milestoneNoTemplate"`
+	RecurringNoTemplate           string `json:"recurringNoTemplate"`
+	VisitsPerCycleInvalidKind     string `json:"visitsPerCycleInvalidKind"`
+	AdHocPoolNoTemplate           string `json:"adHocPoolNoTemplate"`
+	AdHocPerCallNoTemplate        string `json:"adHocPerCallNoTemplate"`
+	AdHocNoEntitlement            string `json:"adHocNoEntitlement"`
+	AdHocBillingCycleNotAllowed   string `json:"adHocBillingCycleNotAllowed"`
+	AdHocVisitsPerCycleNotAllowed string `json:"adHocVisitsPerCycleNotAllowed"`
 }
 
 type PricePlanTabLabels2 struct {

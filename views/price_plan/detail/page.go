@@ -1516,6 +1516,8 @@ func pickSummaryCell(kind, basis string, s centymo.PricePlanBillingSummaryCopy) 
 		byBasis = s.Contract
 	case "BILLING_KIND_MILESTONE":
 		byBasis = s.Milestone
+	case "BILLING_KIND_AD_HOC":
+		byBasis = s.AdHoc
 	default:
 		return centymo.PricePlanSummaryLines{}
 	}
@@ -1526,6 +1528,8 @@ func pickSummaryCell(kind, basis string, s centymo.PricePlanBillingSummaryCopy) 
 		return byBasis.TotalPackage
 	case "AMOUNT_BASIS_DERIVED_FROM_LINES":
 		return byBasis.DerivedFromLines
+	case "AMOUNT_BASIS_PER_OCCURRENCE":
+		return byBasis.PerOccurrence
 	}
 	return centymo.PricePlanSummaryLines{}
 }
@@ -1559,6 +1563,36 @@ func collectBillingSummaryWarnings(
 		out = append(out, PricePlanBillingSummaryWarning{
 			Key: "visitsPerCycleInvalidKind", Message: l.Warning.VisitsPerCycleInvalidKind, Severity: "warning",
 		})
+	}
+	// 2026-05-01 ad-hoc-subscription-billing plan §6 — drawer-level info rows.
+	if kind == "BILLING_KIND_AD_HOC" {
+		basis := pp.GetAmountBasis().String()
+		if !hasTemplate {
+			if basis == "AMOUNT_BASIS_PER_OCCURRENCE" {
+				out = append(out, PricePlanBillingSummaryWarning{
+					Key: "adHocPerCallNoTemplate", Message: l.Warning.AdHocPerCallNoTemplate, Severity: "warning",
+				})
+			} else {
+				out = append(out, PricePlanBillingSummaryWarning{
+					Key: "adHocPoolNoTemplate", Message: l.Warning.AdHocPoolNoTemplate, Severity: "warning",
+				})
+			}
+		}
+		if basis == "AMOUNT_BASIS_TOTAL_PACKAGE" && pp.GetEntitledOccurrences() <= 0 {
+			out = append(out, PricePlanBillingSummaryWarning{
+				Key: "adHocNoEntitlement", Message: l.Warning.AdHocNoEntitlement, Severity: "warning",
+			})
+		}
+		if pp.GetBillingCycleValue() > 0 {
+			out = append(out, PricePlanBillingSummaryWarning{
+				Key: "adHocBillingCycleNotAllowed", Message: l.Warning.AdHocBillingCycleNotAllowed, Severity: "warning",
+			})
+		}
+		if visitsPerCycle > 1 {
+			out = append(out, PricePlanBillingSummaryWarning{
+				Key: "adHocVisitsPerCycleNotAllowed", Message: l.Warning.AdHocVisitsPerCycleNotAllowed, Severity: "warning",
+			})
+		}
 	}
 	return out
 }

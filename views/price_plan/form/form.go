@@ -66,6 +66,11 @@ type Data struct {
 	TermValue           string // int32 as string for form field; backs default_term_value on the wire
 	TermUnit            string // backs default_term_unit on the wire
 	DurationUnitOptions []types.SelectOption // reused for both billing_cycle_unit and term unit
+	// 2026-05-01 ad-hoc-subscription-billing plan §5.5 — int32 as string for
+	// form field. Surfaced only when (BillingKind=AD_HOC AND
+	// AmountBasis=TOTAL_PACKAGE). Empty otherwise — server resets to NULL on
+	// kind/basis change so leftover values can't leak.
+	EntitledOccurrences string
 
 	// Auto-complete option lists. Each entry is {Value, Label, Selected?}.
 	// PlanOptions is consumed in Schedule + Standalone contexts;
@@ -177,9 +182,17 @@ type Labels struct {
 	BillingKindRecurring        string
 	BillingKindContract         string
 	BillingKindMilestone        string
+	BillingKindAdHoc            string
 	AmountBasisPerCycle         string
 	AmountBasisTotalPackage     string
 	AmountBasisDerivedFromLines string
+	AmountBasisPerOccurrence    string
+
+	// 2026-05-01 ad-hoc-subscription-billing plan §5.5 — entitled_occurrences
+	// surfaced only on (AD_HOC × TOTAL_PACKAGE).
+	EntitledOccurrencesLabel       string
+	EntitledOccurrencesPlaceholder string
+	EntitledOccurrencesInfo        string
 
 	// Field-level info text surfaced via an info button beside each label.
 	// Hover/click opens a popover explaining what the field means.
@@ -207,6 +220,13 @@ type Labels struct {
 	// 2026-04-30 cyclic-subscription-jobs plan §9.4 — tooltip surfaced on
 	// the disabled MILESTONE option when the parent Plan is cyclic.
 	MilestoneCyclicBlock string
+
+	// 2026-05-01 ad-hoc-subscription-billing plan §6 — drawer-level guards.
+	AdHocPoolNoTemplate           string
+	AdHocPerCallNoTemplate        string
+	AdHocNoEntitlement            string
+	AdHocBillingCycleNotAllowed   string
+	AdHocVisitsPerCycleNotAllowed string
 }
 
 // LabelsFromPriceSchedule maps the price-schedule-side PlanForm labels into
@@ -286,9 +306,14 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		BillingKindRecurring:        pp.BillingKindRecurring,
 		BillingKindContract:         pp.BillingKindContract,
 		BillingKindMilestone:        pp.BillingKindMilestone,
+		BillingKindAdHoc:            pp.BillingKindAdHoc,
 		AmountBasisPerCycle:         pp.AmountBasisPerCycle,
 		AmountBasisTotalPackage:     pp.AmountBasisTotalPackage,
 		AmountBasisDerivedFromLines: pp.AmountBasisDerivedFromLines,
+		AmountBasisPerOccurrence:    pp.AmountBasisPerOccurrence,
+		EntitledOccurrencesLabel:       pp.EntitledOccurrencesLabel,
+		EntitledOccurrencesPlaceholder: pp.EntitledOccurrencesPlaceholder,
+		EntitledOccurrencesInfo:        pp.EntitledOccurrencesInfo,
 		// Field-level info popovers
 		PlanInfo:         pp.PlanInfo,
 		ScheduleInfo:     pp.ScheduleInfo,
@@ -306,6 +331,12 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		ScheduleLockedTooltip:      pp.ScheduleLockedTooltip,
 		// 2026-04-30 cyclic-subscription-jobs plan §9.4.
 		MilestoneCyclicBlock: pp.MilestoneCyclicBlock,
+		// 2026-05-01 ad-hoc-subscription-billing plan §6 — drawer-level guards.
+		AdHocPoolNoTemplate:           pp.AdHocPoolNoTemplate,
+		AdHocPerCallNoTemplate:        pp.AdHocPerCallNoTemplate,
+		AdHocNoEntitlement:            pp.AdHocNoEntitlement,
+		AdHocBillingCycleNotAllowed:   pp.AdHocBillingCycleNotAllowed,
+		AdHocVisitsPerCycleNotAllowed: pp.AdHocVisitsPerCycleNotAllowed,
 	}
 }
 

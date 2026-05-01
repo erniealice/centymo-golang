@@ -155,6 +155,20 @@ type PageData struct {
 	SpawnCycleJobsURL         string // POST endpoint for "Spawn this cycle now"
 	BackfillCycleJobsDrawerURL string // GET endpoint for the backfill drawer
 
+	// 2026-05-01 ad-hoc-subscription-billing plan §5.1 — Mode branching for
+	// AD_HOC subscriptions. IsAdHoc is mutually exclusive with IsCyclic.
+	// When IsAdHoc is true the Operations tab renders the usage list (one
+	// row per usage Job under the engagement) instead of the cycle accordion;
+	// for AD_HOC × TOTAL_PACKAGE the entitlement counter banner shows
+	// `EntitlementUsed / EntitlementTotal` with a Pool-Generate-Invoice CTA
+	// when no pool Revenue exists yet.
+	IsAdHoc                 bool
+	AdHocBasis              string // "AMOUNT_BASIS_TOTAL_PACKAGE" | "AMOUNT_BASIS_PER_OCCURRENCE"
+	EntitlementUsed         int32
+	EntitlementTotal        int32
+	EntitlementBannerText   string // pre-resolved counter copy ("3 of 5 used")
+	EntitlementHeadingText  string // pre-resolved heading copy ("Pool — 3 of 5 ...")
+
 	// 2026-04-30 cyclic-subscription-jobs plan §21 / Phase D — flat Jobs
 	// tab. Hidden when no Jobs exist (Jobs.HasJobs == false).
 	Jobs *SubscriptionJobsTabData
@@ -1046,6 +1060,49 @@ func applyOperationsTabData(
 		pageData.OperationsHasJobs = len(jobs) > 0
 		return
 	}
+	// AD_HOC branch — Phase D MVP reuses the cyclic accordion shape (each
+	// usage Job is one accordion row keyed on usage_ordinal == cycle_index).
+	// EntitlementUsed/Total drive the entitlement banner above the accordion
+	// for AMOUNT_BASIS_TOTAL_PACKAGE. v1.5 will replace the accordion with a
+	// dedicated visit-list partial + Request-Usage CTA per ad-hoc plan §5.2.
+	if computeIsAdHoc(sub) {
+		pageData.IsAdHoc = true
+		pp := sub.GetPricePlan()
+		pageData.AdHocBasis = pp.GetAmountBasis().String()
+		pageData.OperationsCyclic = buildSubscriptionCyclesData(ctx, deps, sub, jobs)
+		// Count usage Jobs (parent_job_id != "" AND usage_ordinal > 0).
+		var used int32
+		for _, j := range jobs {
+			if j.GetParentJobId() == "" {
+				continue
+			}
+			if j.GetUsageOrdinal() == 0 && j.GetCycleIndex() == 0 {
+				continue
+			}
+			used++
+		}
+		pageData.EntitlementUsed = used
+		pageData.EntitlementTotal = resolvedAdHocEntitlement(sub)
+		// Pre-resolve heading + counter copy. Lyngua keys carry the
+		// {{.UsedCount}}/{{.EntitledCount}}/{{.Amount}} placeholders.
+		usedStr := fmt.Sprintf("%d", used)
+		totalStr := fmt.Sprintf("%d", pageData.EntitlementTotal)
+		amountStr := formatPriceCentavos(pp.GetBillingAmount(), pp.GetBillingCurrency())
+		repl := strings.NewReplacer(
+			"{{.UsedCount}}", usedStr,
+			"{{.EntitledCount}}", totalStr,
+			"{{.RemainingCount}}", fmt.Sprintf("%d", pageData.EntitlementTotal-used),
+			"{{.Amount}}", amountStr,
+		)
+		if pageData.AdHocBasis == "AMOUNT_BASIS_TOTAL_PACKAGE" {
+			pageData.EntitlementHeadingText = repl.Replace(deps.Labels.Operations.AdHocPoolHeading)
+		} else {
+			pageData.EntitlementHeadingText = repl.Replace(deps.Labels.Operations.AdHocPerCallHeading)
+		}
+		pageData.EntitlementBannerText = repl.Replace(deps.Labels.Operations.EntitlementUsed)
+		pageData.OperationsHasJobs = len(jobs) > 0
+		return
+	}
 	// Non-cyclic — preserve existing rendering path verbatim.
 	if len(jobs) == 0 {
 		return
@@ -1078,10 +1135,10 @@ func loadSubscriptionJobs(ctx context.Context, deps *DetailViewDeps, subscriptio
 	return resp.GetJobs()
 }
 
-// computeIsCyclic mirrors espyna's `eligibleForInstanceSpawn` predicate:
-// RECURRING OR (CONTRACT AND billing_cycle_value > 0). See
-// cyclic-subscription-jobs plan §3.1 / §19.3 (eligibility-gate refactor for
-// AD_HOC forward-compat).
+// computeIsCyclic mirrors espyna's `eligibleForInstanceSpawn` predicate (cyclic
+// branch only): RECURRING OR (CONTRACT AND billing_cycle_value > 0). AD_HOC
+// is also instance-spawning but rendered through a separate code path —
+// computeIsAdHoc covers it.
 func computeIsCyclic(sub *subscriptionpb.Subscription) bool {
 	if sub == nil {
 		return false
@@ -1098,6 +1155,51 @@ func computeIsCyclic(sub *subscriptionpb.Subscription) bool {
 		return true
 	}
 	return false
+}
+
+// formatPriceCentavos converts centavos to a display string. Mirrors the
+// per-package formatCentavos helpers in sibling action.go files; kept local
+// so the subscription/detail package owns its currency formatting.
+func formatPriceCentavos(centavos int64, currency string) string {
+	whole := centavos / 100
+	cents := centavos % 100
+	if cents < 0 {
+		cents = -cents
+	}
+	if currency == "" {
+		currency = "PHP"
+	}
+	return fmt.Sprintf("%s %d.%02d", currency, whole, cents)
+}
+
+// computeIsAdHoc returns true when the subscription's PricePlan is AD_HOC.
+// 2026-05-01 ad-hoc-subscription-billing plan §5.1.
+func computeIsAdHoc(sub *subscriptionpb.Subscription) bool {
+	if sub == nil {
+		return false
+	}
+	pp := sub.GetPricePlan()
+	if pp == nil {
+		return false
+	}
+	return pp.GetBillingKind() == priceplanpb.BillingKind_BILLING_KIND_AD_HOC
+}
+
+// resolvedAdHocEntitlement returns the effective entitled-occurrences count
+// for an AD_HOC × TOTAL_PACKAGE subscription. Mirrors
+// `espyna.resolvedEntitlement` — Subscription override beats PricePlan template
+// (codex MAJ-1).
+func resolvedAdHocEntitlement(sub *subscriptionpb.Subscription) int32 {
+	if sub == nil {
+		return 0
+	}
+	if v := sub.GetEntitledOccurrencesOverride(); v > 0 {
+		return v
+	}
+	if pp := sub.GetPricePlan(); pp != nil {
+		return pp.GetEntitledOccurrences()
+	}
+	return 0
 }
 
 // buildSubscriptionCyclesData partitions the Job list into engagement shell
