@@ -22,6 +22,9 @@ type MaterializeInstanceJobsRequest struct {
 	SubscriptionID   string
 	CyclePeriodStart string
 	Backfill         bool
+	// 2026-05-01 ad-hoc-subscription-billing plan §3.2 — operator-supplied
+	// usage request date for AD_HOC plans. Empty defaults to today UTC.
+	UsageRequestDate string
 }
 
 // MaterializeInstanceJobsResponse mirrors the espyna consumer-surface response.

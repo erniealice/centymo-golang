@@ -168,6 +168,15 @@ type PageData struct {
 	EntitlementTotal        int32
 	EntitlementBannerText   string // pre-resolved counter copy ("3 of 5 used")
 	EntitlementHeadingText  string // pre-resolved heading copy ("Pool — 3 of 5 ...")
+	// 2026-05-01 ad-hoc-subscription-billing v1.5 — operator CTAs.
+	// RequestUsageURL: POST endpoint that spawns one usage Job. Empty when
+	// the route isn't wired (defensive — Operations tab template hides the
+	// button on empty URL).
+	// PoolRecognizeURL: POST endpoint for AD_HOC × TOTAL_PACKAGE pool
+	// invoice generation. Reuses the existing recognize-revenue endpoint;
+	// espyna's executeAdHoc dispatches based on PricePlan kind.
+	RequestUsageURL  string
+	PoolRecognizeURL string
 
 	// 2026-04-30 cyclic-subscription-jobs plan §21 / Phase D — flat Jobs
 	// tab. Hidden when no Jobs exist (Jobs.HasJobs == false).
@@ -424,6 +433,10 @@ func NewView(deps *DetailViewDeps) view.View {
 				deps.Routes.SpawnCycleJobsURL, "{subscriptionId}", id),
 			BackfillCycleJobsDrawerURL: strings.ReplaceAll(
 				deps.Routes.BackfillCycleJobsURL, "{subscriptionId}", id),
+			RequestUsageURL: strings.ReplaceAll(
+				deps.Routes.RequestUsageURL, "{subscriptionId}", id),
+			PoolRecognizeURL: strings.ReplaceAll(
+				deps.Routes.RecognizeURL, "{id}", id),
 		}
 
 		// Inject the tab-content URL into the subscription map so the invoices
@@ -930,6 +943,10 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				deps.Routes.SpawnCycleJobsURL, "{subscriptionId}", id),
 			BackfillCycleJobsDrawerURL: strings.ReplaceAll(
 				deps.Routes.BackfillCycleJobsURL, "{subscriptionId}", id),
+			RequestUsageURL: strings.ReplaceAll(
+				deps.Routes.RequestUsageURL, "{subscriptionId}", id),
+			PoolRecognizeURL: strings.ReplaceAll(
+				deps.Routes.RecognizeURL, "{id}", id),
 		}
 
 		// Same tab_invoices_url + perms gating as the full-page handler so a

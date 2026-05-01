@@ -210,6 +210,32 @@
         {{end}}
     </div>
 
+    {{/* Operator CTAs — Request Usage (always when wired) + Pool-Generate-Invoice
+         (TOTAL_PACKAGE only). Buttons hide when the URL field is empty (defensive
+         — block.go gates the route on the adapter being wired). */}}
+    <div class="subscription-operations-ad-hoc__actions">
+        {{if .RequestUsageURL}}
+        <button type="button"
+                class="btn btn--primary"
+                data-testid="subscription-request-usage-cta"
+                hx-post="{{.RequestUsageURL}}"
+                hx-swap="none"
+                hx-on::after-request="lf.Sheet.handleResponse(event)">
+            {{.Labels.Operations.RequestUsageCta}}
+        </button>
+        {{end}}
+        {{if and .PoolRecognizeURL (eq .AdHocBasis "AMOUNT_BASIS_TOTAL_PACKAGE")}}
+        <button type="button"
+                class="btn btn--secondary"
+                data-testid="subscription-pool-generate-invoice-cta"
+                hx-post="{{.PoolRecognizeURL}}"
+                hx-swap="none"
+                hx-on::after-request="lf.Sheet.handleResponse(event)">
+            {{.Labels.Operations.PoolGenerateInvoiceCta}}
+        </button>
+        {{end}}
+    </div>
+
     {{/* Once-at-engagement-start child Jobs (e.g. onboarding). */}}
     {{if .OperationsCyclic.OnceAtStartJobs}}
     <ul class="operations-job-list operations-job-list--once-at-start"

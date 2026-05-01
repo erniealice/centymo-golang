@@ -144,6 +144,12 @@ const (
 	SubscriptionSpawnCycleJobsURL    = "/action/subscription/spawn-cycle-jobs/{subscriptionId}"
 	SubscriptionBackfillCycleJobsURL = "/action/subscription/backfill-cycle-jobs/{subscriptionId}"
 
+	// 2026-05-01 ad-hoc-subscription-billing plan §5.2 — operator-driven CTA
+	// for AD_HOC subscriptions. Pool-Generate-Invoice reuses the existing
+	// SubscriptionRecognizeURL; Extend-Pool deferred to v1.5.5 (needs new
+	// espyna use case for Subscription.entitled_occurrences_override write).
+	SubscriptionRequestUsageURL = "/action/subscription/request-usage/{subscriptionId}"
+
 	// Collection (money IN) routes
 	CollectionListURL             = "/app/collections/list/{status}"
 	CollectionDetailURL           = "/app/collections/detail/{id}"

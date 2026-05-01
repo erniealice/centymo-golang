@@ -1367,6 +1367,9 @@ type SubscriptionRoutes struct {
 	SpawnCycleJobsURL    string `json:"spawn_cycle_jobs_url"`
 	BackfillCycleJobsURL string `json:"backfill_cycle_jobs_url"`
 
+	// 2026-05-01 ad-hoc-subscription-billing — operator-driven Request Usage CTA.
+	RequestUsageURL string `json:"request_usage_url"`
+
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
@@ -1407,6 +1410,9 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		SpawnCycleJobsURL:    SubscriptionSpawnCycleJobsURL,
 		BackfillCycleJobsURL: SubscriptionBackfillCycleJobsURL,
 
+		// 2026-05-01 ad-hoc-subscription-billing.
+		RequestUsageURL: SubscriptionRequestUsageURL,
+
 		AttachmentUploadURL: SubscriptionAttachmentUploadURL,
 		AttachmentDeleteURL: SubscriptionAttachmentDeleteURL,
 	}
@@ -1443,6 +1449,9 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		// 2026-04-30 cyclic-subscription-jobs routes.
 		"subscription.spawn_cycle_jobs":    r.SpawnCycleJobsURL,
 		"subscription.backfill_cycle_jobs": r.BackfillCycleJobsURL,
+
+		// 2026-05-01 ad-hoc-subscription-billing routes.
+		"subscription.request_usage": r.RequestUsageURL,
 
 		"subscription.attachment.upload": r.AttachmentUploadURL,
 		"subscription.attachment.delete": r.AttachmentDeleteURL,

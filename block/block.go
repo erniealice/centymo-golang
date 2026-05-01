@@ -1984,6 +1984,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ctx.Routes.GET(subscriptionRoutes.BackfillCycleJobsURL, subscriptionaction.NewBackfillCyclesAction(subActionDeps))
 					ctx.Routes.POST(subscriptionRoutes.BackfillCycleJobsURL, subscriptionaction.NewBackfillCyclesAction(subActionDeps))
 				}
+				// 2026-05-01 ad-hoc-subscription-billing — Request Usage CTA on
+				// the AD_HOC Operations tab. Pool-Generate-Invoice reuses the
+				// existing /action/subscription/recognize-revenue/{id} endpoint
+				// (espyna's executeAdHoc dispatches by PricePlan kind).
+				if subscriptionRoutes.RequestUsageURL != "" {
+					ctx.Routes.POST(subscriptionRoutes.RequestUsageURL, subscriptionaction.NewRequestUsageAction(subActionDeps))
+				}
 				// Auto-complete search (http.HandlerFunc — uses HandleFunc, not GET)
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchClientURL, subscriptionaction.NewSearchClientsAction(subActionDeps))
 				handleFunc(ctx.Routes, "GET", subscriptionRoutes.SearchPlanURL, subscriptionaction.NewSearchPlansAction(subActionDeps))
