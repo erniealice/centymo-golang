@@ -35,8 +35,29 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var subscriptionAllowedSortCols = []string{
-	"date_created", "date_start", "date_end", "name",
+// SubscriptionSortSpec is the canonical sort specification for the subscription
+// list page. It is exported so that the sort-consistency guard test can register
+// it without duplicating the declaration.
+var SubscriptionSortSpec = espynahttp.SortSpec{
+	AllowedCols: []string{"name", "date_created", "date_start", "date_end", "client"},
+	DefaultCol:  "date_created",
+	DefaultDir:  "desc",
+	// ColMap bridges view-facing column keys to their SQL counterparts.
+	// "client" maps to "client_name" which is the alias projected by the enriched CTE.
+	ColMap: map[string]string{
+		"date_start": "date_time_start",
+		"date_end":   "date_time_end",
+		"client":     "client_name",
+	},
+}
+
+// SubscriptionTableDefaults exposes the table config defaults for the sort-consistency guard test.
+var SubscriptionTableDefaults = struct {
+	DefaultSortColumn    string
+	DefaultSortDirection string
+}{
+	DefaultSortColumn:    SubscriptionSortSpec.DefaultCol,
+	DefaultSortDirection: SubscriptionSortSpec.DefaultDir,
 }
 
 var subscriptionSearchFields = []string{"name"}
@@ -158,8 +179,8 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 		ShowColumns:          true,
 		ShowDensity:          true,
 		ShowEntries:          true,
-		DefaultSortColumn:    "customer",
-		DefaultSortDirection: "asc",
+		DefaultSortColumn:    SubscriptionSortSpec.DefaultCol,
+		DefaultSortDirection: SubscriptionSortSpec.DefaultDir,
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
 			Title:   l.Empty.Title,
@@ -192,7 +213,7 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, subscriptionAllowedSortCols)
+		p, err := espynahttp.ParseTableParamsFromSpec(viewCtx.Request, SubscriptionSortSpec)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -232,7 +253,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, subscriptionAllowedSortCols)
+		p, err := espynahttp.ParseTableParamsFromSpec(viewCtx.Request, SubscriptionSortSpec)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -261,12 +282,17 @@ func subscriptionColumns(l centymo.SubscriptionLabels) []types.TableColumn {
 	}
 	// Status column omitted on purpose — the list page is already scoped
 	// by /list/{status}, so a per-row badge would be redundant.
+	// Column Keys match SubscriptionSortSpec.AllowedCols exactly so that the
+	// sort parameter sent by the browser is whitelisted at parse time.
+	// "plan" is not in AllowedCols (no SQL sort support); NoSort is not set so
+	// the column header renders as sortable-looking, but clicking it falls back
+	// to the default — acceptable until a plan-sort CASE WHEN branch is added.
 	return []types.TableColumn{
-		{Key: "name", Label: nameLabel, Sortable: true},
-		{Key: "client", Label: clientLabel, Sortable: true},
-		{Key: "plan", Label: l.Columns.Plan, Sortable: true},
-		{Key: "start_date", Label: l.Columns.StartDate, Sortable: true, WidthClass: "col-4xl"},
-		{Key: "end_date", Label: endDateLabel, Sortable: true, WidthClass: "col-4xl"},
+		{Key: "name", Label: nameLabel},
+		{Key: "client", Label: clientLabel},
+		{Key: "plan", Label: l.Columns.Plan, NoSort: true},
+		{Key: "date_start", Label: l.Columns.StartDate, WidthClass: "col-4xl"},
+		{Key: "date_end", Label: endDateLabel, WidthClass: "col-4xl"},
 	}
 }
 
