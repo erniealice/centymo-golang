@@ -634,10 +634,10 @@ func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.Expend
 // buildLineItemTable builds the line items table config.
 func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tableLabels types.TableLabels, currency string, expenditureID string, routes centymo.ExpenditureRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "description", Label: "Description", Sortable: false},
-		{Key: "quantity", Label: "Qty", Sortable: false, WidthClass: "col-md"},
-		{Key: "unit_price", Label: "Unit Price", Sortable: false, WidthClass: "col-3xl"},
-		{Key: "total", Label: "Total", Sortable: false, WidthClass: "col-3xl"},
+		{Key: "description", Label: "Description", NoSort: true},
+		{Key: "quantity", Label: "Qty", NoSort: true, WidthClass: "col-md"},
+		{Key: "unit_price", Label: "Unit Price", NoSort: true, WidthClass: "col-3xl"},
+		{Key: "total", Label: "Total", NoSort: true, WidthClass: "col-3xl"},
 	}
 
 	rows := []types.TableRow{}

@@ -243,9 +243,9 @@ func buildAuditTable(l centymo.ProductLineLabels, tableLabels types.TableLabels)
 	return &types.TableConfig{
 		ID: "product-line-audit-table",
 		Columns: []types.TableColumn{
-			{Key: "date", Label: "Date", Sortable: true},
-			{Key: "action", Label: l.Detail.AuditAction, Sortable: false},
-			{Key: "user", Label: l.Detail.AuditUser, Sortable: false},
+			{Key: "date", Label: "Date"},
+			{Key: "action", Label: l.Detail.AuditAction, NoSort: true},
+			{Key: "user", Label: l.Detail.AuditUser, NoSort: true},
 		},
 		Rows:       []types.TableRow{},
 		ShowSearch: false, ShowActions: false, ShowFilters: false, ShowSort: false,

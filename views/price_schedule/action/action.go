@@ -12,11 +12,16 @@ import (
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var clientNameSort = &commonpb.SortRequest{
+	Fields: []*commonpb.SortField{{Field: "name", Direction: commonpb.SortDirection_ASC}},
+}
 
 // splitScheduleDateTimeForInputs renders ts in tz as a (date, time) pair
 // suitable for the drawer's date+time input grid. Nil ts → ("", "").
@@ -163,7 +168,7 @@ func loadClientOptions(ctx context.Context, deps *Deps, selectedID string) []map
 	if deps.ListClients == nil {
 		return nil
 	}
-	resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{})
+	resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{Sort: clientNameSort})
 	if err != nil {
 		return nil
 	}
@@ -194,7 +199,7 @@ func resolveClientName(ctx context.Context, deps *Deps, clientID string) string 
 	if clientID == "" || deps.ListClients == nil {
 		return ""
 	}
-	resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{})
+	resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{Sort: clientNameSort})
 	if err != nil {
 		return clientID
 	}

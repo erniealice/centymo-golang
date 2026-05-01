@@ -8,6 +8,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
+	"github.com/erniealice/espyna-golang/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -33,7 +34,6 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var productLineAllowedSortCols = []string{"date_created", "date_modified", "name", "status"}
 var productLineSearchFields = []string{"name", "description"}
 
 func NewView(deps *ListViewDeps) view.View {
@@ -42,11 +42,12 @@ func NewView(deps *ListViewDeps) view.View {
 		if status == "" {
 			status = "active"
 		}
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, productLineAllowedSortCols)
+		columns := productLineColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "name", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		tableConfig, err := buildTableConfig(ctx, deps, columns, status, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -86,11 +87,12 @@ func NewTableView(deps *ListViewDeps) view.View {
 		if status == "" {
 			status = "active"
 		}
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, productLineAllowedSortCols)
+		columns := productLineColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "name", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		tableConfig, err := buildTableConfig(ctx, deps, columns, status, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -98,7 +100,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 	})
 }
 
-func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.TableColumn, status string, p tableparams.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 	listParams := espynahttp.ToListParams(p, productLineSearchFields)
 
@@ -135,7 +137,6 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 
 	l := deps.Labels
-	columns := productLineColumns(l)
 	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms)
 	types.ApplyColumnStyles(columns, rows)
 
@@ -189,10 +190,10 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 func productLineColumns(l centymo.ProductLineLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "description", Label: l.Columns.Description, Sortable: false},
-		{Key: "date_created", Label: l.Columns.DateCreated, Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, WidthClass: "col-2xl"},
+		{Key: "name", Label: l.Columns.Name, Filterable: true, FilterType: types.FilterTypeString},
+		{Key: "description", Label: l.Columns.Description, NoSort: true},
+		{Key: "date_created", Label: l.Columns.DateCreated, Filterable: true, FilterType: types.FilterTypeDate},
+		{Key: "status", Label: l.Columns.Status, Filterable: false, WidthClass: "col-2xl"},
 	}
 }
 

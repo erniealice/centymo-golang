@@ -142,15 +142,15 @@ func NewView(deps *ListViewDeps) view.View {
 
 func expenditureColumns(l centymo.ExpenditureLabels, expenditureType string) []types.TableColumn {
 	cols := []types.TableColumn{
-		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
-		{Key: "vendor", Label: l.Columns.Vendor, Sortable: true},
-		{Key: "date", Label: l.Columns.Date, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "reference", Label: l.Columns.Reference},
+		{Key: "vendor", Label: l.Columns.Vendor},
+		{Key: "date", Label: l.Columns.Date, WidthClass: "col-3xl"},
+		{Key: "amount", Label: l.Columns.Amount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 	if expenditureType == "expense" {
 		// Replace vendor with category for expenses
-		cols[1] = types.TableColumn{Key: "category", Label: l.Columns.Category, Sortable: true}
+		cols[1] = types.TableColumn{Key: "category", Label: l.Columns.Category}
 	}
 	return cols
 }

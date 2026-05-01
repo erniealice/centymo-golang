@@ -145,15 +145,15 @@ func NewView(deps *ListViewDeps) view.View {
 
 func procurementRequestColumns(l centymo.ProcurementRequestLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "request_number", Label: l.Columns.RequestNumber, Sortable: true},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "request_number", Label: l.Columns.RequestNumber},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 		// SPS Wave 3 — F3 strategy column (header-level rollup).
-		{Key: "strategy", Label: l.Filters.FulfillmentStrategy, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "requester", Label: l.Columns.Requester, Sortable: true},
-		{Key: "supplier", Label: l.Columns.Supplier, Sortable: true},
-		{Key: "estimated_total", Label: l.Columns.EstimatedTotal, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "needed_by", Label: l.Columns.NeededBy, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "date_created", Label: l.Columns.DateCreated, Sortable: true, WidthClass: "col-3xl"},
+		{Key: "strategy", Label: l.Filters.FulfillmentStrategy, WidthClass: "col-2xl"},
+		{Key: "requester", Label: l.Columns.Requester},
+		{Key: "supplier", Label: l.Columns.Supplier},
+		{Key: "estimated_total", Label: l.Columns.EstimatedTotal, WidthClass: "col-3xl", Align: "right"},
+		{Key: "needed_by", Label: l.Columns.NeededBy, WidthClass: "col-3xl"},
+		{Key: "date_created", Label: l.Columns.DateCreated, WidthClass: "col-3xl"},
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
+	"github.com/erniealice/espyna-golang/tableparams"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -64,7 +65,7 @@ var subscriptionSearchFields = []string{"name"}
 
 // buildTableConfig fetches subscription data and builds the table configuration.
 // Shared by NewView (full page render) and NewTableView (HTMX partial swap target).
-func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p tableparams.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 
 	listParams := espynahttp.ToListParams(p, subscriptionSearchFields)

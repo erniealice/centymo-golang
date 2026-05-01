@@ -114,15 +114,15 @@ func NewView(deps *ListViewDeps) view.View {
 
 func supplierContractColumns(l centymo.SupplierContractLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "supplier", Label: l.Columns.Supplier, Sortable: true},
-		{Key: "kind", Label: l.Columns.Kind, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "validity", Label: l.Columns.Validity, Sortable: false, WidthClass: "col-3xl"},
-		{Key: "committed", Label: l.Columns.Committed, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "released", Label: l.Columns.Released, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "billed", Label: l.Columns.Billed, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "remaining", Label: l.Columns.Remaining, Sortable: true, WidthClass: "col-3xl", Align: "right"},
+		{Key: "name", Label: l.Columns.Name},
+		{Key: "supplier", Label: l.Columns.Supplier},
+		{Key: "kind", Label: l.Columns.Kind, WidthClass: "col-2xl"},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
+		{Key: "validity", Label: l.Columns.Validity, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "committed", Label: l.Columns.Committed, WidthClass: "col-3xl", Align: "right"},
+		{Key: "released", Label: l.Columns.Released, WidthClass: "col-3xl", Align: "right"},
+		{Key: "billed", Label: l.Columns.Billed, WidthClass: "col-3xl", Align: "right"},
+		{Key: "remaining", Label: l.Columns.Remaining, WidthClass: "col-3xl", Align: "right"},
 	}
 }
 

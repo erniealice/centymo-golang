@@ -79,13 +79,13 @@ func buildOptionsTable(ctx context.Context, deps *DetailViewDeps, productID stri
 	ol := l.Options
 
 	columns := []types.TableColumn{
-		{Key: "sortOrder", Label: ol.Columns.SortOrder, Sortable: true, WidthClass: "col-lg"},
-		{Key: "name", Label: ol.Columns.Name, Sortable: true},
-		{Key: "code", Label: ol.Columns.Code, Sortable: true},
-		{Key: "dataType", Label: ol.Columns.DataType, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "valuesCount", Label: ol.Columns.ValuesCount, Sortable: true, WidthClass: "col-lg"},
-		{Key: "required", Label: ol.Columns.Required, Sortable: true, WidthClass: "col-lg"},
-		{Key: "status", Label: ol.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "sortOrder", Label: ol.Columns.SortOrder, WidthClass: "col-lg"},
+		{Key: "name", Label: ol.Columns.Name},
+		{Key: "code", Label: ol.Columns.Code},
+		{Key: "dataType", Label: ol.Columns.DataType, WidthClass: "col-3xl"},
+		{Key: "valuesCount", Label: ol.Columns.ValuesCount, WidthClass: "col-lg"},
+		{Key: "required", Label: ol.Columns.Required, WidthClass: "col-lg"},
+		{Key: "status", Label: ol.Columns.Status, WidthClass: "col-2xl"},
 	}
 
 	yesLabel := deps.CommonLabels.Badges.Yes
@@ -245,11 +245,11 @@ func buildOptionValuesTable(ctx context.Context, deps *DetailViewDeps, productID
 	ol := l.Options
 
 	columns := []types.TableColumn{
-		{Key: "label", Label: ol.Value.Columns.Label, Sortable: true},
-		{Key: "value", Label: ol.Value.Columns.Value, Sortable: true},
-		{Key: "sortOrder", Label: ol.Value.Columns.SortOrder, Sortable: true, WidthClass: "col-lg"},
-		{Key: "colorPreview", Label: ol.Value.Columns.ColorPreview, Sortable: false, WidthClass: "col-lg"},
-		{Key: "status", Label: ol.Value.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "label", Label: ol.Value.Columns.Label},
+		{Key: "value", Label: ol.Value.Columns.Value},
+		{Key: "sortOrder", Label: ol.Value.Columns.SortOrder, WidthClass: "col-lg"},
+		{Key: "colorPreview", Label: ol.Value.Columns.ColorPreview, NoSort: true, WidthClass: "col-lg"},
+		{Key: "status", Label: ol.Value.Columns.Status, WidthClass: "col-2xl"},
 	}
 
 	rows := []types.TableRow{}

@@ -165,17 +165,17 @@ func buildFilteredTable(ctx context.Context, deps *Deps, dateFrom, dateTo, locat
 	l := deps.Labels
 
 	columns := []types.TableColumn{
-		{Key: "transaction_date", Label: l.Detail.Date, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "item_name", Label: l.Columns.ProductName, Sortable: true},
-		{Key: "product_name", Label: l.Movements.ProductColumn, Sortable: true},
-		{Key: "variant_sku", Label: l.Movements.VariantSKU, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "sku", Label: l.Columns.SKU, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "location", Label: l.Detail.Location, Sortable: true, WidthClass: "col-5xl"},
-		{Key: "transaction_type", Label: l.Detail.Type, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "quantity", Label: l.Detail.Quantity, Sortable: true, WidthClass: "col-lg"},
-		{Key: "serial_number", Label: l.Detail.Serial, Sortable: false, WidthClass: "col-4xl"},
-		{Key: "reference", Label: l.Detail.Reference, Sortable: false},
-		{Key: "performed_by", Label: l.Detail.PerformedBy, Sortable: false, WidthClass: "col-4xl"},
+		{Key: "transaction_date", Label: l.Detail.Date, WidthClass: "col-3xl"},
+		{Key: "item_name", Label: l.Columns.ProductName},
+		{Key: "product_name", Label: l.Movements.ProductColumn},
+		{Key: "variant_sku", Label: l.Movements.VariantSKU, WidthClass: "col-3xl"},
+		{Key: "sku", Label: l.Columns.SKU, WidthClass: "col-3xl"},
+		{Key: "location", Label: l.Detail.Location, WidthClass: "col-5xl"},
+		{Key: "transaction_type", Label: l.Detail.Type, WidthClass: "col-2xl"},
+		{Key: "quantity", Label: l.Detail.Quantity, WidthClass: "col-lg"},
+		{Key: "serial_number", Label: l.Detail.Serial, NoSort: true, WidthClass: "col-4xl"},
+		{Key: "reference", Label: l.Detail.Reference, NoSort: true},
+		{Key: "performed_by", Label: l.Detail.PerformedBy, NoSort: true, WidthClass: "col-4xl"},
 	}
 
 	var rows []types.TableRow

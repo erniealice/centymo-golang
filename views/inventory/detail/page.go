@@ -539,11 +539,11 @@ func loadSerials(ctx context.Context, deps *DetailViewDeps, inventoryItemID stri
 
 func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string, routes centymo.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "serial_number", Label: l.Detail.SerialNumber, Sortable: true},
-		{Key: "imei", Label: l.Detail.IMEI, Sortable: false, WidthClass: "col-6xl"},
-		{Key: "status", Label: l.Detail.SerialStatus, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "warranty_end", Label: l.Detail.WarrantyEnd, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "purchase_order", Label: l.Detail.PurchaseOrder, Sortable: false, WidthClass: "col-3xl"},
+		{Key: "serial_number", Label: l.Detail.SerialNumber},
+		{Key: "imei", Label: l.Detail.IMEI, NoSort: true, WidthClass: "col-6xl"},
+		{Key: "status", Label: l.Detail.SerialStatus, WidthClass: "col-2xl"},
+		{Key: "warranty_end", Label: l.Detail.WarrantyEnd, WidthClass: "col-3xl"},
+		{Key: "purchase_order", Label: l.Detail.PurchaseOrder, NoSort: true, WidthClass: "col-3xl"},
 	}
 
 	rows := []types.TableRow{}
@@ -649,12 +649,12 @@ func buildTransactionTable(ctx context.Context, deps *DetailViewDeps, inventoryI
 	}
 
 	columns := []types.TableColumn{
-		{Key: "transaction_date", Label: l.Detail.Date, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "transaction_type", Label: l.Detail.Type, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "quantity", Label: l.Detail.Quantity, Sortable: true, WidthClass: "col-lg"},
-		{Key: "reference", Label: l.Detail.Reference, Sortable: false},
-		{Key: "serial_number", Label: l.Detail.Serial, Sortable: false, WidthClass: "col-4xl"},
-		{Key: "performed_by", Label: l.Detail.PerformedBy, Sortable: false, WidthClass: "col-4xl"},
+		{Key: "transaction_date", Label: l.Detail.Date, WidthClass: "col-3xl"},
+		{Key: "transaction_type", Label: l.Detail.Type, WidthClass: "col-2xl"},
+		{Key: "quantity", Label: l.Detail.Quantity, WidthClass: "col-lg"},
+		{Key: "reference", Label: l.Detail.Reference, NoSort: true},
+		{Key: "serial_number", Label: l.Detail.Serial, NoSort: true, WidthClass: "col-4xl"},
+		{Key: "performed_by", Label: l.Detail.PerformedBy, NoSort: true, WidthClass: "col-4xl"},
 	}
 
 	rows := []types.TableRow{}
@@ -791,10 +791,10 @@ func depreciationMethodLabel(method string, l centymo.InventoryLabels) string {
 
 func buildAuditTable(l centymo.InventoryLabels, tableLabels types.TableLabels) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "date", Label: l.Detail.Date, Sortable: true, WidthClass: "col-5xl"},
-		{Key: "action", Label: l.Detail.AuditAction, Sortable: true},
-		{Key: "user", Label: l.Detail.AuditUser, Sortable: true, WidthClass: "col-6xl"},
-		{Key: "description", Label: l.Detail.Description, Sortable: false},
+		{Key: "date", Label: l.Detail.Date, WidthClass: "col-5xl"},
+		{Key: "action", Label: l.Detail.AuditAction},
+		{Key: "user", Label: l.Detail.AuditUser, WidthClass: "col-6xl"},
+		{Key: "description", Label: l.Detail.Description, NoSort: true},
 	}
 
 	rows := []types.TableRow{}

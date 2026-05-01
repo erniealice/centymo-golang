@@ -396,12 +396,12 @@ func NewLineItemDiscountView(deps *LineItemDeps) view.View {
 // buildLineItemTableWithActions builds the line items table with row actions.
 func buildLineItemTableWithActions(items []map[string]any, l centymo.RevenueLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.RevenueRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "type", Label: l.Detail.ItemType, Sortable: false, WidthClass: "col-lg"},
-		{Key: "description", Label: l.Detail.Description, Sortable: false},
-		{Key: "quantity", Label: l.Detail.Quantity, Sortable: false, WidthClass: "col-md"},
-		{Key: "unit_price", Label: l.Detail.UnitPrice, Sortable: false, WidthClass: "col-3xl"},
-		{Key: "discount", Label: l.Detail.Discount, Sortable: false, WidthClass: "col-lg"},
-		{Key: "total", Label: l.Detail.Total, Sortable: false, WidthClass: "col-3xl"},
+		{Key: "type", Label: l.Detail.ItemType, NoSort: true, WidthClass: "col-lg"},
+		{Key: "description", Label: l.Detail.Description, NoSort: true},
+		{Key: "quantity", Label: l.Detail.Quantity, NoSort: true, WidthClass: "col-md"},
+		{Key: "unit_price", Label: l.Detail.UnitPrice, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "discount", Label: l.Detail.Discount, NoSort: true, WidthClass: "col-lg"},
+		{Key: "total", Label: l.Detail.Total, NoSort: true, WidthClass: "col-3xl"},
 	}
 
 	rows := []types.TableRow{}

@@ -7,6 +7,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
+	"github.com/erniealice/espyna-golang/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -32,7 +33,6 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var resourceAllowedSortCols = []string{"date_created", "name", "status"}
 var resourceSearchFields = []string{"name", "description"}
 
 // NewView creates the resource list view.
@@ -43,12 +43,13 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, resourceAllowedSortCols)
+		columns := resourceColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "name", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		tableConfig, err := buildTableConfig(ctx, deps, columns, status, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -81,12 +82,13 @@ func NewTableView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, resourceAllowedSortCols)
+		columns := resourceColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "name", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		tableConfig, err := buildTableConfig(ctx, deps, columns, status, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -96,7 +98,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 }
 
 // buildTableConfig fetches resource data and builds the table configuration.
-func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.TableColumn, status string, p tableparams.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 
 	listParams := espynahttp.ToListParams(p, resourceSearchFields)
@@ -125,7 +127,6 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 
 	l := deps.Labels
-	columns := resourceColumns(l)
 	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
 	types.ApplyColumnStyles(columns, rows)
 
@@ -188,10 +189,10 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 func resourceColumns(l centymo.ResourceLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "description", Label: l.Columns.Description, Sortable: false},
-		{Key: "product", Label: l.Columns.Product, Sortable: false},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "name", Label: l.Columns.Name},
+		{Key: "description", Label: l.Columns.Description, NoSort: true},
+		{Key: "product", Label: l.Columns.Product, NoSort: true},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 }
 

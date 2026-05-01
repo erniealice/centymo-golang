@@ -7,6 +7,7 @@ import (
 	"math"
 
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
+	"github.com/erniealice/espyna-golang/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -34,10 +35,6 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var inventoryAllowedSortCols = []string{
-	"date_created", "date_modified", "product_name", "quantity", "status",
-}
-
 var inventorySearchFields = []string{"product_name", "sku"}
 
 // NewView creates the inventory list view (full page).
@@ -48,12 +45,13 @@ func NewView(deps *ListViewDeps) view.View {
 			location = "ayala-central-bloc"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, inventoryAllowedSortCols)
+		columns := inventoryColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "date_created", "desc")
 		if err != nil {
 			return view.Error(err)
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, location, p)
+		tableConfig, err := buildTableConfig(ctx, deps, columns, location, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -98,12 +96,13 @@ func NewTableView(deps *ListViewDeps) view.View {
 			location = "ayala-central-bloc"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, inventoryAllowedSortCols)
+		columns := inventoryColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "date_created", "desc")
 		if err != nil {
 			return view.Error(err)
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, location, p)
+		tableConfig, err := buildTableConfig(ctx, deps, columns, location, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -113,7 +112,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 }
 
 // buildTableConfig fetches inventory data and builds the table configuration.
-func buildTableConfig(ctx context.Context, deps *ListViewDeps, location string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.TableColumn, location string, p tableparams.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 
 	listParams := espynahttp.ToListParams(p, inventorySearchFields)
@@ -130,7 +129,6 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, location string, 
 	}
 
 	l := deps.Labels
-	columns := inventoryColumns(l)
 	rows := buildTableRows(resp.GetData(), l, deps.Routes, perms)
 	types.ApplyColumnStyles(columns, rows)
 
@@ -223,14 +221,14 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, location string, 
 
 func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "product_name", Label: l.Columns.ProductName, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "sku", Label: l.Columns.SKU, Sortable: false, Filterable: false, WidthClass: "col-4xl"},
-		{Key: "tracking_mode", Label: l.Columns.Type, Sortable: false, Filterable: false, WidthClass: "col-3xl"},
-		{Key: "quantity", Label: l.Columns.OnHand, Sortable: true, Filterable: true, FilterType: types.FilterTypeNumeric, WidthClass: "col-2xl"},
-		{Key: "available", Label: l.Columns.Available, Sortable: false, Filterable: false, WidthClass: "col-2xl"},
-		{Key: "reorder_level", Label: l.Columns.ReorderLvl, Sortable: false, Filterable: false, WidthClass: "col-3xl"},
-		{Key: "date_created", Label: "Date Created", Sortable: true, Filterable: true, FilterType: types.FilterTypeDate},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, WidthClass: "col-2xl"},
+		{Key: "product_name", Label: l.Columns.ProductName, Filterable: true, FilterType: types.FilterTypeString},
+		{Key: "sku", Label: l.Columns.SKU, Filterable: false, WidthClass: "col-4xl"},
+		{Key: "tracking_mode", Label: l.Columns.Type, Filterable: false, WidthClass: "col-3xl"},
+		{Key: "quantity", Label: l.Columns.OnHand, Filterable: true, FilterType: types.FilterTypeNumeric, WidthClass: "col-2xl"},
+		{Key: "available", Label: l.Columns.Available, NoSort: true, Filterable: false, WidthClass: "col-2xl"},
+		{Key: "reorder_level", Label: l.Columns.ReorderLvl, NoSort: true, Filterable: false, WidthClass: "col-3xl"},
+		{Key: "date_created", Label: "Date Created", Filterable: true, FilterType: types.FilterTypeDate},
+		{Key: "status", Label: l.Columns.Status, Filterable: false, WidthClass: "col-2xl"},
 	}
 }
 

@@ -34,7 +34,6 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var collectionAllowedSortCols = []string{"date_created", "date_modified", "status"}
 var collectionSearchFields = []string{"name", "reference_number", "status"}
 
 // NewView creates the collection list view.
@@ -47,7 +46,8 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "pending"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, collectionAllowedSortCols)
+		columns := collectionColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "date_created", "desc")
 		if err != nil {
 			return view.Error(err)
 		}
@@ -80,7 +80,6 @@ func NewView(deps *ListViewDeps) view.View {
 		}
 
 		l := deps.Labels
-		columns := collectionColumns(l)
 		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
@@ -140,12 +139,12 @@ func NewView(deps *ListViewDeps) view.View {
 
 func collectionColumns(l centymo.CollectionLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
-		{Key: "customer", Label: l.Columns.Customer, Sortable: true},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "method", Label: l.Columns.Method, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "date", Label: l.Columns.Date, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "reference", Label: l.Columns.Reference},
+		{Key: "customer", Label: l.Columns.Customer},
+		{Key: "amount", Label: l.Columns.Amount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "method", Label: l.Columns.Method, WidthClass: "col-3xl"},
+		{Key: "date", Label: l.Columns.Date, WidthClass: "col-3xl"},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 }
 

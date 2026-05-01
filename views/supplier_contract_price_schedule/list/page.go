@@ -141,13 +141,13 @@ func loadContractNames(ctx context.Context, deps *ListViewDeps) map[string]strin
 
 func scheduleColumns(l centymo.SupplierContractPriceScheduleLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "supplier_contract", Label: l.Columns.SupplierContract, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "sequence_number", Label: l.Columns.SequenceNumber, Sortable: true, WidthClass: "col-xs", Align: "right"},
-		{Key: "date_start", Label: l.Columns.DateStart, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "date_end", Label: l.Columns.DateEnd, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "currency", Label: l.Columns.Currency, Sortable: true, WidthClass: "col-xs"},
+		{Key: "name", Label: l.Columns.Name},
+		{Key: "supplier_contract", Label: l.Columns.SupplierContract, WidthClass: "col-3xl"},
+		{Key: "sequence_number", Label: l.Columns.SequenceNumber, WidthClass: "col-xs", Align: "right"},
+		{Key: "date_start", Label: l.Columns.DateStart, WidthClass: "col-2xl"},
+		{Key: "date_end", Label: l.Columns.DateEnd, WidthClass: "col-2xl"},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
+		{Key: "currency", Label: l.Columns.Currency, WidthClass: "col-xs"},
 	}
 }
 

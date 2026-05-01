@@ -116,14 +116,14 @@ func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.Expend
 // buildLineItemTable builds the line items table config for a purchase order.
 func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, currency string, purchaseOrderID string, routes centymo.ExpenditureRoutes, isDraft bool, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "line_number", Label: "Line #", Sortable: false, WidthClass: "col-md"},
-		{Key: "description", Label: "Description", Sortable: false},
-		{Key: "line_type", Label: "Type", Sortable: false, WidthClass: "col-lg"},
-		{Key: "quantity_ordered", Label: "Qty Ordered", Sortable: false, WidthClass: "col-xl"},
-		{Key: "quantity_received", Label: "Qty Received", Sortable: false, WidthClass: "col-2xl"},
-		{Key: "quantity_billed", Label: "Qty Billed", Sortable: false, WidthClass: "col-xl"},
-		{Key: "unit_price", Label: "Unit Price", Sortable: false, WidthClass: "col-3xl"},
-		{Key: "total", Label: "Total", Sortable: false, WidthClass: "col-3xl"},
+		{Key: "line_number", Label: "Line #", NoSort: true, WidthClass: "col-md"},
+		{Key: "description", Label: "Description", NoSort: true},
+		{Key: "line_type", Label: "Type", NoSort: true, WidthClass: "col-lg"},
+		{Key: "quantity_ordered", Label: "Qty Ordered", NoSort: true, WidthClass: "col-xl"},
+		{Key: "quantity_received", Label: "Qty Received", NoSort: true, WidthClass: "col-2xl"},
+		{Key: "quantity_billed", Label: "Qty Billed", NoSort: true, WidthClass: "col-xl"},
+		{Key: "unit_price", Label: "Unit Price", NoSort: true, WidthClass: "col-3xl"},
+		{Key: "total", Label: "Total", NoSort: true, WidthClass: "col-3xl"},
 	}
 
 	canEdit := isDraft && perms != nil && perms.Can("purchase_order", "update")

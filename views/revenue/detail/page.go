@@ -386,12 +386,12 @@ func filterLineItems(all []map[string]any, revenueID string) []map[string]any {
 
 func buildLineItemTable(items []map[string]any, l centymo.RevenueLabels, tableLabels types.TableLabels, currency string) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "description", Label: l.Detail.Description, Sortable: false},
-		{Key: "quantity", Label: l.Detail.Quantity, Sortable: false, WidthClass: "col-md"},
-		{Key: "cost_price", Label: l.Detail.CostPrice, Sortable: false, WidthClass: "col-3xl"},
-		{Key: "unit_price", Label: l.Detail.UnitPrice, Sortable: false, WidthClass: "col-3xl"},
-		{Key: "discount", Label: l.Detail.Discount, Sortable: false, WidthClass: "col-lg"},
-		{Key: "total", Label: l.Detail.Total, Sortable: false, WidthClass: "col-3xl"},
+		{Key: "description", Label: l.Detail.Description, NoSort: true},
+		{Key: "quantity", Label: l.Detail.Quantity, NoSort: true, WidthClass: "col-md"},
+		{Key: "cost_price", Label: l.Detail.CostPrice, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "unit_price", Label: l.Detail.UnitPrice, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "discount", Label: l.Detail.Discount, NoSort: true, WidthClass: "col-lg"},
+		{Key: "total", Label: l.Detail.Total, NoSort: true, WidthClass: "col-3xl"},
 	}
 
 	rows := []types.TableRow{}
@@ -434,10 +434,10 @@ func buildLineItemTable(items []map[string]any, l centymo.RevenueLabels, tableLa
 // buildAuditTable creates the audit trail table.
 func buildAuditTable(l centymo.RevenueLabels, tableLabels types.TableLabels) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "date", Label: l.Detail.Date, Sortable: true, WidthClass: "col-5xl"},
-		{Key: "action", Label: l.Detail.AuditAction, Sortable: true},
-		{Key: "user", Label: l.Detail.AuditUser, Sortable: true, WidthClass: "col-6xl"},
-		{Key: "description", Label: l.Detail.Description, Sortable: false},
+		{Key: "date", Label: l.Detail.Date, WidthClass: "col-5xl"},
+		{Key: "action", Label: l.Detail.AuditAction},
+		{Key: "user", Label: l.Detail.AuditUser, WidthClass: "col-6xl"},
+		{Key: "description", Label: l.Detail.Description, NoSort: true},
 	}
 
 	rows := []types.TableRow{}
@@ -478,11 +478,11 @@ func filterPayments(all []map[string]any, revenueID string) []map[string]any {
 // buildPaymentTable creates the payment table config for the payment tab.
 func buildPaymentTable(payments []map[string]any, l centymo.RevenueLabels, tableLabels types.TableLabels, currency string, revenueID string, routes centymo.RevenueRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "method", Label: l.Detail.PaymentMethod, Sortable: false},
-		{Key: "amount", Label: l.Detail.AmountPaid, Sortable: false, WidthClass: "col-3xl"},
-		{Key: "reference", Label: l.Detail.Reference, Sortable: false, WidthClass: "col-5xl"},
-		{Key: "received_by", Label: l.Detail.ReceivedBy, Sortable: false, WidthClass: "col-4xl"},
-		{Key: "date", Label: l.Detail.PaymentDate, Sortable: false, WidthClass: "col-3xl"},
+		{Key: "method", Label: l.Detail.PaymentMethod, NoSort: true},
+		{Key: "amount", Label: l.Detail.AmountPaid, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "reference", Label: l.Detail.Reference, NoSort: true, WidthClass: "col-5xl"},
+		{Key: "received_by", Label: l.Detail.ReceivedBy, NoSort: true, WidthClass: "col-4xl"},
+		{Key: "date", Label: l.Detail.PaymentDate, NoSort: true, WidthClass: "col-3xl"},
 	}
 
 	rows := []types.TableRow{}

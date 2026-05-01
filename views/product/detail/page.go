@@ -503,9 +503,9 @@ func buildLinesTable(ctx context.Context, deps *DetailViewDeps, productID string
 	}
 
 	columns := []types.TableColumn{
-		{Key: "name", Label: "Line", Sortable: false},
-		{Key: "line_id", Label: "Line ID", Sortable: false},
-		{Key: "sort_order", Label: "Sort Order", Sortable: false, WidthClass: "col-2xl"},
+		{Key: "name", Label: "Line", NoSort: true},
+		{Key: "line_id", Label: "Line ID"},
+		{Key: "sort_order", Label: "Sort Order", WidthClass: "col-2xl"},
 	}
 	types.ApplyColumnStyles(columns, rows)
 
@@ -741,10 +741,10 @@ func BuildVariantsTable(ctx context.Context, deps *DetailViewDeps, productID str
 	l := deps.Labels
 
 	columns := []types.TableColumn{
-		{Key: "sku", Label: l.Variant.SKU, Sortable: true},
-		{Key: "priceOverride", Label: l.Variant.PriceOverride, Sortable: true, WidthClass: "col-4xl"},
-		{Key: "options", Label: l.Detail.OptionsLabel, Sortable: false},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "sku", Label: l.Variant.SKU},
+		{Key: "priceOverride", Label: l.Variant.PriceOverride, WidthClass: "col-4xl"},
+		{Key: "options", Label: l.Detail.OptionsLabel, NoSort: true},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 
 	rows := []types.TableRow{}

@@ -114,13 +114,13 @@ func NewView(deps *ListViewDeps) view.View {
 
 func accrualColumns(l centymo.AccruedExpenseLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "period", Label: l.Columns.PeriodStart, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "supplier_contract", Label: l.Columns.SupplierContract, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "accrued_amount", Label: l.Columns.AccruedAmount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "settled_amount", Label: l.Columns.SettledAmount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "remaining_amount", Label: l.Columns.RemainingAmount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
+		{Key: "name", Label: l.Columns.Name},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
+		{Key: "period", Label: l.Columns.PeriodStart, WidthClass: "col-3xl"},
+		{Key: "supplier_contract", Label: l.Columns.SupplierContract, WidthClass: "col-3xl"},
+		{Key: "accrued_amount", Label: l.Columns.AccruedAmount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "settled_amount", Label: l.Columns.SettledAmount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "remaining_amount", Label: l.Columns.RemainingAmount, WidthClass: "col-3xl", Align: "right"},
 	}
 }
 

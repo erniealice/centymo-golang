@@ -105,12 +105,12 @@ func NewView(deps *ListViewDeps) view.View {
 
 func recognitionColumns(l centymo.ExpenseRecognitionLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "period", Label: l.Columns.PeriodStart, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "supplier_contract", Label: l.Columns.SupplierContract, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "total_amount", Label: l.Columns.TotalAmount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "idempotency_key", Label: l.Columns.IdempotencyKey, Sortable: false, WidthClass: "col-3xl"},
+		{Key: "name", Label: l.Columns.Name},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
+		{Key: "period", Label: l.Columns.PeriodStart, WidthClass: "col-3xl"},
+		{Key: "supplier_contract", Label: l.Columns.SupplierContract, WidthClass: "col-3xl"},
+		{Key: "total_amount", Label: l.Columns.TotalAmount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "idempotency_key", Label: l.Columns.IdempotencyKey, NoSort: true, WidthClass: "col-3xl"},
 	}
 }
 

@@ -694,9 +694,9 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 	perms := view.GetUserPermissions(ctx)
 
 	columns := []types.TableColumn{
-		{Key: "product", Label: "Product", Sortable: true},
-		{Key: "billing_treatment", Label: "Billing", Sortable: true, WidthClass: "col-3xl"},
-		{Key: "price", Label: "Price", Sortable: true, WidthClass: "col-4xl"},
+		{Key: "product", Label: "Product"},
+		{Key: "billing_treatment", Label: "Billing", WidthClass: "col-3xl"},
+		{Key: "price", Label: "Price", WidthClass: "col-4xl"},
 	}
 
 	// Build product ID → name map for display

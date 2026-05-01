@@ -8,6 +8,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
+	"github.com/erniealice/espyna-golang/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -36,7 +37,6 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var pricePlanAllowedSortCols = []string{"date_created", "date_modified", "name", "status"}
 var pricePlanSearchFields = []string{"name", "description"}
 
 func NewView(deps *ListViewDeps) view.View {
@@ -45,11 +45,12 @@ func NewView(deps *ListViewDeps) view.View {
 		if status == "" {
 			status = "active"
 		}
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, pricePlanAllowedSortCols)
+		columns := pricePlanColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "name", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		tableConfig, err := buildTableConfig(ctx, deps, status, columns, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -80,11 +81,12 @@ func NewTableView(deps *ListViewDeps) view.View {
 		if status == "" {
 			status = "active"
 		}
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, pricePlanAllowedSortCols)
+		columns := pricePlanColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "name", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		tableConfig, err := buildTableConfig(ctx, deps, status, columns, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -92,7 +94,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 	})
 }
 
-func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, columns []types.TableColumn, p tableparams.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 	listParams := espynahttp.ToListParams(p, pricePlanSearchFields)
 
@@ -155,7 +157,6 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 
 	l := deps.Labels
-	columns := pricePlanColumns(l)
 	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms, planNames, scheduleNames, deps.CommonLabels.DurationUnit)
 	types.ApplyColumnStyles(columns, rows)
 
@@ -209,12 +210,12 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 func pricePlanColumns(l centymo.PricePlanLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "duration", Label: l.Columns.Duration, Sortable: false, WidthClass: "col-2xl"},
-		{Key: "plan", Label: l.Columns.Plan, Sortable: false},
-		{Key: "schedule", Label: l.Columns.Schedule, Sortable: false},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, Filterable: false, WidthClass: "col-2xl"},
+		{Key: "name", Label: l.Columns.Name, Filterable: true, FilterType: types.FilterTypeString},
+		{Key: "amount", Label: l.Columns.Amount, WidthClass: "col-2xl"},
+		{Key: "duration", Label: l.Columns.Duration, WidthClass: "col-2xl"},
+		{Key: "plan", Label: l.Columns.Plan, NoSort: true},
+		{Key: "schedule", Label: l.Columns.Schedule, NoSort: true},
+		{Key: "status", Label: l.Columns.Status, Filterable: false, WidthClass: "col-2xl"},
 	}
 }
 

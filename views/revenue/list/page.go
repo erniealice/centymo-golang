@@ -8,6 +8,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
+	"github.com/erniealice/espyna-golang/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -35,10 +36,6 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var revenueAllowedSortCols = []string{
-	"revenue_date_string", "date_created", "date_modified", "total_amount", "status",
-}
-
 var revenueSearchFields = []string{"reference_number", "client_name"}
 
 // NewView creates the sales list view (full page).
@@ -49,12 +46,13 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "draft"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, revenueAllowedSortCols)
+		columns := revenueColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "revenue_date_string", "desc")
 		if err != nil {
 			return view.Error(err)
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		tableConfig, err := buildTableConfig(ctx, deps, columns, status, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -99,12 +97,13 @@ func NewTableView(deps *ListViewDeps) view.View {
 			status = "draft"
 		}
 
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, revenueAllowedSortCols)
+		columns := revenueColumns(deps.Labels)
+		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "revenue_date_string", "desc")
 		if err != nil {
 			return view.Error(err)
 		}
 
-		tableConfig, err := buildTableConfig(ctx, deps, status, p)
+		tableConfig, err := buildTableConfig(ctx, deps, columns, status, p)
 		if err != nil {
 			return view.Error(err)
 		}
@@ -114,7 +113,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 }
 
 // buildTableConfig fetches revenue data and builds the table configuration.
-func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p espynahttp.TableQueryParams) (*types.TableConfig, error) {
+func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.TableColumn, status string, p tableparams.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 
 	listParams := espynahttp.ToListParams(p, revenueSearchFields)
@@ -145,7 +144,6 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 
 	l := deps.Labels
-	columns := revenueColumns(l)
 	rows := buildTableRows(resp.GetRevenueList(), status, l, deps.Routes, perms)
 	types.ApplyColumnStyles(columns, rows)
 
@@ -217,12 +215,12 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 
 func revenueColumns(l centymo.RevenueLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "reference_number", Label: l.Columns.Reference, Sortable: true, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "client_name", Label: l.Columns.Customer, Sortable: true, Filterable: true, FilterType: types.FilterTypeString, WidthClass: "col-9xl"},
-		{Key: "revenue_date_string", Label: l.Form.Date, Sortable: true, Filterable: true, FilterType: types.FilterTypeDate, WidthClass: "col-3xl"},
-		{Key: "total_amount", Label: l.Columns.Amount, Sortable: true, Filterable: true, FilterType: types.FilterTypeMoney, WidthClass: "col-3xl", Align: "right"},
-		{Key: "due_date", Label: l.Form.DueDate, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "payment_term", Label: l.Form.PaymentTerms, Sortable: false, WidthClass: "col-3xl"},
+		{Key: "reference_number", Label: l.Columns.Reference, Filterable: true, FilterType: types.FilterTypeString},
+		{Key: "client_name", Label: l.Columns.Customer, Filterable: true, FilterType: types.FilterTypeString, WidthClass: "col-9xl"},
+		{Key: "revenue_date_string", Label: l.Form.Date, Filterable: true, FilterType: types.FilterTypeDate, WidthClass: "col-3xl"},
+		{Key: "total_amount", Label: l.Columns.Amount, Filterable: true, FilterType: types.FilterTypeMoney, WidthClass: "col-3xl", Align: "right"},
+		{Key: "due_date", Label: l.Form.DueDate, WidthClass: "col-3xl"},
+		{Key: "payment_term", Label: l.Form.PaymentTerms, NoSort: true, WidthClass: "col-3xl"},
 	}
 }
 

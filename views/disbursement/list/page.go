@@ -117,12 +117,12 @@ func NewView(deps *ListViewDeps) view.View {
 
 func disbursementColumns(l centymo.DisbursementLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "reference", Label: l.Columns.Reference, Sortable: true},
-		{Key: "payee", Label: l.Columns.Payee, Sortable: true},
-		{Key: "amount", Label: l.Columns.Amount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "method", Label: l.Columns.Method, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "date", Label: l.Columns.Date, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "reference", Label: l.Columns.Reference},
+		{Key: "payee", Label: l.Columns.Payee},
+		{Key: "amount", Label: l.Columns.Amount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "method", Label: l.Columns.Method, WidthClass: "col-3xl"},
+		{Key: "date", Label: l.Columns.Date, WidthClass: "col-3xl"},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 }
 

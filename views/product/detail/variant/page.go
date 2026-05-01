@@ -387,11 +387,11 @@ func buildStockTable(ctx context.Context, deps *DetailViewDeps, productID, varia
 	l := deps.Labels
 
 	columns := []types.TableColumn{
-		{Key: "sku", Label: l.Variant.SKU, Sortable: true},
-		{Key: "location", Label: l.Variant.Location, Sortable: true},
-		{Key: "quantity", Label: l.Variant.QtyOnHand, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "serials", Label: l.Variant.SerialCount, Sortable: true, WidthClass: "col-2xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "sku", Label: l.Variant.SKU},
+		{Key: "location", Label: l.Variant.Location},
+		{Key: "quantity", Label: l.Variant.QtyOnHand, WidthClass: "col-2xl"},
+		{Key: "serials", Label: l.Variant.SerialCount, WidthClass: "col-2xl"},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 
 	rows := []types.TableRow{}
@@ -524,11 +524,11 @@ func buildPricingTable(ctx context.Context, deps *DetailViewDeps, productID, var
 	}
 
 	columns := []types.TableColumn{
-		{Key: "start", Label: startLabel, Sortable: true},
-		{Key: "end", Label: endLabel, Sortable: true},
-		{Key: "package", Label: packageLabel, Sortable: true},
-		{Key: "rate_card", Label: rateCardLabel, Sortable: true},
-		{Key: "amount", Label: amountLabel, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "start", Label: startLabel},
+		{Key: "end", Label: endLabel},
+		{Key: "package", Label: packageLabel},
+		{Key: "rate_card", Label: rateCardLabel},
+		{Key: "amount", Label: amountLabel, WidthClass: "col-2xl"},
 	}
 
 	emptyTitle := l.Detail.VariantPricing

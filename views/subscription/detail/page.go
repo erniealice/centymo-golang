@@ -826,10 +826,10 @@ func buildInvoicesTable(
 	disabledTooltip string,
 ) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "reference_number", Label: l.Invoices.ColumnCode, Sortable: true},
-		{Key: "revenue_date_string", Label: l.Invoices.ColumnDate, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "total_amount", Label: l.Invoices.ColumnAmount, Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "status", Label: l.Invoices.ColumnStatus, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "reference_number", Label: l.Invoices.ColumnCode},
+		{Key: "revenue_date_string", Label: l.Invoices.ColumnDate, WidthClass: "col-3xl"},
+		{Key: "total_amount", Label: l.Invoices.ColumnAmount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "status", Label: l.Invoices.ColumnStatus, WidthClass: "col-2xl"},
 	}
 
 	var rows []types.TableRow

@@ -465,10 +465,10 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 	l := deps.Labels
 
 	columns := []types.TableColumn{
-		{Key: "name", Label: l.Detail.PlanColumnPlan, Sortable: true},
-		{Key: "amount", Label: l.Detail.PlanColumnAmount, Sortable: true, WidthClass: "col-4xl", Align: "right"},
-		{Key: "duration", Label: l.Detail.PlanColumnDuration, Sortable: false, WidthClass: "col-3xl"},
-		{Key: "status", Label: l.Detail.PlanColumnStatus, Sortable: false, WidthClass: "col-2xl"},
+		{Key: "name", Label: l.Detail.PlanColumnPlan},
+		{Key: "amount", Label: l.Detail.PlanColumnAmount, WidthClass: "col-4xl", Align: "right"},
+		{Key: "duration", Label: l.Detail.PlanColumnDuration, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "status", Label: l.Detail.PlanColumnStatus, NoSort: true, WidthClass: "col-2xl"},
 	}
 
 	perms := view.GetUserPermissions(ctx)

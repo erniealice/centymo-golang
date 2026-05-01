@@ -957,14 +957,14 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 	showTreatment := parent.BillingKind != "BILLING_KIND_ONE_TIME"
 
 	columns := []types.TableColumn{
-		{Key: "product", Label: deps.ScheduleLabels.Detail.ProductPriceColumnProduct, Sortable: true},
-		{Key: "price", Label: deps.ScheduleLabels.Detail.ProductPriceColumnPrice, Sortable: true, WidthClass: "col-4xl", Align: "right"},
-		{Key: "currency", Label: deps.ScheduleLabels.Detail.ProductPriceColumnCurrency, Sortable: false, WidthClass: "col-2xl"},
+		{Key: "product", Label: deps.ScheduleLabels.Detail.ProductPriceColumnProduct},
+		{Key: "price", Label: deps.ScheduleLabels.Detail.ProductPriceColumnPrice, WidthClass: "col-4xl", Align: "right"},
+		{Key: "currency", Label: deps.ScheduleLabels.Detail.ProductPriceColumnCurrency, NoSort: true, WidthClass: "col-2xl"},
 	}
 	if showTreatment {
-		columns = append(columns, types.TableColumn{Key: "treatment", Label: deps.ScheduleLabels.Detail.ProductPriceColumnTreatment, Sortable: false, WidthClass: "col-3xl"})
+		columns = append(columns, types.TableColumn{Key: "treatment", Label: deps.ScheduleLabels.Detail.ProductPriceColumnTreatment, NoSort: true, WidthClass: "col-3xl"})
 	}
-	columns = append(columns, types.TableColumn{Key: "effective", Label: deps.ScheduleLabels.Detail.ProductPriceColumnEffective, Sortable: false, WidthClass: "col-4xl"})
+	columns = append(columns, types.TableColumn{Key: "effective", Label: deps.ScheduleLabels.Detail.ProductPriceColumnEffective, NoSort: true, WidthClass: "col-4xl"})
 
 	productNames := map[string]string{}
 	if deps.ListProducts != nil {

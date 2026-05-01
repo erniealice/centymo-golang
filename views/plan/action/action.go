@@ -12,10 +12,15 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 )
+
+var clientNameSort = &commonpb.SortRequest{
+	Fields: []*commonpb.SortField{{Field: "name", Direction: commonpb.SortDirection_ASC}},
+}
 
 // parseVisitsPerCycle parses the visits_per_cycle form value (defaults to 0
 // on parse error or empty), clamps to [1, 100]. Returns 0 when the input
@@ -227,7 +232,7 @@ func loadClientOptions(ctx context.Context, listClients func(ctx context.Context
 	if listClients == nil {
 		return nil
 	}
-	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{Sort: clientNameSort})
 	if err != nil {
 		log.Printf("Failed to load clients for plan drawer: %v", err)
 		return nil
@@ -258,7 +263,7 @@ func resolveClientLabel(ctx context.Context, clientID string, listClients func(c
 	if clientID == "" || listClients == nil {
 		return ""
 	}
-	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+	resp, err := listClients(ctx, &clientpb.ListClientsRequest{Sort: clientNameSort})
 	if err != nil {
 		return clientID
 	}
@@ -505,14 +510,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 		}
 
-		// Close drawer and reload current page so the detail view reflects the update.
-		return view.ViewResult{
-			StatusCode: http.StatusOK,
-			Headers: map[string]string{
-				"HX-Trigger": `{"formSuccess":true}`,
-				"HX-Refresh": "true",
-			},
-		}
+		return centymo.HTMXSuccess("plans-table")
 	})
 }
 

@@ -115,12 +115,12 @@ func NewView(deps *ListViewDeps) view.View {
 
 func purchaseOrderColumns() []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "po_number", Label: "PO Number", Sortable: true},
-		{Key: "supplier", Label: "Supplier", Sortable: true},
-		{Key: "status", Label: "Status", Sortable: true, WidthClass: "col-2xl"},
-		{Key: "total_amount", Label: "Total Amount", Sortable: true, WidthClass: "col-3xl", Align: "right"},
-		{Key: "order_date", Label: "Order Date", Sortable: true, WidthClass: "col-3xl"},
-		{Key: "expected_delivery", Label: "Expected Delivery", Sortable: true, WidthClass: "col-5xl"},
+		{Key: "po_number", Label: "PO Number"},
+		{Key: "supplier", Label: "Supplier"},
+		{Key: "status", Label: "Status", WidthClass: "col-2xl"},
+		{Key: "total_amount", Label: "Total Amount", WidthClass: "col-3xl", Align: "right"},
+		{Key: "order_date", Label: "Order Date", WidthClass: "col-3xl"},
+		{Key: "expected_delivery", Label: "Expected Delivery", WidthClass: "col-5xl"},
 	}
 }
 

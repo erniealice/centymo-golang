@@ -352,9 +352,9 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 	perms := view.GetUserPermissions(ctx)
 
 	columns := []types.TableColumn{
-		{Key: "name", Label: l.Columns.Product, Sortable: true},
-		{Key: "item_type", Label: l.Columns.ItemType, Sortable: true, WidthClass: "col-3xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "name", Label: l.Columns.Product},
+		{Key: "item_type", Label: l.Columns.ItemType, WidthClass: "col-3xl"},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 
 	// Build product_id → product_kind map for the Item Type column.
@@ -510,11 +510,11 @@ func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, pla
 	perms := view.GetUserPermissions(ctx)
 
 	columns := []types.TableColumn{
-		{Key: "name", Label: l.Columns.PricePlan, Sortable: true},
-		{Key: "amount", Label: l.Detail.Price, Sortable: true, WidthClass: "col-4xl"},
-		{Key: "duration", Label: l.Columns.Duration, Sortable: true, WidthClass: "col-4xl"},
-		{Key: "schedule", Label: l.Columns.PriceSchedule, Sortable: true, WidthClass: "col-6xl"},
-		{Key: "status", Label: l.Columns.Status, Sortable: true, WidthClass: "col-2xl"},
+		{Key: "name", Label: l.Columns.PricePlan},
+		{Key: "amount", Label: l.Detail.Price, WidthClass: "col-4xl"},
+		{Key: "duration", Label: l.Columns.Duration, WidthClass: "col-4xl"},
+		{Key: "schedule", Label: l.Columns.PriceSchedule, WidthClass: "col-6xl"},
+		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 
 	// Build a schedule ID → name map for display.

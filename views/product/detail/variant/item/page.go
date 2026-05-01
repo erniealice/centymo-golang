@@ -351,11 +351,11 @@ func LoadSerials(ctx context.Context, deps *variant.DetailViewDeps, inventoryIte
 // BuildSerialTable builds the serial numbers table with view actions linking to serial detail.
 func BuildSerialTable(serials []*inventoryserialpb.InventorySerial, tableLabels types.TableLabels, productID, variantID, itemID string, l centymo.ProductLabels, routes centymo.ProductRoutes) *types.TableConfig {
 	columns := []types.TableColumn{
-		{Key: "serial_number", Label: l.Detail.SerialNumber, Sortable: true},
-		{Key: "imei", Label: l.Detail.IMEI, Sortable: false},
-		{Key: "status", Label: l.Detail.Status, Sortable: true},
-		{Key: "warranty_end", Label: l.Detail.WarrantyEnd, Sortable: true},
-		{Key: "purchase_order", Label: l.Detail.PurchaseOrder, Sortable: false},
+		{Key: "serial_number", Label: l.Detail.SerialNumber},
+		{Key: "imei", Label: l.Detail.IMEI, NoSort: true},
+		{Key: "status", Label: l.Detail.Status},
+		{Key: "warranty_end", Label: l.Detail.WarrantyEnd},
+		{Key: "purchase_order", Label: l.Detail.PurchaseOrder, NoSort: true},
 	}
 
 	rows := []types.TableRow{}
