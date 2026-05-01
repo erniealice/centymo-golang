@@ -255,6 +255,11 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
             </div>
         </div>
 
+        {{/* Hint vs Info — Hint renders as visible <span class="form-hint"> below the
+             input (always visible, light/secondary text); Info renders as the (i)
+             popover beside the label (verbose explainer hidden until hover/click).
+             We pass both so operators see the field-purpose copy inline AND can
+             expand to the longer popover when they need the full per-mode reference. */}}
         <div class="form-row">
             {{template "form-group" (dict
                 "Type" "number"
@@ -266,6 +271,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Step" "0.01"
                 "Min" "0"
                 "Disabled" (and .IsEdit .InUse)
+                "Hint" .Labels.AmountInfo
                 "Info" .Labels.AmountInfo
             )}}
             {{template "form-group" (dict
@@ -279,6 +285,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     (dict "Value" "PHP" "Label" .Labels.CurrencyPHP)
                     (dict "Value" "USD" "Label" .Labels.CurrencyUSD)
                 )
+                "Hint" .Labels.CurrencyInfo
                 "Info" .Labels.CurrencyInfo
             )}}
         </div>
@@ -296,6 +303,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Min" "1"
                 "Step" "1"
                 "Placeholder" .Labels.EntitledOccurrencesPlaceholder
+                "Hint" .Labels.EntitledOccurrencesInfo
                 "Info" .Labels.EntitledOccurrencesInfo
                 "Disabled" (and .IsEdit .InUse)
             )}}
@@ -311,6 +319,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Min" "1"
                 "Placeholder" .Labels.BillingCyclePlaceholder
                 "Disabled" (and .IsEdit .InUse)
+                "Hint" .Labels.BillingCycleInfo
                 "Info" .Labels.BillingCycleInfo
             )}}
             {{template "form-group" (dict
@@ -333,6 +342,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Value" .TermValue
                 "Min" "0"
                 "Placeholder" .Labels.TermPlaceholder
+                "Hint" .Labels.TermInfo
                 "Info" .Labels.TermInfo
                 "Disabled" (and .IsEdit .InUse)
             )}}
