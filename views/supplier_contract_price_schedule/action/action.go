@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -16,58 +15,9 @@ import (
 
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
 	scpspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
-	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule/form"
 )
-
-// StatusOption is a select option for the schedule status enum.
-// Description is required by the shared form-group select template (reads
-// .Description on every option to set data-description) — keep the field
-// even when unused so template execution doesn't panic.
-type StatusOption struct {
-	Value       string
-	Label       string
-	Selected    bool
-	Description string
-}
-
-// FormData is the template data for the SCPS drawer form.
-type FormData struct {
-	FormAction string
-	IsEdit     bool
-	ID         string
-
-	// Identity
-	Name        string
-	Description string
-	InternalID  string
-
-	// Scoping
-	SupplierContractID    string
-	SupplierContractLabel string
-	SupplierContracts     []types.SelectOption
-
-	// Validity (date-only — half-open [start, end), end blank = open-ended)
-	DateStart   string
-	DateEnd     string
-	OpenEnded   bool
-
-	// Money / location
-	Currency           string
-	LocationID         string
-	Locations          []types.SelectOption
-
-	// Lifecycle
-	Status         string
-	StatusOptions  []StatusOption
-	SequenceNumber string
-
-	// Notes
-	Notes string
-
-	Labels       centymo.SupplierContractPriceScheduleFormLabels
-	StatusLabels centymo.SupplierContractPriceScheduleStatusLabels
-	CommonLabels pyeza.CommonLabels
-}
 
 // Deps holds all dependencies for the SCPS action handlers.
 type Deps struct {
@@ -127,11 +77,11 @@ func NewAddAction(deps *Deps) view.View {
 			SupplierContractId: r.FormValue("supplier_contract_id"),
 			Name:               r.FormValue("name"),
 			Description:        optionalString(r.FormValue("description")),
-			DateTimeStart:      parseDateUTC(r.FormValue("date_start"), false),
-			DateTimeEnd:        parseEndDate(r.FormValue("date_end"), openEnded),
+			DateTimeStart:      form.ParseDateUTC(r.FormValue("date_start"), false),
+			DateTimeEnd:        form.ParseEndDate(r.FormValue("date_end"), openEnded),
 			LocationId:         optionalString(r.FormValue("location_id")),
 			Currency:           r.FormValue("currency"),
-			Status:             parseStatus(r.FormValue("status")),
+			Status:             form.ParseStatus(r.FormValue("status")),
 			SequenceNumber:     int32(seqNum),
 			Notes:              optionalString(r.FormValue("notes")),
 			Active:             true,
@@ -181,12 +131,12 @@ func NewEditAction(deps *Deps) view.View {
 			fd.Description = s.GetDescription()
 			fd.InternalID = s.GetInternalId()
 			fd.SupplierContractID = s.GetSupplierContractId()
-			fd.DateStart = formatDateUTC(s.GetDateTimeStart())
+			fd.DateStart = form.FormatDateUTC(s.GetDateTimeStart())
 			if end := s.GetDateTimeEnd(); end == nil {
 				fd.OpenEnded = true
 				fd.DateEnd = ""
 			} else {
-				fd.DateEnd = formatDateUTC(end)
+				fd.DateEnd = form.FormatDateUTC(end)
 			}
 			fd.LocationID = s.GetLocationId()
 			fd.Currency = s.GetCurrency()
@@ -213,11 +163,11 @@ func NewEditAction(deps *Deps) view.View {
 			SupplierContractId: r.FormValue("supplier_contract_id"),
 			Name:               r.FormValue("name"),
 			Description:        optionalString(r.FormValue("description")),
-			DateTimeStart:      parseDateUTC(r.FormValue("date_start"), false),
-			DateTimeEnd:        parseEndDate(r.FormValue("date_end"), openEnded),
+			DateTimeStart:      form.ParseDateUTC(r.FormValue("date_start"), false),
+			DateTimeEnd:        form.ParseEndDate(r.FormValue("date_end"), openEnded),
 			LocationId:         optionalString(r.FormValue("location_id")),
 			Currency:           r.FormValue("currency"),
-			Status:             parseStatus(r.FormValue("status")),
+			Status:             form.ParseStatus(r.FormValue("status")),
 			SequenceNumber:     int32(seqNum),
 			Notes:              optionalString(r.FormValue("notes")),
 		}
@@ -301,14 +251,14 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 
 // --- helpers -----------------------------------------------------------------
 
-func buildEmptyFormData(ctx context.Context, deps *Deps, l centymo.SupplierContractPriceScheduleLabels) *FormData {
-	fd := &FormData{
+func buildEmptyFormData(ctx context.Context, deps *Deps, l centymo.SupplierContractPriceScheduleLabels) *form.Data {
+	fd := &form.Data{
 		Labels:       l.Form,
 		StatusLabels: l.Status,
 		CommonLabels: deps.CommonLabels,
 	}
 
-	fd.StatusOptions = []StatusOption{
+	fd.StatusOptions = []form.StatusOption{
 		{Value: "SUPPLIER_CONTRACT_PRICE_SCHEDULE_STATUS_SCHEDULED", Label: l.Status.Scheduled},
 		{Value: "SUPPLIER_CONTRACT_PRICE_SCHEDULE_STATUS_ACTIVE", Label: l.Status.Active},
 		{Value: "SUPPLIER_CONTRACT_PRICE_SCHEDULE_STATUS_SUPERSEDED", Label: l.Status.Superseded},
@@ -329,47 +279,6 @@ func buildEmptyFormData(ctx context.Context, deps *Deps, l centymo.SupplierContr
 	}
 
 	return fd
-}
-
-// parseDateUTC parses YYYY-MM-DD as midnight UTC.
-func parseDateUTC(date string, _ bool) *timestamppb.Timestamp {
-	if date == "" {
-		return nil
-	}
-	t, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return nil
-	}
-	return timestamppb.New(t.UTC())
-}
-
-// parseEndDate handles the open-ended checkbox: when checked, end is nil.
-// Otherwise parses as YYYY-MM-DD at end-of-day UTC (23:59:59).
-func parseEndDate(date string, openEnded bool) *timestamppb.Timestamp {
-	if openEnded || date == "" {
-		return nil
-	}
-	t, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return nil
-	}
-	// End is exclusive in the half-open window; render as end-of-day UTC.
-	endOfDay := t.UTC().Add(24*time.Hour - time.Second)
-	return timestamppb.New(endOfDay)
-}
-
-func formatDateUTC(ts *timestamppb.Timestamp) string {
-	if ts == nil || !ts.IsValid() {
-		return ""
-	}
-	return ts.AsTime().UTC().Format("2006-01-02")
-}
-
-func parseStatus(s string) scpspb.SupplierContractPriceScheduleStatus {
-	if v, ok := scpspb.SupplierContractPriceScheduleStatus_value[s]; ok {
-		return scpspb.SupplierContractPriceScheduleStatus(v)
-	}
-	return scpspb.SupplierContractPriceScheduleStatus_SUPPLIER_CONTRACT_PRICE_SCHEDULE_STATUS_SCHEDULED
 }
 
 func optionalString(s string) *string {

@@ -15,36 +15,9 @@ import (
 
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
+
+	"github.com/erniealice/centymo-golang/views/disbursement/form"
 )
-
-// ExpenditureOption is a minimal struct for rendering expenditure (bill) options in the form.
-type ExpenditureOption struct {
-	Id     string
-	Name   string
-	Amount string
-}
-
-// FormData is the template data for the disbursement drawer form.
-type FormData struct {
-	FormAction       string
-	IsEdit           bool
-	ID               string
-	ReferenceNumber  string
-	Payee            string
-	Amount           string
-	Currency         string
-	Method           string
-	Date             string
-	ApprovedBy       string
-	ApprovedRole     string
-	Notes            string
-	DisbursementType string
-	ExpenditureID    string
-	Expenditures     []*ExpenditureOption
-	Status           string
-	Labels           centymo.DisbursementFormLabels
-	CommonLabels     any
-}
 
 // Deps holds dependencies for disbursement action handlers.
 type Deps struct {
@@ -64,7 +37,7 @@ type Deps struct {
 func loadExpenditureOptions(
 	ctx context.Context,
 	listFn func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error),
-) []*ExpenditureOption {
+) []*form.ExpenditureOption {
 	if listFn == nil {
 		return nil
 	}
@@ -73,14 +46,14 @@ func loadExpenditureOptions(
 		log.Printf("Failed to list expenditures: %v", err)
 		return nil
 	}
-	var opts []*ExpenditureOption
+	var opts []*form.ExpenditureOption
 	for _, e := range resp.GetData() {
 		status := e.GetStatus()
 		if status != "pending" && status != "approved" {
 			continue
 		}
 		amount := fmt.Sprintf("%.2f", float64(e.GetTotalAmount())/100.0)
-		opts = append(opts, &ExpenditureOption{
+		opts = append(opts, &form.ExpenditureOption{
 			Id:     e.GetId(),
 			Name:   e.GetName(),
 			Amount: e.GetCurrency() + " " + amount,
@@ -107,7 +80,7 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("disbursement-drawer-form", &FormData{
+			return view.OK("disbursement-drawer-form", &form.Data{
 				FormAction:   deps.Routes.AddURL,
 				Currency:     "PHP",
 				Status:       "draft",
@@ -184,7 +157,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := readData[0]
 
-			return view.OK("disbursement-drawer-form", &FormData{
+			return view.OK("disbursement-drawer-form", &form.Data{
 				FormAction:       route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:           true,
 				ID:               id,

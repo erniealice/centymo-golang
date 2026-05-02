@@ -880,6 +880,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					productDeps.ListPlans = uc.ListPlans.Execute
 				}
 			}
+			wireServiceDashboard(productDeps, useCases)
 			productmod.NewModule(productDeps).RegisterRoutes(ctx.Routes)
 
 			// Inventory-flavoured product mount. Reuses the same product module
@@ -2060,7 +2061,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		if cfg.wantCollection() {
 			if useCases.Treasury != nil && useCases.Treasury.Collection != nil {
-				collectionmod.NewModule(&collectionmod.ModuleDeps{
+				collDeps := &collectionmod.ModuleDeps{
 					Routes:           collectionRoutes,
 					Labels:           collectionLabels,
 					CommonLabels:     ctx.Common,
@@ -2076,7 +2077,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					CreateAttachment: createAttachment,
 					DeleteAttachment: deleteAttachment,
 					NewID:            newAttachmentID,
-				}).RegisterRoutes(ctx.Routes)
+				}
+				wireCashDashboard(collDeps, useCases)
+				collectionmod.NewModule(collDeps).RegisterRoutes(ctx.Routes)
 			}
 		}
 
@@ -2208,6 +2211,8 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// expose a /action/* mirror because recognition is created by use
 			// case (no UI form). Leaving empty by default; verticals can wire
 			// a custom trigger URL via lyngua override.
+			wirePurchaseDashboard(expDeps, useCases)
+			wireExpenseDashboard(expDeps, useCases)
 			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
 		}
 

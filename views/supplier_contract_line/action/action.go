@@ -15,41 +15,9 @@ import (
 
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
+
+	"github.com/erniealice/centymo-golang/views/supplier_contract_line/form"
 )
-
-// TreatmentOption is a select option for the line treatment enum.
-type TreatmentOption struct {
-	Value    string
-	Label    string
-	Selected bool
-}
-
-// LineFormData is the template data for the supplier contract line drawer form.
-type LineFormData struct {
-	FormAction         string
-	IsEdit             bool
-	ID                 string
-	SupplierContractID string
-
-	// Core fields
-	Description    string
-	LineType       string
-	ProductID      string
-	Quantity       string
-	UnitPrice      string
-	Treatment      string
-	StartDate      string
-	EndDate        string
-	ExpenseAccountID string
-	LineNumber     string
-
-	// Options
-	TreatmentOptions []TreatmentOption
-	Products         []types.SelectOption
-
-	Labels       centymo.SupplierContractLabels
-	CommonLabels pyeza.CommonLabels
-}
 
 // Deps holds dependencies for line item action handlers.
 type Deps struct {
@@ -215,11 +183,11 @@ func NewDeleteAction(deps *Deps) view.View {
 
 // --- helpers -----------------------------------------------------------------
 
-func buildEmptyLineFormData(ctx context.Context, deps *Deps, l centymo.SupplierContractLabels) *LineFormData {
-	fd := &LineFormData{
+func buildEmptyLineFormData(ctx context.Context, deps *Deps, l centymo.SupplierContractLabels) *form.Data {
+	fd := &form.Data{
 		Labels:       l,
 		CommonLabels: deps.CommonLabels,
-		TreatmentOptions: []TreatmentOption{
+		TreatmentOptions: []form.TreatmentOption{
 			{Value: "SUPPLIER_CONTRACT_LINE_TREATMENT_RECURRING", Label: l.Lines.TreatmentRecurring},
 			{Value: "SUPPLIER_CONTRACT_LINE_TREATMENT_ONE_TIME", Label: l.Lines.TreatmentOneTime},
 			{Value: "SUPPLIER_CONTRACT_LINE_TREATMENT_USAGE_BASED", Label: l.Lines.TreatmentUsageBased},

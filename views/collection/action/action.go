@@ -14,43 +14,9 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
+
+	"github.com/erniealice/centymo-golang/views/collection/form"
 )
-
-// FormLabels holds i18n labels for the collection drawer form template.
-type FormLabels struct {
-	Customer             string
-	Date                 string
-	Amount               string
-	Currency             string
-	Reference            string
-	ReferencePlaceholder string
-	PaymentMethod        string
-	Status               string
-	Notes                string
-	NotesPlaceholder     string
-	// Form holds extended placeholder and option labels used by the template.
-	Form centymo.CollectionFormLabels
-}
-
-// FormData is the template data for the collection drawer form.
-type FormData struct {
-	FormAction       string
-	IsEdit           bool
-	ID               string
-	Customer         string
-	ReferenceNumber  string
-	Amount           string
-	Currency         string
-	CollectionMethod string
-	Date             string
-	ReceivedBy       string
-	ReceivedRole     string
-	Notes            string
-	CollectionType   string
-	Status           string
-	Labels           FormLabels
-	CommonLabels     any
-}
 
 // Deps holds dependencies for collection action handlers.
 type Deps struct {
@@ -60,22 +26,6 @@ type Deps struct {
 	ReadCollection   func(ctx context.Context, req *collectionpb.ReadCollectionRequest) (*collectionpb.ReadCollectionResponse, error)
 	UpdateCollection func(ctx context.Context, req *collectionpb.UpdateCollectionRequest) (*collectionpb.UpdateCollectionResponse, error)
 	DeleteCollection func(ctx context.Context, req *collectionpb.DeleteCollectionRequest) (*collectionpb.DeleteCollectionResponse, error)
-}
-
-func formLabels(l centymo.CollectionFormLabels) FormLabels {
-	return FormLabels{
-		Customer:             l.Customer,
-		Date:                 l.Date,
-		Amount:               l.Amount,
-		Currency:             l.Currency,
-		Reference:            l.Reference,
-		ReferencePlaceholder: l.ReferencePlaceholder,
-		PaymentMethod:        l.PaymentMethod,
-		Status:               l.Status,
-		Notes:                l.Notes,
-		NotesPlaceholder:     l.NotesPlaceholder,
-		Form:                 l,
-	}
 }
 
 // parseAmount converts a form string amount (decimal) to int64 centavos.
@@ -96,11 +46,11 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("collection-drawer-form", &FormData{
+			return view.OK("collection-drawer-form", &form.Data{
 				FormAction:   deps.Routes.AddURL,
 				Currency:     "PHP",
 				Status:       "pending",
-				Labels:       formLabels(centymo.DefaultCollectionLabels().Form),
+				Labels:       deps.Labels.Form,
 				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}
@@ -172,7 +122,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := readData[0]
 
-			return view.OK("collection-drawer-form", &FormData{
+			return view.OK("collection-drawer-form", &form.Data{
 				FormAction:       route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:           true,
 				ID:               id,
@@ -187,7 +137,7 @@ func NewEditAction(deps *Deps) view.View {
 				Notes:            "",
 				CollectionType:   record.GetCollectionType(),
 				Status:           record.GetStatus(),
-				Labels:           formLabels(centymo.DefaultCollectionLabels().Form),
+				Labels:           deps.Labels.Form,
 				CommonLabels:     nil, // injected by ViewAdapter
 			})
 		}

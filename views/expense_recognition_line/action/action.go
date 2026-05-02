@@ -17,22 +17,9 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	expenserecognitionlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_line"
-)
 
-// LineFormData is the template data for the recognition line drawer form.
-type LineFormData struct {
-	FormAction          string
-	IsEdit              bool
-	ID                  string
-	ExpenseRecognitionID string
-	Description         string
-	Quantity            string
-	UnitAmount          string
-	Amount              string
-	Currency            string
-	CommonLabels        any
-	Labels              centymo.ExpenseRecognitionLineLabels
-}
+	"github.com/erniealice/centymo-golang/views/expense_recognition_line/form"
+)
 
 // Deps holds dependencies for line action handlers.
 type Deps struct {
@@ -55,7 +42,7 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("expense-recognition-line-drawer-form", &LineFormData{
+			return view.OK("expense-recognition-line-drawer-form", &form.Data{
 				FormAction:           route.ResolveURL(deps.Routes.LineAddURL, "id", recognitionID),
 				ExpenseRecognitionID: recognitionID,
 				Quantity:             "1",
@@ -113,7 +100,7 @@ func NewEditAction(deps *Deps) view.View {
 				return centymo.HTMXError("recognition line not found")
 			}
 			line := readResp.GetData()[0]
-			return view.OK("expense-recognition-line-drawer-form", &LineFormData{
+			return view.OK("expense-recognition-line-drawer-form", &form.Data{
 				FormAction:           route.ResolveURL(deps.Routes.LineEditURL, "id", recognitionID, "lid", lineID),
 				IsEdit:               true,
 				ID:                   lineID,

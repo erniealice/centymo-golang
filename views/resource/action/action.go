@@ -10,36 +10,9 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	resourcepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/resource"
+
+	"github.com/erniealice/centymo-golang/views/resource/form"
 )
-
-// FormLabels holds i18n labels for the drawer form template.
-type FormLabels struct {
-	Name            string
-	NamePlaceholder string
-	Description     string
-	DescPlaceholder string
-	ProductId       string
-	UserId          string
-
-	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string
-	DescriptionInfo string
-	ProductIdInfo   string
-	UserIdInfo      string
-}
-
-// FormData is the template data for the resource drawer form.
-type FormData struct {
-	FormAction   string
-	IsEdit       bool
-	ID           string
-	Name         string
-	Description  string
-	ProductId    string
-	UserId       string
-	Labels       FormLabels
-	CommonLabels any
-}
 
 // Deps holds dependencies for resource action handlers.
 type Deps struct {
@@ -49,22 +22,6 @@ type Deps struct {
 	ReadResource   func(ctx context.Context, req *resourcepb.ReadResourceRequest) (*resourcepb.ReadResourceResponse, error)
 	UpdateResource func(ctx context.Context, req *resourcepb.UpdateResourceRequest) (*resourcepb.UpdateResourceResponse, error)
 	DeleteResource func(ctx context.Context, req *resourcepb.DeleteResourceRequest) (*resourcepb.DeleteResourceResponse, error)
-}
-
-func formLabels(l centymo.ResourceLabels) FormLabels {
-	return FormLabels{
-		Name:            l.Form.Name,
-		NamePlaceholder: l.Form.NamePlaceholder,
-		Description:     l.Form.Description,
-		DescPlaceholder: l.Form.DescPlaceholder,
-		ProductId:       l.Form.ProductId,
-		UserId:          l.Form.UserId,
-		// Info fields sourced from centymo.ResourceFormLabels (populated from lyngua JSON + defaults).
-		NameInfo:        l.Form.NameInfo,
-		DescriptionInfo: l.Form.DescriptionInfo,
-		ProductIdInfo:   l.Form.ProductIdInfo,
-		UserIdInfo:      l.Form.UserIdInfo,
-	}
 }
 
 func strPtr(s string) *string {
@@ -80,9 +37,9 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("resource-drawer-form", &FormData{
+			return view.OK("resource-drawer-form", &form.Data{
 				FormAction:   deps.Routes.AddURL,
-				Labels:       formLabels(deps.Labels),
+				Labels:       deps.Labels.Form,
 				CommonLabels: nil,
 			})
 		}
@@ -139,7 +96,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := readResp.GetData()[0]
 
-			return view.OK("resource-drawer-form", &FormData{
+			return view.OK("resource-drawer-form", &form.Data{
 				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:       true,
 				ID:           id,
@@ -147,7 +104,7 @@ func NewEditAction(deps *Deps) view.View {
 				Description:  record.GetDescription(),
 				ProductId:    record.GetProductId(),
 				UserId:       record.GetUserId(),
-				Labels:       formLabels(deps.Labels),
+				Labels:       deps.Labels.Form,
 				CommonLabels: nil,
 			})
 		}

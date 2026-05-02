@@ -11,38 +11,9 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
+
+	"github.com/erniealice/centymo-golang/views/pricelist/form"
 )
-
-// FormLabels holds i18n labels for the price list drawer form template.
-type FormLabels struct {
-	Name            string
-	Description     string
-	DescPlaceholder string
-	DateStart       string
-	DateEnd         string
-	Active          string
-
-	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string
-	DescriptionInfo string
-	DateStartInfo   string
-	DateEndInfo     string
-	ActiveInfo      string
-}
-
-// FormData is the template data for the price list drawer form.
-type FormData struct {
-	FormAction   string
-	IsEdit       bool
-	ID           string
-	Name         string
-	Description  string
-	DateStart    string
-	DateEnd      string
-	Active       bool
-	Labels       FormLabels
-	CommonLabels any
-}
 
 // Deps holds dependencies for price list action handlers.
 type Deps struct {
@@ -54,23 +25,6 @@ type Deps struct {
 	DeletePriceList func(ctx context.Context, req *pricelistpb.DeletePriceListRequest) (*pricelistpb.DeletePriceListResponse, error)
 }
 
-func formLabels(t func(string) string, f centymo.PriceListFormLabels) FormLabels {
-	return FormLabels{
-		Name:            t("pricelist.form.name"),
-		Description:     t("pricelist.form.description"),
-		DescPlaceholder: t("pricelist.form.descriptionPlaceholder"),
-		DateStart:       t("pricelist.form.dateStart"),
-		DateEnd:         t("pricelist.form.dateEnd"),
-		Active:          t("pricelist.form.active"),
-		// Info fields sourced from centymo.PriceListFormLabels (populated from lyngua JSON + defaults).
-		NameInfo:        f.NameInfo,
-		DescriptionInfo: f.DescriptionInfo,
-		DateStartInfo:   f.DateStartInfo,
-		DateEndInfo:     f.DateEndInfo,
-		ActiveInfo:      f.ActiveInfo,
-	}
-}
-
 // NewAddAction creates the price list add action (GET = form, POST = create).
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -80,10 +34,10 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("pricelist-drawer-form", &FormData{
+			return view.OK("pricelist-drawer-form", &form.Data{
 				FormAction:   deps.Routes.AddURL,
 				Active:       true,
-				Labels:       formLabels(viewCtx.T, deps.Labels.Form),
+				Labels:       form.BuildLabels(viewCtx.T, deps.Labels.Form),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}
@@ -145,7 +99,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			pl := data[0]
 
-			return view.OK("pricelist-drawer-form", &FormData{
+			return view.OK("pricelist-drawer-form", &form.Data{
 				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:       true,
 				ID:           id,
@@ -154,7 +108,7 @@ func NewEditAction(deps *Deps) view.View {
 				DateStart:    pl.GetDateStart(),
 				DateEnd:      pl.GetDateEnd(),
 				Active:       pl.GetActive(),
-				Labels:       formLabels(viewCtx.T, deps.Labels.Form),
+				Labels:       form.BuildLabels(viewCtx.T, deps.Labels.Form),
 				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}

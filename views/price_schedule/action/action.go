@@ -17,6 +17,8 @@ import (
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/erniealice/centymo-golang/views/price_schedule/form"
 )
 
 var clientNameSort = &commonpb.SortRequest{
@@ -64,51 +66,6 @@ func parseScheduleDateTime(date, t string, tz *time.Location, isEnd bool) *times
 	return timestamppb.New(parsed.UTC())
 }
 
-type LocationOption struct {
-	Id   string
-	Name string
-}
-
-type FormData struct {
-	FormAction            string
-	IsEdit                bool
-	ID                    string
-	Name                  string
-	Description           string
-	// Date + optional time inputs (2026-04-28 date+time field plan).
-	// The drawer renders <input type="date"> + <input type="time"> side
-	// by side; time is OPTIONAL. Empty time defaults to 00:00:00 for
-	// DateStart and 23:59:59 for DateEnd so an end-only date covers the
-	// full day. parseScheduleDateTime() applies the rule on POST.
-	DateStartDate         string
-	DateStartTime         string
-	DateEndDate           string
-	DateEndTime           string
-	Active                bool
-	Locations             []*LocationOption
-	SelectedLocationID    string
-	SelectedLocationLabel string
-	LocationOptions       []map[string]any
-
-	// 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
-	ClientID            string
-	ClientLabel         string
-	ClientOptions       []map[string]any
-	SearchClientURL     string
-	// SuggestNameURL is the GET endpoint that the Client picker hits via
-	// HTMX to refresh the Name input with the per-tier derived name
-	// "{ClientName} - {customClientPriceScheduleLabelSuffix}".
-	SuggestNameURL string
-
-	// Scope (2026-04-28) — "location" or "client". Drives the radio that
-	// mutually excludes the Location and Client pickers. Default "location"
-	// for new schedules; for edit, derived from record.client_id presence.
-	Scope string
-
-	Labels       centymo.PriceScheduleFormLabels
-	CommonLabels any
-}
-
 type Deps struct {
 	Routes                   centymo.PriceScheduleRoutes
 	Labels                   centymo.PriceScheduleLabels
@@ -124,7 +81,7 @@ type Deps struct {
 	SearchClientsURL string
 }
 
-func loadLocations(ctx context.Context, deps *Deps) []*LocationOption {
+func loadLocations(ctx context.Context, deps *Deps) []*form.LocationOption {
 	if deps.ListLocations == nil {
 		return nil
 	}
@@ -132,32 +89,11 @@ func loadLocations(ctx context.Context, deps *Deps) []*LocationOption {
 	if err != nil {
 		return nil
 	}
-	opts := make([]*LocationOption, 0, len(resp.GetData()))
+	opts := make([]*form.LocationOption, 0, len(resp.GetData()))
 	for _, loc := range resp.GetData() {
-		opts = append(opts, &LocationOption{Id: loc.GetId(), Name: loc.GetName()})
+		opts = append(opts, &form.LocationOption{Id: loc.GetId(), Name: loc.GetName()})
 	}
 	return opts
-}
-
-func buildLocationAutoCompleteOptions(locations []*LocationOption, selectedID string) []map[string]any {
-	opts := make([]map[string]any, 0, len(locations))
-	for _, loc := range locations {
-		opts = append(opts, map[string]any{
-			"Value":    loc.Id,
-			"Label":    loc.Name,
-			"Selected": loc.Id == selectedID,
-		})
-	}
-	return opts
-}
-
-func findLocationLabel(locations []*LocationOption, id string) string {
-	for _, loc := range locations {
-		if loc.Id == id {
-			return loc.Name
-		}
-	}
-	return ""
 }
 
 // loadClientOptions fetches the workspace's clients and converts them into
@@ -221,24 +157,6 @@ func resolveClientName(ctx context.Context, deps *Deps, clientID string) string 
 	return clientID
 }
 
-// buildDerivedScheduleName produces "{ClientName} - {customClientPriceScheduleLabelSuffix}"
-// per plan §4.4.1. Empty client name short-circuits to the suffix alone, and
-// empty suffix short-circuits to the client name alone.
-func buildDerivedScheduleName(clientName, suffix string) string {
-	clientName = strings.TrimSpace(clientName)
-	suffix = strings.TrimSpace(suffix)
-	if clientName == "" && suffix == "" {
-		return ""
-	}
-	if suffix == "" {
-		return clientName
-	}
-	if clientName == "" {
-		return suffix
-	}
-	return clientName + " - " + suffix
-}
-
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
@@ -253,7 +171,7 @@ func NewAddAction(deps *Deps) view.View {
 			if viewCtx.Request.URL.Query().Get("suggest_name") == "1" {
 				clientID := viewCtx.Request.URL.Query().Get("client_id")
 				clientName := resolveClientName(ctx, deps, clientID)
-				derived := buildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
+				derived := form.BuildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
 				return view.OK("price-schedule-name-suggest", map[string]any{
 					"Value":           derived,
 					"NamePlaceholder": deps.Labels.Form.NamePlaceholder,
@@ -267,7 +185,7 @@ func NewAddAction(deps *Deps) view.View {
 			clientLabel := resolveClientName(ctx, deps, pinnedClientID)
 			defaultName := ""
 			if pinnedClientID != "" {
-				defaultName = buildDerivedScheduleName(clientLabel, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
+				defaultName = form.BuildDerivedScheduleName(clientLabel, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
 			}
 			// 2026-04-28 — Scope radio default. `location` unless the URL
 			// pins a client (?client_id=...) which implies client scope.
@@ -275,12 +193,12 @@ func NewAddAction(deps *Deps) view.View {
 			if pinnedClientID != "" {
 				scope = "client"
 			}
-			return view.OK("price-schedule-drawer-form", &FormData{
+			return view.OK("price-schedule-drawer-form", &form.Data{
 				FormAction:      deps.Routes.AddURL,
 				Active:          true,
 				Name:            defaultName,
 				Locations:       locations,
-				LocationOptions: buildLocationAutoCompleteOptions(locations, ""),
+				LocationOptions: form.BuildLocationAutoCompleteOptions(locations, ""),
 				ClientID:        pinnedClientID,
 				ClientLabel:     clientLabel,
 				ClientOptions:   loadClientOptions(ctx, deps, pinnedClientID),
@@ -347,7 +265,7 @@ func NewSuggestNameAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		clientID := viewCtx.Request.URL.Query().Get("client_id")
 		clientName := resolveClientName(ctx, deps, clientID)
-		derived := buildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
+		derived := form.BuildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
 		return view.OK("price-schedule-name-suggest", map[string]any{
 			"Value":           derived,
 			"NamePlaceholder": deps.Labels.Form.NamePlaceholder,
@@ -401,7 +319,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			startDate, startTime := splitScheduleDateTimeForInputs(record.GetDateTimeStart(), tz)
 			endDate, endTime := splitScheduleDateTimeForInputs(record.GetDateTimeEnd(), tz)
-			return view.OK("price-schedule-drawer-form", &FormData{
+			return view.OK("price-schedule-drawer-form", &form.Data{
 				FormAction:            formAction,
 				IsEdit:                !isClone,
 				ID:                    formID,
@@ -413,9 +331,9 @@ func NewEditAction(deps *Deps) view.View {
 				DateEndTime:           endTime,
 				Active:                record.GetActive(),
 				SelectedLocationID:    selectedLocationID,
-				SelectedLocationLabel: findLocationLabel(locations, selectedLocationID),
+				SelectedLocationLabel: form.FindLocationLabel(locations, selectedLocationID),
 				Locations:             locations,
-				LocationOptions:       buildLocationAutoCompleteOptions(locations, selectedLocationID),
+				LocationOptions:       form.BuildLocationAutoCompleteOptions(locations, selectedLocationID),
 				// 2026-04-27 plan-client-scope plan §6.7 — Client picker.
 				ClientID:        selectedClientID,
 				ClientLabel:     clientLabel,

@@ -16,42 +16,9 @@ import (
 
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
+
+	"github.com/erniealice/centymo-golang/views/procurement_request/form"
 )
-
-// FormData is the template data for the procurement request drawer form.
-type FormData struct {
-	FormAction string
-	IsEdit     bool
-	ID         string
-
-	// Section 1 — Identity
-	RequestNumber      string
-	RequesterUserID    string
-	SupplierID         string
-	LocationID         string
-
-	// Section 2 — Financial
-	Currency             string
-	EstimatedTotalAmount string
-
-	// Section 3 — Timing & Approval
-	NeededByDate   string
-	ApprovedBy     string
-	ApprovedAt     string
-	Status         string
-
-	// Section 4 — Others
-	Justification string
-	Notes         string
-	Active        bool
-
-	// Dropdown options
-	Suppliers     []types.SelectOption
-	StatusOptions []types.SelectOption
-
-	Labels       centymo.ProcurementRequestFormLabels
-	CommonLabels pyeza.CommonLabels
-}
 
 // Deps holds all dependencies for the procurement request action handlers.
 type Deps struct {
@@ -255,8 +222,8 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 
 // --- helpers -----------------------------------------------------------------
 
-func buildEmptyFormData(ctx context.Context, deps *Deps, l centymo.ProcurementRequestLabels) *FormData {
-	fd := &FormData{
+func buildEmptyFormData(ctx context.Context, deps *Deps, l centymo.ProcurementRequestLabels) *form.Data {
+	fd := &form.Data{
 		Labels:       l.Form,
 		CommonLabels: deps.CommonLabels,
 	}

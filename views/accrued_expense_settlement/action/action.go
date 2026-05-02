@@ -28,28 +28,9 @@ import (
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	"google.golang.org/protobuf/types/known/timestamppb"
-)
 
-// SettlementFormData is the template data for the settlement drawer form.
-//
-// Used by both the inline Add/Edit drawer and the parent-level "Settle"
-// drawer (the latter posts to AccruedExpenseSettleURL — see
-// detail.NewSettleAction). The form fields are identical; only the action
-// URL differs.
-type SettlementFormData struct {
-	FormAction         string
-	IsEdit             bool
-	ID                 string
-	AccruedExpenseID   string
-	ExpenditureID      string
-	AmountSettled      string
-	Currency           string
-	FxRate             string
-	ReversalReason     string
-	Expenditures       []types.SelectOption
-	CommonLabels       any
-	Labels             centymo.AccruedExpenseSettlementLabels
-}
+	"github.com/erniealice/centymo-golang/views/accrued_expense_settlement/form"
+)
 
 // Deps holds dependencies for settlement action handlers.
 type Deps struct {
@@ -205,8 +186,8 @@ func NewDeleteAction(deps *Deps) view.View {
 
 // --- form helpers ------------------------------------------------------------
 
-func buildEmptyFormData(ctx context.Context, deps *Deps, l centymo.AccruedExpenseSettlementLabels) *SettlementFormData {
-	fd := &SettlementFormData{
+func buildEmptyFormData(ctx context.Context, deps *Deps, l centymo.AccruedExpenseSettlementLabels) *form.Data {
+	fd := &form.Data{
 		Labels:       l,
 		CommonLabels: deps.CommonLabels,
 	}

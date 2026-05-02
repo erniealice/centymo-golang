@@ -287,7 +287,7 @@ func NewModule(deps *ModuleDeps) *Module {
 
 	return &Module{
 		routes:    deps.Routes,
-		Dashboard: revenuedashboard.NewView(&revenuedashboard.Deps{Labels: deps.Labels, CommonLabels: deps.CommonLabels}),
+		Dashboard: revenuedashboard.NewView(&revenuedashboard.Deps{Labels: deps.Labels, Routes: deps.Routes, CommonLabels: deps.CommonLabels}),
 		List: revenuelist.NewView(&revenuelist.ListViewDeps{
 			Routes: deps.Routes, GetListPageData: deps.GetListPageData,
 			Labels: deps.Labels, CommonLabels: deps.CommonLabels, TableLabels: deps.TableLabels,

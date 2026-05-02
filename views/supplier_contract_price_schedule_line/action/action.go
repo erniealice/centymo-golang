@@ -15,32 +15,9 @@ import (
 
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
 	scpslpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule_line"
+
+	"github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule_line/form"
 )
-
-// LineFormData is the template data for the SCPSL drawer form.
-type LineFormData struct {
-	FormAction                      string
-	IsEdit                          bool
-	ID                              string
-	SupplierContractPriceScheduleID string
-
-	// Fields
-	SupplierContractLineID string
-	Currency               string
-	UnitPrice              string
-	MinimumAmount          string
-	Quantity               string
-	CycleValueOverride     string
-	CycleUnitOverride      string
-	Notes                  string
-
-	// Options
-	ContractLines []types.SelectOption
-
-	Labels       centymo.SupplierContractPriceScheduleLineFormLabels
-	NounLabels   centymo.SupplierContractPriceScheduleLinesLabels
-	CommonLabels pyeza.CommonLabels
-}
 
 // Deps holds dependencies for SCPSL action handlers.
 type Deps struct {
@@ -265,8 +242,8 @@ func NewDeleteAction(deps *Deps) view.View {
 
 // --- helpers -----------------------------------------------------------------
 
-func buildEmptyLineFormData(ctx context.Context, deps *Deps, l centymo.SupplierContractPriceScheduleLabels) *LineFormData {
-	fd := &LineFormData{
+func buildEmptyLineFormData(ctx context.Context, deps *Deps, l centymo.SupplierContractPriceScheduleLabels) *form.Data {
+	fd := &form.Data{
 		Labels:       l.Lines.LineForm,
 		NounLabels:   l.Lines,
 		CommonLabels: deps.CommonLabels,
