@@ -47,7 +47,7 @@ func NewView(deps *ListViewDeps) view.View {
 		}
 
 		columns := revenueColumns(deps.Labels)
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "revenue_date_string", "desc")
+		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "revenue_date_string", "desc")
 		if err != nil {
 			return view.Error(err)
 		}
@@ -98,7 +98,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 		}
 
 		columns := revenueColumns(deps.Labels)
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "revenue_date_string", "desc")
+		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "revenue_date_string", "desc")
 		if err != nil {
 			return view.Error(err)
 		}

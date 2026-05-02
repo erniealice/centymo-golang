@@ -47,7 +47,7 @@ func NewView(deps *ListViewDeps) view.View {
 		}
 
 		columns := collectionColumns(deps.Labels)
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "date_created", "desc")
+		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "date_created", "desc")
 		if err != nil {
 			return view.Error(err)
 		}

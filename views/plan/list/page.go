@@ -59,7 +59,7 @@ func NewView(deps *ListViewDeps) view.View {
 		}
 
 		columns := planColumns(deps.Labels)
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "name", "asc")
+		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "name", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
@@ -100,7 +100,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 		}
 
 		columns := planColumns(deps.Labels)
-		p, err := espynahttp.ParseTableParams(viewCtx.Request, types.SortableKeys(columns), "name", "asc")
+		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "name", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
@@ -360,14 +360,14 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 			ID:    id,
 			Cells: cells,
 			DataAttrs: map[string]string{
-				"name":             name,
-				"price":            description,
-				"status":           recordStatus,
-				"deletable":        boolAttr(!inUseIDs[id]),
-				"activatable":      boolAttr(recordStatus == "inactive"),
-				"deactivatable":    boolAttr(recordStatus == "active"),
-				"client_id":        clientID,
-				"job_template_id":  p.GetJobTemplateId(),
+				"name":                   name,
+				"price":                  description,
+				"status":                 recordStatus,
+				"deletable":              boolAttr(!inUseIDs[id]),
+				"activatable":            boolAttr(recordStatus == "inactive"),
+				"deactivatable":          boolAttr(recordStatus == "active"),
+				"client_id":              clientID,
+				"job_template_id":        p.GetJobTemplateId(),
 				"plan-job-template-name": tplLabel,
 			},
 			Actions: actions,
@@ -426,4 +426,3 @@ func intervalVariant(interval string) string {
 		return "default"
 	}
 }
-
