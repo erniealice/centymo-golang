@@ -55,10 +55,10 @@ func (d *ListViewDeps) permEntity() string {
 // Zero-value ("") maps to the service behaviour so that callers which
 // do not set Mode continue to see service products.
 var modeProductKinds = map[string][]string{
-	"":          {"service"},                         // zero-value = service behaviour
-	"service":   {"service"},                         // explicit service mount
+	"":          {"service"},                          // zero-value = service behaviour
+	"service":   {"service"},                          // explicit service mount
 	"inventory": {"stocked_good", "non_stocked_good"}, // resold goods only
-	"supplies":  {"consumable"},                      // consumables used in service delivery
+	"supplies":  {"consumable"},                       // consumables used in service delivery
 }
 
 // PageData holds the data for the product list page.
@@ -320,11 +320,11 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 
 func productColumns(l centymo.ProductLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "description", Label: l.Columns.Description, NoSort: true},
-		{Key: "line", Label: l.Columns.Line, NoSort: true},
-		{Key: "price", Label: l.Columns.Price, WidthClass: "col-4xl"},
-		{Key: "date_created", Label: "Date Created", Filterable: true, FilterType: types.FilterTypeDate},
+		{Key: "name", Label: l.Columns.Name},
+		{Key: "description", Label: l.Columns.Description, NoSort: true, NoFilter: true},
+		{Key: "line", Label: l.Columns.Line, NoSort: true, NoFilter: true},
+		{Key: "price", Label: l.Columns.Price, NoFilter: true, WidthClass: "col-4xl"},
+		{Key: "date_created", Label: "Date Created"},
 	}
 }
 

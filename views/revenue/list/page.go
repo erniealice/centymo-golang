@@ -215,12 +215,12 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 
 func revenueColumns(l centymo.RevenueLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "reference_number", Label: l.Columns.Reference, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "client_name", Label: l.Columns.Customer, Filterable: true, FilterType: types.FilterTypeString, WidthClass: "col-9xl"},
-		{Key: "revenue_date_string", Label: l.Form.Date, Filterable: true, FilterType: types.FilterTypeDate, WidthClass: "col-3xl"},
-		{Key: "total_amount", Label: l.Columns.Amount, Filterable: true, FilterType: types.FilterTypeMoney, WidthClass: "col-3xl", Align: "right"},
+		{Key: "reference_number", Label: l.Columns.Reference},
+		{Key: "client_name", Label: l.Columns.Customer, WidthClass: "col-9xl"},
+		{Key: "revenue_date_string", Label: l.Form.Date, WidthClass: "col-3xl"},
+		{Key: "total_amount", Label: l.Columns.Amount, WidthClass: "col-3xl", Align: "right"},
 		{Key: "due_date", Label: l.Form.DueDate, WidthClass: "col-3xl"},
-		{Key: "payment_term", Label: l.Form.PaymentTerms, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "payment_term", Label: l.Form.PaymentTerms, NoSort: true, NoFilter: true, WidthClass: "col-3xl"},
 	}
 }
 
@@ -299,7 +299,12 @@ func buildTableRows(revenues []*revenuepb.Revenue, status string, l centymo.Reve
 				"customer":  name,
 				"date":      revenueDate,
 				"amount":    fmt.Sprintf("%d", r.GetTotalAmount()),
-				"undoable":  func() string { if r.GetFulfillmentStatus() == "has_collection" { return "false" }; return "true" }(),
+				"undoable": func() string {
+					if r.GetFulfillmentStatus() == "has_collection" {
+						return "false"
+					}
+					return "true"
+				}(),
 			},
 			Actions: actions,
 		})

@@ -190,10 +190,10 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 
 func productLineColumns(l centymo.ProductLineLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "description", Label: l.Columns.Description, NoSort: true},
-		{Key: "date_created", Label: l.Columns.DateCreated, Filterable: true, FilterType: types.FilterTypeDate},
-		{Key: "status", Label: l.Columns.Status, Filterable: false, WidthClass: "col-2xl"},
+		{Key: "name", Label: l.Columns.Name},
+		{Key: "description", Label: l.Columns.Description, NoSort: true, NoFilter: true},
+		{Key: "date_created", Label: l.Columns.DateCreated},
+		{Key: "status", Label: l.Columns.Status, NoFilter: true, WidthClass: "col-2xl"},
 	}
 }
 

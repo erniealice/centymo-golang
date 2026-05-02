@@ -201,13 +201,13 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 
 func priceScheduleColumns(l centymo.PriceScheduleLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "name", Label: l.Columns.Name, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "description", Label: l.Columns.Description, NoSort: true},
+		{Key: "name", Label: l.Columns.Name},
+		{Key: "description", Label: l.Columns.Description, NoSort: true, NoFilter: true},
 		{Key: "date_start", Label: l.Columns.DateStart, WidthClass: "col-2xl"},
 		{Key: "date_end", Label: l.Columns.DateEnd, WidthClass: "col-2xl"},
-		{Key: "location", Label: l.Columns.Location, NoSort: true},
-		{Key: "status", Label: l.Columns.Status, Filterable: false, WidthClass: "col-2xl"},
-		{Key: "client", Label: l.Form.ClientLabel, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "location", Label: l.Columns.Location, NoSort: true, NoFilter: true},
+		{Key: "status", Label: l.Columns.Status, NoFilter: true, WidthClass: "col-2xl"},
+		{Key: "client", Label: l.Form.ClientLabel, NoSort: true, NoFilter: true, WidthClass: "col-3xl"},
 	}
 }
 

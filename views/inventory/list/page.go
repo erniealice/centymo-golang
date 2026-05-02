@@ -221,14 +221,14 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 
 func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	return []types.TableColumn{
-		{Key: "product_name", Label: l.Columns.ProductName, Filterable: true, FilterType: types.FilterTypeString},
-		{Key: "sku", Label: l.Columns.SKU, Filterable: false, WidthClass: "col-4xl"},
-		{Key: "tracking_mode", Label: l.Columns.Type, Filterable: false, WidthClass: "col-3xl"},
-		{Key: "quantity", Label: l.Columns.OnHand, Filterable: true, FilterType: types.FilterTypeNumeric, WidthClass: "col-2xl"},
-		{Key: "available", Label: l.Columns.Available, NoSort: true, Filterable: false, WidthClass: "col-2xl"},
-		{Key: "reorder_level", Label: l.Columns.ReorderLvl, NoSort: true, Filterable: false, WidthClass: "col-3xl"},
-		{Key: "date_created", Label: "Date Created", Filterable: true, FilterType: types.FilterTypeDate},
-		{Key: "status", Label: l.Columns.Status, Filterable: false, WidthClass: "col-2xl"},
+		{Key: "product_name", Label: l.Columns.ProductName},
+		{Key: "sku", Label: l.Columns.SKU, NoFilter: true, WidthClass: "col-4xl"},
+		{Key: "tracking_mode", Label: l.Columns.Type, NoFilter: true, WidthClass: "col-3xl"},
+		{Key: "quantity", Label: l.Columns.OnHand, WidthClass: "col-2xl"},
+		{Key: "available", Label: l.Columns.Available, NoSort: true, NoFilter: true, WidthClass: "col-2xl"},
+		{Key: "reorder_level", Label: l.Columns.ReorderLvl, NoSort: true, NoFilter: true, WidthClass: "col-3xl"},
+		{Key: "date_created", Label: "Date Created"},
+		{Key: "status", Label: l.Columns.Status, NoFilter: true, WidthClass: "col-2xl"},
 	}
 }
 
@@ -283,14 +283,14 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 				{Type: "badge", Value: status, Variant: statusVariant(status)},
 			},
 			DataAttrs: map[string]string{
-				"name":        name,
-				"sku":         sku,
+				"name":          name,
+				"sku":           sku,
 				"tracking_mode": itemType,
-				"on_hand":     onHandStr,
-				"reserved":    reservedStr,
-				"available":   available,
-				"reorder_lvl": reorderStr,
-				"status":      status,
+				"on_hand":       onHandStr,
+				"reserved":      reservedStr,
+				"available":     available,
+				"reorder_lvl":   reorderStr,
+				"status":        status,
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Actions.View, Action: "view", Href: detailURL},
