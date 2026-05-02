@@ -1,4 +1,6 @@
-package action
+// Package lineitem handles the PO line item feature for purchase orders.
+// Drawer template: po-line-item-drawer-form.html (stays flat at view root).
+package lineitem
 
 import (
 	"context"
@@ -12,30 +14,13 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	lineitemform "github.com/erniealice/centymo-golang/views/purchase_order/line_item/form"
 
 	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
 )
 
-// LineItemFormData is the template data for the PO line item drawer form.
-type LineItemFormData struct {
-	FormAction      string
-	IsEdit          bool
-	ID              string
-	PurchaseOrderID string
-	LineType        string
-	Description     string
-	ProductID       string
-	InventoryItemID string
-	LocationID      string
-	QuantityOrdered string
-	UnitPrice       string
-	Notes           string
-	Labels          centymo.ExpenditureLabels
-	CommonLabels    any
-}
-
-// LineItemDeps holds dependencies for PO line item action handlers.
-type LineItemDeps struct {
+// Deps holds dependencies for PO line item action handlers.
+type Deps struct {
 	Routes centymo.ExpenditureRoutes
 	Labels centymo.ExpenditureLabels
 
@@ -45,8 +30,8 @@ type LineItemDeps struct {
 	DeletePurchaseOrderLineItem func(ctx context.Context, req *purchaseorderlineitempb.DeletePurchaseOrderLineItemRequest) (*purchaseorderlineitempb.DeletePurchaseOrderLineItemResponse, error)
 }
 
-// lineItemHTMXSuccess returns a success HTMX response that refreshes the PO line items table.
-func lineItemHTMXSuccess() view.ViewResult {
+// htmxSuccess returns a success HTMX response that refreshes the PO line items table.
+func htmxSuccess() view.ViewResult {
 	return view.ViewResult{
 		StatusCode: http.StatusOK,
 		Headers: map[string]string{
@@ -55,8 +40,8 @@ func lineItemHTMXSuccess() view.ViewResult {
 	}
 }
 
-// lineItemHTMXError returns an error HTMX response.
-func lineItemHTMXError(message string) view.ViewResult {
+// htmxError returns an error HTMX response.
+func htmxError(message string) view.ViewResult {
 	return view.ViewResult{
 		StatusCode: http.StatusUnprocessableEntity,
 		Headers: map[string]string{
@@ -65,18 +50,18 @@ func lineItemHTMXError(message string) view.ViewResult {
 	}
 }
 
-// NewLineItemAddAction creates the PO line item add action (GET = form, POST = create).
-func NewLineItemAddAction(deps *LineItemDeps) view.View {
+// NewAddAction creates the PO line item add action (GET = form, POST = create).
+func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("purchase_order", "update") {
-			return lineItemHTMXError(deps.Labels.Errors.PermissionDenied)
+			return htmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		purchaseOrderID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("po-line-item-drawer-form", &LineItemFormData{
+			return view.OK("po-line-item-drawer-form", &lineitemform.Data{
 				FormAction:      route.ResolveURL(deps.Routes.PurchaseOrderLineItemAddURL, "id", purchaseOrderID),
 				PurchaseOrderID: purchaseOrderID,
 				LineType:        "goods",
@@ -88,7 +73,7 @@ func NewLineItemAddAction(deps *LineItemDeps) view.View {
 
 		// POST — create line item
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return lineItemHTMXError(deps.Labels.Errors.InvalidFormData)
+			return htmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -133,19 +118,19 @@ func NewLineItemAddAction(deps *LineItemDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create PO line item for PO %s: %v", purchaseOrderID, err)
-			return lineItemHTMXError(err.Error())
+			return htmxError(err.Error())
 		}
 
-		return lineItemHTMXSuccess()
+		return htmxSuccess()
 	})
 }
 
-// NewLineItemEditAction creates the PO line item edit action (GET = pre-filled form, POST = update).
-func NewLineItemEditAction(deps *LineItemDeps) view.View {
+// NewEditAction creates the PO line item edit action (GET = pre-filled form, POST = update).
+func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("purchase_order", "update") {
-			return lineItemHTMXError(deps.Labels.Errors.PermissionDenied)
+			return htmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		purchaseOrderID := viewCtx.Request.PathValue("id")
@@ -156,11 +141,11 @@ func NewLineItemEditAction(deps *LineItemDeps) view.View {
 				Data: &purchaseorderlineitempb.PurchaseOrderLineItem{Id: itemID},
 			})
 			if err != nil || len(readResp.GetData()) == 0 {
-				return lineItemHTMXError(deps.Labels.Errors.NotFound)
+				return htmxError(deps.Labels.Errors.NotFound)
 			}
 			item := readResp.GetData()[0]
 
-			return view.OK("po-line-item-drawer-form", &LineItemFormData{
+			return view.OK("po-line-item-drawer-form", &lineitemform.Data{
 				FormAction:      route.ResolveURL(deps.Routes.PurchaseOrderLineItemEditURL, "id", purchaseOrderID, "itemId", itemID),
 				IsEdit:          true,
 				ID:              itemID,
@@ -180,7 +165,7 @@ func NewLineItemEditAction(deps *LineItemDeps) view.View {
 
 		// POST — update line item
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return lineItemHTMXError(deps.Labels.Errors.InvalidFormData)
+			return htmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -223,19 +208,19 @@ func NewLineItemEditAction(deps *LineItemDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update PO line item %s: %v", itemID, err)
-			return lineItemHTMXError(err.Error())
+			return htmxError(err.Error())
 		}
 
-		return lineItemHTMXSuccess()
+		return htmxSuccess()
 	})
 }
 
-// NewLineItemRemoveAction creates the PO line item remove action (POST only).
-func NewLineItemRemoveAction(deps *LineItemDeps) view.View {
+// NewRemoveAction creates the PO line item remove action (POST only).
+func NewRemoveAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("purchase_order", "update") {
-			return lineItemHTMXError(deps.Labels.Errors.PermissionDenied)
+			return htmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		itemID := viewCtx.Request.URL.Query().Get("itemId")
@@ -244,7 +229,7 @@ func NewLineItemRemoveAction(deps *LineItemDeps) view.View {
 			itemID = viewCtx.Request.FormValue("itemId")
 		}
 		if itemID == "" {
-			return lineItemHTMXError(deps.Labels.Errors.IDRequired)
+			return htmxError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeletePurchaseOrderLineItem(ctx, &purchaseorderlineitempb.DeletePurchaseOrderLineItemRequest{
@@ -252,9 +237,9 @@ func NewLineItemRemoveAction(deps *LineItemDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete PO line item %s: %v", itemID, err)
-			return lineItemHTMXError(err.Error())
+			return htmxError(err.Error())
 		}
 
-		return lineItemHTMXSuccess()
+		return htmxSuccess()
 	})
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/erniealice/centymo-golang"
 	productaction "github.com/erniealice/centymo-golang/views/product/action"
+	productdashboard "github.com/erniealice/centymo-golang/views/product/dashboard"
 	productdetail "github.com/erniealice/centymo-golang/views/product/detail"
 	productvariant "github.com/erniealice/centymo-golang/views/product/detail/variant"
 	variantitem "github.com/erniealice/centymo-golang/views/product/detail/variant/item"
@@ -166,11 +167,17 @@ type ModuleDeps struct {
 
 	// Audit history
 	ListAuditHistory func(ctx context.Context, req *auditlog.ListAuditRequest) (*auditlog.ListAuditResponse, error)
+
+	// Phase 5 — service dashboard data callback. Nil-safe; degrades to zero
+	// values until the orchestrator wires the espyna product dashboard
+	// adapter (kind=service). Only meaningful for the service mount.
+	GetServiceDashboardPageData func(ctx context.Context, req *productdashboard.Request) (*productdashboard.Response, error)
 }
 
 // Module holds all constructed product views.
 type Module struct {
 	routes        centymo.ProductRoutes
+	Dashboard     view.View
 	List          view.View
 	Table         view.View
 	Detail        view.View
@@ -350,10 +357,18 @@ func NewModule(deps *ModuleDeps) *Module {
 		PermissionEntity: deps.PermissionEntity,
 	}
 
+	dashboardView := productdashboard.NewView(&productdashboard.Deps{
+		Routes:       deps.Routes,
+		Labels:       deps.Labels,
+		CommonLabels: deps.CommonLabels,
+		GetPageData:  deps.GetServiceDashboardPageData,
+	})
+
 	return &Module{
-		routes: deps.Routes,
-		List:   productlist.NewView(listDeps),
-		Table:  productlist.NewTableView(listDeps),
+		routes:    deps.Routes,
+		Dashboard: dashboardView,
+		List:      productlist.NewView(listDeps),
+		Table:     productlist.NewTableView(listDeps),
 		Detail:                       productdetail.NewView(detailDeps),
 		TabAction:                    productdetail.NewTabAction(detailDeps),
 		Add:                          productaction.NewAddAction(actionDeps),
@@ -394,6 +409,11 @@ func NewModule(deps *ModuleDeps) *Module {
 }
 
 func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
+	// Phase 5 — only mount the service dashboard when this routes block
+	// carries a DashboardURL. Inventory/supplies mounts leave it empty.
+	if m.routes.DashboardURL != "" && m.Dashboard != nil {
+		r.GET(m.routes.DashboardURL, m.Dashboard)
+	}
 	r.GET(m.routes.ListURL, m.List)
 	r.GET(m.routes.TableURL, m.Table)
 	r.GET(m.routes.DetailURL, m.Detail)

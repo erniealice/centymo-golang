@@ -1,4 +1,6 @@
-package action
+// Package payment owns the handler and dep-bearing helpers for the revenue
+// payment drawer (revenue-payment-drawer-form.html).
+package payment
 
 import (
 	"context"
@@ -10,28 +12,11 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/centymo-golang/views/revenue/payment/form"
 )
 
-// PaymentFormData is the template data for the payment drawer form.
-type PaymentFormData struct {
-	FormAction         string
-	IsEdit             bool
-	ID                 string
-	RevenueID          string
-	CollectionMethodID string
-	AmountPaid         string
-	Currency           string
-	ReferenceNumber    string
-	Notes              string
-	ReceivedBy         string
-	ReceivedRole       string
-	PaymentMethods     []pyeza.SelectOption
-	CommonLabels       any
-	Labels             centymo.RevenueLabels
-}
-
-// PaymentDeps holds dependencies for payment action handlers.
-type PaymentDeps struct {
+// Deps holds dependencies for payment action handlers.
+type Deps struct {
 	Routes centymo.RevenueRoutes
 	DB     centymo.DataSource
 	Labels centymo.RevenueLabels
@@ -61,8 +46,8 @@ func loadCollectionMethods(ctx context.Context, db centymo.DataSource) []pyeza.S
 	return options
 }
 
-// NewPaymentAddAction creates the payment add action (GET = form, POST = create).
-func NewPaymentAddAction(deps *PaymentDeps) view.View {
+// NewAddAction creates the payment add action (GET = form, POST = create).
+func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
@@ -73,7 +58,7 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			methods := loadCollectionMethods(ctx, deps.DB)
-			return view.OK("revenue-payment-drawer-form", &PaymentFormData{
+			return view.OK("revenue-payment-drawer-form", &form.Data{
 				FormAction:     route.ResolveURL(deps.Routes.PaymentAddURL, "id", revenueID),
 				RevenueID:      revenueID,
 				Currency:       "PHP",
@@ -126,8 +111,8 @@ func NewPaymentAddAction(deps *PaymentDeps) view.View {
 	})
 }
 
-// NewPaymentEditAction creates the payment edit action (GET = form, POST = update).
-func NewPaymentEditAction(deps *PaymentDeps) view.View {
+// NewEditAction creates the payment edit action (GET = form, POST = update).
+func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
@@ -153,7 +138,7 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 			receivedRole, _ := record["received_role"].(string)
 
 			methods := loadCollectionMethods(ctx, deps.DB)
-			return view.OK("revenue-payment-drawer-form", &PaymentFormData{
+			return view.OK("revenue-payment-drawer-form", &form.Data{
 				FormAction:         route.ResolveURL(deps.Routes.PaymentEditURL, "id", revenueID, "pid", paymentID),
 				IsEdit:             true,
 				ID:                 paymentID,
@@ -211,8 +196,8 @@ func NewPaymentEditAction(deps *PaymentDeps) view.View {
 	})
 }
 
-// NewPaymentRemoveAction creates the payment remove action (POST only).
-func NewPaymentRemoveAction(deps *PaymentDeps) view.View {
+// NewRemoveAction creates the payment remove action (POST only).
+func NewRemoveAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
@@ -238,8 +223,8 @@ func NewPaymentRemoveAction(deps *PaymentDeps) view.View {
 	})
 }
 
-// NewPaymentTableAction returns a payment table refresh trigger for HTMX.
-func NewPaymentTableAction(deps *PaymentDeps) view.View {
+// NewTableAction returns a payment table refresh trigger for HTMX.
+func NewTableAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		return centymo.HTMXSuccess("payment-table")
 	})

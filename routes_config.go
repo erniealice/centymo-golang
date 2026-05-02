@@ -28,6 +28,11 @@ type ProductRoutes struct {
 	ActiveNav    string `json:"active_nav"`
 	ActiveSubNav string `json:"active_sub_nav"`
 
+	// Phase 5 — dashboard URL for the service mount (product_kind=service).
+	// Empty for non-service mounts; the inventory and supplies mounts route
+	// dashboards from elsewhere.
+	DashboardURL string `json:"dashboard_url"`
+
 	ListURL       string `json:"list_url"`
 	TableURL      string `json:"table_url"`
 	DetailURL     string `json:"detail_url"`
@@ -100,6 +105,11 @@ func DefaultProductRoutes() ProductRoutes {
 		ActiveNav:    "inventory",
 		ActiveSubNav: "masterlist",
 
+		// Default to the service dashboard URL — only meaningful for the
+		// service-flavoured mount. Inventory/supplies mounts overwrite or
+		// ignore this field.
+		DashboardURL: ServiceDashboardURL,
+
 		ListURL:       ProductListURL,
 		TableURL:      ProductTableURL,
 		DetailURL:     ProductDetailURL,
@@ -171,6 +181,8 @@ func DefaultProductInventoryRoutes() ProductRoutes {
 	r := DefaultProductRoutes()
 	r.ActiveNav = "inventory"
 	r.ActiveSubNav = "masterlist"
+	// Inventory mount has its own dashboard module — clear the service one.
+	r.DashboardURL = ""
 	shift := func(s string) string {
 		s = strings.Replace(s, "/app/products/", "/app/inventory/products/", 1)
 		s = strings.Replace(s, "/action/product/", "/action/inventory-product/", 1)
@@ -234,6 +246,8 @@ func DefaultProductSuppliesRoutes() ProductRoutes {
 	r := DefaultProductRoutes()
 	r.ActiveNav = "inventory"
 	r.ActiveSubNav = "supplies"
+	// Supplies mount has no dashboard.
+	r.DashboardURL = ""
 	shift := func(s string) string {
 		s = strings.Replace(s, "/app/products/", "/app/inventory/supplies/", 1)
 		s = strings.Replace(s, "/action/product/", "/action/inventory-supplies/", 1)
@@ -285,6 +299,7 @@ func DefaultProductSuppliesRoutes() ProductRoutes {
 // product routes.
 func (r ProductRoutes) RouteMap() map[string]string {
 	return map[string]string{
+		"product.dashboard":   r.DashboardURL,
 		"product.list":        r.ListURL,
 		"product.table":       r.TableURL,
 		"product.detail":      r.DetailURL,

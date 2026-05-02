@@ -13,6 +13,7 @@ import (
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 
 	collectionaction "github.com/erniealice/centymo-golang/views/collection/action"
+	collectiondashboard "github.com/erniealice/centymo-golang/views/collection/dashboard"
 	collectiondetail "github.com/erniealice/centymo-golang/views/collection/detail"
 	collectionlist "github.com/erniealice/centymo-golang/views/collection/list"
 )
@@ -37,6 +38,11 @@ type ModuleDeps struct {
 	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
 	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	NewID            func() string
+
+	// Cash dashboard data callback (Phase 5 — nil-safe; degrades to zero values).
+	// Orchestrator wraps the espyna treasury/collection/dashboard use case
+	// here, projecting workspace_id from the request context.
+	GetCashDashboardPageData func(ctx context.Context, req *collectiondashboard.Request) (*collectiondashboard.Response, error)
 }
 
 // Module holds all constructed collection views.
@@ -89,9 +95,16 @@ func NewModule(deps *ModuleDeps) *Module {
 		TableLabels:     deps.TableLabels,
 	})
 
+	dashboardView := collectiondashboard.NewView(&collectiondashboard.Deps{
+		Routes:       deps.Routes,
+		Labels:       deps.Labels,
+		CommonLabels: deps.CommonLabels,
+		GetPageData:  deps.GetCashDashboardPageData,
+	})
+
 	return &Module{
 		routes:           deps.Routes,
-		Dashboard:        listView, // Dashboard reuses list view for now
+		Dashboard:        dashboardView,
 		List:             listView,
 		Detail:           collectiondetail.NewView(detailDeps),
 		TabAction:        collectiondetail.NewTabAction(detailDeps),

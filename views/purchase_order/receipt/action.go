@@ -1,4 +1,6 @@
-package action
+// Package receipt handles the confirm-receipt feature for purchase orders.
+// Drawer template: po-receipt-form.html (stays flat at view root).
+package receipt
 
 import (
 	"context"
@@ -12,6 +14,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	receiptform "github.com/erniealice/centymo-golang/views/purchase_order/receipt/form"
 
 	enumspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/enums"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
@@ -20,29 +23,8 @@ import (
 	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
 )
 
-// ReceiptLineRow is a single line item row shown in the receipt form.
-type ReceiptLineRow struct {
-	ID              string
-	Description     string
-	LineType        string
-	QuantityOrdered string
-	QuantityReceived string
-	Remaining       string
-}
-
-// ReceiptFormData is the template data for the PO receipt form.
-type ReceiptFormData struct {
-	FormAction      string
-	PurchaseOrderID string
-	Lines           []ReceiptLineRow
-	Today           string
-	LocationID      string
-	Labels          centymo.ExpenditureLabels
-	CommonLabels    any
-}
-
-// ReceiptActionDeps holds dependencies for the confirm-receipt action handler.
-type ReceiptActionDeps struct {
+// Deps holds dependencies for the confirm-receipt action handler.
+type Deps struct {
 	Routes centymo.ExpenditureRoutes
 	Labels centymo.ExpenditureLabels
 
@@ -56,12 +38,25 @@ type ReceiptActionDeps struct {
 	UpdateInventoryItem         func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
 }
 
+func htmxError(message string) view.ViewResult {
+	return view.ViewResult{
+		StatusCode: http.StatusUnprocessableEntity,
+		Headers: map[string]string{
+			"HX-Error-Message": message,
+		},
+	}
+}
+
+func strPtr(s string) *string {
+	return &s
+}
+
 // NewConfirmReceiptAction creates the PO confirm-receipt action (GET = form, POST = process).
-func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
+func NewConfirmReceiptAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("purchase_order", "update") {
-			return lineItemHTMXError(deps.Labels.Errors.PermissionDenied)
+			return htmxError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -72,14 +67,14 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 		})
 		if err != nil || len(poResp.GetData()) == 0 {
 			log.Printf("Failed to read purchase order %s for receipt: %v", id, err)
-			return lineItemHTMXError(deps.Labels.Errors.NotFound)
+			return htmxError(deps.Labels.Errors.NotFound)
 		}
 		po := poResp.GetData()[0]
 
 		// Validate PO status
 		status := po.GetStatus()
 		if status != "approved" && status != "partially_received" {
-			return lineItemHTMXError("Purchase order must be approved or partially received to confirm receipt.")
+			return htmxError("Purchase order must be approved or partially received to confirm receipt.")
 		}
 
 		// List line items
@@ -88,12 +83,12 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to list line items for PO %s: %v", id, err)
-			return lineItemHTMXError(deps.Labels.Errors.InvalidFormData)
+			return htmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
 			// Build unreceived lines (excluding expense and fully received)
-			var lines []ReceiptLineRow
+			var lines []receiptform.LineRow
 			for _, item := range listResp.GetData() {
 				if item.GetPurchaseOrderId() != id {
 					continue
@@ -105,7 +100,7 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 				if remaining <= 0 {
 					continue
 				}
-				lines = append(lines, ReceiptLineRow{
+				lines = append(lines, receiptform.LineRow{
 					ID:               item.GetId(),
 					Description:      item.GetDescription(),
 					LineType:         item.GetLineType(),
@@ -117,7 +112,7 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 
 			locationID := po.GetLocationId()
 
-			return view.OK("po-receipt-form", &ReceiptFormData{
+			return view.OK("po-receipt-form", &receiptform.Data{
 				FormAction:      route.ResolveURL(deps.Routes.PurchaseOrderConfirmReceiptURL, "id", id),
 				PurchaseOrderID: id,
 				Lines:           lines,
@@ -130,7 +125,7 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 
 		// POST — process the receipt
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return lineItemHTMXError(deps.Labels.Errors.InvalidFormData)
+			return htmxError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -192,7 +187,7 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 				})
 				if err != nil {
 					log.Printf("Failed to create inventory movement for line item %s: %v", itemID, err)
-					return lineItemHTMXError(fmt.Sprintf("Failed to create inventory movement: %v", err))
+					return htmxError(fmt.Sprintf("Failed to create inventory movement: %v", err))
 				}
 
 				// Update inventory item quantity
@@ -206,9 +201,9 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 						newAvailable := newOnHand - invItem.GetQuantityReserved()
 						_, _ = deps.UpdateInventoryItem(ctx, &inventoryitempb.UpdateInventoryItemRequest{
 							Data: &inventoryitempb.InventoryItem{
-								Id:                 inventoryItemID,
-								QuantityOnHand:     newOnHand,
-								QuantityAvailable:  newAvailable,
+								Id:                inventoryItemID,
+								QuantityOnHand:    newOnHand,
+								QuantityAvailable: newAvailable,
 							},
 						})
 					}
@@ -225,7 +220,7 @@ func NewConfirmReceiptAction(deps *ReceiptActionDeps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to update quantity_received for line item %s: %v", itemID, err)
-				return lineItemHTMXError(fmt.Sprintf("Failed to update line item: %v", err))
+				return htmxError(fmt.Sprintf("Failed to update line item: %v", err))
 			}
 		}
 

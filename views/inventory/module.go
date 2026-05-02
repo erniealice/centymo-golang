@@ -12,9 +12,12 @@ import (
 	"github.com/erniealice/centymo-golang"
 	inventoryaction "github.com/erniealice/centymo-golang/views/inventory/action"
 	inventorydashboard "github.com/erniealice/centymo-golang/views/inventory/dashboard"
+	inventorydepreciation "github.com/erniealice/centymo-golang/views/inventory/depreciation"
 	inventorydetail "github.com/erniealice/centymo-golang/views/inventory/detail"
 	inventorylist "github.com/erniealice/centymo-golang/views/inventory/list"
 	inventorymovements "github.com/erniealice/centymo-golang/views/inventory/movements"
+	inventoryserial "github.com/erniealice/centymo-golang/views/inventory/serial"
+	inventorytransaction "github.com/erniealice/centymo-golang/views/inventory/transaction"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
@@ -117,23 +120,16 @@ type Module struct {
 
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &inventoryaction.Deps{
-		Routes:                      deps.Routes,
-		Labels:                      deps.Labels,
-		CreateInventoryItem:         deps.CreateInventoryItem,
-		ReadInventoryItem:           deps.ReadInventoryItem,
-		UpdateInventoryItem:         deps.UpdateInventoryItem,
-		DeleteInventoryItem:         deps.DeleteInventoryItem,
-		CreateInventorySerial:       deps.CreateInventorySerial,
-		ReadInventorySerial:         deps.ReadInventorySerial,
-		UpdateInventorySerial:       deps.UpdateInventorySerial,
-		DeleteInventorySerial:       deps.DeleteInventorySerial,
-		CreateInventoryTransaction:  deps.CreateInventoryTransaction,
-		CreateInventoryDepreciation: deps.CreateInventoryDepreciation,
-		ReadInventoryDepreciation:   deps.ReadInventoryDepreciation,
-		UpdateInventoryDepreciation: deps.UpdateInventoryDepreciation,
+		Routes:              deps.Routes,
+		Labels:              deps.Labels,
+		CreateInventoryItem: deps.CreateInventoryItem,
+		ReadInventoryItem:   deps.ReadInventoryItem,
+		UpdateInventoryItem: deps.UpdateInventoryItem,
+		DeleteInventoryItem: deps.DeleteInventoryItem,
 	}
 
 	dashboardDeps := &inventorydashboard.Deps{
+		Routes:                     deps.Routes,
 		ListInventoryItems:         deps.ListInventoryItems,
 		ListInventorySerials:       deps.ListInventorySerials,
 		ListInventoryTransactions:  deps.ListInventoryTransactions,
@@ -184,6 +180,31 @@ func NewModule(deps *ModuleDeps) *Module {
 		TableLabels:               deps.TableLabels,
 	}
 
+	depreciationDeps := &inventorydepreciation.Deps{
+		Routes:                      deps.Routes,
+		Labels:                      deps.Labels,
+		CreateInventoryDepreciation: deps.CreateInventoryDepreciation,
+		ReadInventoryDepreciation:   deps.ReadInventoryDepreciation,
+		UpdateInventoryDepreciation: deps.UpdateInventoryDepreciation,
+	}
+
+	serialDeps := &inventoryserial.Deps{
+		Routes:                deps.Routes,
+		Labels:                deps.Labels,
+		CreateInventorySerial: deps.CreateInventorySerial,
+		ReadInventorySerial:   deps.ReadInventorySerial,
+		UpdateInventorySerial: deps.UpdateInventorySerial,
+		DeleteInventorySerial: deps.DeleteInventorySerial,
+	}
+
+	transactionDeps := &inventorytransaction.Deps{
+		Routes:                     deps.Routes,
+		Labels:                     deps.Labels,
+		CreateInventoryTransaction: deps.CreateInventoryTransaction,
+		ReadInventoryItem:          deps.ReadInventoryItem,
+		UpdateInventoryItem:        deps.UpdateInventoryItem,
+	}
+
 	return &Module{
 		routes:    deps.Routes,
 		Dashboard: inventorydashboard.NewView(dashboardDeps),
@@ -202,14 +223,14 @@ func NewModule(deps *ModuleDeps) *Module {
 		SetStatus:          inventoryaction.NewSetStatusAction(deps.SetItemActive, deps.Labels),
 		BulkSetStatus:      inventoryaction.NewBulkSetStatusAction(deps.SetItemActive, deps.Labels),
 		TabAction:          inventorydetail.NewTabAction(detailDeps),
-		SerialTable:        inventoryaction.NewSerialTableAction(actionDeps),
-		SerialAssign:       inventoryaction.NewSerialAssignAction(actionDeps),
-		SerialEdit:         inventoryaction.NewSerialEditAction(actionDeps),
-		SerialRemove:       inventoryaction.NewSerialRemoveAction(actionDeps),
-		TransactionTable:   inventoryaction.NewTransactionTableAction(actionDeps),
-		TransactionAssign:  inventoryaction.NewTransactionAssignAction(actionDeps),
-		DepreciationAssign: inventoryaction.NewDepreciationAssignAction(actionDeps),
-		DepreciationEdit:   inventoryaction.NewDepreciationEditAction(actionDeps),
+		SerialTable:        inventoryserial.NewTableAction(serialDeps),
+		SerialAssign:       inventoryserial.NewAssignAction(serialDeps),
+		SerialEdit:         inventoryserial.NewEditAction(serialDeps),
+		SerialRemove:       inventoryserial.NewRemoveAction(serialDeps),
+		TransactionTable:   inventorytransaction.NewTableAction(transactionDeps),
+		TransactionAssign:  inventorytransaction.NewAssignAction(transactionDeps),
+		DepreciationAssign: inventorydepreciation.NewAssignAction(depreciationDeps),
+		DepreciationEdit:   inventorydepreciation.NewEditAction(depreciationDeps),
 		DashboardStats:     inventorydashboard.NewDashboardStatsAction(dashboardDeps),
 		DashboardChart:     inventorydashboard.NewDashboardChartAction(dashboardDeps),
 		DashboardMovements: inventorydashboard.NewDashboardMovementsAction(dashboardDeps),

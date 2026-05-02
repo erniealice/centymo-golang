@@ -12,6 +12,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	"github.com/erniealice/centymo-golang"
+	"github.com/erniealice/centymo-golang/views/revenue/form"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
@@ -22,97 +23,16 @@ import (
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
-	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
-	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
-	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
 // PaymentTermOption is a minimal struct for rendering payment term options in the form.
-type PaymentTermOption struct {
-	Id      string
-	Name    string
-	NetDays int32
-}
-
-// FormInner holds nested form labels accessed via .Labels.Form.* in templates.
-type FormInner struct {
-	SectionInfo                string
-	CurrencyPlaceholder        string
-	StatusDraft                string
-	StatusComplete             string
-	StatusCancelled            string
-	CustomerNamePlaceholder    string
-	CustomerSearchPlaceholder  string
-	CustomerNoResults          string
-	LocationPlaceholder        string
-	LocationSearchPlaceholder  string
-	LocationNoResults          string
-}
-
-// FormLabels holds i18n labels for the drawer form template.
-type FormLabels struct {
-	Customer                  string
-	Date                      string
-	Currency                  string
-	Reference                 string
-	ReferencePlaceholder      string
-	Status                    string
-	Notes                     string
-	NotesPlaceholder          string
-	Location                  string
-	PaymentTerms              string
-	SelectPaymentTerm         string
-	DueDate                   string
-	Subscription              string
-	SubscriptionNoResults     string
-	RevenueType               string
-	RevenueTypeOneTime        string
-	RevenueTypeFromEngagement string
-	RevenueTypeFromActivities string
-	ActivityIDs               string
-	ActivityIDsPlaceholder    string
-	Form                      FormInner
-
-	// Field-level info text surfaced via an info button beside each label.
-	ReferenceInfo    string
-	DateInfo         string
-	CustomerInfo     string
-	LocationInfo     string
-	SubscriptionInfo string
-	CurrencyInfo     string
-	NotesInfo        string
-}
-
-// FormData is the template data for the sales drawer form.
-type FormData struct {
-	FormAction            string
-	IsEdit                bool
-	ID                    string
-	Name                  string
-	ClientID              string
-	ClientLabel           string
-	SearchClientURL       string
-	SubscriptionID        string
-	SubscriptionLabel     string
-	SearchSubscriptionURL string
-	ReferenceNumber       string
-	Date                  string
-	Currency              string
-	Status                string
-	Notes                 string
-	LocationID            string
-	LocationLabel         string
-	SearchLocationURL     string
-	PaymentTerms          []*PaymentTermOption
-	SelectedPaymentTermID string
-	DueDateString         string
-	RevenueType           string
-	ActivityIDs           string
-	Labels                FormLabels
-	CommonLabels          any
-}
+// Re-exported from form package for use by callers wiring module deps.
+type PaymentTermOption = form.PaymentTermOption
 
 // Deps holds dependencies for sales action handlers.
 type Deps struct {
@@ -173,8 +93,10 @@ type Deps struct {
 	RecognizeRevenueFromSubscription func(ctx context.Context, req *revenuepb.CreateRevenueWithLineItemsRequest) (*revenuepb.CreateRevenueWithLineItemsResponse, error)
 }
 
-func formLabels(t func(string) string) FormLabels {
-	return FormLabels{
+// buildFormLabels constructs form.Labels from the translation function.
+// The formLabels function was a verbatim mapper — inlined here per Decision 2.
+func buildFormLabels(t func(string) string) form.Labels {
+	return form.Labels{
 		Customer:                  t("revenue.form.customer"),
 		Date:                      t("revenue.form.date"),
 		Currency:                  t("revenue.form.currency"),
@@ -195,7 +117,7 @@ func formLabels(t func(string) string) FormLabels {
 		RevenueTypeFromActivities: t("revenue.form.revenueTypeFromActivities"),
 		ActivityIDs:               t("revenue.form.activityIDs"),
 		ActivityIDsPlaceholder:    t("revenue.form.activityIDsPlaceholder"),
-		Form: FormInner{
+		Form: form.Inner{
 			SectionInfo:               t("revenue.form.sectionInfo"),
 			CurrencyPlaceholder:       t("revenue.form.currencyPlaceholder"),
 			StatusDraft:               t("revenue.form.statusDraft"),
@@ -219,7 +141,7 @@ func formLabels(t func(string) string) FormLabels {
 }
 
 // loadPaymentTerms fetches payment term options. Returns nil on error (graceful degradation).
-func loadPaymentTerms(ctx context.Context, deps *Deps) []*PaymentTermOption {
+func loadPaymentTerms(ctx context.Context, deps *Deps) []*form.PaymentTermOption {
 	if deps.ListPaymentTerms == nil {
 		return nil
 	}
@@ -310,7 +232,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			paymentTerms := loadPaymentTerms(ctx, deps)
-			return view.OK("revenue-drawer-form", &FormData{
+			return view.OK("revenue-drawer-form", &form.Data{
 				FormAction:            deps.Routes.AddURL,
 				Currency:              "PHP",
 				Status:                "draft",
@@ -318,7 +240,7 @@ func NewAddAction(deps *Deps) view.View {
 				PaymentTerms:          paymentTerms,
 				SearchClientURL:       deps.Routes.SearchClientURL,
 				SearchSubscriptionURL: deps.Routes.SearchSubscriptionURL,
-				Labels:                formLabels(viewCtx.T),
+				Labels:                buildFormLabels(viewCtx.T),
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
 		}
@@ -584,7 +506,7 @@ func NewEditAction(deps *Deps) view.View {
 			if existingSubscriptionID != "" {
 				revenueType = "from_engagement"
 			}
-			return view.OK("revenue-drawer-form", &FormData{
+			return view.OK("revenue-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
 				ID:                    id,
@@ -607,7 +529,7 @@ func NewEditAction(deps *Deps) view.View {
 				SelectedPaymentTermID: selectedPaymentTermID,
 				DueDateString:         record.GetDueDate(),
 				RevenueType:           revenueType,
-				Labels:                formLabels(viewCtx.T),
+				Labels:                buildFormLabels(viewCtx.T),
 				CommonLabels:          nil, // injected by ViewAdapter
 			})
 		}

@@ -9,33 +9,10 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	categoryform "github.com/erniealice/centymo-golang/views/expenditure/category/form"
 
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 )
-
-// FormLabels holds flat i18n labels for the category drawer form template.
-type FormLabels struct {
-	Code        string
-	Name        string
-	Description string
-
-	// Field-level info text surfaced via an info button beside each label.
-	CodeInfo        string
-	NameInfo        string
-	DescriptionInfo string
-}
-
-// FormData is the template data for the category drawer form.
-type FormData struct {
-	FormAction   string
-	IsEdit       bool
-	ID           string
-	Code         string
-	Name         string
-	Description  string
-	Labels       FormLabels
-	CommonLabels any
-}
 
 // ActionDeps holds dependencies for category action handlers.
 type ActionDeps struct {
@@ -49,8 +26,10 @@ type ActionDeps struct {
 	DeleteExpenditureCategory func(ctx context.Context, req *expenditurecategorypb.DeleteExpenditureCategoryRequest) (*expenditurecategorypb.DeleteExpenditureCategoryResponse, error)
 }
 
-// formLabels maps ExpenditureCategoryLabels into the flat FormLabels struct for the template.
-func formLabels(l centymo.ExpenditureCategoryLabels) FormLabels {
+// formLabels maps ExpenditureCategoryLabels into the flat Labels struct for the template.
+// Kept in action/ (not deleted) because it performs real transformation:
+// defaults Code/Name/Description to hardcoded "Code"/"Name"/"Description" strings.
+func formLabels(l centymo.ExpenditureCategoryLabels) categoryform.Labels {
 	code := l.Form.Code
 	name := l.Form.Name
 	description := l.Form.Description
@@ -63,7 +42,7 @@ func formLabels(l centymo.ExpenditureCategoryLabels) FormLabels {
 	if description == "" {
 		description = "Description"
 	}
-	return FormLabels{
+	return categoryform.Labels{
 		Code:        code,
 		Name:        name,
 		Description: description,
@@ -102,7 +81,7 @@ func NewAddAction(deps *ActionDeps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("category-drawer-form", &FormData{
+			return view.OK("category-drawer-form", &categoryform.Data{
 				FormAction:   deps.Routes.ExpenseCategoryAddURL,
 				Labels:       formLabels(deps.Labels.Category),
 				CommonLabels: nil, // injected by ViewAdapter
@@ -163,7 +142,7 @@ func NewEditAction(deps *ActionDeps) view.View {
 			}
 			rec := data[0]
 
-			return view.OK("category-drawer-form", &FormData{
+			return view.OK("category-drawer-form", &categoryform.Data{
 				FormAction:   route.ResolveURL(deps.Routes.ExpenseCategoryEditURL, "id", id),
 				IsEdit:       true,
 				ID:           id,

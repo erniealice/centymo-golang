@@ -1,4 +1,6 @@
-package action
+// Package transaction handles the stock movement feature for inventory items.
+// Drawer template: transaction-drawer-form.html (stays flat at view root).
+package transaction
 
 import (
 	"context"
@@ -12,36 +14,24 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	transactionform "github.com/erniealice/centymo-golang/views/inventory/transaction/form"
 
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
 )
 
-// TransactionFormLabels holds i18n labels for the transaction drawer form.
-type TransactionFormLabels struct {
-	Type      string
-	Quantity  string
-	Date      string
-	Reference string
+// Deps is the dependency subset needed by the transaction feature.
+type Deps struct {
+	Routes centymo.InventoryRoutes
+	Labels centymo.InventoryLabels
 
-	// Field-level info text surfaced via an info button beside each label.
-	TypeInfo      string
-	QuantityInfo  string
-	DateInfo      string
-	ReferenceInfo string
+	CreateInventoryTransaction func(ctx context.Context, req *inventorytransactionpb.CreateInventoryTransactionRequest) (*inventorytransactionpb.CreateInventoryTransactionResponse, error)
+	ReadInventoryItem          func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
+	UpdateInventoryItem        func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
 }
 
-// TransactionFormData is the template data for the transaction drawer form.
-type TransactionFormData struct {
-	FormAction   string
-	Labels       TransactionFormLabels
-	TypeOptions  []pyeza.SelectOption
-	Today        string
-	CommonLabels any
-}
-
-func transactionFormLabels(t func(string) string, tx centymo.InventoryTransactionLabels) TransactionFormLabels {
-	return TransactionFormLabels{
+func formLabels(t func(string) string, tx centymo.InventoryTransactionLabels) transactionform.Labels {
+	return transactionform.Labels{
 		Type:      t("inventory.transaction.type"),
 		Quantity:  t("inventory.transaction.quantity"),
 		Date:      t("inventory.transaction.date"),
@@ -54,7 +44,7 @@ func transactionFormLabels(t func(string) string, tx centymo.InventoryTransactio
 	}
 }
 
-func transactionTypeOptions(t func(string) string) []pyeza.SelectOption {
+func typeOptions(t func(string) string) []pyeza.SelectOption {
 	return []pyeza.SelectOption{
 		{Value: "received", Label: t("inventory.transaction.typeReceived")},
 		{Value: "sold", Label: t("inventory.transaction.typeSold")},
@@ -65,8 +55,15 @@ func transactionTypeOptions(t func(string) string) []pyeza.SelectOption {
 	}
 }
 
-// NewTransactionAssignAction creates the stock movement action (GET = form, POST = create).
-func NewTransactionAssignAction(deps *Deps) view.View {
+func strPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+// NewAssignAction creates the stock movement action (GET = form, POST = create).
+func NewAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
@@ -76,10 +73,10 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 		inventoryItemID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("transaction-drawer-form", &TransactionFormData{
+			return view.OK("transaction-drawer-form", &transactionform.Data{
 				FormAction:   route.ResolveURL(deps.Routes.TransactionAssignURL, "id", inventoryItemID),
-				Labels:       transactionFormLabels(viewCtx.T, deps.Labels.Transaction),
-				TypeOptions:  transactionTypeOptions(viewCtx.T),
+				Labels:       formLabels(viewCtx.T, deps.Labels.Transaction),
+				TypeOptions:  typeOptions(viewCtx.T),
 				Today:        time.Now().Format("2006-01-02"),
 				CommonLabels: nil,
 			})
@@ -139,8 +136,8 @@ func NewTransactionAssignAction(deps *Deps) view.View {
 	})
 }
 
-// NewTransactionTableAction returns the transaction table partial for HTMX refresh.
-func NewTransactionTableAction(deps *Deps) view.View {
+// NewTableAction returns the transaction table partial for HTMX refresh.
+func NewTableAction(_ *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		return centymo.HTMXSuccess("transaction-table")
 	})

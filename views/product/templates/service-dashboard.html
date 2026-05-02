@@ -1,0 +1,13 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "service-dashboard"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "service-dashboard-content"}}
+<div class="page-content"
+     data-page-css="/assets/css/centymo/centymo-service-dashboard.css?v={{.CacheVersion}}"
+     data-testid="dashboard-service">
+    {{template "dashboard" .Dashboard}}
+</div>
+{{end}}

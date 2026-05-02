@@ -1,13 +1,18 @@
-package action
+// Package search owns the HTMX autocomplete JSON endpoints for the revenue
+// drawer (client, subscription, location, and product search).
+package search
 
 // This file provides JSON search handlers for the auto-complete component.
 // They accept ?q=searchterm and return JSON: [{"value":"id","label":"Name"}, ...]
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
+
+	centymo "github.com/erniealice/centymo-golang"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -21,6 +26,15 @@ type searchOption struct {
 }
 
 const searchResultLimit = 20
+
+// Deps holds dependencies for the search handlers.
+type Deps struct {
+	DB                  centymo.DataSource
+	ListClients         func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
+	ListSubscriptions   func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
+	ListProducts        func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+}
 
 // NewSearchClientsAction returns an http.HandlerFunc that searches clients
 // by company_name, user first_name, or last_name and returns JSON results

@@ -182,6 +182,10 @@ const (
 	ProductTableURL  = "/action/product/table/{status}"
 	ProductDetailURL = "/app/products/detail/{id}"
 
+	// Service dashboard — services are products filtered to product_kind="service".
+	// The dashboard sits ABOVE the service-mount product list at this URL.
+	ServiceDashboardURL = "/app/services/dashboard"
+
 	// Inventory routes — list is per-location
 	InventoryDashboardURL  = "/app/inventory/dashboard"
 	InventoryListURL       = "/app/inventory/list/{location}"

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
+	productform "github.com/erniealice/centymo-golang/views/product/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -18,45 +19,6 @@ import (
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 )
-
-// FormData is the template data for the product drawer form.
-type FormData struct {
-	FormAction  string
-	IsEdit      bool
-	ID          string
-	Name        string
-	Description string
-	Price       string
-	Currency    string
-	Active      bool
-	LineID      string
-	LineOptions []types.SelectOption
-	// Model D — variant configurability and unit-of-measure fields.
-	VariantMode string // "none" | "configurable"
-	Unit        string
-	// CanToggleVariantMode is false when the product already has option or
-	// variant rows; the template renders the toggle as disabled + surfaces
-	// VariantModeLockedHelp so the user understands why the setting is locked.
-	// Defaults to true for the Add flow (no existing children).
-	CanToggleVariantMode bool
-
-	// Four-axis product taxonomy — each axis rendered as a <select>. The
-	// current value is the stored value (edit) or the mount default (add).
-	// The Options slice is narrowed per-mount via Deps.Allowed*: services
-	// mount shows only {service}, supplies mount only {consumable}, inventory
-	// shows {stocked_good, non_stocked_good}. When len(Options) == 1 the
-	// template renders the select disabled so the user still sees the locked
-	// classification without being able to change it.
-	ProductKind          string
-	ProductKindOptions   []types.SelectOption
-	DeliveryMode         string
-	DeliveryModeOptions  []types.SelectOption
-	TrackingMode         string
-	TrackingModeOptions  []types.SelectOption
-
-	Labels       centymo.ProductFormLabels
-	CommonLabels any
-}
 
 // Deps holds dependencies for product action handlers.
 type Deps struct {
@@ -229,10 +191,6 @@ func countOptionsAndVariants(ctx context.Context, deps *Deps, productID string) 
 	return optionCount, variantCount
 }
 
-func formLabels(l centymo.ProductLabels) centymo.ProductFormLabels {
-	return l.Form
-}
-
 // loadLineOptions fetches all active lines and returns them as SelectOption slice.
 // selectedID marks the option that should be pre-selected (for edit mode).
 func loadLineOptions(ctx context.Context, deps *Deps, selectedID string) []types.SelectOption {
@@ -277,7 +235,7 @@ func NewAddAction(deps *Deps) view.View {
 			productKind := firstNonEmpty(deps.DefaultProductKind, firstAllowed(deps.AllowedProductKinds, allProductKinds))
 			deliveryMode := firstNonEmpty(deps.DefaultDeliveryMode, firstAllowed(deps.AllowedDeliveryModes, allDeliveryModes))
 			trackingMode := firstNonEmpty(deps.DefaultTrackingMode, firstAllowed(deps.AllowedTrackingModes, allTrackingModes))
-			return view.OK("product-drawer-form", &FormData{
+			return view.OK("product-drawer-form", &productform.Data{
 				FormAction:           deps.Routes.AddURL,
 				Active:               true,
 				Currency:             "PHP",
@@ -290,7 +248,7 @@ func NewAddAction(deps *Deps) view.View {
 				DeliveryModeOptions:  buildEnumOptions(allDeliveryModes, deps.AllowedDeliveryModes, deliveryMode, deliveryModeLabelMap(deps.Labels.DeliveryMode), deps.Labels.Form.DeliveryModeValueInfo),
 				TrackingMode:         trackingMode,
 				TrackingModeOptions:  buildEnumOptions(allTrackingModes, deps.AllowedTrackingModes, trackingMode, trackingModeLabelMap(deps.Labels.TrackingMode), deps.Labels.Form.TrackingModeValueInfo),
-				Labels:               formLabels(deps.Labels),
+				Labels:               deps.Labels.Form,
 				CommonLabels:         nil, // injected by ViewAdapter
 			})
 		}
@@ -441,7 +399,7 @@ func NewEditAction(deps *Deps) view.View {
 			productKind := firstNonEmpty(p.GetProductKind(), deps.DefaultProductKind, firstAllowed(deps.AllowedProductKinds, allProductKinds))
 			deliveryMode := firstNonEmpty(p.GetDeliveryMode(), deps.DefaultDeliveryMode, firstAllowed(deps.AllowedDeliveryModes, allDeliveryModes))
 			trackingMode := firstNonEmpty(p.GetTrackingMode(), deps.DefaultTrackingMode, firstAllowed(deps.AllowedTrackingModes, allTrackingModes))
-			return view.OK("product-drawer-form", &FormData{
+			return view.OK("product-drawer-form", &productform.Data{
 				FormAction:           formAction,
 				IsEdit:               !isClone,
 				ID:                   formID,
@@ -461,7 +419,7 @@ func NewEditAction(deps *Deps) view.View {
 				DeliveryModeOptions:  buildEnumOptions(allDeliveryModes, deps.AllowedDeliveryModes, deliveryMode, deliveryModeLabelMap(deps.Labels.DeliveryMode), deps.Labels.Form.DeliveryModeValueInfo),
 				TrackingMode:         trackingMode,
 				TrackingModeOptions:  buildEnumOptions(allTrackingModes, deps.AllowedTrackingModes, trackingMode, trackingModeLabelMap(deps.Labels.TrackingMode), deps.Labels.Form.TrackingModeValueInfo),
-				Labels:               formLabels(deps.Labels),
+				Labels:               deps.Labels.Form,
 				CommonLabels:         nil, // injected by ViewAdapter
 			})
 		}

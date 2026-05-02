@@ -15,7 +15,10 @@ import (
 	expenditureaction "github.com/erniealice/centymo-golang/views/expenditure/action"
 	expenditurecategory "github.com/erniealice/centymo-golang/views/expenditure/category"
 	expendituredetail "github.com/erniealice/centymo-golang/views/expenditure/detail"
+	expenseboard "github.com/erniealice/centymo-golang/views/expenditure/expense_dashboard"
 	expenditurelist "github.com/erniealice/centymo-golang/views/expenditure/list"
+	expenditurepay "github.com/erniealice/centymo-golang/views/expenditure/pay"
+	purchaseboard "github.com/erniealice/centymo-golang/views/expenditure/purchase_dashboard"
 	expendituresettings "github.com/erniealice/centymo-golang/views/expenditure/settings"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
@@ -31,6 +34,7 @@ import (
 
 
 // PaymentTermOption is re-exported from action for use by callers wiring ModuleDeps.
+// The underlying type lives in views/expenditure/form; action re-exports it as an alias.
 type PaymentTermOption = expenditureaction.PaymentTermOption
 
 // ModuleDeps holds all dependencies for the expenditure module.
@@ -94,6 +98,12 @@ type ModuleDeps struct {
 	ExpenseRecognitionDetailURL string // /app/expense-recognitions/detail/{id}
 	AccruedExpenseDetailURL     string // /app/accrued-expenses/detail/{id}
 	RecognizeFromExpenditureURL string // /action/expense-recognition/recognize-from-expenditure (POST trigger)
+
+	// Phase 5 — purchase/expense dashboard data callbacks. Nil-safe; the
+	// dashboards fall back to zero values when the orchestrator hasn't
+	// wired the espyna expenditure dashboard use case yet.
+	GetPurchaseDashboardPageData func(ctx context.Context, req *purchaseboard.Request) (*purchaseboard.Response, error)
+	GetExpenseDashboardPageData  func(ctx context.Context, req *expenseboard.Request) (*expenseboard.Response, error)
 }
 
 // Module holds all constructed expenditure views.
@@ -170,23 +180,19 @@ func NewModule(deps *ModuleDeps) *Module {
 			CommonLabels:     deps.CommonLabels,
 			TableLabels:      deps.TableLabels,
 		}),
-		// Dashboards use same list view for now (will be enhanced later)
-		PurchaseDashboard: expenditurelist.NewView(&expenditurelist.ListViewDeps{
-			ListExpenditures: deps.ListExpenditures,
-			RefreshURL:       deps.Routes.PurchaseListURL,
-			ExpenditureType:  "purchase",
-			Labels:           deps.Labels,
-			CommonLabels:     deps.CommonLabels,
-			TableLabels:      deps.TableLabels,
+		// Phase 5 — real dashboards backed by espyna expenditure dashboard
+		// use case (kind=purchase / kind=expense via separate callbacks).
+		PurchaseDashboard: purchaseboard.NewView(&purchaseboard.Deps{
+			Routes:       deps.Routes,
+			Labels:       deps.Labels,
+			CommonLabels: deps.CommonLabels,
+			GetPageData:  deps.GetPurchaseDashboardPageData,
 		}),
-		ExpenseDashboard: expenditurelist.NewView(&expenditurelist.ListViewDeps{
-			ListExpenditures: deps.ListExpenditures,
-			RefreshURL:       deps.Routes.ExpenseListURL,
-			ExpenditureType:  "expense",
-			AddURL:           deps.Routes.AddURL,
-			Labels:           deps.Labels,
-			CommonLabels:     deps.CommonLabels,
-			TableLabels:      deps.TableLabels,
+		ExpenseDashboard: expenseboard.NewView(&expenseboard.Deps{
+			Routes:       deps.Routes,
+			Labels:       deps.Labels,
+			CommonLabels: deps.CommonLabels,
+			GetPageData:  deps.GetExpenseDashboardPageData,
 		}),
 	}
 
@@ -304,7 +310,7 @@ func NewModule(deps *ModuleDeps) *Module {
 
 	// Expense pay action (nil-guarded — only built when CreateDisbursement and ReadExpenditure are provided)
 	if deps.CreateDisbursement != nil && deps.ReadExpenditure != nil {
-		m.ExpensePay = expenditureaction.NewPayAction(&expenditureaction.PayDeps{
+		m.ExpensePay = expenditurepay.NewPayAction(&expenditurepay.Deps{
 			ExpenditureRoutes:  deps.Routes,
 			DisbursementRoutes: deps.DisbursementRoutes,
 			DisbursementLabels: deps.DisbursementLabels,

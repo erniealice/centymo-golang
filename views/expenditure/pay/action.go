@@ -1,12 +1,18 @@
-package action
+// Package pay handles the disbursement pre-linked-to-expenditure feature.
+// Drawer template: expense-pay-drawer-form (defined in detail/templates/detail.html,
+// included in the top-level expenditure TemplatesFS via embed.go).
+package pay
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
+	"strconv"
 
 	centymo "github.com/erniealice/centymo-golang"
+	payform "github.com/erniealice/centymo-golang/views/expenditure/pay/form"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -15,20 +21,8 @@ import (
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 )
 
-// PayFormData is the template data for the pay drawer form.
-type PayFormData struct {
-	FormAction       string
-	ExpenditureID    string
-	Name             string
-	Amount           string
-	Currency         string
-	DisbursementType string
-	Labels           centymo.DisbursementFormLabels
-	CommonLabels     any
-}
-
-// PayDeps holds dependencies for the expenditure pay action.
-type PayDeps struct {
+// Deps holds dependencies for the expenditure pay action.
+type Deps struct {
 	ExpenditureRoutes  centymo.ExpenditureRoutes
 	DisbursementRoutes centymo.DisbursementRoutes
 	DisbursementLabels centymo.DisbursementLabels
@@ -52,11 +46,19 @@ func expenditureTypeToDisbursementType(expenditureType string) string {
 	}
 }
 
+func parseAmount(s string) int64 {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return int64(math.Round(f * 100))
+}
+
 // NewPayAction creates a disbursement pre-linked to an expenditure.
 //
 // GET: returns a pre-filled drawer form.
 // POST: creates the disbursement and redirects to disbursement detail.
-func NewPayAction(deps *PayDeps) view.View {
+func NewPayAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("disbursement", "create") {
@@ -87,7 +89,7 @@ func NewPayAction(deps *PayDeps) view.View {
 				payeeName = exp.GetReferenceNumber()
 			}
 
-			return view.OK("expense-pay-drawer-form", &PayFormData{
+			return view.OK("expense-pay-drawer-form", &payform.Data{
 				FormAction:       route.ResolveURL(deps.ExpenditureRoutes.PayURL, "id", id),
 				ExpenditureID:    id,
 				Name:             "Payment - " + payeeName,

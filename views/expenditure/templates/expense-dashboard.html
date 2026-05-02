@@ -1,0 +1,13 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "expense-dashboard"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "expense-dashboard-content"}}
+<div class="page-content"
+     data-page-css="/assets/css/centymo/centymo-expense-dashboard.css?v={{.CacheVersion}}"
+     data-testid="dashboard-expense">
+    {{template "dashboard" .Dashboard}}
+</div>
+{{end}}

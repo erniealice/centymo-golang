@@ -304,6 +304,10 @@ type InventoryDashboardLabels struct {
 	Week                 string `json:"week"`
 	Month                string `json:"month"`
 	Year                 string `json:"year"`
+	// Quick-action labels — populated for the pyeza dashboard block.
+	QuickNewItem   string `json:"quickNewItem"`
+	QuickViewAll   string `json:"quickViewAll"`
+	QuickMovements string `json:"quickMovements"`
 }
 
 type InventoryMovementsLabels struct {
@@ -662,6 +666,37 @@ type ProductLabels struct {
 	ProductKind  ProductKindLabels  `json:"productKind"`
 	DeliveryMode DeliveryModeLabels `json:"deliveryMode"`
 	TrackingMode TrackingModeLabels `json:"trackingMode"`
+
+	// Phase 5 — service dashboard (product_kind=service surface).
+	ServiceDashboard ServiceDashboardLabels `json:"serviceDashboard"`
+}
+
+// ServiceDashboardLabels holds translatable strings for the service
+// dashboard. The "Service" wording is preferred at the dashboard surface
+// because the sidebar key is "service"; the underlying entity is still
+// Product filtered to product_kind="service".
+type ServiceDashboardLabels struct {
+	Title              string `json:"title"`
+	Subtitle           string `json:"subtitle"`
+	StatTotalActive    string `json:"statTotalActive"`
+	StatTopRevenue     string `json:"statTopRevenue"`
+	StatByLineCount    string `json:"statByLineCount"`
+	StatRecentlyAdded  string `json:"statRecentlyAdded"`
+	WidgetByLine       string `json:"widgetByLine"`
+	WidgetTopRevenue   string `json:"widgetTopRevenue"`
+	WidgetRecent       string `json:"widgetRecent"`
+	QuickNew           string `json:"quickNew"`
+	QuickBundleBuilder string `json:"quickBundleBuilder"`
+	QuickTagService    string `json:"quickTagService"`
+	QuickPriceSchedule string `json:"quickPriceSchedule"`
+	ViewAll            string `json:"viewAll"`
+	EmptyRecentTitle   string `json:"emptyRecentTitle"`
+	EmptyRecentDesc    string `json:"emptyRecentDesc"`
+	EmptyTopRevenue    string `json:"emptyTopRevenue"`
+	NewService         string `json:"newService"`
+	ColLine            string `json:"colLine"`
+	ColRank            string `json:"colRank"`
+	ColService         string `json:"colService"`
 }
 
 type ProductPageLabels struct {
@@ -1516,6 +1551,60 @@ type ExpenditureLabels struct {
 	LineItemForm         ExpenditureLineItemFormLabels         `json:"lineItemForm"`
 	DisbursementForm     ExpenditureDisbursementFormLabels     `json:"disbursementForm"`
 	PurchaseOrder        PurchaseOrderLabels                   `json:"purchaseOrder"`
+
+	// Dashboard labels — Phase 5. One block per surface (purchase/expense).
+	PurchaseDashboard PurchaseDashboardLabels `json:"purchaseDashboard"`
+	ExpenseDashboard  ExpenseDashboardLabels  `json:"expenseDashboard"`
+}
+
+// PurchaseDashboardLabels holds translatable strings for the purchase
+// dashboard (expenditure_type=purchase surface).
+type PurchaseDashboardLabels struct {
+	Title             string `json:"title"`
+	Subtitle          string `json:"subtitle"`
+	StatOpenPOs       string `json:"statOpenPOs"`
+	StatAwaiting      string `json:"statAwaiting"`
+	StatSpentMTD      string `json:"statSpentMTD"`
+	StatTopSupplier   string `json:"statTopSupplier"`
+	WidgetMonthly     string `json:"widgetMonthly"`
+	WidgetTopSupplier string `json:"widgetTopSupplier"`
+	WidgetRecent      string `json:"widgetRecent"`
+	QuickNew          string `json:"quickNew"`
+	QuickReceive      string `json:"quickReceive"`
+	QuickMatch        string `json:"quickMatch"`
+	QuickSuppliers    string `json:"quickSuppliers"`
+	ViewAll           string `json:"viewAll"`
+	EmptyRecentTitle  string `json:"emptyRecentTitle"`
+	EmptyRecentDesc   string `json:"emptyRecentDesc"`
+	EmptySuppliers    string `json:"emptySuppliers"`
+	NewPurchase       string `json:"newPurchase"`
+	ColSupplier       string `json:"colSupplier"`
+	ColTotal          string `json:"colTotal"`
+}
+
+// ExpenseDashboardLabels holds translatable strings for the expense
+// dashboard (expenditure_type=expense surface).
+type ExpenseDashboardLabels struct {
+	Title              string `json:"title"`
+	Subtitle           string `json:"subtitle"`
+	StatPendingApproval string `json:"statPendingApproval"`
+	StatApprovedMTD     string `json:"statApprovedMTD"`
+	StatReimbursable    string `json:"statReimbursable"`
+	StatCategoriesUsed  string `json:"statCategoriesUsed"`
+	WidgetByCategory    string `json:"widgetByCategory"`
+	WidgetTopCategory   string `json:"widgetTopCategory"`
+	WidgetRecent        string `json:"widgetRecent"`
+	QuickNew            string `json:"quickNew"`
+	QuickApprove        string `json:"quickApprove"`
+	QuickReimburse      string `json:"quickReimburse"`
+	QuickCategorySettings string `json:"quickCategorySettings"`
+	ViewAll             string `json:"viewAll"`
+	EmptyRecentTitle    string `json:"emptyRecentTitle"`
+	EmptyRecentDesc     string `json:"emptyRecentDesc"`
+	EmptyCategories     string `json:"emptyCategories"`
+	NewExpense          string `json:"newExpense"`
+	ColCategory         string `json:"colCategory"`
+	ColTotal            string `json:"colTotal"`
 }
 
 // ExpenditureCategoryLabels holds translatable strings for the expenditure
@@ -2141,17 +2230,42 @@ type PurchaseOrderReceiptLabels struct {
 
 // CollectionLabels holds all translatable strings for the collection module.
 type CollectionLabels struct {
-	Page    CollectionPageLabels    `json:"page"`
-	Buttons CollectionButtonLabels  `json:"buttons"`
-	Columns CollectionColumnLabels  `json:"columns"`
-	Empty   CollectionEmptyLabels   `json:"empty"`
-	Form    CollectionFormLabels    `json:"form"`
-	Actions CollectionActionLabels  `json:"actions"`
-	Bulk    CollectionBulkLabels    `json:"bulkActions"`
-	Detail  CollectionDetailLabels  `json:"detail"`
-	Status  CollectionStatusLabels  `json:"status"`
-	Confirm CollectionConfirmLabels `json:"confirm"`
-	Errors  CollectionErrorLabels   `json:"errors"`
+	Page      CollectionPageLabels      `json:"page"`
+	Buttons   CollectionButtonLabels    `json:"buttons"`
+	Columns   CollectionColumnLabels    `json:"columns"`
+	Empty     CollectionEmptyLabels     `json:"empty"`
+	Form      CollectionFormLabels      `json:"form"`
+	Actions   CollectionActionLabels    `json:"actions"`
+	Bulk      CollectionBulkLabels      `json:"bulkActions"`
+	Detail    CollectionDetailLabels    `json:"detail"`
+	Status    CollectionStatusLabels    `json:"status"`
+	Confirm   CollectionConfirmLabels   `json:"confirm"`
+	Errors    CollectionErrorLabels     `json:"errors"`
+	Dashboard CashDashboardLabels       `json:"dashboard"`
+}
+
+// CashDashboardLabels holds translatable strings for the cash (collection)
+// dashboard page. The "Cash" wording is preferred at the dashboard surface
+// because the sidebar key is "cash"; underlying entity is still Collection.
+type CashDashboardLabels struct {
+	Title             string `json:"title"`
+	Subtitle          string `json:"subtitle"`
+	StatPending       string `json:"statPending"`
+	StatOverdue       string `json:"statOverdue"`
+	StatCollectedToday string `json:"statCollectedToday"`
+	StatCollectedWeek  string `json:"statCollectedWeek"`
+	WidgetDailyTrend  string `json:"widgetDailyTrend"`
+	WidgetByMode      string `json:"widgetByMode"`
+	WidgetRecent      string `json:"widgetRecent"`
+	QuickRecord       string `json:"quickRecord"`
+	QuickReconcile    string `json:"quickReconcile"`
+	QuickAging        string `json:"quickAging"`
+	QuickMarkCleared  string `json:"quickMarkCleared"`
+	ViewAll           string `json:"viewAll"`
+	EmptyRecentTitle  string `json:"emptyRecentTitle"`
+	EmptyRecentDesc   string `json:"emptyRecentDesc"`
+	NewCollection     string `json:"newCollection"`
+	CollectionUpdated string `json:"collectionUpdated"`
 }
 
 type CollectionPageLabels struct {
@@ -2414,6 +2528,26 @@ func DefaultCollectionLabels() CollectionLabels {
 			IDRequired:       "Collection ID is required",
 			NoIDsProvided:    "No collection IDs provided",
 			InvalidStatus:    "Invalid status",
+		},
+		Dashboard: CashDashboardLabels{
+			Title:              "Cash",
+			Subtitle:           "Track collected payments and outstanding balances",
+			StatPending:        "Pending",
+			StatOverdue:        "Overdue",
+			StatCollectedToday: "Collected Today",
+			StatCollectedWeek:  "Collected This Week",
+			WidgetDailyTrend:   "Collected per day (30d)",
+			WidgetByMode:       "By payment mode",
+			WidgetRecent:       "Recent collections",
+			QuickRecord:        "Record Collection",
+			QuickReconcile:     "Reconcile",
+			QuickAging:         "Aging Report",
+			QuickMarkCleared:   "Mark Cleared",
+			ViewAll:            "View All",
+			EmptyRecentTitle:   "No recent collections",
+			EmptyRecentDesc:    "Recent collections will appear here once payments are recorded.",
+			NewCollection:      "New collection",
+			CollectionUpdated:  "Collection updated",
 		},
 	}
 }

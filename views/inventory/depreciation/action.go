@@ -1,4 +1,6 @@
-package action
+// Package depreciation handles the depreciation feature for inventory items.
+// Drawer template: depreciation-drawer-form.html (stays flat at view root).
+package depreciation
 
 import (
 	"context"
@@ -13,43 +15,23 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	depreciationform "github.com/erniealice/centymo-golang/views/inventory/depreciation/form"
 
 	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 )
 
-// DepreciationFormLabels holds i18n labels for the depreciation drawer form.
-type DepreciationFormLabels struct {
-	Method       string
-	CostBasis    string
-	SalvageValue string
-	UsefulLife   string
-	StartDate    string
+// Deps is the dependency subset needed by the depreciation feature.
+type Deps struct {
+	Routes centymo.InventoryRoutes
+	Labels centymo.InventoryLabels
 
-	// Field-level info text surfaced via an info button beside each label.
-	MethodInfo       string
-	CostBasisInfo    string
-	SalvageValueInfo string
-	UsefulLifeInfo   string
-	StartDateInfo    string
+	CreateInventoryDepreciation func(ctx context.Context, req *inventorydepreciationpb.CreateInventoryDepreciationRequest) (*inventorydepreciationpb.CreateInventoryDepreciationResponse, error)
+	ReadInventoryDepreciation   func(ctx context.Context, req *inventorydepreciationpb.ReadInventoryDepreciationRequest) (*inventorydepreciationpb.ReadInventoryDepreciationResponse, error)
+	UpdateInventoryDepreciation func(ctx context.Context, req *inventorydepreciationpb.UpdateInventoryDepreciationRequest) (*inventorydepreciationpb.UpdateInventoryDepreciationResponse, error)
 }
 
-// DepreciationFormData is the template data for the depreciation drawer form.
-type DepreciationFormData struct {
-	FormAction    string
-	IsEdit        bool
-	ID            string
-	Method        string
-	CostBasis     string
-	SalvageValue  string
-	UsefulLife    string
-	StartDate     string
-	Labels        DepreciationFormLabels
-	MethodOptions []pyeza.SelectOption
-	CommonLabels  any
-}
-
-func depreciationFormLabels(t func(string) string, d centymo.InventoryDepreciationLabels) DepreciationFormLabels {
-	return DepreciationFormLabels{
+func formLabels(t func(string) string, d centymo.InventoryDepreciationLabels) depreciationform.Labels {
+	return depreciationform.Labels{
 		Method:       t("inventory.depreciation.method"),
 		CostBasis:    t("inventory.depreciation.costBasis"),
 		SalvageValue: t("inventory.depreciation.salvageValue"),
@@ -64,7 +46,7 @@ func depreciationFormLabels(t func(string) string, d centymo.InventoryDepreciati
 	}
 }
 
-func depreciationMethodOptions(t func(string) string) []pyeza.SelectOption {
+func methodOptions(t func(string) string) []pyeza.SelectOption {
 	return []pyeza.SelectOption{
 		{Value: "straight_line", Label: t("inventory.depreciation.methodStraightLine")},
 		{Value: "declining_balance", Label: t("inventory.depreciation.methodDecliningBalance")},
@@ -72,8 +54,8 @@ func depreciationMethodOptions(t func(string) string) []pyeza.SelectOption {
 	}
 }
 
-// NewDepreciationAssignAction creates the depreciation configure action (GET = form, POST = create).
-func NewDepreciationAssignAction(deps *Deps) view.View {
+// NewAssignAction creates the depreciation configure action (GET = form, POST = create).
+func NewAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
@@ -83,11 +65,11 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 		inventoryItemID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("depreciation-drawer-form", &DepreciationFormData{
+			return view.OK("depreciation-drawer-form", &depreciationform.Data{
 				FormAction:    route.ResolveURL(deps.Routes.DepreciationAssignURL, "id", inventoryItemID),
 				Method:        "straight_line",
-				Labels:        depreciationFormLabels(viewCtx.T, deps.Labels.Depreciation),
-				MethodOptions: depreciationMethodOptions(viewCtx.T),
+				Labels:        formLabels(viewCtx.T, deps.Labels.Depreciation),
+				MethodOptions: methodOptions(viewCtx.T),
 				CommonLabels:  nil,
 			})
 		}
@@ -128,8 +110,8 @@ func NewDepreciationAssignAction(deps *Deps) view.View {
 	})
 }
 
-// NewDepreciationEditAction creates the depreciation edit action (GET = form, POST = update).
-func NewDepreciationEditAction(deps *Deps) view.View {
+// NewEditAction creates the depreciation edit action (GET = form, POST = update).
+func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
@@ -153,7 +135,7 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 			}
 			record := records[0]
 
-			return view.OK("depreciation-drawer-form", &DepreciationFormData{
+			return view.OK("depreciation-drawer-form", &depreciationform.Data{
 				FormAction:    route.ResolveURL(deps.Routes.DepreciationEditURL, "id", inventoryItemID, "did", depreciationID),
 				IsEdit:        true,
 				ID:            depreciationID,
@@ -162,8 +144,8 @@ func NewDepreciationEditAction(deps *Deps) view.View {
 				SalvageValue:  fmt.Sprintf("%.2f", float64(record.GetSalvageValue())/100.0),
 				UsefulLife:    fmt.Sprintf("%d", record.GetUsefulLifeMonths()),
 				StartDate:     record.GetStartDate(),
-				Labels:        depreciationFormLabels(viewCtx.T, deps.Labels.Depreciation),
-				MethodOptions: depreciationMethodOptions(viewCtx.T),
+				Labels:        formLabels(viewCtx.T, deps.Labels.Depreciation),
+				MethodOptions: methodOptions(viewCtx.T),
 				CommonLabels:  nil,
 			})
 		}

@@ -13,6 +13,8 @@ import (
 	revenuedashboard "github.com/erniealice/centymo-golang/views/revenue/dashboard"
 	revenuedetail "github.com/erniealice/centymo-golang/views/revenue/detail"
 	revenuelist "github.com/erniealice/centymo-golang/views/revenue/list"
+	revenuepayment "github.com/erniealice/centymo-golang/views/revenue/payment"
+	revenuesearch "github.com/erniealice/centymo-golang/views/revenue/search"
 	revenuesettings "github.com/erniealice/centymo-golang/views/revenue/settings"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
@@ -193,7 +195,14 @@ func NewModule(deps *ModuleDeps) *Module {
 		ReadJobActivity:                  deps.ReadJobActivity,
 		RecognizeRevenueFromSubscription: deps.RecognizeRevenueFromSubscription,
 	}
-	paymentDeps := &revenueaction.PaymentDeps{Routes: deps.Routes, DB: deps.DB, Labels: deps.Labels}
+	paymentDeps := &revenuepayment.Deps{Routes: deps.Routes, DB: deps.DB, Labels: deps.Labels}
+	searchDeps := &revenuesearch.Deps{
+		DB:                  deps.DB,
+		ListClients:         deps.ListClients,
+		SearchClientsByName: deps.SearchClientsByName,
+		ListSubscriptions:   deps.ListSubscriptions,
+		ListProducts:        deps.ListProducts,
+	}
 	detailDeps := &revenuedetail.DetailViewDeps{
 		Routes:               deps.Routes,
 		DB:                   deps.DB,
@@ -300,16 +309,16 @@ func NewModule(deps *ModuleDeps) *Module {
 		LineItemEdit:       revenuedetail.NewLineItemEditView(lineItemDeps),
 		LineItemRemove:     revenuedetail.NewLineItemRemoveView(lineItemDeps),
 		LineItemDiscount:   revenuedetail.NewLineItemDiscountView(lineItemDeps),
-		PaymentTable:       revenueaction.NewPaymentTableAction(paymentDeps),
-		PaymentAdd:         revenueaction.NewPaymentAddAction(paymentDeps),
-		PaymentEdit:        revenueaction.NewPaymentEditAction(paymentDeps),
-		PaymentRemove:      revenueaction.NewPaymentRemoveAction(paymentDeps),
+		PaymentTable:       revenuepayment.NewTableAction(paymentDeps),
+		PaymentAdd:         revenuepayment.NewAddAction(paymentDeps),
+		PaymentEdit:        revenuepayment.NewEditAction(paymentDeps),
+		PaymentRemove:      revenuepayment.NewRemoveAction(paymentDeps),
 		InvoiceDownload:     invoiceDownload,
 		SendEmailHandler:    sendEmailHandler,
-		SearchClients:       revenueaction.NewSearchClientsAction(actionDeps),
-		SearchSubscriptions: revenueaction.NewSearchSubscriptionsAction(actionDeps),
-		SearchLocations:     revenueaction.NewSearchLocationsAction(actionDeps),
-		SearchProducts:      revenueaction.NewSearchProductsAction(actionDeps),
+		SearchClients:       revenuesearch.NewSearchClientsAction(searchDeps),
+		SearchSubscriptions: revenuesearch.NewSearchSubscriptionsAction(searchDeps),
+		SearchLocations:     revenuesearch.NewSearchLocationsAction(searchDeps),
+		SearchProducts:      revenuesearch.NewSearchProductsAction(searchDeps),
 		PriceLookup:         revenueaction.NewPriceLookupAction(actionDeps),
 		SettingsTemplates:   settingsTemplates,
 		SettingsUpload:     settingsUpload,

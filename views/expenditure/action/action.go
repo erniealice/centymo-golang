@@ -12,6 +12,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	expenditureform "github.com/erniealice/centymo-golang/views/expenditure/form"
 
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
@@ -19,82 +20,8 @@ import (
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 )
 
-// PaymentTermOption is a minimal struct for rendering payment term options in the form.
-type PaymentTermOption struct {
-	Id      string
-	Name    string
-	NetDays int32
-}
-
-// PurchaseOrderOption is a minimal struct for rendering purchase order options in the form.
-type PurchaseOrderOption struct {
-	Id           string
-	PoNumber     string
-	SupplierName string
-}
-
-// FormLabels holds flat i18n labels for the expense drawer form template.
-type FormLabels struct {
-	Name                string
-	NamePlaceholder     string
-	Category            string
-	Supplier            string
-	Date                string
-	Amount              string
-	Currency            string
-	ReferenceNumber     string
-	Notes               string
-	NotesPlaceholder    string
-	Status              string
-	ExpenditureType     string
-	TypeExpense         string
-	TypePurchase        string
-	StatusPending       string
-	StatusApproved      string
-	StatusPaid          string
-	StatusCancelled     string
-	CurrencyPlaceholder  string
-	PaymentTerms         string
-	SelectPaymentTerm    string
-	DueDate              string
-	LinkToPurchaseOrder  string
-
-	// Field-level info text surfaced via an info button beside each label.
-	NameInfo            string
-	ExpenditureTypeInfo string
-	CategoryInfo        string
-	DateInfo            string
-	AmountInfo          string
-	CurrencyInfo        string
-	ReferenceNumberInfo string
-	SupplierInfo        string
-	NotesInfo           string
-}
-
-// FormData is the template data for the expense drawer form.
-type FormData struct {
-	FormAction            string
-	IsEdit                bool
-	ID                    string
-	Name                  string
-	ExpenditureType       string
-	ExpenditureCategoryID string
-	SupplierID            string
-	Date                  string
-	TotalAmount           string
-	Currency              string
-	Status                string
-	ReferenceNumber       string
-	Notes                 string
-	Categories            []pyeza.SelectOption
-	Suppliers             []pyeza.SelectOption
-	PaymentTerms          []*PaymentTermOption
-	SelectedPaymentTermID string
-	PurchaseOrders        []*PurchaseOrderOption
-	PurchaseOrderID       string
-	Labels                FormLabels
-	CommonLabels          any
-}
+// PaymentTermOption is re-exported from form for use by callers wiring ModuleDeps.
+type PaymentTermOption = expenditureform.PaymentTermOption
 
 // Deps holds dependencies for expense action handlers.
 type Deps struct {
@@ -120,9 +47,11 @@ type Deps struct {
 	ListPurchaseOrders func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error)
 }
 
-// formLabels maps ExpenditureLabels into the flat FormLabels struct for the template.
-func formLabels(l centymo.ExpenditureLabels) FormLabels {
-	return FormLabels{
+// formLabels maps ExpenditureLabels into the flat Labels struct for the template.
+// Kept in action/ (not deleted) because it performs real transformation:
+// hardcoded "Supplier", "e.g. PHP", "Payment Terms" etc. + draws from l.Form, l.Types, l.Status.
+func formLabels(l centymo.ExpenditureLabels) expenditureform.Labels {
+	return expenditureform.Labels{
 		Name:                l.Form.VendorName,
 		NamePlaceholder:     l.Form.VendorNamePlaceholder,
 		Category:            l.Form.ExpenditureCategory,
@@ -235,7 +164,7 @@ func loadSupplierOptions(
 func loadPurchaseOrderOptions(
 	ctx context.Context,
 	listFn func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error),
-) []*PurchaseOrderOption {
+) []*expenditureform.PurchaseOrderOption {
 	if listFn == nil {
 		return nil
 	}
@@ -244,7 +173,7 @@ func loadPurchaseOrderOptions(
 		log.Printf("Failed to list purchase orders: %v", err)
 		return nil
 	}
-	var opts []*PurchaseOrderOption
+	var opts []*expenditureform.PurchaseOrderOption
 	for _, po := range resp.GetData() {
 		if !po.GetActive() {
 			continue
@@ -253,7 +182,7 @@ func loadPurchaseOrderOptions(
 		if s := po.GetSupplier(); s != nil {
 			supplierName = s.GetName()
 		}
-		opts = append(opts, &PurchaseOrderOption{
+		opts = append(opts, &expenditureform.PurchaseOrderOption{
 			Id:           po.GetId(),
 			PoNumber:     po.GetPoNumber(),
 			SupplierName: supplierName,
@@ -286,7 +215,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			paymentTerms := loadPaymentTerms(ctx, deps)
-			return view.OK("expense-drawer-form", &FormData{
+			return view.OK("expense-drawer-form", &expenditureform.Data{
 				FormAction:      deps.Routes.AddURL,
 				ExpenditureType: "expense",
 				Currency:        "PHP",
@@ -372,7 +301,7 @@ func NewEditAction(deps *Deps) view.View {
 
 			paymentTerms := loadPaymentTerms(ctx, deps)
 			selectedPaymentTermID := record.GetPaymentTermId()
-			return view.OK("expense-drawer-form", &FormData{
+			return view.OK("expense-drawer-form", &expenditureform.Data{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
 				ID:                    id,

@@ -11,6 +11,7 @@ package action
 //	{"found": true, "price": 1500, "currency": "USD", "price_list_id": "...", "price_product_id": "..."}
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,6 +19,14 @@ import (
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 )
+
+// writeJSON marshals data as JSON and writes it to the response writer.
+func writeJSON(w http.ResponseWriter, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Printf("action: failed to encode JSON response: %v", err)
+	}
+}
 
 // PriceLookupResponse is the JSON shape returned by the price lookup handler.
 type PriceLookupResponse struct {

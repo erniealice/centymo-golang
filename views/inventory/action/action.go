@@ -11,71 +11,22 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	inventoryform "github.com/erniealice/centymo-golang/views/inventory/form"
 
-	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
-	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
-	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
 )
 
-// FormLabels holds i18n labels for the inventory drawer form template.
-type FormLabels struct {
-	Product          string
-	SKU              string
-	SKUPlaceholder   string
-	OnHand           string
-	Reserved         string
-	ReorderLevel     string
-	UnitOfMeasure    string
-	Notes            string
-	NotesPlaceholder string
-	Active           string
-
-	// Field-level info text surfaced via an info button beside each label.
-	ProductInfo       string
-	SKUInfo           string
-	OnHandInfo        string
-	ReservedInfo      string
-	ReorderLevelInfo  string
-	UnitOfMeasureInfo string
-	NotesInfo         string
-	ActiveInfo        string
-}
-
-// FormData is the template data for the inventory drawer form.
-type FormData struct {
-	FormAction    string
-	IsEdit        bool
-	ID            string
-	Name          string
-	SKU           string
-	OnHand        string
-	Reserved      string
-	ReorderLevel  string
-	UnitOfMeasure string
-	LocationID    string
-	Notes         string
-	Active        bool
-	Labels        FormLabels
-	CommonLabels  any
-}
-
-// Deps holds dependencies for inventory action handlers.
+// Deps holds dependencies for the primary inventory CRUD action handlers.
+// Feature-specific deps (serial, transaction, depreciation) live in their
+// respective feature packages (inventory/serial, inventory/transaction,
+// inventory/depreciation).
 type Deps struct {
-	Routes                      centymo.InventoryRoutes
-	Labels                      centymo.InventoryLabels
-	CreateInventoryItem         func(ctx context.Context, req *inventoryitempb.CreateInventoryItemRequest) (*inventoryitempb.CreateInventoryItemResponse, error)
-	ReadInventoryItem           func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
-	UpdateInventoryItem         func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
-	DeleteInventoryItem         func(ctx context.Context, req *inventoryitempb.DeleteInventoryItemRequest) (*inventoryitempb.DeleteInventoryItemResponse, error)
-	CreateInventorySerial       func(ctx context.Context, req *inventoryserialpb.CreateInventorySerialRequest) (*inventoryserialpb.CreateInventorySerialResponse, error)
-	ReadInventorySerial         func(ctx context.Context, req *inventoryserialpb.ReadInventorySerialRequest) (*inventoryserialpb.ReadInventorySerialResponse, error)
-	UpdateInventorySerial       func(ctx context.Context, req *inventoryserialpb.UpdateInventorySerialRequest) (*inventoryserialpb.UpdateInventorySerialResponse, error)
-	DeleteInventorySerial       func(ctx context.Context, req *inventoryserialpb.DeleteInventorySerialRequest) (*inventoryserialpb.DeleteInventorySerialResponse, error)
-	CreateInventoryTransaction  func(ctx context.Context, req *inventorytransactionpb.CreateInventoryTransactionRequest) (*inventorytransactionpb.CreateInventoryTransactionResponse, error)
-	CreateInventoryDepreciation func(ctx context.Context, req *inventorydepreciationpb.CreateInventoryDepreciationRequest) (*inventorydepreciationpb.CreateInventoryDepreciationResponse, error)
-	ReadInventoryDepreciation   func(ctx context.Context, req *inventorydepreciationpb.ReadInventoryDepreciationRequest) (*inventorydepreciationpb.ReadInventoryDepreciationResponse, error)
-	UpdateInventoryDepreciation func(ctx context.Context, req *inventorydepreciationpb.UpdateInventoryDepreciationRequest) (*inventorydepreciationpb.UpdateInventoryDepreciationResponse, error)
+	Routes              centymo.InventoryRoutes
+	Labels              centymo.InventoryLabels
+	CreateInventoryItem func(ctx context.Context, req *inventoryitempb.CreateInventoryItemRequest) (*inventoryitempb.CreateInventoryItemResponse, error)
+	ReadInventoryItem   func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
+	UpdateInventoryItem func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
+	DeleteInventoryItem func(ctx context.Context, req *inventoryitempb.DeleteInventoryItemRequest) (*inventoryitempb.DeleteInventoryItemResponse, error)
 }
 
 func strPtr(s string) *string {
@@ -85,8 +36,8 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func formLabels(t func(string) string, f centymo.InventoryFormLabels) FormLabels {
-	return FormLabels{
+func formLabels(t func(string) string, f centymo.InventoryFormLabels) inventoryform.Labels {
+	return inventoryform.Labels{
 		Product:          t("inventory.form.product"),
 		SKU:              t("inventory.form.sku"),
 		SKUPlaceholder:   t("inventory.form.skuPlaceholder"),
@@ -118,7 +69,7 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("inventory-drawer-form", &FormData{
+			return view.OK("inventory-drawer-form", &inventoryform.Data{
 				FormAction:    deps.Routes.AddURL,
 				Active:        true,
 				UnitOfMeasure: "pcs",
@@ -184,7 +135,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			item := items[0]
 
-			return view.OK("inventory-drawer-form", &FormData{
+			return view.OK("inventory-drawer-form", &inventoryform.Data{
 				FormAction:    route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:        true,
 				ID:            id,

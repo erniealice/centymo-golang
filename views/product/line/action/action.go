@@ -6,36 +6,12 @@ import (
 	"net/http"
 
 	centymo "github.com/erniealice/centymo-golang"
+	lineform "github.com/erniealice/centymo-golang/views/product/line/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
 	linepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line"
 )
-
-// FormLabels holds i18n labels for the line drawer form template.
-type FormLabels struct {
-	Name            string
-	Description     string
-	DescPlaceholder string
-	Active          string
-
-	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string
-	DescriptionInfo string
-	ActiveInfo      string
-}
-
-// FormData is the template data for the line drawer form.
-type FormData struct {
-	FormAction   string
-	IsEdit       bool
-	ID           string
-	Name         string
-	Description  string
-	Active       bool
-	Labels       FormLabels
-	CommonLabels any
-}
 
 // Deps holds dependencies for line action handlers.
 type Deps struct {
@@ -47,19 +23,6 @@ type Deps struct {
 	DeleteLine func(ctx context.Context, req *linepb.DeleteLineRequest) (*linepb.DeleteLineResponse, error)
 }
 
-func formLabels(labels centymo.ProductLineLabels) FormLabels {
-	return FormLabels{
-		Name:            labels.Form.Name,
-		Description:     labels.Form.Description,
-		DescPlaceholder: labels.Form.DescPlaceholder,
-		Active:          labels.Form.Active,
-		// Info fields sourced from centymo.ProductLineFormLabels (populated from lyngua JSON + defaults).
-		NameInfo:        labels.Form.NameInfo,
-		DescriptionInfo: labels.Form.DescriptionInfo,
-		ActiveInfo:      labels.Form.ActiveInfo,
-	}
-}
-
 // NewAddAction creates the line add action.
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -69,10 +32,10 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("product-line-drawer-form", &FormData{
+			return view.OK("product-line-drawer-form", &lineform.Data{
 				FormAction:   deps.Routes.AddURL,
 				Active:       true,
-				Labels:       formLabels(deps.Labels),
+				Labels:       deps.Labels.Form,
 				CommonLabels: nil,
 			})
 		}
@@ -122,14 +85,14 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := data[0]
 
-			return view.OK("product-line-drawer-form", &FormData{
+			return view.OK("product-line-drawer-form", &lineform.Data{
 				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:       true,
 				ID:           id,
 				Name:         record.GetName(),
 				Description:  record.GetDescription(),
 				Active:       record.GetActive(),
-				Labels:       formLabels(deps.Labels),
+				Labels:       deps.Labels.Form,
 				CommonLabels: nil,
 			})
 		}

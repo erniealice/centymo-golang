@@ -1,4 +1,6 @@
-package action
+// Package serial handles the serial number feature for inventory items.
+// Drawer template: serial-drawer-form.html (stays flat at view root).
+package serial
 
 import (
 	"context"
@@ -10,49 +12,24 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	serialform "github.com/erniealice/centymo-golang/views/inventory/serial/form"
 
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 )
 
-// SerialFormLabels holds i18n labels for the serial drawer form.
-type SerialFormLabels struct {
-	SerialNumber  string
-	IMEI          string
-	Status        string
-	WarrantyStart string
-	WarrantyEnd   string
-	PurchaseOrder string
-	SoldReference string
+// Deps is the dependency subset needed by the serial feature.
+type Deps struct {
+	Routes centymo.InventoryRoutes
+	Labels centymo.InventoryLabels
 
-	// Field-level info text surfaced via an info button beside each label.
-	SerialNumberInfo  string
-	IMEIInfo          string
-	StatusInfo        string
-	WarrantyStartInfo string
-	WarrantyEndInfo   string
-	PurchaseOrderInfo string
-	SoldReferenceInfo string
+	CreateInventorySerial func(ctx context.Context, req *inventoryserialpb.CreateInventorySerialRequest) (*inventoryserialpb.CreateInventorySerialResponse, error)
+	ReadInventorySerial   func(ctx context.Context, req *inventoryserialpb.ReadInventorySerialRequest) (*inventoryserialpb.ReadInventorySerialResponse, error)
+	UpdateInventorySerial func(ctx context.Context, req *inventoryserialpb.UpdateInventorySerialRequest) (*inventoryserialpb.UpdateInventorySerialResponse, error)
+	DeleteInventorySerial func(ctx context.Context, req *inventoryserialpb.DeleteInventorySerialRequest) (*inventoryserialpb.DeleteInventorySerialResponse, error)
 }
 
-// SerialFormData is the template data for the serial drawer form.
-type SerialFormData struct {
-	FormAction    string
-	IsEdit        bool
-	ID            string
-	SerialNumber  string
-	IMEI          string
-	Status        string
-	WarrantyStart string
-	WarrantyEnd   string
-	PurchaseOrder string
-	SoldReference string
-	Labels        SerialFormLabels
-	StatusOptions []pyeza.SelectOption
-	CommonLabels  any
-}
-
-func serialFormLabels(t func(string) string, s centymo.InventorySerialLabels) SerialFormLabels {
-	return SerialFormLabels{
+func formLabels(t func(string) string, s centymo.InventorySerialLabels) serialform.Labels {
+	return serialform.Labels{
 		SerialNumber:  t("inventory.serial.serialNumber"),
 		IMEI:          t("inventory.serial.imei"),
 		Status:        t("inventory.serial.status"),
@@ -71,7 +48,7 @@ func serialFormLabels(t func(string) string, s centymo.InventorySerialLabels) Se
 	}
 }
 
-func serialStatusOptions(t func(string) string) []pyeza.SelectOption {
+func statusOptions(t func(string) string) []pyeza.SelectOption {
 	return []pyeza.SelectOption{
 		{Value: "available", Label: t("inventory.serial.statusAvailable")},
 		{Value: "sold", Label: t("inventory.serial.statusSold")},
@@ -81,8 +58,15 @@ func serialStatusOptions(t func(string) string) []pyeza.SelectOption {
 	}
 }
 
-// NewSerialAssignAction creates the serial assign action (GET = form, POST = create).
-func NewSerialAssignAction(deps *Deps) view.View {
+func strPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+// NewAssignAction creates the serial assign action (GET = form, POST = create).
+func NewAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
@@ -92,11 +76,11 @@ func NewSerialAssignAction(deps *Deps) view.View {
 		inventoryItemID := viewCtx.Request.PathValue("id")
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("serial-drawer-form", &SerialFormData{
+			return view.OK("serial-drawer-form", &serialform.Data{
 				FormAction:    route.ResolveURL(deps.Routes.SerialAssignURL, "id", inventoryItemID),
 				Status:        "available",
-				Labels:        serialFormLabels(viewCtx.T, deps.Labels.Serial),
-				StatusOptions: serialStatusOptions(viewCtx.T),
+				Labels:        formLabels(viewCtx.T, deps.Labels.Serial),
+				StatusOptions: statusOptions(viewCtx.T),
 				CommonLabels:  nil,
 			})
 		}
@@ -127,8 +111,8 @@ func NewSerialAssignAction(deps *Deps) view.View {
 	})
 }
 
-// NewSerialEditAction creates the serial edit action (GET = form, POST = update).
-func NewSerialEditAction(deps *Deps) view.View {
+// NewEditAction creates the serial edit action (GET = form, POST = update).
+func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
@@ -152,7 +136,7 @@ func NewSerialEditAction(deps *Deps) view.View {
 			}
 			record := records[0]
 
-			return view.OK("serial-drawer-form", &SerialFormData{
+			return view.OK("serial-drawer-form", &serialform.Data{
 				FormAction:    route.ResolveURL(deps.Routes.SerialEditURL, "id", inventoryItemID, "sid", serialID),
 				IsEdit:        true,
 				ID:            serialID,
@@ -162,8 +146,8 @@ func NewSerialEditAction(deps *Deps) view.View {
 				WarrantyStart: record.GetWarrantyStart(),
 				WarrantyEnd:   record.GetWarrantyEnd(),
 				PurchaseOrder: record.GetPurchaseOrder(),
-				Labels:        serialFormLabels(viewCtx.T, deps.Labels.Serial),
-				StatusOptions: serialStatusOptions(viewCtx.T),
+				Labels:        formLabels(viewCtx.T, deps.Labels.Serial),
+				StatusOptions: statusOptions(viewCtx.T),
 				CommonLabels:  nil,
 			})
 		}
@@ -194,8 +178,8 @@ func NewSerialEditAction(deps *Deps) view.View {
 	})
 }
 
-// NewSerialRemoveAction creates the serial remove action (POST only).
-func NewSerialRemoveAction(deps *Deps) view.View {
+// NewRemoveAction creates the serial remove action (POST only).
+func NewRemoveAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "delete") {
@@ -223,10 +207,9 @@ func NewSerialRemoveAction(deps *Deps) view.View {
 	})
 }
 
-// NewSerialTableAction returns the serial table partial for HTMX refresh.
-func NewSerialTableAction(deps *Deps) view.View {
+// NewTableAction returns the serial table partial for HTMX refresh.
+func NewTableAction(_ *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		// Trigger table refresh on the client side
 		return centymo.HTMXSuccess("serial-table")
 	})
 }

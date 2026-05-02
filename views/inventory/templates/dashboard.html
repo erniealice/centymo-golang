@@ -1,114 +1,13 @@
-{{/* Full page -- for direct access / non-HTMX */}}
+{{/* Full page — for direct access / non-HTMX */}}
 {{define "inventory-dashboard"}}
 {{template "app-shell" .}}
 {{end}}
 
-{{/* Content-only partial -- for HTMX navigation */}}
+{{/* Content-only partial — for HTMX navigation */}}
 {{define "inventory-dashboard-content"}}
-<div class="page-content" data-page-css="/assets/css/centymo/centymo-inventory-dashboard.css?v={{.CacheVersion}}">
-    <!-- Stats Row: 8 KPI Widgets -->
-    <div class="centymo-stats-row centymo-stats-row--8">
-        {{range .Widgets}}
-        {{template "stat-card" dict "Icon" .Icon "Value" .Value "Label" .Label "Trend" .Trend "TrendUp" .TrendUp "Color" .Color}}
-        {{end}}
-    </div>
-
-    <!-- Main Grid -->
-    <div class="centymo-dashboard-grid">
-        <!-- Stock Level Chart -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">{{.Labels.Dashboard.StockLevels}}</h2>
-                <div class="card-actions">
-                    <button class="card-btn" id="filter-week" data-testid="inventory-filter-week-btn">{{.Labels.Dashboard.Week}}</button>
-                    <button class="card-btn" id="filter-month" data-testid="inventory-filter-month-btn">{{.Labels.Dashboard.Month}}</button>
-                    <button class="card-btn primary" id="filter-year" data-testid="inventory-filter-year-btn">{{.Labels.Dashboard.Year}}</button>
-                </div>
-            </div>
-            <div class="centymo-chart-area">
-                <div class="centymo-chart-placeholder">
-                    <div class="centymo-chart-line">
-                        <svg viewBox="0 0 400 200" preserveAspectRatio="none">
-                            <defs>
-                                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" style="stop-color:#7A9E7A;stop-opacity:0.3" />
-                                    <stop offset="100%" style="stop-color:#7A9E7A;stop-opacity:0" />
-                                </linearGradient>
-                            </defs>
-                            <path d="M0,120 Q50,100 100,110 T200,80 T300,70 T400,50" fill="none" stroke="#7A9E7A" stroke-width="3" stroke-linecap="round"/>
-                            <path d="M0,120 Q50,100 100,110 T200,80 T300,70 T400,50 L400,200 L0,200 Z" fill="url(#chartGradient)"/>
-                        </svg>
-                    </div>
-                    <div class="centymo-chart-labels">
-                        <span class="centymo-chart-label">Jan</span>
-                        <span class="centymo-chart-label">Mar</span>
-                        <span class="centymo-chart-label">May</span>
-                        <span class="centymo-chart-label">Jul</span>
-                        <span class="centymo-chart-label">Sep</span>
-                        <span class="centymo-chart-label">Nov</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">{{.Labels.Dashboard.RecentActivity}}</h2>
-                <a class="card-btn" href="{{route "inventory.movements"}}">{{.Labels.Dashboard.ViewAll}}</a>
-            </div>
-            <div class="centymo-activity-list"
-                 id="inventory-recent-activity"
-                 hx-get="{{route "inventory.dashboard.movements"}}"
-                 hx-trigger="load"
-                 hx-target="this"
-                 hx-swap="innerHTML">
-                <!-- Loaded async via HTMX -->
-                <div class="centymo-activity-item" data-testid="activity-1">
-                    <div class="centymo-activity-icon client">
-                        {{template "icon-plus"}}
-                    </div>
-                    <div class="centymo-activity-content">
-                        <div class="centymo-activity-title">Stock Received</div>
-                        <div class="centymo-activity-desc">50 units -- SKU-1042 at Ayala Central</div>
-                    </div>
-                    <span class="centymo-activity-time">1h ago</span>
-                </div>
-
-                <div class="centymo-activity-item" data-testid="activity-2">
-                    <div class="centymo-activity-icon quote">
-                        {{template "icon-alert-triangle"}}
-                    </div>
-                    <div class="centymo-activity-content">
-                        <div class="centymo-activity-title">Low Stock Alert</div>
-                        <div class="centymo-activity-desc">SKU-0891 below reorder level</div>
-                    </div>
-                    <span class="centymo-activity-time">3h ago</span>
-                </div>
-
-                <div class="centymo-activity-item" data-testid="activity-3">
-                    <div class="centymo-activity-icon award">
-                        {{template "icon-edit"}}
-                    </div>
-                    <div class="centymo-activity-content">
-                        <div class="centymo-activity-title">Item Updated</div>
-                        <div class="centymo-activity-desc">SKU-0756 reorder level changed</div>
-                    </div>
-                    <span class="centymo-activity-time">5h ago</span>
-                </div>
-
-                <div class="centymo-activity-item" data-testid="activity-4">
-                    <div class="centymo-activity-icon integration">
-                        {{template "icon-map-pin"}}
-                    </div>
-                    <div class="centymo-activity-content">
-                        <div class="centymo-activity-title">Transfer Completed</div>
-                        <div class="centymo-activity-desc">20 units moved to SM City Cebu</div>
-                    </div>
-                    <span class="centymo-activity-time">1d ago</span>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="page-content"
+     data-page-css="/assets/css/centymo/centymo-inventory-dashboard.css?v={{.CacheVersion}}"
+     data-testid="dashboard-inventory">
+    {{template "dashboard" .Dashboard}}
 </div>
 {{end}}

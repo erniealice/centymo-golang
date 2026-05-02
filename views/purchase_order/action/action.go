@@ -9,47 +9,10 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	poform "github.com/erniealice/centymo-golang/views/purchase_order/form"
 
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 )
-
-// FormData is the template data for the purchase order drawer form.
-type FormData struct {
-	FormAction   string
-	IsEdit       bool
-	ID           string
-	PoNumber     string
-	SupplierID   string
-	PoType       string
-	OrderDate    string
-	Currency     string
-	PaymentTerms string
-	Notes        string
-	Labels       FormLabels
-	CommonLabels any
-}
-
-// FormLabels holds flat i18n labels for the purchase order drawer form template.
-type FormLabels struct {
-	PoNumber         string
-	SupplierID       string
-	PoType           string
-	OrderDate        string
-	Currency         string
-	PaymentTerms     string
-	Notes            string
-	NotesPlaceholder string
-	Status           string
-
-	// Field-level info text surfaced via an info button beside each label.
-	PoNumberInfo     string
-	SupplierIDInfo   string
-	PoTypeInfo       string
-	OrderDateInfo    string
-	CurrencyInfo     string
-	PaymentTermsInfo string
-	NotesInfo        string
-}
 
 // Deps holds dependencies for purchase order action handlers.
 type Deps struct {
@@ -63,9 +26,11 @@ type Deps struct {
 	DeletePurchaseOrder func(ctx context.Context, req *purchaseorderpb.DeletePurchaseOrderRequest) (*purchaseorderpb.DeletePurchaseOrderResponse, error)
 }
 
-// formLabels maps ExpenditureLabels into the flat FormLabels struct for the template.
-func formLabels(l centymo.ExpenditureLabels) FormLabels {
-	return FormLabels{
+// formLabels maps ExpenditureLabels into the flat Labels struct for the template.
+// Kept in action/ (not deleted) because it performs real transformation:
+// hardcoded "PO Number", "Supplier", "PO Type" strings + draws from two label sources.
+func formLabels(l centymo.ExpenditureLabels) poform.Labels {
+	return poform.Labels{
 		PoNumber:         "PO Number",
 		SupplierID:       "Supplier",
 		PoType:           "PO Type",
@@ -100,7 +65,7 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			return view.OK("purchase-order-drawer-form", &FormData{
+			return view.OK("purchase-order-drawer-form", &poform.Data{
 				FormAction:   deps.Routes.PurchaseOrderAddURL,
 				PoType:       "standard",
 				Currency:     "PHP",
@@ -174,7 +139,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			record := readData[0]
 
-			return view.OK("purchase-order-drawer-form", &FormData{
+			return view.OK("purchase-order-drawer-form", &poform.Data{
 				FormAction:   route.ResolveURL(deps.Routes.PurchaseOrderEditURL, "id", id),
 				IsEdit:       true,
 				ID:           id,

@@ -11,11 +11,24 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/centymo-golang/views/plan/form"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
+)
+
+// Re-export form types for callers that construct form.Data directly.
+// ClientFieldMode and JobTemplateOption are re-exported so callers in
+// action/price_plan.go and action/product_plan.go don't need to import form/.
+type ClientFieldMode = form.ClientFieldMode
+type JobTemplateOption = form.JobTemplateOption
+
+const (
+	ClientFieldModePicker   = form.ClientFieldModePicker
+	ClientFieldModeReadonly = form.ClientFieldModeReadonly
+	ClientFieldModeLocked   = form.ClientFieldModeLocked
 )
 
 var clientNameSort = &commonpb.SortRequest{
@@ -40,94 +53,6 @@ func parseVisitsPerCycle(raw string) int32 {
 		n = 100
 	}
 	return int32(n)
-}
-
-// FormLabels holds i18n labels for the drawer form template.
-type FormLabels struct {
-	Name            string
-	NamePlaceholder string
-	Description     string
-	DescPlaceholder string
-	Active          string
-
-	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string
-	DescriptionInfo string
-	ActiveInfo      string
-
-	// 2026-04-27 plan-client-scope plan §6.2 / §6.6 — Client picker.
-	Client                  string
-	ClientHelp              string
-	ClientPlaceholder       string
-	ClientSearchPlaceholder string
-	ClientNoResults         string
-	ClientLockedTooltip     string
-	ClientForLabel          string // "For {{.ClientName}}" — read-only badge in client-context entry
-	ClientInfo              string
-
-	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — JobTemplate select.
-	JobTemplate     string
-	JobTemplateNone string
-	JobTemplateHint string
-
-	// 2026-04-30 cyclic-subscription-jobs plan §9.3 — visits_per_cycle field.
-	VisitsPerCycleLabel       string
-	VisitsPerCyclePlaceholder string
-	VisitsPerCycleHint        string
-}
-
-// ClientFieldMode selects how the Client field renders on the drawer per
-// plan §6.6:
-//   - "picker"   → standard auto-complete (workspace add).
-//   - "readonly" → read-only badge "For {ClientName}" (client-context entry,
-//     ?context=client&client_id=...).
-//   - "locked"   → read-only badge with the lock tooltip (Plan has active
-//     subscriptions and client_id is reference-checker locked).
-type ClientFieldMode string
-
-const (
-	ClientFieldModePicker   ClientFieldMode = "picker"
-	ClientFieldModeReadonly ClientFieldMode = "readonly"
-	ClientFieldModeLocked   ClientFieldMode = "locked"
-)
-
-// JobTemplateOption is a {value, label} pair for the JobTemplate select.
-type JobTemplateOption struct {
-	Value string
-	Label string
-}
-
-// FormData is the template data for the plan drawer form.
-type FormData struct {
-	FormAction   string
-	IsEdit       bool
-	ID           string
-	Name         string
-	Description  string
-	Active       bool
-
-	// 2026-04-27 plan-client-scope plan §6.2 / §6.6.
-	ClientFieldMode      ClientFieldMode
-	ClientID             string             // existing or pre-filled client_id
-	ClientLabel          string             // display name for the chosen client
-	ClientOptions        []map[string]any   // optgroup-flattened options for the picker
-	SearchClientURL      string             // auto-complete search endpoint
-
-	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Plan.job_template_id
-	// assignment. JobTemplateID is the currently-assigned id (empty on add /
-	// when unset); JobTemplateOptions enumerates active JobTemplates for the
-	// drawer's <select>.
-	JobTemplateID      string
-	JobTemplateOptions []JobTemplateOption
-
-	// 2026-04-30 cyclic-subscription-jobs plan §7.3 / §9.3 — Plan.visits_per_cycle.
-	// Number of cycle Job instances spawned per billing cycle. Default 1
-	// when unset; the drawer template renders 1 in the input either way.
-	// Visible only when JobTemplateID is set (template-side JS gate).
-	VisitsPerCycle int32
-
-	Labels       FormLabels
-	CommonLabels any
 }
 
 // Deps holds dependencies for plan action handlers.
@@ -161,8 +86,11 @@ type Deps struct {
 	ListJobTemplates func(ctx context.Context, req *jobtemplatepb.ListJobTemplatesRequest) (*jobtemplatepb.ListJobTemplatesResponse, error)
 }
 
-func formLabels(l centymo.PlanLabels) FormLabels {
-	return FormLabels{
+// buildFormLabels maps centymo.PlanLabels fields to form.Labels.
+// The original formLabels() was a verbatim passthrough — inlined here per
+// Decision 2 to keep the build explicit and to satisfy the form boundary.
+func buildFormLabels(l centymo.PlanLabels) form.Labels {
+	return form.Labels{
 		Name:            l.Form.Name,
 		NamePlaceholder: l.Form.NamePlaceholder,
 		Description:     l.Form.Description,
@@ -195,7 +123,7 @@ func formLabels(l centymo.PlanLabels) FormLabels {
 // loadJobTemplateOptions fetches active JobTemplates for the Plan drawer's
 // JobTemplate select. Returns nil when the dep is unwired so the template
 // can hide the field gracefully.
-func loadJobTemplateOptions(ctx context.Context, listJobTemplates func(ctx context.Context, req *jobtemplatepb.ListJobTemplatesRequest) (*jobtemplatepb.ListJobTemplatesResponse, error)) []JobTemplateOption {
+func loadJobTemplateOptions(ctx context.Context, listJobTemplates func(ctx context.Context, req *jobtemplatepb.ListJobTemplatesRequest) (*jobtemplatepb.ListJobTemplatesResponse, error)) []form.JobTemplateOption {
 	if listJobTemplates == nil {
 		return nil
 	}
@@ -204,7 +132,7 @@ func loadJobTemplateOptions(ctx context.Context, listJobTemplates func(ctx conte
 		log.Printf("Failed to load job templates for plan drawer: %v", err)
 		return nil
 	}
-	opts := make([]JobTemplateOption, 0, len(resp.GetData()))
+	opts := make([]form.JobTemplateOption, 0, len(resp.GetData()))
 	for _, t := range resp.GetData() {
 		if t == nil {
 			continue
@@ -217,7 +145,7 @@ func loadJobTemplateOptions(ctx context.Context, listJobTemplates func(ctx conte
 		if label == "" {
 			label = t.GetId()
 		}
-		opts = append(opts, JobTemplateOption{
+		opts = append(opts, form.JobTemplateOption{
 			Value: t.GetId(),
 			Label: label,
 		})
@@ -298,13 +226,13 @@ func NewAddAction(deps *Deps) view.View {
 			// the Client field renders read-only (with a hidden input).
 			ctxParam := viewCtx.Request.URL.Query().Get("context")
 			pinnedClientID := viewCtx.Request.URL.Query().Get("client_id")
-			fieldMode := ClientFieldModePicker
+			fieldMode := form.ClientFieldModePicker
 			clientLabel := ""
 			if ctxParam == "client" && pinnedClientID != "" {
-				fieldMode = ClientFieldModeReadonly
+				fieldMode = form.ClientFieldModeReadonly
 				clientLabel = resolveClientLabel(ctx, pinnedClientID, deps.ListClients)
 			}
-			return view.OK("plan-drawer-form", &FormData{
+			return view.OK("plan-drawer-form", &form.Data{
 				FormAction:         deps.Routes.AddURL,
 				Active:             true,
 				ClientFieldMode:    fieldMode,
@@ -313,7 +241,7 @@ func NewAddAction(deps *Deps) view.View {
 				ClientOptions:      loadClientOptions(ctx, deps.ListClients, pinnedClientID),
 				SearchClientURL:    deps.SearchClientsURL,
 				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
-				Labels:             formLabels(deps.Labels),
+				Labels:             buildFormLabels(deps.Labels),
 				CommonLabels:       nil, // injected by ViewAdapter
 			})
 		}
@@ -414,13 +342,13 @@ func NewEditAction(deps *Deps) view.View {
 			// when the reference checker reports the plan as locked.
 			clientID := record.GetClientId()
 			clientLabel := resolveClientLabel(ctx, clientID, deps.ListClients)
-			fieldMode := ClientFieldModePicker
+			fieldMode := form.ClientFieldModePicker
 			if isClone {
 				// Cloning starts fresh — the new plan can be assigned to any
 				// client (or none). Skip the lock check.
 			} else if deps.GetPlanClientScopeLockedIDs != nil {
 				if locked, _ := deps.GetPlanClientScopeLockedIDs(ctx, []string{id}); locked[id] {
-					fieldMode = ClientFieldModeLocked
+					fieldMode = form.ClientFieldModeLocked
 				}
 			}
 			// Honor ?context=client&client_id=... overrides on edit (e.g. opened
@@ -431,11 +359,11 @@ func NewEditAction(deps *Deps) view.View {
 				if pinned := viewCtx.Request.URL.Query().Get("client_id"); pinned != "" {
 					clientID = pinned
 					clientLabel = resolveClientLabel(ctx, pinned, deps.ListClients)
-					fieldMode = ClientFieldModeReadonly
+					fieldMode = form.ClientFieldModeReadonly
 				}
 			}
 
-			return view.OK("plan-drawer-form", &FormData{
+			return view.OK("plan-drawer-form", &form.Data{
 				FormAction:         formAction,
 				IsEdit:             !isClone,
 				ID:                 formID,
@@ -451,7 +379,7 @@ func NewEditAction(deps *Deps) view.View {
 				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
 				// 2026-04-30 cyclic-subscription-jobs plan §7.3.
 				VisitsPerCycle: record.GetVisitsPerCycle(),
-				Labels:         formLabels(deps.Labels),
+				Labels:         buildFormLabels(deps.Labels),
 				CommonLabels:   nil, // injected by ViewAdapter
 			})
 		}

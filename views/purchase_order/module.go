@@ -16,7 +16,9 @@ import (
 
 	purchaseorderaction "github.com/erniealice/centymo-golang/views/purchase_order/action"
 	purchaseorderdetail "github.com/erniealice/centymo-golang/views/purchase_order/detail"
+	purchaseorderlineitem "github.com/erniealice/centymo-golang/views/purchase_order/line_item"
 	purchaseorderlist "github.com/erniealice/centymo-golang/views/purchase_order/list"
+	purchaseorderreceipt "github.com/erniealice/centymo-golang/views/purchase_order/receipt"
 )
 
 // ModuleDeps holds all dependencies for the purchase order module.
@@ -126,7 +128,7 @@ func NewModule(deps *ModuleDeps) *Module {
 
 	// Line item action views (nil-guarded — only built when CreatePurchaseOrderLineItem is provided)
 	if deps.CreatePurchaseOrderLineItem != nil {
-		lineItemActionDeps := &purchaseorderaction.LineItemDeps{
+		lineItemActionDeps := &purchaseorderlineitem.Deps{
 			Routes:                      deps.Routes,
 			Labels:                      deps.Labels,
 			CreatePurchaseOrderLineItem: deps.CreatePurchaseOrderLineItem,
@@ -134,14 +136,14 @@ func NewModule(deps *ModuleDeps) *Module {
 			UpdatePurchaseOrderLineItem: deps.UpdatePurchaseOrderLineItem,
 			DeletePurchaseOrderLineItem: deps.DeletePurchaseOrderLineItem,
 		}
-		m.PurchaseOrderLineItemAdd = purchaseorderaction.NewLineItemAddAction(lineItemActionDeps)
-		m.PurchaseOrderLineItemEdit = purchaseorderaction.NewLineItemEditAction(lineItemActionDeps)
-		m.PurchaseOrderLineItemRemove = purchaseorderaction.NewLineItemRemoveAction(lineItemActionDeps)
+		m.PurchaseOrderLineItemAdd = purchaseorderlineitem.NewAddAction(lineItemActionDeps)
+		m.PurchaseOrderLineItemEdit = purchaseorderlineitem.NewEditAction(lineItemActionDeps)
+		m.PurchaseOrderLineItemRemove = purchaseorderlineitem.NewRemoveAction(lineItemActionDeps)
 	}
 
 	// Confirm-receipt action (nil-guarded — only built when ReadPurchaseOrder + ListPurchaseOrderLineItems + UpdatePurchaseOrderLineItem are provided)
 	if deps.ReadPurchaseOrder != nil && deps.ListPurchaseOrderLineItems != nil && deps.UpdatePurchaseOrderLineItem != nil {
-		receiptDeps := &purchaseorderaction.ReceiptActionDeps{
+		receiptDeps := &purchaseorderreceipt.Deps{
 			Routes:                      deps.Routes,
 			Labels:                      deps.Labels,
 			ReadPurchaseOrder:           deps.ReadPurchaseOrder,
@@ -153,7 +155,7 @@ func NewModule(deps *ModuleDeps) *Module {
 			ReadInventoryItem:           deps.ReadInventoryItem,
 			UpdateInventoryItem:         deps.UpdateInventoryItem,
 		}
-		m.PurchaseOrderConfirmReceipt = purchaseorderaction.NewConfirmReceiptAction(receiptDeps)
+		m.PurchaseOrderConfirmReceipt = purchaseorderreceipt.NewConfirmReceiptAction(receiptDeps)
 	}
 
 	return m
