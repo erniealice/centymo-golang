@@ -123,11 +123,11 @@ type InventoryDetailLabels struct {
 	AttributeValue string `json:"attributeValue"`
 
 	// Serial columns
-	SerialNumber  string `json:"serialNumber"`
-	IMEI          string `json:"imei"`
-	SerialStatus  string `json:"serialStatus"`
-	WarrantyEnd   string `json:"warrantyEnd"`
-	PurchaseOrder string `json:"purchaseOrder"`
+	SerialNumber     string `json:"serialNumber"`
+	IMEI             string `json:"imei"`
+	SerialStatus     string `json:"serialStatus"`
+	WarrantyEnd      string `json:"warrantyEnd"`
+	PurchaseOrder    string `json:"purchaseOrder"`
 	RevenueReference string `json:"revenueReference"`
 
 	// Serial summary
@@ -595,17 +595,17 @@ type RevenueErrorLabels struct {
 }
 
 type RevenueDashboardLabels struct {
-	Title          string `json:"title"`
-	TotalRevenue   string `json:"totalRevenue"`
-	Revenue        string `json:"revenue"`
-	Completed      string `json:"completed"`
-	Active         string `json:"active"`
-	RevenueTrend   string `json:"revenueTrend"`
-	Week           string `json:"week"`
-	Month          string `json:"month"`
-	Year           string `json:"year"`
-	RecentRevenue  string `json:"recentRevenue"`
-	ViewAll        string `json:"viewAll"`
+	Title             string `json:"title"`
+	TotalRevenue      string `json:"totalRevenue"`
+	Revenue           string `json:"revenue"`
+	Completed         string `json:"completed"`
+	Active            string `json:"active"`
+	RevenueTrend      string `json:"revenueTrend"`
+	Week              string `json:"week"`
+	Month             string `json:"month"`
+	Year              string `json:"year"`
+	RecentRevenue     string `json:"recentRevenue"`
+	ViewAll           string `json:"viewAll"`
 	NewRevenueCreated string `json:"newRevenueCreated"`
 	RevenueCompleted  string `json:"revenueCompleted"`
 	RevenueUpdated    string `json:"revenueUpdated"`
@@ -636,22 +636,22 @@ type RevenueSettingsLabels struct {
 
 // ProductLabels holds all translatable strings for the product module.
 type ProductLabels struct {
-	Page         ProductPageLabels       `json:"page"`
-	Buttons      ProductButtonLabels     `json:"buttons"`
-	Columns      ProductColumnLabels     `json:"columns"`
-	Empty        ProductEmptyLabels      `json:"empty"`
-	Form         ProductFormLabels       `json:"form"`
-	Actions      ProductActionLabels     `json:"actions"`
-	Bulk         ProductBulkLabels       `json:"bulkActions"`
-	Tabs         ProductTabLabels        `json:"tabs"`
-	Detail       ProductDetailLabels     `json:"detail"`
-	Status       ProductStatusLabels     `json:"status"`
-	Variant      ProductVariantLabels    `json:"variant"`
-	Attribute    ProductAttributeLabels  `json:"attribute"`
-	Options      ProductOptionLabels     `json:"options"`
-	Confirm      ProductConfirmLabels    `json:"confirm"`
-	Errors       ProductErrorLabels      `json:"errors"`
-	Breadcrumb   ProductBreadcrumbLabels `json:"breadcrumb"`
+	Page       ProductPageLabels       `json:"page"`
+	Buttons    ProductButtonLabels     `json:"buttons"`
+	Columns    ProductColumnLabels     `json:"columns"`
+	Empty      ProductEmptyLabels      `json:"empty"`
+	Form       ProductFormLabels       `json:"form"`
+	Actions    ProductActionLabels     `json:"actions"`
+	Bulk       ProductBulkLabels       `json:"bulkActions"`
+	Tabs       ProductTabLabels        `json:"tabs"`
+	Detail     ProductDetailLabels     `json:"detail"`
+	Status     ProductStatusLabels     `json:"status"`
+	Variant    ProductVariantLabels    `json:"variant"`
+	Attribute  ProductAttributeLabels  `json:"attribute"`
+	Options    ProductOptionLabels     `json:"options"`
+	Confirm    ProductConfirmLabels    `json:"confirm"`
+	Errors     ProductErrorLabels      `json:"errors"`
+	Breadcrumb ProductBreadcrumbLabels `json:"breadcrumb"`
 	// Four-axis product taxonomy enum labels — loaded from lyngua
 	// product.json "productKind"/"deliveryMode"/"trackingMode" blocks.
 	// Wired here so the drawer-form select uses the exact tier-cascaded
@@ -700,13 +700,13 @@ type ProductFormLabels struct {
 	LinePlaceholder string `json:"linePlaceholder"`
 
 	// Variant / option / attribute form labels
-	PricePlaceholder         string `json:"pricePlaceholder"`
-	SelectOption             string `json:"selectOption"`
-	Required                 string `json:"required"`
-	Option                   string `json:"option"`
-	SelectAttribute          string `json:"selectAttribute"`
-	AllAttributesAssigned    string `json:"allAttributesAssigned"`
-	OptionNeedsValuesAlert   string `json:"optionNeedsValuesAlert"`
+	PricePlaceholder       string `json:"pricePlaceholder"`
+	SelectOption           string `json:"selectOption"`
+	Required               string `json:"required"`
+	Option                 string `json:"option"`
+	SelectAttribute        string `json:"selectAttribute"`
+	AllAttributesAssigned  string `json:"allAttributesAssigned"`
+	OptionNeedsValuesAlert string `json:"optionNeedsValuesAlert"`
 
 	// Field-level info text surfaced via an info button beside each label.
 	NameInfo        string `json:"nameInfo"`
@@ -944,20 +944,20 @@ type ProductOptionColumnLabels struct {
 }
 
 type ProductOptionFormLabels struct {
-	Name                    string `json:"name"`
-	NamePlaceholder         string `json:"namePlaceholder"`
-	Code                    string `json:"code"`
-	CodePlaceholder         string `json:"codePlaceholder"`
-	DataType                string `json:"dataType"`
-	SortOrder               string `json:"sortOrder"`
-	MinValue                string `json:"minValue"`
-	MaxValue                string `json:"maxValue"`
-	Active                  string `json:"active"`
-	Required                string `json:"required"`
-	RequiredCaution         string `json:"requiredCaution"`
-	Description             string `json:"description"`
-	DescriptionPlaceholder  string `json:"descriptionPlaceholder"`
-	DescriptionEmpty        string `json:"descriptionEmpty"`
+	Name                   string `json:"name"`
+	NamePlaceholder        string `json:"namePlaceholder"`
+	Code                   string `json:"code"`
+	CodePlaceholder        string `json:"codePlaceholder"`
+	DataType               string `json:"dataType"`
+	SortOrder              string `json:"sortOrder"`
+	MinValue               string `json:"minValue"`
+	MaxValue               string `json:"maxValue"`
+	Active                 string `json:"active"`
+	Required               string `json:"required"`
+	RequiredCaution        string `json:"requiredCaution"`
+	Description            string `json:"description"`
+	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
+	DescriptionEmpty       string `json:"descriptionEmpty"`
 
 	// Field-level info text surfaced via an info button beside each label.
 	NameInfo        string `json:"nameInfo"`
@@ -971,11 +971,11 @@ type ProductOptionFormLabels struct {
 }
 
 type ProductOptionDataTypeLabels struct {
-	TextList   string `json:"textList"`
+	TextList    string `json:"textList"`
 	NumberRange string `json:"numberRange"`
-	ColorList  string `json:"colorList"`
-	FreeText   string `json:"freeText"`
-	FreeNumber string `json:"freeNumber"`
+	ColorList   string `json:"colorList"`
+	FreeText    string `json:"freeText"`
+	FreeNumber  string `json:"freeNumber"`
 }
 
 type ProductOptionValueLabels struct {
@@ -1494,25 +1494,25 @@ func DefaultProductLineLabels() ProductLineLabels {
 // ExpenditureLabels holds all translatable strings for the expenditure module
 // (purchase + expense views).
 type ExpenditureLabels struct {
-	Labels              ExpenditureLabelNames              `json:"labels"`
-	Page                ExpenditurePageLabels              `json:"page"`
-	Buttons             ExpenditureButtonLabels            `json:"buttons"`
-	Columns             ExpenditureColumnLabels            `json:"columns"`
-	Empty               ExpenditureEmptyLabels             `json:"empty"`
-	Form                ExpenditureFormLabels              `json:"form"`
-	Status              ExpenditureStatusLabels            `json:"status"`
-	Types               ExpenditureTypeLabels              `json:"types"`
-	Actions             ExpenditureActionLabels            `json:"actions"`
-	Bulk                ExpenditureBulkLabels              `json:"bulkActions"`
-	Detail              ExpenditureDetailLabels            `json:"detail"`
-	Errors              ExpenditureErrorLabels             `json:"errors"`
-	Category            ExpenditureCategoryLabels          `json:"category"`
-	PaymentMethod       ExpenditurePaymentMethodLabels     `json:"paymentMethod"`
+	Labels               ExpenditureLabelNames                 `json:"labels"`
+	Page                 ExpenditurePageLabels                 `json:"page"`
+	Buttons              ExpenditureButtonLabels               `json:"buttons"`
+	Columns              ExpenditureColumnLabels               `json:"columns"`
+	Empty                ExpenditureEmptyLabels                `json:"empty"`
+	Form                 ExpenditureFormLabels                 `json:"form"`
+	Status               ExpenditureStatusLabels               `json:"status"`
+	Types                ExpenditureTypeLabels                 `json:"types"`
+	Actions              ExpenditureActionLabels               `json:"actions"`
+	Bulk                 ExpenditureBulkLabels                 `json:"bulkActions"`
+	Detail               ExpenditureDetailLabels               `json:"detail"`
+	Errors               ExpenditureErrorLabels                `json:"errors"`
+	Category             ExpenditureCategoryLabels             `json:"category"`
+	PaymentMethod        ExpenditurePaymentMethodLabels        `json:"paymentMethod"`
 	DisbursementCategory ExpenditureDisbursementCategoryLabels `json:"disbursementCategory"`
-	Schedule            ExpenditureScheduleLabels          `json:"schedule"`
-	LineItemForm        ExpenditureLineItemFormLabels      `json:"lineItemForm"`
-	DisbursementForm    ExpenditureDisbursementFormLabels  `json:"disbursementForm"`
-	PurchaseOrder       PurchaseOrderLabels                `json:"purchaseOrder"`
+	Schedule             ExpenditureScheduleLabels             `json:"schedule"`
+	LineItemForm         ExpenditureLineItemFormLabels         `json:"lineItemForm"`
+	DisbursementForm     ExpenditureDisbursementFormLabels     `json:"disbursementForm"`
+	PurchaseOrder        PurchaseOrderLabels                   `json:"purchaseOrder"`
 }
 
 // ExpenditureCategoryLabels holds translatable strings for the expenditure
@@ -1769,23 +1769,23 @@ type ExpenditureDetailLabels struct {
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
 	AuditEmptyMessage    string `json:"auditEmptyMessage"`
 	// Additional fields used in the expense detail template
-	Title               string `json:"title"`
-	InfoSection         string `json:"infoSection"`
-	Name                string `json:"name"`
-	PaymentSummary      string `json:"paymentSummary"`
-	TotalAmount         string `json:"totalAmount"`
-	Paid                string `json:"paid"`
-	Outstanding         string `json:"outstanding"`
-	PaymentStatus       string `json:"paymentStatus"`
-	UpdateStatus        string `json:"updateStatus"`
-	SaveStatus          string `json:"saveStatus"`
-	Payment             string `json:"payment"`
-	Pay                 string `json:"pay"`
-	AddItem             string `json:"addItem"`
-	EmptyTitle          string `json:"emptyTitle"`
-	EmptyMessage        string `json:"emptyMessage"`
-	TabDetails          string `json:"tabDetails"`
-	TabPayments         string `json:"tabPayments"`
+	Title          string `json:"title"`
+	InfoSection    string `json:"infoSection"`
+	Name           string `json:"name"`
+	PaymentSummary string `json:"paymentSummary"`
+	TotalAmount    string `json:"totalAmount"`
+	Paid           string `json:"paid"`
+	Outstanding    string `json:"outstanding"`
+	PaymentStatus  string `json:"paymentStatus"`
+	UpdateStatus   string `json:"updateStatus"`
+	SaveStatus     string `json:"saveStatus"`
+	Payment        string `json:"payment"`
+	Pay            string `json:"pay"`
+	AddItem        string `json:"addItem"`
+	EmptyTitle     string `json:"emptyTitle"`
+	EmptyMessage   string `json:"emptyMessage"`
+	TabDetails     string `json:"tabDetails"`
+	TabPayments    string `json:"tabPayments"`
 	// SPS P10 — Recognition + Accrual tabs on expenditure detail
 	TabRecognition          string `json:"tabRecognition"`
 	TabAccrual              string `json:"tabAccrual"`
@@ -1816,42 +1816,42 @@ type ExpenditureDisbursementCategoryLabels struct {
 
 // ExpenditureScheduleLabels holds translatable strings for the payment schedule tab.
 type ExpenditureScheduleLabels struct {
-	Scheduled   string `json:"scheduled"`
-	Paid        string `json:"paid"`
-	Remaining   string `json:"remaining"`
-	DueDate     string `json:"dueDate"`
-	AmountDue   string `json:"amountDue"`
-	PaidAmount  string `json:"paidAmount"`
-	PaidDate    string `json:"paidDate"`
-	Reference   string `json:"reference"`
-	EmptyTitle  string `json:"emptyTitle"`
+	Scheduled    string `json:"scheduled"`
+	Paid         string `json:"paid"`
+	Remaining    string `json:"remaining"`
+	DueDate      string `json:"dueDate"`
+	AmountDue    string `json:"amountDue"`
+	PaidAmount   string `json:"paidAmount"`
+	PaidDate     string `json:"paidDate"`
+	Reference    string `json:"reference"`
+	EmptyTitle   string `json:"emptyTitle"`
 	EmptyMessage string `json:"emptyMessage"`
 }
 
 // ExpenditureLineItemFormLabels holds translatable strings for the line item drawer form.
 type ExpenditureLineItemFormLabels struct {
-	EditTitle           string `json:"editTitle"`
-	Description         string `json:"description"`
+	EditTitle              string `json:"editTitle"`
+	Description            string `json:"description"`
 	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
-	Quantity            string `json:"quantity"`
-	UnitPrice           string `json:"unitPrice"`
-	Notes               string `json:"notes"`
-	Save                string `json:"save"`
-	Cancel              string `json:"cancel"`
+	Quantity               string `json:"quantity"`
+	UnitPrice              string `json:"unitPrice"`
+	Notes                  string `json:"notes"`
+	Save                   string `json:"save"`
+	Cancel                 string `json:"cancel"`
 }
 
 // ExpenditureDisbursementFormLabels holds translatable strings for the pay (disbursement) drawer form.
 type ExpenditureDisbursementFormLabels struct {
-	Reference          string `json:"reference"`
+	Reference            string `json:"reference"`
 	ReferencePlaceholder string `json:"referencePlaceholder"`
-	Payee              string `json:"payee"`
-	Amount             string `json:"amount"`
-	Currency           string `json:"currency"`
-	CurrencyPlaceholder string `json:"currencyPlaceholder"`
-	PaymentMethod      string `json:"paymentMethod"`
-	Category           string `json:"category"`
-	ApprovedBy         string `json:"approvedBy"`
-	ApproverPlaceholder string `json:"approverPlaceholder"`
+	Payee                string `json:"payee"`
+	Amount               string `json:"amount"`
+	Currency             string `json:"currency"`
+	CurrencyPlaceholder  string `json:"currencyPlaceholder"`
+	PaymentMethod        string `json:"paymentMethod"`
+	Category             string `json:"category"`
+	ApprovedBy           string `json:"approvedBy"`
+	ApproverPlaceholder  string `json:"approverPlaceholder"`
 }
 
 // ---------------------------------------------------------------------------
@@ -1865,27 +1865,27 @@ type PurchaseOrderErrorLabels struct {
 
 // PurchaseOrderLabels holds all translatable strings for the purchase order module.
 type PurchaseOrderLabels struct {
-	Labels      PurchaseOrderLabelNames      `json:"labels"`
-	Page        PurchaseOrderPageLabels      `json:"page"`
-	Buttons     PurchaseOrderButtonLabels    `json:"buttons"`
-	Columns     PurchaseOrderColumnLabels    `json:"columns"`
-	Empty       PurchaseOrderEmptyLabels     `json:"empty"`
-	Form        PurchaseOrderFormLabels      `json:"form"`
-	Status      PurchaseOrderStatusLabels    `json:"status"`
-	POTypes     PurchaseOrderPOTypeLabels    `json:"poTypes"`
-	LineTypes   PurchaseOrderLineTypeLabels  `json:"lineTypes"`
-	Actions     PurchaseOrderActionLabels    `json:"actions"`
-	Bulk        PurchaseOrderBulkLabels      `json:"bulkActions"`
-	Detail      PurchaseOrderDetailLabels    `json:"detail"`
-	LineItems   PurchaseOrderLineItemLabels  `json:"lineItems"`
-	Receipt     PurchaseOrderReceiptLabels   `json:"receipt"`
-	Errors      PurchaseOrderErrorLabels     `json:"errors"`
+	Labels    PurchaseOrderLabelNames     `json:"labels"`
+	Page      PurchaseOrderPageLabels     `json:"page"`
+	Buttons   PurchaseOrderButtonLabels   `json:"buttons"`
+	Columns   PurchaseOrderColumnLabels   `json:"columns"`
+	Empty     PurchaseOrderEmptyLabels    `json:"empty"`
+	Form      PurchaseOrderFormLabels     `json:"form"`
+	Status    PurchaseOrderStatusLabels   `json:"status"`
+	POTypes   PurchaseOrderPOTypeLabels   `json:"poTypes"`
+	LineTypes PurchaseOrderLineTypeLabels `json:"lineTypes"`
+	Actions   PurchaseOrderActionLabels   `json:"actions"`
+	Bulk      PurchaseOrderBulkLabels     `json:"bulkActions"`
+	Detail    PurchaseOrderDetailLabels   `json:"detail"`
+	LineItems PurchaseOrderLineItemLabels `json:"lineItems"`
+	Receipt   PurchaseOrderReceiptLabels  `json:"receipt"`
+	Errors    PurchaseOrderErrorLabels    `json:"errors"`
 }
 
 type PurchaseOrderLabelNames struct {
-	Name         string `json:"name"`
-	NamePlural   string `json:"namePlural"`
-	LineItem     string `json:"lineItem"`
+	Name           string `json:"name"`
+	NamePlural     string `json:"namePlural"`
+	LineItem       string `json:"lineItem"`
 	LineItemPlural string `json:"lineItemPlural"`
 }
 
@@ -1909,21 +1909,21 @@ type PurchaseOrderButtonLabels struct {
 }
 
 type PurchaseOrderColumnLabels struct {
-	PONumber       string `json:"poNumber"`
-	POType         string `json:"poType"`
-	Supplier       string `json:"supplier"`
-	Location       string `json:"location"`
-	OrderDate      string `json:"orderDate"`
-	Status         string `json:"status"`
-	Currency       string `json:"currency"`
-	Subtotal       string `json:"subtotal"`
-	TaxAmount      string `json:"taxAmount"`
-	TotalAmount    string `json:"totalAmount"`
-	PaymentTerms   string `json:"paymentTerms"`
-	ShippingTerms  string `json:"shippingTerms"`
-	ApprovedBy     string `json:"approvedBy"`
+	PONumber        string `json:"poNumber"`
+	POType          string `json:"poType"`
+	Supplier        string `json:"supplier"`
+	Location        string `json:"location"`
+	OrderDate       string `json:"orderDate"`
+	Status          string `json:"status"`
+	Currency        string `json:"currency"`
+	Subtotal        string `json:"subtotal"`
+	TaxAmount       string `json:"taxAmount"`
+	TotalAmount     string `json:"totalAmount"`
+	PaymentTerms    string `json:"paymentTerms"`
+	ShippingTerms   string `json:"shippingTerms"`
+	ApprovedBy      string `json:"approvedBy"`
 	ReferenceNumber string `json:"referenceNumber"`
-	Notes          string `json:"notes"`
+	Notes           string `json:"notes"`
 }
 
 type PurchaseOrderEmptyLabels struct {
@@ -1948,53 +1948,53 @@ type PurchaseOrderEmptyLabels struct {
 }
 
 type PurchaseOrderFormLabels struct {
-	PONumber                 string `json:"poNumber"`
-	PONumberPlaceholder      string `json:"poNumberPlaceholder"`
-	POType                   string `json:"poType"`
-	SelectPOType             string `json:"selectPoType"`
-	Supplier                 string `json:"supplier"`
-	SelectSupplier           string `json:"selectSupplier"`
-	Location                 string `json:"location"`
-	SelectLocation           string `json:"selectLocation"`
-	OrderDate                string `json:"orderDate"`
-	Currency                 string `json:"currency"`
-	Subtotal                 string `json:"subtotal"`
-	TaxAmount                string `json:"taxAmount"`
-	TotalAmount              string `json:"totalAmount"`
-	PaymentTerms             string `json:"paymentTerms"`
-	ShippingTerms            string `json:"shippingTerms"`
-	ApprovedBy               string `json:"approvedBy"`
-	ReferenceNumber          string `json:"referenceNumber"`
+	PONumber                   string `json:"poNumber"`
+	PONumberPlaceholder        string `json:"poNumberPlaceholder"`
+	POType                     string `json:"poType"`
+	SelectPOType               string `json:"selectPoType"`
+	Supplier                   string `json:"supplier"`
+	SelectSupplier             string `json:"selectSupplier"`
+	Location                   string `json:"location"`
+	SelectLocation             string `json:"selectLocation"`
+	OrderDate                  string `json:"orderDate"`
+	Currency                   string `json:"currency"`
+	Subtotal                   string `json:"subtotal"`
+	TaxAmount                  string `json:"taxAmount"`
+	TotalAmount                string `json:"totalAmount"`
+	PaymentTerms               string `json:"paymentTerms"`
+	ShippingTerms              string `json:"shippingTerms"`
+	ApprovedBy                 string `json:"approvedBy"`
+	ReferenceNumber            string `json:"referenceNumber"`
 	ReferenceNumberPlaceholder string `json:"referenceNumberPlaceholder"`
-	Notes                    string `json:"notes"`
-	NotesPlaceholder         string `json:"notesPlaceholder"`
-	SectionInfo              string `json:"sectionInfo"`
-	SectionSupplier          string `json:"sectionSupplier"`
-	SectionFinancials        string `json:"sectionFinancials"`
-	SectionNotes             string `json:"sectionNotes"`
+	Notes                      string `json:"notes"`
+	NotesPlaceholder           string `json:"notesPlaceholder"`
+	SectionInfo                string `json:"sectionInfo"`
+	SectionSupplier            string `json:"sectionSupplier"`
+	SectionFinancials          string `json:"sectionFinancials"`
+	SectionNotes               string `json:"sectionNotes"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	PONumberInfo          string `json:"poNumberInfo"`
-	POTypeInfo            string `json:"poTypeInfo"`
-	SupplierInfo          string `json:"supplierInfo"`
-	OrderDateInfo         string `json:"orderDateInfo"`
-	ExpectedDeliveryInfo  string `json:"expectedDeliveryInfo"`
-	CurrencyInfo          string `json:"currencyInfo"`
-	PaymentTermsInfo      string `json:"paymentTermsInfo"`
-	ShippingTermsInfo     string `json:"shippingTermsInfo"`
-	ReferenceNumberInfo   string `json:"referenceNumberInfo"`
-	NotesInfo             string `json:"notesInfo"`
+	PONumberInfo         string `json:"poNumberInfo"`
+	POTypeInfo           string `json:"poTypeInfo"`
+	SupplierInfo         string `json:"supplierInfo"`
+	OrderDateInfo        string `json:"orderDateInfo"`
+	ExpectedDeliveryInfo string `json:"expectedDeliveryInfo"`
+	CurrencyInfo         string `json:"currencyInfo"`
+	PaymentTermsInfo     string `json:"paymentTermsInfo"`
+	ShippingTermsInfo    string `json:"shippingTermsInfo"`
+	ReferenceNumberInfo  string `json:"referenceNumberInfo"`
+	NotesInfo            string `json:"notesInfo"`
 }
 
 type PurchaseOrderStatusLabels struct {
-	Draft              string `json:"draft"`
-	PendingApproval    string `json:"pending_approval"`
-	Approved           string `json:"approved"`
-	PartiallyReceived  string `json:"partially_received"`
-	FullyReceived      string `json:"fully_received"`
-	Billed             string `json:"billed"`
-	Closed             string `json:"closed"`
-	Cancelled          string `json:"cancelled"`
+	Draft             string `json:"draft"`
+	PendingApproval   string `json:"pending_approval"`
+	Approved          string `json:"approved"`
+	PartiallyReceived string `json:"partially_received"`
+	FullyReceived     string `json:"fully_received"`
+	Billed            string `json:"billed"`
+	Closed            string `json:"closed"`
+	Cancelled         string `json:"cancelled"`
 }
 
 type PurchaseOrderPOTypeLabels struct {
@@ -2112,24 +2112,24 @@ type PurchaseOrderLineItemLabels struct {
 
 // PurchaseOrderReceiptLabels holds translatable strings for the confirm receipt drawer form.
 type PurchaseOrderReceiptLabels struct {
-	AutoConfirmed       string `json:"autoConfirmed"`
-	NoLines             string `json:"noLines"`
-	OverReceiptError    string `json:"overReceiptError"`
-	PartialSuccess      string `json:"partialSuccess"`
-	QtyToReceive        string `json:"qtyToReceive"`
-	ReceiptDate         string `json:"receiptDate"`
-	ReceivingLocation   string `json:"receivingLocation"`
-	ServiceRendered     string `json:"serviceRendered"`
-	Success             string `json:"success"`
-	Title               string `json:"title"`
-	AllReceived         string `json:"allReceived"`
-	Description         string `json:"description"`
-	Type                string `json:"type"`
-	Ordered             string `json:"ordered"`
-	Received            string `json:"received"`
-	Remaining           string `json:"remaining"`
-	ConfirmButton       string `json:"confirmButton"`
-	Cancel              string `json:"cancel"`
+	AutoConfirmed     string `json:"autoConfirmed"`
+	NoLines           string `json:"noLines"`
+	OverReceiptError  string `json:"overReceiptError"`
+	PartialSuccess    string `json:"partialSuccess"`
+	QtyToReceive      string `json:"qtyToReceive"`
+	ReceiptDate       string `json:"receiptDate"`
+	ReceivingLocation string `json:"receivingLocation"`
+	ServiceRendered   string `json:"serviceRendered"`
+	Success           string `json:"success"`
+	Title             string `json:"title"`
+	AllReceived       string `json:"allReceived"`
+	Description       string `json:"description"`
+	Type              string `json:"type"`
+	Ordered           string `json:"ordered"`
+	Received          string `json:"received"`
+	Remaining         string `json:"remaining"`
+	ConfirmButton     string `json:"confirmButton"`
+	Cancel            string `json:"cancel"`
 }
 
 // ---------------------------------------------------------------------------
@@ -2211,14 +2211,14 @@ type CollectionFormLabels struct {
 	StatusFailed            string `json:"statusFailed"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	ReferenceInfo    string `json:"referenceInfo"`
-	CustomerInfo     string `json:"customerInfo"`
-	AmountInfo       string `json:"amountInfo"`
-	CurrencyInfo     string `json:"currencyInfo"`
+	ReferenceInfo     string `json:"referenceInfo"`
+	CustomerInfo      string `json:"customerInfo"`
+	AmountInfo        string `json:"amountInfo"`
+	CurrencyInfo      string `json:"currencyInfo"`
 	PaymentMethodInfo string `json:"paymentMethodInfo"`
-	DateInfo         string `json:"dateInfo"`
-	StatusInfo       string `json:"statusInfo"`
-	NotesInfo        string `json:"notesInfo"`
+	DateInfo          string `json:"dateInfo"`
+	StatusInfo        string `json:"statusInfo"`
+	NotesInfo         string `json:"notesInfo"`
 }
 
 type CollectionActionLabels struct {
@@ -2512,16 +2512,16 @@ type DisbursementFormLabels struct {
 	LinkToBill              string `json:"linkToBill"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	ReferenceInfo    string `json:"referenceInfo"`
-	DateInfo         string `json:"dateInfo"`
-	PayeeInfo        string `json:"payeeInfo"`
-	AmountInfo       string `json:"amountInfo"`
-	CurrencyInfo     string `json:"currencyInfo"`
+	ReferenceInfo     string `json:"referenceInfo"`
+	DateInfo          string `json:"dateInfo"`
+	PayeeInfo         string `json:"payeeInfo"`
+	AmountInfo        string `json:"amountInfo"`
+	CurrencyInfo      string `json:"currencyInfo"`
 	PaymentMethodInfo string `json:"paymentMethodInfo"`
-	StatusInfo       string `json:"statusInfo"`
-	CategoryInfo     string `json:"categoryInfo"`
-	ApprovedByInfo   string `json:"approvedByInfo"`
-	NotesInfo        string `json:"notesInfo"`
+	StatusInfo        string `json:"statusInfo"`
+	CategoryInfo      string `json:"categoryInfo"`
+	ApprovedByInfo    string `json:"approvedByInfo"`
+	NotesInfo         string `json:"notesInfo"`
 }
 
 type DisbursementActionLabels struct {
@@ -2793,21 +2793,21 @@ type PlanFilterLabels struct {
 
 // PlanLabels holds all translatable strings for the plan module.
 type PlanLabels struct {
-	Page            PlanPageLabels         `json:"page"`
-	Buttons         PlanButtonLabels       `json:"buttons"`
-	Columns         PlanColumnLabels       `json:"columns"`
-	Empty           PlanEmptyLabels        `json:"empty"`
-	Form            PlanFormLabels         `json:"form"`
-	Actions         PlanActionLabels       `json:"actions"`
-	Bulk            PlanBulkLabels         `json:"bulkActions"`
-	Status          PlanStatusLabels       `json:"status"`
-	Detail          PlanDetailLabels       `json:"detail"`
-	Tabs            PlanTabLabels          `json:"tabs"`
-	Confirm         PlanConfirmLabels      `json:"confirm"`
-	Errors          PlanErrorLabels        `json:"errors"`
-	PricePlanForm   PricePlanFormLabels    `json:"pricePlanForm"`
-	ProductPlanForm ProductPlanFormLabels  `json:"productPlanForm"`
-	Filters         PlanFilterLabels       `json:"filters"`
+	Page            PlanPageLabels        `json:"page"`
+	Buttons         PlanButtonLabels      `json:"buttons"`
+	Columns         PlanColumnLabels      `json:"columns"`
+	Empty           PlanEmptyLabels       `json:"empty"`
+	Form            PlanFormLabels        `json:"form"`
+	Actions         PlanActionLabels      `json:"actions"`
+	Bulk            PlanBulkLabels        `json:"bulkActions"`
+	Status          PlanStatusLabels      `json:"status"`
+	Detail          PlanDetailLabels      `json:"detail"`
+	Tabs            PlanTabLabels         `json:"tabs"`
+	Confirm         PlanConfirmLabels     `json:"confirm"`
+	Errors          PlanErrorLabels       `json:"errors"`
+	PricePlanForm   PricePlanFormLabels   `json:"pricePlanForm"`
+	ProductPlanForm ProductPlanFormLabels `json:"productPlanForm"`
+	Filters         PlanFilterLabels      `json:"filters"`
 }
 
 // ProductPlanFormLabels holds translatable labels for the ProductPlan add/edit form within a plan.
@@ -2879,40 +2879,40 @@ type PricePlanFormLabels struct {
 	PlanSearch          string `json:"planSearch"`
 
 	// Wave 2 — new billing semantics fields (from lyngua price_plan.json → price_plan.form)
-	SectionBasic               string `json:"sectionBasic"`
-	SectionPricing             string `json:"sectionPricing"`
-	BillingKindLabel           string `json:"billingKindLabel"`
-	BillingKindOneTime         string `json:"billingKindOneTime"`
-	BillingKindRecurring       string `json:"billingKindRecurring"`
-	BillingKindContract        string `json:"billingKindContract"`
-	BillingKindMilestone       string `json:"billingKindMilestone"`
-	BillingKindAdHoc           string `json:"billingKindAdHoc"`
+	SectionBasic         string `json:"sectionBasic"`
+	SectionPricing       string `json:"sectionPricing"`
+	BillingKindLabel     string `json:"billingKindLabel"`
+	BillingKindOneTime   string `json:"billingKindOneTime"`
+	BillingKindRecurring string `json:"billingKindRecurring"`
+	BillingKindContract  string `json:"billingKindContract"`
+	BillingKindMilestone string `json:"billingKindMilestone"`
+	BillingKindAdHoc     string `json:"billingKindAdHoc"`
 	// Per-option hint copy surfaced inline below the billing_kind select as the
 	// operator picks. Matches the multi-vertical convention — general/ tier ships
 	// neutral phrasing, professional/ overrides with engagement vocabulary.
-	BillingKindOneTimeHint   string `json:"billingKindOneTimeHint"`
-	BillingKindRecurringHint string `json:"billingKindRecurringHint"`
-	BillingKindContractHint  string `json:"billingKindContractHint"`
-	BillingKindMilestoneHint string `json:"billingKindMilestoneHint"`
-	BillingKindAdHocHint     string `json:"billingKindAdHocHint"`
-	AmountBasisLabel           string `json:"amountBasisLabel"`
-	AmountBasisPerCycle        string `json:"amountBasisPerCycle"`
-	AmountBasisTotalPackage    string `json:"amountBasisTotalPackage"`
+	BillingKindOneTimeHint      string `json:"billingKindOneTimeHint"`
+	BillingKindRecurringHint    string `json:"billingKindRecurringHint"`
+	BillingKindContractHint     string `json:"billingKindContractHint"`
+	BillingKindMilestoneHint    string `json:"billingKindMilestoneHint"`
+	BillingKindAdHocHint        string `json:"billingKindAdHocHint"`
+	AmountBasisLabel            string `json:"amountBasisLabel"`
+	AmountBasisPerCycle         string `json:"amountBasisPerCycle"`
+	AmountBasisTotalPackage     string `json:"amountBasisTotalPackage"`
 	AmountBasisDerivedFromLines string `json:"amountBasisDerivedFromLines"`
-	AmountBasisPerOccurrence   string `json:"amountBasisPerOccurrence"`
+	AmountBasisPerOccurrence    string `json:"amountBasisPerOccurrence"`
 	// Per-option hint copy for amount_basis (mirrors billing_kind pattern).
 	AmountBasisPerCycleHint         string `json:"amountBasisPerCycleHint"`
 	AmountBasisTotalPackageHint     string `json:"amountBasisTotalPackageHint"`
 	AmountBasisDerivedFromLinesHint string `json:"amountBasisDerivedFromLinesHint"`
 	AmountBasisPerOccurrenceHint    string `json:"amountBasisPerOccurrenceHint"`
-	EntitledOccurrencesLabel       string `json:"entitledOccurrencesLabel"`
-	EntitledOccurrencesPlaceholder string `json:"entitledOccurrencesPlaceholder"`
-	EntitledOccurrencesInfo        string `json:"entitledOccurrencesInfo"`
-	BillingCycleLabel       string `json:"billingCycleLabel"`
-	BillingCyclePlaceholder string `json:"billingCyclePlaceholder"`
-	TermLabel               string `json:"termLabel"`
-	TermPlaceholder         string `json:"termPlaceholder"`
-	TermOpenEndedHelp       string `json:"termOpenEndedHelp"`
+	EntitledOccurrencesLabel        string `json:"entitledOccurrencesLabel"`
+	EntitledOccurrencesPlaceholder  string `json:"entitledOccurrencesPlaceholder"`
+	EntitledOccurrencesInfo         string `json:"entitledOccurrencesInfo"`
+	BillingCycleLabel               string `json:"billingCycleLabel"`
+	BillingCyclePlaceholder         string `json:"billingCyclePlaceholder"`
+	TermLabel                       string `json:"termLabel"`
+	TermPlaceholder                 string `json:"termPlaceholder"`
+	TermOpenEndedHelp               string `json:"termOpenEndedHelp"`
 
 	// Field-level info text surfaced via an info button beside each label.
 	PlanInfo         string `json:"planInfo"`
@@ -2955,10 +2955,10 @@ type PricePlanFormLabels struct {
 	// 2026-05-01 ad-hoc-subscription-billing plan §6 — client-side guards
 	// surfaced as drawer warnings / tooltips on the disabled options. The
 	// server enforces the same rules in validate_ad_hoc.go.
-	AdHocPoolNoTemplate          string `json:"adHocPoolNoTemplate"`
-	AdHocPerCallNoTemplate       string `json:"adHocPerCallNoTemplate"`
-	AdHocNoEntitlement           string `json:"adHocNoEntitlement"`
-	AdHocBillingCycleNotAllowed  string `json:"adHocBillingCycleNotAllowed"`
+	AdHocPoolNoTemplate           string `json:"adHocPoolNoTemplate"`
+	AdHocPerCallNoTemplate        string `json:"adHocPerCallNoTemplate"`
+	AdHocNoEntitlement            string `json:"adHocNoEntitlement"`
+	AdHocBillingCycleNotAllowed   string `json:"adHocBillingCycleNotAllowed"`
 	AdHocVisitsPerCycleNotAllowed string `json:"adHocVisitsPerCycleNotAllowed"`
 }
 
@@ -3072,17 +3072,17 @@ type PlanButtonLabels struct {
 }
 
 type PlanColumnLabels struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Interval    string `json:"interval"`
-	Price       string `json:"price"`
-	Status      string `json:"status"`
-	Product     string `json:"product"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	Interval      string `json:"interval"`
+	Price         string `json:"price"`
+	Status        string `json:"status"`
+	Product       string `json:"product"`
 	PricePlan     string `json:"pricePlan"`
 	PriceSchedule string `json:"priceSchedule"`
 	Duration      string `json:"duration"`
-	Location    string `json:"location"`
-	ItemType    string `json:"itemType"`
+	Location      string `json:"location"`
+	ItemType      string `json:"itemType"`
 }
 
 type PlanEmptyLabels struct {
@@ -3161,14 +3161,14 @@ type PlanFormLabels struct {
 
 	// Client-scope fields (2026-04-27 plan-client-scope plan §7).
 	// Set on the Plan add/edit drawer Client picker.
-	ClientLabel              string `json:"clientLabel"`
-	ClientHelp               string `json:"clientHelp"`
-	ClientPlaceholder        string `json:"clientPlaceholder"`
-	ClientSearchPlaceholder  string `json:"clientSearchPlaceholder"`
-	ClientNoResults          string `json:"clientNoResults"`
-	ClientLockedTooltip      string `json:"clientLockedTooltip"`
-	ClientForLabel           string `json:"clientForLabel"` // "For {{.ClientName}}" — read-only badge in client-context entry-point
-	ClientInfo               string `json:"clientInfo"`
+	ClientLabel             string `json:"clientLabel"`
+	ClientHelp              string `json:"clientHelp"`
+	ClientPlaceholder       string `json:"clientPlaceholder"`
+	ClientSearchPlaceholder string `json:"clientSearchPlaceholder"`
+	ClientNoResults         string `json:"clientNoResults"`
+	ClientLockedTooltip     string `json:"clientLockedTooltip"`
+	ClientForLabel          string `json:"clientForLabel"` // "For {{.ClientName}}" — read-only badge in client-context entry-point
+	ClientInfo              string `json:"clientInfo"`
 
 	// JobTemplate select (2026-04-29 auto-spawn-jobs-from-subscription plan §5
 	// — Plan.job_template_id assignment from the drawer). Empty value =
@@ -3265,29 +3265,29 @@ type PlanConfirmLabels struct {
 
 // SubscriptionLabels holds all translatable strings for the subscription module.
 type SubscriptionLabels struct {
-	Page       SubscriptionPageLabels       `json:"page"`
-	Buttons    SubscriptionButtonLabels     `json:"buttons"`
-	Columns    SubscriptionColumnLabels     `json:"columns"`
-	Empty      SubscriptionEmptyLabels      `json:"empty"`
-	Form       SubscriptionFormLabels       `json:"form"`
-	Actions    SubscriptionActionLabels     `json:"actions"`
-	Bulk       SubscriptionBulkLabels       `json:"bulkActions"`
-	Status     SubscriptionStatusLabels     `json:"status"`
-	Detail     SubscriptionDetailLabels     `json:"detail"`
-	Tabs       SubscriptionTabLabels        `json:"tabs"`
-	Invoices   SubscriptionInvoicesLabels   `json:"invoices"`
-	Recognize  SubscriptionRecognizeLabels  `json:"recognize"`
-	Milestone  SubscriptionMilestoneLabels  `json:"milestone"`
+	Page      SubscriptionPageLabels      `json:"page"`
+	Buttons   SubscriptionButtonLabels    `json:"buttons"`
+	Columns   SubscriptionColumnLabels    `json:"columns"`
+	Empty     SubscriptionEmptyLabels     `json:"empty"`
+	Form      SubscriptionFormLabels      `json:"form"`
+	Actions   SubscriptionActionLabels    `json:"actions"`
+	Bulk      SubscriptionBulkLabels      `json:"bulkActions"`
+	Status    SubscriptionStatusLabels    `json:"status"`
+	Detail    SubscriptionDetailLabels    `json:"detail"`
+	Tabs      SubscriptionTabLabels       `json:"tabs"`
+	Invoices  SubscriptionInvoicesLabels  `json:"invoices"`
+	Recognize SubscriptionRecognizeLabels `json:"recognize"`
+	Milestone SubscriptionMilestoneLabels `json:"milestone"`
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / §9 — Operations
 	// tab on the subscription detail page + retroactive spawn drawer copy.
 	Operations SubscriptionOperationsLabels `json:"operations"`
 	Spawn      SubscriptionSpawnLabels      `json:"spawn"`
 	// 2026-04-30 cyclic-subscription-jobs plan §9.2 / §21.3 — Backfill cycle
 	// Jobs drawer + flat Jobs tab.
-	Backfill SubscriptionBackfillLabels  `json:"backfill"`
-	Jobs     SubscriptionJobsTabLabels   `json:"jobs"`
-	Confirm  SubscriptionConfirmLabels   `json:"confirm"`
-	Errors   SubscriptionErrorLabels     `json:"errors"`
+	Backfill SubscriptionBackfillLabels `json:"backfill"`
+	Jobs     SubscriptionJobsTabLabels  `json:"jobs"`
+	Confirm  SubscriptionConfirmLabels  `json:"confirm"`
+	Errors   SubscriptionErrorLabels    `json:"errors"`
 }
 
 type SubscriptionPageLabels struct {
@@ -3425,8 +3425,8 @@ type SubscriptionDetailLabels struct {
 }
 
 type SubscriptionTabLabels struct {
-	Info         string `json:"info"`
-	Operations   string `json:"operations"`
+	Info       string `json:"info"`
+	Operations string `json:"operations"`
 	// 2026-04-30 cyclic-subscription-jobs plan §21.2 — flat Jobs tab.
 	Jobs         string `json:"jobs"`
 	Invoices     string `json:"invoices"`
@@ -3470,18 +3470,18 @@ type SubscriptionRecognizeLabels struct {
 	RevenueDate   string `json:"revenueDate"`
 
 	// Line items table
-	LineItemsSection      string `json:"lineItemsSection"`
-	ColumnDescription     string `json:"columnDescription"`
-	ColumnUnitPrice       string `json:"columnUnitPrice"`
-	ColumnQuantity        string `json:"columnQuantity"`
-	ColumnLineTotal       string `json:"columnLineTotal"`
-	ColumnTreatment       string `json:"columnTreatment"`
-	TotalLabel            string `json:"totalLabel"`
-	RemoveLine            string `json:"removeLine"`
-	TreatmentRecurring    string `json:"treatmentRecurring"`
-	TreatmentFirstCycle   string `json:"treatmentFirstCycle"`
-	TreatmentUsageBased   string `json:"treatmentUsageBased"`
-	TreatmentOneTime      string `json:"treatmentOneTime"`
+	LineItemsSection    string `json:"lineItemsSection"`
+	ColumnDescription   string `json:"columnDescription"`
+	ColumnUnitPrice     string `json:"columnUnitPrice"`
+	ColumnQuantity      string `json:"columnQuantity"`
+	ColumnLineTotal     string `json:"columnLineTotal"`
+	ColumnTreatment     string `json:"columnTreatment"`
+	TotalLabel          string `json:"totalLabel"`
+	RemoveLine          string `json:"removeLine"`
+	TreatmentRecurring  string `json:"treatmentRecurring"`
+	TreatmentFirstCycle string `json:"treatmentFirstCycle"`
+	TreatmentUsageBased string `json:"treatmentUsageBased"`
+	TreatmentOneTime    string `json:"treatmentOneTime"`
 
 	// Notes
 	NotesLabel       string `json:"notesLabel"`
@@ -3493,12 +3493,12 @@ type SubscriptionRecognizeLabels struct {
 	Cancel   string `json:"cancel"`
 
 	// Blocking error banners
-	CurrencyMismatchError       string `json:"currencyMismatchError"`
-	IdempotencyError            string `json:"idempotencyError"`
-	IdempotencyExistingLink     string `json:"idempotencyExistingLink"`
-	NoLinesError                string `json:"noLinesError"`
-	CycleNotConfiguredWarning   string `json:"cycleNotConfiguredWarning"`
-	UsageBasedSkippedNotice     string `json:"usageBasedSkippedNotice"`
+	CurrencyMismatchError     string `json:"currencyMismatchError"`
+	IdempotencyError          string `json:"idempotencyError"`
+	IdempotencyExistingLink   string `json:"idempotencyExistingLink"`
+	NoLinesError              string `json:"noLinesError"`
+	CycleNotConfiguredWarning string `json:"cycleNotConfiguredWarning"`
+	UsageBasedSkippedNotice   string `json:"usageBasedSkippedNotice"`
 
 	// 2026-04-27 plan-client-scope plan §7 — info notice on the recognize
 	// drawer when the active subscription's PricePlan is client-scoped.
@@ -3523,20 +3523,20 @@ type SubscriptionRecognizeLabels struct {
 // Milestones section + the mark-ready / waive CTAs. Lyngua key:
 // `subscription.milestone.*`. See milestone-billing plan §5.
 type SubscriptionMilestoneLabels struct {
-	Title            string `json:"title"`
-	Subtitle         string `json:"subtitle"`
-	MarkReady        string `json:"markReady"`
-	Waive            string `json:"waive"`
-	ViewInvoice      string `json:"viewInvoice"`
-	StatusPending    string `json:"statusPending"`
-	StatusReady      string `json:"statusReady"`
-	StatusBilled     string `json:"statusBilled"`
-	StatusWaived     string `json:"statusWaived"`
-	StatusDeferred   string `json:"statusDeferred"`
-	StatusCancelled  string `json:"statusCancelled"`
-	TotalInvoiced    string `json:"totalInvoiced"`
-	AmountFull       string `json:"amountFull"`
-	AmountPartial    string `json:"amountPartial"`
+	Title           string `json:"title"`
+	Subtitle        string `json:"subtitle"`
+	MarkReady       string `json:"markReady"`
+	Waive           string `json:"waive"`
+	ViewInvoice     string `json:"viewInvoice"`
+	StatusPending   string `json:"statusPending"`
+	StatusReady     string `json:"statusReady"`
+	StatusBilled    string `json:"statusBilled"`
+	StatusWaived    string `json:"statusWaived"`
+	StatusDeferred  string `json:"statusDeferred"`
+	StatusCancelled string `json:"statusCancelled"`
+	TotalInvoiced   string `json:"totalInvoiced"`
+	AmountFull      string `json:"amountFull"`
+	AmountPartial   string `json:"amountPartial"`
 }
 
 // SubscriptionOperationsLabels holds labels for the Subscription detail's
@@ -3544,14 +3544,14 @@ type SubscriptionMilestoneLabels struct {
 // auto-spawn-jobs-from-subscription plan §5.2 / §9 and cyclic-subscription-jobs
 // plan §9.1 (cycle accordion + backfill keys).
 type SubscriptionOperationsLabels struct {
-	Title         string `json:"title"`
-	EmptyTitle    string `json:"emptyTitle"`
-	EmptyMessage  string `json:"emptyMessage"`
-	SpawnAction   string `json:"spawnAction"`
-	RootJob       string `json:"rootJob"`
-	ChildJob      string `json:"childJob"`
-	PhaseSummary  string `json:"phaseSummary"`
-	ViewJobLink   string `json:"viewJobLink"`
+	Title        string `json:"title"`
+	EmptyTitle   string `json:"emptyTitle"`
+	EmptyMessage string `json:"emptyMessage"`
+	SpawnAction  string `json:"spawnAction"`
+	RootJob      string `json:"rootJob"`
+	ChildJob     string `json:"childJob"`
+	PhaseSummary string `json:"phaseSummary"`
+	ViewJobLink  string `json:"viewJobLink"`
 
 	// 2026-04-30 cyclic-subscription-jobs plan §9.1 — cycle accordion copy.
 	EngagementHeading     string `json:"engagementHeading"`
@@ -3571,23 +3571,23 @@ type SubscriptionOperationsLabels struct {
 	// 2026-05-01 ad-hoc-subscription-billing plan §5.2 — Operations tab
 	// AD_HOC mode keys. Vertical-neutral defaults ("usage", "occurrence")
 	// with professional-tier overrides ("service call", "retainer", etc.).
-	AdHocPoolHeading        string `json:"adHocPoolHeading"`
-	AdHocPerCallHeading     string `json:"adHocPerCallHeading"`
-	EntitlementUsed         string `json:"entitlementUsed"`
-	EntitlementRemaining    string `json:"entitlementRemaining"`
-	EntitlementExhausted    string `json:"entitlementExhausted"`
-	RequestUsageCta         string `json:"requestUsageCta"`
-	ExtendEntitlementCta    string `json:"extendEntitlementCta"`
-	UsageRequestedDate      string `json:"usageRequestedDate"`
-	UsageDeliveredDate      string `json:"usageDeliveredDate"`
-	UsageOrdinalLabel       string `json:"usageOrdinalLabel"`
-	UsageNotDelivered       string `json:"usageNotDelivered"`
-	PoolInvoiceLink         string `json:"poolInvoiceLink"`
-	PoolInvoicePending      string `json:"poolInvoicePending"`
-	PoolGenerateInvoiceCta  string `json:"poolGenerateInvoiceCta"`
-	PerCallRecognizeCta     string `json:"perCallRecognizeCta"`
-	PerCallInvoiceLink      string `json:"perCallInvoiceLink"`
-	PerCallNotReady         string `json:"perCallNotReady"`
+	AdHocPoolHeading       string `json:"adHocPoolHeading"`
+	AdHocPerCallHeading    string `json:"adHocPerCallHeading"`
+	EntitlementUsed        string `json:"entitlementUsed"`
+	EntitlementRemaining   string `json:"entitlementRemaining"`
+	EntitlementExhausted   string `json:"entitlementExhausted"`
+	RequestUsageCta        string `json:"requestUsageCta"`
+	ExtendEntitlementCta   string `json:"extendEntitlementCta"`
+	UsageRequestedDate     string `json:"usageRequestedDate"`
+	UsageDeliveredDate     string `json:"usageDeliveredDate"`
+	UsageOrdinalLabel      string `json:"usageOrdinalLabel"`
+	UsageNotDelivered      string `json:"usageNotDelivered"`
+	PoolInvoiceLink        string `json:"poolInvoiceLink"`
+	PoolInvoicePending     string `json:"poolInvoicePending"`
+	PoolGenerateInvoiceCta string `json:"poolGenerateInvoiceCta"`
+	PerCallRecognizeCta    string `json:"perCallRecognizeCta"`
+	PerCallInvoiceLink     string `json:"perCallInvoiceLink"`
+	PerCallNotReady        string `json:"perCallNotReady"`
 }
 
 // SubscriptionBackfillLabels holds labels for the Backfill cycle Jobs drawer.
@@ -3677,17 +3677,17 @@ func DefaultPlanLabels() PlanLabels {
 			AddProduct:    "Add Product",
 		},
 		Columns: PlanColumnLabels{
-			Name:        "Name",
-			Description: "Description",
-			Interval:    "Interval",
-			Price:       "Price",
-			Status:      "Status",
-			Product:     "Product",
+			Name:          "Name",
+			Description:   "Description",
+			Interval:      "Interval",
+			Price:         "Price",
+			Status:        "Status",
+			Product:       "Product",
 			PricePlan:     "Price Plan",
 			PriceSchedule: "Price Schedule",
 			Duration:      "Duration",
-			Location:    "Location",
-			ItemType:    "Item Type",
+			Location:      "Location",
+			ItemType:      "Item Type",
 		},
 		Empty: PlanEmptyLabels{
 			Title:           "No plans found",
@@ -3965,12 +3965,12 @@ type PricePlanDetailLabels2 struct {
 
 	// 2026-04-30 cyclic-subscription-jobs plan §20 — Billing model summary
 	// rendered on the info tab. Lyngua key: `pricePlan.detail.summary*`.
-	SummaryHeading            string                       `json:"summaryHeading"`
-	CustomerHeading           string                       `json:"customerHeading"`
-	OperationsHeading         string                       `json:"operationsHeading"`
-	RevenueRecognitionHeading string                       `json:"revenueRecognitionHeading"`
-	Summary                   PricePlanBillingSummaryCopy  `json:"summary"`
-	Warning                   PricePlanBillingSummaryWarn  `json:"warning"`
+	SummaryHeading            string                      `json:"summaryHeading"`
+	CustomerHeading           string                      `json:"customerHeading"`
+	OperationsHeading         string                      `json:"operationsHeading"`
+	RevenueRecognitionHeading string                      `json:"revenueRecognitionHeading"`
+	Summary                   PricePlanBillingSummaryCopy `json:"summary"`
+	Warning                   PricePlanBillingSummaryWarn `json:"warning"`
 }
 
 // PricePlanBillingSummaryCopy carries the per-(kind × basis) lyngua copy that
@@ -4312,18 +4312,18 @@ type PriceScheduleFilterLabels struct {
 
 // PriceScheduleLabels holds all labels for the price schedule module.
 type PriceScheduleLabels struct {
-	Page     PriceSchedulePageLabels      `json:"page"`
-	Buttons  PriceScheduleButtonLabels    `json:"buttons"`
-	Columns  PriceScheduleColumnLabels    `json:"columns"`
-	Empty    PriceScheduleEmptyLabels     `json:"empty"`
-	Form     PriceScheduleFormLabels      `json:"form"`
-	PlanForm PriceSchedulePlanFormLabels  `json:"planForm"`
-	Bulk     PriceScheduleBulkLabels      `json:"bulk"`
-	Confirm  PriceScheduleConfirmLabels   `json:"confirm"`
-	Tabs     PriceScheduleTabLabels       `json:"tabs"`
-	Detail   PriceScheduleDetailLabels    `json:"detail"`
-	Errors   PriceScheduleErrorLabels     `json:"errors"`
-	Filters  PriceScheduleFilterLabels    `json:"filters"`
+	Page     PriceSchedulePageLabels     `json:"page"`
+	Buttons  PriceScheduleButtonLabels   `json:"buttons"`
+	Columns  PriceScheduleColumnLabels   `json:"columns"`
+	Empty    PriceScheduleEmptyLabels    `json:"empty"`
+	Form     PriceScheduleFormLabels     `json:"form"`
+	PlanForm PriceSchedulePlanFormLabels `json:"planForm"`
+	Bulk     PriceScheduleBulkLabels     `json:"bulk"`
+	Confirm  PriceScheduleConfirmLabels  `json:"confirm"`
+	Tabs     PriceScheduleTabLabels      `json:"tabs"`
+	Detail   PriceScheduleDetailLabels   `json:"detail"`
+	Errors   PriceScheduleErrorLabels    `json:"errors"`
+	Filters  PriceScheduleFilterLabels   `json:"filters"`
 }
 
 // PriceSchedulePlanFormLabels holds labels for the "Add Plan" (price_plan) drawer form
@@ -4388,17 +4388,17 @@ type PriceScheduleEmptyLabels struct {
 }
 
 type PriceScheduleFormLabels struct {
-	Name                string `json:"name"`
-	NamePlaceholder     string `json:"namePlaceholder"`
-	Description         string `json:"description"`
-	DescPlaceholder     string `json:"descPlaceholder"`
-	DateStart           string `json:"dateStart"`
-	DateEnd             string `json:"dateEnd"`
+	Name            string `json:"name"`
+	NamePlaceholder string `json:"namePlaceholder"`
+	Description     string `json:"description"`
+	DescPlaceholder string `json:"descPlaceholder"`
+	DateStart       string `json:"dateStart"`
+	DateEnd         string `json:"dateEnd"`
 	// Optional time inputs paired with DateStart/DateEnd (2026-04-28 date+time
 	// field plan). TimePlaceholder is shared by both inputs.
-	TimeStart        string `json:"timeStart"`
-	TimeEnd          string `json:"timeEnd"`
-	TimePlaceholder  string `json:"timePlaceholder"`
+	TimeStart           string `json:"timeStart"`
+	TimeEnd             string `json:"timeEnd"`
+	TimePlaceholder     string `json:"timePlaceholder"`
 	Location            string `json:"location"`
 	LocationPlaceholder string `json:"locationPlaceholder"`
 	SelectLocation      string `json:"selectLocation"`
@@ -4434,12 +4434,12 @@ type PriceScheduleFormLabels struct {
 	LocationSearchPlaceholder            string `json:"locationSearchPlaceholder"`
 
 	// Scope radio (2026-04-28) — mutually exclusive Location / Client picker.
-	ScopeLabel               string `json:"scopeLabel"`
-	ScopeInfo                string `json:"scopeInfo"`
-	ScopeOptionLocation      string `json:"scopeOptionLocation"`
-	ScopeOptionClient        string `json:"scopeOptionClient"`
-	ScopeOptionLocationHelp  string `json:"scopeOptionLocationHelp"`
-	ScopeOptionClientHelp    string `json:"scopeOptionClientHelp"`
+	ScopeLabel              string `json:"scopeLabel"`
+	ScopeInfo               string `json:"scopeInfo"`
+	ScopeOptionLocation     string `json:"scopeOptionLocation"`
+	ScopeOptionClient       string `json:"scopeOptionClient"`
+	ScopeOptionLocationHelp string `json:"scopeOptionLocationHelp"`
+	ScopeOptionClientHelp   string `json:"scopeOptionClientHelp"`
 }
 
 type PriceScheduleBulkLabels struct {
@@ -4502,14 +4502,14 @@ func (t PriceScheduleTabLabels) CanonicalizeTab(slug string) string {
 }
 
 type PriceScheduleDetailLabels struct {
-	Title           string `json:"title"`
-	DateCreated     string `json:"dateCreated"`
-	DateModified    string `json:"dateModified"`
-	NoLocation      string `json:"noLocation"`
-	NoDateEnd       string `json:"noDateEnd"`
-	NoDescription   string `json:"noDescription"`
-	PlansEmptyTitle      string `json:"plansEmptyTitle"`
-	PlansEmptyMsg        string `json:"plansEmptyMsg"`
+	Title                 string `json:"title"`
+	DateCreated           string `json:"dateCreated"`
+	DateModified          string `json:"dateModified"`
+	NoLocation            string `json:"noLocation"`
+	NoDateEnd             string `json:"noDateEnd"`
+	NoDescription         string `json:"noDescription"`
+	PlansEmptyTitle       string `json:"plansEmptyTitle"`
+	PlansEmptyMsg         string `json:"plansEmptyMsg"`
 	NoDescriptionSubtitle string `json:"noDescriptionSubtitle"`
 
 	// Product price (per-product breakdown, shown on the schedule-scoped plan detail).
@@ -4539,8 +4539,8 @@ type PriceScheduleDetailLabels struct {
 	PlanInUseTooltip    string `json:"planInUseTooltip"`
 
 	// Plans table primary action + inline error messages.
-	PlanAdd          string `json:"planAdd"`
-	PlanRequired     string `json:"planRequired"`
+	PlanAdd      string `json:"planAdd"`
+	PlanRequired string `json:"planRequired"`
 
 	// Product prices table columns.
 	ProductPriceColumnProduct   string `json:"productPriceColumnProduct"`
@@ -4556,20 +4556,20 @@ type PriceScheduleDetailLabels struct {
 	BasisBannerDerived      string `json:"basisBannerDerived"`
 
 	// Drawer section labels used by the schedule-scoped PPP drawer.
-	ProductPriceCatalogSection string `json:"productPriceCatalogSection"`
-	ProductPricePricingSection string `json:"productPricePricingSection"`
+	ProductPriceCatalogSection   string `json:"productPriceCatalogSection"`
+	ProductPricePricingSection   string `json:"productPricePricingSection"`
 	ProductPriceEffectiveSection string `json:"productPriceEffectiveSection"`
 }
 
 type PriceScheduleErrorLabels struct {
-	NotFound                    string `json:"notFound"`
-	LoadFailed                  string `json:"loadFailed"`
-	Unauthorized                string `json:"unauthorized"`
-	CreateFailed                string `json:"createFailed"`
-	UpdateFailed                string `json:"updateFailed"`
-	DeleteFailed                string `json:"deleteFailed"`
-	InUse                       string `json:"inUse"`
-	PricePlanCreateUnavailable  string `json:"pricePlanCreateUnavailable"`
+	NotFound                   string `json:"notFound"`
+	LoadFailed                 string `json:"loadFailed"`
+	Unauthorized               string `json:"unauthorized"`
+	CreateFailed               string `json:"createFailed"`
+	UpdateFailed               string `json:"updateFailed"`
+	DeleteFailed               string `json:"deleteFailed"`
+	InUse                      string `json:"inUse"`
+	PricePlanCreateUnavailable string `json:"pricePlanCreateUnavailable"`
 }
 
 // DefaultPriceScheduleLabels returns PriceScheduleLabels with sensible English defaults.
@@ -4786,11 +4786,11 @@ type ClientPackagesLabels struct {
 // 2026-04-27 plan-client-scope plan §7.
 func DefaultClientPackagesLabels() ClientPackagesLabels {
 	return ClientPackagesLabels{
-		TabTitle:    "Packages",
-		Empty:       "No custom packages yet — every engagement uses a general package.",
-		AddAction:   "Add custom package",
-		ColumnName:     "Name",
-		ColumnSchedule: "Rate card",
+		TabTitle:          "Packages",
+		Empty:             "No custom packages yet — every engagement uses a general package.",
+		AddAction:         "Add custom package",
+		ColumnName:        "Name",
+		ColumnSchedule:    "Rate card",
 		ColumnEngagements: "Engagements",
 	}
 }
@@ -4894,8 +4894,8 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			AuditTrailDesc:       "Audit trail for subscription changes is coming soon.",
 		},
 		Tabs: SubscriptionTabLabels{
-			Info:         "Information",
-			Operations:   "Operations",
+			Info:       "Information",
+			Operations: "Operations",
 			// 2026-04-30 cyclic-subscription-jobs plan §21.2 — flat Jobs tab.
 			Jobs:         "Jobs",
 			Invoices:     "Invoices",
@@ -4916,34 +4916,34 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			RecognizeSubtitle: "Generate an invoice from this subscription's price plan.",
 		},
 		Recognize: SubscriptionRecognizeLabels{
-			ContextSection:        "Subscription",
-			ClientLabel:           "Client",
-			PlanLabel:             "Plan / Rate Card",
-			QuantityLabel:         "Quantity",
-			PeriodSection:         "Billing period",
-			PeriodStart:           "Period start",
-			PeriodEnd:             "Period end",
-			RevenueDate:           "Revenue date",
-			LineItemsSection:      "Line items",
-			ColumnDescription:     "Description",
-			ColumnUnitPrice:       "Unit price",
-			ColumnQuantity:        "Qty",
-			ColumnLineTotal:       "Line total",
-			ColumnTreatment:       "Treatment",
-			TotalLabel:            "Total",
-			RemoveLine:            "Remove",
-			TreatmentRecurring:    "Every cycle",
-			TreatmentFirstCycle:   "First cycle only",
-			TreatmentUsageBased:   "On use",
-			TreatmentOneTime:      "One time",
-			NotesLabel:            "Notes",
-			NotesPlaceholder:      "Notes are auto-prefixed with the period; append any free-text below.",
-			Generate:              "Generate",
-			Cancel:                "Cancel",
-			CurrencyMismatchError: "Client billing currency ({{.ClientCurrency}}) does not match the rate card ({{.PlanCurrency}}). Update one before generating revenue.",
-			IdempotencyError:      "An invoice for this period already exists. Cancel the existing one or pick a different period.",
-			IdempotencyExistingLink: "View the existing invoice",
-			NoLinesError:            "Cannot create an invoice with no line items. Add a price plan with at least one product, or override at least one line.",
+			ContextSection:            "Subscription",
+			ClientLabel:               "Client",
+			PlanLabel:                 "Plan / Rate Card",
+			QuantityLabel:             "Quantity",
+			PeriodSection:             "Billing period",
+			PeriodStart:               "Period start",
+			PeriodEnd:                 "Period end",
+			RevenueDate:               "Revenue date",
+			LineItemsSection:          "Line items",
+			ColumnDescription:         "Description",
+			ColumnUnitPrice:           "Unit price",
+			ColumnQuantity:            "Qty",
+			ColumnLineTotal:           "Line total",
+			ColumnTreatment:           "Treatment",
+			TotalLabel:                "Total",
+			RemoveLine:                "Remove",
+			TreatmentRecurring:        "Every cycle",
+			TreatmentFirstCycle:       "First cycle only",
+			TreatmentUsageBased:       "On use",
+			TreatmentOneTime:          "One time",
+			NotesLabel:                "Notes",
+			NotesPlaceholder:          "Notes are auto-prefixed with the period; append any free-text below.",
+			Generate:                  "Generate",
+			Cancel:                    "Cancel",
+			CurrencyMismatchError:     "Client billing currency ({{.ClientCurrency}}) does not match the rate card ({{.PlanCurrency}}). Update one before generating revenue.",
+			IdempotencyError:          "An invoice for this period already exists. Cancel the existing one or pick a different period.",
+			IdempotencyExistingLink:   "View the existing invoice",
+			NoLinesError:              "Cannot create an invoice with no line items. Add a price plan with at least one product, or override at least one line.",
 			CycleNotConfiguredWarning: "Plan has no billing cycle configured; defaulting to 1 month.",
 			UsageBasedSkippedNotice:   "Usage-based lines were skipped — record them via metering.",
 			// 2026-04-27 plan-client-scope plan §7 — surfaced when the
@@ -5256,29 +5256,29 @@ func DefaultResourceLabels() ResourceLabels {
 // MapTableLabels maps common labels into the flat types.TableLabels structure.
 func MapTableLabels(common pyeza.CommonLabels) types.TableLabels {
 	return types.TableLabels{
-		Search:             common.Table.Search,
-		SearchPlaceholder:  common.Table.SearchPlaceholder,
-		Filters:            common.Table.Filters,
-		FilterConditions:   common.Table.FilterConditions,
-		ClearAll:           common.Table.ClearAll,
-		AddCondition:       common.Table.AddCondition,
-		Clear:              common.Table.Clear,
-		ApplyFilters:       common.Table.ApplyFilters,
-		Sort:               common.Table.Sort,
-		Columns:            common.Table.Columns,
-		Export:             common.Table.Export,
-		DensityLabel:       common.Table.Density.Title,
-		DensityDense:       common.Table.Density.Dense,
-		DensityDefault:     common.Table.Density.Default,
-		DensityComfortable: common.Table.Density.Comfortable,
-		DensityCompact:     common.Table.Density.Compact,
-		EntriesPerPage:     common.Table.EntriesLabel,
-		Show:               common.Table.Show,
-		Entries:            common.Table.Entries,
-		Showing:            common.Table.Showing,
-		To:                 common.Table.To,
-		Of:                 common.Table.Of,
-		EntriesLabel:       common.Table.EntriesLabel,
+		Search:                   common.Table.Search,
+		SearchPlaceholder:        common.Table.SearchPlaceholder,
+		Filters:                  common.Table.Filters,
+		FilterConditions:         common.Table.FilterConditions,
+		ClearAll:                 common.Table.ClearAll,
+		AddCondition:             common.Table.AddCondition,
+		Clear:                    common.Table.Clear,
+		ApplyFilters:             common.Table.ApplyFilters,
+		Sort:                     common.Table.Sort,
+		Columns:                  common.Table.Columns,
+		Export:                   common.Table.Export,
+		DensityLabel:             common.Table.Density.Title,
+		DensityDense:             common.Table.Density.Dense,
+		DensityDefault:           common.Table.Density.Default,
+		DensityComfortable:       common.Table.Density.Comfortable,
+		DensityCompact:           common.Table.Density.Compact,
+		EntriesPerPage:           common.Table.EntriesLabel,
+		Show:                     common.Table.Show,
+		Entries:                  common.Table.Entries,
+		Showing:                  common.Table.Showing,
+		To:                       common.Table.To,
+		Of:                       common.Table.Of,
+		EntriesLabel:             common.Table.EntriesLabel,
 		SelectAll:                common.Table.SelectAll,
 		BulkSelectAllPage:        common.Table.BulkSelectAllPage,
 		BulkSelectAllAcrossPages: common.Table.BulkSelectAllAcrossPages,
@@ -5292,6 +5292,34 @@ func MapTableLabels(common pyeza.CommonLabels) types.TableLabels {
 		SortDescDate:             common.Table.SortDescDate,
 		SortAscEnum:              common.Table.SortAscEnum,
 		SortDescEnum:             common.Table.SortDescEnum,
+		FilterOpContains:         common.Table.FilterOpContains,
+		FilterOpEquals:           common.Table.FilterOpEquals,
+		FilterOpStartsWith:       common.Table.FilterOpStartsWith,
+		FilterOpEndsWith:         common.Table.FilterOpEndsWith,
+		FilterOpNotEquals:        common.Table.FilterOpNotEquals,
+		FilterOpBetween:          common.Table.FilterOpBetween,
+		FilterOpEq:               common.Table.FilterOpEq,
+		FilterOpNeq:              common.Table.FilterOpNeq,
+		FilterOpGt:               common.Table.FilterOpGt,
+		FilterOpGte:              common.Table.FilterOpGte,
+		FilterOpLt:               common.Table.FilterOpLt,
+		FilterOpLte:              common.Table.FilterOpLte,
+		FilterOpOn:               common.Table.FilterOpOn,
+		FilterOpBefore:           common.Table.FilterOpBefore,
+		FilterOpAfter:            common.Table.FilterOpAfter,
+		FilterOpIn:               common.Table.FilterOpIn,
+		FilterOpNotIn:            common.Table.FilterOpNotIn,
+		FilterPresetToday:        common.Table.FilterPresetToday,
+		FilterPreset7d:           common.Table.FilterPreset7d,
+		FilterPreset30d:          common.Table.FilterPreset30d,
+		FilterPresetMonth:        common.Table.FilterPresetMonth,
+		FilterPresetCustom:       common.Table.FilterPresetCustom,
+		FilterAny:                common.Table.FilterAny,
+		FilterYes:                common.Table.FilterYes,
+		FilterNo:                 common.Table.FilterNo,
+		FilterSearchPlaceholder:  common.Table.FilterSearchPlaceholder,
+		FilterMinPlaceholder:     common.Table.FilterMinPlaceholder,
+		FilterMaxPlaceholder:     common.Table.FilterMaxPlaceholder,
 		Actions:                  common.Table.Actions,
 		Prev:                     common.Pagination.Prev,
 		Next:                     common.Pagination.Next,
@@ -5439,24 +5467,24 @@ type SupplierContractFormLabels struct {
 	SectionOthers         string `json:"sectionOthers"`
 
 	// §1 Identity
-	Name                       string `json:"name"`
-	NamePlaceholder            string `json:"namePlaceholder"`
-	NameInfo                   string `json:"nameInfo"`
-	ContractNumber             string `json:"contractNumber"`
-	ContractNumberPlaceholder  string `json:"contractNumberPlaceholder"`
-	Kind                       string `json:"kind"`
-	KindInfo                   string `json:"kindInfo"`
-	KindSubscription           string `json:"kindSubscription"`
-	KindRetainer               string `json:"kindRetainer"`
-	KindLease                  string `json:"kindLease"`
-	KindUtility                string `json:"kindUtility"`
-	KindFramework              string `json:"kindFramework"`
-	KindBlanket                string `json:"kindBlanket"`
-	KindOneTime                string `json:"kindOneTime"`
-	KindOther                  string `json:"kindOther"`
-	Supplier                   string `json:"supplier"`
-	SupplierPlaceholder        string `json:"supplierPlaceholder"`
-	SupplierInfo               string `json:"supplierInfo"`
+	Name                      string `json:"name"`
+	NamePlaceholder           string `json:"namePlaceholder"`
+	NameInfo                  string `json:"nameInfo"`
+	ContractNumber            string `json:"contractNumber"`
+	ContractNumberPlaceholder string `json:"contractNumberPlaceholder"`
+	Kind                      string `json:"kind"`
+	KindInfo                  string `json:"kindInfo"`
+	KindSubscription          string `json:"kindSubscription"`
+	KindRetainer              string `json:"kindRetainer"`
+	KindLease                 string `json:"kindLease"`
+	KindUtility               string `json:"kindUtility"`
+	KindFramework             string `json:"kindFramework"`
+	KindBlanket               string `json:"kindBlanket"`
+	KindOneTime               string `json:"kindOneTime"`
+	KindOther                 string `json:"kindOther"`
+	Supplier                  string `json:"supplier"`
+	SupplierPlaceholder       string `json:"supplierPlaceholder"`
+	SupplierInfo              string `json:"supplierInfo"`
 
 	// §2 Validity & Recurrence
 	StartDate             string `json:"startDate"`
@@ -5575,40 +5603,40 @@ func DefaultSupplierContractLabels() SupplierContractLabels {
 			Notes:           "Notes",
 		},
 		Lines: SupplierContractLineLabels{
-			Description:                "Description",
-			LineType:                   "Line Type",
-			Quantity:                   "Quantity",
-			UnitPrice:                  "Unit Price",
-			Total:                      "Total",
-			Treatment:                  "Treatment",
-			EmptyTitle:                 "No lines yet",
-			EmptyMessage:               "Add a line to this contract.",
-			AddLine:                    "Add Line",
-			TreatmentRecurring:         "Recurring",
-			TreatmentOneTime:           "One Time",
-			TreatmentUsageBased:        "Usage Based",
-			TreatmentMinimumCommitment: "Minimum Commitment",
-			LineTypeGoods:              "Goods",
-			LineTypeService:            "Service",
-			LineTypeExpense:            "Expense",
-			FormDescription:            "Description",
-			FormDescriptionPlaceholder: "e.g. Cloud hosting — 50 seats",
-			FormLineType:               "Line Type",
-			FormLineTypeInfo:           "Goods = physical items; Service = intangible; Expense = direct cost",
-			FormTreatment:              "Treatment",
-			FormTreatmentInfo:          "How this line is billed: recurring, one-time, usage-based, or minimum commitment",
-			FormProduct:                "Product",
-			FormProductPlaceholder:     "Select a product (optional)",
-			FormQuantity:               "Quantity",
-			FormQuantityInfo:           "For recurring lines, this is the per-cycle quantity.",
-			FormUnitPrice:              "Unit Price",
-			FormUnitPriceInfo:          "Amount in centavos ÷ 100 for display.",
-			FormExpenseAccount:         "Expense Account",
+			Description:                   "Description",
+			LineType:                      "Line Type",
+			Quantity:                      "Quantity",
+			UnitPrice:                     "Unit Price",
+			Total:                         "Total",
+			Treatment:                     "Treatment",
+			EmptyTitle:                    "No lines yet",
+			EmptyMessage:                  "Add a line to this contract.",
+			AddLine:                       "Add Line",
+			TreatmentRecurring:            "Recurring",
+			TreatmentOneTime:              "One Time",
+			TreatmentUsageBased:           "Usage Based",
+			TreatmentMinimumCommitment:    "Minimum Commitment",
+			LineTypeGoods:                 "Goods",
+			LineTypeService:               "Service",
+			LineTypeExpense:               "Expense",
+			FormDescription:               "Description",
+			FormDescriptionPlaceholder:    "e.g. Cloud hosting — 50 seats",
+			FormLineType:                  "Line Type",
+			FormLineTypeInfo:              "Goods = physical items; Service = intangible; Expense = direct cost",
+			FormTreatment:                 "Treatment",
+			FormTreatmentInfo:             "How this line is billed: recurring, one-time, usage-based, or minimum commitment",
+			FormProduct:                   "Product",
+			FormProductPlaceholder:        "Select a product (optional)",
+			FormQuantity:                  "Quantity",
+			FormQuantityInfo:              "For recurring lines, this is the per-cycle quantity.",
+			FormUnitPrice:                 "Unit Price",
+			FormUnitPriceInfo:             "Amount in centavos ÷ 100 for display.",
+			FormExpenseAccount:            "Expense Account",
 			FormExpenseAccountPlaceholder: "GL account ID",
-			FormStartDate:              "Start Date",
-			FormStartDateHint:          "Leave empty to inherit from contract.",
-			FormEndDate:                "End Date",
-			FormLineNumber:             "Line Number",
+			FormStartDate:                 "Start Date",
+			FormStartDateHint:             "Leave empty to inherit from contract.",
+			FormEndDate:                   "End Date",
+			FormLineNumber:                "Line Number",
 		},
 		LinkedPOs: SupplierContractLinkedPOLabels{
 			PONumber:     "PO Number",
@@ -5627,77 +5655,77 @@ func DefaultSupplierContractLabels() SupplierContractLabels {
 			EmptyMessage: "Expenditures linked to this contract will appear here.",
 		},
 		Form: SupplierContractFormLabels{
-			SectionIdentity:            "Identity Details",
-			SectionValidity:            "Validity & Recurrence",
-			SectionMoney:               "Money & Approval",
-			SectionCategorization:      "Categorization",
-			SectionOthers:              "Others",
-			Name:                       "Contract Name",
-			NamePlaceholder:            "e.g. AWS Hosting MSA 2026",
-			NameInfo:                   "A short descriptive name for this contract.",
-			ContractNumber:             "Contract Number",
-			ContractNumberPlaceholder:  "Supplier's reference number",
-			Kind:                       "Kind",
-			KindInfo:                   "Subscription = recurring time-based; Blanket = quantity-based commitment; Framework = pricing agreement only.",
-			KindSubscription:           "Subscription",
-			KindRetainer:               "Retainer",
-			KindLease:                  "Lease",
-			KindUtility:                "Utility",
-			KindFramework:              "Framework",
-			KindBlanket:                "Blanket",
-			KindOneTime:                "One Time",
-			KindOther:                  "Other",
-			Supplier:                   "Supplier",
-			SupplierPlaceholder:        "Select supplier",
-			SupplierInfo:               "The vendor or service provider you are committing to.",
-			StartDate:                  "Start Date",
-			EndDate:                    "End Date",
-			EndDateHint:                "Leave empty for open-ended.",
-			BillingCycleValue:          "Billing Cycle",
-			BillingCycleUnit:           "Cycle Unit",
-			BillingCycleInfo:           "How often this contract generates an expenditure (for recurring kinds).",
-			CycleUnitDay:               "Day",
-			CycleUnitWeek:              "Week",
-			CycleUnitMonth:             "Month",
-			CycleUnitYear:              "Year",
-			AutoRenew:                  "Auto Renew",
-			RenewalNoticeDays:          "Renewal Notice (days)",
-			RenewalNoticeDaysHint:      "How many days before expiry to send a renewal reminder.",
-			Currency:                   "Currency",
-			CurrencyInfo:               "ISO 4217 currency code (e.g. PHP, USD).",
-			Status:                     "Status",
-			StatusInfo:                 "Lifecycle stage. draft → requested → pending_approval → approved → active → expiring/expired/terminated.",
-			StatusDraft:                "Draft",
-			StatusRequested:            "Requested",
-			StatusPendingApproval:      "Pending Approval",
-			StatusApproved:             "Approved",
-			StatusActive:               "Active",
-			StatusExpiring:             "Expiring",
-			StatusSuspended:            "Suspended",
-			StatusExpired:              "Expired",
-			StatusTerminated:           "Terminated",
-			StatusRejected:             "Rejected",
-			CommittedAmount:            "Committed Amount",
-			CommittedAmountInfo:        "Total value committed at signing (centavos). Immutable after approval.",
-			CycleAmount:                "Cycle Amount",
-			CycleAmountHint:            "Expected per-cycle charge for recurring contracts.",
-			PaymentTerm:                "Payment Term",
-			PaymentTermPlaceholder:     "Select payment term",
-			ApprovedBy:                 "Approved By",
-			ApprovedDate:               "Approved Date",
+			SectionIdentity:                "Identity Details",
+			SectionValidity:                "Validity & Recurrence",
+			SectionMoney:                   "Money & Approval",
+			SectionCategorization:          "Categorization",
+			SectionOthers:                  "Others",
+			Name:                           "Contract Name",
+			NamePlaceholder:                "e.g. AWS Hosting MSA 2026",
+			NameInfo:                       "A short descriptive name for this contract.",
+			ContractNumber:                 "Contract Number",
+			ContractNumberPlaceholder:      "Supplier's reference number",
+			Kind:                           "Kind",
+			KindInfo:                       "Subscription = recurring time-based; Blanket = quantity-based commitment; Framework = pricing agreement only.",
+			KindSubscription:               "Subscription",
+			KindRetainer:                   "Retainer",
+			KindLease:                      "Lease",
+			KindUtility:                    "Utility",
+			KindFramework:                  "Framework",
+			KindBlanket:                    "Blanket",
+			KindOneTime:                    "One Time",
+			KindOther:                      "Other",
+			Supplier:                       "Supplier",
+			SupplierPlaceholder:            "Select supplier",
+			SupplierInfo:                   "The vendor or service provider you are committing to.",
+			StartDate:                      "Start Date",
+			EndDate:                        "End Date",
+			EndDateHint:                    "Leave empty for open-ended.",
+			BillingCycleValue:              "Billing Cycle",
+			BillingCycleUnit:               "Cycle Unit",
+			BillingCycleInfo:               "How often this contract generates an expenditure (for recurring kinds).",
+			CycleUnitDay:                   "Day",
+			CycleUnitWeek:                  "Week",
+			CycleUnitMonth:                 "Month",
+			CycleUnitYear:                  "Year",
+			AutoRenew:                      "Auto Renew",
+			RenewalNoticeDays:              "Renewal Notice (days)",
+			RenewalNoticeDaysHint:          "How many days before expiry to send a renewal reminder.",
+			Currency:                       "Currency",
+			CurrencyInfo:                   "ISO 4217 currency code (e.g. PHP, USD).",
+			Status:                         "Status",
+			StatusInfo:                     "Lifecycle stage. draft → requested → pending_approval → approved → active → expiring/expired/terminated.",
+			StatusDraft:                    "Draft",
+			StatusRequested:                "Requested",
+			StatusPendingApproval:          "Pending Approval",
+			StatusApproved:                 "Approved",
+			StatusActive:                   "Active",
+			StatusExpiring:                 "Expiring",
+			StatusSuspended:                "Suspended",
+			StatusExpired:                  "Expired",
+			StatusTerminated:               "Terminated",
+			StatusRejected:                 "Rejected",
+			CommittedAmount:                "Committed Amount",
+			CommittedAmountInfo:            "Total value committed at signing (centavos). Immutable after approval.",
+			CycleAmount:                    "Cycle Amount",
+			CycleAmountHint:                "Expected per-cycle charge for recurring contracts.",
+			PaymentTerm:                    "Payment Term",
+			PaymentTermPlaceholder:         "Select payment term",
+			ApprovedBy:                     "Approved By",
+			ApprovedDate:                   "Approved Date",
 			ExpenditureCategory:            "Expenditure Category",
 			ExpenditureCategoryPlaceholder: "Select category",
-			ExpenseAccount:             "Expense Account",
-			ExpenseAccountPlaceholder:  "GL account ID",
-			Location:                   "Location",
-			LocationPlaceholder:        "Branch or cost center",
-			Notes:                      "Notes",
-			NotesPlaceholder:           "Additional notes or context",
-			Active:                     "Active",
-			Edit:                       "Edit",
-			EditTitle:                  "Edit Supplier Contract",
-			Approve:                    "Approve",
-			Terminate:                  "Terminate",
+			ExpenseAccount:                 "Expense Account",
+			ExpenseAccountPlaceholder:      "GL account ID",
+			Location:                       "Location",
+			LocationPlaceholder:            "Branch or cost center",
+			Notes:                          "Notes",
+			NotesPlaceholder:               "Additional notes or context",
+			Active:                         "Active",
+			Edit:                           "Edit",
+			EditTitle:                      "Edit Supplier Contract",
+			Approve:                        "Approve",
+			Terminate:                      "Terminate",
 		},
 		Empty: SupplierContractEmptyLabels{
 			Title:   "No supplier contracts",
@@ -5934,10 +5962,10 @@ type ProcurementRequestFormLabels struct {
 	EstimatedTotalInfo string `json:"estimatedTotalInfo"`
 
 	// §3 Timing & Approval
-	NeededByDate          string `json:"neededByDate"`
-	NeededByDateInfo      string `json:"neededByDateInfo"`
-	Status                string `json:"status"`
-	StatusInfo            string `json:"statusInfo"`
+	NeededByDate               string `json:"neededByDate"`
+	NeededByDateInfo           string `json:"neededByDateInfo"`
+	Status                     string `json:"status"`
+	StatusInfo                 string `json:"statusInfo"`
 	StatusDraft                string `json:"statusDraft"`
 	StatusSubmitted            string `json:"statusSubmitted"`
 	StatusPendingApproval      string `json:"statusPendingApproval"`
@@ -5946,7 +5974,7 @@ type ProcurementRequestFormLabels struct {
 	StatusRejected             string `json:"statusRejected"`
 	StatusFulfilled            string `json:"statusFulfilled"`
 	StatusCancelled            string `json:"statusCancelled"`
-	ApprovedBy            string `json:"approvedBy"`
+	ApprovedBy                 string `json:"approvedBy"`
 
 	// §4 Others
 	Justification            string `json:"justification"`
@@ -6050,7 +6078,7 @@ func DefaultProcurementRequestLabels() ProcurementRequestLabels {
 			FormRecurringCycleValue:            "Cycle Every",
 			FormRecurringCycleUnit:             "Cycle Unit",
 			FormRecurringTermValue:             "Term Length",
-			FormRecurringTermUnit:               "Term Unit",
+			FormRecurringTermUnit:              "Term Unit",
 			FormRecurringCycleHint:             "Billing/delivery cadence (e.g. every 1 month).",
 			FormRecurringTermHint:              "Total contract horizon (e.g. 24 months).",
 			FormRecurringUnitDay:               "Day",
@@ -6069,28 +6097,28 @@ func DefaultProcurementRequestLabels() ProcurementRequestLabels {
 			EmptyMessage: "POs spawned from this request will appear here after approval.",
 		},
 		Form: ProcurementRequestFormLabels{
-			SectionIdentity:          "Identity",
-			SectionFinancial:         "Financial",
-			SectionApproval:          "Timing & Approval",
-			SectionOthers:            "Others",
-			RequestNumber:            "Request Number",
-			RequestNumberPlaceholder: "e.g. PR-2026-001",
-			RequestNumberInfo:        "A unique identifier for this procurement request.",
-			RequesterUser:            "Requester",
-			RequesterUserPlaceholder: "User ID of requester",
-			Supplier:                 "Supplier",
-			SupplierPlaceholder:      "Select supplier (optional for RFQ)",
-			SupplierHint:             "Leave empty if supplier is not yet selected (RFQ flow).",
-			Location:                 "Location",
-			LocationPlaceholder:      "Branch or cost center",
-			Currency:                 "Currency",
-			CurrencyInfo:             "ISO 4217 currency code (e.g. PHP, USD).",
-			EstimatedTotal:           "Estimated Total",
-			EstimatedTotalInfo:       "Best estimate of total spend (centavos ÷ 100 for display).",
-			NeededByDate:             "Needed By",
-			NeededByDateInfo:         "When the goods or services are required.",
-			Status:                   "Status",
-			StatusInfo:               "Lifecycle stage. draft → submitted → pending_approval → approved/rejected → fulfilled/cancelled.",
+			SectionIdentity:            "Identity",
+			SectionFinancial:           "Financial",
+			SectionApproval:            "Timing & Approval",
+			SectionOthers:              "Others",
+			RequestNumber:              "Request Number",
+			RequestNumberPlaceholder:   "e.g. PR-2026-001",
+			RequestNumberInfo:          "A unique identifier for this procurement request.",
+			RequesterUser:              "Requester",
+			RequesterUserPlaceholder:   "User ID of requester",
+			Supplier:                   "Supplier",
+			SupplierPlaceholder:        "Select supplier (optional for RFQ)",
+			SupplierHint:               "Leave empty if supplier is not yet selected (RFQ flow).",
+			Location:                   "Location",
+			LocationPlaceholder:        "Branch or cost center",
+			Currency:                   "Currency",
+			CurrencyInfo:               "ISO 4217 currency code (e.g. PHP, USD).",
+			EstimatedTotal:             "Estimated Total",
+			EstimatedTotalInfo:         "Best estimate of total spend (centavos ÷ 100 for display).",
+			NeededByDate:               "Needed By",
+			NeededByDateInfo:           "When the goods or services are required.",
+			Status:                     "Status",
+			StatusInfo:                 "Lifecycle stage. draft → submitted → pending_approval → approved/rejected → fulfilled/cancelled.",
 			StatusDraft:                "Draft",
 			StatusSubmitted:            "Submitted",
 			StatusPendingApproval:      "Pending Approval",
@@ -6099,18 +6127,18 @@ func DefaultProcurementRequestLabels() ProcurementRequestLabels {
 			StatusRejected:             "Rejected",
 			StatusFulfilled:            "Fulfilled",
 			StatusCancelled:            "Cancelled",
-			ApprovedBy:               "Approved By",
-			Justification:            "Justification",
-			JustificationPlaceholder: "Business reason for this request",
-			Notes:                    "Notes",
-			NotesPlaceholder:         "Additional notes or context",
-			Active:                   "Active",
-			Edit:                     "Edit",
-			EditTitle:                "Edit Procurement Request",
-			Submit:                   "Submit for Approval",
-			Approve:                  "Approve",
-			Reject:                   "Reject",
-			SpawnPO:                  "Create PO",
+			ApprovedBy:                 "Approved By",
+			Justification:              "Justification",
+			JustificationPlaceholder:   "Business reason for this request",
+			Notes:                      "Notes",
+			NotesPlaceholder:           "Additional notes or context",
+			Active:                     "Active",
+			Edit:                       "Edit",
+			EditTitle:                  "Edit Procurement Request",
+			Submit:                     "Submit for Approval",
+			Approve:                    "Approve",
+			Reject:                     "Reject",
+			SpawnPO:                    "Create PO",
 		},
 		Empty: ProcurementRequestEmptyLabels{
 			Title:   "No procurement requests",
@@ -6233,18 +6261,18 @@ type ProcurementLabels struct {
 // SupplierContractPriceScheduleLabels holds all translatable strings for the
 // supplier_contract_price_schedule + child line views.
 type SupplierContractPriceScheduleLabels struct {
-	Labels  SupplierContractPriceScheduleNounLabels    `json:"labels"`
-	Page    SupplierContractPriceSchedulePageLabels    `json:"page"`
-	Buttons SupplierContractPriceScheduleButtonLabels  `json:"buttons"`
-	Filters SupplierContractPriceScheduleFilterLabels  `json:"filters"`
-	Columns SupplierContractPriceScheduleColumnLabels  `json:"columns"`
-	Empty   SupplierContractPriceScheduleEmptyLabels   `json:"empty"`
-	Form    SupplierContractPriceScheduleFormLabels    `json:"form"`
-	Status  SupplierContractPriceScheduleStatusLabels  `json:"status"`
-	Tabs    SupplierContractPriceScheduleTabLabels     `json:"tabs"`
-	Lines   SupplierContractPriceScheduleLinesLabels   `json:"lines"`
-	Detail  SupplierContractPriceScheduleDetailLabels  `json:"detail"`
-	Errors  SupplierContractPriceScheduleErrorLabels   `json:"errors"`
+	Labels  SupplierContractPriceScheduleNounLabels   `json:"labels"`
+	Page    SupplierContractPriceSchedulePageLabels   `json:"page"`
+	Buttons SupplierContractPriceScheduleButtonLabels `json:"buttons"`
+	Filters SupplierContractPriceScheduleFilterLabels `json:"filters"`
+	Columns SupplierContractPriceScheduleColumnLabels `json:"columns"`
+	Empty   SupplierContractPriceScheduleEmptyLabels  `json:"empty"`
+	Form    SupplierContractPriceScheduleFormLabels   `json:"form"`
+	Status  SupplierContractPriceScheduleStatusLabels `json:"status"`
+	Tabs    SupplierContractPriceScheduleTabLabels    `json:"tabs"`
+	Lines   SupplierContractPriceScheduleLinesLabels  `json:"lines"`
+	Detail  SupplierContractPriceScheduleDetailLabels `json:"detail"`
+	Errors  SupplierContractPriceScheduleErrorLabels  `json:"errors"`
 }
 
 type SupplierContractPriceScheduleNounLabels struct {
@@ -6295,16 +6323,16 @@ type SupplierContractPriceScheduleColumnLabels struct {
 }
 
 type SupplierContractPriceScheduleEmptyLabels struct {
-	Title              string `json:"title"`
-	Message            string `json:"message"`
-	ScheduledTitle     string `json:"scheduledTitle"`
-	ScheduledMessage   string `json:"scheduledMessage"`
-	ActiveTitle        string `json:"activeTitle"`
-	ActiveMessage      string `json:"activeMessage"`
-	SupersededTitle    string `json:"supersededTitle"`
-	SupersededMessage  string `json:"supersededMessage"`
-	CancelledTitle     string `json:"cancelledTitle"`
-	CancelledMessage   string `json:"cancelledMessage"`
+	Title             string `json:"title"`
+	Message           string `json:"message"`
+	ScheduledTitle    string `json:"scheduledTitle"`
+	ScheduledMessage  string `json:"scheduledMessage"`
+	ActiveTitle       string `json:"activeTitle"`
+	ActiveMessage     string `json:"activeMessage"`
+	SupersededTitle   string `json:"supersededTitle"`
+	SupersededMessage string `json:"supersededMessage"`
+	CancelledTitle    string `json:"cancelledTitle"`
+	CancelledMessage  string `json:"cancelledMessage"`
 }
 
 type SupplierContractPriceScheduleFormLabels struct {
@@ -6316,14 +6344,14 @@ type SupplierContractPriceScheduleFormLabels struct {
 	SectionNotes     string `json:"sectionNotes"`
 
 	// Identity
-	Name                  string `json:"name"`
-	NamePlaceholder       string `json:"namePlaceholder"`
-	NameInfo              string `json:"nameInfo"`
-	Description           string `json:"description"`
+	Name                   string `json:"name"`
+	NamePlaceholder        string `json:"namePlaceholder"`
+	NameInfo               string `json:"nameInfo"`
+	Description            string `json:"description"`
 	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
-	InternalID            string `json:"internalId"`
-	InternalIDPlaceholder string `json:"internalIdPlaceholder"`
-	InternalIDInfo        string `json:"internalIdInfo"`
+	InternalID             string `json:"internalId"`
+	InternalIDPlaceholder  string `json:"internalIdPlaceholder"`
+	InternalIDInfo         string `json:"internalIdInfo"`
 
 	// Scoping
 	SupplierContract       string `json:"supplierContract"`
@@ -6338,12 +6366,12 @@ type SupplierContractPriceScheduleFormLabels struct {
 	DateEndInfo        string `json:"dateEndInfo"`
 
 	// Currency / location
-	Currency           string `json:"currency"`
+	Currency            string `json:"currency"`
 	CurrencyPlaceholder string `json:"currencyPlaceholder"`
-	CurrencyInfo       string `json:"currencyInfo"`
-	Location           string `json:"location"`
-	SelectLocation     string `json:"selectLocation"`
-	LocationInfo       string `json:"locationInfo"`
+	CurrencyInfo        string `json:"currencyInfo"`
+	Location            string `json:"location"`
+	SelectLocation      string `json:"selectLocation"`
+	LocationInfo        string `json:"locationInfo"`
 
 	// Lifecycle
 	Status                    string `json:"status"`
@@ -6373,52 +6401,52 @@ type SupplierContractPriceScheduleTabLabels struct {
 }
 
 type SupplierContractPriceScheduleLinesLabels struct {
-	Title              string                                          `json:"title"`
-	Empty              string                                          `json:"empty"`
-	AddLine            string                                          `json:"addLine"`
-	ColumnContractLine string                                          `json:"columnContractLine"`
-	ColumnUnitPrice    string                                          `json:"columnUnitPrice"`
-	ColumnQuantity     string                                          `json:"columnQuantity"`
-	ColumnMinimumAmount string                                         `json:"columnMinimumAmount"`
-	ColumnCurrency     string                                          `json:"columnCurrency"`
-	ColumnCycleOverride string                                         `json:"columnCycleOverride"`
-	LineForm           SupplierContractPriceScheduleLineFormLabels     `json:"lineForm"`
+	Title               string                                      `json:"title"`
+	Empty               string                                      `json:"empty"`
+	AddLine             string                                      `json:"addLine"`
+	ColumnContractLine  string                                      `json:"columnContractLine"`
+	ColumnUnitPrice     string                                      `json:"columnUnitPrice"`
+	ColumnQuantity      string                                      `json:"columnQuantity"`
+	ColumnMinimumAmount string                                      `json:"columnMinimumAmount"`
+	ColumnCurrency      string                                      `json:"columnCurrency"`
+	ColumnCycleOverride string                                      `json:"columnCycleOverride"`
+	LineForm            SupplierContractPriceScheduleLineFormLabels `json:"lineForm"`
 }
 
 type SupplierContractPriceScheduleLineFormLabels struct {
-	SectionLink                  string `json:"sectionLink"`
-	SectionPricing               string `json:"sectionPricing"`
-	SectionCycle                 string `json:"sectionCycle"`
-	SupplierContractLine         string `json:"supplierContractLine"`
-	SelectSupplierContractLine   string `json:"selectSupplierContractLine"`
-	SupplierContractLineInfo     string `json:"supplierContractLineInfo"`
-	UnitPrice                    string `json:"unitPrice"`
-	UnitPricePlaceholder         string `json:"unitPricePlaceholder"`
-	UnitPriceInfo                string `json:"unitPriceInfo"`
-	MinimumAmount                string `json:"minimumAmount"`
-	MinimumAmountPlaceholder     string `json:"minimumAmountPlaceholder"`
-	MinimumAmountInfo            string `json:"minimumAmountInfo"`
-	Quantity                     string `json:"quantity"`
-	QuantityPlaceholder          string `json:"quantityPlaceholder"`
-	QuantityInfo                 string `json:"quantityInfo"`
-	Currency                     string `json:"currency"`
-	CurrencyPlaceholder          string `json:"currencyPlaceholder"`
-	CycleValueOverride           string `json:"cycleValueOverride"`
+	SectionLink                   string `json:"sectionLink"`
+	SectionPricing                string `json:"sectionPricing"`
+	SectionCycle                  string `json:"sectionCycle"`
+	SupplierContractLine          string `json:"supplierContractLine"`
+	SelectSupplierContractLine    string `json:"selectSupplierContractLine"`
+	SupplierContractLineInfo      string `json:"supplierContractLineInfo"`
+	UnitPrice                     string `json:"unitPrice"`
+	UnitPricePlaceholder          string `json:"unitPricePlaceholder"`
+	UnitPriceInfo                 string `json:"unitPriceInfo"`
+	MinimumAmount                 string `json:"minimumAmount"`
+	MinimumAmountPlaceholder      string `json:"minimumAmountPlaceholder"`
+	MinimumAmountInfo             string `json:"minimumAmountInfo"`
+	Quantity                      string `json:"quantity"`
+	QuantityPlaceholder           string `json:"quantityPlaceholder"`
+	QuantityInfo                  string `json:"quantityInfo"`
+	Currency                      string `json:"currency"`
+	CurrencyPlaceholder           string `json:"currencyPlaceholder"`
+	CycleValueOverride            string `json:"cycleValueOverride"`
 	CycleValueOverridePlaceholder string `json:"cycleValueOverridePlaceholder"`
-	CycleValueOverrideInfo       string `json:"cycleValueOverrideInfo"`
-	CycleUnitOverride            string `json:"cycleUnitOverride"`
-	CycleUnitOverridePlaceholder string `json:"cycleUnitOverridePlaceholder"`
-	CycleUnitOverrideInfo        string `json:"cycleUnitOverrideInfo"`
+	CycleValueOverrideInfo        string `json:"cycleValueOverrideInfo"`
+	CycleUnitOverride             string `json:"cycleUnitOverride"`
+	CycleUnitOverridePlaceholder  string `json:"cycleUnitOverridePlaceholder"`
+	CycleUnitOverrideInfo         string `json:"cycleUnitOverrideInfo"`
 }
 
 type SupplierContractPriceScheduleDetailLabels struct {
-	PageTitle             string `json:"pageTitle"`
-	Title                 string `json:"title"`
-	InfoSection           string `json:"infoSection"`
-	LinesSection          string `json:"linesSection"`
-	AuditTrailComingSoon  string `json:"auditTrailComingSoon"`
-	AuditEmptyTitle       string `json:"auditEmptyTitle"`
-	AuditEmptyMessage     string `json:"auditEmptyMessage"`
+	PageTitle            string `json:"pageTitle"`
+	Title                string `json:"title"`
+	InfoSection          string `json:"infoSection"`
+	LinesSection         string `json:"linesSection"`
+	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+	AuditEmptyTitle      string `json:"auditEmptyTitle"`
+	AuditEmptyMessage    string `json:"auditEmptyMessage"`
 }
 
 type SupplierContractPriceScheduleErrorLabels struct {
@@ -6675,13 +6703,13 @@ type ExpenseRecognitionTabLabels struct {
 }
 
 type ExpenseRecognitionDetailLabels struct {
-	PageTitle             string `json:"pageTitle"`
-	Title                 string `json:"title"`
-	InfoSection           string `json:"infoSection"`
-	SourceSection         string `json:"sourceSection"`
-	AuditTrailComingSoon  string `json:"auditTrailComingSoon"`
-	AuditEmptyTitle       string `json:"auditEmptyTitle"`
-	AuditEmptyMessage     string `json:"auditEmptyMessage"`
+	PageTitle            string `json:"pageTitle"`
+	Title                string `json:"title"`
+	InfoSection          string `json:"infoSection"`
+	SourceSection        string `json:"sourceSection"`
+	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
+	AuditEmptyTitle      string `json:"auditEmptyTitle"`
+	AuditEmptyMessage    string `json:"auditEmptyMessage"`
 }
 
 type ExpenseRecognitionLineLabels struct {
@@ -6747,18 +6775,18 @@ type ExpenseRecognitionEmptyLabels struct {
 }
 
 type ExpenseRecognitionErrorLabels struct {
-	PermissionDenied      string `json:"permissionDenied"`
-	InvalidFormData       string `json:"invalidFormData"`
-	NotFound              string `json:"notFound"`
-	IDRequired            string `json:"idRequired"`
-	NoPermission          string `json:"noPermission"`
-	CreationFailed        string `json:"creation_failed"`
-	UpdateFailed          string `json:"update_failed"`
-	DeletionFailed        string `json:"deletion_failed"`
-	ListFailed            string `json:"list_failed"`
-	ReverseFailed         string `json:"reverse_failed"`
-	IdempotencyCollision  string `json:"idempotency_collision"`
-	LoadFailed            string `json:"load_failed"`
+	PermissionDenied     string `json:"permissionDenied"`
+	InvalidFormData      string `json:"invalidFormData"`
+	NotFound             string `json:"notFound"`
+	IDRequired           string `json:"idRequired"`
+	NoPermission         string `json:"noPermission"`
+	CreationFailed       string `json:"creation_failed"`
+	UpdateFailed         string `json:"update_failed"`
+	DeletionFailed       string `json:"deletion_failed"`
+	ListFailed           string `json:"list_failed"`
+	ReverseFailed        string `json:"reverse_failed"`
+	IdempotencyCollision string `json:"idempotency_collision"`
+	LoadFailed           string `json:"load_failed"`
 }
 
 // DefaultExpenseRecognitionLabels returns English fallback labels.
@@ -6889,19 +6917,19 @@ func DefaultExpenseRecognitionLabels() ExpenseRecognitionLabels {
 // + accrued_expense_settlement modules. Loaded from lyngua key root
 // "accruedExpense" with settlement subkeys merged in via composition.
 type AccruedExpenseLabels struct {
-	Page        AccruedExpensePageLabels        `json:"page"`
-	Buttons     AccruedExpenseButtonLabels      `json:"buttons"`
-	Columns     AccruedExpenseColumnLabels      `json:"columns"`
-	Tabs        AccruedExpenseTabLabels         `json:"tabs"`
-	Detail      AccruedExpenseDetailLabels      `json:"detail"`
-	Settlements AccruedExpenseSettlementLabels  `json:"settlements"`
-	Form        AccruedExpenseFormLabels        `json:"form"`
-	Status      AccruedExpenseStatusLabels      `json:"status"`
-	Actions     AccruedExpenseActionLabels      `json:"actions"`
-	Confirm     AccruedExpenseConfirmLabels     `json:"confirm"`
-	Balances    AccruedExpenseBalanceLabels     `json:"balances"`
-	Empty       AccruedExpenseEmptyLabels       `json:"empty"`
-	Errors      AccruedExpenseErrorLabels       `json:"errors"`
+	Page        AccruedExpensePageLabels       `json:"page"`
+	Buttons     AccruedExpenseButtonLabels     `json:"buttons"`
+	Columns     AccruedExpenseColumnLabels     `json:"columns"`
+	Tabs        AccruedExpenseTabLabels        `json:"tabs"`
+	Detail      AccruedExpenseDetailLabels     `json:"detail"`
+	Settlements AccruedExpenseSettlementLabels `json:"settlements"`
+	Form        AccruedExpenseFormLabels       `json:"form"`
+	Status      AccruedExpenseStatusLabels     `json:"status"`
+	Actions     AccruedExpenseActionLabels     `json:"actions"`
+	Confirm     AccruedExpenseConfirmLabels    `json:"confirm"`
+	Balances    AccruedExpenseBalanceLabels    `json:"balances"`
+	Empty       AccruedExpenseEmptyLabels      `json:"empty"`
+	Errors      AccruedExpenseErrorLabels      `json:"errors"`
 }
 
 type AccruedExpensePageLabels struct {
@@ -6969,13 +6997,13 @@ type AccruedExpenseSettlementLabels struct {
 	AddSettlement      string `json:"addSettlement"`
 
 	// Drawer form labels
-	FormExpenditure        string `json:"formExpenditure"`
+	FormExpenditure            string `json:"formExpenditure"`
 	FormExpenditurePlaceholder string `json:"formExpenditurePlaceholder"`
-	FormAmountSettled      string `json:"formAmountSettled"`
-	FormCurrency           string `json:"formCurrency"`
-	FormFxRate             string `json:"formFxRate"`
-	FormFxRateInfo         string `json:"formFxRateInfo"`
-	FormReversalReason     string `json:"formReversalReason"`
+	FormAmountSettled          string `json:"formAmountSettled"`
+	FormCurrency               string `json:"formCurrency"`
+	FormFxRate                 string `json:"formFxRate"`
+	FormFxRateInfo             string `json:"formFxRateInfo"`
+	FormReversalReason         string `json:"formReversalReason"`
 }
 
 type AccruedExpenseFormLabels struct {
@@ -6989,53 +7017,53 @@ type AccruedExpenseFormLabels struct {
 	SectionNotes      string `json:"sectionNotes"`
 
 	// §1 Identity
-	Name                  string `json:"name"`
-	NamePlaceholder       string `json:"namePlaceholder"`
-	NameInfo              string `json:"nameInfo"`
-	Description           string `json:"description"`
+	Name                   string `json:"name"`
+	NamePlaceholder        string `json:"namePlaceholder"`
+	NameInfo               string `json:"nameInfo"`
+	Description            string `json:"description"`
 	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
-	InternalID            string `json:"internalId"`
-	InternalIDPlaceholder string `json:"internalIdPlaceholder"`
+	InternalID             string `json:"internalId"`
+	InternalIDPlaceholder  string `json:"internalIdPlaceholder"`
 
 	// §2 Source
-	SupplierContract        string `json:"supplierContract"`
-	SelectSupplierContract  string `json:"selectSupplierContract"`
-	SupplierContractInfo    string `json:"supplierContractInfo"`
-	Supplier                string `json:"supplier"`
-	SelectSupplier          string `json:"selectSupplier"`
-	SupplierInfo            string `json:"supplierInfo"`
+	SupplierContract       string `json:"supplierContract"`
+	SelectSupplierContract string `json:"selectSupplierContract"`
+	SupplierContractInfo   string `json:"supplierContractInfo"`
+	Supplier               string `json:"supplier"`
+	SelectSupplier         string `json:"selectSupplier"`
+	SupplierInfo           string `json:"supplierInfo"`
 
 	// §3 Period
-	RecognitionDate     string `json:"recognitionDate"`
-	RecognitionDateInfo string `json:"recognitionDateInfo"`
-	PeriodStart         string `json:"periodStart"`
-	PeriodStartInfo     string `json:"periodStartInfo"`
-	PeriodEnd           string `json:"periodEnd"`
-	PeriodEndInfo       string `json:"periodEndInfo"`
-	CycleDate           string `json:"cycleDate"`
+	RecognitionDate      string `json:"recognitionDate"`
+	RecognitionDateInfo  string `json:"recognitionDateInfo"`
+	PeriodStart          string `json:"periodStart"`
+	PeriodStartInfo      string `json:"periodStartInfo"`
+	PeriodEnd            string `json:"periodEnd"`
+	PeriodEndInfo        string `json:"periodEndInfo"`
+	CycleDate            string `json:"cycleDate"`
 	CycleDatePlaceholder string `json:"cycleDatePlaceholder"`
-	CycleDateInfo       string `json:"cycleDateInfo"`
+	CycleDateInfo        string `json:"cycleDateInfo"`
 
 	// §4 Money
-	Currency             string `json:"currency"`
-	CurrencyPlaceholder  string `json:"currencyPlaceholder"`
-	CurrencyInfo         string `json:"currencyInfo"`
-	AccruedAmount        string `json:"accruedAmount"`
+	Currency                 string `json:"currency"`
+	CurrencyPlaceholder      string `json:"currencyPlaceholder"`
+	CurrencyInfo             string `json:"currencyInfo"`
+	AccruedAmount            string `json:"accruedAmount"`
 	AccruedAmountPlaceholder string `json:"accruedAmountPlaceholder"`
-	AccruedAmountInfo    string `json:"accruedAmountInfo"`
-	SettledAmount        string `json:"settledAmount"`
-	SettledAmountInfo    string `json:"settledAmountInfo"`
-	RemainingAmount      string `json:"remainingAmount"`
-	RemainingAmountInfo  string `json:"remainingAmountInfo"`
+	AccruedAmountInfo        string `json:"accruedAmountInfo"`
+	SettledAmount            string `json:"settledAmount"`
+	SettledAmountInfo        string `json:"settledAmountInfo"`
+	RemainingAmount          string `json:"remainingAmount"`
+	RemainingAmountInfo      string `json:"remainingAmountInfo"`
 
 	// §5 Lifecycle
-	Status              string `json:"status"`
-	SelectStatus        string `json:"selectStatus"`
-	StatusInfo          string `json:"statusInfo"`
-	StatusOutstanding   string `json:"statusOutstanding"`
-	StatusPartial       string `json:"statusPartial"`
-	StatusSettled       string `json:"statusSettled"`
-	StatusReversed      string `json:"statusReversed"`
+	Status            string `json:"status"`
+	SelectStatus      string `json:"selectStatus"`
+	StatusInfo        string `json:"statusInfo"`
+	StatusOutstanding string `json:"statusOutstanding"`
+	StatusPartial     string `json:"statusPartial"`
+	StatusSettled     string `json:"statusSettled"`
+	StatusReversed    string `json:"statusReversed"`
 
 	// §6 Accounting
 	ExpenseAccount       string `json:"expenseAccount"`
@@ -7105,19 +7133,19 @@ type AccruedExpenseEmptyLabels struct {
 }
 
 type AccruedExpenseErrorLabels struct {
-	PermissionDenied      string `json:"permissionDenied"`
-	InvalidFormData       string `json:"invalidFormData"`
-	NotFound              string `json:"notFound"`
-	IDRequired            string `json:"idRequired"`
-	NoPermission          string `json:"noPermission"`
-	CreationFailed        string `json:"creation_failed"`
-	UpdateFailed          string `json:"update_failed"`
-	DeletionFailed        string `json:"deletion_failed"`
-	ListFailed            string `json:"list_failed"`
-	SettleFailed          string `json:"settle_failed"`
-	ReverseFailed         string `json:"reverse_failed"`
-	BalanceDrift          string `json:"balance_drift"`
-	LoadFailed            string `json:"load_failed"`
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+	CreationFailed   string `json:"creation_failed"`
+	UpdateFailed     string `json:"update_failed"`
+	DeletionFailed   string `json:"deletion_failed"`
+	ListFailed       string `json:"list_failed"`
+	SettleFailed     string `json:"settle_failed"`
+	ReverseFailed    string `json:"reverse_failed"`
+	BalanceDrift     string `json:"balance_drift"`
+	LoadFailed       string `json:"load_failed"`
 }
 
 // DefaultAccruedExpenseLabels returns English fallback labels.
