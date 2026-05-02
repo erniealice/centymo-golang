@@ -6,6 +6,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	templateview "github.com/erniealice/hybra-golang/views/template"
+	templateviewform "github.com/erniealice/hybra-golang/views/template/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 )
@@ -13,7 +14,7 @@ import (
 // SettingsViewDeps holds view dependencies for the purchases settings (template management) views.
 type SettingsViewDeps struct {
 	Routes       centymo.ExpenditureRoutes
-	Labels       templateview.Labels
+	Labels       templateviewform.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 

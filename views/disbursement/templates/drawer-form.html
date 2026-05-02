@@ -54,11 +54,11 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
                 "Info" .Labels.AmountInfo
             )}}
             {{template "form-group" (dict
-                "Type" "text"
+                "Type" "select"
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
-                "Placeholder" .Labels.CurrencyPlaceholder
+                "Options" .CommonLabels.Currency.Options
                 "Info" .Labels.CurrencyInfo
             )}}
         </div>

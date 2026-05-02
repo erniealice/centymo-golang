@@ -356,6 +356,7 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 			}
 			scheduleMode, scheduleLockID, scheduleLockLabel, scheduleLockClient := resolveScheduleLock(ctx, deps, parentPlan)
 			labels := form.LabelsFromPricePlan(formLabels)
+			// Context-specific overrides; intentionally inlined (Decision 2 — only 2 fields).
 			labels.ScheduleLockedTooltip = applyScheduleLockTooltip(labels.ScheduleLockedTooltip, scheduleLockClient)
 			scheduleAutoHint := buildScheduleAutoHint(formLabels, scheduleMode, scheduleLockID, scheduleLockClient)
 			return view.OK("price-plan-drawer-form", &form.Data{
@@ -515,6 +516,7 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				editScheduleID = editScheduleLockID
 			}
 			editLabels := form.LabelsFromPricePlan(formLabels)
+			// Context-specific overrides; intentionally inlined (Decision 2 — only 2 fields).
 			editLabels.ScheduleLockedTooltip = applyScheduleLockTooltip(editLabels.ScheduleLockedTooltip, editScheduleLockClient)
 			editScheduleAutoHint := buildScheduleAutoHint(formLabels, editScheduleMode, editScheduleLockID, editScheduleLockClient)
 

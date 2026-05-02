@@ -37,10 +37,11 @@ Used by both Add and Edit actions.
             </div>
             <div class="form-row">
                 {{template "form-group" (dict
-                    "Type" "text"
+                    "Type" "select"
                     "Name" "currency"
                     "Label" .Labels.FormCurrency
                     "Value" .Currency
+                    "Options" .CommonLabels.Currency.Options
                     "Required" true
                 )}}
             </div>

@@ -2,17 +2,14 @@ package action
 
 import (
 	"context"
-	"log"
 	"math/rand"
-	"net/http"
 	"strings"
 	"time"
 
-	"github.com/erniealice/pyeza-golang/route"
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
-	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/centymo-golang/views/subscription/form"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
@@ -27,113 +24,6 @@ import (
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-// FormLabels holds i18n labels for the subscription drawer form template.
-type FormLabels struct {
-	Customer                  string
-	CustomerPlaceholder       string
-	Plan                      string
-	PlanPlaceholder           string
-	StartDate                 string
-	EndDate                   string
-	StartTime                 string
-	EndTime                   string
-	TimePlaceholder           string
-	Timezone                  string
-	Notes                     string
-	NotesPlaceholder          string
-	CustomerSearchPlaceholder string
-	PlanSearchPlaceholder     string
-	CustomerNoResults         string
-	PlanNoResults             string
-	Code                      string
-	CodePlaceholder           string
-	CustomerInfo              string
-	PlanInfo                  string
-	CodeInfo                  string
-	StartDateInfo             string
-	EndDateInfo               string
-	StartTimeInfo             string
-	EndTimeInfo               string
-	NotesInfo                 string
-
-	// 2026-04-27 plan-client-scope plan §5.1 / §7 — group headers in the
-	// grouped Plan / PricePlan auto-complete picker.
-	PlanGroupForClient string // "For {ClientName}" — pre-resolved with ClientName injected.
-	PlanGroupGeneral   string
-
-	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9.
-	SpawnJobsSectionTitle string
-	SpawnJobsToggle       string
-	SpawnJobsHelpText     string
-	SpawnJobsSummary      string // {{.JobCount}} / {{.TemplateNames}} / {{.PhaseCount}} / {{.TaskCount}}
-	SpawnJobsNone         string
-}
-
-// PlanOptionGroup is one optgroup in the grouped Plan/PricePlan auto-complete
-// on the subscription drawer (plan §5.1). Field name `GroupLabel` matches the
-// pyeza auto-complete component's expected SelectOptionGroup shape — see
-// templates/components/auto-complete.html.
-type PlanOptionGroup struct {
-	GroupLabel string              // group header
-	Options    []map[string]string // {Value, Label} entries
-}
-
-// FormData is the template data for the subscription drawer form.
-type FormData struct {
-	FormAction      string
-	IsEdit          bool
-	ID              string
-	Code            string
-	ClientID        string
-	PricePlanID     string
-	// Date/Time form values, split for the two-row date+time grid.
-	// Stored in the operator's display TZ (DefaultTZ) for the date/time inputs;
-	// JS recombines + converts to UTC RFC 3339 for the hidden field.
-	DateStartDate string
-	DateStartTime string
-	DateEndDate   string
-	DateEndTime   string
-	// Pre-computed RFC 3339 hidden values; JS overwrites on every change.
-	DateStartISO string
-	DateEndISO   string
-	// DefaultTZ is the IANA name of the operator's display timezone, surfaced as
-	// data-default-tz on the form for client-side recombination.
-	DefaultTZ string
-	Notes     string
-
-	Clients         []map[string]string
-	PricePlans      []map[string]string
-	SearchClientURL string
-	SearchPlanURL   string
-	ClientLabel     string
-	PlanLabel       string
-	ClientLocked    bool
-	// ClientBillingCurrency is the selected client's billing currency, passed to
-	// the plan search URL so the grouped auto-complete only shows plans in that
-	// currency. Empty = no currency filter.
-	ClientBillingCurrency string
-
-	// 2026-04-27 plan-client-scope plan §5 — grouped picker options. When
-	// non-empty, the template renders the grouped variant instead of the
-	// flat search auto-complete.
-	PlanOptionGroups []PlanOptionGroup
-
-	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 — Spawn Jobs
-	// section state. SpawnJobsAvailable controls section visibility (true
-	// when the selected Plan resolves to one or more JobTemplates).
-	// SpawnJobsDefault controls the default checked state of the toggle.
-	// SpawnJobsSummary is the resolved summary string, or empty when no
-	// templates resolve. SpawnJobsPartialURL is the HTMX endpoint that
-	// re-renders the section on Plan select change.
-	SpawnJobsAvailable  bool
-	SpawnJobsDefault    bool
-	SpawnJobsSummary    string
-	SpawnJobsPartialURL string
-
-	Labels       FormLabels
-	CommonLabels any
-}
 
 // Deps holds dependencies for subscription action handlers.
 type Deps struct {
@@ -218,6 +108,34 @@ type Deps struct {
 	MaterializeInstanceJobsForSubscription MaterializeInstanceJobsForSubscriptionAdapter
 }
 
+// MaterializeInstanceJobsRequest mirrors the espyna consumer-surface request.
+// Keeping a centymo-local struct so this package does not import espyna directly.
+// 2026-04-30 cyclic-subscription-jobs plan §5.3 / Phase D.
+type MaterializeInstanceJobsRequest struct {
+	SubscriptionID   string
+	CyclePeriodStart string
+	Backfill         bool
+	// 2026-05-01 ad-hoc-subscription-billing plan §3.2 — operator-supplied
+	// usage request date for AD_HOC plans. Empty defaults to today UTC.
+	UsageRequestDate string
+}
+
+// MaterializeInstanceJobsResponse mirrors the espyna consumer-surface response.
+type MaterializeInstanceJobsResponse struct {
+	SpawnedCycleCount         int
+	SpawnedJobCount           int
+	OnceAtStartJobCount       int
+	EngagementWasNewlyCreated bool
+	SkippedReason             string
+	BackfillCappedAt          int32
+}
+
+// MaterializeInstanceJobsForSubscriptionAdapter is the function-pointer type
+// the centymo block.go wires once the espyna consumer is available.
+type MaterializeInstanceJobsForSubscriptionAdapter func(
+	ctx context.Context, req *MaterializeInstanceJobsRequest,
+) (*MaterializeInstanceJobsResponse, error)
+
 // CustomizePlanForClientRequest mirrors the espyna use-case request shape
 // (plan §4.1). Centymo handlers build this and pass it through Deps.
 // The `derivedName` carries the per-tier "{Client.name} - {suffix}" label
@@ -240,8 +158,12 @@ type CustomizePlanForClientResponse struct {
 	Reused         bool
 }
 
-func formLabels(l centymo.SubscriptionLabels) FormLabels {
-	return FormLabels{
+// buildFormLabels builds a form.Labels from centymo.SubscriptionLabels.
+// This is the dep-bearing helper that resolves typed labels into the
+// form package's flat Labels shape. Lives here (not in form/) because
+// centymo.SubscriptionLabels is a dependency-bearing type.
+func buildFormLabels(l centymo.SubscriptionLabels) form.Labels {
+	return form.Labels{
 		Customer:                  l.Form.Customer,
 		CustomerPlaceholder:       l.Form.CustomerPlaceholder,
 		Plan:                      l.Form.Plan,
@@ -278,16 +200,6 @@ func formLabels(l centymo.SubscriptionLabels) FormLabels {
 	}
 }
 
-// resolvePlanGroupForClientLabel renders the {{.ClientName}}-templated
-// "For {ClientName}" group header. Falls back gracefully when the label
-// has no template directive or the client name is empty.
-func resolvePlanGroupForClientLabel(template, clientName string) string {
-	if clientName == "" {
-		return template
-	}
-	return strings.ReplaceAll(template, "{{.ClientName}}", clientName)
-}
-
 // generateCode returns a random 7-character uppercase alphanumeric code,
 // using chars that are visually unambiguous (no O, I, 0, 1).
 func generateCode() string {
@@ -297,155 +209,6 @@ func generateCode() string {
 		b[i] = chars[rand.Intn(len(chars))]
 	}
 	return string(b)
-}
-
-// loadClientOptions fetches the client list and converts to select options.
-func loadClientOptions(ctx context.Context, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)) []map[string]string {
-	if listClients == nil {
-		return nil
-	}
-	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
-	if err != nil {
-		log.Printf("Failed to load clients for dropdown: %v", err)
-		return nil
-	}
-	var options []map[string]string
-	for _, c := range resp.GetData() {
-		label := c.GetId()
-		if u := c.GetUser(); u != nil {
-			first := u.GetFirstName()
-			last := u.GetLastName()
-			if first != "" || last != "" {
-				label = first + " " + last
-			}
-		}
-		options = append(options, map[string]string{
-			"Value": c.GetId(),
-			"Label": label,
-		})
-	}
-	return options
-}
-
-// loadPlanOptions fetches the plan list and converts to select options.
-func loadPlanOptions(ctx context.Context, listPlans func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)) []map[string]string {
-	if listPlans == nil {
-		return nil
-	}
-	resp, err := listPlans(ctx, &planpb.ListPlansRequest{})
-	if err != nil {
-		log.Printf("Failed to load plans for dropdown: %v", err)
-		return nil
-	}
-	var options []map[string]string
-	for _, p := range resp.GetData() {
-		if !p.GetActive() {
-			continue
-		}
-		options = append(options, map[string]string{
-			"Value": p.GetId(),
-			"Label": p.GetName(),
-		})
-	}
-	return options
-}
-
-// loadPlanOptionGroups builds the grouped Plan picker for the subscription
-// drawer per plan §5.1. Group order: client-scoped first ("For {ClientName}"),
-// general ("General packages") second. Empty groups are omitted.
-//
-// The list is filtered post-fetch in Go because TypedFilter doesn't yet
-// expose a NULL/NOT-NULL primitive on string fields. Volume is small.
-func loadPlanOptionGroups(ctx context.Context, listPlans func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error), clientID, clientName string, l FormLabels) []PlanOptionGroup {
-	if listPlans == nil {
-		return nil
-	}
-	resp, err := listPlans(ctx, &planpb.ListPlansRequest{})
-	if err != nil {
-		log.Printf("Failed to load plans for grouped picker: %v", err)
-		return nil
-	}
-
-	var clientPlans, masterPlans []map[string]string
-	for _, p := range resp.GetData() {
-		if !p.GetActive() {
-			continue
-		}
-		entry := map[string]string{"Value": p.GetId(), "Label": p.GetName()}
-		switch cid := p.GetClientId(); {
-		case cid == "":
-			masterPlans = append(masterPlans, entry)
-		case clientID != "" && cid == clientID:
-			clientPlans = append(clientPlans, entry)
-		}
-	}
-
-	var groups []PlanOptionGroup
-	if len(clientPlans) > 0 {
-		groups = append(groups, PlanOptionGroup{
-			GroupLabel: resolvePlanGroupForClientLabel(l.PlanGroupForClient, clientName),
-			Options:    clientPlans,
-		})
-	}
-	if len(masterPlans) > 0 {
-		groups = append(groups, PlanOptionGroup{
-			GroupLabel: l.PlanGroupGeneral,
-			Options:    masterPlans,
-		})
-	}
-	return groups
-}
-
-// loadPricePlanOptionGroups is the same shape as loadPlanOptionGroups but
-// keyed off PricePlan.client_id. Used by the subscription edit drawer's
-// PricePlan picker.
-func loadPricePlanOptionGroups(ctx context.Context, listPricePlans func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error), clientID, clientName string, l FormLabels) []PlanOptionGroup {
-	if listPricePlans == nil {
-		return nil
-	}
-	resp, err := listPricePlans(ctx, &priceplanpb.ListPricePlansRequest{})
-	if err != nil {
-		log.Printf("Failed to load price plans for grouped picker: %v", err)
-		return nil
-	}
-
-	var clientPP, masterPP []map[string]string
-	for _, pp := range resp.GetData() {
-		if !pp.GetActive() {
-			continue
-		}
-		label := pp.GetName()
-		if label == "" {
-			if pl := pp.GetPlan(); pl != nil {
-				label = pl.GetName()
-			}
-			if label == "" {
-				label = pp.GetId()
-			}
-		}
-		entry := map[string]string{"Value": pp.GetId(), "Label": label}
-		switch cid := pp.GetClientId(); {
-		case cid == "":
-			masterPP = append(masterPP, entry)
-		case clientID != "" && cid == clientID:
-			clientPP = append(clientPP, entry)
-		}
-	}
-
-	var groups []PlanOptionGroup
-	if len(clientPP) > 0 {
-		groups = append(groups, PlanOptionGroup{
-			GroupLabel: resolvePlanGroupForClientLabel(l.PlanGroupForClient, clientName),
-			Options:    clientPP,
-		})
-	}
-	if len(masterPP) > 0 {
-		groups = append(groups, PlanOptionGroup{
-			GroupLabel: l.PlanGroupGeneral,
-			Options:    masterPP,
-		})
-	}
-	return groups
 }
 
 // resolveClientBillingCurrency finds the billing_currency for a client by ID.
@@ -596,326 +359,24 @@ func parseFormDateTime(date, t, iso string, tz *time.Location, isEnd bool) *time
 	return timestamppb.New(parsed.UTC())
 }
 
-// NewAddAction creates the subscription add action (GET = form, POST = create).
-func NewAddAction(deps *Deps) view.View {
-	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("subscription", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+// formatDateForInput extracts a YYYY-MM-DD date string from either a date
+// string (which may be a full timestamp or just a date) or a millisecond
+// timestamp. If dateString is non-empty it is used directly — if it is longer
+// than 10 chars the first 10 characters are returned (the date portion of an
+// ISO 8601 timestamp). Falls back to dateMillis when dateString is empty;
+// zero and negative millisecond values return "".
+func formatDateForInput(dateString string, dateMillis int64) string {
+	if dateString != "" {
+		if len(dateString) > 10 {
+			return dateString[:10]
 		}
-
-		if viewCtx.Request.Method == http.MethodGet {
-			clientID := viewCtx.Request.URL.Query().Get("client_id")
-			clientName := viewCtx.Request.URL.Query().Get("client_name")
-			clientBillingCurrency := viewCtx.Request.URL.Query().Get("billing_currency")
-			clientLocked := clientID != ""
-
-			tz := pyezatypes.LocationFromContext(ctx)
-			// Default new engagement to "today, 00:00" in the operator's TZ.
-			today := time.Now().In(tz)
-			defaultDate := today.Format(pyezatypes.DateInputLayout)
-			defaultISO := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz).Format(time.RFC3339)
-			labels := formLabels(deps.Labels)
-			return view.OK("subscription-drawer-form", &FormData{
-				FormAction:            deps.Routes.AddURL,
-				SearchClientURL:       deps.Routes.SearchClientURL,
-				SearchPlanURL:         deps.Routes.SearchPlanURL,
-				ClientID:              clientID,
-				ClientLabel:           clientName,
-				ClientLocked:          clientLocked,
-				ClientBillingCurrency: clientBillingCurrency,
-				Code:                  generateCode(),
-				DateStartDate:         defaultDate,
-				DateStartISO:          defaultISO,
-				DefaultTZ:             tz.String(),
-				PlanOptionGroups:      loadPricePlanOptionGroups(ctx, deps.ListPricePlans, clientID, clientName, labels),
-				// Spawn Jobs section starts hidden on add (no PricePlan
-				// selected yet); the HTMX partial fills it after selection.
-				SpawnJobsAvailable:  false,
-				SpawnJobsDefault:    true,
-				SpawnJobsPartialURL: deps.Routes.SpawnJobsPartialURL,
-				Labels:              labels,
-				CommonLabels:        nil, // injected by ViewAdapter
-			})
-		}
-
-		// POST — create subscription
-		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
-		}
-
-		r := viewCtx.Request
-
-		tz := pyezatypes.LocationFromContext(ctx)
-		dateTimeStart := parseFormDateTime(
-			r.FormValue("date_start_date"),
-			r.FormValue("date_start_time"),
-			r.FormValue("date_time_start_iso"),
-			tz,
-			false,
-		)
-		dateTimeEnd := parseFormDateTime(
-			r.FormValue("date_end_date"),
-			r.FormValue("date_end_time"),
-			r.FormValue("date_time_end_iso"),
-			tz,
-			true,
-		)
-
-		pricePlanID := r.FormValue("price_plan_id")
-
-		code := r.FormValue("code")
-		if code == "" {
-			code = generateCode()
-		}
-
-		// Resolve plan name for auto-generated subscription name. The drawer
-		// submits a price_plan_id, so look up the PricePlan (not the Plan).
-		planName := resolvePricePlanName(ctx, pricePlanID, deps)
-		name := planName
-		if code != "" {
-			name = planName + " [" + code + "]"
-		}
-
-		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 — propagate the
-		// operator's "Spawn Jobs on Create" toggle decision through context so
-		// CreateSubscriptionUseCase → JobTemplateInstantiator can honor opt-out.
-		//
-		// Tri-state via the `spawn_jobs_field_present` hidden marker emitted
-		// by the form template only when the section was rendered (i.e. the
-		// selected Plan resolved to a JobTemplate):
-		//
-		//   - marker absent           → section not rendered → don't override
-		//                                 (espyna falls back to its legacy
-		//                                  default-on, which will short-circuit
-		//                                  with no_template_found anyway).
-		//   - marker present + spawn_jobs truthy → operator opted in.
-		//   - marker present + spawn_jobs absent  → operator unchecked the box.
-		//
-		// Plain-string key mirrors espyna's exported constant
-		// SpawnJobsOverrideKey (espyna's internal pkg is not importable from
-		// centymo, but a string-keyed context value crosses the module boundary
-		// the same way "businessType" already does).
-		spawnCtx := ctx
-		if r.Form.Get("spawn_jobs_field_present") != "" {
-			rawVal := strings.ToLower(strings.TrimSpace(r.FormValue("spawn_jobs")))
-			val := rawVal == "true" || rawVal == "on" || rawVal == "1" || rawVal == "yes"
-			v := val
-			spawnCtx = context.WithValue(ctx, "spawn_jobs_override", &v)
-		}
-
-		resp, err := deps.CreateSubscription(spawnCtx, &subscriptionpb.CreateSubscriptionRequest{
-			Data: &subscriptionpb.Subscription{
-				Name:          name,
-				ClientId:      r.FormValue("client_id"),
-				PricePlanId:   pricePlanID,
-				Code:          strPtr(code),
-				DateTimeStart: dateTimeStart,
-				DateTimeEnd:   dateTimeEnd,
-				Active:        true,
-			},
-		})
-		if err != nil {
-			log.Printf("Failed to create subscription: %v", err)
-			return centymo.HTMXError(err.Error())
-		}
-
-		_ = resp
-		return centymo.HTMXSuccess("subscriptions-table")
-	})
-}
-
-// NewEditAction creates the subscription edit action (GET = form, POST = update).
-func NewEditAction(deps *Deps) view.View {
-	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("subscription", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
-		}
-
-		id := viewCtx.Request.PathValue("id")
-
-		if viewCtx.Request.Method == http.MethodGet {
-			// Prefer the joined item-page-data path so Client (+ User) is populated
-			// without a second ListClients-and-iterate roundtrip. Falls back to
-			// ReadSubscription only if the dep is unwired.
-			var record *subscriptionpb.Subscription
-			if deps.GetSubscriptionItemPageData != nil {
-				resp, err := deps.GetSubscriptionItemPageData(ctx, &subscriptionpb.GetSubscriptionItemPageDataRequest{
-					SubscriptionId: id,
-				})
-				if err != nil || resp == nil || resp.GetSubscription() == nil {
-					log.Printf("Failed to read subscription %s: %v", id, err)
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
-				}
-				record = resp.GetSubscription()
-			} else {
-				readResp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
-					Data: &subscriptionpb.Subscription{Id: id},
-				})
-				if err != nil {
-					log.Printf("Failed to read subscription %s: %v", id, err)
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
-				}
-				readData := readResp.GetData()
-				if len(readData) == 0 {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
-				}
-				record = readData[0]
-			}
-
-			// Prefer the joined client (populated by GetSubscriptionItemPageData);
-			// fall back to the ListClients lookup for the legacy ReadSubscription path.
-			clientLabel := ""
-			if c := record.GetClient(); c != nil {
-				if name := c.GetName(); name != "" {
-					clientLabel = name
-				} else if u := c.GetUser(); u != nil {
-					clientLabel = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
-				}
-			}
-			if clientLabel == "" {
-				clientLabel = resolveClientLabel(ctx, record.GetClientId(), deps.ListClients)
-			}
-			clientBillingCurrency := ""
-			if c := record.GetClient(); c != nil {
-				clientBillingCurrency = c.GetBillingCurrency()
-			}
-			if clientBillingCurrency == "" {
-				clientBillingCurrency = resolveClientBillingCurrency(ctx, record.GetClientId(), deps.ListClients)
-			}
-			// PricePlanID, not a plan_id — resolve via PricePlan so the selected
-			// label matches the autocomplete dropdown's display.
-			planLabel := resolvePricePlanName(ctx, record.GetPricePlanId(), deps)
-
-			// Lock client field when opened from client detail page
-			clientLocked := viewCtx.Request.URL.Query().Get("client_id") != ""
-
-			tz := pyezatypes.LocationFromContext(ctx)
-			startDate, startTime, startISO := splitTimestampForInputs(record.GetDateTimeStart(), tz)
-			endDate, endTime, endISO := splitTimestampForInputs(record.GetDateTimeEnd(), tz)
-
-			labels := formLabels(deps.Labels)
-			return view.OK("subscription-drawer-form", &FormData{
-				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:                true,
-				ID:                    id,
-				Code:                  record.GetCode(),
-				ClientID:              record.GetClientId(),
-				PricePlanID:           record.GetPricePlanId(),
-				DateStartDate:         startDate,
-				DateStartTime:         startTime,
-				DateStartISO:          startISO,
-				DateEndDate:           endDate,
-				DateEndTime:           endTime,
-				DateEndISO:            endISO,
-				DefaultTZ:             tz.String(),
-				SearchClientURL:       deps.Routes.SearchClientURL,
-				SearchPlanURL:         deps.Routes.SearchPlanURL,
-				ClientLabel:           clientLabel,
-				ClientLocked:          clientLocked,
-				ClientBillingCurrency: clientBillingCurrency,
-				PlanLabel:             planLabel,
-				PlanOptionGroups:      loadPricePlanOptionGroups(ctx, deps.ListPricePlans, record.GetClientId(), clientLabel, labels),
-				// Edit drawer never spawns Jobs — the toggle hides because
-				// SpawnJobsAvailable defaults false. Operators trigger
-				// retroactive spawn via the Operations tab CTA.
-				SpawnJobsAvailable:  false,
-				SpawnJobsPartialURL: deps.Routes.SpawnJobsPartialURL,
-				Labels:              labels,
-				CommonLabels:        nil, // injected by ViewAdapter
-			})
-		}
-
-		// POST — update subscription
-		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
-		}
-
-		r := viewCtx.Request
-
-		tz := pyezatypes.LocationFromContext(ctx)
-		dateTimeStart := parseFormDateTime(
-			r.FormValue("date_start_date"),
-			r.FormValue("date_start_time"),
-			r.FormValue("date_time_start_iso"),
-			tz,
-			false,
-		)
-		dateTimeEnd := parseFormDateTime(
-			r.FormValue("date_end_date"),
-			r.FormValue("date_end_time"),
-			r.FormValue("date_time_end_iso"),
-			tz,
-			true,
-		)
-
-		pricePlanID := r.FormValue("price_plan_id")
-		if pricePlanID == "" {
-			pricePlanID = r.FormValue("plan_id")
-		}
-
-		code := r.FormValue("code")
-		if code == "" {
-			code = generateCode()
-		}
-
-		// Resolve plan name for auto-generated subscription name. The drawer
-		// submits a price_plan_id, so look up the PricePlan (not the Plan).
-		planName := resolvePricePlanName(ctx, pricePlanID, deps)
-		name := planName
-		if code != "" {
-			name = planName + " [" + code + "]"
-		}
-
-		_, err := deps.UpdateSubscription(ctx, &subscriptionpb.UpdateSubscriptionRequest{
-			Data: &subscriptionpb.Subscription{
-				Id:            id,
-				Name:          name,
-				ClientId:      r.FormValue("client_id"),
-				PricePlanId:   pricePlanID,
-				Code:          strPtr(code),
-				DateTimeStart: dateTimeStart,
-				DateTimeEnd:   dateTimeEnd,
-			},
-		})
-		if err != nil {
-			log.Printf("Failed to update subscription %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
-		}
-
-		return centymo.HTMXSuccess("subscriptions-table")
-	})
-}
-
-// NewDeleteAction creates the subscription delete action (POST only).
-// The row ID comes via query param (?id=xxx) appended by table-actions.js.
-func NewDeleteAction(deps *Deps) view.View {
-	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("subscription", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
-		}
-
-		id := viewCtx.Request.URL.Query().Get("id")
-		if id == "" {
-			_ = viewCtx.Request.ParseForm()
-			id = viewCtx.Request.FormValue("id")
-		}
-		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
-		}
-
-		_, err := deps.DeleteSubscription(ctx, &subscriptionpb.DeleteSubscriptionRequest{
-			Data: &subscriptionpb.Subscription{Id: id},
-		})
-		if err != nil {
-			log.Printf("Failed to delete subscription %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
-		}
-
-		return centymo.HTMXSuccess("subscriptions-table")
-	})
+		return dateString
+	}
+	if dateMillis <= 0 {
+		return ""
+	}
+	t := time.UnixMilli(dateMillis).UTC()
+	return t.Format(pyezatypes.DateInputLayout)
 }
 
 // strPtr returns a pointer to a string.
@@ -1062,3 +523,27 @@ func itoa(n int) string {
 	return string(b[i:])
 }
 
+// resolveSubscriptionLabel returns a "code · name" label for the drawer header.
+// Shared by spawn_jobs and spawn_cycle_jobs handlers.
+func resolveSubscriptionLabel(ctx context.Context, deps *Deps, subscriptionID string) string {
+	if deps == nil || deps.ReadSubscription == nil {
+		return subscriptionID
+	}
+	resp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
+		Data: &subscriptionpb.Subscription{Id: subscriptionID},
+	})
+	if err != nil || resp == nil || len(resp.GetData()) == 0 {
+		return subscriptionID
+	}
+	s := resp.GetData()[0]
+	if c := s.GetCode(); c != "" {
+		if n := s.GetName(); n != "" {
+			return c + " · " + n
+		}
+		return c
+	}
+	if n := s.GetName(); n != "" {
+		return n
+	}
+	return subscriptionID
+}

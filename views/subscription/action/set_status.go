@@ -7,8 +7,6 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
-
-	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
 // NewSetStatusAction creates the subscription activate/deactivate action (POST only).
@@ -89,47 +87,3 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	})
 }
 
-// NewBulkDeleteAction creates the subscription bulk delete action (POST only).
-// Selected IDs come as multiple "id" form fields.
-// IDs that are in use (referenced by dependent records) are skipped silently;
-// the remaining IDs are deleted.
-func NewBulkDeleteAction(deps *Deps) view.View {
-	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("subscription", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
-		}
-
-		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
-
-		ids := viewCtx.Request.Form["id"]
-		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
-		}
-
-		// Gate: skip IDs that have dependent records.
-		var inUse map[string]bool
-		if deps.GetInUseIDs != nil {
-			var err error
-			inUse, err = deps.GetInUseIDs(ctx, ids)
-			if err != nil {
-				log.Printf("Failed to check subscription in-use IDs: %v", err)
-			}
-		}
-
-		for _, id := range ids {
-			if inUse[id] {
-				log.Printf("Skipping bulk delete for subscription %s — has dependent records", id)
-				continue
-			}
-			idCopy := id
-			if _, err := deps.DeleteSubscription(ctx, &subscriptionpb.DeleteSubscriptionRequest{
-				Data: &subscriptionpb.Subscription{Id: idCopy},
-			}); err != nil {
-				log.Printf("Failed to bulk-delete subscription %s: %v", id, err)
-			}
-		}
-
-		return centymo.HTMXSuccess("subscriptions-table")
-	})
-}

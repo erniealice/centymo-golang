@@ -6,6 +6,7 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	templateview "github.com/erniealice/hybra-golang/views/template"
+	templateviewform "github.com/erniealice/hybra-golang/views/template/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 )
@@ -51,8 +52,8 @@ func templateConfig(deps *SettingsViewDeps) *templateview.Config {
 	}
 }
 
-func convertLabels(l centymo.RevenueSettingsLabels) templateview.Labels {
-	return templateview.Labels{
+func convertLabels(l centymo.RevenueSettingsLabels) templateviewform.Labels {
+	return templateviewform.Labels{
 		PageTitle:      l.PageTitle,
 		Caption:        l.Caption,
 		UploadTemplate: l.UploadTemplate,

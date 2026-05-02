@@ -7,6 +7,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 )
 
+
 // ---------------------------------------------------------------------------
 // Inventory labels
 // ---------------------------------------------------------------------------
@@ -610,6 +611,8 @@ type RevenueDashboardLabels struct {
 	RevenueCompleted  string `json:"revenueCompleted"`
 	RevenueUpdated    string `json:"revenueUpdated"`
 	RevenueCancelled  string `json:"revenueCancelled"`
+	QuickNewRevenue   string `json:"quickNewRevenue"`
+	QuickViewAll      string `json:"quickViewAll"`
 }
 
 // RevenueSettingsLabels holds translatable strings for the revenue settings page
@@ -2862,8 +2865,6 @@ type PricePlanFormLabels struct {
 	AmountPlaceholder   string `json:"amountPlaceholder"`
 	Currency            string `json:"currency"`
 	CurrencyPlaceholder string `json:"currencyPlaceholder"`
-	CurrencyPHP         string `json:"currencyPHP"`
-	CurrencyUSD         string `json:"currencyUSD"`
 	DurationValue       string `json:"durationValue"`
 	DurationUnit        string `json:"durationUnit"`
 	Schedule            string `json:"schedule"`
@@ -2988,8 +2989,6 @@ type ProductPricePlanFormLabels struct {
 	PricePlaceholder                   string `json:"pricePlaceholder"`
 	CurrencyLabel                      string `json:"currencyLabel"`
 	CurrencyPlaceholder                string `json:"currencyPlaceholder"`
-	CurrencyPHP                        string `json:"currencyPHP"`
-	CurrencyUSD                        string `json:"currencyUSD"`
 	DateStartLabel                     string `json:"dateStartLabel"`
 	DateEndLabel                       string `json:"dateEndLabel"`
 
@@ -3032,8 +3031,6 @@ func DefaultProductPricePlanLabels() ProductPricePlanLabels {
 			PricePlaceholder:                   "0.00",
 			CurrencyLabel:                      "Currency",
 			CurrencyPlaceholder:                "e.g. PHP",
-			CurrencyPHP:                        "PHP (₱)",
-			CurrencyUSD:                        "USD ($)",
 			DateStartLabel:                     "Effective from",
 			DateEndLabel:                       "Effective until",
 			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
@@ -4109,8 +4106,6 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			AmountPlaceholder:   "0.00",
 			Currency:            "Currency",
 			CurrencyPlaceholder: "e.g. PHP",
-			CurrencyPHP:         "PHP (₱)",
-			CurrencyUSD:         "USD ($)",
 			DurationValue:       "Duration",
 			DurationUnit:        "Unit",
 			Schedule:            "Price Schedule",
@@ -4344,8 +4339,6 @@ type PriceSchedulePlanFormLabels struct {
 	AmountPlaceholder      string `json:"amountPlaceholder"`
 	CurrencyLabel          string `json:"currencyLabel"`
 	CurrencyPlaceholder    string `json:"currencyPlaceholder"`
-	CurrencyPHP            string `json:"currencyPHP"`
-	CurrencyUSD            string `json:"currencyUSD"`
 	DurationLabel          string `json:"durationLabel"`
 	UnitLabel              string `json:"unitLabel"`
 	ActiveLabel            string `json:"activeLabel"`
@@ -4524,10 +4517,33 @@ type PriceScheduleDetailLabels struct {
 	ProductField              string `json:"productField"`        // drawer product select label ("Product" / "Service")
 
 	// Plans table columns (price-schedule-detail plans tab).
-	PlanColumnPlan     string `json:"planColumnPlan"`
-	PlanColumnAmount   string `json:"planColumnAmount"`
-	PlanColumnDuration string `json:"planColumnDuration"`
-	PlanColumnStatus   string `json:"planColumnStatus"`
+	PlanColumnPlan         string `json:"planColumnPlan"`
+	PlanColumnAmount       string `json:"planColumnAmount"`
+	PlanColumnBillingKind  string `json:"planColumnBillingKind"`
+	PlanColumnAmountBasis  string `json:"planColumnAmountBasis"`
+	PlanColumnCadence      string `json:"planColumnCadence"`
+	PlanColumnDuration     string `json:"planColumnDuration"` // deprecated; replaced by PlanColumnCadence
+	PlanColumnStatus       string `json:"planColumnStatus"`
+
+	// Cadence cell prefixes per BillingKind (rendered as "{prefix} {cycle}" or
+	// just "{prefix}" when no cycle applies).
+	CadenceOneTime    string `json:"cadenceOneTime"`    // e.g. "One-time payment"
+	CadenceRecurring  string `json:"cadenceRecurring"`  // e.g. "Every {cycle}"
+	CadenceContract   string `json:"cadenceContract"`   // e.g. "Contract — billed every {cycle}"
+	CadenceMilestone  string `json:"cadenceMilestone"`  // e.g. "Per milestone"
+	CadenceAdHoc      string `json:"cadenceAdHoc"`      // e.g. "Per occurrence"
+	CadenceUnspecified string `json:"cadenceUnspecified"`
+
+	// Compact labels for the BillingKind / AmountBasis cells in the plans table.
+	BillingKindOneTime          string `json:"billingKindOneTime"`
+	BillingKindRecurring        string `json:"billingKindRecurring"`
+	BillingKindContract         string `json:"billingKindContract"`
+	BillingKindMilestone        string `json:"billingKindMilestone"`
+	BillingKindAdHoc            string `json:"billingKindAdHoc"`
+	AmountBasisPerCycle         string `json:"amountBasisPerCycle"`
+	AmountBasisTotalPackage     string `json:"amountBasisTotalPackage"`
+	AmountBasisDerivedFromLines string `json:"amountBasisDerivedFromLines"`
+	AmountBasisPerOccurrence    string `json:"amountBasisPerOccurrence"`
 
 	// Plans table row actions + confirms.
 	PlanView            string `json:"planView"`
@@ -4689,10 +4705,30 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			ProductPriceSection:       "Product Price",
 			ProductField:              "Product",
 
-			PlanColumnPlan:     "Plan",
-			PlanColumnAmount:   "Amount",
-			PlanColumnDuration: "Duration",
-			PlanColumnStatus:   "Status",
+			PlanColumnPlan:        "Plan",
+			PlanColumnAmount:      "Amount",
+			PlanColumnBillingKind: "Billing model",
+			PlanColumnAmountBasis: "Amount basis",
+			PlanColumnCadence:     "Cadence",
+			PlanColumnDuration:    "Duration",
+			PlanColumnStatus:      "Status",
+
+			CadenceOneTime:     "One-time payment",
+			CadenceRecurring:   "Every %s",
+			CadenceContract:    "Contract — billed every %s",
+			CadenceMilestone:   "Per milestone",
+			CadenceAdHoc:       "Per occurrence",
+			CadenceUnspecified: "—",
+
+			BillingKindOneTime:          "One-time",
+			BillingKindRecurring:        "Recurring",
+			BillingKindContract:         "Contract",
+			BillingKindMilestone:        "Milestone",
+			BillingKindAdHoc:            "Ad hoc",
+			AmountBasisPerCycle:         "Per cycle",
+			AmountBasisTotalPackage:     "Total package",
+			AmountBasisDerivedFromLines: "Derived from lines",
+			AmountBasisPerOccurrence:    "Per occurrence",
 
 			PlanView:            "View",
 			PlanEdit:            "Edit",
@@ -4733,8 +4769,6 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			AmountPlaceholder:      "0.00",
 			CurrencyLabel:          "Currency",
 			CurrencyPlaceholder:    "e.g. PHP",
-			CurrencyPHP:            "PHP (₱)",
-			CurrencyUSD:            "USD ($)",
 			DurationLabel:          "Duration",
 			UnitLabel:              "Unit",
 			ActiveLabel:            "Active",

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
-	templateview "github.com/erniealice/hybra-golang/views/template"
+	templateviewform "github.com/erniealice/hybra-golang/views/template/form"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -40,7 +40,7 @@ type ModuleDeps struct {
 	SqlDB            *sql.DB
 	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
 	Labels           centymo.ExpenditureLabels
-	TemplateLabels   templateview.Labels
+	TemplateLabels   templateviewform.Labels
 	CommonLabels     pyeza.CommonLabels
 	TableLabels      types.TableLabels
 

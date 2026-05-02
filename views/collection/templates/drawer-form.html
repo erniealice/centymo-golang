@@ -48,11 +48,11 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Info" .Labels.Form.AmountInfo
             )}}
             {{template "form-group" (dict
-                "Type" "text"
+                "Type" "select"
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
-                "Placeholder" .Labels.Form.CurrencyPlaceholder
+                "Options" .CommonLabels.Currency.Options
                 "Info" .Labels.Form.CurrencyInfo
             )}}
         </div>

@@ -190,10 +190,11 @@ Data: .Name, .Description, .Price, .Currency, .Active, .Unit, .VariantMode,
                 "Info" .Labels.PriceInfo
             )}}
             {{template "form-group" (dict
-                "Type" "text"
+                "Type" "select"
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
+                "Options" .CommonLabels.Currency.Options
                 "Info" .Labels.CurrencyInfo
             )}}
         </div>

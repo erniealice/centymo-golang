@@ -305,10 +305,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Value" .Currency
                 "Required" true
                 "Disabled" (and .IsEdit .InUse)
-                "Options" (list
-                    (dict "Value" "PHP" "Label" .Labels.CurrencyPHP)
-                    (dict "Value" "USD" "Label" .Labels.CurrencyUSD)
-                )
+                "Options" .CommonLabels.Currency.Options
                 "Hint" .Labels.CurrencyInfo
                 "Info" .Labels.CurrencyInfo
             )}}

@@ -206,7 +206,6 @@ func priceScheduleColumns(l centymo.PriceScheduleLabels) []types.TableColumn {
 		{Key: "date_start", Label: l.Columns.DateStart, WidthClass: "col-2xl"},
 		{Key: "date_end", Label: l.Columns.DateEnd, WidthClass: "col-2xl"},
 		{Key: "location", Label: l.Columns.Location, NoSort: true, NoFilter: true},
-		{Key: "status", Label: l.Columns.Status, NoFilter: true, WidthClass: "col-2xl"},
 		{Key: "client", Label: l.Form.ClientLabel, NoSort: true, NoFilter: true, WidthClass: "col-3xl"},
 	}
 }
@@ -253,7 +252,6 @@ func buildTableRows(ctx context.Context, priceSchedules []*priceschedulepb.Price
 			types.DateTimeCellSplit(dateStartDate, dateStartTime),
 			types.DateTimeCellSplit(dateEndDate, dateEndTime),
 			{Type: "text", Value: locationName},
-			{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
 		}
 		if clientLabel != "" {
 			cells = append(cells, types.TableCell{Type: "badge", Value: clientLabel, Variant: "info"})
@@ -393,17 +391,6 @@ func statusEmptyTitle(l centymo.PriceScheduleLabels, status string) string {
 
 func statusEmptyMessage(l centymo.PriceScheduleLabels, status string) string {
 	return l.Empty.Message
-}
-
-func statusVariant(status string) string {
-	switch status {
-	case "active":
-		return "success"
-	case "inactive":
-		return "warning"
-	default:
-		return "default"
-	}
 }
 
 func statusSubNav(base, status string) string {

@@ -73,11 +73,11 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
         {{/* --- Currency + Status row --- */}}
         <div class="form-row">
             {{template "form-group" (dict
-                "Type" "text"
+                "Type" "select"
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
-                "Placeholder" .Labels.CurrencyPlaceholder
+                "Options" .CommonLabels.Currency.Options
                 "Info" .Labels.CurrencyInfo
             )}}
             {{template "form-group" (dict

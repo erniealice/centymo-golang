@@ -34,11 +34,11 @@ Used by both Add and Edit actions.
                 "Info" .Labels.DateInfo
             )}}
             {{template "form-group" (dict
-                "Type" "text"
+                "Type" "select"
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
-                "Placeholder" .Labels.Form.CurrencyPlaceholder
+                "Options" .CommonLabels.Currency.Options
                 "Info" .Labels.CurrencyInfo
             )}}
         </div>

@@ -32,10 +32,11 @@ The settle drawer also reuses this template via the parent's
                     "Required" true
                 )}}
                 {{template "form-group" (dict
-                    "Type" "text"
+                    "Type" "select"
                     "Name" "currency"
                     "Label" .Labels.FormCurrency
                     "Value" .Currency
+                    "Options" .CommonLabels.Currency.Options
                     "Required" true
                 )}}
             </div>

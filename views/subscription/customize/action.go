@@ -1,4 +1,7 @@
-package action
+// Package customize handles the "Customize Package for Client" feature.
+// This is a POST-only flow — no own drawer template.
+// 2026-04-27 plan-client-scope plan §6.5.
+package customize
 
 import (
 	"context"
@@ -15,33 +18,53 @@ import (
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
-// NewCustomizePackageAction creates the POST handler that drives the
-// "Customize this package for {ClientName}" CTA on the subscription detail's
-// Package tab (plan §6.5 / §4.4.1).
-//
+// Request mirrors the espyna use-case request shape (plan §4.1).
+type Request struct {
+	SourcePlanID      string
+	SourcePricePlanID string
+	ClientID          string
+	SubscriptionID    string
+	NewScheduleName   string
+}
+
+// Response mirrors the espyna use-case response shape (plan §4.1).
+type Response struct {
+	NewPlanID      string
+	NewPricePlanID string
+	NewScheduleID  string
+	Reused         bool
+}
+
+// Deps is the dependency subset needed by the customize feature.
+type Deps struct {
+	Labels centymo.SubscriptionLabels
+
+	// CustomClientPriceScheduleLabelSuffix carries the lyngua-resolved suffix
+	// appended to a client's name when constructing the custom PriceSchedule name.
+	CustomClientPriceScheduleLabelSuffix string
+
+	CustomizePlanForClient      func(ctx context.Context, req *Request) (*Response, error)
+	GetSubscriptionItemPageData func(ctx context.Context, req *subscriptionpb.GetSubscriptionItemPageDataRequest) (*subscriptionpb.GetSubscriptionItemPageDataResponse, error)
+	ReadSubscription            func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
+	ReadPricePlan               func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	ListClients                 func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+}
+
+// NewAction creates the POST handler for "Customize this package for {ClientName}".
 // Algorithm (handler-side):
-//   1. Read subscription → resolve price_plan_id, client_id, client name.
-//   2. Read customClientPriceScheduleLabelSuffix from typed labels.
-//   3. Build derivedName = "{ClientName} - {suffix}" (note: space-hyphen-space).
-//   4. Call espyna CustomizePlanForClient with the source IDs + derivedName.
-//   5. On success, respond with HX-Push-Url pointing at the new PricePlan's
-//      package page and HX-Trigger refresh-package.
-//
-// Cross-package contract: Deps.CustomizePlanForClient is a function pointer
-// matching the espyna use case's signature. The block wires it via the
-// CustomizePlanForClientRequest/Response shape declared in action.go.
-//
-// 2026-04-27 plan-client-scope plan §6.5.
-func NewCustomizePackageAction(deps *Deps) view.View {
+//  1. Read subscription → resolve price_plan_id, client_id, client name.
+//  2. Read customClientPriceScheduleLabelSuffix from typed labels.
+//  3. Build derivedName = "{ClientName} - {suffix}".
+//  4. Call espyna CustomizePlanForClient with the source IDs + derivedName.
+//  5. On success, respond with HX-Push-Url pointing at the new PricePlan's
+//     package page and HX-Trigger refresh-package.
+func NewAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		// Authz: same gate the use case checks server-side. Surface the same
-		// permission key set the espyna side validates.
 		if !perms.Can("revenue", "create") && !perms.Can("plan", "create") {
 			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
-		// POST only — the customize CTA is a single-button flow, no GET drawer.
 		if viewCtx.Request.Method != http.MethodPost {
 			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
@@ -55,8 +78,7 @@ func NewCustomizePackageAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
-		// Step 1 — load the subscription with its joined client + price plan.
-		sub, err := loadSubscriptionForCustomize(ctx, deps, subscriptionID)
+		sub, err := loadSubscription(ctx, deps, subscriptionID)
 		if err != nil {
 			log.Printf("Customize: failed to load subscription %s: %v", subscriptionID, err)
 			return centymo.HTMXError(deps.Labels.Errors.NotFound)
@@ -67,8 +89,6 @@ func NewCustomizePackageAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
-		// Resolve source plan_id from the live PricePlan record (the join may
-		// not include plan_id directly).
 		sourcePlanID := ""
 		if pp := sub.GetPricePlan(); pp != nil {
 			sourcePlanID = pp.GetPlanId()
@@ -84,22 +104,11 @@ func NewCustomizePackageAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
-		// Step 1 (cont) — resolve client name. Fallback chain mirrors
-		// resolveClientBreadcrumb in subscription/detail/page.go.
-		clientName := resolveClientNameForCustomize(ctx, deps, sub, clientID)
-
-		// Step 2 — read suffix from typed labels (plan §4.4.1 step 2).
-		// The lyngua-resolved suffix is threaded through Deps by block.go so
-		// the professional-tier "Rate Cards" override reaches this handler
-		// without relying on the X-Client-Schedule-Suffix header pattern.
+		clientName := resolveClientName(ctx, deps, sub, clientID)
 		suffix := deps.CustomClientPriceScheduleLabelSuffix
+		derivedName := buildScheduleName(clientName, suffix)
 
-		// Step 3 — build derivedName per plan §4.4.1.
-		// Note: space-hyphen-space separator ("{Client.name} - {suffix}").
-		derivedName := buildDerivedScheduleName(clientName, suffix)
-
-		// Step 4 — invoke the espyna use case.
-		req := &CustomizePlanForClientRequest{
+		req := &Request{
 			SourcePlanID:      sourcePlanID,
 			SourcePricePlanID: pricePlanID,
 			ClientID:          clientID,
@@ -115,8 +124,7 @@ func NewCustomizePackageAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
-		// Step 5 — HX-redirect to the new package page + trigger.
-		newURL := buildPackageURLForClient(clientID, subscriptionID, resp.NewPricePlanID)
+		newURL := "/app/clients/detail/" + clientID + "/engagements/" + subscriptionID + "/package/" + resp.NewPricePlanID
 		return view.ViewResult{
 			StatusCode: http.StatusOK,
 			Headers: map[string]string{
@@ -127,10 +135,8 @@ func NewCustomizePackageAction(deps *Deps) view.View {
 	})
 }
 
-// loadSubscriptionForCustomize fetches the subscription with its joined
-// client + price plan. Prefers GetSubscriptionItemPageData; falls back to
-// ReadSubscription.
-func loadSubscriptionForCustomize(ctx context.Context, deps *Deps, id string) (*subscriptionpb.Subscription, error) {
+// loadSubscription fetches the subscription with joined client + price plan.
+func loadSubscription(ctx context.Context, deps *Deps, id string) (*subscriptionpb.Subscription, error) {
 	if deps.GetSubscriptionItemPageData != nil {
 		resp, err := deps.GetSubscriptionItemPageData(ctx, &subscriptionpb.GetSubscriptionItemPageDataRequest{
 			SubscriptionId: id,
@@ -154,10 +160,8 @@ func loadSubscriptionForCustomize(ctx context.Context, deps *Deps, id string) (*
 	return resp.GetData()[0], nil
 }
 
-// resolveClientNameForCustomize resolves a display name for the client,
-// preferring the joined client on the subscription, then falling back to
-// ListClients lookup, and finally the bare client_id.
-func resolveClientNameForCustomize(ctx context.Context, deps *Deps, sub *subscriptionpb.Subscription, clientID string) string {
+// resolveClientName resolves a display name for the client.
+func resolveClientName(ctx context.Context, deps *Deps, sub *subscriptionpb.Subscription, clientID string) string {
 	if c := sub.GetClient(); c != nil {
 		if name := c.GetName(); name != "" {
 			return name
@@ -191,10 +195,8 @@ func resolveClientNameForCustomize(ctx context.Context, deps *Deps, sub *subscri
 	return clientID
 }
 
-// buildDerivedScheduleName mirrors plan §4.4.1: "{Client.name} - {suffix}".
-// Note the space-hyphen-space separator. When the suffix is empty, falls
-// back to just the client name (no trailing dash).
-func buildDerivedScheduleName(clientName, suffix string) string {
+// buildScheduleName mirrors plan §4.4.1: "{Client.name} - {suffix}".
+func buildScheduleName(clientName, suffix string) string {
 	clientName = strings.TrimSpace(clientName)
 	suffix = strings.TrimSpace(suffix)
 	if clientName == "" && suffix == "" {
@@ -209,19 +211,6 @@ func buildDerivedScheduleName(clientName, suffix string) string {
 	return clientName + " - " + suffix
 }
 
-// buildPackageURLForClient builds the post-customize redirect target per
-// plan §6.5: /app/clients/detail/{cid}/engagements/{sid}/package/{newPpid}.
-//
-// We don't pull the URL from a route map because that path is owned by
-// entydad's client-detail page (plan §6.3) — at this seam we just construct
-// the canonical convention. If/when the URL diverges, plumb it through Deps.
-func buildPackageURLForClient(clientID, subscriptionID, pricePlanID string) string {
-	return "/app/clients/detail/" + clientID + "/engagements/" + subscriptionID + "/package/" + pricePlanID
-}
-
-// errNotFound is the sentinel returned from loadSubscriptionForCustomize
-// when the subscription read returns an empty data slice. Wrapped at the
-// call site into the lyngua "not found" error.
 var errNotFound = customizeError("subscription not found")
 
 type customizeError string

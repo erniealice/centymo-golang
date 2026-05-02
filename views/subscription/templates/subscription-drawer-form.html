@@ -225,7 +225,7 @@ Data: .Code, .ClientID, .PricePlanID,
     var planTrigger = planContainer.querySelector('.auto-complete-trigger');
 
     var baseURL = planContainer.dataset.searchUrl || '';
-    var clientBillingCurrency = {{if .ClientBillingCurrency}}{{ printf "%q" .ClientBillingCurrency }}{{else}}''{{end}};
+    var clientBillingCurrency = {{.ClientBillingCurrency}};
     var defaultTZ = form.dataset.defaultTz || 'Asia/Manila';
 
     var initialPlaceholderHTML = '<span class="auto-complete-placeholder">{{.Labels.PlanPlaceholder}}</span>';

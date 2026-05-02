@@ -1,4 +1,6 @@
-package action
+// Package search provides HTMX search-as-you-type endpoints for subscriptions.
+// Extracted per S1 pattern — 476 LOC exceeds the ~150 LOC trigger threshold.
+package search
 
 // This file provides JSON search handlers for the auto-complete component.
 // They accept ?q=searchterm and return JSON: [{"value":"id","label":"Name"}, ...]
@@ -21,16 +23,26 @@ import (
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 )
 
-// searchOption is the JSON shape returned by the search handlers.
-type searchOption struct {
+// Deps is the dependency subset needed by the search handlers.
+type Deps struct {
+	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
+	ListClients         func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	ListPricePlans      func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	ListPlans           func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ReadPlan            func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+}
+
+// option is the JSON shape returned by the search handlers.
+type option struct {
 	Value string `json:"value"`
 	Label string `json:"label"`
 }
 
-// groupedSearchResult is the grouped JSON shape for the price plan auto-complete.
-type groupedSearchResult struct {
-	Group   string         `json:"group"`
-	Options []searchOption `json:"options"`
+// groupedResult is the grouped JSON shape for the price plan auto-complete.
+type groupedResult struct {
+	Group   string   `json:"group"`
+	Options []option `json:"options"`
 }
 
 const searchResultLimit = 20
@@ -43,33 +55,31 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 		ctx := r.Context()
 		query := strings.TrimSpace(r.URL.Query().Get("q"))
 
-		// Use proto search if available (SQL ILIKE, no full load)
 		if deps.SearchClientsByName != nil {
 			resp, err := deps.SearchClientsByName(ctx, &clientpb.SearchClientsByNameRequest{
 				Query: query,
 			})
 			if err != nil {
 				log.Printf("search clients: failed to search clients by name: %v", err)
-				writeJSON(w, []searchOption{})
+				writeJSON(w, []option{})
 				return
 			}
-			var results []searchOption
+			var results []option
 			for _, r := range resp.GetResults() {
-				results = append(results, searchOption{
+				results = append(results, option{
 					Value: r.GetId(),
 					Label: r.GetLabel(),
 				})
 			}
 			if results == nil {
-				results = []searchOption{}
+				results = []option{}
 			}
 			writeJSON(w, results)
 			return
 		}
 
-		// Fallback: load all clients and filter in Go
 		if deps.ListClients == nil {
-			writeJSON(w, []searchOption{})
+			writeJSON(w, []option{})
 			return
 		}
 
@@ -77,11 +87,11 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 		resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{})
 		if err != nil {
 			log.Printf("search clients: failed to list clients: %v", err)
-			writeJSON(w, []searchOption{})
+			writeJSON(w, []option{})
 			return
 		}
 
-		var results []searchOption
+		var results []option
 		for _, c := range resp.GetData() {
 			if !c.GetActive() {
 				continue
@@ -118,7 +128,7 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 				}
 			}
 
-			results = append(results, searchOption{
+			results = append(results, option{
 				Value: c.GetId(),
 				Label: label,
 			})
@@ -129,7 +139,7 @@ func NewSearchClientsAction(deps *Deps) http.HandlerFunc {
 		}
 
 		if results == nil {
-			results = []searchOption{}
+			results = []option{}
 		}
 		writeJSON(w, results)
 	}
@@ -145,9 +155,8 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		startISO := strings.TrimSpace(r.URL.Query().Get("date_time_start_iso"))
 		endISO := strings.TrimSpace(r.URL.Query().Get("date_time_end_iso"))
-		// billing_currency filters results to PricePlans matching the client's
-		// billing currency. Empty = no filter (show all currencies).
 		billingCurrency := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("billing_currency")))
+		clientIDFilter := strings.TrimSpace(r.URL.Query().Get("client_id"))
 
 		tz := pyezatypes.LocationFromContext(ctx)
 		reqStart, hasStart := parseRFC3339(startISO)
@@ -161,14 +170,13 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				reqEnd = reqStart
 			}
 		}
-		_ = tz // tz only consumed below for group-label formatting
+		_ = tz
 
 		if deps.ListPricePlans == nil {
-			// Fallback to plan search if ListPricePlans not wired
 			if deps.ListPlans != nil {
 				searchPlansLegacy(ctx, w, q, deps)
 			} else {
-				writeJSON(w, []searchOption{})
+				writeJSON(w, []option{})
 			}
 			return
 		}
@@ -176,11 +184,10 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 		resp, err := deps.ListPricePlans(ctx, &priceplanpb.ListPricePlansRequest{})
 		if err != nil {
 			log.Printf("search price plans: failed to list price plans: %v", err)
-			writeJSON(w, []groupedSearchResult{})
+			writeJSON(w, []groupedResult{})
 			return
 		}
 
-		// Build schedule lookup map when ListPriceSchedules is wired.
 		scheduleByID := map[string]*priceschedulepb.PriceSchedule{}
 		if deps.ListPriceSchedules != nil {
 			schedResp, schedErr := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
@@ -193,9 +200,6 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 			}
 		}
 
-		// Per-plan name cache for the embedded-plan fallback. ListPricePlans returns
-		// flat rows without the joined plan, so we resolve names lazily via ReadPlan
-		// and cache the result to avoid repeating the lookup for shared plan_ids.
 		planNameByID := map[string]string{}
 		resolvePlanName := func(planID string) string {
 			if planID == "" || deps.ReadPlan == nil {
@@ -217,15 +221,14 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 
 		queryLower := strings.ToLower(q)
 
-		// group key → options (use insertion-stable order via a slice of keys)
 		type groupEntry struct {
-			schedID   string // empty = unscheduled
-			schedName string // display label for the group header
-			dateStart string // for sorting
-			options   []searchOption
+			schedID   string
+			schedName string
+			dateStart string
+			options   []option
 		}
 		groupMap := map[string]*groupEntry{}
-		var groupOrder []string // tracks insertion order of group keys
+		var groupOrder []string
 
 		totalOptions := 0
 
@@ -237,9 +240,6 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				break
 			}
 
-			// Resolve display name: prefer pp.GetName(), fall back to embedded plan name,
-			// then to the joined plan-name lookup (since ListPricePlans does not embed the plan),
-			// then to a placeholder so the option is never rendered with an empty label.
 			displayName := pp.GetName()
 			if displayName == "" {
 				if pl := pp.GetPlan(); pl != nil {
@@ -253,12 +253,10 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				displayName = "(Unnamed plan)"
 			}
 
-			// Apply query filter.
 			if queryLower != "" && !strings.Contains(strings.ToLower(displayName), queryLower) {
 				continue
 			}
 
-			// Apply billing currency filter (when the drawer passes a client's billing_currency).
 			if billingCurrency != "" && strings.ToUpper(pp.GetBillingCurrency()) != billingCurrency {
 				continue
 			}
@@ -269,14 +267,24 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				sched = scheduleByID[schedID]
 			}
 
-			// Apply date filter (UTC timestamp comparison).
+			// Apply client scope filter.
+			if clientIDFilter != "" {
+				ppClient := pp.GetClientId()
+				schedClient := ""
+				if sched != nil {
+					schedClient = sched.GetClientId()
+				}
+				if (ppClient != "" && ppClient != clientIDFilter) || (schedClient != "" && schedClient != clientIDFilter) {
+					continue
+				}
+			}
+
+			// Apply date filter.
 			if hasDateFilter {
 				if schedID == "" {
-					// Unscheduled plans are excluded when any date filter is set.
 					continue
 				}
 				if sched == nil {
-					// Unknown schedule referenced — skip.
 					continue
 				}
 				schedStartTS := sched.GetDateTimeStart()
@@ -285,8 +293,6 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 					continue
 				}
 				schedStart := schedStartTS.AsTime()
-				// Schedule must cover the requested range:
-				// schedStart <= reqStart AND (schedEnd == nil || reqEnd <= schedEnd)
 				if schedStart.After(reqStart) {
 					continue
 				}
@@ -297,7 +303,6 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				}
 			}
 
-			// Determine group key and label.
 			groupKey := schedID
 			if groupKey == "" {
 				groupKey = "__unscheduled__"
@@ -324,7 +329,6 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				groupOrder = append(groupOrder, groupKey)
 			}
 
-			// Build option label: "Name · ₱15,000.00 PHP"
 			amount := float64(pp.GetBillingAmount()) / 100.0
 			currency := pp.GetBillingCurrency()
 			var label string
@@ -334,19 +338,18 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				label = fmt.Sprintf("%s · ₱%s", displayName, formatAmount(amount))
 			}
 
-			groupMap[groupKey].options = append(groupMap[groupKey].options, searchOption{
+			groupMap[groupKey].options = append(groupMap[groupKey].options, option{
 				Value: pp.GetId(),
 				Label: label,
 			})
 			totalOptions++
 		}
 
-		// Sort groups: by dateStart ascending then schedName; unscheduled last.
 		sort.SliceStable(groupOrder, func(i, j int) bool {
 			a := groupMap[groupOrder[i]]
 			b := groupMap[groupOrder[j]]
 			if a.schedID == "" && b.schedID != "" {
-				return false // unscheduled always last
+				return false
 			}
 			if a.schedID != "" && b.schedID == "" {
 				return true
@@ -357,18 +360,16 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 			return a.schedName < b.schedName
 		})
 
-		// Sort options within each group by display name ascending.
 		for _, entry := range groupMap {
 			sort.SliceStable(entry.options, func(i, j int) bool {
 				return entry.options[i].Label < entry.options[j].Label
 			})
 		}
 
-		// Build result slice.
-		results := make([]groupedSearchResult, 0, len(groupOrder))
+		results := make([]groupedResult, 0, len(groupOrder))
 		for _, key := range groupOrder {
 			entry := groupMap[key]
-			results = append(results, groupedSearchResult{
+			results = append(results, groupedResult{
 				Group:   entry.schedName,
 				Options: entry.options,
 			})
@@ -384,11 +385,11 @@ func searchPlansLegacy(ctx context.Context, w http.ResponseWriter, query string,
 	resp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
 	if err != nil {
 		log.Printf("search plans: failed to list plans: %v", err)
-		writeJSON(w, []searchOption{})
+		writeJSON(w, []option{})
 		return
 	}
 
-	var results []searchOption
+	var results []option
 	for _, p := range resp.GetData() {
 		if !p.GetActive() {
 			continue
@@ -397,7 +398,7 @@ func searchPlansLegacy(ctx context.Context, w http.ResponseWriter, query string,
 		if queryLower != "" && !strings.Contains(strings.ToLower(name), queryLower) {
 			continue
 		}
-		results = append(results, searchOption{
+		results = append(results, option{
 			Value: p.GetId(),
 			Label: name,
 		})
@@ -406,20 +407,17 @@ func searchPlansLegacy(ctx context.Context, w http.ResponseWriter, query string,
 		}
 	}
 	if results == nil {
-		results = []searchOption{}
+		results = []option{}
 	}
 	writeJSON(w, results)
 }
 
-// formatAmount formats a float amount with thousands separators and 2 decimal places.
 func formatAmount(amount float64) string {
 	s := fmt.Sprintf("%.2f", amount)
-	// Add thousands separators
 	parts := strings.Split(s, ".")
 	intPart := parts[0]
 	decPart := parts[1]
 
-	// Insert commas
 	n := len(intPart)
 	if n <= 3 {
 		return intPart + "." + decPart
@@ -435,7 +433,6 @@ func formatAmount(amount float64) string {
 	return string(result) + "." + decPart
 }
 
-// writeJSON marshals data as JSON and writes it to the response writer.
 func writeJSON(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(data); err != nil {
@@ -443,8 +440,6 @@ func writeJSON(w http.ResponseWriter, data any) {
 	}
 }
 
-// parseRFC3339 returns the parsed UTC instant from an RFC3339 string or
-// (zero, false) when empty/invalid.
 func parseRFC3339(iso string) (time.Time, bool) {
 	if iso == "" {
 		return time.Time{}, false

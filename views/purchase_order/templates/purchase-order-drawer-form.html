@@ -73,10 +73,7 @@ Data: .PONumber, .POType, .SupplierID, .OrderDate, .ExpectedDeliveryDate, .Curre
                 "Name" "currency"
                 "Label" .Labels.Currency
                 "Value" .Currency
-                "Options" (list
-                    (dict "Value" "PHP" "Label" .Labels.CurrencyPHP)
-                    (dict "Value" "USD" "Label" .Labels.CurrencyUSD)
-                )
+                "Options" .CommonLabels.Currency.Options
                 "Info" .Labels.CurrencyInfo
             )}}
             {{template "form-group" (dict

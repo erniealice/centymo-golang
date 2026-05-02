@@ -189,7 +189,7 @@
     var picker = form.querySelector('#schedule-client-search');
     var nameWrap = form.querySelector('#schedule-name-input-wrap');
     var clientRadio = form.querySelector('input[name="scope"][value="client"]');
-    var suggestURL = {{if .SuggestNameURL}}{{ printf "%q" .SuggestNameURL }}{{else}}''{{end}};
+    var suggestURL = {{.SuggestNameURL}};
     if (!picker || !nameWrap || !suggestURL) { return; }
     var hidden = picker.querySelector('.auto-complete-input');
     if (!hidden) { return; }

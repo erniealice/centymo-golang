@@ -42,12 +42,12 @@ Three-section line form: contract-line link, pricing, optional cycle override.
                     "Info" .Labels.UnitPriceInfo
                 )}}
                 {{template "form-group" (dict
-                    "Type" "text"
+                    "Type" "select"
                     "Name" "currency"
                     "Label" .Labels.Currency
                     "Value" .Currency
                     "Required" true
-                    "Placeholder" .Labels.CurrencyPlaceholder
+                    "Options" .CommonLabels.Currency.Options
                 )}}
             </div>
 

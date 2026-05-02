@@ -69,12 +69,12 @@ Adapted 5-section layout for procurement requests:
 
             <div class="form-row">
                 {{template "form-group" (dict
-                    "Type" "text"
+                    "Type" "select"
                     "Name" "currency"
                     "Label" .Labels.Currency
                     "Value" .Currency
                     "Required" true
-                    "Placeholder" "PHP"
+                    "Options" .CommonLabels.Currency.Options
                     "Info" .Labels.CurrencyInfo
                 )}}
                 {{template "form-group" (dict

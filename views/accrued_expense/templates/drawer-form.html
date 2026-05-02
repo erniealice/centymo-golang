@@ -109,12 +109,12 @@ are written ONLY through the SettleAccrual / ReverseAccrual use cases
             <h3 class="form-section-title">{{.Labels.SectionMoney}}</h3>
             <div class="form-row">
                 {{template "form-group" (dict
-                    "Type" "text"
+                    "Type" "select"
                     "Name" "currency"
                     "Label" .Labels.Currency
                     "Value" .Currency
                     "Required" true
-                    "Placeholder" .Labels.CurrencyPlaceholder
+                    "Options" .CommonLabels.Currency.Options
                     "Info" .Labels.CurrencyInfo
                 )}}
                 {{template "form-group" (dict

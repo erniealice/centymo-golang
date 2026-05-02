@@ -32,11 +32,12 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
                 "Info" .Labels.Form.AmountInfo
             )}}
             {{template "form-group" (dict
-                "Type" "text"
+                "Type" "select"
                 "Name" "currency"
                 "Label" .Labels.Form.Currency
-                "Value" "PHP"
+                "Value" (or .Currency "PHP")
                 "Required" true
+                "Options" .CommonLabels.Currency.Options
                 "Info" .Labels.Form.CurrencyInfo
             )}}
         </div>

@@ -150,8 +150,6 @@ type Labels struct {
 	AmountPlaceholder      string
 	CurrencyLabel          string
 	CurrencyPlaceholder    string
-	CurrencyPHP            string
-	CurrencyUSD            string
 	DurationLabel          string
 	DurationUnitLabel      string
 	ActiveLabel            string
@@ -241,39 +239,6 @@ type Labels struct {
 	AdHocVisitsPerCycleNotAllowed string
 }
 
-// LabelsFromPriceSchedule maps the price-schedule-side PlanForm labels into
-// the flat template-facing Labels shape. Used by callers in a Schedule context
-// (add/edit from a PriceSchedule detail page).
-func LabelsFromPriceSchedule(pf centymo.PriceSchedulePlanFormLabels) Labels {
-	return Labels{
-		SectionBasic:           pf.SectionPackage,
-		SectionPricing:         pf.SectionPricing,
-		NameLabel:              pf.NameLabel,
-		NamePlaceholder:        pf.NamePlaceholder,
-		DescriptionLabel:       pf.DescriptionLabel,
-		DescriptionPlaceholder: pf.DescriptionPlaceholder,
-		AmountLabel:            pf.AmountLabel,
-		AmountPlaceholder:      pf.AmountPlaceholder,
-		CurrencyLabel:          pf.CurrencyLabel,
-		CurrencyPlaceholder:    pf.CurrencyPlaceholder,
-		CurrencyPHP:            pf.CurrencyPHP,
-		CurrencyUSD:            pf.CurrencyUSD,
-		DurationLabel:          pf.DurationLabel,
-		DurationUnitLabel:      pf.UnitLabel,
-		ActiveLabel:            pf.ActiveLabel,
-		PlanLabel:              pf.PackageLabel,
-		PlanPlaceholder:        pf.PackagePlaceholder,
-		PlanSearch:             pf.PackageSearch,
-		ScheduleLabel:          pf.PriceScheduleField,
-		SchedulePlaceholder:    pf.SchedulePlaceholder,
-		ScheduleSearch:         pf.ScheduleSearch,
-		LocationHintPrefix:     pf.LocationHintPrefix,
-		// Wave 2: billing labels not yet on PriceSchedulePlanFormLabels —
-		// leave empty here; PricePlanFormLabels path provides them when
-		// the standalone action builds the form.
-	}
-}
-
 // LabelsFromPricePlan maps centymo.PricePlanFormLabels (the tier-aware
 // struct populated by lyngua) into the flat template-facing Labels shape.
 // Fields are sourced entirely from the struct; no hardcoded English fallbacks.
@@ -291,8 +256,6 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		AmountPlaceholder:      pp.AmountPlaceholder,
 		CurrencyLabel:          pp.Currency,
 		CurrencyPlaceholder:    pp.CurrencyPlaceholder,
-		CurrencyPHP:            pp.CurrencyPHP,
-		CurrencyUSD:            pp.CurrencyUSD,
 		DurationLabel:          pp.DurationValue,
 		DurationUnitLabel:      pp.DurationUnit,
 		ActiveLabel:            pp.Active,

@@ -466,8 +466,10 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 
 	columns := []types.TableColumn{
 		{Key: "name", Label: l.Detail.PlanColumnPlan},
-		{Key: "amount", Label: l.Detail.PlanColumnAmount, WidthClass: "col-4xl", Align: "right"},
-		{Key: "duration", Label: l.Detail.PlanColumnDuration, NoSort: true, WidthClass: "col-3xl"},
+		{Key: "amount", Label: l.Detail.PlanColumnAmount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "billing_kind", Label: l.Detail.PlanColumnBillingKind, NoSort: true, WidthClass: "col-2xl"},
+		{Key: "amount_basis", Label: l.Detail.PlanColumnAmountBasis, NoSort: true, WidthClass: "col-2xl"},
+		{Key: "cadence", Label: l.Detail.PlanColumnCadence, NoSort: true, WidthClass: "col-3xl"},
 		{Key: "status", Label: l.Detail.PlanColumnStatus, NoSort: true, WidthClass: "col-2xl"},
 	}
 
@@ -534,10 +536,16 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 				if currency == "" {
 					currency = "PHP"
 				}
-				duration := ""
-				if dv := pp.GetDurationValue(); dv > 0 {
-					duration = pyeza.FormatDuration(dv, pp.GetDurationUnit(), deps.CommonLabels.DurationUnit)
+				cycle := ""
+				if cv := pp.GetBillingCycleValue(); cv > 0 {
+					cycle = pyeza.FormatDuration(cv, pp.GetBillingCycleUnit(), deps.CommonLabels.DurationUnit)
+				} else if dv := pp.GetDurationValue(); dv > 0 {
+					// Fallback to legacy duration_* dual-write fields.
+					cycle = pyeza.FormatDuration(dv, pp.GetDurationUnit(), deps.CommonLabels.DurationUnit)
 				}
+				cadence := formatCadence(pp.GetBillingKind(), cycle, l.Detail)
+				billingKindLabel := formatBillingKindLabel(pp.GetBillingKind(), l.Detail)
+				amountBasisLabel := formatAmountBasisLabel(pp.GetAmountBasis(), l.Detail)
 				planStatus := "active"
 				planVariant := "success"
 				if !pp.GetActive() {
@@ -557,7 +565,9 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 					Cells: []types.TableCell{
 						{Type: "text", Value: name},
 						types.MoneyCell(float64(pp.GetBillingAmount()), currency, true),
-						{Type: "text", Value: duration},
+						{Type: "badge", Value: billingKindLabel, Variant: "info"},
+						{Type: "text", Value: amountBasisLabel},
+						{Type: "text", Value: cadence},
 						{Type: "badge", Value: planStatus, Variant: planVariant},
 					},
 					Actions: []types.TableAction{
@@ -679,5 +689,67 @@ func applyBillingFieldsFromRequest(pp *priceplanpb.PricePlan, r *http.Request) {
 			v32 := int32(n)
 			pp.EntitledOccurrences = &v32
 		}
+	}
+}
+
+// formatCadence renders a billing-kind-aware cadence string for the plans
+// table. Recurring and contract kinds embed the formatted cycle string (e.g.
+// "monthly") into a tier-translatable template via fmt.Sprintf("%s"); the
+// other kinds return a kind-specific phrase that doesn't need a cycle.
+func formatCadence(kind priceplanpb.BillingKind, cycle string, l centymo.PriceScheduleDetailLabels) string {
+	switch kind {
+	case priceplanpb.BillingKind_BILLING_KIND_ONE_TIME:
+		return l.CadenceOneTime
+	case priceplanpb.BillingKind_BILLING_KIND_RECURRING:
+		if cycle == "" {
+			return l.CadenceUnspecified
+		}
+		return fmt.Sprintf(l.CadenceRecurring, cycle)
+	case priceplanpb.BillingKind_BILLING_KIND_CONTRACT:
+		if cycle == "" {
+			return l.BillingKindContract
+		}
+		return fmt.Sprintf(l.CadenceContract, cycle)
+	case priceplanpb.BillingKind_BILLING_KIND_MILESTONE:
+		return l.CadenceMilestone
+	case priceplanpb.BillingKind_BILLING_KIND_AD_HOC:
+		return l.CadenceAdHoc
+	default:
+		if cycle != "" {
+			return cycle
+		}
+		return l.CadenceUnspecified
+	}
+}
+
+func formatBillingKindLabel(kind priceplanpb.BillingKind, l centymo.PriceScheduleDetailLabels) string {
+	switch kind {
+	case priceplanpb.BillingKind_BILLING_KIND_ONE_TIME:
+		return l.BillingKindOneTime
+	case priceplanpb.BillingKind_BILLING_KIND_RECURRING:
+		return l.BillingKindRecurring
+	case priceplanpb.BillingKind_BILLING_KIND_CONTRACT:
+		return l.BillingKindContract
+	case priceplanpb.BillingKind_BILLING_KIND_MILESTONE:
+		return l.BillingKindMilestone
+	case priceplanpb.BillingKind_BILLING_KIND_AD_HOC:
+		return l.BillingKindAdHoc
+	default:
+		return ""
+	}
+}
+
+func formatAmountBasisLabel(basis priceplanpb.AmountBasis, l centymo.PriceScheduleDetailLabels) string {
+	switch basis {
+	case priceplanpb.AmountBasis_AMOUNT_BASIS_PER_CYCLE:
+		return l.AmountBasisPerCycle
+	case priceplanpb.AmountBasis_AMOUNT_BASIS_TOTAL_PACKAGE:
+		return l.AmountBasisTotalPackage
+	case priceplanpb.AmountBasis_AMOUNT_BASIS_DERIVED_FROM_LINES:
+		return l.AmountBasisDerivedFromLines
+	case priceplanpb.AmountBasis_AMOUNT_BASIS_PER_OCCURRENCE:
+		return l.AmountBasisPerOccurrence
+	default:
+		return ""
 	}
 }

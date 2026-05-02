@@ -111,12 +111,12 @@ Used by both Add and Edit actions. Five sections per drawer parity convention:
 
             <div class="form-row">
                 {{template "form-group" (dict
-                    "Type" "text"
+                    "Type" "select"
                     "Name" "currency"
                     "Label" .Labels.Currency
                     "Value" .Currency
                     "Required" true
-                    "Placeholder" .Labels.CurrencyPlaceholder
+                    "Options" .CommonLabels.Currency.Options
                     "Info" .Labels.CurrencyInfo
                 )}}
                 {{template "form-group" (dict
