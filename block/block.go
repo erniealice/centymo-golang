@@ -26,7 +26,7 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 
 	consumer "github.com/erniealice/espyna-golang/consumer"
-	"github.com/erniealice/espyna-golang/contrib/postgres/reference"
+	"github.com/erniealice/espyna-golang/reference"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
@@ -300,9 +300,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		}
 
 		// --- Type-assert reference checker (optional — nil-safe) ---
-		var refChecker *reference.Checker
+		var refChecker reference.Checker
 		if ctx.RefChecker != nil {
-			refChecker, _ = ctx.RefChecker.(*reference.Checker)
+			refChecker, _ = ctx.RefChecker.(reference.Checker)
 		}
 
 		// --- Type-assert attachment operations ---
