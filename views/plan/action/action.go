@@ -117,6 +117,8 @@ func buildFormLabels(l centymo.PlanLabels) form.Labels {
 		VisitsPerCycleLabel:       l.Form.VisitsPerCycleLabel,
 		VisitsPerCyclePlaceholder: l.Form.VisitsPerCyclePlaceholder,
 		VisitsPerCycleHint:        l.Form.VisitsPerCycleHint,
+		// Client-scope cascade notice — always rendered below the client picker.
+		ClientScopeCascadeNotice: l.Form.ClientScopeCascadeNotice,
 	}
 }
 

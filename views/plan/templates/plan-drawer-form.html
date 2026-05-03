@@ -10,30 +10,7 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels,
 
     <div class="sheet-body">
         {{/* --- Basic Information --- */}}
-        <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "text"
-                "Name" "name"
-                "Label" .Labels.Name
-                "Value" .Name
-                "Required" true
-                "Placeholder" .Labels.NamePlaceholder
-                "Info" .Labels.NameInfo
-            )}}
-        </div>
-
-        <div class="form-row single">
-            {{template "form-group" (dict
-                "Type" "textarea"
-                "Name" "description"
-                "Label" .Labels.Description
-                "Value" .Description
-                "Placeholder" .Labels.DescPlaceholder
-                "Info" .Labels.DescriptionInfo
-            )}}
-        </div>
-
-        {{/* --- Client (2026-04-27 plan-client-scope plan §6.2 / §6.6) --- */}}
+        {{/* --- Client picker first so operators see the scope cascade rule before filling other fields --- */}}
         {{if eq .ClientFieldMode "readonly"}}
         {{/* Context-pinned (e.g. /app/clients/detail/{cid}?tab=packages) */}}
         <div class="form-row single">
@@ -81,6 +58,35 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels,
             )}}
         </div>
         {{end}}
+
+        {{/* Client-scope cascade notice — always rendered so operators see it before selecting.
+             Wording is tier-specific and lives in lyngua (clientScopeCascadeNotice key). */}}
+        <div class="form-row single">
+            {{template "alert" (dict "Message" .Labels.ClientScopeCascadeNotice "State" "info" "ID" "plan-client-scope-notice")}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "Label" .Labels.Name
+                "Value" .Name
+                "Required" true
+                "Placeholder" .Labels.NamePlaceholder
+                "Info" .Labels.NameInfo
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "description"
+                "Label" .Labels.Description
+                "Value" .Description
+                "Placeholder" .Labels.DescPlaceholder
+                "Info" .Labels.DescriptionInfo
+            )}}
+        </div>
 
         {{/* 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Plan.job_template_id
              assignment. Only rendered when JobTemplateOptions is populated

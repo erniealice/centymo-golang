@@ -10,20 +10,18 @@
 
         {{/* ----------------------------------------------------------------
              Scope radio (2026-04-28). Mutually excludes the Client and
-             Location pickers below. The two pickers stay rendered (and
-             therefore wired up to JS) but are hidden by display:none until
-             their matching radio option is selected. Server-side, the POST
-             handlers force-clear the inverse FK so the use case sees only
-             one populated.
+             Location pickers below.
 
-             Migrated 2026-04-28 to the pyeza form-radio-group component.
-             The option `value` strings ("location"/"client") are preserved
-             so the existing form-data shape is unchanged; the inline
-             scope-toggle script below now matches the radios via
-             `input[name="scope"][value="..."]` instead of by id, so this
-             template is decoupled from form-radio's auto-generated id
-             format.
+             2026-05-03 — When the drawer is opened from a client-detail page
+             (?client_id=...), .ClientLocked is true: the scope is forced to
+             "client", the radio is hidden entirely, and the Client picker
+             below collapses to a read-only display with a hidden client_id
+             input. The hidden `scope=client` input keeps the POST shape
+             unchanged for the use case.
              ---------------------------------------------------------------- */}}
+        {{if .ClientLocked}}
+        <input type="hidden" name="scope" value="client">
+        {{else}}
         <div class="form-row single">
             {{template "form-radio-group" (dict
                 "Name" "scope"
@@ -45,13 +43,28 @@
                 )
             )}}
         </div>
+        {{end}}
 
+        {{if .ClientLocked}}
+        {{/* Read-only client display — opened from a specific client's detail
+             page so the client identity is fixed. Hidden input carries the
+             client_id; visible field is disabled. */}}
+        <div class="form-row single">
+            <input type="hidden" name="client_id" value="{{.ClientID}}">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "_client_display"
+                "Label" .Labels.ClientLabel
+                "Value" .ClientLabel
+                "Disabled" true
+                "Info" .Labels.ClientInfo
+            )}}
+        </div>
+        {{else}}
         {{/* Client picker — 2026-04-27 plan-client-scope plan §6.7 / §4.4.1.
              Visible only when scope=client. Changing the client triggers a
              server-side suggest-name swap so the Name input below becomes
-             "{ClientName} - {suffix}". The container div carries the
-             scope-aware id so the inline scope-toggle script can flip its
-             display. */}}
+             "{ClientName} - {suffix}". */}}
         <div class="form-row single" id="schedule-client-picker-wrap"
              {{if ne .Scope "client"}}style="display:none"{{end}}>
             {{template "auto-complete" (dict
@@ -88,6 +101,7 @@
                 "Info" .Labels.LocationInfo
             )}}
         </div>
+        {{end}}
 
         {{/* Name moved AFTER the Client/Location pickers per the 2026-04-28
              redesign; keeps the suggest-name HTMX target id intact. */}}

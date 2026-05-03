@@ -35,6 +35,10 @@ type Labels struct {
 	VisitsPerCycleLabel       string
 	VisitsPerCyclePlaceholder string
 	VisitsPerCycleHint        string
+
+	// Client-scope cascade notice — rendered unconditionally below the client
+	// picker so operators see the schedule restriction before filling other fields.
+	ClientScopeCascadeNotice string
 }
 
 // ClientFieldMode selects how the Client field renders on the drawer per

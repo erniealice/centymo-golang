@@ -135,25 +135,29 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			scheduleName := lookupScheduleName(ctx, deps, scheduleID)
-			planOptions := buildPlanOptions(ctx, deps)
+			scheduleName, scheduleClientID := lookupScheduleNameAndClient(ctx, deps, scheduleID)
+			// 2026-05-03 — when the parent schedule is client-scoped, the
+			// Package picker is filtered to plans that are either general-scope
+			// (no client_id) or assigned to the same client.
+			planOptions := buildPlanOptions(ctx, deps, scheduleClientID)
 			formLabels := deps.PricePlanLabels.Form
 			return view.OK("price-plan-drawer-form", &form.Data{
-				FormAction:          route.ResolveURL(deps.Routes.PlanAddURL, "id", scheduleID),
-				Context:             form.ContextSchedule,
-				ScheduleID:          scheduleID,
-				ScheduleName:        scheduleName,
-				Active:              true,
-				Currency:            "PHP",
-				DurationUnit:        "months",
-				BillingKind:         "BILLING_KIND_RECURRING",
-				AmountBasis:         "AMOUNT_BASIS_PER_CYCLE",
-				BillingCycleUnit:    "month",
-				TermUnit:            "month",
-				PlanOptions:         planOptions,
-				DurationUnitOptions: form.BuildDurationUnitOptions(deps.CommonLabels),
-				Labels:              form.LabelsFromPricePlan(formLabels),
-				CommonLabels:        deps.CommonLabels,
+				FormAction:             route.ResolveURL(deps.Routes.PlanAddURL, "id", scheduleID),
+				Context:                form.ContextSchedule,
+				ScheduleID:             scheduleID,
+				ScheduleName:           scheduleName,
+				ParentScheduleClientID: scheduleClientID,
+				Active:                 true,
+				Currency:               "PHP",
+				DurationUnit:           "months",
+				BillingKind:            "BILLING_KIND_RECURRING",
+				AmountBasis:            "AMOUNT_BASIS_PER_CYCLE",
+				BillingCycleUnit:       "month",
+				TermUnit:               "month",
+				PlanOptions:            planOptions,
+				DurationUnitOptions:    form.BuildDurationUnitOptions(deps.CommonLabels),
+				Labels:                 form.LabelsFromPricePlan(formLabels),
+				CommonLabels:           deps.CommonLabels,
 			})
 		}
 
@@ -307,23 +311,32 @@ func autoSeedProductPricePlans(ctx context.Context, deps *DetailViewDeps, create
 	}
 }
 
-func lookupScheduleName(ctx context.Context, deps *DetailViewDeps, scheduleID string) string {
+func lookupScheduleNameAndClient(ctx context.Context, deps *DetailViewDeps, scheduleID string) (name, clientID string) {
 	if deps.ReadPriceSchedule == nil {
-		return scheduleID
+		return scheduleID, ""
 	}
 	resp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{
 		Data: &priceschedulepb.PriceSchedule{Id: scheduleID},
 	})
 	if err != nil || len(resp.GetData()) == 0 {
-		return scheduleID
+		return scheduleID, ""
 	}
-	if name := resp.GetData()[0].GetName(); name != "" {
-		return name
+	ps := resp.GetData()[0]
+	name = ps.GetName()
+	if name == "" {
+		name = scheduleID
 	}
-	return scheduleID
+	return name, ps.GetClientId()
 }
 
-func buildPlanOptions(ctx context.Context, deps *DetailViewDeps) []map[string]any {
+// buildPlanOptions returns the plan picker options with a strict, mutually-
+// exclusive client-scope filter:
+//
+//   - Client-scoped schedule (scheduleClientID != ""): only plans whose
+//     client_id equals scheduleClientID. General-scope plans are excluded.
+//   - General-scope schedule (scheduleClientID == ""): only plans with no
+//     client_id. Client-scoped plans cannot be attached to a general schedule.
+func buildPlanOptions(ctx context.Context, deps *DetailViewDeps, scheduleClientID string) []map[string]any {
 	if deps.ListPlans == nil {
 		return nil
 	}
@@ -335,6 +348,16 @@ func buildPlanOptions(ctx context.Context, deps *DetailViewDeps) []map[string]an
 	for _, p := range resp.GetData() {
 		if p == nil || !p.GetActive() {
 			continue
+		}
+		planClientID := p.GetClientId()
+		if scheduleClientID != "" {
+			if planClientID != scheduleClientID {
+				continue
+			}
+		} else {
+			if planClientID != "" {
+				continue
+			}
 		}
 		opts = append(opts, map[string]any{
 			"Value":       p.GetId(),

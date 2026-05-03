@@ -32,5 +32,7 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 		ListPriceSchedules:  deps.ListPriceSchedules,
 		ListPlans:           deps.ListPlans,
 		ReadPlan:            deps.ReadPlan,
+		PlanGroupForClient:  deps.Labels.Form.PlanGroupForClient,
+		PlanGroupGeneral:    deps.Labels.Form.PlanGroupGeneral,
 	})
 }

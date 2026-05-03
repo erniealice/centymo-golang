@@ -347,15 +347,20 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				defaultTermValue = fmt.Sprintf("%d", v)
 			}
 			formLabels := deps.PlanLabels.Form
-			planOpts := buildPlanOptions(ctx, deps, pp.GetPlanId())
+			scheduleName, scheduleClientID := lookupScheduleNameAndClient(ctx, deps, sid)
+			// 2026-05-03 — same mutually-exclusive plan-scope filter as the
+			// schedule-add drawer: client-scoped schedule shows only matching
+			// client's plans, master schedule shows only master plans.
+			planOpts := buildPlanOptions(ctx, deps, pp.GetPlanId(), scheduleClientID)
 			return view.OK("price-plan-drawer-form", &form.Data{
-				FormAction:            route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
-				IsEdit:                true,
-				Context:               form.ContextSchedule,
-				ID:                    ppid,
-				PlanID:                pp.GetPlanId(),
-				ScheduleID:            sid,
-				ScheduleName:          lookupScheduleName(ctx, deps, sid),
+				FormAction:             route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
+				IsEdit:                 true,
+				Context:                form.ContextSchedule,
+				ID:                     ppid,
+				PlanID:                 pp.GetPlanId(),
+				ScheduleID:             sid,
+				ScheduleName:           scheduleName,
+				ParentScheduleClientID: scheduleClientID,
 				Name:                  pp.GetName(),
 				Description:           pp.GetDescription(),
 				Amount:                strconv.FormatFloat(float64(pp.GetBillingAmount())/100.0, 'f', 2, 64),
@@ -1301,7 +1306,18 @@ func loadProductOptions(ctx context.Context, deps *DetailViewDeps, planID, selec
 	return options
 }
 
-func buildPlanOptions(ctx context.Context, deps *DetailViewDeps, selectedID string) []map[string]any {
+// buildPlanOptions returns the plan picker options with a strict, mutually-
+// exclusive client-scope filter mirroring the schedule-add drawer:
+//
+//   - Client-scoped schedule (scheduleClientID != ""): only plans whose
+//     client_id matches scheduleClientID. Master plans are excluded.
+//   - Master schedule (scheduleClientID == ""): only master plans
+//     (client_id empty). Client-scoped plans cannot attach to a master schedule.
+//
+// `selectedID` is preserved for edit-mode drawer pre-selection regardless of
+// the filter (the row is already wired; we never silently drop the operator's
+// existing selection).
+func buildPlanOptions(ctx context.Context, deps *DetailViewDeps, selectedID, scheduleClientID string) []map[string]any {
 	if deps.ListPlans == nil {
 		return nil
 	}
@@ -1314,6 +1330,16 @@ func buildPlanOptions(ctx context.Context, deps *DetailViewDeps, selectedID stri
 		if p == nil || !p.GetActive() {
 			continue
 		}
+		planClientID := p.GetClientId()
+		if scheduleClientID != "" {
+			if planClientID != scheduleClientID && p.GetId() != selectedID {
+				continue
+			}
+		} else {
+			if planClientID != "" && p.GetId() != selectedID {
+				continue
+			}
+		}
 		opts = append(opts, map[string]any{
 			"Value":       p.GetId(),
 			"Label":       p.GetName(),
@@ -1325,19 +1351,28 @@ func buildPlanOptions(ctx context.Context, deps *DetailViewDeps, selectedID stri
 }
 
 func lookupScheduleName(ctx context.Context, deps *DetailViewDeps, scheduleID string) string {
+	name, _ := lookupScheduleNameAndClient(ctx, deps, scheduleID)
+	return name
+}
+
+// lookupScheduleNameAndClient returns the schedule's display name + client_id.
+// Used by edit handlers that need the client_id to scope-filter the plan picker.
+func lookupScheduleNameAndClient(ctx context.Context, deps *DetailViewDeps, scheduleID string) (name, clientID string) {
 	if deps.ReadPriceSchedule == nil {
-		return scheduleID
+		return scheduleID, ""
 	}
 	resp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{
 		Data: &priceschedulepb.PriceSchedule{Id: scheduleID},
 	})
 	if err != nil || len(resp.GetData()) == 0 {
-		return scheduleID
+		return scheduleID, ""
 	}
-	if n := resp.GetData()[0].GetName(); n != "" {
-		return n
+	ps := resp.GetData()[0]
+	name = ps.GetName()
+	if name == "" {
+		name = scheduleID
 	}
-	return scheduleID
+	return name, ps.GetClientId()
 }
 
 // lookupPlanNameDesc returns the linked Plan's name and description (trimmed).

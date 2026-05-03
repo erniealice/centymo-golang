@@ -12,7 +12,23 @@ Data: .Code, .ClientID, .PricePlanID,
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="if (event.detail && event.detail.elt === event.currentTarget) lf.Sheet.handleResponse(event)" data-default-tz="{{.DefaultTZ}}">
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
+    {{/* 2026-05-03 — Edit-locked: warning banner above the body, then a
+         disabled fieldset wrapping all inputs below so they render read-only
+         in one swoop. Inline style strips the default fieldset chrome. The
+         footer further hides the Update button (see end of form). */}}
+    {{if .InUse}}
+    <div class="sheet-banner">
+        {{template "alert" (dict
+            "Message" .LockMessage
+            "State" "warning"
+            "ID" "subscription-edit-lock-notice"
+        )}}
+    </div>
+    {{end}}
+
+    <fieldset {{if .InUse}}disabled{{end}} style="border:0;padding:0;margin:0;min-width:0;">
     <div class="sheet-body">
+
         {{/* --- Customer --- */}}
         {{if .ClientLocked}}
         <div class="form-row single">
@@ -26,6 +42,19 @@ Data: .Code, .ClientID, .PricePlanID,
                 "Info" .Labels.CustomerInfo
             )}}
         </div>
+        {{/* 2026-05-03 — Locked-customer drawer (opened from a client detail
+             engagements tab) explains the picker filter: plans match the
+             client's billing currency and other-client scoped plans are
+             excluded. Per-schedule grouping makes the rest visible at a glance. */}}
+        {{if .Labels.PlanClientScopeNotice}}
+        <div class="form-row single">
+            {{template "alert" (dict
+                "Message" .Labels.PlanClientScopeNotice
+                "State" "info"
+                "ID" "subscription-plan-scope-notice"
+            )}}
+        </div>
+        {{end}}
         {{else}}
         <div class="form-row single">
             {{template "auto-complete" (dict
@@ -63,6 +92,19 @@ Data: .Code, .ClientID, .PricePlanID,
                 "Info" .Labels.StartTimeInfo
             )}}
         </div>
+        {{/* 2026-05-03 — Row-level hint clarifying that the start date+time
+             feeds the plan picker's date filter. Same alert-info style as the
+             client-scope notice for visual consistency. The form-row-hint
+             class tightens the gap so it reads as part of the date row above. */}}
+        {{if .Labels.StartDateRowHelp}}
+        <div class="form-row single form-row-hint">
+            {{template "alert" (dict
+                "Message" .Labels.StartDateRowHelp
+                "State" "info"
+                "ID" "subscription-start-date-row-hint"
+            )}}
+        </div>
+        {{end}}
 
         {{/* --- End Date+Time --- */}}
         <div class="form-row">
@@ -82,6 +124,18 @@ Data: .Code, .ClientID, .PricePlanID,
                 "Info" .Labels.EndTimeInfo
             )}}
         </div>
+        {{/* 2026-05-03 — Row-level hint clarifying that the end date+time
+             determines when recurring invoicing stops. Same alert-info style
+             as the start-date row hint and client-scope notice. */}}
+        {{if .Labels.EndDateRowHelp}}
+        <div class="form-row single form-row-hint">
+            {{template "alert" (dict
+                "Message" .Labels.EndDateRowHelp
+                "State" "info"
+                "ID" "subscription-end-date-row-hint"
+            )}}
+        </div>
+        {{end}}
 
         {{/* --- Active TZ label --- */}}
         <div class="form-row single">
@@ -93,27 +147,10 @@ Data: .Code, .ClientID, .PricePlanID,
         <input type="hidden" name="date_time_end_iso"   value="{{.DateEndISO}}">
 
         {{/* --- Price Plan ---
-             2026-04-27 plan-client-scope plan §5.3 — when .PlanOptionGroups is
-             populated, render a grouped auto-complete (client-scoped first,
-             general second). Otherwise fall back to the legacy flat search
-             auto-complete used before client-scope landed. */}}
+             Action-mode auto-complete: server-side client/general grouping is
+             handled by the search endpoint, so the dropdown fetches on first
+             open via SearchURL — no inline pre-render. */}}
         <div class="form-row single">
-            {{if .PlanOptionGroups}}
-            {{template "auto-complete" (dict
-                "ID" "plan-search"
-                "Name" "price_plan_id"
-                "Label" .Labels.Plan
-                "Placeholder" .Labels.PlanPlaceholder
-                "SearchPlaceholder" .Labels.PlanSearchPlaceholder
-                "SearchURL" .SearchPlanURL
-                "Value" .PricePlanID
-                "SelectedLabel" .PlanLabel
-                "OptionGroups" .PlanOptionGroups
-                "Required" true
-                "NoResults" .Labels.PlanNoResults
-                "Info" .Labels.PlanInfo
-            )}}
-            {{else}}
             {{template "auto-complete" (dict
                 "ID" "plan-search"
                 "Name" "price_plan_id"
@@ -127,7 +164,6 @@ Data: .Code, .ClientID, .PricePlanID,
                 "NoResults" .Labels.PlanNoResults
                 "Info" .Labels.PlanInfo
             )}}
-            {{end}}
         </div>
 
         {{/* --- Engagement Code --- */}}
@@ -199,7 +235,15 @@ Data: .Code, .ClientID, .PricePlanID,
         </div>
     </div>
 
+    </fieldset>
+    {{/* 2026-05-03 — Hide the Update/Save button when locked; show only Close. */}}
+    {{if .InUse}}
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">{{.CommonLabels.Buttons.Close}}</button>
+    </div>
+    {{else}}
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+    {{end}}
 </form>
 
 <script>
@@ -226,6 +270,11 @@ Data: .Code, .ClientID, .PricePlanID,
 
     var baseURL = planContainer.dataset.searchUrl || '';
     var clientBillingCurrency = {{.ClientBillingCurrency}};
+    // 2026-05-03 — propagate client_id + client_name to the search endpoint so
+    // it can filter (drop other-client-scoped plans) and group (For {Client} /
+    // General) with the resolved client display name.
+    var clientIDForSearch = {{.ClientID}};
+    var clientNameForSearch = {{.ClientLabel}};
     var defaultTZ = form.dataset.defaultTz || 'Asia/Manila';
 
     var initialPlaceholderHTML = '<span class="auto-complete-placeholder">{{.Labels.PlanPlaceholder}}</span>';
@@ -304,6 +353,14 @@ Data: .Code, .ClientID, .PricePlanID,
             url = url + sep + 'billing_currency=' + encodeURIComponent(clientBillingCurrency);
             sep = '&';
         }
+        if (clientIDForSearch) {
+            url = url + sep + 'client_id=' + encodeURIComponent(clientIDForSearch);
+            sep = '&';
+        }
+        if (clientNameForSearch) {
+            url = url + sep + 'client_name=' + encodeURIComponent(clientNameForSearch);
+            sep = '&';
+        }
         planContainer.dataset.searchUrl = url;
     }
 
@@ -327,6 +384,16 @@ Data: .Code, .ClientID, .PricePlanID,
         refreshHidden();
         updatePlanSearchURL();
         clearPlanSelection();
+        // 2026-05-03 — if the dropdown is open, force a refetch by toggling
+        // closed→open. Auto-complete's openDropdown() calls doSearch('') in
+        // action mode, so this picks up the new dataset.searchUrl.
+        if (planContainer.classList.contains('open')) {
+            var trigger = planContainer.querySelector('.auto-complete-trigger');
+            if (trigger) {
+                trigger.click(); // close
+                trigger.click(); // reopen with refreshed URL
+            }
+        }
     }
 
     [startDate, startTime, endDate, endTime].forEach(function (el) {

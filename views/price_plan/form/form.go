@@ -222,6 +222,12 @@ type Labels struct {
 	// Templated via {{.ClientName}}. Blank means "no banner".
 	ParentScheduleClientNotice string
 
+	// 2026-05-03 — info banners rendered inline below the readonly Schedule
+	// display. ScheduleClientPickerNotice when the parent schedule is
+	// client-scoped, ScheduleGeneralPickerNotice when general-scope.
+	ScheduleClientPickerNotice  string
+	ScheduleGeneralPickerNotice string
+
 	// 2026-04-27 plan-client-scope plan §6.7 — tooltip for the readonly
 	// Schedule field when the parent Plan is client-scoped. Templated via
 	// {{.ClientName}}. Blank means "no tooltip".
@@ -312,8 +318,10 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		TermInfo:         pp.TermInfo,
 		ActiveInfo:       pp.ActiveInfo,
 		// 2026-04-27 plan-client-scope plan §6.7.
-		ParentScheduleClientNotice: pp.ParentScheduleClientNotice,
-		ScheduleLockedTooltip:      pp.ScheduleLockedTooltip,
+		ParentScheduleClientNotice:  pp.ParentScheduleClientNotice,
+		ScheduleClientPickerNotice:  pp.ScheduleClientPickerNotice,
+		ScheduleGeneralPickerNotice: pp.ScheduleGeneralPickerNotice,
+		ScheduleLockedTooltip:       pp.ScheduleLockedTooltip,
 		// 2026-04-30 cyclic-subscription-jobs plan §9.4.
 		MilestoneCyclicBlock: pp.MilestoneCyclicBlock,
 		// 2026-05-01 ad-hoc-subscription-billing plan §6 — drawer-level guards.

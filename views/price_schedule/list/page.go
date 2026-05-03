@@ -202,7 +202,6 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 func priceScheduleColumns(l centymo.PriceScheduleLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name},
-		{Key: "description", Label: l.Columns.Description, NoSort: true, NoFilter: true},
 		{Key: "date_start", Label: l.Columns.DateStart, WidthClass: "col-2xl"},
 		{Key: "date_end", Label: l.Columns.DateEnd, WidthClass: "col-2xl"},
 		{Key: "location", Label: l.Columns.Location, NoSort: true, NoFilter: true},
@@ -221,7 +220,6 @@ func buildTableRows(ctx context.Context, priceSchedules []*priceschedulepb.Price
 
 		id := ps.GetId()
 		name := ps.GetName()
-		description := ps.GetDescription()
 		dateStartDate, dateStartTime := types.FormatTimestampSplitInTZ(ps.GetDateTimeStart(), tz)
 		dateEndDate, dateEndTime := types.FormatTimestampSplitInTZ(ps.GetDateTimeEnd(), tz)
 
@@ -248,7 +246,6 @@ func buildTableRows(ctx context.Context, priceSchedules []*priceschedulepb.Price
 
 		cells := []types.TableCell{
 			{Type: "text", Value: name},
-			{Type: "text", Value: description},
 			types.DateTimeCellSplit(dateStartDate, dateStartTime),
 			types.DateTimeCellSplit(dateEndDate, dateEndTime),
 			{Type: "text", Value: locationName},

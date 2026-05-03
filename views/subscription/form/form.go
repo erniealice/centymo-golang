@@ -32,10 +32,22 @@ type Labels struct {
 	EndTimeInfo               string
 	NotesInfo                 string
 
+	// 2026-05-03 — Row-level help text below the date+time rows.
+	StartDateRowHelp string
+	EndDateRowHelp   string
+
 	// 2026-04-27 plan-client-scope plan §5.1 / §7 — group headers in the
 	// grouped Plan / PricePlan auto-complete picker.
 	PlanGroupForClient string // "For {ClientName}" — pre-resolved with ClientName injected.
 	PlanGroupGeneral   string
+
+	// 2026-05-03 — info banner below the locked Customer field; explains the
+	// Plan picker is filtered to client-scoped plans only.
+	PlanClientScopeNotice string
+
+	// 2026-05-03 — Edit-locked notice rendered above the form when the
+	// subscription has revenue / job references and cannot be edited.
+	EditLockedReason string
 
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9.
 	SpawnJobsSectionTitle string
@@ -43,15 +55,6 @@ type Labels struct {
 	SpawnJobsHelpText     string
 	SpawnJobsSummary      string // {{.JobCount}} / {{.TemplateNames}} / {{.PhaseCount}} / {{.TaskCount}}
 	SpawnJobsNone         string
-}
-
-// OptionGroup is one optgroup in the grouped Plan/PricePlan auto-complete
-// on the subscription drawer (plan §5.1). Field name `GroupLabel` matches the
-// pyeza auto-complete component's expected SelectOptionGroup shape — see
-// templates/components/auto-complete.html.
-type OptionGroup struct {
-	GroupLabel string              // group header
-	Options    []map[string]string // {Value, Label} entries
 }
 
 // Data is the template data for the subscription drawer form.
@@ -89,10 +92,14 @@ type Data struct {
 	// currency. Empty = no currency filter.
 	ClientBillingCurrency string
 
-	// 2026-04-27 plan-client-scope plan §5 — grouped picker options. When
-	// non-empty, the template renders the grouped variant instead of the
-	// flat search auto-complete.
-	PlanOptionGroups []OptionGroup
+	// 2026-05-03 — Reference-checker lock signal. When InUse is true (the
+	// subscription is referenced by Revenue rows, subscription_attribute, or
+	// operation Job rows), the drawer renders all fields read-only and hides
+	// the Update button. Reassigning the plan after revenue has been
+	// recognised would break the audit trail. LockMessage is the lyngua-loaded
+	// notice rendered in place of the form footer.
+	InUse       bool
+	LockMessage string
 
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 — Spawn Jobs
 	// section state. SpawnJobsAvailable controls section visibility (true

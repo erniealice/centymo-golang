@@ -48,6 +48,13 @@ type Data struct {
 	// for new schedules; for edit, derived from record.client_id presence.
 	Scope string
 
+	// 2026-05-03 — When the drawer is opened from a specific client's detail
+	// page (?client_id=...), ClientLocked is true. The template hides the
+	// scope radio and renders the Client field as a read-only display row
+	// with a hidden client_id input — the Client picker auto-complete is
+	// suppressed entirely.
+	ClientLocked bool
+
 	Labels       centymo.PriceScheduleFormLabels
 	CommonLabels any
 }
@@ -77,20 +84,22 @@ func FindLocationLabel(locations []*LocationOption, id string) string {
 	return ""
 }
 
-// BuildDerivedScheduleName produces "{ClientName} - {suffix}" per plan §4.4.1.
-// Empty client name short-circuits to the suffix alone, and empty suffix
-// short-circuits to the client name alone.
-func BuildDerivedScheduleName(clientName, suffix string) string {
-	clientName = strings.TrimSpace(clientName)
-	suffix = strings.TrimSpace(suffix)
-	if clientName == "" && suffix == "" {
-		return ""
+// BuildDerivedScheduleName produces "{ClientName} - {suffix} - {timestamp}"
+// per plan §4.4.1, with a 2026-05-03 trailing timestamp suffix to avoid
+// duplicate names when an operator creates multiple schedules for the same
+// client (or repeatedly adds master schedules from the standalone list).
+// Any of the three components may be empty; the function joins only the
+// non-empty parts with " - ". An entirely-empty input returns "".
+func BuildDerivedScheduleName(clientName, suffix, timestamp string) string {
+	parts := []string{}
+	if v := strings.TrimSpace(clientName); v != "" {
+		parts = append(parts, v)
 	}
-	if suffix == "" {
-		return clientName
+	if v := strings.TrimSpace(suffix); v != "" {
+		parts = append(parts, v)
 	}
-	if clientName == "" {
-		return suffix
+	if v := strings.TrimSpace(timestamp); v != "" {
+		parts = append(parts, v)
 	}
-	return clientName + " - " + suffix
+	return strings.Join(parts, " - ")
 }

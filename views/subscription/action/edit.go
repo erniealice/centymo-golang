@@ -86,7 +86,23 @@ func NewEditAction(deps *Deps) view.View {
 			startDate, startTime, startISO := splitTimestampForInputs(record.GetDateTimeStart(), tz)
 			endDate, endTime, endISO := splitTimestampForInputs(record.GetDateTimeEnd(), tz)
 
+			// 2026-05-03 — Reference-checker lock. If this subscription is
+			// referenced by Revenue / subscription_attribute / Job rows,
+			// surface InUse + LockMessage so the drawer renders read-only and
+			// hides the Update button. Reassigning the plan after revenue is
+			// recognised would corrupt the audit trail.
+			inUse := false
+			lockMessage := ""
+			if deps.GetInUseIDs != nil {
+				inUseMap, _ := deps.GetInUseIDs(ctx, []string{id})
+				if inUseMap[id] {
+					inUse = true
+					lockMessage = deps.Labels.Form.EditLockedReason
+				}
+			}
+
 			labels := buildFormLabels(deps.Labels)
+			labels.PlanClientScopeNotice = resolvePlanClientScopeNotice(labels.PlanClientScopeNotice, clientBillingCurrency)
 			return view.OK("subscription-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
@@ -107,7 +123,11 @@ func NewEditAction(deps *Deps) view.View {
 				ClientLocked:          clientLocked,
 				ClientBillingCurrency: clientBillingCurrency,
 				PlanLabel:             planLabel,
-				PlanOptionGroups:      form.LoadPricePlanOptionGroups(ctx, deps.ListPricePlans, deps.ListPriceSchedules, record.GetClientId(), clientLabel, labels),
+				InUse:                 inUse,
+				LockMessage:           lockMessage,
+				// 2026-05-03 — pre-render dropped. Action-mode autocomplete
+				// fetches via SearchPlanURL on first open; pre-rendered options
+				// were ignored.
 				// Edit drawer never spawns Jobs — the toggle hides because
 				// SpawnJobsAvailable defaults false. Operators trigger
 				// retroactive spawn via the Operations tab CTA.
@@ -118,7 +138,20 @@ func NewEditAction(deps *Deps) view.View {
 			})
 		}
 
-		// POST — update subscription
+		// POST — update subscription. Server-side defense for the in-use
+		// guard: even if the operator bypasses the read-only HTML, reject the
+		// update when references exist.
+		if deps.GetInUseIDs != nil {
+			inUseMap, _ := deps.GetInUseIDs(ctx, []string{id})
+			if inUseMap[id] {
+				msg := deps.Labels.Form.EditLockedReason
+				if msg == "" {
+					msg = deps.Labels.Errors.InvalidFormData
+				}
+				return centymo.HTMXError(msg)
+			}
+		}
+
 		if err := viewCtx.Request.ParseForm(); err != nil {
 			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}

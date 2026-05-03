@@ -190,8 +190,12 @@ func buildFormLabels(l centymo.SubscriptionLabels) form.Labels {
 		StartTimeInfo:             l.Form.StartTimeInfo,
 		EndTimeInfo:               l.Form.EndTimeInfo,
 		NotesInfo:                 l.Form.NotesInfo,
+		StartDateRowHelp:          l.Form.StartDateRowHelp,
+		EndDateRowHelp:            l.Form.EndDateRowHelp,
 		PlanGroupForClient:        l.Form.PlanGroupForClient,
 		PlanGroupGeneral:          l.Form.PlanGroupGeneral,
+		PlanClientScopeNotice:     l.Form.PlanClientScopeNotice,
+		EditLockedReason:          l.Form.EditLockedReason,
 		SpawnJobsSectionTitle:     l.Form.SpawnJobsSectionTitle,
 		SpawnJobsToggle:           l.Form.SpawnJobsToggle,
 		SpawnJobsHelpText:         l.Form.SpawnJobsHelpText,
@@ -202,6 +206,24 @@ func buildFormLabels(l centymo.SubscriptionLabels) form.Labels {
 
 // generateCode returns a random 7-character uppercase alphanumeric code,
 // using chars that are visually unambiguous (no O, I, 0, 1).
+// resolvePlanClientScopeNotice substitutes the {{.Currency}} placeholder in
+// the picker scope notice with the client's billing currency code (e.g.
+// "PHP"). When the client has no billing currency, the placeholder + its
+// surrounding parenthesis decoration are stripped so the sentence still reads
+// cleanly: "Plans below match this client's billing currency."
+func resolvePlanClientScopeNotice(template, currency string) string {
+	if template == "" {
+		return template
+	}
+	if currency == "" {
+		// Strip "(<placeholder>)" or " (<placeholder>)" if present;
+		// otherwise leave the template alone.
+		template = strings.ReplaceAll(template, " ({{.Currency}})", "")
+		return strings.ReplaceAll(template, "({{.Currency}})", "")
+	}
+	return strings.ReplaceAll(template, "{{.Currency}}", currency)
+}
+
 func generateCode() string {
 	const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 	b := make([]byte, 7)

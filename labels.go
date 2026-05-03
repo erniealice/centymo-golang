@@ -3082,6 +3082,15 @@ type PricePlanFormLabels struct {
 	ScheduleAutoCreateHint string `json:"scheduleAutoCreateHint"`
 	ScheduleAutoReuseHint  string `json:"scheduleAutoReuseHint"`
 
+	// 2026-05-03 — info banner rendered below the readonly Schedule display.
+	// ScheduleClientPickerNotice fires when the parent schedule is
+	// client-scoped: picker shows only plans assigned to that client.
+	// ScheduleGeneralPickerNotice fires when the parent schedule is
+	// general-scope: picker shows only general-scope plans (client-specific
+	// plans cannot attach to a general schedule).
+	ScheduleClientPickerNotice  string `json:"scheduleClientPickerNotice"`
+	ScheduleGeneralPickerNotice string `json:"scheduleGeneralPickerNotice"`
+
 	// 2026-04-30 cyclic-subscription-jobs plan §9.4 — client-side block
 	// surfaced as a tooltip on the disabled MILESTONE option in the
 	// billing_kind dropdown when the parent Plan is cyclic.
@@ -3313,6 +3322,11 @@ type PlanFormLabels struct {
 	VisitsPerCycleLabel       string `json:"visitsPerCycleLabel"`
 	VisitsPerCyclePlaceholder string `json:"visitsPerCyclePlaceholder"`
 	VisitsPerCycleHint        string `json:"visitsPerCycleHint"`
+
+	// Client-scope cascade notice — shown unconditionally below the client picker
+	// so operators see the schedule restriction before filling other fields.
+	// Tier-specific wording lives in lyngua; default uses proto-generic vocabulary.
+	ClientScopeCascadeNotice string `json:"clientScopeCascadeNotice"`
 }
 
 type PlanDetailLabels struct {
@@ -3527,11 +3541,29 @@ type SubscriptionFormLabels struct {
 	EndTimeInfo   string `json:"endTimeInfo"`
 	NotesInfo     string `json:"notesInfo"`
 
+	// 2026-05-03 — Row-level help text rendered below the start/end date+time
+	// rows. Explains the operational consequence of the date range (which plans
+	// are eligible, when invoicing stops). Distinct from StartDateInfo /
+	// EndDateInfo (per-field popovers explaining what each field stores).
+	StartDateRowHelp string `json:"startDateRowHelp"`
+	EndDateRowHelp   string `json:"endDateRowHelp"`
+
 	// 2026-04-27 plan-client-scope plan §5.1 / §7 — group headers in the
 	// grouped Plan / PricePlan auto-complete picker on the subscription
 	// drawer. Templated via {{.ClientName}} for the per-client group.
 	PlanGroupForClient string `json:"planGroupForClient"`
 	PlanGroupGeneral   string `json:"planGroupGeneral"`
+
+	// 2026-05-03 — info banner shown below the locked Customer field on the
+	// subscription create drawer, explaining that the Plan picker is
+	// scoped to plans assigned to this client (general-scope plans
+	// excluded, mirroring the search.go filter).
+	PlanClientScopeNotice string `json:"planClientScopeNotice"`
+
+	// 2026-05-03 — Edit-drawer lock notice rendered when the subscription is
+	// referenced by Revenue / subscription_attribute / Job rows. Editing is
+	// disabled to preserve the audit trail.
+	EditLockedReason string `json:"editLockedReason"`
 
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9 — Spawn
 	// Jobs toggle section on the subscription create drawer.
@@ -3866,6 +3898,8 @@ func DefaultPlanLabels() PlanLabels {
 			VisitsPerCycleLabel:       "Visits per billing cycle",
 			VisitsPerCyclePlaceholder: "1",
 			VisitsPerCycleHint:        "Number of cycle Job instances per billing cycle. Default 1. Use 2 for biweekly visits billed monthly, 4 for weekly visits billed monthly.",
+			// Client-scope cascade notice — proto-generic default; tiers override via lyngua.
+			ClientScopeCascadeNotice: "If a client is selected, this plan can only be assigned to a client-scoped price schedule.",
 		},
 		Actions: PlanActionLabels{
 			View:       "View Plan",
@@ -4284,7 +4318,9 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			TermInfo:         "How long the engagement lasts. Leave empty for open-ended / no expiration.",
 			ActiveInfo:       "Inactive price plans stay on record but are hidden from new subscriptions.",
 			// 2026-04-27 plan-client-scope plan §6.7 — info banner shown above
-			// the form when its parent PriceSchedule is client-scoped.
+			// the form when its parent PriceSchedule is client-scoped. Loaded
+			// from lyngua price_plan.json#price_plan.form.parentScheduleClientNotice
+			// (under "form", not "fields" — the Go struct lives on PricePlanFormLabels).
 			ParentScheduleClientNotice: "This price schedule belongs to {{.ClientName}}. Price plans created here will be available only for engagements with this client.",
 			// 2026-04-27 plan-client-scope plan §6.7 — tooltip on the readonly
 			// Schedule label when the parent Plan is client-scoped. Proto-generic
@@ -4292,6 +4328,9 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			ScheduleLockedTooltip:  "This price plan is bound to {{.ClientName}}'s price schedule.",
 			ScheduleAutoCreateHint: "No price schedule exists for {{.ClientName}} yet — one will be created automatically when you save.",
 			ScheduleAutoReuseHint:  "This price plan will be added to the existing price schedule for {{.ClientName}}.",
+			// 2026-05-03 — Plan picker scope notices on the schedule-scoped add drawer.
+			ScheduleClientPickerNotice:  "Only packages assigned to this client are available below.",
+			ScheduleGeneralPickerNotice: "Packages assigned specifically to clients are not available for assignment to general scoped rate cards.",
 			// 2026-04-30 cyclic-subscription-jobs plan §9.4.
 			MilestoneCyclicBlock: "Milestone billing is not supported on cyclic plans (RECURRING / CONTRACT × PER_CYCLE / multi-visit).",
 		},
@@ -5014,14 +5053,18 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			CustomerInfo:  "The client this subscription is billed to.",
 			PlanInfo:      "The price plan this subscription follows. Determines amount, billing cycle, and any per-product prices.",
 			CodeInfo:      "Short reference used on invoices and receipts. Leave blank to auto-generate.",
-			StartDateInfo: "First day the subscription is active. Billing cycles are counted from this date.",
-			EndDateInfo:   "Last day the subscription is active. Leave blank for open-ended.",
+			StartDateInfo:    "First day the subscription is active. Billing cycles are counted from this date.",
+			EndDateInfo:      "Last day the subscription is active. Leave blank for open-ended.",
+			StartDateRowHelp: "Start date and time affect which plans are available below — only plans active in this date range can be selected.",
+			EndDateRowHelp:   "End date and time control when recurring invoices stop being issued for this subscription. Leave blank for open-ended billing.",
 			StartTimeInfo: "Optional time of day in the operator's display timezone. Leave blank for start of day (00:00).",
 			EndTimeInfo:   "Optional time of day in the operator's display timezone. Leave blank for end of day (23:59).",
 			NotesInfo:     "Internal remarks — shown on detail pages but not on customer-facing documents.",
 			// 2026-04-27 plan-client-scope plan §5.1 / §7 — grouped picker headers.
-			PlanGroupForClient: "For {{.ClientName}}",
-			PlanGroupGeneral:   "General packages",
+			PlanGroupForClient:    "For {{.ClientName}}",
+			PlanGroupGeneral:      "General packages",
+			PlanClientScopeNotice: "Plans below match this client's billing currency ({{.Currency}}).",
+			EditLockedReason:      "This subscription has revenue records and cannot be edited. Reassigning the plan would break the audit trail.",
 			// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9 —
 			// Spawn Jobs toggle on subscription create drawer.
 			SpawnJobsSectionTitle: "Operations",

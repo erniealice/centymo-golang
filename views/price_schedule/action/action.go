@@ -168,10 +168,17 @@ func NewAddAction(deps *Deps) view.View {
 			// asks for a name suggestion, render only the Name input partial
 			// so the schedule-drawer's HTMX picker swap can update the name
 			// without reloading the entire form.
+			// 2026-05-03 — Trailing timestamp ("YYYY-MM-DD HH:MM" in operator
+			// TZ) appended to derived names so duplicate-name collisions are
+			// avoided. Same suffix used by both the suggest-name partial and
+			// the initial render.
+			tz := pyezatypes.LocationFromContext(ctx)
+			derivedTimestamp := time.Now().In(tz).Format("2006-01-02 15:04:05")
+
 			if viewCtx.Request.URL.Query().Get("suggest_name") == "1" {
 				clientID := viewCtx.Request.URL.Query().Get("client_id")
 				clientName := resolveClientName(ctx, deps, clientID)
-				derived := form.BuildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
+				derived := form.BuildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix, derivedTimestamp)
 				return view.OK("price-schedule-name-suggest", map[string]any{
 					"Value":           derived,
 					"NamePlaceholder": deps.Labels.Form.NamePlaceholder,
@@ -183,15 +190,17 @@ func NewAddAction(deps *Deps) view.View {
 			// + name pre-fill via HTMX swap when a client is selected.
 			pinnedClientID := viewCtx.Request.URL.Query().Get("client_id")
 			clientLabel := resolveClientName(ctx, deps, pinnedClientID)
-			defaultName := ""
-			if pinnedClientID != "" {
-				defaultName = form.BuildDerivedScheduleName(clientLabel, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
-			}
+			// 2026-05-03 — Pre-fill the name in BOTH contexts so duplicates
+			// are unlikely. Client context cascades the client name; standalone
+			// uses just the lyngua suffix + timestamp.
+			defaultName := form.BuildDerivedScheduleName(clientLabel, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix, derivedTimestamp)
 			// 2026-04-28 — Scope radio default. `location` unless the URL
 			// pins a client (?client_id=...) which implies client scope.
 			scope := "location"
+			clientLocked := false
 			if pinnedClientID != "" {
 				scope = "client"
+				clientLocked = true
 			}
 			return view.OK("price-schedule-drawer-form", &form.Data{
 				FormAction:      deps.Routes.AddURL,
@@ -205,6 +214,7 @@ func NewAddAction(deps *Deps) view.View {
 				SearchClientURL: deps.SearchClientsURL,
 				SuggestNameURL:  deps.Routes.AddURL + "?suggest_name=1",
 				Scope:           scope,
+				ClientLocked:    clientLocked,
 				Labels:          deps.Labels.Form,
 			})
 		}
@@ -265,7 +275,9 @@ func NewSuggestNameAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		clientID := viewCtx.Request.URL.Query().Get("client_id")
 		clientName := resolveClientName(ctx, deps, clientID)
-		derived := form.BuildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix)
+		tz := pyezatypes.LocationFromContext(ctx)
+		derivedTimestamp := time.Now().In(tz).Format("2006-01-02 15:04:05")
+		derived := form.BuildDerivedScheduleName(clientName, deps.Labels.Form.CustomClientPriceScheduleLabelSuffix, derivedTimestamp)
 		return view.OK("price-schedule-name-suggest", map[string]any{
 			"Value":           derived,
 			"NamePlaceholder": deps.Labels.Form.NamePlaceholder,

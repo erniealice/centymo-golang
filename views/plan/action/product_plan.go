@@ -665,6 +665,7 @@ func NewProductPlanPickerAction(deps *ProductPlanDeps) view.View {
 			Name:                     "",
 			SelectedKind:             kind,
 			SelectedProductID:        productID,
+			SelectedProductLabel:     findProductLabel(products, productID),
 			ProductLabel:             formLabels.Product,
 			ProductPlaceholder:       formLabels.ProductPlaceholder,
 			ProductOptions:           buildProductAutoCompleteOptions(products, productID, disabledIDs),

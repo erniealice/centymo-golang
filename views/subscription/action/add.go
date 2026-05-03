@@ -36,6 +36,12 @@ func NewAddAction(deps *Deps) view.View {
 			defaultDate := today.Format(pyezatypes.DateInputLayout)
 			defaultISO := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz).Format(time.RFC3339)
 			labels := buildFormLabels(deps.Labels)
+			// 2026-05-03 — Substitute {{.Currency}} placeholder in the
+			// PlanClientScopeNotice with the client's billing currency code so
+			// the banner reads "Plans below match this client's billing
+			// currency (PHP)." Falls back to a no-currency variant when the
+			// client has no billing currency set.
+			labels.PlanClientScopeNotice = resolvePlanClientScopeNotice(labels.PlanClientScopeNotice, clientBillingCurrency)
 			return view.OK("subscription-drawer-form", &form.Data{
 				FormAction:            deps.Routes.AddURL,
 				SearchClientURL:       deps.Routes.SearchClientURL,
@@ -48,7 +54,10 @@ func NewAddAction(deps *Deps) view.View {
 				DateStartDate:         defaultDate,
 				DateStartISO:          defaultISO,
 				DefaultTZ:             tz.String(),
-				PlanOptionGroups:      form.LoadPricePlanOptionGroups(ctx, deps.ListPricePlans, deps.ListPriceSchedules, clientID, clientName, labels),
+				// 2026-05-03 — pre-render dropped. The autocomplete is in action
+				// mode (SearchPlanURL is set), so the inline-rendered options
+				// were ignored anyway and the search endpoint already returns
+				// the same client-scoped grouping on first dropdown open.
 				// Spawn Jobs section starts hidden on add (no PricePlan
 				// selected yet); the HTMX partial fills it after selection.
 				SpawnJobsAvailable:  false,

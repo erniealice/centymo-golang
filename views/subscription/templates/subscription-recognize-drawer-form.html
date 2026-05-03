@@ -60,27 +60,22 @@ to a single CTA in v1).
 
         {{/* --- Currency mismatch banner (blocking) --- */}}
         {{if .CurrencyMismatch}}
-        <div
-          class="form-row single alert alert--error"
-          data-recognize-currency-mismatch
-          role="alert"
-        >
-            <strong>{{.Labels.CurrencyMismatchError}}</strong>
-            <small>
-              {{.Labels.ClientLabel}}: {{.ClientCurrency}} ·
-              {{.Labels.PlanLabel}}: {{.PlanCurrency}}
-            </small>
+        <div class="form-row single" data-recognize-currency-mismatch>
+            {{template "alert" (dict
+                "Message" (printf "%s: %s · %s: %s" .Labels.ClientLabel .ClientCurrency .Labels.PlanLabel .PlanCurrency)
+                "Title" .Labels.CurrencyMismatchError
+                "State" "error"
+            )}}
         </div>
         {{end}}
 
         {{/* --- Idempotency conflict banner (blocking) --- */}}
         {{if .IdempotencyConflict}}
-        <div
-          class="form-row single alert alert--error"
-          data-recognize-idempotency-error
-          role="alert"
-        >
-            <strong>{{.Labels.IdempotencyError}}</strong>
+        <div class="form-row single" data-recognize-idempotency-error>
+            {{template "alert" (dict
+                "Message" .Labels.IdempotencyError
+                "State" "error"
+            )}}
             {{if .ConflictingRevenueURL}}
             <a href="{{.ConflictingRevenueURL}}" class="alert__link" data-testid="recognize-existing-invoice-link">
               {{.Labels.IdempotencyExistingLink}}
@@ -91,12 +86,11 @@ to a single CTA in v1).
 
         {{/* --- No-lines-to-invoice banner (blocking) --- */}}
         {{if .NoLinesToInvoice}}
-        <div
-          class="form-row single alert alert--error"
-          data-recognize-no-lines-error
-          role="alert"
-        >
-            <strong>{{.Labels.NoLinesError}}</strong>
+        <div class="form-row single" data-recognize-no-lines-error>
+            {{template "alert" (dict
+                "Message" .Labels.NoLinesError
+                "State" "error"
+            )}}
         </div>
         {{end}}
 
@@ -107,19 +101,21 @@ to a single CTA in v1).
             {{$hasSelectable := false}}
             {{range .MilestoneOptions}}{{if .Selectable}}{{$hasSelectable = true}}{{end}}{{end}}
             {{if not $hasSelectable}}
-            <div class="form-row single alert alert--warning"
-                 data-recognize-no-ready-milestone
-                 role="alert">
-              <strong>{{.Labels.NoReadyMilestone}}</strong>
+            <div class="form-row single" data-recognize-no-ready-milestone>
+                {{template "alert" (dict
+                    "Message" .Labels.NoReadyMilestone
+                    "State" "warning"
+                )}}
             </div>
             {{end}}
 
             {{/* Over-billing rejection banner. */}}
             {{if .OverBillingError}}
-            <div class="form-row single alert alert--error"
-                 data-recognize-overbilling-error
-                 role="alert">
-              <strong>{{.Labels.OverBillingRejected}}</strong>
+            <div class="form-row single" data-recognize-overbilling-error>
+                {{template "alert" (dict
+                    "Message" .Labels.OverBillingRejected
+                    "State" "error"
+                )}}
             </div>
             {{end}}
 
@@ -290,10 +286,15 @@ to a single CTA in v1).
 
         {{/* --- Warnings (non-blocking) --- */}}
         {{if .Warnings}}
-        <div class="form-row single alert alert--warning" role="status" data-recognize-warnings>
-          <ul>
-            {{range .Warnings}}<li>{{.}}</li>{{end}}
-          </ul>
+        <div class="form-row single" data-recognize-warnings>
+            <div class="alert alert-warning alert-subtle" role="status" aria-live="polite">
+                <div class="alert-icon">{{template "icon-alert-triangle"}}</div>
+                <div class="alert-body">
+                    <ul class="alert-message">
+                        {{range .Warnings}}<li>{{.}}</li>{{end}}
+                    </ul>
+                </div>
+            </div>
         </div>
         {{end}}
 

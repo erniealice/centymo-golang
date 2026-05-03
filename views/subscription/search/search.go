@@ -31,6 +31,13 @@ type Deps struct {
 	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 	ListPlans           func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	ReadPlan            func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
+
+	// PlanGroupForClient is the lyngua-resolved label template for the
+	// client-scoped group header, e.g. "For {{.ClientName}}".
+	// PlanGroupGeneral is the fixed label for the general group, e.g.
+	// "General packages". Both are sourced from SubscriptionLabels.Form.
+	PlanGroupForClient string
+	PlanGroupGeneral   string
 }
 
 // option is the JSON shape returned by the search handlers.
@@ -157,6 +164,7 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 		endISO := strings.TrimSpace(r.URL.Query().Get("date_time_end_iso"))
 		billingCurrency := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("billing_currency")))
 		clientIDFilter := strings.TrimSpace(r.URL.Query().Get("client_id"))
+		clientNameParam := strings.TrimSpace(r.URL.Query().Get("client_name"))
 
 		tz := pyezatypes.LocationFromContext(ctx)
 		reqStart, hasStart := parseRFC3339(startISO)
@@ -220,6 +228,15 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 		}
 
 		queryLower := strings.ToLower(q)
+		_ = clientNameParam // reserved for future per-client group header (currently unused — grouping is per-schedule across both tiers).
+
+		// 2026-05-03 (revised) — Per-schedule grouping for both standalone
+		// (no client) and client-context callers. When client_id is present we
+		// still apply a cross-client rejection filter so a *different* client's
+		// scoped plans never appear, but client-scoped AND general-scope plans
+		// for the chosen client both surface, grouped under their parent
+		// PriceSchedule. See discussion 2026-05-03: a client engagement may
+		// legitimately attach a general-scope plan, so we don't drop those.
 
 		type groupEntry struct {
 			schedID   string
@@ -267,7 +284,10 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				sched = scheduleByID[schedID]
 			}
 
-			// Apply client scope filter.
+			// 2026-05-03 — Apply cross-client rejection when clientIDFilter
+			// is set. A plan scoped to a *different* client (directly or via
+			// its parent schedule) is never selectable in this drawer.
+			// General-scope plans pass through.
 			if clientIDFilter != "" {
 				ppClient := pp.GetClientId()
 				schedClient := ""

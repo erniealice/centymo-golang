@@ -28,15 +28,12 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
          server-authoritative even though the field is never user-editable. */}}
     {{if .ParentScheduleClientName}}
     <input type="hidden" name="client_id" value="{{.ParentScheduleClientID}}">
-    <div class="sheet-banner alert alert-info" role="status" data-testid="price-plan-parent-scope-banner">
-        {{template "icon-info"}}
-        <span>
-            {{/* The notice template carries {{.ClientName}}; render once with
-                 simple ReplaceAll on the client side via Go template — but we
-                 only have html/template here, so just inline the client name. */}}
-            {{.Labels.ParentScheduleClientNotice}}
-            <strong>{{.ParentScheduleClientName}}</strong>
-        </span>
+    <div class="sheet-banner" data-testid="price-plan-parent-scope-banner">
+        {{template "alert" (dict
+            "Message" .Labels.ParentScheduleClientNotice
+            "Title" .ParentScheduleClientName
+            "State" "info"
+        )}}
     </div>
     {{end}}
 
@@ -104,6 +101,35 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                     "Info" .Labels.ScheduleInfo
                 )}}
             </div>
+            {{/* 2026-05-03 — Inline info banner below the readonly Schedule
+                 display. Two mutually-exclusive variants:
+                   • Client-scoped schedule  → notice that only plans assigned
+                     to this client appear in the picker.
+                   • General-scope schedule  → notice that client-scoped plans
+                     cannot attach to a general schedule.
+                 Tier-specific wording (rate card / package / etc.) lives in
+                 lyngua; see the .Labels.Schedule*PickerNotice keys. */}}
+            {{if .ParentScheduleClientID}}
+                {{if .Labels.ScheduleClientPickerNotice}}
+                <div class="form-row single">
+                    {{template "alert" (dict
+                        "Message" .Labels.ScheduleClientPickerNotice
+                        "State" "info"
+                        "ID" "price-plan-picker-scope-notice"
+                    )}}
+                </div>
+                {{end}}
+            {{else}}
+                {{if .Labels.ScheduleGeneralPickerNotice}}
+                <div class="form-row single">
+                    {{template "alert" (dict
+                        "Message" .Labels.ScheduleGeneralPickerNotice
+                        "State" "info"
+                        "ID" "price-plan-picker-scope-notice"
+                    )}}
+                </div>
+                {{end}}
+            {{end}}
             <div class="form-row single">
                 {{template "auto-complete" (dict
                     "ID" "plan-select"
@@ -284,7 +310,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
              popover beside the label (verbose explainer hidden until hover/click).
              We pass both so operators see the field-purpose copy inline AND can
              expand to the longer popover when they need the full per-mode reference. */}}
-        <div class="form-row">
+        <div class="form-row single">
             {{template "form-group" (dict
                 "Type" "number"
                 "Name" "amount"
@@ -298,6 +324,8 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 "Hint" .Labels.AmountInfo
                 "Info" .Labels.AmountInfo
             )}}
+        </div>
+        <div class="form-row single">
             {{template "form-group" (dict
                 "Type" "select"
                 "Name" "currency"
