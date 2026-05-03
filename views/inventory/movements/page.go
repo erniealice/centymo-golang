@@ -2,7 +2,6 @@ package movements
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -20,13 +19,13 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
-	SqlDB                     *sql.DB // raw DB for filtered queries (nil = fallback to proto functions)
-	ListInventoryItems        func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
-	ListInventoryTransactions func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
-	ListLocations             func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
-	Labels                    centymo.InventoryLabels
-	CommonLabels              pyeza.CommonLabels
-	TableLabels               types.TableLabels
+	GetInventoryMovementsListPageData func(ctx context.Context, req *inventorytransactionpb.GetInventoryMovementsListPageDataRequest) (*inventorytransactionpb.GetInventoryMovementsListPageDataResponse, error)
+	ListInventoryItems                func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
+	ListInventoryTransactions         func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
+	ListLocations                     func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	Labels                            centymo.InventoryLabels
+	CommonLabels                      pyeza.CommonLabels
+	TableLabels                       types.TableLabels
 }
 
 // LocationOption represents a location for the filter dropdown.
@@ -81,7 +80,7 @@ func NewView(deps *Deps) view.View {
 		// Load locations for dropdown
 		locations := loadLocations(ctx, deps)
 
-		// Query transactions (filtered by default date range if SQL available)
+		// Query transactions (filtered by default date range if use case available)
 		tableConfig := buildFilteredTable(ctx, deps, dateFrom, dateTo, "", "", "")
 
 		pageData := &PageData{
@@ -159,8 +158,8 @@ func loadLocations(ctx context.Context, deps *Deps) []LocationOption {
 	return options
 }
 
-// buildFilteredTable builds the table config with optional SQL filtering.
-// If SqlDB is nil, falls back to in-memory ListSimple with no filters.
+// buildFilteredTable builds the table config using the typed use case when available,
+// falling back to in-memory ListSimple with no filters.
 func buildFilteredTable(ctx context.Context, deps *Deps, dateFrom, dateTo, location, txType, search string) *types.TableConfig {
 	l := deps.Labels
 
@@ -180,7 +179,7 @@ func buildFilteredTable(ctx context.Context, deps *Deps, dateFrom, dateTo, locat
 
 	var rows []types.TableRow
 
-	if deps.SqlDB != nil {
+	if deps.GetInventoryMovementsListPageData != nil {
 		rows = queryFilteredRows(ctx, deps, dateFrom, dateTo, location, txType, search)
 	} else {
 		rows = queryFallbackRows(ctx, deps)
@@ -212,89 +211,62 @@ func buildFilteredTable(ctx context.Context, deps *Deps, dateFrom, dateTo, locat
 	return tableConfig
 }
 
-// queryFilteredRows uses raw SQL with JOINs and filters.
+// queryFilteredRows calls the typed use case and maps the proto response to table rows.
 func queryFilteredRows(ctx context.Context, deps *Deps, dateFrom, dateTo, location, txType, search string) []types.TableRow {
-	query := `
-		SELECT it.id, it.transaction_date, it.transaction_type, it.quantity,
-		       it.serial_number, it.reference_type, it.reference_id, it.performed_by,
-		       COALESCE(ii.name, '') as item_name,
-		       COALESCE(ii.location_id, '') as location_id,
-		       COALESCE(ii.sku, '') as item_sku,
-		       COALESCE(pv.sku, '') as variant_sku,
-		       COALESCE(p.name, '') as product_name
-		FROM inventory_transaction it
-		LEFT JOIN inventory_item ii ON it.inventory_item_id = ii.id
-		LEFT JOIN product_variant pv ON ii.product_variant_id = pv.id
-		LEFT JOIN product p ON pv.product_id = p.id
-		WHERE it.active = true
-		  AND ($1 = '' OR it.transaction_date >= $1::timestamptz)
-		  AND ($2 = '' OR it.transaction_date <= ($2::date + interval '1 day')::timestamptz)
-		  AND ($3 = '' OR ii.location_id = $3)
-		  AND ($4 = '' OR it.transaction_type = $4)
-		  AND ($5 = '' OR (
-		       p.name ILIKE '%' || $5 || '%'
-		    OR pv.sku ILIKE '%' || $5 || '%'
-		    OR ii.sku ILIKE '%' || $5 || '%'
-		    OR ii.name ILIKE '%' || $5 || '%'
-		  ))
-		ORDER BY it.transaction_date DESC
-	`
+	req := &inventorytransactionpb.GetInventoryMovementsListPageDataRequest{}
+	if dateFrom != "" {
+		req.DateFrom = &dateFrom
+	}
+	if dateTo != "" {
+		req.DateTo = &dateTo
+	}
+	if location != "" {
+		req.LocationId = &location
+	}
+	if txType != "" {
+		req.TransactionType = &txType
+	}
+	if search != "" {
+		req.Search = &search
+	}
 
-	sqlRows, err := deps.SqlDB.QueryContext(ctx, query, dateFrom, dateTo, location, txType, search)
+	resp, err := deps.GetInventoryMovementsListPageData(ctx, req)
 	if err != nil {
 		log.Printf("Failed to query filtered movements: %v", err)
 		return nil
 	}
-	defer sqlRows.Close()
 
-	var rows []types.TableRow
-	for sqlRows.Next() {
-		var id, txTypeVal string
-		var itemName, locationID, itemSKU, variantSKU, productName string
-		var qty float64
-		var txDateNullable sql.NullTime
-		var serial, refType, refID, performer sql.NullString
+	movements := resp.GetData()
+	rows := make([]types.TableRow, 0, len(movements))
+	for _, m := range movements {
+		txTypeVal := m.GetTransactionType()
 
-		if err := sqlRows.Scan(
-			&id, &txDateNullable, &txTypeVal, &qty,
-			&serial, &refType, &refID, &performer,
-			&itemName, &locationID, &itemSKU, &variantSKU, &productName,
-		); err != nil {
-			log.Printf("Failed to scan movement row: %v", err)
-			continue
-		}
-
-		txDate := ""
-		if txDateNullable.Valid {
-			txDate = txDateNullable.Time.Format("2006-01-02")
-		}
-
-		ref := refType.String
-		if refID.String != "" {
+		ref := m.GetReferenceType()
+		if refID := m.GetReferenceId(); refID != "" {
 			if ref != "" {
-				ref += ": " + refID.String
+				ref += ": " + refID
 			} else {
-				ref = refID.String
+				ref = refID
 			}
 		}
 
-		locationName := centymo.LocationDisplayName(locationID)
-		qtyStr := formatQuantity(qty, txTypeVal)
+		locationName := centymo.LocationDisplayName(m.GetLocationId())
+		qtyStr := formatQuantity(m.GetQuantity(), txTypeVal)
 
 		rows = append(rows, types.TableRow{
-			ID: id,
+			ID: m.GetId(),
 			Cells: []types.TableCell{
-				{Type: "text", Value: txDate},
-				{Type: "text", Value: itemName},
-				{Type: "text", Value: productName},
-				{Type: "text", Value: variantSKU},
-				{Type: "text", Value: itemSKU},
+				{Type: "text", Value: m.GetTransactionDate()},
+				{Type: "text", Value: m.GetItemName()},
+				{Type: "text", Value: m.GetProductName()},
+				{Type: "text", Value: m.GetVariantSku()},
+				{Type: "text", Value: m.GetItemSku()},
 				{Type: "text", Value: locationName},
 				{Type: "badge", Value: txTypeVal, Variant: txTypeVariant(txTypeVal)},
 				{Type: "text", Value: qtyStr},
-				{Type: "text", Value: serial.String},
+				{Type: "text", Value: m.GetSerialNumber()},
 				{Type: "text", Value: ref},
-				{Type: "text", Value: performer.String},
+				{Type: "text", Value: m.GetPerformedBy()},
 			},
 		})
 	}

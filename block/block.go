@@ -512,7 +512,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if cfg.wantInventory() {
 			invDeps := &inventorymod.ModuleDeps{
 				Routes:       inventoryRoutes,
-				SqlDB:        ctx.SqlDB,
 				Labels:       inventoryLabels,
 				CommonLabels: ctx.Common,
 				TableLabels:  centymoTableLabels,
@@ -546,6 +545,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if uc := useCases.Inventory.InventoryTransaction; uc != nil {
 					invDeps.ListInventoryTransactions = uc.ListInventoryTransactions.Execute
 					invDeps.CreateInventoryTransaction = uc.CreateInventoryTransaction.Execute
+					if uc.GetInventoryMovementsListPageData != nil {
+						invDeps.GetInventoryMovementsListPageData = uc.GetInventoryMovementsListPageData.Execute
+					}
 				}
 				if uc := useCases.Inventory.InventoryDepreciation; uc != nil {
 					invDeps.ListInventoryDepreciations = uc.ListInventoryDepreciations.Execute
@@ -2117,7 +2119,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			expDeps := &expendituremod.ModuleDeps{
 				Routes:         expenditureRoutes,
 				DB:             db,
-				SqlDB:          ctx.SqlDB,
 				Labels:         expenditureLabels,
 				TemplateLabels: templateview.DefaultLabels(),
 				CommonLabels:   ctx.Common,

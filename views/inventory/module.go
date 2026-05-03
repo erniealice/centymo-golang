@@ -2,7 +2,6 @@ package inventory
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
 
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -36,7 +35,6 @@ import (
 // ModuleDeps holds all dependencies for the inventory module.
 type ModuleDeps struct {
 	Routes       centymo.InventoryRoutes
-	SqlDB        *sql.DB // raw DB for filtered movement queries
 	Labels       centymo.InventoryLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
@@ -57,8 +55,9 @@ type ModuleDeps struct {
 	DeleteInventorySerial func(ctx context.Context, req *inventoryserialpb.DeleteInventorySerialRequest) (*inventoryserialpb.DeleteInventorySerialResponse, error)
 
 	// Inventory Transaction
-	ListInventoryTransactions  func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
-	CreateInventoryTransaction func(ctx context.Context, req *inventorytransactionpb.CreateInventoryTransactionRequest) (*inventorytransactionpb.CreateInventoryTransactionResponse, error)
+	ListInventoryTransactions         func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
+	CreateInventoryTransaction        func(ctx context.Context, req *inventorytransactionpb.CreateInventoryTransactionRequest) (*inventorytransactionpb.CreateInventoryTransactionResponse, error)
+	GetInventoryMovementsListPageData func(ctx context.Context, req *inventorytransactionpb.GetInventoryMovementsListPageDataRequest) (*inventorytransactionpb.GetInventoryMovementsListPageDataResponse, error)
 
 	// Inventory Depreciation
 	ListInventoryDepreciations  func(ctx context.Context, req *inventorydepreciationpb.ListInventoryDepreciationsRequest) (*inventorydepreciationpb.ListInventoryDepreciationsResponse, error)
@@ -171,13 +170,13 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	movementsDeps := &inventorymovements.Deps{
-		SqlDB:                     deps.SqlDB,
-		ListInventoryItems:        deps.ListInventoryItems,
-		ListInventoryTransactions: deps.ListInventoryTransactions,
-		ListLocations:             deps.ListLocations,
-		Labels:                    deps.Labels,
-		CommonLabels:              deps.CommonLabels,
-		TableLabels:               deps.TableLabels,
+		GetInventoryMovementsListPageData: deps.GetInventoryMovementsListPageData,
+		ListInventoryItems:                deps.ListInventoryItems,
+		ListInventoryTransactions:         deps.ListInventoryTransactions,
+		ListLocations:                     deps.ListLocations,
+		Labels:                            deps.Labels,
+		CommonLabels:                      deps.CommonLabels,
+		TableLabels:                       deps.TableLabels,
 	}
 
 	depreciationDeps := &inventorydepreciation.Deps{

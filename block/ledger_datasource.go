@@ -113,6 +113,23 @@ func (d *espynaLedgerDataSource) ListExpenses(
 	return d.svc.ListExpenses(ctx, start, end)
 }
 
+// GetCashBookReport delegates to the espyna LedgerReportingAdapter (Phase 7).
+func (d *espynaLedgerDataSource) GetCashBookReport(
+	ctx context.Context,
+	req *reportpb.CashBookReportRequest,
+) (*reportpb.CashBookReportResponse, error) {
+	return d.svc.GetCashBookReport(ctx, req)
+}
+
+// GetSimplePayablesAgingReport delegates to the espyna LedgerReportingAdapter (Phase 8).
+// Named GetSimplePayablesAgingReport to avoid collision with the parameterized GetPayablesAgingReport.
+func (d *espynaLedgerDataSource) GetSimplePayablesAgingReport(
+	ctx context.Context,
+	req *reportpb.PayablesAgingReportRequest,
+) (*reportpb.PayablesAgingReportResponse, error) {
+	return d.svc.GetSimplePayablesAgingReport(ctx, req)
+}
+
 // newLedgerDataSource wraps a consumer.LedgerReportingService as a fycha.DataSource.
 // Returns nil if svc is nil (report views will be skipped gracefully).
 func newLedgerDataSource(svc consumer.LedgerReportingService) fycha.DataSource {

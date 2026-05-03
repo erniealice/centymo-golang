@@ -435,16 +435,48 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.DeleteFailed)
 		}
 		ids := viewCtx.Request.Form["id"]
-		var inUse map[string]bool
-		if deps.GetPriceScheduleInUseIDs != nil && len(ids) > 0 {
-			inUse, _ = deps.GetPriceScheduleInUseIDs(ctx, ids)
-		}
+		// Strip blanks once so the eligibility math is unambiguous.
+		var attempted []string
 		for _, id := range ids {
-			if id == "" || inUse[id] {
+			if id != "" {
+				attempted = append(attempted, id)
+			}
+		}
+		if len(attempted) == 0 {
+			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+		}
+		var inUse map[string]bool
+		if deps.GetPriceScheduleInUseIDs != nil {
+			inUse, _ = deps.GetPriceScheduleInUseIDs(ctx, attempted)
+		}
+		// Track each id's outcome so we can mirror single-delete's loud failure
+		// when nothing succeeded, and still refresh on partial success.
+		// Previously this loop swallowed in-use blocks via `continue` and
+		// discarded errors via `_, _ = deps.DeletePriceSchedule(...)`,
+		// returning 200 even when zero rows were deleted.
+		var deleted, blocked, failed int
+		for _, id := range attempted {
+			if inUse[id] {
+				blocked++
 				continue
 			}
-			_, _ = deps.DeletePriceSchedule(ctx, &priceschedulepb.DeletePriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}})
+			if _, err := deps.DeletePriceSchedule(ctx, &priceschedulepb.DeletePriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}}); err != nil {
+				log.Printf("Failed to delete price schedule %s during bulk: %v", id, err)
+				failed++
+				continue
+			}
+			deleted++
 		}
+		if deleted == 0 {
+			// All-fail case: surface the single-delete-style error so the
+			// operator sees a real toast instead of silent table refresh.
+			if blocked > 0 && failed == 0 {
+				return centymo.HTMXError(deps.Labels.Errors.InUse)
+			}
+			return centymo.HTMXError(deps.Labels.Errors.DeleteFailed)
+		}
+		// Partial success — at least one deleted; the table refresh
+		// surfaces the result. The skipped rows stay visible.
 		return centymo.HTMXSuccess("price-schedules-table")
 	})
 }

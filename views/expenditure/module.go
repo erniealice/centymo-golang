@@ -2,8 +2,6 @@ package expenditure
 
 import (
 	"context"
-	"database/sql"
-	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
 	templateviewform "github.com/erniealice/hybra-golang/views/template/form"
@@ -32,7 +30,6 @@ import (
 	disbursementschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement_schedule"
 )
 
-
 // PaymentTermOption is re-exported from action for use by callers wiring ModuleDeps.
 // The underlying type lives in views/expenditure/form; action re-exports it as an alias.
 type PaymentTermOption = expenditureaction.PaymentTermOption
@@ -41,7 +38,6 @@ type PaymentTermOption = expenditureaction.PaymentTermOption
 type ModuleDeps struct {
 	Routes           centymo.ExpenditureRoutes
 	DB               centymo.DataSource
-	SqlDB            *sql.DB
 	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
 	Labels           centymo.ExpenditureLabels
 	TemplateLabels   templateviewform.Labels
@@ -90,6 +86,11 @@ type ModuleDeps struct {
 	DisbursementRoutes centymo.DisbursementRoutes
 	DisbursementLabels centymo.DisbursementLabels
 	CreateDisbursement func(ctx context.Context, req *disbursementpb.CreateDisbursementRequest) (*disbursementpb.CreateDisbursementResponse, error)
+
+	// Phase 5 — typed replacements for the former raw-SQL closures.
+	// Both optional; nil-safe — detail page degrades gracefully when missing.
+	GetPaidAmount             func(ctx context.Context, expenditureID string) (int64, error)
+	ListDisbursementSchedules func(ctx context.Context, expenditureID string) ([]*disbursementschedulepb.DisbursementSchedule, error)
 
 	// SPS Wave 4 — Recognition + Accrual tabs on the expense detail page.
 	// All optional; nil-safe — when missing, the tabs render empty states.
@@ -241,68 +242,12 @@ func NewModule(deps *ModuleDeps) *Module {
 			ExpenseRecognitionDetailURL: deps.ExpenseRecognitionDetailURL,
 			AccruedExpenseDetailURL:     deps.AccruedExpenseDetailURL,
 			RecognizeFromExpenditureURL: deps.RecognizeFromExpenditureURL,
+			// Phase 5 — wired by block.go via typed use cases; nil when not provisioned.
+			GetPaidAmount:             deps.GetPaidAmount,
+			ListDisbursementSchedules: deps.ListDisbursementSchedules,
 		}
 		if deps.ListExpenditureLineItems != nil {
 			detailDeps.ListExpenditureLineItems = deps.ListExpenditureLineItems
-		}
-		if deps.SqlDB != nil {
-			sqlDB := deps.SqlDB
-			detailDeps.GetPaidAmount = func(ctx context.Context, expenditureID string) (int64, error) {
-				var total int64
-				err := sqlDB.QueryRowContext(ctx,
-					`SELECT COALESCE(SUM(amount), 0) FROM treasury_disbursement
-					 WHERE expenditure_id = $1 AND active = true AND status IN ('paid', 'completed')`,
-					expenditureID,
-				).Scan(&total)
-				return total, err
-			}
-		}
-		if deps.SqlDB != nil {
-			sqlDB2 := deps.SqlDB
-			detailDeps.ListDisbursementSchedules = func(ctx context.Context, expenditureID string) ([]*disbursementschedulepb.DisbursementSchedule, error) {
-				rows, err := sqlDB2.QueryContext(ctx,
-					`SELECT id, sequence, amount, due_date, status,
-					        paid_amount, paid_date, disbursement_id
-					 FROM disbursement_schedule
-					 WHERE expenditure_id = $1 AND active = true
-					 ORDER BY sequence ASC`,
-					expenditureID,
-				)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-
-				var schedules []*disbursementschedulepb.DisbursementSchedule
-				for rows.Next() {
-					var (
-						id             string
-						sequence       int32
-						amount         int64
-						dueDateMillis  int64
-						status         string
-						paidAmount     *int64
-						paidDate       *int64
-						disbursementID *string
-					)
-					if err := rows.Scan(&id, &sequence, &amount, &dueDateMillis, &status, &paidAmount, &paidDate, &disbursementID); err != nil {
-						return nil, err
-					}
-					s := &disbursementschedulepb.DisbursementSchedule{
-						Id:             id,
-						ExpenditureId:  expenditureID,
-						Sequence:       sequence,
-						Amount:         amount,
-						DueDate:        formatDisbEpochMillis(dueDateMillis),
-						Status:         status,
-						PaidAmount:     paidAmount,
-						PaidDate:       paidDate,
-						DisbursementId: disbursementID,
-					}
-					schedules = append(schedules, s)
-				}
-				return schedules, rows.Err()
-			}
 		}
 		m.ExpenseDetail = expendituredetail.NewView(detailDeps)
 		m.ExpenseTabAction = expendituredetail.NewTabAction(detailDeps)
@@ -422,12 +367,4 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 		r.POST(m.routes.ExpenseCategoryEditURL, m.CategoryEdit)
 		r.POST(m.routes.ExpenseCategoryDeleteURL, m.CategoryDelete)
 	}
-}
-
-// formatDisbEpochMillis converts epoch milliseconds to a YYYY-MM-DD string.
-func formatDisbEpochMillis(ms int64) string {
-	if ms == 0 {
-		return ""
-	}
-	return time.UnixMilli(ms).UTC().Format("2006-01-02")
 }

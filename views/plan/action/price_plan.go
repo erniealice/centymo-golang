@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/price_plan/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
+	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
@@ -134,69 +136,89 @@ func readPlan(ctx context.Context, deps *PricePlanDeps, planID string) *planpb.P
 	return resp.GetData()[0]
 }
 
-// resolvePricePlanClientName mirrors plan/action/action.go:resolveClientLabel
-// — duplicated locally to avoid a cross-package import on the helper. Returns
-// the empty string when the dep is unwired or the lookup misses; returns the
-// client_id verbatim as a last resort so the drawer never renders a blank
-// label.
-func resolvePricePlanClientName(ctx context.Context, clientID string, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)) string {
+// resolvePricePlanClientNameAndTz returns the display name AND the
+// *time.Location anchoring derived-name suffixes. Tz comes from
+// Client.User.Timezone (the only client-side tz the proto carries),
+// falling back to fallbackTz when missing or invalid. Bad IANA names log
+// and fall through. fallbackTz must not be nil.
+func resolvePricePlanClientNameAndTz(ctx context.Context, clientID string, listClients func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error), fallbackTz *time.Location) (string, *time.Location) {
 	if clientID == "" || listClients == nil {
-		return ""
+		return "", fallbackTz
 	}
 	resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
 	if err != nil {
-		return clientID
+		return clientID, fallbackTz
 	}
 	for _, c := range resp.GetData() {
 		if c.GetId() != clientID {
 			continue
 		}
+		tz := fallbackTz
+		if u := c.GetUser(); u != nil {
+			if tzName := strings.TrimSpace(u.GetTimezone()); tzName != "" {
+				if loc, err := time.LoadLocation(tzName); err == nil {
+					tz = loc
+				} else {
+					log.Printf("invalid client timezone %q for client %s: %v; falling back to request tz", tzName, clientID, err)
+				}
+			}
+		}
 		if name := c.GetName(); name != "" {
-			return name
+			return name, tz
 		}
 		if u := c.GetUser(); u != nil {
 			full := strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
 			if full != "" {
-				return full
+				return full, tz
 			}
 		}
-		return clientID
+		return clientID, tz
 	}
-	return clientID
+	return clientID, fallbackTz
 }
 
 // findClientPriceSchedule searches the workspace's active price schedules
-// for the one bound to the supplied client_id. Returns the first match's ID,
-// or the empty string when none exists (the use case will auto-create on
-// save in the next task).
-func findClientPriceSchedule(ctx context.Context, deps *PricePlanDeps, clientID string) string {
+// for the one bound to the supplied client_id. Returns the first match's
+// full row, or nil when none exists (the use case will auto-create on save).
+// Returning the row (not just the ID) lets the caller render the schedule's
+// actual saved Name in the drawer's readonly label, instead of re-deriving
+// "{client} - {suffix}" — the two can disagree if an operator has manually
+// renamed the schedule.
+func findClientPriceSchedule(ctx context.Context, deps *PricePlanDeps, clientID string) *priceschedulepb.PriceSchedule {
 	if clientID == "" || deps.ListPriceSchedules == nil {
-		return ""
+		return nil
 	}
 	resp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
 	if err != nil {
 		log.Printf("Failed to list price schedules for client schedule lock: %v", err)
-		return ""
+		return nil
 	}
 	for _, s := range resp.GetData() {
 		if !s.GetActive() {
 			continue
 		}
 		if s.GetClientId() == clientID {
-			return s.GetId()
+			return s
 		}
 	}
-	return ""
+	return nil
 }
 
 // resolveScheduleLock computes the (mode, scheduleID, scheduleLabel,
 // clientName) tuple for the price-schedule field on the PricePlan drawer.
-// When the parent plan carries a client_id, the field collapses to readonly
-// and the label derives from "{ClientName} - {Suffix}" — Suffix sourced from
-// PriceScheduleFormLabels.CustomClientPriceScheduleLabelSuffix (general:
-// "Price Schedule"; professional: "Rate Cards"). When the plan is master,
-// returns ("picker", "", "", "") so the caller falls through to the standard
-// auto-complete branch.
+// When the parent plan carries a client_id, the field collapses to readonly:
+//   - if a client schedule already exists, the label is the schedule's
+//     saved Name (so the drawer never disagrees with the persisted row);
+//   - if none exists yet, the label is a timestamped preview built via
+//     pyezatypes.AppendTimestamp, in the client's tz when set, otherwise
+//     the request tz. The base mirrors espyna's
+//     applyClientScopedScheduleRule (parentPlan.Name → "{client} - {suffix}"
+//     → suffix-only) so the persisted name will share the same shape.
+//     Render-time vs save-time timestamps will differ by a few seconds —
+//     accepted.
+//
+// When the plan is master, returns ("picker", "", "", "") so the caller
+// falls through to the standard auto-complete branch.
 func resolveScheduleLock(ctx context.Context, deps *PricePlanDeps, plan *planpb.Plan) (mode, scheduleID, scheduleLabel, clientName string) {
 	if plan == nil {
 		return "picker", "", "", ""
@@ -205,22 +227,36 @@ func resolveScheduleLock(ctx context.Context, deps *PricePlanDeps, plan *planpb.
 	if clientID == "" {
 		return "picker", "", "", ""
 	}
-	clientName = resolvePricePlanClientName(ctx, clientID, deps.ListClients)
+	requestTz := pyezatypes.LocationFromContext(ctx)
+	resolvedName, tz := resolvePricePlanClientNameAndTz(ctx, clientID, deps.ListClients, requestTz)
+	clientName = resolvedName
+
+	// Existing schedule → use the row's saved Name verbatim. If the
+	// operator renamed it, the drawer reflects that — the alternative
+	// (re-derive "{client} - {suffix}") silently lies.
+	if existing := findClientPriceSchedule(ctx, deps, clientID); existing != nil {
+		return "readonly", existing.GetId(), existing.GetName(), clientName
+	}
+
+	// No existing schedule → preview the name the use case will mint on
+	// save. Base is ALWAYS "{client} - {suffix}" so the rate-card list
+	// scans by client, regardless of how the parent Plan is named. Suffix
+	// is lyngua-driven (general: "Price Schedule"; professional: "Rate
+	// Cards"). Espyna's applyClientScopedScheduleRule mirrors this shape
+	// using the suffix passed via context (see ctx plumbing in the POST
+	// handler) so the persisted name matches.
 	suffix := deps.PriceScheduleLabels.Form.CustomClientPriceScheduleLabelSuffix
 	if suffix == "" {
 		suffix = "Price Schedule"
 	}
-	derived := strings.TrimSpace(clientName)
-	if derived == "" {
-		derived = clientID
+	var base string
+	if cn := strings.TrimSpace(clientName); cn != "" {
+		base = cn + " - " + suffix
+	} else {
+		base = suffix
 	}
-	derived = derived + " - " + suffix
-	scheduleID = findClientPriceSchedule(ctx, deps, clientID)
-	// Always lock — when a matching client schedule exists the saved
-	// PricePlan attaches to it; when none exists yet, the use case
-	// auto-creates one on save. Drawer renders a contextual hint
-	// (will-create vs will-reuse) below the field.
-	return "readonly", scheduleID, derived, clientName
+	preview := pyezatypes.AppendTimestamp(base, time.Now(), tz)
+	return "readonly", "", preview, clientName
 }
 
 // buildScheduleAutoHint picks the right info-line for the readonly schedule
@@ -429,6 +465,16 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 		}
 		applyBillingFields(pp, r)
 
+		// Plumb the lyngua-resolved suffix through context so espyna's
+		// applyClientScopedScheduleRule can name an auto-created schedule
+		// "{client} - {suffix} - {timestamp} {tz}" with the right
+		// tier-specific noun (general: "Price Schedule"; professional:
+		// "Rate Cards"). String key matches espyna's
+		// ExtractClientScheduleSuffixFromContext reader.
+		if suffix := deps.PriceScheduleLabels.Form.CustomClientPriceScheduleLabelSuffix; suffix != "" {
+			ctx = context.WithValue(ctx, "clientScheduleSuffix", suffix)
+		}
+
 		createResp, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{
 			Data: pp,
 		})
@@ -610,6 +656,14 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			pp.PriceScheduleId = &schedID
 		}
 		applyBillingFields(pp, r)
+
+		// Plumb the lyngua-resolved suffix through context — see comment
+		// in NewPricePlanAddAction. The update path also routes through
+		// applyClientScopedScheduleRule when the operator clears
+		// price_schedule_id on edit.
+		if suffix := deps.PriceScheduleLabels.Form.CustomClientPriceScheduleLabelSuffix; suffix != "" {
+			ctx = context.WithValue(ctx, "clientScheduleSuffix", suffix)
+		}
 
 		if _, err := deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{Data: pp}); err != nil {
 			log.Printf("Failed to update price plan %s: %v", ppID, err)
