@@ -1,0 +1,16 @@
+{{define "subscription-plan-info-section"}}
+{{if .PlanInfo.Available}}
+<section data-testid="subscription-plan-info-section" class="form-section">
+    <h3 class="form-section-title">{{.Labels.PlanInfoSectionTitle}}</h3>
+    <dl class="form-summary">
+        {{if .PlanInfo.BillingKind}}<dt>{{.Labels.BillingKindLabelLite}}</dt><dd>{{.PlanInfo.BillingKind}}</dd>{{end}}
+        {{if .PlanInfo.AmountBasis}}<dt>{{.Labels.AmountBasisLabelLite}}</dt><dd>{{.PlanInfo.AmountBasis}}</dd>{{end}}
+        {{if .PlanInfo.AmountDisplay}}<dt>{{.Labels.AmountLabelLite}}</dt><dd>{{.PlanInfo.AmountDisplay}}</dd>{{end}}
+        {{if .PlanInfo.BillingCycle}}<dt>{{.Labels.BillingCycleLabelLite}}</dt><dd>{{.PlanInfo.BillingCycle}}</dd>{{end}}
+        {{if .PlanInfo.Term}}<dt>{{.Labels.TermLabelLite}}</dt><dd>{{.PlanInfo.Term}}</dd>{{end}}
+        {{if .PlanInfo.VisitsPerCycle}}<dt>{{.Labels.VisitsPerCycleLabelLite}}</dt><dd>{{.PlanInfo.VisitsPerCycle}}</dd>{{end}}
+        {{if .PlanInfo.EntitledOccurrences}}<dt>{{.Labels.EntitledOccurrencesLabelLite}}</dt><dd>{{.PlanInfo.EntitledOccurrences}}</dd>{{end}}
+    </dl>
+</section>
+{{end}}
+{{end}}
