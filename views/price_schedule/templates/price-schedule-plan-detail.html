@@ -15,6 +15,8 @@
             {{template "price-schedule-plan-tab-info" .}}
         {{else if eq .ActiveTab "product-prices"}}
             {{template "price-schedule-plan-tab-product-prices" .}}
+        {{else if eq .ActiveTab "subscriptions"}}
+            {{template "price-schedule-plan-tab-subscriptions" .}}
         {{end}}
     </div>
 </div>
@@ -79,6 +81,16 @@
             <div class="coming-soon-title">{{.ProductPriceEmptyTitle}}</div>
             <p class="coming-soon-text">{{.ProductPriceEmptyMsg}}</p>
         </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* TAB: Subscriptions / Engagements — see
+     docs/plan/20260504-price-plan-engagements-tab/ */}}
+{{define "price-schedule-plan-tab-subscriptions"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .SubscriptionsTable}}
+        {{template "table-card" .SubscriptionsTable}}
     {{end}}
 </div>
 {{end}}

@@ -4136,6 +4136,10 @@ type PricePlanDetailLabels2 struct {
 	RevenueRecognitionHeading string                      `json:"revenueRecognitionHeading"`
 	Summary                   PricePlanBillingSummaryCopy `json:"summary"`
 	Warning                   PricePlanBillingSummaryWarn `json:"warning"`
+
+	// 2026-05-04 — Subscriptions/Engagements tab on the price-plan detail.
+	// See docs/plan/20260504-price-plan-engagements-tab/.
+	Subscriptions PricePlanSubscriptionsSectionLabels `json:"subscriptions"`
 }
 
 // PricePlanBillingSummaryCopy carries the per-(kind × basis) lyngua copy that
@@ -4181,10 +4185,26 @@ type PricePlanBillingSummaryWarn struct {
 }
 
 type PricePlanTabLabels2 struct {
-	Info        string `json:"info"`
-	Products    string `json:"products"`
-	Attachments string `json:"attachments"`
-	Audit       string `json:"audit"`
+	Info          string `json:"info"`
+	Products      string `json:"products"`
+	Subscriptions string `json:"subscriptions"`
+	Attachments   string `json:"attachments"`
+	Audit         string `json:"audit"`
+}
+
+// PricePlanSubscriptionsSectionLabels holds the column headers, empty state,
+// and confirm-delete copy for the price-plan detail "Subscriptions" tab —
+// professional tier overrides this block to use the engagement vocabulary.
+type PricePlanSubscriptionsSectionLabels struct {
+	ColumnName             string `json:"columnName"`
+	ColumnClient           string `json:"columnClient"`
+	ColumnPlan             string `json:"columnPlan"`
+	ColumnStartDate        string `json:"columnStartDate"`
+	ColumnEndDate          string `json:"columnEndDate"`
+	EmptyTitle             string `json:"emptyTitle"`
+	EmptyMessage           string `json:"emptyMessage"`
+	ConfirmDeleteTitle     string `json:"confirmDeleteTitle"`
+	ConfirmDeleteMessage   string `json:"confirmDeleteMessage"`
 }
 
 type PricePlanConfirmLabels struct {
@@ -4416,12 +4436,24 @@ func DefaultPricePlanLabels() PricePlanLabels {
 				RecurringNoTemplate:       "This subscription will not have operational tracking. Add a JobTemplate to the Plan to enable cycle Jobs.",
 				VisitsPerCycleInvalidKind: "visits_per_cycle is only valid for cyclic plans. Reset to 1 or change the billing kind.",
 			},
+			Subscriptions: PricePlanSubscriptionsSectionLabels{
+				ColumnName:           "Subscription",
+				ColumnClient:         "Client",
+				ColumnPlan:           "Plan",
+				ColumnStartDate:      "Start Date",
+				ColumnEndDate:        "End Date",
+				EmptyTitle:           "No subscriptions yet",
+				EmptyMessage:         "Subscriptions referencing this price plan will appear here.",
+				ConfirmDeleteTitle:   "Delete Subscription",
+				ConfirmDeleteMessage: "Are you sure you want to delete subscription %s? This action cannot be undone.",
+			},
 		},
 		Tabs: PricePlanTabLabels2{
-			Info:        "Information",
-			Products:    "Products",
-			Attachments: "Attachments",
-			Audit:       "Audit Trail",
+			Info:          "Information",
+			Products:      "Products",
+			Subscriptions: "Subscriptions",
+			Attachments:   "Attachments",
+			Audit:         "Audit Trail",
 		},
 		Confirm: PricePlanConfirmLabels{
 			DeleteTitle:       "Delete Rate Card",
@@ -4632,6 +4664,11 @@ type PriceScheduleTabLabels struct {
 	PricePlanSlug     string `json:"pricePlanSlug"`
 	ProductPrices     string `json:"productPrices"`
 	ProductPricesSlug string `json:"productPricesSlug"`
+	// 2026-05-04 — Subscriptions/Engagements tab on the schedule-scoped
+	// price_plan detail. Professional tier overrides the label to
+	// "Engagements"; URL slug stays "subscriptions" across tiers.
+	Subscriptions     string `json:"subscriptions"`
+	SubscriptionsSlug string `json:"subscriptionsSlug"`
 }
 
 // ResolveTabSlug returns the URL slug for a canonical tab key. Today only the
@@ -4646,6 +4683,10 @@ func (t PriceScheduleTabLabels) ResolveTabSlug(canonical string) string {
 		}
 	case "product-prices":
 		if s := strings.TrimSpace(t.ProductPricesSlug); s != "" {
+			return s
+		}
+	case "subscriptions":
+		if s := strings.TrimSpace(t.SubscriptionsSlug); s != "" {
 			return s
 		}
 	}
@@ -4663,6 +4704,9 @@ func (t PriceScheduleTabLabels) CanonicalizeTab(slug string) string {
 	}
 	if s := strings.TrimSpace(t.ProductPricesSlug); s != "" && slug == s {
 		return "product-prices"
+	}
+	if s := strings.TrimSpace(t.SubscriptionsSlug); s != "" && slug == s {
+		return "subscriptions"
 	}
 	return slug
 }
@@ -4854,10 +4898,12 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			DeactivateMessage: "Deactivate {{name}}?",
 		},
 		Tabs: PriceScheduleTabLabels{
-			Info:          "Info",
-			PricePlan:     "Plans",
-			PricePlanSlug: "",
-			ProductPrices: "Product Prices",
+			Info:              "Info",
+			PricePlan:         "Plans",
+			PricePlanSlug:     "",
+			ProductPrices:     "Product Prices",
+			Subscriptions:     "Subscriptions",
+			SubscriptionsSlug: "",
 		},
 		Detail: PriceScheduleDetailLabels{
 			Title:                     "Price Schedule",

@@ -1171,6 +1171,14 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					priceScheduleDeps.UpdateProductPricePlan = ppp.UpdateProductPricePlan.Execute
 					priceScheduleDeps.DeleteProductPricePlan = ppp.DeleteProductPricePlan.Execute
 				}
+				// 2026-05-04 — Engagements (subscriptions) tab on the schedule-scoped
+				// price_plan detail page. See docs/plan/20260504-price-plan-engagements-tab/.
+				if useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.ListSubscriptionsByPricePlan != nil {
+					priceScheduleDeps.ListSubscriptionsByPricePlan = useCases.Subscription.Subscription.ListSubscriptionsByPricePlan.Execute
+				}
+				priceScheduleDeps.SubscriptionDetailURL = subscriptionRoutes.DetailURL
+				priceScheduleDeps.SubscriptionEditURL = subscriptionRoutes.EditURL
+				priceScheduleDeps.SubscriptionDeleteURL = subscriptionRoutes.DeleteURL
 				priceschedulemod.NewModule(priceScheduleDeps).RegisterRoutes(ctx.Routes)
 
 				// =====================================================================
@@ -2042,11 +2050,26 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				subDetailDeps.SpawnJobsURL = subscriptionRoutes.SpawnJobsURL
 				subDetailDeps.JobDetailURL = cfg.jobDetailURL
 				subDetailDeps.ClientDetailURL = cfg.clientDetailURL
+				// 2026-05-04 — engagement breadcrumb (rate-card → plan).
+				subDetailDeps.PriceScheduleDetailURL = priceScheduleRoutes.DetailURL
+				subDetailDeps.PricePlanDetailURL = priceScheduleRoutes.PlanDetailURL
+				if useCases.Subscription.PriceSchedule != nil && useCases.Subscription.PriceSchedule.ReadPriceSchedule != nil {
+					subDetailDeps.ReadPriceSchedule = useCases.Subscription.PriceSchedule.ReadPriceSchedule.Execute
+				}
+				if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.ReadPricePlan != nil {
+					subDetailDeps.ReadPricePlan = useCases.Subscription.PricePlan.ReadPricePlan.Execute
+				}
 				ctx.Routes.GET(subscriptionRoutes.DetailURL, subscriptiondetail.NewView(subDetailDeps))
 				ctx.Routes.GET(subscriptionRoutes.TabActionURL, subscriptiondetail.NewTabAction(subDetailDeps))
 				// Nested route — same view, breadcrumb activated via path param.
 				if subscriptionRoutes.UnderClientDetailURL != "" {
 					ctx.Routes.GET(subscriptionRoutes.UnderClientDetailURL, subscriptiondetail.NewView(subDetailDeps))
+				}
+				// 2026-05-04 — Engagement detail nested under the rate-card → plan
+				// path. Same view; the URL alone activates the schedule + plan
+				// breadcrumb segments inside the subscription detail page.
+				if priceScheduleRoutes.PlanEngagementDetailURL != "" {
+					ctx.Routes.GET(priceScheduleRoutes.PlanEngagementDetailURL, subscriptiondetail.NewView(subDetailDeps))
 				}
 				// Subscription attachments
 				if uploadFile != nil {

@@ -26,6 +26,7 @@ import (
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
 // DetailViewDeps holds all dependencies for the schedule-scoped price_plan detail page.
@@ -77,6 +78,23 @@ type DetailViewDeps struct {
 	// namespace as the operator switches tabs.
 	PlanScopedDetailURL    string
 	PlanScopedTabActionURL string
+
+	// 2026-05-04 — Engagements (subscriptions) tab dependencies. See
+	// docs/plan/20260504-price-plan-engagements-tab/.
+	ListSubscriptionsByPricePlan func(ctx context.Context, req *subscriptionpb.ListSubscriptionsByPricePlanRequest) (*subscriptionpb.ListSubscriptionsByPricePlanResponse, error)
+	// SubscriptionEditURL / SubscriptionDeleteURL drive the row actions on
+	// the subscriptions tab table. When empty, the row's edit/delete actions
+	// render disabled (display-only). DetailURL is overridden by the nested
+	// engagement URL when PlanEngagementDetailURL is non-empty.
+	SubscriptionEditURL   string
+	SubscriptionDeleteURL string
+	// PlanEngagementDetailURL is the schedule-scoped engagement URL template
+	// /app/price-schedules/detail/{id}/plan/{ppid}/engagement/{eid}. When
+	// set, the row's "View" action targets this nested URL so the
+	// subscription detail page renders with a rate-card → plan → engagement
+	// breadcrumb. Empty falls back to SubscriptionDetailURL.
+	PlanEngagementDetailURL string
+	SubscriptionDetailURL   string
 }
 
 // PageData is the template data for the schedule-scoped plan detail page.
@@ -107,6 +125,23 @@ type PageData struct {
 	ProductPricesTable     *types.TableConfig
 	ProductPriceEmptyTitle string
 	ProductPriceEmptyMsg   string
+
+	// 2026-05-04 — Engagements (subscriptions) tab payload.
+	SubscriptionsTable *types.TableConfig
+}
+
+// SubscriptionRow is one row in the schedule-scoped plan detail
+// "Engagements" / "Subscriptions" tab table. Names + dates are pre-formatted
+// for the tier's display TZ; the view-layer table builder consumes this struct
+// directly into pyeza TableRow cells.
+type SubscriptionRow struct {
+	ID         string
+	Name       string
+	ClientID   string
+	ClientName string
+	Plan       string
+	DateStart  string
+	DateEnd    string
 }
 
 // EditFormData is the drawer form for editing a price_plan under a schedule.
@@ -883,6 +918,11 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 		}
 	}
 
+	// Subscriptions count for tab badge — sourced from the new
+	// ListSubscriptionsByPricePlan use case so the value matches what the tab
+	// table will render. When the dep is unwired the badge stays at 0.
+	subscriptionCount := countSubscriptionsForPricePlan(ctx, deps, ppid)
+
 	// Tab item URLs reflect the active mount: when plan-scoped, they live under
 	// /app/plans/detail/{plan_id}/price/{ppid}; otherwise the rate-card-scoped
 	// defaults derived from PriceScheduleRoutes.
@@ -900,9 +940,18 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 	base := route.ResolveURL(detailURLTemplate, "id", pathID, "ppid", ppid)
 	action := route.ResolveURL(tabActionURLTemplate, "id", pathID, "ppid", ppid, "tab", "")
 	productPricesSlug := deps.ScheduleLabels.Tabs.ResolveTabSlug("product-prices")
+	subscriptionsSlug := deps.ScheduleLabels.Tabs.ResolveTabSlug("subscriptions")
+	subscriptionsLabel := deps.ScheduleLabels.Tabs.Subscriptions
+	if subscriptionsLabel == "" {
+		subscriptionsLabel = deps.PlanLabels.Tabs.Subscriptions
+	}
+	if subscriptionsLabel == "" {
+		subscriptionsLabel = "Subscriptions"
+	}
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: deps.ScheduleLabels.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "product-prices", Label: deps.ScheduleLabels.Tabs.ProductPrices, Href: base + "?tab=" + productPricesSlug, HxGet: action + productPricesSlug, Icon: "icon-package", Count: count},
+		{Key: "subscriptions", Label: subscriptionsLabel, Href: base + "?tab=" + subscriptionsSlug, HxGet: action + subscriptionsSlug, Icon: "icon-briefcase", Count: subscriptionCount},
 	}
 
 	headerSubtitle := effectiveDesc
@@ -950,7 +999,187 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 	if activeTab == "product-prices" {
 		pageData.ProductPricesTable = buildProductPricesTable(ctx, deps, sid, ppid)
 	}
+	if activeTab == "subscriptions" {
+		rows := loadSubscriptionsForPricePlan(ctx, deps, ppid)
+		pageData.SubscriptionsTable = buildSubscriptionsTable(ctx, deps, sid, ppid, rows)
+	}
 	return pageData, nil
+}
+
+// countSubscriptionsForPricePlan returns the count of active subscriptions
+// referencing the given PricePlan. The use case is the same one the tab body
+// renders against — so the badge count and row count cannot drift. Returns 0
+// (no badge) when the dep is unwired.
+func countSubscriptionsForPricePlan(ctx context.Context, deps *DetailViewDeps, pricePlanID string) int {
+	if deps.ListSubscriptionsByPricePlan == nil {
+		return 0
+	}
+	activeOnly := true
+	resp, err := deps.ListSubscriptionsByPricePlan(ctx, &subscriptionpb.ListSubscriptionsByPricePlanRequest{
+		PricePlanId: pricePlanID,
+		ActiveOnly:  &activeOnly,
+	})
+	if err != nil {
+		log.Printf("Failed to count subscriptions for price plan %s: %v", pricePlanID, err)
+		return 0
+	}
+	return len(resp.GetSubscriptionList())
+}
+
+// loadSubscriptionsForPricePlan fetches active subscriptions for the given
+// PricePlan and shapes them into SubscriptionRow values for the tab table.
+// Hydration of Client + PricePlan + Plan is provided by the espyna use case
+// (single CTE-based JOIN) — the view layer does not chain N+1 lookups.
+func loadSubscriptionsForPricePlan(ctx context.Context, deps *DetailViewDeps, pricePlanID string) []SubscriptionRow {
+	if deps.ListSubscriptionsByPricePlan == nil {
+		return nil
+	}
+	activeOnly := true
+	resp, err := deps.ListSubscriptionsByPricePlan(ctx, &subscriptionpb.ListSubscriptionsByPricePlanRequest{
+		PricePlanId: pricePlanID,
+		ActiveOnly:  &activeOnly,
+	})
+	if err != nil {
+		log.Printf("Failed to load subscriptions for price plan %s: %v", pricePlanID, err)
+		return nil
+	}
+
+	tz := types.LocationFromContext(ctx)
+	rows := make([]SubscriptionRow, 0, len(resp.GetSubscriptionList()))
+	for _, s := range resp.GetSubscriptionList() {
+		if s == nil {
+			continue
+		}
+		clientName := ""
+		clientID := s.GetClientId()
+		if c := s.GetClient(); c != nil {
+			clientName = c.GetName()
+			if clientName == "" {
+				if u := c.GetUser(); u != nil {
+					first := u.GetFirstName()
+					last := u.GetLastName()
+					if first != "" || last != "" {
+						clientName = strings.TrimSpace(first + " " + last)
+					}
+					if clientName == "" {
+						clientName = u.GetEmailAddress()
+					}
+				}
+			}
+			if clientID == "" {
+				clientID = c.GetId()
+			}
+		}
+
+		planName := ""
+		if pp := s.GetPricePlan(); pp != nil {
+			if p := pp.GetPlan(); p != nil {
+				planName = p.GetName()
+			}
+			if planName == "" {
+				planName = pp.GetName()
+			}
+		}
+
+		rows = append(rows, SubscriptionRow{
+			ID:         s.GetId(),
+			Name:       s.GetName(),
+			ClientID:   clientID,
+			ClientName: clientName,
+			Plan:       planName,
+			DateStart:  types.FormatTimestampInTZ(s.GetDateTimeStart(), tz, types.DateTimeReadable),
+			DateEnd:    types.FormatTimestampInTZ(s.GetDateTimeEnd(), tz, types.DateTimeReadable),
+		})
+	}
+	return rows
+}
+
+// buildSubscriptionsTable assembles the TableConfig for the schedule-scoped
+// plan detail's "Engagements"/"Subscriptions" tab. Columns:
+// Name → Client → Plan → Start Date → End Date. The View action targets the
+// nested engagement URL when configured so the breadcrumb chains
+// rate-card → plan → engagement.
+func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, sid, ppid string, rows []SubscriptionRow) *types.TableConfig {
+	perms := view.GetUserPermissions(ctx)
+	subLabels := deps.PlanLabels.Detail.Subscriptions
+
+	columns := []types.TableColumn{
+		{Key: "name", Label: subLabels.ColumnName},
+		{Key: "client", Label: subLabels.ColumnClient},
+		{Key: "plan", Label: subLabels.ColumnPlan},
+		{Key: "start_date", Label: subLabels.ColumnStartDate, WidthClass: "col-3xl"},
+		{Key: "end_date", Label: subLabels.ColumnEndDate, WidthClass: "col-3xl"},
+	}
+
+	tableRows := make([]types.TableRow, 0, len(rows))
+	for _, r := range rows {
+		viewURL := ""
+		if deps.PlanEngagementDetailURL != "" {
+			viewURL = route.ResolveURL(deps.PlanEngagementDetailURL, "id", sid, "ppid", ppid, "eid", r.ID)
+		} else if deps.SubscriptionDetailURL != "" {
+			viewURL = route.ResolveURL(deps.SubscriptionDetailURL, "id", r.ID)
+		}
+
+		actions := []types.TableAction{}
+		if viewURL != "" {
+			actions = append(actions, types.TableAction{Type: "view", Label: deps.CommonLabels.Actions.View, Action: "view", Href: viewURL})
+		}
+		if perms.Can("subscription", "update") && deps.SubscriptionEditURL != "" {
+			editURL := route.ResolveURL(deps.SubscriptionEditURL, "id", r.ID)
+			actions = append(actions, types.TableAction{Type: "edit", Label: deps.CommonLabels.Actions.Edit, Action: "edit", URL: editURL, DrawerTitle: r.Name})
+		}
+		if perms.Can("subscription", "delete") && deps.SubscriptionDeleteURL != "" {
+			actions = append(actions, types.TableAction{
+				Type:           "delete",
+				Label:          deps.CommonLabels.Actions.Delete,
+				Action:         "delete",
+				URL:            deps.SubscriptionDeleteURL,
+				ItemName:       r.Name,
+				ConfirmTitle:   subLabels.ConfirmDeleteTitle,
+				ConfirmMessage: fmt.Sprintf(subLabels.ConfirmDeleteMessage, r.Name),
+			})
+		}
+
+		tableRows = append(tableRows, types.TableRow{
+			ID: r.ID,
+			Cells: []types.TableCell{
+				{Type: "text", Value: r.Name},
+				{Type: "text", Value: r.ClientName},
+				{Type: "text", Value: r.Plan},
+				{Type: "text", Value: r.DateStart},
+				{Type: "text", Value: r.DateEnd},
+			},
+			DataAttrs: map[string]string{
+				"name":   r.Name,
+				"client": r.ClientName,
+				"plan":   r.Plan,
+			},
+			Actions: actions,
+		})
+	}
+
+	types.ApplyColumnStyles(columns, tableRows)
+
+	tc := &types.TableConfig{
+		ID:                   "subscriptions-table",
+		Columns:              columns,
+		Rows:                 tableRows,
+		Labels:               deps.TableLabels,
+		ShowSearch:           true,
+		ShowActions:          true,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "name",
+		DefaultSortDirection: "asc",
+		EmptyState: types.TableEmptyState{
+			Title:   subLabels.EmptyTitle,
+			Message: subLabels.EmptyMessage,
+		},
+	}
+	types.ApplyTableSettings(tc)
+	return tc
 }
 
 func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, sid, ppid string) *types.TableConfig {

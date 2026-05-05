@@ -1188,6 +1188,12 @@ type PriceScheduleRoutes struct {
 	PlanProductPriceAddURL     string `json:"plan_product_price_add_url"`
 	PlanProductPriceEditURL    string `json:"plan_product_price_edit_url"`
 	PlanProductPriceDeleteURL  string `json:"plan_product_price_delete_url"`
+	// 2026-05-04 — Engagement (subscription) detail nested under the
+	// schedule-scoped price_plan path. Activates the rate-card → plan →
+	// engagement breadcrumb in the subscription detail view. Empty string
+	// disables the nested route. See
+	// docs/plan/20260504-price-plan-engagements-tab/.
+	PlanEngagementDetailURL    string `json:"plan_engagement_detail_url"`
 }
 
 // DefaultPriceScheduleRoutes returns a PriceScheduleRoutes populated from the package-level
@@ -1215,6 +1221,7 @@ func DefaultPriceScheduleRoutes() PriceScheduleRoutes {
 		PlanProductPriceAddURL:    PriceSchedulePlanProductPriceAddURL,
 		PlanProductPriceEditURL:   PriceSchedulePlanProductPriceEditURL,
 		PlanProductPriceDeleteURL: PriceSchedulePlanProductPriceDeleteURL,
+		PlanEngagementDetailURL:   PriceSchedulePlanEngagementDetailURL,
 	}
 }
 
@@ -1255,6 +1262,7 @@ func DefaultPriceScheduleInventoryRoutes() PriceScheduleRoutes {
 	r.PlanProductPriceAddURL = shift(r.PlanProductPriceAddURL)
 	r.PlanProductPriceEditURL = shift(r.PlanProductPriceEditURL)
 	r.PlanProductPriceDeleteURL = shift(r.PlanProductPriceDeleteURL)
+	r.PlanEngagementDetailURL = shift(r.PlanEngagementDetailURL)
 	return r
 }
 
@@ -1281,6 +1289,7 @@ func (r PriceScheduleRoutes) RouteMap() map[string]string {
 		"price_schedule.plan.product_price.add":         r.PlanProductPriceAddURL,
 		"price_schedule.plan.product_price.edit":        r.PlanProductPriceEditURL,
 		"price_schedule.plan.product_price.delete":      r.PlanProductPriceDeleteURL,
+		"price_schedule.plan.engagement.detail":         r.PlanEngagementDetailURL,
 	}
 }
 

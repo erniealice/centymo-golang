@@ -22,6 +22,7 @@ import (
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
 // ModuleDeps holds all dependencies for the price_schedule module.
@@ -65,6 +66,13 @@ type ModuleDeps struct {
 	// ListClientNames returns id → display name. Used by the schedule list's
 	// optional Client column when the §6.1 filter chip is set.
 	ListClientNames func(ctx context.Context) map[string]string
+
+	// 2026-05-04 — Engagements (subscriptions) tab on the schedule-scoped
+	// price_plan detail page. See docs/plan/20260504-price-plan-engagements-tab/.
+	ListSubscriptionsByPricePlan func(ctx context.Context, req *subscriptionpb.ListSubscriptionsByPricePlanRequest) (*subscriptionpb.ListSubscriptionsByPricePlanResponse, error)
+	SubscriptionDetailURL        string
+	SubscriptionEditURL          string
+	SubscriptionDeleteURL        string
 }
 
 // Module holds all constructed price_schedule views.
@@ -161,6 +169,12 @@ func NewModule(deps *ModuleDeps) *Module {
 		UpdateProductPricePlan: deps.UpdateProductPricePlan,
 		DeleteProductPricePlan: deps.DeleteProductPricePlan,
 		GetPricePlanInUseIDs:   deps.GetPricePlanInUseIDs,
+		// 2026-05-04 engagements tab.
+		ListSubscriptionsByPricePlan: deps.ListSubscriptionsByPricePlan,
+		PlanEngagementDetailURL:      deps.Routes.PlanEngagementDetailURL,
+		SubscriptionDetailURL:        deps.SubscriptionDetailURL,
+		SubscriptionEditURL:          deps.SubscriptionEditURL,
+		SubscriptionDeleteURL:        deps.SubscriptionDeleteURL,
 	}
 
 	return &Module{

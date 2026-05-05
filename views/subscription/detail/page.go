@@ -26,6 +26,7 @@ import (
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
@@ -66,6 +67,17 @@ type DetailViewDeps struct {
 	// (e.g. "/app/clients/detail/{id}"); used to build the breadcrumb link.
 	// Empty string disables the breadcrumb link (label still renders).
 	ClientDetailURL string
+
+	// 2026-05-04 — when the subscription detail page is mounted at the nested
+	// rate-card → plan → engagement URL, these absolute path templates power
+	// a 2-segment breadcrumb (PriceSchedule → PricePlan). All three deps are
+	// optional and nil-safe; absence produces a degraded breadcrumb (id-only).
+	// See docs/plan/20260504-price-plan-engagements-tab/.
+	PriceScheduleDetailURL string
+	PricePlanDetailURL     string
+	ReadPriceSchedule      func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
+	ReadPricePlan          func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+
 	Labels          centymo.SubscriptionLabels
 	CommonLabels    pyeza.CommonLabels
 	TableLabels     types.TableLabels
@@ -352,8 +364,27 @@ func subscriptionToMap(ctx context.Context, s *subscriptionpb.Subscription) map[
 // breadcrumb.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		id := viewCtx.Request.PathValue("id")
+		// 2026-05-04 — three URL mounts share this view:
+		//   /app/subscriptions/detail/{id}                                  (flat)
+		//   /app/clients/detail/{client_id}/subscriptions/{id}              (under client)
+		//   /app/services/rate-cards/detail/{id}/plan/{ppid}/engagement/{eid}  (under price plan)
+		// The third mount uses {eid} for the subscription id (since {id} is
+		// already taken by the price_schedule_id) — fall back through {id}
+		// for the flat / under-client mounts so a single PathValue("id")
+		// still works for them.
+		id := viewCtx.Request.PathValue("eid")
+		if id == "" {
+			id = viewCtx.Request.PathValue("id")
+		}
 		clientIDFromPath := viewCtx.Request.PathValue("client_id")
+		// When mounted under the price plan path, {id} is the price_schedule
+		// id and {ppid} is the price_plan id. We only use these for the
+		// breadcrumb resolver — they're absent on the flat/under-client mounts.
+		priceScheduleIDFromPath := ""
+		pricePlanIDFromPath := viewCtx.Request.PathValue("ppid")
+		if pricePlanIDFromPath != "" {
+			priceScheduleIDFromPath = viewCtx.Request.PathValue("id")
+		}
 
 		sub, err := loadSubscriptionWithRelations(ctx, deps, id)
 		if err != nil {
@@ -362,6 +393,14 @@ func NewView(deps *DetailViewDeps) view.View {
 		}
 		subscription := subscriptionToMap(ctx, sub)
 		breadcrumbLabel, breadcrumbURL := resolveClientBreadcrumb(ctx, deps, clientIDFromPath, sub)
+		// Price-plan breadcrumb wins when the path values are present —
+		// rate-card → plan → engagement context overrides the client breadcrumb.
+		if pricePlanIDFromPath != "" {
+			if pl, pu := resolvePricePlanBreadcrumb(ctx, deps, priceScheduleIDFromPath, pricePlanIDFromPath); pl != "" {
+				breadcrumbLabel = pl
+				breadcrumbURL = pu
+			}
+		}
 
 		subName, _ := subscription["name"].(string)
 		customer, _ := subscription["customer"].(string)
@@ -571,6 +610,54 @@ func resolveClientBreadcrumb(ctx context.Context, deps *DetailViewDeps, clientID
 	href := ""
 	if deps.ClientDetailURL != "" {
 		href = route.ResolveURL(deps.ClientDetailURL, "id", clientIDFromPath) + "?tab=engagements"
+	}
+	return label, href
+}
+
+// resolvePricePlanBreadcrumb returns the (label, href) pair for the page-header
+// breadcrumb when the subscription is being viewed under a rate-card → plan
+// context — i.e. the URL is
+// /app/services/rate-cards/detail/{ps}/plan/{pp}/engagement/{eid}. The label
+// is "<schedule name> › <plan name>"; the href points back at the price-plan
+// detail page so "back" lands the operator on the engagements tab they came
+// from. Returns ("", "") when neither dep is wired or both lookups fail —
+// caller should fall back to the client breadcrumb.
+//
+// 2026-05-04 — see docs/plan/20260504-price-plan-engagements-tab/.
+func resolvePricePlanBreadcrumb(ctx context.Context, deps *DetailViewDeps, priceScheduleID, pricePlanID string) (string, string) {
+	if pricePlanID == "" {
+		return "", ""
+	}
+	scheduleName := ""
+	if priceScheduleID != "" && deps.ReadPriceSchedule != nil {
+		if resp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{
+			Data: &priceschedulepb.PriceSchedule{Id: priceScheduleID},
+		}); err == nil && len(resp.GetData()) > 0 {
+			scheduleName = resp.GetData()[0].GetName()
+		}
+	}
+	planName := ""
+	if deps.ReadPricePlan != nil {
+		if resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
+			Data: &priceplanpb.PricePlan{Id: pricePlanID},
+		}); err == nil && len(resp.GetData()) > 0 {
+			planName = resp.GetData()[0].GetName()
+		}
+	}
+	parts := []string{}
+	if scheduleName != "" {
+		parts = append(parts, scheduleName)
+	}
+	if planName != "" {
+		parts = append(parts, planName)
+	}
+	if len(parts) == 0 {
+		return "", ""
+	}
+	label := strings.Join(parts, " › ")
+	href := ""
+	if deps.PricePlanDetailURL != "" && priceScheduleID != "" {
+		href = route.ResolveURL(deps.PricePlanDetailURL, "id", priceScheduleID, "ppid", pricePlanID) + "?tab=subscriptions"
 	}
 	return label, href
 }
