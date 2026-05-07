@@ -8,11 +8,13 @@ import (
 	"strconv"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 )
 
@@ -29,6 +31,8 @@ type DetailViewDeps struct {
 	// Workflow — provided as closures from block.go
 	SettleAccrual  func(ctx context.Context, req *accruedexpensepb.SettleAccrualRequest) error
 	ReverseAccrual func(ctx context.Context, id, reason string) error
+
+	attachment.AttachmentOps
 }
 
 // PageData holds template data for the accrued_expense detail page.
@@ -45,6 +49,8 @@ type PageData struct {
 	SettlementTable     *types.TableConfig
 	SettlementAddURL    string
 
+	AttachmentTable *types.TableConfig
+
 	SettleURL  string
 	ReverseURL string
 	EditURL    string
@@ -55,6 +61,7 @@ const (
 	tabSettlements = "settlements"
 	tabSource      = "source"
 	tabActivity    = "activity"
+	tabAttachments = "attachments"
 )
 
 // NewView creates the accrued_expense detail page view.
@@ -91,6 +98,7 @@ func NewView(deps *DetailViewDeps) view.View {
 			{Key: tabSettlements, Label: l.Tabs.Settlements},
 			{Key: tabSource, Label: l.Tabs.Source},
 			{Key: tabActivity, Label: l.Tabs.Activity},
+			{Key: tabAttachments, Label: l.Detail.TabAttachments, Icon: "icon-paperclip"},
 		}
 
 		pd := &PageData{
@@ -117,6 +125,19 @@ func NewView(deps *DetailViewDeps) view.View {
 		if activeTab == tabSettlements && deps.ListAccruedExpenseSettlements != nil {
 			pd.SettlementTable = buildSettlementTable(ctx, deps, id, l)
 			pd.SettlementAddURL = route.ResolveURL(deps.Routes.SettlementAddURL, "id", id)
+		}
+
+		if activeTab == tabAttachments && deps.ListAttachments != nil {
+			cfg := attachmentConfig(deps)
+			resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+			if err != nil {
+				log.Printf("Failed to list attachments for accrued_expense %s: %v", id, err)
+			}
+			var items []*attachmentpb.Attachment
+			if resp != nil {
+				items = resp.GetData()
+			}
+			pd.AttachmentTable = attachment.BuildTable(items, cfg, id)
 		}
 
 		return view.OK("accrued-expense-detail", pd)
@@ -152,6 +173,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			{Key: tabSettlements, Label: l.Tabs.Settlements},
 			{Key: tabSource, Label: l.Tabs.Source},
 			{Key: tabActivity, Label: l.Tabs.Activity},
+			{Key: tabAttachments, Label: l.Detail.TabAttachments, Icon: "icon-paperclip"},
 		}
 
 		pd := &PageData{
@@ -174,7 +196,24 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			pd.SettlementAddURL = route.ResolveURL(deps.Routes.SettlementAddURL, "id", id)
 		}
 
-		return view.OK("accrued-expense-tab-content", pd)
+		if tab == tabAttachments && deps.ListAttachments != nil {
+			cfg := attachmentConfig(deps)
+			resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+			if err != nil {
+				log.Printf("Failed to list attachments for accrued_expense %s: %v", id, err)
+			}
+			var items []*attachmentpb.Attachment
+			if resp != nil {
+				items = resp.GetData()
+			}
+			pd.AttachmentTable = attachment.BuildTable(items, cfg, id)
+		}
+
+		templateName := "accrued-expense-tab-content"
+		if tab == tabAttachments {
+			templateName = "attachment-tab"
+		}
+		return view.OK(templateName, pd)
 	})
 }
 

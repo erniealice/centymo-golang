@@ -124,8 +124,7 @@ type PageData struct {
 	TabItems            []pyeza.TabItem
 	// Invoices tab
 	Invoices        *types.TableConfig
-	AttachmentTable     *types.TableConfig
-	AttachmentUploadURL string
+	AttachmentTable *types.TableConfig
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
 	AuditHasNext    bool
@@ -507,9 +506,11 @@ func NewView(deps *DetailViewDeps) view.View {
 			applyJobsTabData(ctx, deps, pageData, allJobs)
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
+			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
+				sub.GetPricePlan(), deps.Routes, l, id)
 			pageData.Invoices = buildInvoicesTable(
 				revenues, l, deps.TableLabels, centymo.RevenueDetailURL,
-				deps.Routes.RecognizeURL, id,
+				invoicesPrimaryAction,
 				canRecognize, subscriptionActive,
 				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
 			)
@@ -526,7 +527,6 @@ func NewView(deps *DetailViewDeps) view.View {
 				}
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		case "audit-history":
 			if deps.ListAuditHistory != nil {
 				cursor := viewCtx.QueryParams["cursor"]
@@ -892,22 +892,89 @@ func loadSubscriptionInvoices(ctx context.Context, deps *DetailViewDeps, subscri
 	return resp.GetRevenueList()
 }
 
+// InvoicesPrimaryAction carries the URL, label, and icon for the invoices-tab
+// toolbar CTA. The billing_kind of the subscription's price plan determines
+// which action is surfaced. Resolved by resolveInvoicesPrimaryAction.
+type InvoicesPrimaryAction struct {
+	// URL is the resolved route path with the subscription ID substituted in.
+	URL string
+	// Label is the user-facing button text (flows through SubscriptionLabels).
+	Label string
+	// Icon is the pyeza icon token (e.g. "icon-file-plus", "icon-zap").
+	Icon string
+}
+
+// resolveInvoicesPrimaryAction returns the appropriate InvoicesPrimaryAction
+// for the subscription's price plan billing kind.
+//
+// Mapping:
+//   - RECURRING / CONTRACT-with-cycle (cyclic) → RevenueRunURL (Invoice Run drawer)
+//   - AD_HOC → RequestUsageURL (Request Usage action)
+//   - MILESTONE / default (nil plan, ONE_TIME, CONTRACT-no-cycle, UNSPECIFIED) → RecognizeURL
+//
+// Note: the proto has a single BILLING_KIND_AD_HOC constant; the plan's
+// AD_HOC_POOL / AD_HOC_PER_CALL distinction is not yet represented in proto.
+// AD_HOC is routed to RequestUsageURL which handles both pool and per-call
+// dispatch via espyna's executeAdHoc. Gap filed for a future proto extension.
+func resolveInvoicesPrimaryAction(
+	plan *priceplanpb.PricePlan,
+	routes centymo.SubscriptionRoutes,
+	l centymo.SubscriptionLabels,
+	subscriptionID string,
+) InvoicesPrimaryAction {
+	if plan != nil {
+		switch plan.GetBillingKind() {
+		case priceplanpb.BillingKind_BILLING_KIND_RECURRING:
+			return InvoicesPrimaryAction{
+				URL:   route.ResolveURL(routes.RevenueRunURL, "id", subscriptionID),
+				Label: l.Invoices.RunInvoicesAction,
+				Icon:  "icon-zap",
+			}
+		case priceplanpb.BillingKind_BILLING_KIND_CONTRACT:
+			if plan.GetBillingCycleValue() > 0 {
+				return InvoicesPrimaryAction{
+					URL:   route.ResolveURL(routes.RevenueRunURL, "id", subscriptionID),
+					Label: l.Invoices.RunInvoicesAction,
+					Icon:  "icon-zap",
+				}
+			}
+			// CONTRACT without a billing cycle → treat as milestone/default.
+			return InvoicesPrimaryAction{
+				URL:   route.ResolveURL(routes.RecognizeURL, "id", subscriptionID),
+				Label: l.Invoices.RecognizeAction,
+				Icon:  "icon-file-plus",
+			}
+		case priceplanpb.BillingKind_BILLING_KIND_AD_HOC:
+			return InvoicesPrimaryAction{
+				URL:   strings.ReplaceAll(routes.RequestUsageURL, "{subscriptionId}", subscriptionID),
+				Label: l.Invoices.RequestUsageAction,
+				Icon:  "icon-file-plus",
+			}
+		}
+	}
+	// nil plan, MILESTONE, ONE_TIME, UNSPECIFIED → recognize drawer.
+	return InvoicesPrimaryAction{
+		URL:   route.ResolveURL(routes.RecognizeURL, "id", subscriptionID),
+		Label: l.Invoices.RecognizeAction,
+		Icon:  "icon-file-plus",
+	}
+}
+
 // buildInvoicesTable builds a TableConfig for the invoices tab.
 // Columns: reference number (code), date, amount, status.
 //
-// Surfaces a "Recognize Revenue" PrimaryAction on the toolbar AND on the
+// Surfaces a billing-kind-appropriate PrimaryAction on the toolbar AND on the
 // empty-state when the operator has revenue:create AND the subscription is
 // active. Disabled state degrades to a tooltip explaining the gate.
 //
-// Note: NO page-header "Recognize Revenue" button — per plan §11.2 / §4.2,
-// cause and effect stay adjacent on the invoices tab.
+// Note: NO page-header CTA — per plan §11.2 / §4.2, cause and effect stay
+// adjacent on the invoices tab.
 func buildInvoicesTable(
 	revenues []*revenuepb.Revenue,
 	l centymo.SubscriptionLabels,
 	tableLabels types.TableLabels,
 	detailURLTemplate string,
-	recognizeURL string,
-	subscriptionID string,
+	primaryAction InvoicesPrimaryAction,
 	canRecognize bool,
 	subscriptionActive bool,
 	disabledTooltip string,
@@ -976,13 +1043,14 @@ func buildInvoicesTable(
 
 	// PrimaryAction: tab toolbar CTA + same action surfaced on the empty state
 	// (the table-card template renders the primary action in both places).
-	if recognizeURL != "" && subscriptionID != "" {
-		actionURL := route.ResolveURL(recognizeURL, "id", subscriptionID)
+	// The URL, label, and icon are resolved by resolveInvoicesPrimaryAction
+	// based on the subscription's billing_kind.
+	if primaryAction.URL != "" {
 		disabled := !canRecognize || !subscriptionActive
 		tc.PrimaryAction = &types.PrimaryAction{
-			Label:           l.Invoices.RecognizeAction,
-			ActionURL:       actionURL,
-			Icon:            "icon-file-plus",
+			Label:           primaryAction.Label,
+			ActionURL:       primaryAction.URL,
+			Icon:            primaryAction.Icon,
 			Disabled:        disabled,
 			DisabledTooltip: disabledTooltip,
 		}
@@ -1064,9 +1132,11 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			applyJobsTabData(ctx, deps, pageData, allJobs)
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
+			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
+				sub.GetPricePlan(), deps.Routes, l, id)
 			pageData.Invoices = buildInvoicesTable(
 				revenues, l, deps.TableLabels, centymo.RevenueDetailURL,
-				deps.Routes.RecognizeURL, id,
+				invoicesPrimaryAction,
 				canRecognize, subscriptionActive,
 				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
 			)
@@ -1083,7 +1153,6 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				}
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 		case "audit-history":
 			if deps.ListAuditHistory != nil {
 				cursor := viewCtx.QueryParams["cursor"]

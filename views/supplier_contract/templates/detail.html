@@ -51,6 +51,8 @@
         {{template "supplier-contract-tab-linked-expenditures" .}}
         {{else if eq .ActiveTab "activity"}}
         {{template "supplier-contract-tab-activity" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

@@ -26,6 +26,8 @@
         {{template "purchase-order-tab-info" .}}
         {{else if eq .ActiveTab "items"}}
         {{template "purchase-order-tab-items" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

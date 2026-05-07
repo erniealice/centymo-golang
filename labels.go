@@ -638,6 +638,367 @@ type RevenueSettingsLabels struct {
 }
 
 // ---------------------------------------------------------------------------
+// Revenue Run labels
+// ---------------------------------------------------------------------------
+
+// RevenueRunLabels holds all translatable strings for the Revenue Run
+// (invoice-run) module. Lyngua root key: "revenueRun".
+// D13: naming is revenueRun / revenue_run / RevenueRun / revenue-run everywhere
+// except the user-visible VALUE "Invoice Run" (supplied by lyngua).
+type RevenueRunLabels struct {
+	AppLabel       string                      `json:"appLabel"`
+	Queue          RevenueRunQueueLabels        `json:"queue"`
+	List           RevenueRunListLabels         `json:"list"`
+	Detail         RevenueRunDetailLabels       `json:"detail"`
+	StatusBadges   RevenueRunStatusBadgeLabels  `json:"statusBadges"`
+	Actions        RevenueRunActionLabels       `json:"actions"`
+	ScopeKind      RevenueRunScopeKindLabels    `json:"scopeKind"`
+	AttemptOutcome RevenueRunOutcomeLabels      `json:"attemptOutcome"`
+	Errors         RevenueRunErrorLabels        `json:"errors"`
+	// ToastBatchSuccess is the message shown after a Surface B batch-run
+	// submission. Supports the standard {{.Created}}/{{.Skipped}}/{{.Errored}}
+	// placeholders, substituted Go-side before the toast is dispatched.
+	ToastBatchSuccess string `json:"toastBatchSuccess"`
+	// ViewRunLink is the link label used on toasts whose batch produced
+	// exactly one run. Multi-run batches omit the link.
+	ViewRunLink string `json:"viewRunLink"`
+}
+
+// RevenueRunQueueLabels holds copy for the workspace-queue page (Surface B).
+type RevenueRunQueueLabels struct {
+	Title        string `json:"title"`
+	Subtitle     string `json:"subtitle"`
+	// AsOfDateLabel is the label for the AsOfDate date picker above the table.
+	AsOfDateLabel string `json:"asOfDateLabel"`
+	Columns  RevenueRunQueueColumnLabels `json:"columns"`
+	Empty    RevenueRunQueueEmptyLabels  `json:"empty"`
+	Bulk     RevenueRunQueueBulkLabels   `json:"bulk"`
+}
+
+type RevenueRunQueueColumnLabels struct {
+	Client         string `json:"client"`
+	Subscriptions  string `json:"subscriptions"`
+	PendingPeriods string `json:"pendingPeriods"`
+	Total          string `json:"total"`
+	Currency       string `json:"currency"`
+	Actions        string `json:"actions"`
+	Run            string `json:"run"`
+}
+
+type RevenueRunQueueEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type RevenueRunQueueBulkLabels struct {
+	RunSelected        string `json:"runSelected"`
+	RunAllMatching     string `json:"runAllMatching"`
+	CapExceededMessage string `json:"capExceededMessage"`
+}
+
+// RevenueRunListLabels holds copy for the run history list page (Surface D).
+type RevenueRunListLabels struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+	Columns  RevenueRunListColumnLabels       `json:"columns"`
+	Empty    RevenueRunListEmptyLabels         `json:"empty"`
+	Filters  RevenueRunListFilterLabels        `json:"filterLabels"`
+}
+
+type RevenueRunListColumnLabels struct {
+	ID          string `json:"id"`
+	Scope       string `json:"scope"`
+	AsOfDate    string `json:"asOfDate"`
+	Initiator   string `json:"initiator"`
+	InitiatedAt string `json:"initiatedAt"`
+	Status      string `json:"status"`
+	Created     string `json:"created"`
+	Skipped     string `json:"skipped"`
+	Errored     string `json:"errored"`
+	Actions     string `json:"actions"`
+}
+
+type RevenueRunListEmptyLabels struct {
+	Pending  RevenueRunListEmptyStateLabels `json:"pending"`
+	Complete RevenueRunListEmptyStateLabels `json:"complete"`
+	Failed   RevenueRunListEmptyStateLabels `json:"failed"`
+}
+
+type RevenueRunListEmptyStateLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type RevenueRunListFilterLabels struct {
+	Pending  string `json:"pending"`
+	Complete string `json:"complete"`
+	Failed   string `json:"failed"`
+}
+
+// RevenueRunDetailLabels holds copy for the run detail page (Surface D).
+type RevenueRunDetailLabels struct {
+	Title      string                          `json:"title"`
+	Tabs       RevenueRunDetailTabLabels       `json:"tabs"`
+	Summary    RevenueRunSummaryLabels         `json:"summary"`
+	Selections RevenueRunSelectionsTabLabels   `json:"selections"`
+	Results    RevenueRunResultsTabLabels      `json:"results"`
+	Invoices   RevenueRunInvoicesTabLabels     `json:"invoices"`
+}
+
+// RevenueRunSelectionsTabLabels holds column headers and empty-state copy for
+// the Selections tab on the run detail page.
+type RevenueRunSelectionsTabLabels struct {
+	ColSubscription  string `json:"colSubscription"`
+	ColPeriodStart   string `json:"colPeriodStart"`
+	ColPeriodEnd     string `json:"colPeriodEnd"`
+	ColPeriodMarker  string `json:"colPeriodMarker"`
+	EmptyTitle       string `json:"emptyTitle"`
+	EmptyMessage     string `json:"emptyMessage"`
+}
+
+// RevenueRunResultsTabLabels holds column headers and empty-state copy for
+// the Results tab on the run detail page.
+type RevenueRunResultsTabLabels struct {
+	ColSubscription string `json:"colSubscription"`
+	ColPeriodStart  string `json:"colPeriodStart"`
+	ColPeriodEnd    string `json:"colPeriodEnd"`
+	ColOutcome      string `json:"colOutcome"`
+	ColErrorCode    string `json:"colErrorCode"`
+	EmptyTitle      string `json:"emptyTitle"`
+	EmptyMessage    string `json:"emptyMessage"`
+}
+
+// RevenueRunInvoicesTabLabels holds column headers and empty-state copy for
+// the Invoices tab on the run detail page. Also holds the coming-soon label
+// for the Audit History tab.
+type RevenueRunInvoicesTabLabels struct {
+	ColReference    string `json:"colReference"`
+	ColDate         string `json:"colDate"`
+	ColAmount       string `json:"colAmount"`
+	ColStatus       string `json:"colStatus"`
+	EmptyTitle      string `json:"emptyTitle"`
+	EmptyMessage    string `json:"emptyMessage"`
+	// AuditHistoryComingSoon is the coming-soon message for the Audit History tab.
+	AuditHistoryComingSoon string `json:"auditHistoryComingSoon"`
+}
+
+type RevenueRunDetailTabLabels struct {
+	Summary        string `json:"summary"`
+	Selections     string `json:"selections"`
+	Results        string `json:"results"`
+	Invoices       string `json:"invoices"`
+	AuditHistory   string `json:"auditHistory"`
+	Attachments    string `json:"attachments"`
+}
+
+type RevenueRunSummaryLabels struct {
+	Scope                   string `json:"scope"`
+	AsOfDate                string `json:"asOfDate"`
+	Initiator               string `json:"initiator"`
+	InitiatedAt             string `json:"initiatedAt"`
+	CompletedAt             string `json:"completedAt"`
+	Status                  string `json:"status"`
+	Totals                  string `json:"totals"`
+	PossiblyInterruptedNote string `json:"possiblyInterruptedNote"`
+}
+
+// RevenueRunStatusBadgeLabels holds display labels for each run status value.
+type RevenueRunStatusBadgeLabels struct {
+	Pending             string `json:"pending"`
+	Complete            string `json:"complete"`
+	Failed              string `json:"failed"`
+	PossiblyInterrupted string `json:"possiblyInterrupted"`
+}
+
+// RevenueRunActionLabels holds labels for interactive actions on run rows/pages.
+type RevenueRunActionLabels struct {
+	Run                  string `json:"run"`
+	ReRunFailed          string `json:"reRunFailed"`
+	ReRunFailedComingSoon string `json:"reRunFailedComingSoon"`
+	ViewRun              string `json:"viewRun"`
+	ViewClient           string `json:"viewClient"`
+	ViewSubscription     string `json:"viewSubscription"`
+}
+
+// RevenueRunScopeKindLabels holds display labels for each scope kind value.
+type RevenueRunScopeKindLabels struct {
+	Subscription string `json:"subscription"`
+	Client       string `json:"client"`
+	Workspace    string `json:"workspace"`
+}
+
+// RevenueRunOutcomeLabels holds display labels for per-attempt outcome values.
+type RevenueRunOutcomeLabels struct {
+	Created string `json:"created"`
+	Skipped string `json:"skipped"`
+	Errored string `json:"errored"`
+}
+
+// RevenueRunErrorLabels holds error message strings for the revenue-run module.
+type RevenueRunErrorLabels struct {
+	CapExceeded          string `json:"capExceeded"`
+	PermissionDenied     string `json:"permissionDenied"`
+	UseCaseUnavailable   string `json:"useCaseUnavailable"`
+	InvalidSelection     string `json:"invalidSelection"`
+	IdempotencyConflict  string `json:"idempotencyConflict"`
+	ClientMismatch       string `json:"clientMismatch"`
+	WorkspaceMismatch    string `json:"workspaceMismatch"`
+	TamperedPeriod       string `json:"tamperedPeriod"`
+	// RunAllMatchingNotImplemented is shown when the operator attempts
+	// "run for all matching" before FilterToken signing is wired (Wave 3 stub).
+	RunAllMatchingNotImplemented string `json:"runAllMatchingNotImplemented"`
+}
+
+// DefaultRevenueRunLabels returns RevenueRunLabels with sensible English defaults.
+func DefaultRevenueRunLabels() RevenueRunLabels {
+	return RevenueRunLabels{
+		AppLabel: "Invoice Run",
+		Queue: RevenueRunQueueLabels{
+			Title:         "Invoice Run Queue",
+			Subtitle:      "Clients with pending billing periods ready to invoice",
+			AsOfDateLabel: "As of date",
+			Columns: RevenueRunQueueColumnLabels{
+				Client:         "Client",
+				Subscriptions:  "Subscriptions",
+				PendingPeriods: "Pending periods",
+				Total:          "Total",
+				Currency:       "Currency",
+				Actions:        "Actions",
+				Run:            "Run",
+			},
+			Empty: RevenueRunQueueEmptyLabels{
+				Title:   "Queue is empty",
+				Message: "No clients have pending billing periods at this time.",
+			},
+			Bulk: RevenueRunQueueBulkLabels{
+				RunSelected:        "Run for selected",
+				RunAllMatching:     "Run for all matching",
+				CapExceededMessage: "Capped at 50 clients per batch. Narrow the filter to run the rest.",
+			},
+		},
+		List: RevenueRunListLabels{
+			Title:    "Invoice Runs",
+			Subtitle: "History of invoice run batches",
+			Columns: RevenueRunListColumnLabels{
+				ID:          "Run ID",
+				Scope:       "Scope",
+				AsOfDate:    "As of date",
+				Initiator:   "Initiator",
+				InitiatedAt: "Initiated",
+				Status:      "Status",
+				Created:     "Created",
+				Skipped:     "Skipped",
+				Errored:     "Errored",
+				Actions:     "Actions",
+			},
+			Empty: RevenueRunListEmptyLabels{
+				Pending: RevenueRunListEmptyStateLabels{
+					Title:   "No pending runs",
+					Message: "There are no invoice runs currently in progress.",
+				},
+				Complete: RevenueRunListEmptyStateLabels{
+					Title:   "No completed runs",
+					Message: "No invoice runs have completed yet.",
+				},
+				Failed: RevenueRunListEmptyStateLabels{
+					Title:   "No failed runs",
+					Message: "No invoice runs have failed.",
+				},
+			},
+			Filters: RevenueRunListFilterLabels{
+				Pending:  "Pending",
+				Complete: "Complete",
+				Failed:   "Failed",
+			},
+		},
+		Detail: RevenueRunDetailLabels{
+			Title: "Invoice Run",
+			Tabs: RevenueRunDetailTabLabels{
+				Summary:      "Summary",
+				Selections:   "Selections",
+				Results:      "Results",
+				Invoices:     "Invoices",
+				AuditHistory: "Audit History",
+				Attachments:  "Attachments",
+			},
+			Summary: RevenueRunSummaryLabels{
+				Scope:                   "Scope",
+				AsOfDate:                "As of date",
+				Initiator:               "Initiator",
+				InitiatedAt:             "Initiated",
+				CompletedAt:             "Completed",
+				Status:                  "Status",
+				Totals:                  "Totals",
+				PossiblyInterruptedNote: "This run may have been interrupted before completing. Some invoices may be missing.",
+			},
+			Selections: RevenueRunSelectionsTabLabels{
+				ColSubscription: "Subscription",
+				ColPeriodStart:  "Period start",
+				ColPeriodEnd:    "Period end",
+				ColPeriodMarker: "Period marker",
+				EmptyTitle:      "No selections",
+				EmptyMessage:    "This run has no attempt records.",
+			},
+			Results: RevenueRunResultsTabLabels{
+				ColSubscription: "Subscription",
+				ColPeriodStart:  "Period start",
+				ColPeriodEnd:    "Period end",
+				ColOutcome:      "Outcome",
+				ColErrorCode:    "Error code",
+				EmptyTitle:      "No results",
+				EmptyMessage:    "This run has no attempt records.",
+			},
+			Invoices: RevenueRunInvoicesTabLabels{
+				ColReference:           "Reference",
+				ColDate:                "Date",
+				ColAmount:              "Amount",
+				ColStatus:              "Status",
+				EmptyTitle:             "No invoices",
+				EmptyMessage:           "No invoices were created by this run.",
+				AuditHistoryComingSoon: "Audit history is coming soon.",
+			},
+		},
+		StatusBadges: RevenueRunStatusBadgeLabels{
+			Pending:             "Pending",
+			Complete:            "Complete",
+			Failed:              "Failed",
+			PossiblyInterrupted: "Possibly interrupted",
+		},
+		Actions: RevenueRunActionLabels{
+			Run:                   "Run",
+			ReRunFailed:           "Re-run failed",
+			ReRunFailedComingSoon: "Re-run failed (coming soon)",
+			ViewRun:               "View run",
+			ViewClient:            "View client",
+			ViewSubscription:      "View subscription",
+		},
+		ScopeKind: RevenueRunScopeKindLabels{
+			Subscription: "Subscription",
+			Client:       "Client",
+			Workspace:    "Workspace",
+		},
+		AttemptOutcome: RevenueRunOutcomeLabels{
+			Created: "Created",
+			Skipped: "Skipped",
+			Errored: "Errored",
+		},
+		Errors: RevenueRunErrorLabels{
+			CapExceeded:                  "Batch cap exceeded — maximum 50 clients per run.",
+			PermissionDenied:             "You do not have permission to run invoices.",
+			UseCaseUnavailable:           "Invoice run is not available for this subscription type.",
+			InvalidSelection:             "One or more selected subscriptions are invalid.",
+			IdempotencyConflict:          "An invoice for one or more periods already exists.",
+			ClientMismatch:               "Selected subscriptions belong to different clients.",
+			WorkspaceMismatch:            "Selected subscriptions belong to a different workspace.",
+			TamperedPeriod:               "A billing period was modified after selection. Please retry.",
+			RunAllMatchingNotImplemented: "Run for all matching is not yet available. Please select individual clients.",
+		},
+		ToastBatchSuccess: "Invoice batch run — {{.Created}} created, {{.Skipped}} skipped, {{.Errored}} failed.",
+		ViewRunLink:       "View run",
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Product labels
 // ---------------------------------------------------------------------------
 
@@ -1886,6 +2247,7 @@ type ExpenditureDetailLabels struct {
 	RecognitionRecognizeCTA string `json:"recognitionRecognizeCta"`
 	AccrualEmptyTitle       string `json:"accrualEmptyTitle"`
 	AccrualEmptyMessage     string `json:"accrualEmptyMessage"`
+	TabAttachments          string `json:"tabAttachments"`
 }
 
 // ExpenditurePaymentMethodLabels holds translatable strings for disbursement payment methods.
@@ -2164,6 +2526,7 @@ type PurchaseOrderDetailLabels struct {
 	AddLineItem          string `json:"addLineItem"`
 	NoLineItems          string `json:"noLineItems"`
 	ConfirmReceiptBtn    string `json:"confirmReceiptBtn"`
+	TabAttachments       string `json:"tabAttachments"`
 }
 
 // PurchaseOrderLineItemLabels holds translatable strings for the PO line item drawer form.
@@ -3420,9 +3783,10 @@ type SubscriptionLabels struct {
 	Status    SubscriptionStatusLabels    `json:"status"`
 	Detail    SubscriptionDetailLabels    `json:"detail"`
 	Tabs      SubscriptionTabLabels       `json:"tabs"`
-	Invoices  SubscriptionInvoicesLabels  `json:"invoices"`
-	Recognize SubscriptionRecognizeLabels `json:"recognize"`
-	Milestone SubscriptionMilestoneLabels `json:"milestone"`
+	Invoices   SubscriptionInvoicesLabels    `json:"invoices"`
+	Recognize  SubscriptionRecognizeLabels   `json:"recognize"`
+	RevenueRun SubscriptionRevenueRunLabels  `json:"revenueRun"`
+	Milestone  SubscriptionMilestoneLabels   `json:"milestone"`
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / §9 — Operations
 	// tab on the subscription detail page + retroactive spawn drawer copy.
 	Operations SubscriptionOperationsLabels `json:"operations"`
@@ -3613,6 +3977,13 @@ type SubscriptionInvoicesLabels struct {
 	RecognizeAction   string `json:"recognizeAction"`
 	RecognizeTitle    string `json:"recognizeTitle"`
 	RecognizeSubtitle string `json:"recognizeSubtitle"`
+
+	// 2026-05-06 revenue-run plan Phase 1 — CTA labels for the three billing-kind
+	// branches on the Invoices tab. resolveInvoicesPrimaryAction (Phase 6) picks
+	// the correct one; all three must be pre-populated so no branch returns "".
+	RunInvoicesAction   string `json:"runInvoicesAction"`
+	PoolRecognizeAction string `json:"poolRecognizeAction"`
+	RequestUsageAction  string `json:"requestUsageAction"`
 }
 
 // SubscriptionRecognizeLabels holds drawer-form labels for the
@@ -3680,6 +4051,59 @@ type SubscriptionRecognizeLabels struct {
 	PartialReason              string `json:"partialReason"`
 	PartialReasonRequired      string `json:"partialReasonRequired"`
 	OverBillingRejected        string `json:"overBillingRejected"`
+}
+
+// SubscriptionRevenueRunLabels holds drawer-form labels for the per-subscription
+// "Invoice Run" drawer (Surface C — CYCLE billing_kind only). Lyngua key:
+// `subscription.revenueRun`. Drops the engagement column that the client-level
+// drawer (Surface A) carries — per-sub context makes it redundant.
+type SubscriptionRevenueRunLabels struct {
+	Title    string `json:"title"`
+	// Subtitle is templated with the subscription name — e.g. "Run invoices for {{.Name}}"
+	Subtitle string `json:"subtitle"`
+
+	// Read-only context row labels (subscription name + plan name)
+	SubscriptionLabel string `json:"subscriptionLabel"`
+	PlanLabel         string `json:"planLabel"`
+
+	AsOfDateLabel         string `json:"asOfDateLabel"`
+	AsOfDateHint          string `json:"asOfDateHint"`
+	BillThroughTodayLabel string `json:"billThroughTodayLabel"`
+
+	// Period table columns
+	ColumnPeriod string `json:"columnPeriod"`
+	ColumnAmount string `json:"columnAmount"`
+	ColumnLines  string `json:"columnLines"`
+
+	// Group headings / empty states
+	GroupNoPending        string `json:"groupNoPending"`
+	GroupCurrencyMismatch string `json:"groupCurrencyMismatch"`
+	EmptyTitle            string `json:"emptyTitle"`
+	EmptyMessage          string `json:"emptyMessage"`
+
+	// Footer buttons
+	GenerateButton      string `json:"generateButton"`
+	GenerateButtonCount string `json:"generateButtonCount"`
+	CancelButton        string `json:"cancelButton"`
+
+	// Post-submit feedback
+	ToastSuccess  string `json:"toastSuccess"`
+	ToastSkipped  string `json:"toastSkipped"`
+	ToastErrored  string `json:"toastErrored"`
+	ViewRunLink   string `json:"viewRunLink"`
+
+	// Inline error messages
+	Errors SubscriptionRevenueRunErrorLabels `json:"errors"`
+}
+
+// SubscriptionRevenueRunErrorLabels holds inline error strings for the
+// per-subscription Invoice Run drawer.
+type SubscriptionRevenueRunErrorLabels struct {
+	PermissionDenied   string `json:"permissionDenied"`
+	IDRequired         string `json:"idRequired"`
+	InvalidFormData    string `json:"invalidFormData"`
+	UseCaseUnavailable string `json:"useCaseUnavailable"`
+	SelectOne          string `json:"selectOne"`
 }
 
 // SubscriptionMilestoneLabels holds labels for the Subscription Package tab's
@@ -4792,6 +5216,10 @@ type PriceScheduleDetailLabels struct {
 	ProductPriceCatalogSection   string `json:"productPriceCatalogSection"`
 	ProductPricePricingSection   string `json:"productPricePricingSection"`
 	ProductPriceEffectiveSection string `json:"productPriceEffectiveSection"`
+
+	// Attachments tab label for the price_schedule detail page and the nested
+	// price_plan (plan) detail page.
+	TabAttachments string `json:"tabAttachments"`
 }
 
 type PriceScheduleErrorLabels struct {
@@ -4971,6 +5399,7 @@ func DefaultPriceScheduleLabels() PriceScheduleLabels {
 			ProductPriceCatalogSection:   "Catalog line",
 			ProductPricePricingSection:   "Pricing",
 			ProductPriceEffectiveSection: "Effective dates",
+			TabAttachments:               "Attachments",
 		},
 		PlanForm: PriceSchedulePlanFormLabels{
 			SectionSchedule:        "Schedule",
@@ -5171,6 +5600,40 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			RecognizeAction:   "Recognize Revenue",
 			RecognizeTitle:    "Recognize Revenue",
 			RecognizeSubtitle: "Generate an invoice from this subscription's price plan.",
+			// 2026-05-06 revenue-run plan Phase 1 — CTA branch labels.
+			RunInvoicesAction:   "Run Invoices",
+			PoolRecognizeAction: "Recognize Revenue",
+			RequestUsageAction:  "Request Usage",
+		},
+		RevenueRun: SubscriptionRevenueRunLabels{
+			Title:                 "Invoice Run",
+			Subtitle:              "Run invoices for {{.Name}}",
+			SubscriptionLabel:     "Engagement",
+			PlanLabel:             "Plan",
+			AsOfDateLabel:         "As of date",
+			AsOfDateHint:          "Only periods ending on or before this date will be included.",
+			BillThroughTodayLabel: "Bill through today",
+			ColumnPeriod:          "Period",
+			ColumnAmount:          "Amount",
+			ColumnLines:           "Lines",
+			GroupNoPending:        "No pending periods",
+			GroupCurrencyMismatch: "Currency mismatch — cannot run",
+			EmptyTitle:            "Nothing to invoice",
+			EmptyMessage:          "This subscription has no pending billing periods as of the selected date.",
+			GenerateButton:        "Generate",
+			GenerateButtonCount:   "Generate ({{.Count}})",
+			CancelButton:          "Cancel",
+			ToastSuccess:          "Invoice run complete — {{.Created}} invoice(s) created.",
+			ToastSkipped:          "Invoice run complete — all periods skipped.",
+			ToastErrored:          "Invoice run completed with errors — {{.Errored}} period(s) failed.",
+			ViewRunLink:           "View run",
+			Errors: SubscriptionRevenueRunErrorLabels{
+				PermissionDenied:   "You do not have permission to run invoices.",
+				IDRequired:         "Subscription ID is required.",
+				InvalidFormData:    "Invalid form data. Please check your inputs and try again.",
+				UseCaseUnavailable: "Invoice run is not available for this subscription type.",
+				SelectOne:          "Select at least one period to generate.",
+			},
 		},
 		Recognize: SubscriptionRecognizeLabels{
 			ContextSection:            "Subscription",
@@ -5650,6 +6113,7 @@ type SupplierContractDetailLabels struct {
 	BilledAmount    string `json:"billedAmount"`
 	RemainingAmount string `json:"remainingAmount"`
 	Notes           string `json:"notes"`
+	TabAttachments  string `json:"tabAttachments"`
 }
 
 type SupplierContractLineLabels struct {
@@ -5858,6 +6322,7 @@ func DefaultSupplierContractLabels() SupplierContractLabels {
 			BilledAmount:    "Billed Amount",
 			RemainingAmount: "Remaining Amount",
 			Notes:           "Notes",
+			TabAttachments:  "Attachments",
 		},
 		Lines: SupplierContractLineLabels{
 			Description:                   "Description",
@@ -6112,17 +6577,18 @@ type ProcurementRequestTabLabels struct {
 }
 
 type ProcurementRequestDetailLabels struct {
-	InfoSection    string `json:"infoSection"`
-	RequestNumber  string `json:"requestNumber"`
-	Status         string `json:"status"`
-	Requester      string `json:"requester"`
-	Supplier       string `json:"supplier"`
-	Currency       string `json:"currency"`
-	EstimatedTotal string `json:"estimatedTotal"`
-	NeededBy       string `json:"neededBy"`
-	DateCreated    string `json:"dateCreated"`
-	ApprovedBy     string `json:"approvedBy"`
-	Justification  string `json:"justification"`
+	InfoSection     string `json:"infoSection"`
+	RequestNumber   string `json:"requestNumber"`
+	Status          string `json:"status"`
+	Requester       string `json:"requester"`
+	Supplier        string `json:"supplier"`
+	Currency        string `json:"currency"`
+	EstimatedTotal  string `json:"estimatedTotal"`
+	NeededBy        string `json:"neededBy"`
+	DateCreated     string `json:"dateCreated"`
+	ApprovedBy      string `json:"approvedBy"`
+	Justification   string `json:"justification"`
+	TabAttachments  string `json:"tabAttachments"`
 }
 
 type ProcurementRequestLineLabels struct {
@@ -6298,6 +6764,7 @@ func DefaultProcurementRequestLabels() ProcurementRequestLabels {
 			DateCreated:    "Created",
 			ApprovedBy:     "Approved By",
 			Justification:  "Justification",
+			TabAttachments: "Attachments",
 		},
 		Lines: ProcurementRequestLineLabels{
 			Description:                        "Description",
@@ -6704,6 +7171,7 @@ type SupplierContractPriceScheduleDetailLabels struct {
 	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
 	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	TabAttachments       string `json:"tabAttachments"`
 }
 
 type SupplierContractPriceScheduleErrorLabels struct {
@@ -6876,6 +7344,7 @@ func DefaultSupplierContractPriceScheduleLabels() SupplierContractPriceScheduleL
 			AuditTrailComingSoon: "Activity log feature coming soon.",
 			AuditEmptyTitle:      "No activity entries",
 			AuditEmptyMessage:    "Activity logs for this schedule will appear here.",
+			TabAttachments:       "Attachments",
 		},
 		Errors: SupplierContractPriceScheduleErrorLabels{
 			PermissionDenied:    "You do not have permission to perform this action.",
@@ -6967,6 +7436,7 @@ type ExpenseRecognitionDetailLabels struct {
 	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
 	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	TabAttachments       string `json:"tabAttachments"`
 }
 
 type ExpenseRecognitionLineLabels struct {
@@ -7094,6 +7564,7 @@ func DefaultExpenseRecognitionLabels() ExpenseRecognitionLabels {
 			AuditTrailComingSoon: "Activity log feature coming soon.",
 			AuditEmptyTitle:      "No activity entries",
 			AuditEmptyMessage:    "Activity logs for this recognition will appear here.",
+			TabAttachments:       "Attachments",
 		},
 		Lines: ExpenseRecognitionLineLabels{
 			Description:                "Description",
@@ -7239,6 +7710,7 @@ type AccruedExpenseDetailLabels struct {
 	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
 	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	TabAttachments       string `json:"tabAttachments"`
 }
 
 type AccruedExpenseSettlementLabels struct {
@@ -7454,6 +7926,7 @@ func DefaultAccruedExpenseLabels() AccruedExpenseLabels {
 			AuditTrailComingSoon: "Activity log feature coming soon.",
 			AuditEmptyTitle:      "No activity entries",
 			AuditEmptyMessage:    "Activity logs for this accrual will appear here.",
+			TabAttachments:       "Attachments",
 		},
 		Settlements: AccruedExpenseSettlementLabels{
 			Expenditure:                "Bill",
@@ -7591,6 +8064,1357 @@ func DefaultAccruedExpenseLabels() AccruedExpenseLabels {
 			ReverseFailed:    "Accrual reversal failed",
 			BalanceDrift:     "Accrual balance drift detected; recompute required",
 			LoadFailed:       "Failed to load accrual",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — SupplierSubscription labels (20260506-supplier-subscriptions)
+// ---------------------------------------------------------------------------
+
+// SupplierSubscriptionLabels holds all translatable strings for the supplier_subscription module.
+type SupplierSubscriptionLabels struct {
+	Page    SupplierSubscriptionPageLabels    `json:"page"`
+	Columns SupplierSubscriptionColumnLabels  `json:"columns"`
+	Tabs    SupplierSubscriptionTabLabels     `json:"tabs"`
+	Detail  SupplierSubscriptionDetailLabels  `json:"detail"`
+	Form    SupplierSubscriptionFormLabels    `json:"form"`
+	Actions SupplierSubscriptionActionLabels  `json:"actions"`
+	Confirm SupplierSubscriptionConfirmLabels `json:"confirm"`
+	Buttons SupplierSubscriptionButtonLabels  `json:"buttons"`
+	Bulk    SupplierSubscriptionBulkLabels    `json:"bulk"`
+	Status  SupplierSubscriptionStatusLabels  `json:"status"`
+	Empty   SupplierSubscriptionEmptyLabels   `json:"empty"`
+	Errors  SupplierSubscriptionErrorLabels   `json:"errors"`
+}
+
+type SupplierSubscriptionPageLabels struct {
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+	PageTitle       string `json:"pageTitle"`
+}
+
+type SupplierSubscriptionColumnLabels struct {
+	Name      string `json:"name"`
+	Supplier  string `json:"supplier"`
+	CostPlan  string `json:"costPlan"`
+	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
+	Active    string `json:"active"`
+	AutoRenew string `json:"autoRenew"`
+	Code      string `json:"code"`
+}
+
+type SupplierSubscriptionTabLabels struct {
+	Info                 string `json:"info"`
+	CostPlan             string `json:"costPlan"`
+	LinkedExpenditures   string `json:"linkedExpenditures"`
+	LinkedPurchaseOrders string `json:"linkedPurchaseOrders"`
+	Activity             string `json:"activity"`
+}
+
+type SupplierSubscriptionDetailLabels struct {
+	InfoSection  string `json:"infoSection"`
+	Name         string `json:"name"`
+	Supplier     string `json:"supplier"`
+	CostPlan     string `json:"costPlan"`
+	Code         string `json:"code"`
+	StartDate    string `json:"startDate"`
+	EndDate      string `json:"endDate"`
+	Active       string `json:"active"`
+	Inactive     string `json:"inactive"`
+	AutoRenew    string `json:"autoRenew"`
+	Location     string `json:"location"`
+	Notes        string `json:"notes"`
+}
+
+type SupplierSubscriptionFormLabels struct {
+	SectionIdentification string `json:"sectionIdentification"`
+	SectionRelationships  string `json:"sectionRelationships"`
+	SectionConfiguration  string `json:"sectionConfiguration"`
+	SectionSchedule       string `json:"sectionSchedule"`
+	SectionNotes          string `json:"sectionNotes"`
+
+	Name                     string `json:"name"`
+	NamePlaceholder          string `json:"namePlaceholder"`
+	Code                     string `json:"code"`
+	CodePlaceholder          string `json:"codePlaceholder"`
+	Supplier                 string `json:"supplier"`
+	SupplierPlaceholder      string `json:"supplierPlaceholder"`
+	SupplierSearch           string `json:"supplierSearch"`
+	SupplierNoResults        string `json:"supplierNoResults"`
+	CostPlan                 string `json:"costPlan"`
+	CostPlanPlaceholder      string `json:"costPlanPlaceholder"`
+	CostPlanSearch           string `json:"costPlanSearch"`
+	CostPlanNoResults        string `json:"costPlanNoResults"`
+	AutoRenew                string `json:"autoRenew"`
+	Active                   string `json:"active"`
+	StartDate                string `json:"startDate"`
+	StartTime                string `json:"startTime"`
+	EndDate                  string `json:"endDate"`
+	EndTime                  string `json:"endTime"`
+	TimePlaceholder          string `json:"timePlaceholder"`
+	Notes                    string `json:"notes"`
+	NotesPlaceholder         string `json:"notesPlaceholder"`
+	CurrencyError            string `json:"currencyError"`
+	EditLockedReason         string `json:"editLockedReason"`
+}
+
+type SupplierSubscriptionActionLabels struct {
+	View       string `json:"view"`
+	Edit       string `json:"edit"`
+	Delete     string `json:"delete"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+	NoPermission string `json:"noPermission"`
+}
+
+type SupplierSubscriptionConfirmLabels struct {
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+}
+
+type SupplierSubscriptionButtonLabels struct {
+	AddSupplierSubscription string `json:"addSupplierSubscription"`
+}
+
+type SupplierSubscriptionBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type SupplierSubscriptionStatusLabels struct {
+	Active     string `json:"active"`
+	Inactive   string `json:"inactive"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type SupplierSubscriptionEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type SupplierSubscriptionErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+	InUse            string `json:"inUse"`
+	LoadFailed       string `json:"loadFailed"`
+	NoIDsProvided    string `json:"noIdsProvided"`
+}
+
+// DefaultSupplierSubscriptionLabels returns English fallback labels for the supplier_subscription module.
+func DefaultSupplierSubscriptionLabels() SupplierSubscriptionLabels {
+	return SupplierSubscriptionLabels{
+		Page: SupplierSubscriptionPageLabels{
+			Heading:         "Supplier Subscriptions",
+			HeadingActive:   "Active Supplier Subscriptions",
+			HeadingInactive: "Inactive Supplier Subscriptions",
+			Caption:         "Recurring supplier commitments",
+			CaptionActive:   "Active recurring supplier commitments",
+			CaptionInactive: "Inactive recurring supplier commitments",
+			PageTitle:       "Supplier Subscription",
+		},
+		Columns: SupplierSubscriptionColumnLabels{
+			Name:      "Name",
+			Supplier:  "Supplier",
+			CostPlan:  "Cost Plan",
+			StartDate: "Start Date",
+			EndDate:   "End Date",
+			Active:    "Status",
+			Code:      "Code",
+		},
+		Tabs: SupplierSubscriptionTabLabels{
+			Info:                 "Info",
+			CostPlan:             "Cost Plan",
+			LinkedExpenditures:   "Expenditures",
+			LinkedPurchaseOrders: "Purchase Orders",
+			Activity:             "Activity",
+		},
+		Detail: SupplierSubscriptionDetailLabels{
+			InfoSection: "Subscription Details",
+			Name:        "Name",
+			Supplier:    "Supplier",
+			CostPlan:    "Cost Plan",
+			Code:        "Code",
+			StartDate:   "Start Date",
+			EndDate:     "End Date",
+			Active:      "Active",
+			Inactive:    "Inactive",
+			AutoRenew:   "Auto-renew",
+			Location:    "Location",
+			Notes:       "Notes",
+		},
+		Form: SupplierSubscriptionFormLabels{
+			SectionIdentification:   "Identification",
+			SectionRelationships:    "Relationships",
+			SectionConfiguration:    "Configuration",
+			SectionSchedule:         "Schedule",
+			SectionNotes:            "Notes",
+			Name:                    "Name",
+			NamePlaceholder:         "e.g. Cloud Hosting — AWS",
+			Code:                    "Code",
+			CodePlaceholder:         "e.g. SUB-2026-001",
+			Supplier:                "Supplier",
+			SupplierPlaceholder:     "Search supplier…",
+			SupplierSearch:          "Search suppliers",
+			SupplierNoResults:       "No suppliers found",
+			CostPlan:                "Cost Plan",
+			CostPlanPlaceholder:     "Search cost plan…",
+			CostPlanSearch:          "Search cost plans",
+			CostPlanNoResults:       "No cost plans found",
+			AutoRenew:               "Auto-renew",
+			Active:                  "Active",
+			StartDate:               "Start Date",
+			StartTime:               "Start Time",
+			EndDate:                 "End Date",
+			EndTime:                 "End Time",
+			TimePlaceholder:         "HH:MM",
+			Notes:                   "Notes",
+			NotesPlaceholder:        "Internal notes about this subscription",
+			CurrencyError:           "The selected cost plan's billing currency does not match the workspace functional currency.",
+			EditLockedReason:        "This subscription has linked expenditures and cannot be fully edited.",
+		},
+		Actions: SupplierSubscriptionActionLabels{
+			View:         "View",
+			Edit:         "Edit",
+			Delete:       "Delete",
+			Activate:     "Activate",
+			Deactivate:   "Deactivate",
+			NoPermission: "No permission",
+		},
+		Confirm: SupplierSubscriptionConfirmLabels{
+			Delete:                "Delete Supplier Subscription",
+			DeleteMessage:         "Are you sure you want to delete this supplier subscription?",
+			Activate:              "Activate Supplier Subscription",
+			ActivateMessage:       "Activate %s?",
+			Deactivate:            "Deactivate Supplier Subscription",
+			DeactivateMessage:     "Deactivate %s?",
+			BulkDelete:            "Delete Supplier Subscriptions",
+			BulkDeleteMessage:     "Delete selected supplier subscriptions?",
+			BulkActivate:          "Activate Selected",
+			BulkActivateMessage:   "Activate selected supplier subscriptions?",
+			BulkDeactivate:        "Deactivate Selected",
+			BulkDeactivateMessage: "Deactivate selected supplier subscriptions?",
+		},
+		Buttons: SupplierSubscriptionButtonLabels{
+			AddSupplierSubscription: "Add Supplier Subscription",
+		},
+		Bulk: SupplierSubscriptionBulkLabels{
+			Delete: "Delete",
+		},
+		Status: SupplierSubscriptionStatusLabels{
+			Active:     "Active",
+			Inactive:   "Inactive",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Empty: SupplierSubscriptionEmptyLabels{
+			Title:   "No supplier subscriptions yet",
+			Message: "Add a supplier subscription to start tracking recurring vendor commitments.",
+		},
+		Errors: SupplierSubscriptionErrorLabels{
+			PermissionDenied: "You do not have permission to perform this action.",
+			InvalidFormData:  "Invalid form data. Please check your inputs and try again.",
+			NotFound:         "Supplier subscription not found.",
+			IDRequired:       "Supplier subscription ID is required.",
+			NoPermission:     "No permission.",
+			InUse:            "This subscription is in use and cannot be deleted.",
+			LoadFailed:       "Failed to load supplier subscription.",
+			NoIDsProvided:    "No IDs provided.",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — CostSchedule labels
+// ---------------------------------------------------------------------------
+
+// CostScheduleLabels holds all translatable strings for the cost_schedule module.
+type CostScheduleLabels struct {
+	Page    CostSchedulePageLabels    `json:"page"`
+	Columns CostScheduleColumnLabels  `json:"columns"`
+	Tabs    CostScheduleTabLabels     `json:"tabs"`
+	Detail  CostScheduleDetailLabels  `json:"detail"`
+	Form    CostScheduleFormLabels    `json:"form"`
+	Actions CostScheduleActionLabels  `json:"actions"`
+	Confirm CostScheduleConfirmLabels `json:"confirm"`
+	Buttons CostScheduleButtonLabels  `json:"buttons"`
+	Bulk    CostScheduleBulkLabels    `json:"bulk"`
+	Status  CostScheduleStatusLabels  `json:"status"`
+	Empty   CostScheduleEmptyLabels   `json:"empty"`
+	Errors  CostScheduleErrorLabels   `json:"errors"`
+}
+
+type CostSchedulePageLabels struct {
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+	PageTitle       string `json:"pageTitle"`
+}
+
+type CostScheduleColumnLabels struct {
+	Name      string `json:"name"`
+	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
+	Location  string `json:"location"`
+	Active    string `json:"active"`
+}
+
+type CostScheduleTabLabels struct {
+	Info       string `json:"info"`
+	CostPlans  string `json:"costPlans"`
+	Activity   string `json:"activity"`
+}
+
+type CostScheduleDetailLabels struct {
+	InfoSection string `json:"infoSection"`
+	Name        string `json:"name"`
+	StartDate   string `json:"startDate"`
+	EndDate     string `json:"endDate"`
+	Location    string `json:"location"`
+	Description string `json:"description"`
+	Active      string `json:"active"`
+	Inactive    string `json:"inactive"`
+}
+
+type CostScheduleFormLabels struct {
+	SectionIdentification string `json:"sectionIdentification"`
+	SectionRelationships  string `json:"sectionRelationships"`
+	SectionConfiguration  string `json:"sectionConfiguration"`
+	SectionSchedule       string `json:"sectionSchedule"`
+	SectionNotes          string `json:"sectionNotes"`
+
+	Name                string `json:"name"`
+	NamePlaceholder     string `json:"namePlaceholder"`
+	Description         string `json:"description"`
+	DescPlaceholder     string `json:"descPlaceholder"`
+	StartDate           string `json:"startDate"`
+	EndDate             string `json:"endDate"`
+	Location            string `json:"location"`
+	LocationPlaceholder string `json:"locationPlaceholder"`
+	Active              string `json:"active"`
+}
+
+type CostScheduleActionLabels struct {
+	View         string `json:"view"`
+	Edit         string `json:"edit"`
+	Delete       string `json:"delete"`
+	Activate     string `json:"activate"`
+	Deactivate   string `json:"deactivate"`
+	NoPermission string `json:"noPermission"`
+}
+
+type CostScheduleConfirmLabels struct {
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+}
+
+type CostScheduleButtonLabels struct {
+	AddCostSchedule string `json:"addCostSchedule"`
+}
+
+type CostScheduleBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type CostScheduleStatusLabels struct {
+	Active     string `json:"active"`
+	Inactive   string `json:"inactive"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type CostScheduleEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type CostScheduleErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+	InUse            string `json:"inUse"`
+	LoadFailed       string `json:"loadFailed"`
+	NoIDsProvided    string `json:"noIdsProvided"`
+}
+
+// DefaultCostScheduleLabels returns English fallback labels.
+func DefaultCostScheduleLabels() CostScheduleLabels {
+	return CostScheduleLabels{
+		Page: CostSchedulePageLabels{
+			Heading:         "Cost Schedules",
+			HeadingActive:   "Active Cost Schedules",
+			HeadingInactive: "Inactive Cost Schedules",
+			Caption:         "Date-bounded supplier pricing windows",
+			CaptionActive:   "Active pricing windows",
+			CaptionInactive: "Inactive pricing windows",
+			PageTitle:       "Cost Schedule",
+		},
+		Columns: CostScheduleColumnLabels{
+			Name:      "Name",
+			StartDate: "Start Date",
+			EndDate:   "End Date",
+			Location:  "Location",
+			Active:    "Status",
+		},
+		Tabs: CostScheduleTabLabels{
+			Info:      "Info",
+			CostPlans: "Cost Plans",
+			Activity:  "Activity",
+		},
+		Detail: CostScheduleDetailLabels{
+			InfoSection: "Schedule Details",
+			Name:        "Name",
+			StartDate:   "Start Date",
+			EndDate:     "End Date",
+			Location:    "Location",
+			Description: "Description",
+			Active:      "Active",
+			Inactive:    "Inactive",
+		},
+		Form: CostScheduleFormLabels{
+			SectionIdentification: "Identification",
+			SectionRelationships:  "Relationships",
+			SectionConfiguration:  "Configuration",
+			SectionSchedule:       "Schedule",
+			SectionNotes:          "Notes",
+			Name:                  "Name",
+			NamePlaceholder:       "e.g. Q1 2026 Supplier Rates",
+			Description:           "Description",
+			DescPlaceholder:       "Internal notes about this cost schedule",
+			StartDate:             "Start Date",
+			EndDate:               "End Date",
+			Location:              "Location",
+			LocationPlaceholder:   "Select location",
+			Active:                "Active",
+		},
+		Actions: CostScheduleActionLabels{
+			View:         "View",
+			Edit:         "Edit",
+			Delete:       "Delete",
+			Activate:     "Activate",
+			Deactivate:   "Deactivate",
+			NoPermission: "No permission",
+		},
+		Confirm: CostScheduleConfirmLabels{
+			Delete:                "Delete Cost Schedule",
+			DeleteMessage:         "Are you sure you want to delete this cost schedule?",
+			Activate:              "Activate Cost Schedule",
+			ActivateMessage:       "Activate %s?",
+			Deactivate:            "Deactivate Cost Schedule",
+			DeactivateMessage:     "Deactivate %s?",
+			BulkDelete:            "Delete Cost Schedules",
+			BulkDeleteMessage:     "Delete selected cost schedules?",
+			BulkActivate:          "Activate Selected",
+			BulkActivateMessage:   "Activate selected cost schedules?",
+			BulkDeactivate:        "Deactivate Selected",
+			BulkDeactivateMessage: "Deactivate selected cost schedules?",
+		},
+		Buttons: CostScheduleButtonLabels{
+			AddCostSchedule: "Add Cost Schedule",
+		},
+		Bulk: CostScheduleBulkLabels{Delete: "Delete"},
+		Status: CostScheduleStatusLabels{
+			Active:     "Active",
+			Inactive:   "Inactive",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Empty: CostScheduleEmptyLabels{
+			Title:   "No cost schedules yet",
+			Message: "Add a cost schedule to group supplier cost plans by date range.",
+		},
+		Errors: CostScheduleErrorLabels{
+			PermissionDenied: "You do not have permission.",
+			InvalidFormData:  "Invalid form data.",
+			NotFound:         "Cost schedule not found.",
+			IDRequired:       "Cost schedule ID is required.",
+			NoPermission:     "No permission.",
+			InUse:            "This cost schedule has linked cost plans and cannot be deleted.",
+			LoadFailed:       "Failed to load cost schedule.",
+			NoIDsProvided:    "No IDs provided.",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — SupplierPlan labels
+// ---------------------------------------------------------------------------
+
+// SupplierPlanLabels holds all translatable strings for the supplier_plan module.
+type SupplierPlanLabels struct {
+	Page    SupplierPlanPageLabels    `json:"page"`
+	Columns SupplierPlanColumnLabels  `json:"columns"`
+	Tabs    SupplierPlanTabLabels     `json:"tabs"`
+	Detail  SupplierPlanDetailLabels  `json:"detail"`
+	Form    SupplierPlanFormLabels    `json:"form"`
+	Actions SupplierPlanActionLabels  `json:"actions"`
+	Confirm SupplierPlanConfirmLabels `json:"confirm"`
+	Buttons SupplierPlanButtonLabels  `json:"buttons"`
+	Bulk    SupplierPlanBulkLabels    `json:"bulk"`
+	Status  SupplierPlanStatusLabels  `json:"status"`
+	Empty   SupplierPlanEmptyLabels   `json:"empty"`
+	Errors  SupplierPlanErrorLabels   `json:"errors"`
+}
+
+type SupplierPlanPageLabels struct {
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+	PageTitle       string `json:"pageTitle"`
+}
+
+type SupplierPlanColumnLabels struct {
+	Name     string `json:"name"`
+	Code     string `json:"code"`
+	Supplier string `json:"supplier"`
+	Active   string `json:"active"`
+}
+
+type SupplierPlanTabLabels struct {
+	Info            string `json:"info"`
+	CostPlans       string `json:"costPlans"`
+	ProductPlans    string `json:"productPlans"`
+	Activity        string `json:"activity"`
+}
+
+type SupplierPlanDetailLabels struct {
+	InfoSection string `json:"infoSection"`
+	Name        string `json:"name"`
+	Code        string `json:"code"`
+	Supplier    string `json:"supplier"`
+	Active      string `json:"active"`
+	Inactive    string `json:"inactive"`
+}
+
+type SupplierPlanFormLabels struct {
+	SectionIdentification string `json:"sectionIdentification"`
+	SectionRelationships  string `json:"sectionRelationships"`
+	SectionConfiguration  string `json:"sectionConfiguration"`
+	SectionSchedule       string `json:"sectionSchedule"`
+	SectionNotes          string `json:"sectionNotes"`
+
+	Name                string `json:"name"`
+	NamePlaceholder     string `json:"namePlaceholder"`
+	Code                string `json:"code"`
+	CodePlaceholder     string `json:"codePlaceholder"`
+	Supplier            string `json:"supplier"`
+	SupplierPlaceholder string `json:"supplierPlaceholder"`
+	Active              string `json:"active"`
+}
+
+type SupplierPlanActionLabels struct {
+	View         string `json:"view"`
+	Edit         string `json:"edit"`
+	Delete       string `json:"delete"`
+	Activate     string `json:"activate"`
+	Deactivate   string `json:"deactivate"`
+	NoPermission string `json:"noPermission"`
+}
+
+type SupplierPlanConfirmLabels struct {
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+}
+
+type SupplierPlanButtonLabels struct {
+	AddSupplierPlan string `json:"addSupplierPlan"`
+}
+
+type SupplierPlanBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type SupplierPlanStatusLabels struct {
+	Active     string `json:"active"`
+	Inactive   string `json:"inactive"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type SupplierPlanEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type SupplierPlanErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+	InUse            string `json:"inUse"`
+	LoadFailed       string `json:"loadFailed"`
+	NoIDsProvided    string `json:"noIdsProvided"`
+}
+
+// DefaultSupplierPlanLabels returns English fallback labels.
+func DefaultSupplierPlanLabels() SupplierPlanLabels {
+	return SupplierPlanLabels{
+		Page: SupplierPlanPageLabels{
+			Heading:         "Supplier Plans",
+			HeadingActive:   "Active Supplier Plans",
+			HeadingInactive: "Inactive Supplier Plans",
+			Caption:         "Supplier product and pricing plans",
+			CaptionActive:   "Active supplier plans",
+			CaptionInactive: "Inactive supplier plans",
+			PageTitle:       "Supplier Plan",
+		},
+		Columns: SupplierPlanColumnLabels{
+			Name:     "Name",
+			Code:     "Code",
+			Supplier: "Supplier",
+			Active:   "Status",
+		},
+		Tabs: SupplierPlanTabLabels{
+			Info:         "Info",
+			CostPlans:    "Cost Plans",
+			ProductPlans: "Product Plans",
+			Activity:     "Activity",
+		},
+		Detail: SupplierPlanDetailLabels{
+			InfoSection: "Plan Details",
+			Name:        "Name",
+			Code:        "Code",
+			Supplier:    "Supplier",
+			Active:      "Active",
+			Inactive:    "Inactive",
+		},
+		Form: SupplierPlanFormLabels{
+			SectionIdentification: "Identification",
+			SectionRelationships:  "Relationships",
+			SectionConfiguration:  "Configuration",
+			SectionSchedule:       "Schedule",
+			SectionNotes:          "Notes",
+			Name:                  "Name",
+			NamePlaceholder:       "e.g. AWS Standard Plan",
+			Code:                  "Code",
+			CodePlaceholder:       "e.g. PLAN-AWS-001",
+			Supplier:              "Supplier",
+			SupplierPlaceholder:   "Select supplier",
+			Active:                "Active",
+		},
+		Actions: SupplierPlanActionLabels{
+			View:         "View",
+			Edit:         "Edit",
+			Delete:       "Delete",
+			Activate:     "Activate",
+			Deactivate:   "Deactivate",
+			NoPermission: "No permission",
+		},
+		Confirm: SupplierPlanConfirmLabels{
+			Delete:                "Delete Supplier Plan",
+			DeleteMessage:         "Are you sure you want to delete this supplier plan?",
+			Activate:              "Activate Supplier Plan",
+			ActivateMessage:       "Activate %s?",
+			Deactivate:            "Deactivate Supplier Plan",
+			DeactivateMessage:     "Deactivate %s?",
+			BulkDelete:            "Delete Supplier Plans",
+			BulkDeleteMessage:     "Delete selected supplier plans?",
+			BulkActivate:          "Activate Selected",
+			BulkActivateMessage:   "Activate selected supplier plans?",
+			BulkDeactivate:        "Deactivate Selected",
+			BulkDeactivateMessage: "Deactivate selected supplier plans?",
+		},
+		Buttons: SupplierPlanButtonLabels{AddSupplierPlan: "Add Supplier Plan"},
+		Bulk:    SupplierPlanBulkLabels{Delete: "Delete"},
+		Status: SupplierPlanStatusLabels{
+			Active:     "Active",
+			Inactive:   "Inactive",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Empty: SupplierPlanEmptyLabels{
+			Title:   "No supplier plans yet",
+			Message: "Add a supplier plan to group cost plans and product plans for a vendor.",
+		},
+		Errors: SupplierPlanErrorLabels{
+			PermissionDenied: "You do not have permission.",
+			InvalidFormData:  "Invalid form data.",
+			NotFound:         "Supplier plan not found.",
+			IDRequired:       "Supplier plan ID is required.",
+			NoPermission:     "No permission.",
+			InUse:            "This supplier plan has linked cost plans or product plans and cannot be deleted.",
+			LoadFailed:       "Failed to load supplier plan.",
+			NoIDsProvided:    "No IDs provided.",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — CostPlan labels
+// ---------------------------------------------------------------------------
+
+// CostPlanLabels holds all translatable strings for the cost_plan module.
+type CostPlanLabels struct {
+	Page    CostPlanPageLabels    `json:"page"`
+	Columns CostPlanColumnLabels  `json:"columns"`
+	Tabs    CostPlanTabLabels     `json:"tabs"`
+	Detail  CostPlanDetailLabels  `json:"detail"`
+	Form    CostPlanFormLabels    `json:"form"`
+	Actions CostPlanActionLabels  `json:"actions"`
+	Confirm CostPlanConfirmLabels `json:"confirm"`
+	Buttons CostPlanButtonLabels  `json:"buttons"`
+	Bulk    CostPlanBulkLabels    `json:"bulk"`
+	Status  CostPlanStatusLabels  `json:"status"`
+	Empty   CostPlanEmptyLabels   `json:"empty"`
+	Errors  CostPlanErrorLabels   `json:"errors"`
+}
+
+type CostPlanPageLabels struct {
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+	PageTitle       string `json:"pageTitle"`
+}
+
+type CostPlanColumnLabels struct {
+	Name            string `json:"name"`
+	BillingKind     string `json:"billingKind"`
+	Amount          string `json:"amount"`
+	Currency        string `json:"currency"`
+	SupplierPlan    string `json:"supplierPlan"`
+	CostSchedule    string `json:"costSchedule"`
+	Active          string `json:"active"`
+}
+
+type CostPlanTabLabels struct {
+	Info                string `json:"info"`
+	Lines               string `json:"lines"`
+	LinkedSubscriptions string `json:"linkedSubscriptions"`
+	Activity            string `json:"activity"`
+}
+
+type CostPlanDetailLabels struct {
+	InfoSection     string `json:"infoSection"`
+	Name            string `json:"name"`
+	BillingKind     string `json:"billingKind"`
+	AmountBasis     string `json:"amountBasis"`
+	Amount          string `json:"amount"`
+	Currency        string `json:"currency"`
+	BillingCycle    string `json:"billingCycle"`
+	DefaultTerm     string `json:"defaultTerm"`
+	SupplierPlan    string `json:"supplierPlan"`
+	CostSchedule    string `json:"costSchedule"`
+	Active          string `json:"active"`
+	Inactive        string `json:"inactive"`
+}
+
+type CostPlanFormLabels struct {
+	SectionIdentification string `json:"sectionIdentification"`
+	SectionRelationships  string `json:"sectionRelationships"`
+	SectionConfiguration  string `json:"sectionConfiguration"`
+	SectionSchedule       string `json:"sectionSchedule"`
+	SectionNotes          string `json:"sectionNotes"`
+
+	Name                    string `json:"name"`
+	NamePlaceholder         string `json:"namePlaceholder"`
+	Description             string `json:"description"`
+	DescPlaceholder         string `json:"descPlaceholder"`
+	SupplierPlan            string `json:"supplierPlan"`
+	SupplierPlanPlaceholder string `json:"supplierPlanPlaceholder"`
+	CostSchedule            string `json:"costSchedule"`
+	CostSchedulePlaceholder string `json:"costSchedulePlaceholder"`
+	BillingKind             string `json:"billingKind"`
+	AmountBasis             string `json:"amountBasis"`
+	Amount                  string `json:"amount"`
+	AmountPlaceholder       string `json:"amountPlaceholder"`
+	Currency                string `json:"currency"`
+	CurrencyPlaceholder     string `json:"currencyPlaceholder"`
+	BillingCycle            string `json:"billingCycle"`
+	BillingCyclePlaceholder string `json:"billingCyclePlaceholder"`
+	DefaultTerm             string `json:"defaultTerm"`
+	DefaultTermPlaceholder  string `json:"defaultTermPlaceholder"`
+	Active                  string `json:"active"`
+
+	// BillingKind option labels
+	BillingKindOneTime    string `json:"billingKindOneTime"`
+	BillingKindRecurring  string `json:"billingKindRecurring"`
+	BillingKindContract   string `json:"billingKindContract"`
+	BillingKindUsageBased string `json:"billingKindUsageBased"`
+	BillingKindAdHoc      string `json:"billingKindAdHoc"`
+
+	// AmountBasis option labels
+	AmountBasisPerCycle         string `json:"amountBasisPerCycle"`
+	AmountBasisTotalPackage     string `json:"amountBasisTotalPackage"`
+	AmountBasisDerivedFromLines string `json:"amountBasisDerivedFromLines"`
+	AmountBasisPerOccurrence    string `json:"amountBasisPerOccurrence"`
+
+	// Duration unit option labels (shared by billing_cycle_unit and default_term_unit)
+	DurationUnitDay   string `json:"durationUnitDay"`
+	DurationUnitWeek  string `json:"durationUnitWeek"`
+	DurationUnitMonth string `json:"durationUnitMonth"`
+	DurationUnitYear  string `json:"durationUnitYear"`
+}
+
+type CostPlanActionLabels struct {
+	View         string `json:"view"`
+	Edit         string `json:"edit"`
+	Delete       string `json:"delete"`
+	Activate     string `json:"activate"`
+	Deactivate   string `json:"deactivate"`
+	NoPermission string `json:"noPermission"`
+}
+
+type CostPlanConfirmLabels struct {
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+}
+
+type CostPlanButtonLabels struct {
+	AddCostPlan string `json:"addCostPlan"`
+}
+
+type CostPlanBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type CostPlanStatusLabels struct {
+	Active     string `json:"active"`
+	Inactive   string `json:"inactive"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type CostPlanEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type CostPlanErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+	InUse            string `json:"inUse"`
+	LoadFailed       string `json:"loadFailed"`
+	NoIDsProvided    string `json:"noIdsProvided"`
+}
+
+// DefaultCostPlanLabels returns English fallback labels.
+func DefaultCostPlanLabels() CostPlanLabels {
+	return CostPlanLabels{
+		Page: CostPlanPageLabels{
+			Heading:         "Cost Plans",
+			HeadingActive:   "Active Cost Plans",
+			HeadingInactive: "Inactive Cost Plans",
+			Caption:         "Supplier pricing plans and billing schedules",
+			CaptionActive:   "Active cost plans",
+			CaptionInactive: "Inactive cost plans",
+			PageTitle:       "Cost Plan",
+		},
+		Columns: CostPlanColumnLabels{
+			Name:         "Name",
+			BillingKind:  "Billing Kind",
+			Amount:       "Amount",
+			Currency:     "Currency",
+			SupplierPlan: "Supplier Plan",
+			CostSchedule: "Cost Schedule",
+			Active:       "Status",
+		},
+		Tabs: CostPlanTabLabels{
+			Info:                "Info",
+			Lines:               "Lines",
+			LinkedSubscriptions: "Subscriptions",
+			Activity:            "Activity",
+		},
+		Detail: CostPlanDetailLabels{
+			InfoSection:  "Cost Plan Details",
+			Name:         "Name",
+			BillingKind:  "Billing Kind",
+			AmountBasis:  "Amount Basis",
+			Amount:       "Amount",
+			Currency:     "Currency",
+			BillingCycle: "Billing Cycle",
+			DefaultTerm:  "Default Term",
+			SupplierPlan: "Supplier Plan",
+			CostSchedule: "Cost Schedule",
+			Active:       "Active",
+			Inactive:     "Inactive",
+		},
+		Form: CostPlanFormLabels{
+			SectionIdentification:   "Identification",
+			SectionRelationships:    "Relationships",
+			SectionConfiguration:    "Configuration",
+			SectionSchedule:         "Schedule",
+			SectionNotes:            "Notes",
+			Name:                    "Name",
+			NamePlaceholder:         "e.g. AWS EC2 Monthly",
+			Description:             "Description",
+			DescPlaceholder:         "Internal notes about this cost plan",
+			SupplierPlan:            "Supplier Plan",
+			SupplierPlanPlaceholder: "Select supplier plan",
+			CostSchedule:            "Cost Schedule",
+			CostSchedulePlaceholder: "Select cost schedule",
+			BillingKind:             "Billing Kind",
+			AmountBasis:             "Amount Basis",
+			Amount:                  "Amount",
+			AmountPlaceholder:       "0.00",
+			Currency:                "Currency",
+			CurrencyPlaceholder:     "e.g. PHP",
+			BillingCycle:            "Billing Cycle",
+			BillingCyclePlaceholder: "e.g. 1",
+			DefaultTerm:             "Default Term",
+			DefaultTermPlaceholder:  "e.g. 12",
+			Active:                  "Active",
+			BillingKindOneTime:      "One Time",
+			BillingKindRecurring:    "Recurring",
+			BillingKindContract:     "Contract",
+			BillingKindUsageBased:   "Usage Based",
+			BillingKindAdHoc:        "Ad Hoc",
+			AmountBasisPerCycle:          "Per Cycle",
+			AmountBasisTotalPackage:      "Total Package",
+			AmountBasisDerivedFromLines:  "Derived From Lines",
+			AmountBasisPerOccurrence:     "Per Occurrence",
+			DurationUnitDay:   "Day",
+			DurationUnitWeek:  "Week",
+			DurationUnitMonth: "Month",
+			DurationUnitYear:  "Year",
+		},
+		Actions: CostPlanActionLabels{
+			View:         "View",
+			Edit:         "Edit",
+			Delete:       "Delete",
+			Activate:     "Activate",
+			Deactivate:   "Deactivate",
+			NoPermission: "No permission",
+		},
+		Confirm: CostPlanConfirmLabels{
+			Delete:                "Delete Cost Plan",
+			DeleteMessage:         "Are you sure you want to delete this cost plan?",
+			Activate:              "Activate Cost Plan",
+			ActivateMessage:       "Activate %s?",
+			Deactivate:            "Deactivate Cost Plan",
+			DeactivateMessage:     "Deactivate %s?",
+			BulkDelete:            "Delete Cost Plans",
+			BulkDeleteMessage:     "Delete selected cost plans?",
+			BulkActivate:          "Activate Selected",
+			BulkActivateMessage:   "Activate selected cost plans?",
+			BulkDeactivate:        "Deactivate Selected",
+			BulkDeactivateMessage: "Deactivate selected cost plans?",
+		},
+		Buttons: CostPlanButtonLabels{AddCostPlan: "Add Cost Plan"},
+		Bulk:    CostPlanBulkLabels{Delete: "Delete"},
+		Status: CostPlanStatusLabels{
+			Active:     "Active",
+			Inactive:   "Inactive",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Empty: CostPlanEmptyLabels{
+			Title:   "No cost plans yet",
+			Message: "Add a cost plan to define billing terms for a supplier engagement.",
+		},
+		Errors: CostPlanErrorLabels{
+			PermissionDenied: "You do not have permission.",
+			InvalidFormData:  "Invalid form data.",
+			NotFound:         "Cost plan not found.",
+			IDRequired:       "Cost plan ID is required.",
+			NoPermission:     "No permission.",
+			InUse:            "This cost plan has linked subscriptions and cannot be deleted.",
+			LoadFailed:       "Failed to load cost plan.",
+			NoIDsProvided:    "No IDs provided.",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — SupplierProductPlan labels
+// ---------------------------------------------------------------------------
+
+// SupplierProductPlanLabels holds all translatable strings for the supplier_product_plan module.
+type SupplierProductPlanLabels struct {
+	Page    SupplierProductPlanPageLabels    `json:"page"`
+	Columns SupplierProductPlanColumnLabels  `json:"columns"`
+	Tabs    SupplierProductPlanTabLabels     `json:"tabs"`
+	Detail  SupplierProductPlanDetailLabels  `json:"detail"`
+	Form    SupplierProductPlanFormLabels    `json:"form"`
+	Actions SupplierProductPlanActionLabels  `json:"actions"`
+	Confirm SupplierProductPlanConfirmLabels `json:"confirm"`
+	Buttons SupplierProductPlanButtonLabels  `json:"buttons"`
+	Bulk    SupplierProductPlanBulkLabels    `json:"bulk"`
+	Status  SupplierProductPlanStatusLabels  `json:"status"`
+	Empty   SupplierProductPlanEmptyLabels   `json:"empty"`
+	Errors  SupplierProductPlanErrorLabels   `json:"errors"`
+}
+
+type SupplierProductPlanPageLabels struct {
+	Heading         string `json:"heading"`
+	HeadingActive   string `json:"headingActive"`
+	HeadingInactive string `json:"headingInactive"`
+	Caption         string `json:"caption"`
+	CaptionActive   string `json:"captionActive"`
+	CaptionInactive string `json:"captionInactive"`
+	PageTitle       string `json:"pageTitle"`
+}
+
+type SupplierProductPlanColumnLabels struct {
+	SupplierPlan    string `json:"supplierPlan"`
+	Product         string `json:"product"`
+	ProductVariant  string `json:"productVariant"`
+	SupplierSKU     string `json:"supplierSku"`
+	SupplierUnit    string `json:"supplierUnit"`
+	Active          string `json:"active"`
+}
+
+type SupplierProductPlanTabLabels struct {
+	Info          string `json:"info"`
+	CostPlanLines string `json:"costPlanLines"`
+	Activity      string `json:"activity"`
+}
+
+type SupplierProductPlanDetailLabels struct {
+	InfoSection    string `json:"infoSection"`
+	SupplierPlan   string `json:"supplierPlan"`
+	Product        string `json:"product"`
+	ProductVariant string `json:"productVariant"`
+	SupplierSKU    string `json:"supplierSku"`
+	SupplierUnit   string `json:"supplierUnit"`
+	Active         string `json:"active"`
+	Inactive       string `json:"inactive"`
+}
+
+type SupplierProductPlanFormLabels struct {
+	SectionIdentification string `json:"sectionIdentification"`
+	SectionRelationships  string `json:"sectionRelationships"`
+	SectionConfiguration  string `json:"sectionConfiguration"`
+	SectionSchedule       string `json:"sectionSchedule"`
+	SectionNotes          string `json:"sectionNotes"`
+
+	SupplierPlan            string `json:"supplierPlan"`
+	SupplierPlanPlaceholder string `json:"supplierPlanPlaceholder"`
+	Product                 string `json:"product"`
+	ProductPlaceholder      string `json:"productPlaceholder"`
+	ProductVariant          string `json:"productVariant"`
+	ProductVariantPlaceholder string `json:"productVariantPlaceholder"`
+	SupplierSKU             string `json:"supplierSku"`
+	SupplierSKUPlaceholder  string `json:"supplierSkuPlaceholder"`
+	SupplierUnit            string `json:"supplierUnit"`
+	SupplierUnitPlaceholder string `json:"supplierUnitPlaceholder"`
+	Active                  string `json:"active"`
+}
+
+type SupplierProductPlanActionLabels struct {
+	View         string `json:"view"`
+	Edit         string `json:"edit"`
+	Delete       string `json:"delete"`
+	Activate     string `json:"activate"`
+	Deactivate   string `json:"deactivate"`
+	NoPermission string `json:"noPermission"`
+}
+
+type SupplierProductPlanConfirmLabels struct {
+	Delete                string `json:"delete"`
+	DeleteMessage         string `json:"deleteMessage"`
+	Activate              string `json:"activate"`
+	ActivateMessage       string `json:"activateMessage"`
+	Deactivate            string `json:"deactivate"`
+	DeactivateMessage     string `json:"deactivateMessage"`
+	BulkDelete            string `json:"bulkDelete"`
+	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	BulkActivate          string `json:"bulkActivate"`
+	BulkActivateMessage   string `json:"bulkActivateMessage"`
+	BulkDeactivate        string `json:"bulkDeactivate"`
+	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+}
+
+type SupplierProductPlanButtonLabels struct {
+	AddSupplierProductPlan string `json:"addSupplierProductPlan"`
+}
+
+type SupplierProductPlanBulkLabels struct {
+	Delete string `json:"delete"`
+}
+
+type SupplierProductPlanStatusLabels struct {
+	Active     string `json:"active"`
+	Inactive   string `json:"inactive"`
+	Activate   string `json:"activate"`
+	Deactivate string `json:"deactivate"`
+}
+
+type SupplierProductPlanEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type SupplierProductPlanErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+	NoPermission     string `json:"noPermission"`
+	InUse            string `json:"inUse"`
+	LoadFailed       string `json:"loadFailed"`
+	NoIDsProvided    string `json:"noIdsProvided"`
+}
+
+// DefaultSupplierProductPlanLabels returns English fallback labels.
+func DefaultSupplierProductPlanLabels() SupplierProductPlanLabels {
+	return SupplierProductPlanLabels{
+		Page: SupplierProductPlanPageLabels{
+			Heading:         "Supplier Product Plans",
+			HeadingActive:   "Active Supplier Product Plans",
+			HeadingInactive: "Inactive Supplier Product Plans",
+			Caption:         "Supplier product catalogue line items",
+			CaptionActive:   "Active supplier product plans",
+			CaptionInactive: "Inactive supplier product plans",
+			PageTitle:       "Supplier Product Plan",
+		},
+		Columns: SupplierProductPlanColumnLabels{
+			SupplierPlan:   "Supplier Plan",
+			Product:        "Product",
+			ProductVariant: "Variant",
+			SupplierSKU:    "Supplier SKU",
+			SupplierUnit:   "Supplier Unit",
+			Active:         "Status",
+		},
+		Tabs: SupplierProductPlanTabLabels{
+			Info:          "Info",
+			CostPlanLines: "Cost Plan Lines",
+			Activity:      "Activity",
+		},
+		Detail: SupplierProductPlanDetailLabels{
+			InfoSection:    "Product Plan Details",
+			SupplierPlan:   "Supplier Plan",
+			Product:        "Product",
+			ProductVariant: "Variant",
+			SupplierSKU:    "Supplier SKU",
+			SupplierUnit:   "Supplier Unit",
+			Active:         "Active",
+			Inactive:       "Inactive",
+		},
+		Form: SupplierProductPlanFormLabels{
+			SectionIdentification:     "Identification",
+			SectionRelationships:      "Relationships",
+			SectionConfiguration:      "Configuration",
+			SectionSchedule:           "Schedule",
+			SectionNotes:              "Notes",
+			SupplierPlan:              "Supplier Plan",
+			SupplierPlanPlaceholder:   "Select supplier plan",
+			Product:                   "Product",
+			ProductPlaceholder:        "Select product",
+			ProductVariant:            "Variant (optional)",
+			ProductVariantPlaceholder: "Select variant",
+			SupplierSKU:               "Supplier SKU",
+			SupplierSKUPlaceholder:    "Supplier's internal SKU code",
+			SupplierUnit:              "Supplier Unit",
+			SupplierUnitPlaceholder:   "e.g. vCPU·hour",
+			Active:                    "Active",
+		},
+		Actions: SupplierProductPlanActionLabels{
+			View:         "View",
+			Edit:         "Edit",
+			Delete:       "Delete",
+			Activate:     "Activate",
+			Deactivate:   "Deactivate",
+			NoPermission: "No permission",
+		},
+		Confirm: SupplierProductPlanConfirmLabels{
+			Delete:                "Delete Supplier Product Plan",
+			DeleteMessage:         "Are you sure you want to delete this supplier product plan?",
+			Activate:              "Activate Supplier Product Plan",
+			ActivateMessage:       "Activate %s?",
+			Deactivate:            "Deactivate Supplier Product Plan",
+			DeactivateMessage:     "Deactivate %s?",
+			BulkDelete:            "Delete Supplier Product Plans",
+			BulkDeleteMessage:     "Delete selected supplier product plans?",
+			BulkActivate:          "Activate Selected",
+			BulkActivateMessage:   "Activate selected supplier product plans?",
+			BulkDeactivate:        "Deactivate Selected",
+			BulkDeactivateMessage: "Deactivate selected supplier product plans?",
+		},
+		Buttons: SupplierProductPlanButtonLabels{AddSupplierProductPlan: "Add Supplier Product Plan"},
+		Bulk:    SupplierProductPlanBulkLabels{Delete: "Delete"},
+		Status: SupplierProductPlanStatusLabels{
+			Active:     "Active",
+			Inactive:   "Inactive",
+			Activate:   "Activate",
+			Deactivate: "Deactivate",
+		},
+		Empty: SupplierProductPlanEmptyLabels{
+			Title:   "No supplier product plans yet",
+			Message: "Add a supplier product plan to map vendor catalogue items to your internal products.",
+		},
+		Errors: SupplierProductPlanErrorLabels{
+			PermissionDenied: "You do not have permission.",
+			InvalidFormData:  "Invalid form data.",
+			NotFound:         "Supplier product plan not found.",
+			IDRequired:       "Supplier product plan ID is required.",
+			NoPermission:     "No permission.",
+			InUse:            "This supplier product plan has linked cost plan lines and cannot be deleted.",
+			LoadFailed:       "Failed to load supplier product plan.",
+			NoIDsProvided:    "No IDs provided.",
+		},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — SupplierProductCostPlan labels (inline editor, no full module)
+// ---------------------------------------------------------------------------
+
+// SupplierProductCostPlanLabels holds translatable strings for the inline cost plan line editor.
+type SupplierProductCostPlanLabels struct {
+	Form    SupplierProductCostPlanFormLabels    `json:"form"`
+	Columns SupplierProductCostPlanColumnLabels  `json:"columns"`
+	Empty   SupplierProductCostPlanEmptyLabels   `json:"empty"`
+	Actions SupplierProductCostPlanActionLabels  `json:"actions"`
+	Errors  SupplierProductCostPlanErrorLabels   `json:"errors"`
+}
+
+type SupplierProductCostPlanFormLabels struct {
+	SectionIdentification string `json:"sectionIdentification"`
+	SectionRelationships  string `json:"sectionRelationships"`
+	SectionConfiguration  string `json:"sectionConfiguration"`
+	SectionSchedule       string `json:"sectionSchedule"`
+	SectionNotes          string `json:"sectionNotes"`
+
+	SupplierProductPlan            string `json:"supplierProductPlan"`
+	SupplierProductPlanPlaceholder string `json:"supplierProductPlanPlaceholder"`
+	BillingTreatment               string `json:"billingTreatment"`
+	Amount                         string `json:"amount"`
+	AmountPlaceholder              string `json:"amountPlaceholder"`
+	MinimumCommitment              string `json:"minimumCommitment"`
+	MinimumCommitmentPlaceholder   string `json:"minimumCommitmentPlaceholder"`
+	Active                         string `json:"active"`
+
+	// BillingTreatment option labels
+	TreatmentRecurring          string `json:"treatmentRecurring"`
+	TreatmentOneTimeInitial     string `json:"treatmentOneTimeInitial"`
+	TreatmentUsageBased         string `json:"treatmentUsageBased"`
+	TreatmentMinimumCommitment  string `json:"treatmentMinimumCommitment"`
+}
+
+type SupplierProductCostPlanColumnLabels struct {
+	SupplierProductPlan string `json:"supplierProductPlan"`
+	BillingTreatment    string `json:"billingTreatment"`
+	Amount              string `json:"amount"`
+	Active              string `json:"active"`
+}
+
+type SupplierProductCostPlanEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+	AddLine string `json:"addLine"`
+}
+
+type SupplierProductCostPlanActionLabels struct {
+	Edit         string `json:"edit"`
+	Delete       string `json:"delete"`
+	Add          string `json:"add"`
+	NoPermission string `json:"noPermission"`
+}
+
+type SupplierProductCostPlanErrorLabels struct {
+	PermissionDenied string `json:"permissionDenied"`
+	InvalidFormData  string `json:"invalidFormData"`
+	NotFound         string `json:"notFound"`
+	IDRequired       string `json:"idRequired"`
+}
+
+// DefaultSupplierProductCostPlanLabels returns English fallback labels.
+func DefaultSupplierProductCostPlanLabels() SupplierProductCostPlanLabels {
+	return SupplierProductCostPlanLabels{
+		Form: SupplierProductCostPlanFormLabels{
+			SectionIdentification:          "Identification",
+			SectionRelationships:           "Relationships",
+			SectionConfiguration:           "Configuration",
+			SectionSchedule:                "Schedule",
+			SectionNotes:                   "Notes",
+			SupplierProductPlan:            "Supplier Product Plan",
+			SupplierProductPlanPlaceholder: "Select product plan",
+			BillingTreatment:               "Billing Treatment",
+			Amount:                         "Amount",
+			AmountPlaceholder:              "0.00",
+			MinimumCommitment:              "Minimum Commitment",
+			MinimumCommitmentPlaceholder:   "0.00",
+			Active:                         "Active",
+			TreatmentRecurring:             "Recurring",
+			TreatmentOneTimeInitial:        "One-Time Initial",
+			TreatmentUsageBased:            "Usage Based",
+			TreatmentMinimumCommitment:     "Minimum Commitment",
+		},
+		Columns: SupplierProductCostPlanColumnLabels{
+			SupplierProductPlan: "Product Plan",
+			BillingTreatment:    "Treatment",
+			Amount:              "Amount",
+			Active:              "Status",
+		},
+		Empty: SupplierProductCostPlanEmptyLabels{
+			Title:   "No cost plan lines yet",
+			Message: "Add product-level cost lines to this cost plan.",
+			AddLine: "Add Line",
+		},
+		Actions: SupplierProductCostPlanActionLabels{
+			Edit:         "Edit",
+			Delete:       "Delete",
+			Add:          "Add Line",
+			NoPermission: "No permission",
+		},
+		Errors: SupplierProductCostPlanErrorLabels{
+			PermissionDenied: "You do not have permission.",
+			InvalidFormData:  "Invalid form data.",
+			NotFound:         "Cost plan line not found.",
+			IDRequired:       "Cost plan line ID is required.",
 		},
 	}
 }

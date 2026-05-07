@@ -45,6 +45,8 @@
         {{template "supplier-contract-price-schedule-tab-lines" .}}
         {{else if eq .ActiveTab "activity"}}
         {{template "supplier-contract-price-schedule-tab-activity" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

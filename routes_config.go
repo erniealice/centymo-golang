@@ -762,6 +762,56 @@ func (r RevenueRoutes) RouteMap() map[string]string {
 	}
 }
 
+// RevenueRunRoutes holds all route paths for the Revenue Run (invoice-run) module.
+// Surface B = workspace queue page; Surface D = run history list + detail pages.
+type RevenueRunRoutes struct {
+	// Sidebar navigation context — set via defaults or routes.json override.
+	ActiveNav string `json:"active_nav"`
+
+	QueueURL           string `json:"queue_url"`
+	QueueTableURL      string `json:"queue_table_url"`
+	ListURL            string `json:"list_url"`
+	ListTableURL       string `json:"list_table_url"`
+	DetailURL          string `json:"detail_url"`
+	DetailTabActionURL string `json:"detail_tab_action_url"`
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
+	SubmitBatchURL     string `json:"submit_batch_url"`
+}
+
+// DefaultRevenueRunRoutes returns a RevenueRunRoutes populated from the
+// package-level route constants defined in routes.go.
+func DefaultRevenueRunRoutes() RevenueRunRoutes {
+	return RevenueRunRoutes{
+		ActiveNav:          "revenue-run",
+		QueueURL:           RevenueRunQueueURL,
+		QueueTableURL:      RevenueRunQueueTableURL,
+		ListURL:            RevenueRunListURL,
+		ListTableURL:       RevenueRunListTableURL,
+		DetailURL:           RevenueRunDetailURL,
+		DetailTabActionURL:  RevenueRunDetailTabActionURL,
+		AttachmentUploadURL: RevenueRunAttachmentUploadURL,
+		AttachmentDeleteURL: RevenueRunAttachmentDeleteURL,
+		SubmitBatchURL:      RevenueRunSubmitBatchURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// revenue-run routes.
+func (r RevenueRunRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"revenue_run.queue":              r.QueueURL,
+		"revenue_run.queue_table":        r.QueueTableURL,
+		"revenue_run.list":               r.ListURL,
+		"revenue_run.list_table":         r.ListTableURL,
+		"revenue_run.detail":              r.DetailURL,
+		"revenue_run.detail_tab_action":   r.DetailTabActionURL,
+		"revenue_run.attachment.upload":   r.AttachmentUploadURL,
+		"revenue_run.attachment.delete":   r.AttachmentDeleteURL,
+		"revenue_run.submit_batch":        r.SubmitBatchURL,
+	}
+}
+
 // ExpenditureRoutes holds all route paths for expenditure views (purchase + expense).
 type ExpenditureRoutes struct {
 	PurchaseListURL      string `json:"purchase_list_url"`
@@ -780,13 +830,15 @@ type ExpenditureRoutes struct {
 	SettingsTemplateDefaultURL string `json:"settings_template_default_url"`
 
 	// Expense CRUD action routes
-	AddURL       string `json:"add_url"`
-	EditURL      string `json:"edit_url"`
-	DeleteURL    string `json:"delete_url"`
-	SetStatusURL string `json:"set_status_url"`
-	DetailURL    string `json:"detail_url"`
-	TableURL     string `json:"table_url"`
-	TabActionURL string `json:"tab_action_url"`
+	AddURL              string `json:"add_url"`
+	EditURL             string `json:"edit_url"`
+	DeleteURL           string `json:"delete_url"`
+	SetStatusURL        string `json:"set_status_url"`
+	DetailURL           string `json:"detail_url"`
+	TableURL            string `json:"table_url"`
+	TabActionURL        string `json:"tab_action_url"`
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 
 	// Expense line item action routes
 	LineItemAddURL    string `json:"line_item_add_url"`
@@ -812,7 +864,9 @@ type ExpenditureRoutes struct {
 	PurchaseOrderDeleteURL    string `json:"purchase_order_delete_url"`
 	PurchaseOrderSetStatusURL string `json:"purchase_order_set_status_url"`
 	PurchaseOrderTableURL     string `json:"purchase_order_table_url"`
-	PurchaseOrderTabActionURL string `json:"purchase_order_tab_action_url"`
+	PurchaseOrderTabActionURL        string `json:"purchase_order_tab_action_url"`
+	PurchaseOrderAttachmentUploadURL string `json:"purchase_order_attachment_upload_url"`
+	PurchaseOrderAttachmentDeleteURL string `json:"purchase_order_attachment_delete_url"`
 
 	// Purchase Order line item routes (within PO detail)
 	PurchaseOrderLineItemTableURL  string `json:"purchase_order_line_item_table_url"`
@@ -841,13 +895,15 @@ func DefaultExpenditureRoutes() ExpenditureRoutes {
 		SettingsTemplateDeleteURL:  ExpenditureSettingsTemplateDeleteURL,
 		SettingsTemplateDefaultURL: ExpenditureSettingsTemplateDefaultURL,
 
-		AddURL:       ExpenditureExpenseAddURL,
-		EditURL:      ExpenditureExpenseEditURL,
-		DeleteURL:    ExpenditureExpenseDeleteURL,
-		SetStatusURL: ExpenditureExpenseSetStatusURL,
-		DetailURL:    ExpenditureExpenseDetailURL,
-		TableURL:     ExpenditureExpenseTableURL,
-		TabActionURL: ExpenditureExpenseTabActionURL,
+		AddURL:              ExpenditureExpenseAddURL,
+		EditURL:             ExpenditureExpenseEditURL,
+		DeleteURL:           ExpenditureExpenseDeleteURL,
+		SetStatusURL:        ExpenditureExpenseSetStatusURL,
+		DetailURL:           ExpenditureExpenseDetailURL,
+		TableURL:            ExpenditureExpenseTableURL,
+		TabActionURL:        ExpenditureExpenseTabActionURL,
+		AttachmentUploadURL: ExpenditureAttachmentUploadURL,
+		AttachmentDeleteURL: ExpenditureAttachmentDeleteURL,
 
 		LineItemAddURL:    ExpenditureExpenseLineItemAddURL,
 		LineItemEditURL:   ExpenditureExpenseLineItemEditURL,
@@ -869,7 +925,9 @@ func DefaultExpenditureRoutes() ExpenditureRoutes {
 		PurchaseOrderDeleteURL:    PurchaseOrderDeleteURL,
 		PurchaseOrderSetStatusURL: PurchaseOrderSetStatusURL,
 		PurchaseOrderTableURL:     PurchaseOrderTableURL,
-		PurchaseOrderTabActionURL: PurchaseOrderTabActionURL,
+		PurchaseOrderTabActionURL:        PurchaseOrderTabActionURL,
+		PurchaseOrderAttachmentUploadURL: PurchaseOrderAttachmentUploadURL,
+		PurchaseOrderAttachmentDeleteURL: PurchaseOrderAttachmentDeleteURL,
 
 		PurchaseOrderLineItemTableURL:  PurchaseOrderLineItemTableURL,
 		PurchaseOrderLineItemAddURL:    PurchaseOrderLineItemAddURL,
@@ -897,13 +955,15 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 		"purchases.settings.template_delete":  r.SettingsTemplateDeleteURL,
 		"purchases.settings.template_default": r.SettingsTemplateDefaultURL,
 
-		"expenditure.expense.add":        r.AddURL,
-		"expenditure.expense.edit":       r.EditURL,
-		"expenditure.expense.delete":     r.DeleteURL,
-		"expenditure.expense.set_status": r.SetStatusURL,
-		"expenditure.expense.detail":     r.DetailURL,
-		"expenditure.expense.table":      r.TableURL,
-		"expenditure.expense.pay":        r.PayURL,
+		"expenditure.expense.add":               r.AddURL,
+		"expenditure.expense.edit":              r.EditURL,
+		"expenditure.expense.delete":            r.DeleteURL,
+		"expenditure.expense.set_status":        r.SetStatusURL,
+		"expenditure.expense.detail":            r.DetailURL,
+		"expenditure.expense.table":             r.TableURL,
+		"expenditure.expense.pay":               r.PayURL,
+		"expenditure.expense.attachment.upload": r.AttachmentUploadURL,
+		"expenditure.expense.attachment.delete": r.AttachmentDeleteURL,
 
 		"expenditure.expense_category.list":   r.ExpenseCategoryListURL,
 		"expenditure.expense_category.add":    r.ExpenseCategoryAddURL,
@@ -919,6 +979,8 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 		"expenditure.purchase_order.set_status":            r.PurchaseOrderSetStatusURL,
 		"expenditure.purchase_order.table":                 r.PurchaseOrderTableURL,
 		"expenditure.purchase_order.tab_action":            r.PurchaseOrderTabActionURL,
+		"expenditure.purchase_order.attachment.upload":     r.PurchaseOrderAttachmentUploadURL,
+		"expenditure.purchase_order.attachment.delete":     r.PurchaseOrderAttachmentDeleteURL,
 		"expenditure.purchase_order.line_item.table":       r.PurchaseOrderLineItemTableURL,
 		"expenditure.purchase_order.line_item.add":         r.PurchaseOrderLineItemAddURL,
 		"expenditure.purchase_order.line_item.edit":        r.PurchaseOrderLineItemEditURL,
@@ -1180,6 +1242,8 @@ type PriceScheduleRoutes struct {
 	SetStatusURL               string `json:"set_status_url"`
 	BulkSetStatusURL           string `json:"bulk_set_status_url"`
 	TabActionURL               string `json:"tab_action_url"`
+	AttachmentUploadURL        string `json:"attachment_upload_url"`
+	AttachmentDeleteURL        string `json:"attachment_delete_url"`
 	PlanAddURL                 string `json:"plan_add_url"`
 	PlanDetailURL              string `json:"plan_detail_url"`
 	PlanTabActionURL           string `json:"plan_tab_action_url"`
@@ -1188,6 +1252,8 @@ type PriceScheduleRoutes struct {
 	PlanProductPriceAddURL     string `json:"plan_product_price_add_url"`
 	PlanProductPriceEditURL    string `json:"plan_product_price_edit_url"`
 	PlanProductPriceDeleteURL  string `json:"plan_product_price_delete_url"`
+	PlanAttachmentUploadURL    string `json:"plan_attachment_upload_url"`
+	PlanAttachmentDeleteURL    string `json:"plan_attachment_delete_url"`
 	// 2026-05-04 — Engagement (subscription) detail nested under the
 	// schedule-scoped price_plan path. Activates the rate-card → plan →
 	// engagement breadcrumb in the subscription detail view. Empty string
@@ -1213,6 +1279,8 @@ func DefaultPriceScheduleRoutes() PriceScheduleRoutes {
 		SetStatusURL:              PriceScheduleSetStatusURL,
 		BulkSetStatusURL:          PriceScheduleBulkSetStatusURL,
 		TabActionURL:              PriceScheduleTabActionURL,
+		AttachmentUploadURL:       PriceScheduleAttachmentUploadURL,
+		AttachmentDeleteURL:       PriceScheduleAttachmentDeleteURL,
 		PlanAddURL:                PriceSchedulePlanAddURL,
 		PlanDetailURL:             PriceSchedulePlanDetailURL,
 		PlanTabActionURL:          PriceSchedulePlanTabActionURL,
@@ -1221,6 +1289,8 @@ func DefaultPriceScheduleRoutes() PriceScheduleRoutes {
 		PlanProductPriceAddURL:    PriceSchedulePlanProductPriceAddURL,
 		PlanProductPriceEditURL:   PriceSchedulePlanProductPriceEditURL,
 		PlanProductPriceDeleteURL: PriceSchedulePlanProductPriceDeleteURL,
+		PlanAttachmentUploadURL:   PriceSchedulePlanAttachmentUploadURL,
+		PlanAttachmentDeleteURL:   PriceSchedulePlanAttachmentDeleteURL,
 		PlanEngagementDetailURL:   PriceSchedulePlanEngagementDetailURL,
 	}
 }
@@ -1254,6 +1324,8 @@ func DefaultPriceScheduleInventoryRoutes() PriceScheduleRoutes {
 	r.SetStatusURL = shift(r.SetStatusURL)
 	r.BulkSetStatusURL = shift(r.BulkSetStatusURL)
 	r.TabActionURL = shift(r.TabActionURL)
+	r.AttachmentUploadURL = shift(r.AttachmentUploadURL)
+	r.AttachmentDeleteURL = shift(r.AttachmentDeleteURL)
 	r.PlanAddURL = shift(r.PlanAddURL)
 	r.PlanDetailURL = shift(r.PlanDetailURL)
 	r.PlanTabActionURL = shift(r.PlanTabActionURL)
@@ -1262,6 +1334,8 @@ func DefaultPriceScheduleInventoryRoutes() PriceScheduleRoutes {
 	r.PlanProductPriceAddURL = shift(r.PlanProductPriceAddURL)
 	r.PlanProductPriceEditURL = shift(r.PlanProductPriceEditURL)
 	r.PlanProductPriceDeleteURL = shift(r.PlanProductPriceDeleteURL)
+	r.PlanAttachmentUploadURL = shift(r.PlanAttachmentUploadURL)
+	r.PlanAttachmentDeleteURL = shift(r.PlanAttachmentDeleteURL)
 	r.PlanEngagementDetailURL = shift(r.PlanEngagementDetailURL)
 	return r
 }
@@ -1281,6 +1355,8 @@ func (r PriceScheduleRoutes) RouteMap() map[string]string {
 		"price_schedule.set_status":      r.SetStatusURL,
 		"price_schedule.bulk_set_status":                r.BulkSetStatusURL,
 		"price_schedule.tab_action":                     r.TabActionURL,
+		"price_schedule.attachment.upload":              r.AttachmentUploadURL,
+		"price_schedule.attachment.delete":              r.AttachmentDeleteURL,
 		"price_schedule.plan.add":                       r.PlanAddURL,
 		"price_schedule.plan.detail":                    r.PlanDetailURL,
 		"price_schedule.plan.tab_action":                r.PlanTabActionURL,
@@ -1289,6 +1365,8 @@ func (r PriceScheduleRoutes) RouteMap() map[string]string {
 		"price_schedule.plan.product_price.add":         r.PlanProductPriceAddURL,
 		"price_schedule.plan.product_price.edit":        r.PlanProductPriceEditURL,
 		"price_schedule.plan.product_price.delete":      r.PlanProductPriceDeleteURL,
+		"price_schedule.plan.attachment.upload":         r.PlanAttachmentUploadURL,
+		"price_schedule.plan.attachment.delete":         r.PlanAttachmentDeleteURL,
 		"price_schedule.plan.engagement.detail":         r.PlanEngagementDetailURL,
 	}
 }
@@ -1394,9 +1472,14 @@ type SubscriptionRoutes struct {
 	// 2026-05-01 ad-hoc-subscription-billing — operator-driven Request Usage CTA.
 	RequestUsageURL string `json:"request_usage_url"`
 
+	// 2026-05-06 revenue-run — per-subscription Invoice Run drawer (Surface C,
+	// CYCLE billing_kind only). Empty string when revenue-run module is not wired.
+	RevenueRunURL string `json:"revenue_run_url"`
+
 	// Attachment routes
-	AttachmentUploadURL string `json:"attachment_upload_url"`
-	AttachmentDeleteURL string `json:"attachment_delete_url"`
+	AttachmentUploadURL   string `json:"attachment_upload_url"`
+	AttachmentDeleteURL   string `json:"attachment_delete_url"`
+	AttachmentDownloadURL string `json:"attachment_download_url"`
 }
 
 // DefaultSubscriptionRoutes returns a SubscriptionRoutes populated from the
@@ -1437,8 +1520,12 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		// 2026-05-01 ad-hoc-subscription-billing.
 		RequestUsageURL: SubscriptionRequestUsageURL,
 
-		AttachmentUploadURL: SubscriptionAttachmentUploadURL,
-		AttachmentDeleteURL: SubscriptionAttachmentDeleteURL,
+		// 2026-05-06 revenue-run — per-subscription drawer.
+		RevenueRunURL: SubscriptionRevenueRunURL,
+
+		AttachmentUploadURL:   SubscriptionAttachmentUploadURL,
+		AttachmentDeleteURL:   SubscriptionAttachmentDeleteURL,
+		AttachmentDownloadURL: SubscriptionAttachmentDownloadURL,
 	}
 }
 
@@ -1477,8 +1564,12 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		// 2026-05-01 ad-hoc-subscription-billing routes.
 		"subscription.request_usage": r.RequestUsageURL,
 
-		"subscription.attachment.upload": r.AttachmentUploadURL,
-		"subscription.attachment.delete": r.AttachmentDeleteURL,
+		// 2026-05-06 revenue-run per-subscription drawer.
+		"subscription.revenue_run": r.RevenueRunURL,
+
+		"subscription.attachment.upload":   r.AttachmentUploadURL,
+		"subscription.attachment.delete":   r.AttachmentDeleteURL,
+		"subscription.attachment.download": r.AttachmentDownloadURL,
 	}
 }
 
@@ -1682,7 +1773,9 @@ type SupplierContractRoutes struct {
 	DeleteURL         string `json:"delete_url"`
 	SetStatusURL      string `json:"set_status_url"`
 	BulkSetStatusURL  string `json:"bulk_set_status_url"`
-	TabActionURL      string `json:"tab_action_url"`
+	TabActionURL        string `json:"tab_action_url"`
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 
 	// Workflow
 	ApproveURL   string `json:"approve_url"`
@@ -1707,8 +1800,10 @@ func DefaultSupplierContractRoutes() SupplierContractRoutes {
 		DeleteURL:        SupplierContractDeleteURL,
 		SetStatusURL:     SupplierContractSetStatusURL,
 		BulkSetStatusURL: SupplierContractBulkSetStatusURL,
-		TabActionURL:     SupplierContractTabActionURL,
-		ApproveURL:       SupplierContractApproveURL,
+		TabActionURL:        SupplierContractTabActionURL,
+		AttachmentUploadURL: SupplierContractAttachmentUploadURL,
+		AttachmentDeleteURL: SupplierContractAttachmentDeleteURL,
+		ApproveURL:          SupplierContractApproveURL,
 		TerminateURL:     SupplierContractTerminateURL,
 		LineAddURL:       SupplierContractLineAddURL,
 		LineEditURL:      SupplierContractLineEditURL,
@@ -1719,13 +1814,15 @@ func DefaultSupplierContractRoutes() SupplierContractRoutes {
 // RouteMap returns a map of dot-notation keys to route paths.
 func (r SupplierContractRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"supplier_contract.list":          r.ListURL,
-		"supplier_contract.detail":        r.DetailURL,
-		"supplier_contract.add":           r.AddURL,
-		"supplier_contract.edit":          r.EditURL,
-		"supplier_contract.delete":        r.DeleteURL,
-		"supplier_contract.set_status":    r.SetStatusURL,
-		"supplier_contract.approve":       r.ApproveURL,
+		"supplier_contract.list":               r.ListURL,
+		"supplier_contract.detail":             r.DetailURL,
+		"supplier_contract.add":                r.AddURL,
+		"supplier_contract.edit":               r.EditURL,
+		"supplier_contract.delete":             r.DeleteURL,
+		"supplier_contract.set_status":         r.SetStatusURL,
+		"supplier_contract.attachment.upload":  r.AttachmentUploadURL,
+		"supplier_contract.attachment.delete":  r.AttachmentDeleteURL,
+		"supplier_contract.approve":            r.ApproveURL,
 		"supplier_contract.terminate":     r.TerminateURL,
 		"supplier_contract.line.add":      r.LineAddURL,
 		"supplier_contract.line.edit":     r.LineEditURL,
@@ -1749,7 +1846,9 @@ type ProcurementRequestRoutes struct {
 	DeleteURL         string `json:"delete_url"`
 	SetStatusURL      string `json:"set_status_url"`
 	BulkSetStatusURL  string `json:"bulk_set_status_url"`
-	TabActionURL      string `json:"tab_action_url"`
+	TabActionURL        string `json:"tab_action_url"`
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 
 	// Workflow actions
 	SubmitURL  string `json:"submit_url"`
@@ -1771,7 +1870,7 @@ type ProcurementRequestRoutes struct {
 // package-level route constants.
 func DefaultProcurementRequestRoutes() ProcurementRequestRoutes {
 	return ProcurementRequestRoutes{
-		ActiveNav:        "procurement-requests",
+		ActiveNav:        "procurement",
 		ActiveSubNav:     "draft",
 		ListURL:          ProcurementRequestListURL,
 		DetailURL:        ProcurementRequestDetailURL,
@@ -1780,8 +1879,10 @@ func DefaultProcurementRequestRoutes() ProcurementRequestRoutes {
 		DeleteURL:        ProcurementRequestDeleteURL,
 		SetStatusURL:     ProcurementRequestSetStatusURL,
 		BulkSetStatusURL: ProcurementRequestBulkSetStatusURL,
-		TabActionURL:     ProcurementRequestTabActionURL,
-		SubmitURL:        ProcurementRequestSubmitURL,
+		TabActionURL:        ProcurementRequestTabActionURL,
+		AttachmentUploadURL: ProcurementRequestAttachmentUploadURL,
+		AttachmentDeleteURL: ProcurementRequestAttachmentDeleteURL,
+		SubmitURL:           ProcurementRequestSubmitURL,
 		ApproveURL:       ProcurementRequestApproveURL,
 		RejectURL:        ProcurementRequestRejectURL,
 		SpawnPOURL:       ProcurementRequestSpawnPOURL,
@@ -1795,13 +1896,15 @@ func DefaultProcurementRequestRoutes() ProcurementRequestRoutes {
 // RouteMap returns a map of dot-notation keys to route paths.
 func (r ProcurementRequestRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"procurement_request.list":        r.ListURL,
-		"procurement_request.detail":      r.DetailURL,
-		"procurement_request.add":         r.AddURL,
-		"procurement_request.edit":        r.EditURL,
-		"procurement_request.delete":      r.DeleteURL,
-		"procurement_request.set_status":  r.SetStatusURL,
-		"procurement_request.submit":      r.SubmitURL,
+		"procurement_request.list":               r.ListURL,
+		"procurement_request.detail":             r.DetailURL,
+		"procurement_request.add":                r.AddURL,
+		"procurement_request.edit":               r.EditURL,
+		"procurement_request.delete":             r.DeleteURL,
+		"procurement_request.set_status":         r.SetStatusURL,
+		"procurement_request.attachment.upload":  r.AttachmentUploadURL,
+		"procurement_request.attachment.delete":  r.AttachmentDeleteURL,
+		"procurement_request.submit":             r.SubmitURL,
 		"procurement_request.approve":     r.ApproveURL,
 		"procurement_request.reject":      r.RejectURL,
 		"procurement_request.spawn_po":    r.SpawnPOURL,
@@ -1874,7 +1977,9 @@ type SupplierContractPriceScheduleRoutes struct {
 	DeleteURL        string `json:"delete_url"`
 	SetStatusURL     string `json:"set_status_url"`
 	BulkSetStatusURL string `json:"bulk_set_status_url"`
-	TabActionURL     string `json:"tab_action_url"`
+	TabActionURL        string `json:"tab_action_url"`
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 
 	// Workflow
 	ActivateURL  string `json:"activate_url"`
@@ -1899,8 +2004,10 @@ func DefaultSupplierContractPriceScheduleRoutes() SupplierContractPriceScheduleR
 		DeleteURL:        SupplierContractPriceScheduleDeleteURL,
 		SetStatusURL:     SupplierContractPriceScheduleSetStatusURL,
 		BulkSetStatusURL: SupplierContractPriceScheduleBulkSetStatusURL,
-		TabActionURL:     SupplierContractPriceScheduleTabActionURL,
-		ActivateURL:      SupplierContractPriceScheduleActivateURL,
+		TabActionURL:        SupplierContractPriceScheduleTabActionURL,
+		AttachmentUploadURL: SupplierContractPriceScheduleAttachmentUploadURL,
+		AttachmentDeleteURL: SupplierContractPriceScheduleAttachmentDeleteURL,
+		ActivateURL:         SupplierContractPriceScheduleActivateURL,
 		SupersedeURL:     SupplierContractPriceScheduleSupersedeURL,
 		LineAddURL:       SupplierContractPriceScheduleLineAddURL,
 		LineEditURL:      SupplierContractPriceScheduleLineEditURL,
@@ -1911,13 +2018,15 @@ func DefaultSupplierContractPriceScheduleRoutes() SupplierContractPriceScheduleR
 // RouteMap returns a map of dot-notation keys to route paths.
 func (r SupplierContractPriceScheduleRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"supplier_contract_price_schedule.list":        r.ListURL,
-		"supplier_contract_price_schedule.detail":      r.DetailURL,
-		"supplier_contract_price_schedule.add":         r.AddURL,
-		"supplier_contract_price_schedule.edit":        r.EditURL,
-		"supplier_contract_price_schedule.delete":      r.DeleteURL,
-		"supplier_contract_price_schedule.set_status":  r.SetStatusURL,
-		"supplier_contract_price_schedule.activate":    r.ActivateURL,
+		"supplier_contract_price_schedule.list":               r.ListURL,
+		"supplier_contract_price_schedule.detail":             r.DetailURL,
+		"supplier_contract_price_schedule.add":                r.AddURL,
+		"supplier_contract_price_schedule.edit":               r.EditURL,
+		"supplier_contract_price_schedule.delete":             r.DeleteURL,
+		"supplier_contract_price_schedule.set_status":         r.SetStatusURL,
+		"supplier_contract_price_schedule.attachment.upload":  r.AttachmentUploadURL,
+		"supplier_contract_price_schedule.attachment.delete":  r.AttachmentDeleteURL,
+		"supplier_contract_price_schedule.activate":           r.ActivateURL,
 		"supplier_contract_price_schedule.supersede":   r.SupersedeURL,
 		"supplier_contract_price_schedule.line.add":    r.LineAddURL,
 		"supplier_contract_price_schedule.line.edit":   r.LineEditURL,
@@ -1936,10 +2045,12 @@ type ExpenseRecognitionRoutes struct {
 	ActiveNav    string `json:"active_nav"`
 	ActiveSubNav string `json:"active_sub_nav"`
 
-	ListURL      string `json:"list_url"`
-	DetailURL    string `json:"detail_url"`
-	DeleteURL    string `json:"delete_url"`
-	TabActionURL string `json:"tab_action_url"`
+	ListURL             string `json:"list_url"`
+	DetailURL           string `json:"detail_url"`
+	DeleteURL           string `json:"delete_url"`
+	TabActionURL        string `json:"tab_action_url"`
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
 
 	// Workflow
 	ReverseURL                  string `json:"reverse_url"`
@@ -1962,6 +2073,8 @@ func DefaultExpenseRecognitionRoutes() ExpenseRecognitionRoutes {
 		DetailURL:                   ExpenseRecognitionDetailURL,
 		DeleteURL:                   ExpenseRecognitionDeleteURL,
 		TabActionURL:                ExpenseRecognitionTabActionURL,
+		AttachmentUploadURL:         ExpenseRecognitionAttachmentUploadURL,
+		AttachmentDeleteURL:         ExpenseRecognitionAttachmentDeleteURL,
 		ReverseURL:                  ExpenseRecognitionReverseURL,
 		RecognizeFromExpenditureURL: ExpenseRecognitionRecognizeFromExpenditureURL,
 		RecognizeFromContractURL:    ExpenseRecognitionRecognizeFromContractURL,
@@ -1977,6 +2090,8 @@ func (r ExpenseRecognitionRoutes) RouteMap() map[string]string {
 		"expense_recognition.list":                       r.ListURL,
 		"expense_recognition.detail":                     r.DetailURL,
 		"expense_recognition.delete":                     r.DeleteURL,
+		"expense_recognition.attachment.upload":          r.AttachmentUploadURL,
+		"expense_recognition.attachment.delete":          r.AttachmentDeleteURL,
 		"expense_recognition.reverse":                    r.ReverseURL,
 		"expense_recognition.recognize_from_expenditure": r.RecognizeFromExpenditureURL,
 		"expense_recognition.recognize_from_contract":    r.RecognizeFromContractURL,
@@ -2004,6 +2119,10 @@ type AccruedExpenseRoutes struct {
 	BulkSetStatusURL string `json:"bulk_set_status_url"`
 	TabActionURL     string `json:"tab_action_url"`
 
+	// Attachments
+	AttachmentUploadURL string `json:"attachment_upload_url"`
+	AttachmentDeleteURL string `json:"attachment_delete_url"`
+
 	// Workflow
 	SettleURL              string `json:"settle_url"`
 	ReverseURL             string `json:"reverse_url"`
@@ -2029,6 +2148,8 @@ func DefaultAccruedExpenseRoutes() AccruedExpenseRoutes {
 		SetStatusURL:        AccruedExpenseSetStatusURL,
 		BulkSetStatusURL:    AccruedExpenseBulkSetStatusURL,
 		TabActionURL:        AccruedExpenseTabActionURL,
+		AttachmentUploadURL: AccruedExpenseAttachmentUploadURL,
+		AttachmentDeleteURL: AccruedExpenseAttachmentDeleteURL,
 		SettleURL:             AccruedExpenseSettleURL,
 		ReverseURL:            AccruedExpenseReverseURL,
 		AccrueFromContractURL: AccruedExpenseAccrueFromContractURL,
@@ -2047,6 +2168,8 @@ func (r AccruedExpenseRoutes) RouteMap() map[string]string {
 		"accrued_expense.edit":              r.EditURL,
 		"accrued_expense.delete":            r.DeleteURL,
 		"accrued_expense.set_status":        r.SetStatusURL,
+		"accrued_expense.attachment.upload": r.AttachmentUploadURL,
+		"accrued_expense.attachment.delete": r.AttachmentDeleteURL,
 		"accrued_expense.settle":              r.SettleURL,
 		"accrued_expense.reverse":             r.ReverseURL,
 		"accrued_expense.accrue_from_contract": r.AccrueFromContractURL,
@@ -2054,4 +2177,324 @@ func (r AccruedExpenseRoutes) RouteMap() map[string]string {
 		"accrued_expense.settlement.edit":   r.SettlementEditURL,
 		"accrued_expense.settlement.delete": r.SettlementDeleteURL,
 	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — SupplierSubscription routes (20260506-supplier-subscriptions)
+// ---------------------------------------------------------------------------
+
+// SupplierSubscriptionRoutes holds all route paths for supplier_subscription views.
+type SupplierSubscriptionRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+
+	// Search autocomplete endpoints for the add/edit drawer
+	SearchCostPlanURL  string `json:"search_cost_plan_url"`
+	SearchSupplierURL  string `json:"search_supplier_url"`
+}
+
+// DefaultSupplierSubscriptionRoutes returns a SupplierSubscriptionRoutes using route constants.
+func DefaultSupplierSubscriptionRoutes() SupplierSubscriptionRoutes {
+	return SupplierSubscriptionRoutes{
+		ActiveNav:    "supplier",
+		ActiveSubNav: "supplier-subscriptions",
+
+		ListURL:          SupplierSubscriptionListURL,
+		TableURL:         SupplierSubscriptionTableURL,
+		DetailURL:        SupplierSubscriptionDetailURL,
+		AddURL:           SupplierSubscriptionAddURL,
+		EditURL:          SupplierSubscriptionEditURL,
+		DeleteURL:        SupplierSubscriptionDeleteURL,
+		BulkDeleteURL:    SupplierSubscriptionBulkDeleteURL,
+		SetStatusURL:     SupplierSubscriptionSetStatusURL,
+		BulkSetStatusURL: SupplierSubscriptionBulkSetStatusURL,
+		TabActionURL:     SupplierSubscriptionTabActionURL,
+		SearchCostPlanURL:  SupplierSubscriptionSearchCostPlanURL,
+		SearchSupplierURL:  SupplierSubscriptionSearchSupplierURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r SupplierSubscriptionRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"supplier_subscription.list":          r.ListURL,
+		"supplier_subscription.table":         r.TableURL,
+		"supplier_subscription.detail":        r.DetailURL,
+		"supplier_subscription.add":           r.AddURL,
+		"supplier_subscription.edit":          r.EditURL,
+		"supplier_subscription.delete":        r.DeleteURL,
+		"supplier_subscription.bulk_delete":   r.BulkDeleteURL,
+		"supplier_subscription.set_status":    r.SetStatusURL,
+		"supplier_subscription.bulk_set_status": r.BulkSetStatusURL,
+		"supplier_subscription.tab_action":    r.TabActionURL,
+		"supplier_subscription.search_cost_plan": r.SearchCostPlanURL,
+		"supplier_subscription.search_supplier":  r.SearchSupplierURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — CostSchedule routes
+// ---------------------------------------------------------------------------
+
+// CostScheduleRoutes holds all route paths for cost_schedule views.
+type CostScheduleRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+}
+
+// DefaultCostScheduleRoutes returns a CostScheduleRoutes using route constants.
+func DefaultCostScheduleRoutes() CostScheduleRoutes {
+	return CostScheduleRoutes{
+		ActiveNav:    "supplier",
+		ActiveSubNav: "cost-schedules",
+
+		ListURL:          CostScheduleListURL,
+		TableURL:         CostScheduleTableURL,
+		DetailURL:        CostScheduleDetailURL,
+		AddURL:           CostScheduleAddURL,
+		EditURL:          CostScheduleEditURL,
+		DeleteURL:        CostScheduleDeleteURL,
+		BulkDeleteURL:    CostScheduleBulkDeleteURL,
+		SetStatusURL:     CostScheduleSetStatusURL,
+		BulkSetStatusURL: CostScheduleBulkSetStatusURL,
+		TabActionURL:     CostScheduleTabActionURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r CostScheduleRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"cost_schedule.list":          r.ListURL,
+		"cost_schedule.table":         r.TableURL,
+		"cost_schedule.detail":        r.DetailURL,
+		"cost_schedule.add":           r.AddURL,
+		"cost_schedule.edit":          r.EditURL,
+		"cost_schedule.delete":        r.DeleteURL,
+		"cost_schedule.bulk_delete":   r.BulkDeleteURL,
+		"cost_schedule.set_status":    r.SetStatusURL,
+		"cost_schedule.bulk_set_status": r.BulkSetStatusURL,
+		"cost_schedule.tab_action":    r.TabActionURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — SupplierPlan routes
+// ---------------------------------------------------------------------------
+
+// SupplierPlanRoutes holds all route paths for supplier_plan views.
+type SupplierPlanRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+
+	// Autocomplete search URL for the supplier select in add/edit forms.
+	SearchSupplierURL string `json:"search_supplier_url"`
+}
+
+// DefaultSupplierPlanRoutes returns a SupplierPlanRoutes using route constants.
+func DefaultSupplierPlanRoutes() SupplierPlanRoutes {
+	return SupplierPlanRoutes{
+		ActiveNav:    "supplier",
+		ActiveSubNav: "supplier-plans",
+
+		ListURL:          SupplierPlanListURL,
+		TableURL:         SupplierPlanTableURL,
+		DetailURL:        SupplierPlanDetailURL,
+		AddURL:           SupplierPlanAddURL,
+		EditURL:          SupplierPlanEditURL,
+		DeleteURL:        SupplierPlanDeleteURL,
+		BulkDeleteURL:    SupplierPlanBulkDeleteURL,
+		SetStatusURL:     SupplierPlanSetStatusURL,
+		BulkSetStatusURL: SupplierPlanBulkSetStatusURL,
+		TabActionURL:     SupplierPlanTabActionURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r SupplierPlanRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"supplier_plan.list":          r.ListURL,
+		"supplier_plan.table":         r.TableURL,
+		"supplier_plan.detail":        r.DetailURL,
+		"supplier_plan.add":           r.AddURL,
+		"supplier_plan.edit":          r.EditURL,
+		"supplier_plan.delete":        r.DeleteURL,
+		"supplier_plan.bulk_delete":   r.BulkDeleteURL,
+		"supplier_plan.set_status":    r.SetStatusURL,
+		"supplier_plan.bulk_set_status": r.BulkSetStatusURL,
+		"supplier_plan.tab_action":    r.TabActionURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — CostPlan routes
+// ---------------------------------------------------------------------------
+
+// CostPlanRoutes holds all route paths for cost_plan views.
+type CostPlanRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+
+	// SupplierProductCostPlan inline CRUD within cost_plan detail
+	ProductCostAddURL    string `json:"product_cost_add_url"`
+	ProductCostEditURL   string `json:"product_cost_edit_url"`
+	ProductCostDeleteURL string `json:"product_cost_delete_url"`
+
+	// Autocomplete search URLs for add/edit form selects.
+	SearchSupplierPlanURL        string `json:"search_supplier_plan_url"`
+	SearchCostScheduleURL        string `json:"search_cost_schedule_url"`
+	SearchSupplierProductPlanURL string `json:"search_supplier_product_plan_url"`
+}
+
+// DefaultCostPlanRoutes returns a CostPlanRoutes using route constants.
+func DefaultCostPlanRoutes() CostPlanRoutes {
+	return CostPlanRoutes{
+		ActiveNav:    "supplier",
+		ActiveSubNav: "cost-plans",
+
+		ListURL:          CostPlanListURL,
+		TableURL:         CostPlanTableURL,
+		DetailURL:        CostPlanDetailURL,
+		AddURL:           CostPlanAddURL,
+		EditURL:          CostPlanEditURL,
+		DeleteURL:        CostPlanDeleteURL,
+		BulkDeleteURL:    CostPlanBulkDeleteURL,
+		SetStatusURL:     CostPlanSetStatusURL,
+		BulkSetStatusURL: CostPlanBulkSetStatusURL,
+		TabActionURL:     CostPlanTabActionURL,
+		ProductCostAddURL:    CostPlanProductCostAddURL,
+		ProductCostEditURL:   CostPlanProductCostEditURL,
+		ProductCostDeleteURL: CostPlanProductCostDeleteURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r CostPlanRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"cost_plan.list":          r.ListURL,
+		"cost_plan.table":         r.TableURL,
+		"cost_plan.detail":        r.DetailURL,
+		"cost_plan.add":           r.AddURL,
+		"cost_plan.edit":          r.EditURL,
+		"cost_plan.delete":        r.DeleteURL,
+		"cost_plan.bulk_delete":   r.BulkDeleteURL,
+		"cost_plan.set_status":    r.SetStatusURL,
+		"cost_plan.bulk_set_status": r.BulkSetStatusURL,
+		"cost_plan.tab_action":    r.TabActionURL,
+		"cost_plan.product_cost.add":    r.ProductCostAddURL,
+		"cost_plan.product_cost.edit":   r.ProductCostEditURL,
+		"cost_plan.product_cost.delete": r.ProductCostDeleteURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P3 — SupplierProductPlan routes
+// ---------------------------------------------------------------------------
+
+// SupplierProductPlanRoutes holds all route paths for supplier_product_plan views.
+type SupplierProductPlanRoutes struct {
+	ActiveNav    string `json:"active_nav"`
+	ActiveSubNav string `json:"active_sub_nav"`
+
+	ListURL          string `json:"list_url"`
+	TableURL         string `json:"table_url"`
+	DetailURL        string `json:"detail_url"`
+	AddURL           string `json:"add_url"`
+	EditURL          string `json:"edit_url"`
+	DeleteURL        string `json:"delete_url"`
+	BulkDeleteURL    string `json:"bulk_delete_url"`
+	SetStatusURL     string `json:"set_status_url"`
+	BulkSetStatusURL string `json:"bulk_set_status_url"`
+	TabActionURL     string `json:"tab_action_url"`
+
+	// Autocomplete search URLs for add/edit form selects.
+	SearchSupplierPlanURL string `json:"search_supplier_plan_url"`
+	SearchProductURL      string `json:"search_product_url"`
+}
+
+// DefaultSupplierProductPlanRoutes returns a SupplierProductPlanRoutes using route constants.
+func DefaultSupplierProductPlanRoutes() SupplierProductPlanRoutes {
+	return SupplierProductPlanRoutes{
+		ActiveNav:    "supplier",
+		ActiveSubNav: "supplier-product-plans",
+
+		ListURL:          SupplierProductPlanListURL,
+		TableURL:         SupplierProductPlanTableURL,
+		DetailURL:        SupplierProductPlanDetailURL,
+		AddURL:           SupplierProductPlanAddURL,
+		EditURL:          SupplierProductPlanEditURL,
+		DeleteURL:        SupplierProductPlanDeleteURL,
+		BulkDeleteURL:    SupplierProductPlanBulkDeleteURL,
+		SetStatusURL:     SupplierProductPlanSetStatusURL,
+		BulkSetStatusURL: SupplierProductPlanBulkSetStatusURL,
+		TabActionURL:     SupplierProductPlanTabActionURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths.
+func (r SupplierProductPlanRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"supplier_product_plan.list":          r.ListURL,
+		"supplier_product_plan.table":         r.TableURL,
+		"supplier_product_plan.detail":        r.DetailURL,
+		"supplier_product_plan.add":           r.AddURL,
+		"supplier_product_plan.edit":          r.EditURL,
+		"supplier_product_plan.delete":        r.DeleteURL,
+		"supplier_product_plan.bulk_delete":   r.BulkDeleteURL,
+		"supplier_product_plan.set_status":    r.SetStatusURL,
+		"supplier_product_plan.bulk_set_status": r.BulkSetStatusURL,
+		"supplier_product_plan.tab_action":    r.TabActionURL,
+	}
+}
+
+// MapTableLabels is a shared helper used across all centymo view modules to
+// produce a types.TableLabels from pyeza CommonLabels. Defined here to avoid
+// duplication; all block module wirings call this.
+func mapTableLabelsFromStrings(search, searchPlaceholder, sortAsc, sortDesc, noResults, loading string) struct{} {
+	// Placeholder — actual implementation lives in the block package; this
+	// comment documents the cross-module convention.
+	return struct{}{}
 }

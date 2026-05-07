@@ -20,6 +20,7 @@ import (
 	accruedexpensedetail "github.com/erniealice/centymo-golang/views/accrued_expense/detail"
 	accruedexpenselist "github.com/erniealice/centymo-golang/views/accrued_expense/list"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
@@ -58,6 +59,13 @@ type ModuleDeps struct {
 	// Dropdowns
 	ListSuppliers         func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)
 	ListSupplierContracts func(ctx context.Context, req *suppliercontractpb.ListSupplierContractsRequest) (*suppliercontractpb.ListSupplierContractsResponse, error)
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewAttachmentID  func() string
 }
 
 // Module holds all constructed accrued_expense views.
@@ -74,6 +82,8 @@ type Module struct {
 	Settle             view.View
 	Reverse            view.View
 	AccrueFromContract view.View
+	AttachmentUpload   view.View
+	AttachmentDelete   view.View
 }
 
 // NewModule creates the accrued_expense module with all views wired.
@@ -96,6 +106,11 @@ func NewModule(deps *ModuleDeps) *Module {
 		SettleAccrual:                 deps.SettleAccrual,
 		ReverseAccrual:                deps.ReverseAccrual,
 	}
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewAttachmentID
 
 	actionDeps := &accruedexpenseaction.Deps{
 		Routes:                  deps.Routes,
@@ -124,6 +139,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		m.TabAction = accruedexpensedetail.NewTabAction(detailDeps)
 		m.Settle = accruedexpensedetail.NewSettleAction(detailDeps)
 		m.Reverse = accruedexpensedetail.NewReverseAction(detailDeps)
+	}
+	if deps.UploadFile != nil {
+		m.AttachmentUpload = accruedexpensedetail.NewAttachmentUploadAction(detailDeps)
+		m.AttachmentDelete = accruedexpensedetail.NewAttachmentDeleteAction(detailDeps)
 	}
 	// AccrueFromContract: register unconditionally so the route returns 422 (not
 	// 405) even before the espyna closure is wired.
@@ -156,5 +175,10 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.AccrueFromContract != nil {
 		r.POST(m.routes.AccrueFromContractURL, m.AccrueFromContract)
+	}
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
 	}
 }

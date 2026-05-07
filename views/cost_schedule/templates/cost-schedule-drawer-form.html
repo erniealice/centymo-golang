@@ -1,0 +1,36 @@
+{{define "cost-schedule-drawer-form"}}
+<form method="POST" action="{{.FormAction}}">
+  {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+  <div class="form-section">
+    <div class="form-group">
+      <label>{{.Labels.Name}}</label>
+      <input type="text" name="name" value="{{.Name}}" placeholder="{{.Labels.NamePlaceholder}}">
+    </div>
+    <div class="form-group">
+      <label>{{.Labels.Description}}</label>
+      <textarea name="description" placeholder="{{.Labels.DescPlaceholder}}">{{.Description}}</textarea>
+    </div>
+  </div>
+  <div class="form-section">
+    <div class="form-group">
+      <label>{{.Labels.StartDate}}</label>
+      <input type="date" name="start_date" value="{{.StartDate}}">
+    </div>
+    <div class="form-group">
+      <label>{{.Labels.EndDate}}</label>
+      <input type="date" name="end_date" value="{{.EndDate}}">
+    </div>
+  </div>
+  <div class="form-section">
+    {{if .IsEdit}}
+    <label>
+      <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+      {{.Labels.Active}}
+    </label>
+    {{end}}
+  </div>
+  <div class="form-actions">
+    <button type="submit">Save</button>
+  </div>
+</form>
+{{end}}

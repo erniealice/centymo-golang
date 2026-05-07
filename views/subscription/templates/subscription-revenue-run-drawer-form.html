@@ -1,0 +1,232 @@
+{{/*
+subscription-revenue-run-drawer-form — per-subscription "Run Invoices" drawer.
+
+Loaded into #sheetContent via HTMX GET from the invoices-tab primary action.
+Shared template for both the outer form (full drawer) and the inner candidates
+partial (HTMX inner-swap on as_of_date change).
+
+Data: revenuerunform.Data
+  (views/subscription/revenue_run/form/form.go)
+Labels: all text via .Labels.* — no English literals.
+*/}}
+
+{{define "subscription-revenue-run-drawer-form"}}
+<form
+    hx-post="{{.FormAction}}"
+    hx-swap="none"
+    hx-on::after-request="lf.Sheet.handleResponse(event)"
+    data-testid="subscription-revenue-run-form"
+>
+    <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
+    <input type="hidden" name="as_of_date"       value="{{.AsOfDate}}">
+
+    <div class="sheet-body">
+        {{template "form-section" (dict "Title" .Labels.Title)}}
+
+        {{/* Read-only context — subscription name + plan name */}}
+        {{if .SubscriptionName}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type"     "text"
+                "Name"     "subscription_name_display"
+                "Label"    .Labels.SubscriptionLabel
+                "Value"    .SubscriptionName
+                "Readonly" true
+            )}}
+        </div>
+        {{end}}
+        {{if .PlanName}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type"     "text"
+                "Name"     "plan_name_display"
+                "Label"    .Labels.PlanLabel
+                "Value"    .PlanName
+                "Readonly" true
+            )}}
+        </div>
+        {{end}}
+
+        {{/* As-of date picker — HTMX inner-swap on change to reload candidates */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type"     "date"
+                "Name"     "as_of_date_picker"
+                "Label"    .Labels.AsOfDateLabel
+                "Value"    .AsOfDate
+                "Max"      .MaxAsOfDate
+                "Required" true
+                "Hint"     .Labels.AsOfDateHint
+                "ID"       "sub-revenue-run-as-of-date"
+                "TestId"   "sub-revenue-run-as-of-date"
+            )}}
+        </div>
+
+        {{/* Candidates partial — replaced on date change via HTMX */}}
+        <div
+            id="sub-revenue-run-candidates"
+            hx-get="{{.FragmentURL}}"
+            hx-trigger="change from:#sub-revenue-run-as-of-date"
+            hx-include="#sub-revenue-run-as-of-date"
+            hx-target="#sub-revenue-run-candidates"
+            hx-swap="outerHTML"
+            data-testid="sub-revenue-run-candidates-container"
+        >
+            {{template "subscription-revenue-run-candidates" .}}
+        </div>
+    </div>
+
+    <div class="sheet-footer" data-testid="sub-revenue-run-footer">
+        <button
+            type="button"
+            class="btn btn-secondary"
+            data-sheet-close
+            data-testid="sub-revenue-run-cancel-btn"
+        >
+            {{.Labels.CancelButton}}
+        </button>
+        <button
+            type="submit"
+            class="btn btn-primary"
+            id="sub-revenue-run-submit-btn"
+            data-testid="sub-revenue-run-submit-btn"
+            {{if eq .EligibleCount 0}}disabled aria-disabled="true"{{end}}
+        >
+            <span id="sub-revenue-run-btn-label">
+                {{.Labels.GenerateButton}}
+            </span>
+        </button>
+    </div>
+</form>
+
+<script>
+(function () {
+    var form = document.currentScript.previousElementSibling;
+    while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
+    if (!form) { return; }
+
+    var submitBtn = form.querySelector('#sub-revenue-run-submit-btn');
+    var btnLabel  = form.querySelector('#sub-revenue-run-btn-label');
+    var asOfInput = form.querySelector('#sub-revenue-run-as-of-date');
+
+    var generateLabel     = {{.Labels.GenerateButton | js}};
+    var generateCountTmpl = {{.Labels.GenerateButtonCount | js}};
+
+    function countChecked() {
+        return form.querySelectorAll('input[name="selection"]:checked').length;
+    }
+
+    function refreshBtn() {
+        var n = countChecked();
+        if (submitBtn) {
+            submitBtn.disabled = n === 0;
+            submitBtn.setAttribute('aria-disabled', n === 0 ? 'true' : 'false');
+        }
+        if (btnLabel) {
+            if (n > 0 && generateCountTmpl) {
+                btnLabel.textContent = generateCountTmpl.replace('{{.Count}}', n);
+            } else {
+                btnLabel.textContent = generateLabel;
+            }
+        }
+    }
+
+    // Re-run on any checkbox change inside the candidates container.
+    // Uses event delegation so it survives the HTMX inner-swap on date change.
+    form.addEventListener('change', function (e) {
+        if (e.target && e.target.name === 'selection') {
+            refreshBtn();
+        }
+    });
+
+    // Re-bind after HTMX swaps the candidates partial.
+    form.addEventListener('htmx:afterSwap', function () {
+        refreshBtn();
+    });
+
+    // Update hidden as_of_date when the date picker changes.
+    if (asOfInput) {
+        asOfInput.addEventListener('change', function () {
+            var hidden = form.querySelector('input[name="as_of_date"]');
+            if (hidden) { hidden.value = asOfInput.value; }
+        });
+    }
+
+    refreshBtn();
+}());
+</script>
+{{end}}
+
+
+{{/*
+subscription-revenue-run-candidates — inner partial, swapped on date change.
+
+Renders the flat period-selection table (no group layer — per-sub scope is a
+single subscription, so grouping by subscription would be redundant). Uses
+data-table data-table--compact per the Wave 2A pyeza fallback precedent (pyeza
+table-card is designed for full-page lists, not 3-column inline pick-lists with
+checkbox-per-row inside a drawer body).
+*/}}
+{{define "subscription-revenue-run-candidates"}}
+<div
+    id="sub-revenue-run-candidates"
+    data-testid="sub-revenue-run-candidates-container"
+>
+    {{if not .Periods}}
+        {{template "empty-state" (dict
+            "Icon"  "icon-file-text"
+            "Title" .Labels.EmptyTitle
+            "Desc"  .Labels.EmptyMessage
+        )}}
+    {{else}}
+        {{if .CurrencyMismatch}}
+        <div class="form-row single">
+            {{template "alert" (dict
+                "Message" .Labels.GroupCurrencyMismatch
+                "State"   "warning"
+            )}}
+        </div>
+        {{end}}
+
+        <table
+            class="data-table data-table--compact sub-revenue-run-periods-table"
+            data-testid="sub-revenue-run-periods-table"
+        >
+            <thead>
+                <tr>
+                    <th class="col-checkbox" aria-hidden="true"></th>
+                    <th>{{.Labels.ColumnPeriod}}</th>
+                    <th class="cell-right">{{.Labels.ColumnAmount}}</th>
+                    <th class="cell-right">{{.Labels.ColumnLines}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Periods}}
+                <tr
+                    class="sub-revenue-run-period-row{{if not .Eligible}} sub-revenue-run-period-row--blocked{{end}}"
+                    data-testid="sub-revenue-run-period-row"
+                    {{if .BlockerReason}}title="{{.BlockerReason}}"{{end}}
+                >
+                    <td class="col-checkbox">
+                        <input
+                            type="checkbox"
+                            name="selection"
+                            value="{{.SelectionValue}}"
+                            {{if not .Eligible}}disabled{{end}}
+                            {{if .Eligible}}checked{{end}}
+                            data-testid="sub-revenue-run-period-checkbox"
+                            aria-label="{{.PeriodLabel}}"
+                        >
+                    </td>
+                    <td data-testid="sub-revenue-run-period-label">{{.PeriodLabel}}</td>
+                    <td class="cell-right" data-testid="sub-revenue-run-period-amount">
+                        {{.AmountDisplay}}
+                    </td>
+                    <td class="cell-right">{{.LineItemCount}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    {{end}}
+</div>
+{{end}}

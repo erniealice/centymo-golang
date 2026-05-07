@@ -9,18 +9,19 @@ import (
 
 func stockAttachmentConfig(deps *variant.DetailViewDeps) *attachment.Config {
 	return &attachment.Config{
-		EntityType:       "stock-item",
-		BucketName:       "attachments",
-		UploadURL:        deps.Routes.VariantStockAttachmentUploadURL,
-		DeleteURL:        deps.Routes.VariantStockAttachmentDeleteURL,
-		Labels:           attachment.DefaultLabels(),
-		CommonLabels:     deps.CommonLabels,
-		TableLabels:      deps.TableLabels,
-		NewID:            deps.NewAttachmentID,
-		UploadFile:       deps.UploadFile,
-		ListAttachments:  deps.ListAttachments,
-		CreateAttachment: deps.CreateAttachment,
-		DeleteAttachment: deps.DeleteAttachment,
+		EntityType:         "stock-item",
+		BucketName:         "attachments",
+		UploadURL:          deps.Routes.VariantStockAttachmentUploadURL,
+		DeleteURL:          deps.Routes.VariantStockAttachmentDeleteURL,
+		PrimaryIDPathParam: "iid",
+		Labels:             attachment.DefaultLabels(),
+		CommonLabels:       deps.CommonLabels,
+		TableLabels:        deps.TableLabels,
+		NewID:              deps.NewAttachmentID,
+		UploadFile:         deps.UploadFile,
+		ListAttachments:    deps.ListAttachments,
+		CreateAttachment:   deps.CreateAttachment,
+		DeleteAttachment:   deps.DeleteAttachment,
 	}
 }
 

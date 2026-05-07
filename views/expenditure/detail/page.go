@@ -11,11 +11,13 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 
+	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
@@ -62,6 +64,8 @@ type DetailViewDeps struct {
 	// trigger — surfaced as the empty-state CTA when an expenditure has no
 	// linked recognition. Optional; when empty no CTA is shown.
 	RecognizeFromExpenditureURL string
+
+	attachment.AttachmentOps
 }
 
 // LineItemDeps holds dependencies for line item action handlers.
@@ -141,6 +145,8 @@ type PageData struct {
 	// SPS P10 — Accrual tab data
 	AccrualTable        *types.TableConfig
 	AccrualDetailURL    string
+
+	AttachmentTable *types.TableConfig
 }
 
 // expenditureToMap converts an Expenditure proto to a map for template use.
@@ -236,6 +242,19 @@ func NewView(deps *DetailViewDeps) view.View {
 			populateRecognition(ctx, deps, data[0], pageData)
 		case "accrual":
 			populateAccruals(ctx, deps, data[0], pageData)
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments for expenditure %s: %v", id, err)
+				}
+				var items []*attachmentpb.Attachment
+				if resp != nil {
+					items = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
+			}
 		}
 
 		return view.OK("expense-detail", pageData)
@@ -298,9 +317,25 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			populateRecognition(ctx, deps, data[0], pageData)
 		case "accrual":
 			populateAccruals(ctx, deps, data[0], pageData)
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments for expenditure %s: %v", id, err)
+				}
+				var items []*attachmentpb.Attachment
+				if resp != nil {
+					items = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
+			}
 		}
 
 		templateName := "expense-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }
@@ -622,12 +657,17 @@ func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.Expend
 	if tabAccrual == "" {
 		tabAccrual = "Accrual"
 	}
+	tabAttachments := l.Detail.TabAttachments
+	if tabAttachments == "" {
+		tabAttachments = "Attachments"
+	}
 	return []pyeza.TabItem{
 		{Key: "info", Label: tabDetails, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "items", Label: tabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
 		{Key: "payments", Label: tabPayments, Href: base + "?tab=payments", HxGet: action + "payments", Icon: "icon-credit-card"},
 		{Key: "recognition", Label: tabRecognition, Href: base + "?tab=recognition", HxGet: action + "recognition", Icon: "icon-file-text"},
 		{Key: "accrual", Label: tabAccrual, Href: base + "?tab=accrual", HxGet: action + "accrual", Icon: "icon-clock"},
+		{Key: "attachments", Label: tabAttachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 	}
 }
 

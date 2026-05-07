@@ -17,6 +17,8 @@
             {{template "price-schedule-tab-info" .}}
         {{else if eq .ActiveTab "pricePlan"}}
             {{template "price-schedule-tab-pricePlan" .}}
+        {{else if eq .ActiveTab "attachments"}}
+            {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

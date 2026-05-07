@@ -13,6 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	view "github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
@@ -73,6 +74,13 @@ type ModuleDeps struct {
 	SubscriptionDetailURL        string
 	SubscriptionEditURL          string
 	SubscriptionDeleteURL        string
+
+	// Attachment operations (price_schedule detail + nested plan detail)
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewAttachmentID  func() string
 }
 
 // Module holds all constructed price_schedule views.
@@ -98,6 +106,11 @@ type Module struct {
 	PlanProductPriceAdd     view.View
 	PlanProductPriceEdit    view.View
 	PlanProductPriceDelete  view.View
+
+	AttachmentUpload     view.View
+	AttachmentDelete     view.View
+	PlanAttachmentUpload view.View
+	PlanAttachmentDelete view.View
 
 	// 2026-04-27 plan-client-scope plan §4.4.1 — name suggest swap.
 	SuggestName view.View
@@ -176,8 +189,18 @@ func NewModule(deps *ModuleDeps) *Module {
 		SubscriptionEditURL:          deps.SubscriptionEditURL,
 		SubscriptionDeleteURL:        deps.SubscriptionDeleteURL,
 	}
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewAttachmentID
+	planDetailDeps.UploadFile = deps.UploadFile
+	planDetailDeps.ListAttachments = deps.ListAttachments
+	planDetailDeps.CreateAttachment = deps.CreateAttachment
+	planDetailDeps.DeleteAttachment = deps.DeleteAttachment
+	planDetailDeps.NewAttachmentID = deps.NewAttachmentID
 
-	return &Module{
+	m := &Module{
 		routes:        deps.Routes,
 		Dashboard:     listView,
 		List:          listView,
@@ -201,6 +224,13 @@ func NewModule(deps *ModuleDeps) *Module {
 		PlanProductPriceDelete: priceschedulePlan.NewProductPriceDeleteAction(planDetailDeps),
 		SuggestName:            pricescheduleaction.NewSuggestNameAction(actionDeps),
 	}
+	if deps.UploadFile != nil {
+		m.AttachmentUpload = pricescheduledetail.NewAttachmentUploadAction(detailDeps)
+		m.AttachmentDelete = pricescheduledetail.NewAttachmentDeleteAction(detailDeps)
+		m.PlanAttachmentUpload = priceschedulePlan.NewAttachmentUploadAction(planDetailDeps)
+		m.PlanAttachmentDelete = priceschedulePlan.NewAttachmentDeleteAction(planDetailDeps)
+	}
+	return m
 }
 
 // pricePlanLabelsFromDeps returns the caller-supplied PricePlanLabels when set;
@@ -271,5 +301,15 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.PlanProductPriceDelete != nil && m.routes.PlanProductPriceDeleteURL != "" {
 		r.POST(m.routes.PlanProductPriceDeleteURL, m.PlanProductPriceDelete)
+	}
+	if m.AttachmentUpload != nil && m.routes.AttachmentUploadURL != "" {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
+	}
+	if m.PlanAttachmentUpload != nil && m.routes.PlanAttachmentUploadURL != "" {
+		r.GET(m.routes.PlanAttachmentUploadURL, m.PlanAttachmentUpload)
+		r.POST(m.routes.PlanAttachmentUploadURL, m.PlanAttachmentUpload)
+		r.POST(m.routes.PlanAttachmentDeleteURL, m.PlanAttachmentDelete)
 	}
 }

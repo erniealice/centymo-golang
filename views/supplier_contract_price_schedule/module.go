@@ -24,6 +24,7 @@ import (
 	scpsdetail "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule/detail"
 	scpslist "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule/list"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
 	scpspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
@@ -59,22 +60,31 @@ type ModuleDeps struct {
 	// Related entities for dropdowns + linked tabs
 	ListSupplierContracts     func(ctx context.Context, req *suppliercontractpb.ListSupplierContractsRequest) (*suppliercontractpb.ListSupplierContractsResponse, error)
 	ListSupplierContractLines func(ctx context.Context, req *suppliercontractlinepb.ListSupplierContractLinesRequest) (*suppliercontractlinepb.ListSupplierContractLinesResponse, error)
+
+	// Attachment operations.
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewAttachmentID  func() string
 }
 
 // Module holds all constructed supplier_contract_price_schedule views.
 type Module struct {
 	routes centymo.SupplierContractPriceScheduleRoutes
 
-	List          view.View
-	Detail        view.View
-	TabAction     view.View
-	Add           view.View
-	Edit          view.View
-	Delete        view.View
-	SetStatus     view.View
-	BulkSetStatus view.View
-	Activate      view.View
-	Supersede     view.View
+	List             view.View
+	Detail           view.View
+	TabAction        view.View
+	Add              view.View
+	Edit             view.View
+	Delete           view.View
+	SetStatus        view.View
+	BulkSetStatus    view.View
+	Activate         view.View
+	Supersede        view.View
+	AttachmentUpload view.View
+	AttachmentDelete view.View
 }
 
 // NewModule creates the supplier_contract_price_schedule module with all
@@ -112,6 +122,11 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListSupplierContractPriceScheduleLines: deps.ListSupplierContractPriceScheduleLines,
 		ListSupplierContractLines:              deps.ListSupplierContractLines,
 	}
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewAttachmentID
 
 	m := &Module{
 		routes:        deps.Routes,
@@ -128,6 +143,10 @@ func NewModule(deps *ModuleDeps) *Module {
 	if deps.ReadSupplierContractPriceSchedule != nil {
 		m.Detail = scpsdetail.NewView(detailDeps)
 		m.TabAction = scpsdetail.NewTabAction(detailDeps)
+		if deps.UploadFile != nil {
+			m.AttachmentUpload = scpsdetail.NewAttachmentUploadAction(detailDeps)
+			m.AttachmentDelete = scpsdetail.NewAttachmentDeleteAction(detailDeps)
+		}
 	}
 
 	return m
@@ -151,5 +170,10 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.TabAction != nil && m.routes.TabActionURL != "" {
 		r.GET(m.routes.TabActionURL, m.TabAction)
+	}
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
 	}
 }

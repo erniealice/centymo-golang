@@ -7,11 +7,13 @@ import (
 	"net/http"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	expenserecognitionlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_line"
 )
@@ -26,6 +28,8 @@ type DetailViewDeps struct {
 	ReadExpenseRecognition       func(ctx context.Context, req *expenserecognitionpb.ReadExpenseRecognitionRequest) (*expenserecognitionpb.ReadExpenseRecognitionResponse, error)
 	ListExpenseRecognitionLines  func(ctx context.Context, req *expenserecognitionlinepb.ListExpenseRecognitionLinesRequest) (*expenserecognitionlinepb.ListExpenseRecognitionLinesResponse, error)
 	ReverseExpenseRecognition    func(ctx context.Context, id, reason string) error
+
+	attachment.AttachmentOps
 }
 
 // PageData holds template data for the expense_recognition detail page.
@@ -42,14 +46,17 @@ type PageData struct {
 	LineItemTable  *types.TableConfig
 	LineItemAddURL string
 
+	AttachmentTable *types.TableConfig
+
 	ReverseURL string
 }
 
 const (
-	tabInfo     = "info"
-	tabLines    = "lines"
-	tabSource   = "source"
-	tabActivity = "activity"
+	tabInfo        = "info"
+	tabLines       = "lines"
+	tabSource      = "source"
+	tabActivity    = "activity"
+	tabAttachments = "attachments"
 )
 
 // NewView creates the expense_recognition detail page view.
@@ -86,6 +93,7 @@ func NewView(deps *DetailViewDeps) view.View {
 			{Key: tabLines, Label: l.Tabs.Lines},
 			{Key: tabSource, Label: l.Tabs.Source},
 			{Key: tabActivity, Label: l.Tabs.Activity},
+			{Key: tabAttachments, Label: l.Detail.TabAttachments, Icon: "icon-paperclip"},
 		}
 
 		pd := &PageData{
@@ -110,6 +118,19 @@ func NewView(deps *DetailViewDeps) view.View {
 		if activeTab == tabLines && deps.ListExpenseRecognitionLines != nil {
 			pd.LineItemTable = buildLineItemTable(ctx, deps, id, l)
 			pd.LineItemAddURL = route.ResolveURL(deps.Routes.LineAddURL, "id", id)
+		}
+
+		if activeTab == tabAttachments && deps.ListAttachments != nil {
+			cfg := attachmentConfig(deps)
+			resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+			if err != nil {
+				log.Printf("Failed to list attachments for expense_recognition %s: %v", id, err)
+			}
+			var items []*attachmentpb.Attachment
+			if resp != nil {
+				items = resp.GetData()
+			}
+			pd.AttachmentTable = attachment.BuildTable(items, cfg, id)
 		}
 
 		return view.OK("expense-recognition-detail", pd)
@@ -145,6 +166,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			{Key: tabLines, Label: l.Tabs.Lines},
 			{Key: tabSource, Label: l.Tabs.Source},
 			{Key: tabActivity, Label: l.Tabs.Activity},
+			{Key: tabAttachments, Label: l.Detail.TabAttachments, Icon: "icon-paperclip"},
 		}
 
 		pd := &PageData{
@@ -165,7 +187,24 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			pd.LineItemAddURL = route.ResolveURL(deps.Routes.LineAddURL, "id", id)
 		}
 
-		return view.OK("expense-recognition-tab-content", pd)
+		if tab == tabAttachments && deps.ListAttachments != nil {
+			cfg := attachmentConfig(deps)
+			resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+			if err != nil {
+				log.Printf("Failed to list attachments for expense_recognition %s: %v", id, err)
+			}
+			var items []*attachmentpb.Attachment
+			if resp != nil {
+				items = resp.GetData()
+			}
+			pd.AttachmentTable = attachment.BuildTable(items, cfg, id)
+		}
+
+		templateName := "expense-recognition-tab-content"
+		if tab == tabAttachments {
+			templateName = "attachment-tab"
+		}
+		return view.OK(templateName, pd)
 	})
 }
 

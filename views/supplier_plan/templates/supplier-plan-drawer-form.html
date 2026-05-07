@@ -1,0 +1,31 @@
+{{define "supplier-plan-drawer-form"}}
+<form method="POST" action="{{.FormAction}}">
+  {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+  <div class="form-section">
+    <div class="form-group">
+      <label>{{.Labels.Name}}</label>
+      <input type="text" name="name" value="{{.Name}}" placeholder="{{.Labels.NamePlaceholder}}">
+    </div>
+  </div>
+  <div class="form-section">
+    <div class="form-group">
+      <label>{{.Labels.Supplier}}</label>
+      <input type="hidden" name="supplier_id" value="{{.SupplierID}}">
+      <input type="text" placeholder="{{.Labels.SupplierPlaceholder}}" value="{{.SupplierLabel}}"
+             data-autocomplete-url="{{.SearchSupplierURL}}"
+             data-autocomplete-target="supplier_id">
+    </div>
+  </div>
+  {{if .IsEdit}}
+  <div class="form-section">
+    <label>
+      <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+      {{.Labels.Active}}
+    </label>
+  </div>
+  {{end}}
+  <div class="form-actions">
+    <button type="submit">Save</button>
+  </div>
+</form>
+{{end}}

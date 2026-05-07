@@ -65,6 +65,8 @@
         {{template "procurement-request-tab-spawned-pos" .}}
         {{else if eq .ActiveTab "activity"}}
         {{template "procurement-request-tab-activity" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>
@@ -80,6 +82,8 @@
 {{template "procurement-request-tab-spawned-pos" .}}
 {{else if eq .ActiveTab "activity"}}
 {{template "procurement-request-tab-activity" .}}
+{{else if eq .ActiveTab "attachments"}}
+{{template "attachment-tab" .}}
 {{end}}
 {{end}}
 

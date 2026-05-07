@@ -24,6 +24,8 @@
         {{template "expense-tab-recognition" .}}
         {{else if eq .ActiveTab "accrual"}}
         {{template "expense-tab-accrual" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>

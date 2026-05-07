@@ -1,0 +1,22 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "revenue-run-queue"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "revenue-run-queue-content"}}
+<div class="page-content page-content--table">
+    <div class="page-content__filters">
+        <form class="filter-row" hx-get="{{.RefreshURL}}" hx-target="#revenue-run-queue-table" hx-swap="outerHTML" hx-include="this">
+            {{template "form-group" (dict
+                "Type"  "date"
+                "Name"  "as_of_date"
+                "Label" .Labels.AsOfDateLabel
+                "Value" .AsOfDate
+                "Max"   .AsOfDateMax
+            )}}
+        </form>
+    </div>
+    {{template "table-card" .Table}}
+</div>
+{{end}}

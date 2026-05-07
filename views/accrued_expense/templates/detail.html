@@ -47,6 +47,8 @@
         {{template "accrued-expense-tab-source" .}}
         {{else if eq .ActiveTab "activity"}}
         {{template "accrued-expense-tab-activity" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>
@@ -62,6 +64,8 @@
 {{template "accrued-expense-tab-source" .}}
 {{else if eq .ActiveTab "activity"}}
 {{template "accrued-expense-tab-activity" .}}
+{{else if eq .ActiveTab "attachments"}}
+{{template "attachment-tab" .}}
 {{end}}
 {{end}}
 

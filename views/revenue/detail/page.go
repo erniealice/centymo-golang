@@ -70,10 +70,9 @@ type PageData struct {
 	RemainingBalance    string
 	PaymentStatus        string
 	PaymentStatusVariant string
-	AuditTable          *types.TableConfig
-	AttachmentTable     *types.TableConfig
-	AttachmentUploadURL string
-	InvoiceDownloadURL  string
+	AuditTable         *types.TableConfig
+	AttachmentTable    *types.TableConfig
+	InvoiceDownloadURL string
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
 	AuditHasNext    bool
@@ -193,7 +192,6 @@ func NewView(deps *DetailViewDeps) view.View {
 				}
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 
 		case "audit-history":
 			if deps.ListAuditHistory != nil {
@@ -339,7 +337,6 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				}
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 
 		case "audit-history":
 			if deps.ListAuditHistory != nil {

@@ -9,6 +9,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
@@ -47,6 +48,13 @@ type ModuleDeps struct {
 	CreateInventoryMovement func(ctx context.Context, req *inventorymovementpb.CreateInventoryMovementRequest) (*inventorymovementpb.CreateInventoryMovementResponse, error)
 	ReadInventoryItem       func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	UpdateInventoryItem     func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewAttachmentID  func() string
 }
 
 // Module holds all constructed purchase order views.
@@ -64,6 +72,8 @@ type Module struct {
 	PurchaseOrderLineItemEdit    view.View
 	PurchaseOrderLineItemRemove  view.View
 	PurchaseOrderConfirmReceipt  view.View
+	AttachmentUpload             view.View
+	AttachmentDelete             view.View
 }
 
 // NewModule creates the purchase order module views.
@@ -110,8 +120,17 @@ func NewModule(deps *ModuleDeps) *Module {
 			ReadPurchaseOrder:          deps.ReadPurchaseOrder,
 			ListPurchaseOrderLineItems: deps.ListPurchaseOrderLineItems,
 		}
+		detailDeps.UploadFile = deps.UploadFile
+		detailDeps.ListAttachments = deps.ListAttachments
+		detailDeps.CreateAttachment = deps.CreateAttachment
+		detailDeps.DeleteAttachment = deps.DeleteAttachment
+		detailDeps.NewAttachmentID = deps.NewAttachmentID
 		m.PurchaseOrderDetail = purchaseorderdetail.NewView(detailDeps)
 		m.PurchaseOrderTabAction = purchaseorderdetail.NewTabAction(detailDeps)
+		if deps.UploadFile != nil {
+			m.AttachmentUpload = purchaseorderdetail.NewAttachmentUploadAction(detailDeps)
+			m.AttachmentDelete = purchaseorderdetail.NewAttachmentDeleteAction(detailDeps)
+		}
 	}
 
 	// Line item table view (nil-guarded — only built when ListPurchaseOrderLineItems is provided)
@@ -203,5 +222,10 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	if m.PurchaseOrderConfirmReceipt != nil {
 		r.GET(m.routes.PurchaseOrderConfirmReceiptURL, m.PurchaseOrderConfirmReceipt)
 		r.POST(m.routes.PurchaseOrderConfirmReceiptURL, m.PurchaseOrderConfirmReceipt)
+	}
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.PurchaseOrderAttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.PurchaseOrderAttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.PurchaseOrderAttachmentDeleteURL, m.AttachmentDelete)
 	}
 }

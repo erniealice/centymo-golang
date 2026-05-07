@@ -8,6 +8,7 @@ import (
 	procurementrequestdetail "github.com/erniealice/centymo-golang/views/procurement_request/detail"
 	procurementrequestlist "github.com/erniealice/centymo-golang/views/procurement_request/list"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
@@ -47,6 +48,13 @@ type ModuleDeps struct {
 	ApproveProcurementRequest func(ctx context.Context, id string) error
 	RejectProcurementRequest  func(ctx context.Context, id string, reason string) error
 	SpawnPurchaseOrder        func(ctx context.Context, id string) (newPOID string, err error)
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewAttachmentID  func() string
 }
 
 // Module holds all constructed procurement_request views.
@@ -60,10 +68,12 @@ type Module struct {
 	Delete        view.View
 	SetStatus     view.View
 	BulkSetStatus view.View
-	Submit        view.View
-	Approve       view.View
-	Reject        view.View
-	SpawnPO       view.View
+	Submit           view.View
+	Approve          view.View
+	Reject           view.View
+	SpawnPO          view.View
+	AttachmentUpload view.View
+	AttachmentDelete view.View
 }
 
 // NewModule creates the procurement_request module with all views wired.
@@ -93,6 +103,11 @@ func NewModule(deps *ModuleDeps) *Module {
 		RejectProcurementRequest:    deps.RejectProcurementRequest,
 		SpawnPurchaseOrder:          deps.SpawnPurchaseOrder,
 	}
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewAttachmentID
 
 	listDeps := &procurementrequestlist.ListViewDeps{
 		Routes:                  deps.Routes,
@@ -119,6 +134,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		m.Approve = procurementrequestdetail.NewApproveAction(detailDeps)
 		m.Reject = procurementrequestdetail.NewRejectAction(detailDeps)
 		m.SpawnPO = procurementrequestdetail.NewSpawnPOAction(detailDeps)
+	}
+	if deps.UploadFile != nil {
+		m.AttachmentUpload = procurementrequestdetail.NewAttachmentUploadAction(detailDeps)
+		m.AttachmentDelete = procurementrequestdetail.NewAttachmentDeleteAction(detailDeps)
 	}
 
 	return m
@@ -153,5 +172,10 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.SpawnPO != nil {
 		r.POST(m.routes.SpawnPOURL, m.SpawnPO)
+	}
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
 	}
 }

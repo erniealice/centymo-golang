@@ -1,0 +1,81 @@
+{{define "supplier-subscription-drawer-form"}}
+<form method="POST" action="{{.FormAction}}">
+  {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+  <!-- Section 1: Identification -->
+  <div class="form-section">
+    <div class="form-group">
+      <label>{{.Labels.Name}}</label>
+      <input type="text" name="name" value="{{.Name}}" placeholder="{{.Labels.NamePlaceholder}}">
+    </div>
+    <div class="form-group">
+      <label>{{.Labels.Code}}</label>
+      <input type="text" name="code" value="{{.Code}}" placeholder="{{.Labels.CodePlaceholder}}">
+    </div>
+  </div>
+
+  <!-- Section 2: Relationships -->
+  <div class="form-section">
+    <div class="form-group">
+      <label>{{.Labels.CostPlan}}</label>
+      <input type="hidden" name="cost_plan_id" value="{{.CostPlanID}}">
+      <input type="text" placeholder="{{.Labels.CostPlanPlaceholder}}" value="{{.CostPlanLabel}}"
+             data-autocomplete-url="{{.SearchCostPlanURL}}"
+             data-autocomplete-target="cost_plan_id">
+    </div>
+    <div class="form-group">
+      <label>{{.Labels.Supplier}}</label>
+      <input type="hidden" name="supplier_id" value="{{.SupplierID}}">
+      <input type="text" placeholder="{{.Labels.SupplierPlaceholder}}" value="{{.SupplierLabel}}"
+             data-autocomplete-url="{{.SearchSupplierURL}}"
+             data-autocomplete-target="supplier_id">
+    </div>
+  </div>
+
+  <!-- Section 3: Configuration -->
+  <div class="form-section">
+    <div class="form-group">
+      <label>
+        <input type="checkbox" name="auto_renew" value="true" {{if .AutoRenew}}checked{{end}}>
+        {{.Labels.AutoRenew}}
+      </label>
+    </div>
+    {{if .IsEdit}}
+    <div class="form-group">
+      <label>
+        <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+        {{.Labels.Active}}
+      </label>
+    </div>
+    {{end}}
+  </div>
+
+  <!-- Section 4: Schedule -->
+  <div class="form-section">
+    <input type="hidden" name="date_time_start_iso" value="{{.DateStartISO}}">
+    <div class="form-group">
+      <label>{{.Labels.StartDate}}</label>
+      <input type="date" name="date_start_date" value="{{.DateStartDate}}">
+      <input type="time" name="date_start_time" value="{{.DateStartTime}}" placeholder="{{.Labels.TimePlaceholder}}">
+    </div>
+    <input type="hidden" name="date_time_end_iso" value="{{.DateEndISO}}">
+    <div class="form-group">
+      <label>{{.Labels.EndDate}}</label>
+      <input type="date" name="date_end_date" value="{{.DateEndDate}}">
+      <input type="time" name="date_end_time" value="{{.DateEndTime}}" placeholder="{{.Labels.TimePlaceholder}}">
+    </div>
+  </div>
+
+  <!-- Section 5: Notes -->
+  <div class="form-section">
+    <div class="form-group">
+      <label>{{.Labels.Notes}}</label>
+      <textarea name="notes" placeholder="{{.Labels.NotesPlaceholder}}">{{.Notes}}</textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit">Save</button>
+  </div>
+</form>
+{{end}}

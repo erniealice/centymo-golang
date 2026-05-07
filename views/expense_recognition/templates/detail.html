@@ -29,6 +29,8 @@
         {{template "expense-recognition-tab-source" .}}
         {{else if eq .ActiveTab "activity"}}
         {{template "expense-recognition-tab-activity" .}}
+        {{else if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
         {{end}}
     </div>
 </div>
@@ -44,6 +46,8 @@
 {{template "expense-recognition-tab-source" .}}
 {{else if eq .ActiveTab "activity"}}
 {{template "expense-recognition-tab-activity" .}}
+{{else if eq .ActiveTab "attachments"}}
+{{template "attachment-tab" .}}
 {{end}}
 {{end}}
 

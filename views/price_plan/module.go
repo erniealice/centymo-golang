@@ -12,6 +12,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	view "github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
@@ -69,6 +70,13 @@ type ModuleDeps struct {
 	// parent PricePlan has billing_kind = MILESTONE.
 	ReadPlan                           func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
 	ListJobTemplatePhasesByJobTemplate func(ctx context.Context, req *jobtemplatephasepb.ListByJobTemplateRequest) (*jobtemplatephasepb.ListByJobTemplateResponse, error)
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewAttachmentID  func() string
 }
 
 // Module holds all constructed price_plan views.
@@ -88,6 +96,8 @@ type Module struct {
 	ProductPriceAdd        view.View
 	ProductPriceEdit       view.View
 	ProductPriceDelete     view.View
+	AttachmentUpload       view.View
+	AttachmentDelete       view.View
 }
 
 // NewModule creates the price_plan module with all views wired.
@@ -143,8 +153,13 @@ func NewModule(deps *ModuleDeps) *Module {
 		ReadPlan:                           deps.ReadPlan,
 		ListJobTemplatePhasesByJobTemplate: deps.ListJobTemplatePhasesByJobTemplate,
 	}
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewAttachmentID
 
-	return &Module{
+	m := &Module{
 		routes:             deps.Routes,
 		Dashboard:          listView,
 		List:               listView,
@@ -161,6 +176,11 @@ func NewModule(deps *ModuleDeps) *Module {
 		ProductPriceEdit:   priceplandetail.NewProductPriceEditAction(detailDeps),
 		ProductPriceDelete: priceplandetail.NewProductPriceDeleteAction(detailDeps),
 	}
+	if deps.UploadFile != nil {
+		m.AttachmentUpload = priceplandetail.NewAttachmentUploadAction(detailDeps)
+		m.AttachmentDelete = priceplandetail.NewAttachmentDeleteAction(detailDeps)
+	}
+	return m
 }
 
 // RegisterRoutes registers all price_plan routes.
@@ -196,5 +216,10 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.ProductPriceDelete != nil && m.routes.ProductPriceDeleteURL != "" {
 		r.POST(m.routes.ProductPriceDeleteURL, m.ProductPriceDelete)
+	}
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
 	}
 }

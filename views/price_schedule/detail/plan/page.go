@@ -14,11 +14,13 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/price_plan/form"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
@@ -95,6 +97,8 @@ type DetailViewDeps struct {
 	// breadcrumb. Empty falls back to SubscriptionDetailURL.
 	PlanEngagementDetailURL string
 	SubscriptionDetailURL   string
+
+	attachment.AttachmentOps
 }
 
 // PageData is the template data for the schedule-scoped plan detail page.
@@ -128,6 +132,8 @@ type PageData struct {
 
 	// 2026-05-04 — Engagements (subscriptions) tab payload.
 	SubscriptionsTable *types.TableConfig
+
+	AttachmentTable *types.TableConfig
 }
 
 // SubscriptionRow is one row in the schedule-scoped plan detail
@@ -303,7 +309,11 @@ func NewPlanScopedTabAction(deps *DetailViewDeps) view.View {
 		if err != nil {
 			return view.Error(err)
 		}
-		return view.OK("price-schedule-plan-tab-"+tab, pageData)
+		templateName := "price-schedule-plan-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
+		return view.OK(templateName, pageData)
 	})
 }
 
@@ -339,7 +349,11 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			return view.Error(err)
 		}
 
-		return view.OK("price-schedule-plan-tab-"+tab, pageData)
+		templateName := "price-schedule-plan-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
+		return view.OK(templateName, pageData)
 	})
 }
 
@@ -948,10 +962,18 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 	if subscriptionsLabel == "" {
 		subscriptionsLabel = "Subscriptions"
 	}
+	attachmentsLabel := deps.ScheduleLabels.Detail.TabAttachments
+	if attachmentsLabel == "" {
+		attachmentsLabel = deps.PlanLabels.Detail.AttachmentsTab
+	}
+	if attachmentsLabel == "" {
+		attachmentsLabel = "Attachments"
+	}
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: deps.ScheduleLabels.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "product-prices", Label: deps.ScheduleLabels.Tabs.ProductPrices, Href: base + "?tab=" + productPricesSlug, HxGet: action + productPricesSlug, Icon: "icon-package", Count: count},
 		{Key: "subscriptions", Label: subscriptionsLabel, Href: base + "?tab=" + subscriptionsSlug, HxGet: action + subscriptionsSlug, Icon: "icon-briefcase", Count: subscriptionCount},
+		{Key: "attachments", Label: attachmentsLabel, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 	}
 
 	headerSubtitle := effectiveDesc
@@ -1002,6 +1024,14 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 	if activeTab == "subscriptions" {
 		rows := loadSubscriptionsForPricePlan(ctx, deps, ppid)
 		pageData.SubscriptionsTable = buildSubscriptionsTable(ctx, deps, sid, ppid, rows)
+	}
+	if activeTab == "attachments" && deps.ListAttachments != nil {
+		cfg := attachmentConfig(deps)
+		var attachItems []*attachmentpb.Attachment
+		if resp, err := deps.ListAttachments(ctx, cfg.EntityType, ppid); err == nil && resp != nil {
+			attachItems = resp.GetData()
+		}
+		pageData.AttachmentTable = attachment.BuildTable(attachItems, cfg, sid, "ppid", ppid)
 	}
 	return pageData, nil
 }

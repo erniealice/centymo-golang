@@ -18,6 +18,7 @@ import (
 	expenditurepay "github.com/erniealice/centymo-golang/views/expenditure/pay"
 	purchaseboard "github.com/erniealice/centymo-golang/views/expenditure/purchase_dashboard"
 	expendituresettings "github.com/erniealice/centymo-golang/views/expenditure/settings"
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
@@ -105,6 +106,12 @@ type ModuleDeps struct {
 	// wired the espyna expenditure dashboard use case yet.
 	GetPurchaseDashboardPageData func(ctx context.Context, req *purchaseboard.Request) (*purchaseboard.Response, error)
 	GetExpenseDashboardPageData  func(ctx context.Context, req *expenseboard.Request) (*expenseboard.Response, error)
+
+	// Attachment operations (for expenditure detail attachments tab)
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewAttachmentID  func() string
 }
 
 // Module holds all constructed expenditure views.
@@ -145,6 +152,10 @@ type Module struct {
 	CategoryAdd    view.View
 	CategoryEdit   view.View
 	CategoryDelete view.View
+
+	// Attachments
+	AttachmentUpload view.View
+	AttachmentDelete view.View
 }
 
 // NewModule creates the expenditure module with purchase and expense views.
@@ -249,8 +260,17 @@ func NewModule(deps *ModuleDeps) *Module {
 		if deps.ListExpenditureLineItems != nil {
 			detailDeps.ListExpenditureLineItems = deps.ListExpenditureLineItems
 		}
+		detailDeps.UploadFile = deps.UploadFile
+		detailDeps.ListAttachments = deps.ListAttachments
+		detailDeps.CreateAttachment = deps.CreateAttachment
+		detailDeps.DeleteAttachment = deps.DeleteAttachment
+		detailDeps.NewAttachmentID = deps.NewAttachmentID
 		m.ExpenseDetail = expendituredetail.NewView(detailDeps)
 		m.ExpenseTabAction = expendituredetail.NewTabAction(detailDeps)
+		if deps.UploadFile != nil {
+			m.AttachmentUpload = expendituredetail.NewAttachmentUploadAction(detailDeps)
+			m.AttachmentDelete = expendituredetail.NewAttachmentDeleteAction(detailDeps)
+		}
 	}
 
 	// Expense pay action (nil-guarded — only built when CreateDisbursement and ReadExpenditure are provided)
@@ -366,5 +386,11 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 		r.GET(m.routes.ExpenseCategoryEditURL, m.CategoryEdit)
 		r.POST(m.routes.ExpenseCategoryEditURL, m.CategoryEdit)
 		r.POST(m.routes.ExpenseCategoryDeleteURL, m.CategoryDelete)
+	}
+	// Attachments
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
 	}
 }

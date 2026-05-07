@@ -12,11 +12,13 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/price_plan/form"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -55,6 +57,8 @@ type DetailViewDeps struct {
 	// Reference checker: returns a map of price_plan_id → true for plans in use by active subscriptions.
 	// Delete is disabled for in-use plans; Edit remains enabled (Pricing fields lock inside the drawer).
 	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	attachment.AttachmentOps
 }
 
 // PageData holds the data for the price schedule detail page.
@@ -77,7 +81,8 @@ type PageData struct {
 	CreatedDate    string
 	ModifiedDate   string
 
-	PlansTable *types.TableConfig
+	PlansTable      *types.TableConfig
+	AttachmentTable *types.TableConfig
 }
 
 // NewView creates the price schedule detail view (full page).
@@ -114,7 +119,11 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			return view.Error(err)
 		}
 
-		return view.OK("price-schedule-tab-"+tab, pageData)
+		templateName := "price-schedule-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
+		return view.OK(templateName, pageData)
 	})
 }
 
@@ -451,6 +460,14 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	if activeTab == "pricePlan" {
 		pageData.PlansTable = buildPlansTable(ctx, deps, ps)
 	}
+	if activeTab == "attachments" && deps.ListAttachments != nil {
+		cfg := attachmentConfig(deps)
+		var attachItems []*attachmentpb.Attachment
+		if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+			attachItems = resp.GetData()
+		}
+		pageData.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
+	}
 
 	return pageData, nil
 }
@@ -459,9 +476,14 @@ func buildTabItems(id string, l centymo.PriceScheduleLabels, planCount int, rout
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	pricePlanSlug := l.Tabs.ResolveTabSlug("pricePlan")
+	attachmentsLabel := l.Detail.TabAttachments
+	if attachmentsLabel == "" {
+		attachmentsLabel = "Attachments"
+	}
 	return []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "pricePlan", Label: l.Tabs.PricePlan, Href: base + "?tab=" + pricePlanSlug, HxGet: action + pricePlanSlug, Icon: "icon-layers", Count: planCount},
+		{Key: "attachments", Label: attachmentsLabel, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 	}
 }
 

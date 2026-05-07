@@ -7,11 +7,13 @@ import (
 	"net/http"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
@@ -48,6 +50,8 @@ type DetailViewDeps struct {
 	// nil the action handler degrades to a redirect-only no-op.
 	ApproveSupplierContract   func(ctx context.Context, id string) error
 	TerminateSupplierContract func(ctx context.Context, id string, reason string) error
+
+	attachment.AttachmentOps
 }
 
 // PageData holds the template data for the supplier contract detail page.
@@ -77,6 +81,9 @@ type PageData struct {
 	PriceScheduleTable  *types.TableConfig
 	PriceScheduleAddURL string
 
+	// Attachments tab
+	AttachmentTable *types.TableConfig
+
 	// Action URLs
 	ApproveURL   string
 	TerminateURL string
@@ -90,6 +97,7 @@ const (
 	tabLinkedExp       = "linked-expenditures"
 	tabPriceSchedules  = "price-schedules"
 	tabActivity        = "activity"
+	tabAttachments     = "attachments"
 )
 
 // NewView creates the supplier contract detail page view.
@@ -137,6 +145,10 @@ func NewView(deps *DetailViewDeps) view.View {
 			"notes":            contract.GetNotes(),
 		}
 
+		attachmentsLabel := l.Detail.TabAttachments
+		if attachmentsLabel == "" {
+			attachmentsLabel = "Attachments"
+		}
 		tabItems := []pyeza.TabItem{
 			{Key: tabInfo, Label: l.Tabs.Info},
 			{Key: tabLines, Label: l.Tabs.Lines},
@@ -144,6 +156,7 @@ func NewView(deps *DetailViewDeps) view.View {
 			{Key: tabLinkedPOs, Label: l.Tabs.LinkedPOs},
 			{Key: tabLinkedExp, Label: l.Tabs.LinkedExpenditures},
 			{Key: tabActivity, Label: l.Tabs.Activity},
+			{Key: tabAttachments, Label: attachmentsLabel, Icon: "icon-paperclip"},
 		}
 
 		pd := &PageData{
@@ -189,6 +202,16 @@ func NewView(deps *DetailViewDeps) view.View {
 			pd.PriceScheduleAddURL = buildPriceScheduleAddURL(deps.PriceScheduleAddURL, id)
 		}
 
+		// Attachments tab
+		if activeTab == tabAttachments && deps.ListAttachments != nil {
+			cfg := attachmentConfig(deps)
+			var attachItems []*attachmentpb.Attachment
+			if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+				attachItems = resp.GetData()
+			}
+			pd.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
+		}
+
 		return view.OK("supplier-contract-detail", pd)
 	})
 }
@@ -232,6 +255,10 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			"notes":            contract.GetNotes(),
 		}
 
+		attachmentsLabel := l.Detail.TabAttachments
+		if attachmentsLabel == "" {
+			attachmentsLabel = "Attachments"
+		}
 		tabItems := []pyeza.TabItem{
 			{Key: tabInfo, Label: l.Tabs.Info},
 			{Key: tabLines, Label: l.Tabs.Lines},
@@ -239,6 +266,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			{Key: tabLinkedPOs, Label: l.Tabs.LinkedPOs},
 			{Key: tabLinkedExp, Label: l.Tabs.LinkedExpenditures},
 			{Key: tabActivity, Label: l.Tabs.Activity},
+			{Key: tabAttachments, Label: attachmentsLabel, Icon: "icon-paperclip"},
 		}
 
 		pd := &PageData{
@@ -256,6 +284,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			EditURL:         buildActionURL(deps.Routes.EditURL, id),
 		}
 
+		templateName := "supplier-contract-tab-content"
 		switch tab {
 		case tabLines:
 			if deps.ListSupplierContractLines != nil {
@@ -275,9 +304,19 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				pd.PriceScheduleTable = buildPriceScheduleTable(ctx, deps, id, l)
 				pd.PriceScheduleAddURL = buildPriceScheduleAddURL(deps.PriceScheduleAddURL, id)
 			}
+		case tabAttachments:
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				var attachItems []*attachmentpb.Attachment
+				if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+					attachItems = resp.GetData()
+				}
+				pd.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
+			}
+			templateName = "attachment-tab"
 		}
 
-		return view.OK("supplier-contract-tab-content", pd)
+		return view.OK(templateName, pd)
 	})
 }
 

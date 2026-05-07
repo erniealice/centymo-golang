@@ -7,18 +7,19 @@ import (
 
 func variantAttachmentConfig(deps *DetailViewDeps) *attachment.Config {
 	return &attachment.Config{
-		EntityType:       "variant",
-		BucketName:       "attachments",
-		UploadURL:        deps.Routes.VariantAttachmentUploadURL,
-		DeleteURL:        deps.Routes.VariantAttachmentDeleteURL,
-		Labels:           attachment.DefaultLabels(),
-		CommonLabels:     deps.CommonLabels,
-		TableLabels:      deps.TableLabels,
-		NewID:            deps.NewAttachmentID,
-		UploadFile:       deps.UploadFile,
-		ListAttachments:  deps.ListAttachments,
-		CreateAttachment: deps.CreateAttachment,
-		DeleteAttachment: deps.DeleteAttachment,
+		EntityType:         "variant",
+		BucketName:         "attachments",
+		UploadURL:          deps.Routes.VariantAttachmentUploadURL,
+		DeleteURL:          deps.Routes.VariantAttachmentDeleteURL,
+		PrimaryIDPathParam: "vid",
+		Labels:             attachment.DefaultLabels(),
+		CommonLabels:       deps.CommonLabels,
+		TableLabels:        deps.TableLabels,
+		NewID:              deps.NewAttachmentID,
+		UploadFile:         deps.UploadFile,
+		ListAttachments:    deps.ListAttachments,
+		CreateAttachment:   deps.CreateAttachment,
+		DeleteAttachment:   deps.DeleteAttachment,
 	}
 }
 

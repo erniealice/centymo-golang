@@ -9,11 +9,13 @@ import (
 	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
@@ -39,6 +41,8 @@ type DetailViewDeps struct {
 	ApproveProcurementRequest func(ctx context.Context, id string) error
 	RejectProcurementRequest  func(ctx context.Context, id string, reason string) error
 	SpawnPurchaseOrder        func(ctx context.Context, id string) (newPOID string, err error)
+
+	attachment.AttachmentOps
 }
 
 // PageData holds template data for the procurement request detail page.
@@ -61,6 +65,9 @@ type PageData struct {
 	// Spawned POs tab
 	SpawnedPOTable *types.TableConfig
 
+	// Attachments tab
+	AttachmentTable *types.TableConfig
+
 	// Action URLs
 	SubmitURL  string
 	ApproveURL string
@@ -70,10 +77,11 @@ type PageData struct {
 }
 
 const (
-	tabInfo      = "info"
-	tabLines     = "lines"
-	tabSpawnedPO = "spawned-pos"
-	tabActivity  = "activity"
+	tabInfo        = "info"
+	tabLines       = "lines"
+	tabSpawnedPO   = "spawned-pos"
+	tabActivity    = "activity"
+	tabAttachments = "attachments"
 )
 
 // NewView creates the procurement request detail page view.
@@ -128,11 +136,16 @@ func NewView(deps *DetailViewDeps) view.View {
 			"policy_decision_log":        req.GetPolicyDecisionLog(),
 		}
 
+		attachmentsLabel := l.Detail.TabAttachments
+		if attachmentsLabel == "" {
+			attachmentsLabel = "Attachments"
+		}
 		tabItems := []pyeza.TabItem{
 			{Key: tabInfo, Label: l.Tabs.Info},
 			{Key: tabLines, Label: l.Tabs.Lines},
 			{Key: tabSpawnedPO, Label: l.Tabs.SpawnedPOs},
 			{Key: tabActivity, Label: l.Tabs.Activity},
+			{Key: tabAttachments, Label: attachmentsLabel, Icon: "icon-paperclip"},
 		}
 
 		pd := &PageData{
@@ -165,6 +178,14 @@ func NewView(deps *DetailViewDeps) view.View {
 
 		if activeTab == tabSpawnedPO && deps.ListPurchaseOrders != nil {
 			pd.SpawnedPOTable = buildSpawnedPOTable(ctx, deps, id, l)
+		}
+		if activeTab == tabAttachments && deps.ListAttachments != nil {
+			cfg := attachmentConfig(deps)
+			var attachItems []*attachmentpb.Attachment
+			if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+				attachItems = resp.GetData()
+			}
+			pd.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
 		}
 
 		return view.OK("procurement-request-detail", pd)
@@ -216,11 +237,16 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			"policy_decision_log":        req.GetPolicyDecisionLog(),
 		}
 
+		attachmentsLabel := l.Detail.TabAttachments
+		if attachmentsLabel == "" {
+			attachmentsLabel = "Attachments"
+		}
 		tabItems := []pyeza.TabItem{
 			{Key: tabInfo, Label: l.Tabs.Info},
 			{Key: tabLines, Label: l.Tabs.Lines},
 			{Key: tabSpawnedPO, Label: l.Tabs.SpawnedPOs},
 			{Key: tabActivity, Label: l.Tabs.Activity},
+			{Key: tabAttachments, Label: attachmentsLabel, Icon: "icon-paperclip"},
 		}
 
 		pd := &PageData{
@@ -250,9 +276,22 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			if deps.ListPurchaseOrders != nil {
 				pd.SpawnedPOTable = buildSpawnedPOTable(ctx, deps, id, l)
 			}
+		case tabAttachments:
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				var attachItems []*attachmentpb.Attachment
+				if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+					attachItems = resp.GetData()
+				}
+				pd.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
+			}
 		}
 
-		return view.OK("procurement-request-tab-content", pd)
+		templateName := "procurement-request-tab-content"
+		if tab == tabAttachments {
+			templateName = "attachment-tab"
+		}
+		return view.OK(templateName, pd)
 	})
 }
 

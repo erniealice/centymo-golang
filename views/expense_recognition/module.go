@@ -20,6 +20,7 @@ import (
 	expenserecognitiondetail "github.com/erniealice/centymo-golang/views/expense_recognition/detail"
 	expenserecognitionlist "github.com/erniealice/centymo-golang/views/expense_recognition/list"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	expenserecognitionlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_line"
 
@@ -50,6 +51,13 @@ type ModuleDeps struct {
 	// corresponding action returns a 422 indicating it isn't wired.
 	RecognizeFromExpenditure expenserecognitionaction.RecognizeFromExpenditureFunc
 	RecognizeFromContract    expenserecognitionaction.RecognizeFromContractFunc
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewAttachmentID  func() string
 }
 
 // Module holds all constructed expense_recognition views.
@@ -62,6 +70,8 @@ type Module struct {
 	Reverse                  view.View
 	RecognizeFromExpenditure view.View
 	RecognizeFromContract    view.View
+	AttachmentUpload         view.View
+	AttachmentDelete         view.View
 }
 
 // NewModule creates the expense_recognition module with all views wired.
@@ -90,6 +100,12 @@ func NewModule(deps *ModuleDeps) *Module {
 		DeleteExpenseRecognition: deps.DeleteExpenseRecognition,
 	}
 
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewAttachmentID
+
 	m := &Module{
 		routes: deps.Routes,
 		List:   expenserecognitionlist.NewView(listDeps),
@@ -99,6 +115,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		m.Detail = expenserecognitiondetail.NewView(detailDeps)
 		m.TabAction = expenserecognitiondetail.NewTabAction(detailDeps)
 		m.Reverse = expenserecognitiondetail.NewReverseAction(detailDeps)
+	}
+	if deps.UploadFile != nil {
+		m.AttachmentUpload = expenserecognitiondetail.NewAttachmentUploadAction(detailDeps)
+		m.AttachmentDelete = expenserecognitiondetail.NewAttachmentDeleteAction(detailDeps)
 	}
 	// Recognition action handlers: register unconditionally so the routes
 	// respond with 422 (not 405) even when use cases aren't wired yet.
@@ -125,5 +145,10 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.RecognizeFromContract != nil {
 		r.POST(m.routes.RecognizeFromContractURL, m.RecognizeFromContract)
+	}
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
 	}
 }

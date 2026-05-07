@@ -7,20 +7,23 @@ import (
 	"net/http"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
 	scpspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
 	scpslpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule_line"
 )
 
 const (
-	tabInfo     = "info"
-	tabLines    = "lines"
-	tabActivity = "activity"
+	tabInfo        = "info"
+	tabLines       = "lines"
+	tabActivity    = "activity"
+	tabAttachments = "attachments"
 )
 
 // DetailViewDeps holds all dependencies for the SCPS detail page.
@@ -33,6 +36,8 @@ type DetailViewDeps struct {
 	ReadSupplierContractPriceSchedule       func(ctx context.Context, req *scpspb.ReadSupplierContractPriceScheduleRequest) (*scpspb.ReadSupplierContractPriceScheduleResponse, error)
 	ListSupplierContractPriceScheduleLines  func(ctx context.Context, req *scpslpb.ListSupplierContractPriceScheduleLinesRequest) (*scpslpb.ListSupplierContractPriceScheduleLinesResponse, error)
 	ListSupplierContractLines               func(ctx context.Context, req *suppliercontractlinepb.ListSupplierContractLinesRequest) (*suppliercontractlinepb.ListSupplierContractLinesResponse, error)
+
+	attachment.AttachmentOps
 }
 
 // PageData holds the template data for the SCPS detail page.
@@ -49,6 +54,9 @@ type PageData struct {
 	// Lines tab
 	LineItemTable  *types.TableConfig
 	LineItemAddURL string
+
+	// Attachments tab
+	AttachmentTable *types.TableConfig
 
 	// Action URLs
 	EditURL      string
@@ -81,6 +89,15 @@ func NewView(deps *DetailViewDeps) view.View {
 		case tabLines:
 			pd.LineItemTable = buildLineItemTable(ctx, deps, id, l)
 			pd.LineItemAddURL = route.ResolveURL(deps.Routes.LineAddURL, "id", id)
+		case tabAttachments:
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				var attachItems []*attachmentpb.Attachment
+				if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+					attachItems = resp.GetData()
+				}
+				pd.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
+			}
 		}
 
 		return view.OK("supplier-contract-price-schedule-detail", pd)
@@ -101,12 +118,23 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		}
 		l := deps.Labels
 		pd := buildPageData(viewCtx, deps, l, schedule, tab, id)
+		templateName := "supplier-contract-price-schedule-tab-content"
 		switch tab {
 		case tabLines:
 			pd.LineItemTable = buildLineItemTable(ctx, deps, id, l)
 			pd.LineItemAddURL = route.ResolveURL(deps.Routes.LineAddURL, "id", id)
+		case tabAttachments:
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				var attachItems []*attachmentpb.Attachment
+				if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+					attachItems = resp.GetData()
+				}
+				pd.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
+			}
+			templateName = "attachment-tab"
 		}
-		return view.OK("supplier-contract-price-schedule-tab-content", pd)
+		return view.OK(templateName, pd)
 	})
 }
 
@@ -153,10 +181,15 @@ func buildPageData(viewCtx *view.ViewContext, deps *DetailViewDeps, l centymo.Su
 		"notes":                schedule.GetNotes(),
 	}
 
+	attachmentsLabel := l.Detail.TabAttachments
+	if attachmentsLabel == "" {
+		attachmentsLabel = "Attachments"
+	}
 	tabItems := []pyeza.TabItem{
 		{Key: tabInfo, Label: l.Tabs.Info},
 		{Key: tabLines, Label: l.Tabs.Lines},
 		{Key: tabActivity, Label: l.Tabs.Activity},
+		{Key: tabAttachments, Label: attachmentsLabel, Icon: "icon-paperclip"},
 	}
 
 	return &PageData{

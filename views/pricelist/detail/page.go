@@ -41,10 +41,9 @@ type PageData struct {
 	ActiveTab           string
 	TabItems            []pyeza.TabItem
 	ID                  string
-	PricesTable         *types.TableConfig
-	AttachmentTable     *types.TableConfig
-	AttachmentUploadURL string
-	Labels              centymo.PriceListLabels
+	PricesTable     *types.TableConfig
+	AttachmentTable *types.TableConfig
+	Labels          centymo.PriceListLabels
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
 	AuditHasNext    bool
@@ -123,7 +122,6 @@ func NewView(deps *DetailViewDeps) view.View {
 				}
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 
 		case "audit-history":
 			if deps.ListAuditHistory != nil {
@@ -218,7 +216,6 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				}
 				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.AttachmentUploadURL, "id", id)
 
 		case "audit-history":
 			if deps.ListAuditHistory != nil {

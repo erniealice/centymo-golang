@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
 
 	consumer "github.com/erniealice/espyna-golang/consumer"
 	"github.com/erniealice/espyna-golang/reference"
@@ -55,6 +57,7 @@ import (
 	procurementrequestlinemod "github.com/erniealice/centymo-golang/views/procurement_request_line"
 	resourcemod "github.com/erniealice/centymo-golang/views/resource"
 	revenuemod "github.com/erniealice/centymo-golang/views/revenue"
+	revenuerunmod "github.com/erniealice/centymo-golang/views/revenue_run"
 	subscriptionaction "github.com/erniealice/centymo-golang/views/subscription/action"
 	subscriptiondetail "github.com/erniealice/centymo-golang/views/subscription/detail"
 	subscriptionlist "github.com/erniealice/centymo-golang/views/subscription/list"
@@ -67,13 +70,24 @@ import (
 	expenserecognitionlinemod "github.com/erniealice/centymo-golang/views/expense_recognition_line"
 	suppliercontractpriceschedulemod "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule"
 	suppliercontractpricescheduleinemod "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule_line"
+	// P3 — six new procurement view modules (20260506-supplier-subscriptions).
+	costplanmod "github.com/erniealice/centymo-golang/views/cost_plan"
+	costschedulemod "github.com/erniealice/centymo-golang/views/cost_schedule"
+	supplierplanmod "github.com/erniealice/centymo-golang/views/supplier_plan"
+	supplierproductplanmod "github.com/erniealice/centymo-golang/views/supplier_product_plan"
+	supplierproductcostplanmod "github.com/erniealice/centymo-golang/views/supplier_product_cost_plan"
+	suppliersubscriptionmod "github.com/erniealice/centymo-golang/views/supplier_subscription"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
 	// SPS Wave 4 — proto packages for the six new view modules.
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	scpspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
+	// Phase 4 — revenue-run proto for block.go shim.
+	revenuerunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_run"
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 )
 
 // ---------------------------------------------------------------------------
@@ -138,12 +152,25 @@ type blockConfig struct {
 	expenseRecognitionLine            bool
 	accruedExpense                    bool
 	accruedExpenseSettlement          bool
+	// Phase 4 (20260506-subscription-invoice-run) — revenue-run history pages.
+	revenueRun bool
+	// P3 (20260506-supplier-subscriptions) — six new procurement modules.
+	costSchedule            bool
+	supplierPlan            bool
+	costPlan                bool
+	supplierProductPlan     bool
+	supplierProductCostPlan bool
+	supplierSubscription    bool
 	// clientDetailURL is the absolute path template (e.g.
 	// "/app/clients/detail/{id}") used for the subscription detail's
 	// page-header breadcrumb when accessed via the under-client nested route.
 	// Centymo cannot import entydad (wrong dep direction); the consumer
 	// supplies it via WithClientDetailURL.
 	clientDetailURL string
+	// clientRevenueRunDrawerURL is the path template for the Surface-A per-client
+	// revenue-run drawer (e.g. "/action/client/revenue-run/{id}").
+	// Phase 7 (Surface B) — the queue page drills into this drawer per row.
+	clientRevenueRunDrawerURL string
 	// jobDetailURL is the absolute path template (e.g. "/app/jobs/detail/{id}")
 	// used by the subscription detail's Operations tab to deep-link to fayna
 	// Job detail. Centymo cannot import fayna; the consumer supplies it via
@@ -193,6 +220,30 @@ func WithAccruedExpenseSettlement() BlockOption {
 	return func(c *blockConfig) { c.accruedExpenseSettlement = true }
 }
 
+// WithRevenueRun enables the revenue-run history list + detail pages (Surface D).
+// Phase 4 of the 20260506-subscription-invoice-run plan.
+func WithRevenueRun() BlockOption { return func(c *blockConfig) { c.revenueRun = true } }
+
+// P3 (20260506-supplier-subscriptions) — six new procurement module toggles.
+func WithCostSchedule() BlockOption {
+	return func(c *blockConfig) { c.costSchedule = true }
+}
+func WithSupplierPlan() BlockOption {
+	return func(c *blockConfig) { c.supplierPlan = true }
+}
+func WithCostPlan() BlockOption {
+	return func(c *blockConfig) { c.costPlan = true }
+}
+func WithSupplierProductPlan() BlockOption {
+	return func(c *blockConfig) { c.supplierProductPlan = true }
+}
+func WithSupplierProductCostPlan() BlockOption {
+	return func(c *blockConfig) { c.supplierProductCostPlan = true }
+}
+func WithSupplierSubscription() BlockOption {
+	return func(c *blockConfig) { c.supplierSubscription = true }
+}
+
 // WithClientDetailURL supplies the entydad client-detail path template (e.g.
 // "/app/clients/detail/{id}") so the subscription detail page can render a
 // "client → subscription" breadcrumb when accessed under a client context.
@@ -200,6 +251,15 @@ func WithAccruedExpenseSettlement() BlockOption {
 // joined client) but isn't a link.
 func WithClientDetailURL(url string) BlockOption {
 	return func(c *blockConfig) { c.clientDetailURL = url }
+}
+
+// WithClientRevenueRunDrawerURL supplies the entydad client-revenue-run drawer
+// path template (e.g. "/action/client/revenue-run/{id}") so the queue page
+// (Surface B) can render a per-row [Run] action that opens the Surface-A drawer.
+// Optional — the per-row action is omitted when unset.
+// Phase 7 (20260506-subscription-invoice-run Surface B).
+func WithClientRevenueRunDrawerURL(url string) BlockOption {
+	return func(c *blockConfig) { c.clientRevenueRunDrawerURL = url }
 }
 
 // WithJobDetailURL supplies the fayna job-detail path template (e.g.
@@ -252,6 +312,29 @@ func (c *blockConfig) wantAccruedExpenseSettlement() bool {
 	return c.enableAll || c.accruedExpenseSettlement
 }
 
+// Phase 4 (20260506-subscription-invoice-run).
+func (c *blockConfig) wantRevenueRun() bool { return c.enableAll || c.revenueRun }
+
+// P3 (20260506-supplier-subscriptions) — six new procurement module want() helpers.
+func (c *blockConfig) wantCostSchedule() bool {
+	return c.enableAll || c.costSchedule
+}
+func (c *blockConfig) wantSupplierPlan() bool {
+	return c.enableAll || c.supplierPlan
+}
+func (c *blockConfig) wantCostPlan() bool {
+	return c.enableAll || c.costPlan
+}
+func (c *blockConfig) wantSupplierProductPlan() bool {
+	return c.enableAll || c.supplierProductPlan
+}
+func (c *blockConfig) wantSupplierProductCostPlan() bool {
+	return c.enableAll || c.supplierProductCostPlan
+}
+func (c *blockConfig) wantSupplierSubscription() bool {
+	return c.enableAll || c.supplierSubscription
+}
+
 // ---------------------------------------------------------------------------
 // Block — the main Lego entry point
 // ---------------------------------------------------------------------------
@@ -277,7 +360,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		cfg.procurementRequest || cfg.procurementRequestLine || cfg.procurement ||
 		cfg.supplierContractPriceSchedule || cfg.supplierContractPriceScheduleLine ||
 		cfg.expenseRecognition || cfg.expenseRecognitionLine ||
-		cfg.accruedExpense || cfg.accruedExpenseSettlement
+		cfg.accruedExpense || cfg.accruedExpenseSettlement ||
+		cfg.revenueRun ||
+		cfg.costSchedule || cfg.supplierPlan || cfg.costPlan ||
+		cfg.supplierProductPlan || cfg.supplierProductCostPlan || cfg.supplierSubscription
 	cfg.enableAll = !moduleSelected
 
 	return func(ctx *pyeza.AppContext) error {
@@ -307,8 +393,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		// --- Type-assert attachment operations ---
 		uploadFile, _ := ctx.UploadFile.(func(context.Context, string, string, []byte, string) error)
+		downloadFile, _ := ctx.DownloadFile.(func(context.Context, string, string) ([]byte, error))
 		listAttachments, _ := ctx.ListAttachments.(func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error))
 		createAttachment, _ := ctx.CreateAttachment.(func(context.Context, *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error))
+		readAttachment, _ := ctx.ReadAttachment.(func(context.Context, *attachmentpb.ReadAttachmentRequest) (*attachmentpb.ReadAttachmentResponse, error))
 		deleteAttachment, _ := ctx.DeleteAttachment.(func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error))
 		newAttachmentID, _ := ctx.NewAttachmentID.(func() string)
 
@@ -504,6 +592,41 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "accrued_expense", &accruedExpenseRoutes)
 		accruedExpenseLabels := centymo.DefaultAccruedExpenseLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "accrued_expense.json", "accruedExpense", &accruedExpenseLabels)
+
+		// Phase 4 — revenue-run (Surface D).
+		revenueRunRoutes := centymo.DefaultRevenueRunRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "revenue_run", &revenueRunRoutes)
+		revenueRunLabels := centymo.DefaultRevenueRunLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "revenue.json", "revenueRun", &revenueRunLabels)
+
+		// P3 (20260506-supplier-subscriptions) — Routes + Labels for the six new procurement modules.
+		costScheduleRoutes := centymo.DefaultCostScheduleRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "cost_schedule", &costScheduleRoutes)
+		costScheduleLabels := centymo.DefaultCostScheduleLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "cost_schedule.json", "costSchedule", &costScheduleLabels)
+
+		supplierPlanRoutes := centymo.DefaultSupplierPlanRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_plan", &supplierPlanRoutes)
+		supplierPlanLabels := centymo.DefaultSupplierPlanLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_plan.json", "supplierPlan", &supplierPlanLabels)
+
+		costPlanRoutes := centymo.DefaultCostPlanRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "cost_plan", &costPlanRoutes)
+		costPlanLabels := centymo.DefaultCostPlanLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "cost_plan.json", "costPlan", &costPlanLabels)
+
+		supplierProductPlanRoutes := centymo.DefaultSupplierProductPlanRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_product_plan", &supplierProductPlanRoutes)
+		supplierProductPlanLabels := centymo.DefaultSupplierProductPlanLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_product_plan.json", "supplierProductPlan", &supplierProductPlanLabels)
+
+		supplierProductCostPlanLabels := centymo.DefaultSupplierProductCostPlanLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_product_cost_plan.json", "supplierProductCostPlan", &supplierProductCostPlanLabels)
+
+		supplierSubscriptionRoutes := centymo.DefaultSupplierSubscriptionRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_subscription", &supplierSubscriptionRoutes)
+		supplierSubscriptionLabels := centymo.DefaultSupplierSubscriptionLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_subscription.json", "supplierSubscription", &supplierSubscriptionLabels)
 
 		// =====================================================================
 		// Inventory module
@@ -1077,6 +1200,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				if useCases.Operation != nil && useCases.Operation.JobTemplatePhase != nil && useCases.Operation.JobTemplatePhase.ListByJobTemplate != nil {
 					pricePlanDeps.ListJobTemplatePhasesByJobTemplate = useCases.Operation.JobTemplatePhase.ListByJobTemplate.Execute
 				}
+				pricePlanDeps.UploadFile = uploadFile
+				pricePlanDeps.ListAttachments = listAttachments
+				pricePlanDeps.CreateAttachment = createAttachment
+				pricePlanDeps.DeleteAttachment = deleteAttachment
+				pricePlanDeps.NewAttachmentID = newAttachmentID
 				priceplanmod.NewModule(pricePlanDeps).RegisterRoutes(ctx.Routes)
 			}
 		}
@@ -1179,6 +1307,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				priceScheduleDeps.SubscriptionDetailURL = subscriptionRoutes.DetailURL
 				priceScheduleDeps.SubscriptionEditURL = subscriptionRoutes.EditURL
 				priceScheduleDeps.SubscriptionDeleteURL = subscriptionRoutes.DeleteURL
+				priceScheduleDeps.UploadFile = uploadFile
+				priceScheduleDeps.ListAttachments = listAttachments
+				priceScheduleDeps.CreateAttachment = createAttachment
+				priceScheduleDeps.DeleteAttachment = deleteAttachment
+				priceScheduleDeps.NewAttachmentID = newAttachmentID
 				priceschedulemod.NewModule(priceScheduleDeps).RegisterRoutes(ctx.Routes)
 
 				// =====================================================================
@@ -1215,6 +1348,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						CreateProductPricePlan:   priceScheduleDeps.CreateProductPricePlan,
 						UpdateProductPricePlan:   priceScheduleDeps.UpdateProductPricePlan,
 						DeleteProductPricePlan:   priceScheduleDeps.DeleteProductPricePlan,
+						UploadFile:               uploadFile,
+						ListAttachments:          listAttachments,
+						CreateAttachment:         createAttachment,
+						DeleteAttachment:         deleteAttachment,
+						NewAttachmentID:          newAttachmentID,
 					}
 					priceschedulemod.NewModule(priceScheduleInventoryDeps).RegisterRoutes(ctx.Routes)
 				}
@@ -1380,8 +1518,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					TableLabels:                centymoTableLabels,
 					AttachmentOps: attachment.AttachmentOps{
 						UploadFile:       uploadFile,
+						DownloadFile:     downloadFile,
 						ListAttachments:  listAttachments,
 						CreateAttachment: createAttachment,
+						ReadAttachment:   readAttachment,
 						DeleteAttachment: deleteAttachment,
 						NewAttachmentID:  newAttachmentID,
 					},
@@ -1633,8 +1773,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						TableLabels:                centymoTableLabels,
 						AttachmentOps: attachment.AttachmentOps{
 							UploadFile:       uploadFile,
+							DownloadFile:     downloadFile,
 							ListAttachments:  listAttachments,
 							CreateAttachment: createAttachment,
+							ReadAttachment:   readAttachment,
 							DeleteAttachment: deleteAttachment,
 							NewAttachmentID:  newAttachmentID,
 						},
@@ -1795,6 +1937,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				subActionDeps := &subscriptionaction.Deps{
 					Routes:             subscriptionRoutes,
 					Labels:             subscriptionLabels,
+					CommonLabels:       ctx.Common,
 					CreateSubscription: useCases.Subscription.Subscription.CreateSubscription.Execute,
 					ReadSubscription:   useCases.Subscription.Subscription.ReadSubscription.Execute,
 					UpdateSubscription: useCases.Subscription.Subscription.UpdateSubscription.Execute,
@@ -1842,6 +1985,97 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					useCases.Revenue.Revenue.RecognizeRevenueFromSubscription != nil {
 					subActionDeps.RecognizeRevenueFromSubscription =
 						useCases.Revenue.Revenue.RecognizeRevenueFromSubscription.Execute
+				}
+
+				// 2026-05-06 revenue-run plan Phase 6 (Surface C) — wire the
+				// per-subscription Invoice Run drawer callbacks.
+				// Both use cases must be present; the drawer gates on nil callbacks.
+				if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
+					useCases.Revenue.Revenue.ListRevenueRunCandidates != nil &&
+					useCases.Revenue.Revenue.GenerateRevenueRun != nil {
+					subActionDeps.ListRevenueRunCandidates = func(fctx context.Context, scope subscriptionaction.RevenueRunScopeAction) ([]subscriptionaction.RevenueRunCandidateAction, string, error) {
+						candidates, nextCursor, err := consumer.ListRevenueRunCandidates(useCases, fctx, consumer.RevenueRunScope{
+							WorkspaceID:    scope.WorkspaceID,
+							ClientID:       scope.ClientID,
+							SubscriptionID: scope.SubscriptionID,
+							AsOfDate:       scope.AsOfDate,
+							Cursor:         scope.Cursor,
+							Limit:          scope.Limit,
+						})
+						if err != nil {
+							return nil, "", err
+						}
+						out := make([]subscriptionaction.RevenueRunCandidateAction, 0, len(candidates))
+						for _, c := range candidates {
+							amtDisplay := fmt.Sprintf("%.2f", float64(c.Amount)/100)
+							out = append(out, subscriptionaction.RevenueRunCandidateAction{
+								SubscriptionID:    c.SubscriptionID,
+								SubscriptionName:  c.SubscriptionName,
+								ClientID:          c.ClientID,
+								ClientName:        c.ClientName,
+								PlanName:          c.PlanName,
+								BillingCycleLabel: c.BillingCycleLabel,
+								Currency:          c.Currency,
+								PeriodStart:       c.PeriodStart,
+								PeriodEnd:         c.PeriodEnd,
+								PeriodLabel:       c.PeriodLabel,
+								PeriodMarker:      c.PeriodMarker,
+								Amount:            c.Amount,
+								AmountDisplay:     amtDisplay,
+								LineItemCount:     c.LineItemCount,
+								Eligible:          c.Eligible,
+								BlockerReason:     c.BlockerReason,
+							})
+						}
+						return out, nextCursor, nil
+					}
+					subActionDeps.GenerateRevenueRun = func(fctx context.Context, scope subscriptionaction.RevenueRunScopeAction, sels subscriptionaction.RevenueRunSelectionsAction) (*subscriptionaction.RevenueRunResultAction, error) {
+						consumerSels := consumer.RevenueRunSelections{
+							FilterToken: sels.FilterToken,
+						}
+						for _, s := range sels.ExplicitList {
+							consumerSels.ExplicitList = append(consumerSels.ExplicitList, consumer.SelectedRevenueRunCandidate{
+								SubscriptionID: s.SubscriptionID,
+								PeriodStart:    s.PeriodStart,
+								PeriodEnd:      s.PeriodEnd,
+								PeriodMarker:   s.PeriodMarker,
+							})
+						}
+						result, err := consumer.GenerateRevenueRun(useCases, fctx, consumer.RevenueRunScope{
+							WorkspaceID:    scope.WorkspaceID,
+							ClientID:       scope.ClientID,
+							SubscriptionID: scope.SubscriptionID,
+							AsOfDate:       scope.AsOfDate,
+						}, consumerSels)
+						if err != nil || result == nil {
+							return nil, err
+						}
+						run := result.Run
+						runID := ""
+						runStatus := ""
+						if run != nil {
+							runID = run.GetId()
+							runStatus = run.GetStatus().String()
+						}
+						var created, skipped, errored int32
+						for _, a := range result.Attempts {
+							switch a.GetOutcome().String() {
+							case "REVENUE_RUN_ATTEMPT_OUTCOME_CREATED":
+								created++
+							case "REVENUE_RUN_ATTEMPT_OUTCOME_SKIPPED":
+								skipped++
+							default:
+								errored++
+							}
+						}
+						return &subscriptionaction.RevenueRunResultAction{
+							RunID:   runID,
+							Status:  runStatus,
+							Created: created,
+							Skipped: skipped,
+							Errored: errored,
+						}, nil
+					}
 				}
 
 				// 2026-04-27 plan-client-scope plan §4 / §6.5 — wire the
@@ -1948,6 +2182,16 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ctx.Routes.GET(subscriptionRoutes.RecognizeURL, subscriptionaction.NewRecognizeAction(subActionDeps))
 					ctx.Routes.POST(subscriptionRoutes.RecognizeURL, subscriptionaction.NewRecognizeAction(subActionDeps))
 				}
+				// 2026-05-06 revenue-run Phase 6 (Surface C) — per-subscription
+				// Invoice Run drawer (GET = preview candidates, POST = generate run).
+				// Gated on both callbacks being wired (set above in the revenue-run
+				// wiring block) and the route being configured.
+				if subActionDeps.ListRevenueRunCandidates != nil &&
+					subActionDeps.GenerateRevenueRun != nil &&
+					subscriptionRoutes.RevenueRunURL != "" {
+					ctx.Routes.GET(subscriptionRoutes.RevenueRunURL, subscriptionaction.NewRevenueRunAction(subActionDeps))
+					ctx.Routes.POST(subscriptionRoutes.RevenueRunURL, subscriptionaction.NewRevenueRunAction(subActionDeps))
+				}
 				// 2026-04-27 plan-client-scope plan §6.5 — Customize package
 				// CTA on subscription detail's Package tab.
 				if subscriptionRoutes.CustomizePackageURL != "" {
@@ -2017,8 +2261,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					TableLabels:      centymoTableLabels,
 					AttachmentOps: attachment.AttachmentOps{
 						UploadFile:       uploadFile,
+						DownloadFile:     downloadFile,
 						ListAttachments:  listAttachments,
 						CreateAttachment: createAttachment,
+						ReadAttachment:   readAttachment,
 						DeleteAttachment: deleteAttachment,
 						NewAttachmentID:  newAttachmentID,
 					},
@@ -2076,6 +2322,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					ctx.Routes.GET(subscriptionRoutes.AttachmentUploadURL, subscriptiondetail.NewAttachmentUploadAction(subDetailDeps))
 					ctx.Routes.POST(subscriptionRoutes.AttachmentUploadURL, subscriptiondetail.NewAttachmentUploadAction(subDetailDeps))
 					ctx.Routes.POST(subscriptionRoutes.AttachmentDeleteURL, subscriptiondetail.NewAttachmentDeleteAction(subDetailDeps))
+					if downloadFile != nil && readAttachment != nil && subscriptionRoutes.AttachmentDownloadURL != "" {
+						handleFunc(ctx.Routes, "GET", subscriptionRoutes.AttachmentDownloadURL, subscriptiondetail.NewAttachmentDownloadHandler(subDetailDeps))
+					}
 				}
 			}
 		}
@@ -2237,6 +2486,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// a custom trigger URL via lyngua override.
 			wirePurchaseDashboard(expDeps, useCases)
 			wireExpenseDashboard(expDeps, useCases)
+			expDeps.ListAttachments = listAttachments
+			expDeps.CreateAttachment = createAttachment
+			expDeps.DeleteAttachment = deleteAttachment
+			expDeps.NewAttachmentID = newAttachmentID
 			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
 		}
 
@@ -2369,6 +2622,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			scDeps.PriceScheduleListURL = supplierContractPriceScheduleRoutes.ListURL
 			scDeps.PriceScheduleDetailURL = supplierContractPriceScheduleRoutes.DetailURL
 			scDeps.PriceScheduleAddURL = supplierContractPriceScheduleRoutes.AddURL
+			scDeps.UploadFile = uploadFile
+			scDeps.ListAttachments = listAttachments
+			scDeps.CreateAttachment = createAttachment
+			scDeps.DeleteAttachment = deleteAttachment
+			scDeps.NewAttachmentID = newAttachmentID
 			suppliercontractmod.NewModule(scDeps).RegisterRoutes(ctx.Routes)
 		}
 
@@ -2490,6 +2748,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				useCases.Expenditure.PurchaseOrder.ListPurchaseOrders != nil {
 				prDeps.ListPurchaseOrders = useCases.Expenditure.PurchaseOrder.ListPurchaseOrders.Execute
 			}
+			prDeps.UploadFile = uploadFile
+			prDeps.ListAttachments = listAttachments
+			prDeps.CreateAttachment = createAttachment
+			prDeps.DeleteAttachment = deleteAttachment
+			prDeps.NewAttachmentID = newAttachmentID
 			procurementrequestmod.NewModule(prDeps).RegisterRoutes(ctx.Routes)
 		}
 
@@ -2626,6 +2889,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				useCases.Expenditure.SupplierContractLine.ListSupplierContractLines != nil {
 				scpsDeps.ListSupplierContractLines = useCases.Expenditure.SupplierContractLine.ListSupplierContractLines.Execute
 			}
+			scpsDeps.UploadFile = uploadFile
+			scpsDeps.ListAttachments = listAttachments
+			scpsDeps.CreateAttachment = createAttachment
+			scpsDeps.DeleteAttachment = deleteAttachment
+			scpsDeps.NewAttachmentID = newAttachmentID
 			suppliercontractpriceschedulemod.NewModule(scpsDeps).RegisterRoutes(ctx.Routes)
 		}
 
@@ -2708,6 +2976,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					erDeps.ListExpenseRecognitionLines = uc.Execute
 				}
 			}
+			erDeps.UploadFile = uploadFile
+			erDeps.ListAttachments = listAttachments
+			erDeps.CreateAttachment = createAttachment
+			erDeps.DeleteAttachment = deleteAttachment
+			erDeps.NewAttachmentID = newAttachmentID
 			expenserecognitionmod.NewModule(erDeps).RegisterRoutes(ctx.Routes)
 		}
 
@@ -2801,6 +3074,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				useCases.Expenditure.SupplierContract.ListSupplierContracts != nil {
 				aeDeps.ListSupplierContracts = useCases.Expenditure.SupplierContract.ListSupplierContracts.Execute
 			}
+			aeDeps.UploadFile = uploadFile
+			aeDeps.ListAttachments = listAttachments
+			aeDeps.CreateAttachment = createAttachment
+			aeDeps.DeleteAttachment = deleteAttachment
+			aeDeps.NewAttachmentID = newAttachmentID
 			accruedexpensemod.NewModule(aeDeps).RegisterRoutes(ctx.Routes)
 		}
 
@@ -2832,6 +3110,476 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				aesDeps.ListExpenditures = useCases.Expenditure.Expenditure.ListExpenditures.Execute
 			}
 			accruedexpensesettlementmod.NewModule(aesDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// Revenue Run module — Surface D (history list + detail pages)
+		// Phase 4 of the 20260506-subscription-invoice-run plan.
+		// =====================================================================
+
+		if cfg.wantRevenueRun() {
+			rrDeps := &revenuerunmod.ModuleDeps{
+				Routes:       revenueRunRoutes,
+				Labels:       revenueRunLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+			}
+
+			// Wire ListRevenueRuns — translate proto response to view-typed rows.
+			rrDeps.ListRevenueRuns = func(fctx context.Context, scope revenuerunmod.ListRevenueRunsScope) ([]revenuerunmod.RevenueRunRow, string, error) {
+				req := &revenuerunpb.ListRevenueRunsRequest{}
+				resp, err := consumer.ListRevenueRuns(useCases, fctx, req)
+				if err != nil {
+					return nil, "", err
+				}
+				if resp == nil {
+					return []revenuerunmod.RevenueRunRow{}, "", nil
+				}
+				rows := make([]revenuerunmod.RevenueRunRow, 0, len(resp.GetData()))
+				for _, r := range resp.GetData() {
+					row := protoRevenueRunToRow(r)
+					// Apply status filter (the proto service may not support it directly yet)
+					if scope.Status != "" && row.Status != scope.Status {
+						continue
+					}
+					rows = append(rows, row)
+				}
+				return rows, "", nil
+			}
+
+			// Wire ReadRevenueRun — translate proto response to view-typed struct.
+			rrDeps.ReadRevenueRun = func(fctx context.Context, id string) (*revenuerunmod.RevenueRunWithAttempts, error) {
+				runID := id
+				resp, err := consumer.ReadRevenueRun(useCases, fctx, &revenuerunpb.ReadRevenueRunRequest{
+					Data: &revenuerunpb.RevenueRun{Id: runID},
+				})
+				if err != nil {
+					return nil, err
+				}
+				if resp == nil || len(resp.GetData()) == 0 {
+					return nil, nil
+				}
+				run := protoRevenueRunToRow(resp.GetData()[0])
+
+				attResp, err := consumer.ListRevenueRunAttempts(useCases, fctx, &revenuerunpb.ListRevenueRunAttemptsRequest{
+					RunId: runID,
+				})
+				if err != nil {
+					log.Printf("centymo.Block: failed to load attempts for run %s: %v", id, err)
+					attResp = nil
+				}
+				var attempts []revenuerunmod.RevenueRunAttemptRow
+				if attResp != nil {
+					attempts = make([]revenuerunmod.RevenueRunAttemptRow, 0, len(attResp.GetData()))
+					for _, a := range attResp.GetData() {
+						attempts = append(attempts, protoRevenueRunAttemptToRow(a))
+					}
+				}
+				return &revenuerunmod.RevenueRunWithAttempts{Run: run, Attempts: attempts}, nil
+			}
+
+			// Wire ListRevenueByRunID — filter revenue list by run_id for the Invoices tab.
+			if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
+				useCases.Revenue.Revenue.GetRevenueListPageData != nil {
+				revenueDetailURLPattern := revenueRoutes.DetailURL
+				rrDeps.ListRevenueByRunID = func(fctx context.Context, runID string) ([]revenuerunmod.RevenueRow, error) {
+					resp, err := useCases.Revenue.Revenue.GetRevenueListPageData.Execute(fctx, &revenuepb.GetRevenueListPageDataRequest{
+						Filters: &commonpb.FilterRequest{
+							Filters: []*commonpb.TypedFilter{
+								{
+									Field: "rv.run_id",
+									FilterType: &commonpb.TypedFilter_StringFilter{
+										StringFilter: &commonpb.StringFilter{
+											Value:    runID,
+											Operator: commonpb.StringOperator_STRING_EQUALS,
+										},
+									},
+								},
+							},
+						},
+					})
+					if err != nil {
+						return nil, err
+					}
+					rows := make([]revenuerunmod.RevenueRow, 0, len(resp.GetRevenueList()))
+					for _, rv := range resp.GetRevenueList() {
+						detailURL := ""
+						if revenueDetailURLPattern != "" {
+							detailURL = route.ResolveURL(revenueDetailURLPattern, "id", rv.GetId())
+						}
+						rows = append(rows, revenuerunmod.RevenueRow{
+							ID:              rv.GetId(),
+							ReferenceNumber: rv.GetReferenceNumber(),
+							RevenueDate:     rv.GetRevenueDate(),
+							TotalAmount:     int64(rv.GetTotalAmount()),
+							Currency:        rv.GetCurrency(),
+							Status:          rv.GetStatus(),
+							DetailURL:       detailURL,
+						})
+					}
+					return rows, nil
+				}
+			}
+
+			// --------------------------------------------------------
+			// Surface B — workspace queue page (Phase 7).
+			// --------------------------------------------------------
+
+			// URL templates from BlockOptions.
+			rrDeps.ClientDetailURLTemplate = cfg.clientDetailURL
+			rrDeps.ClientDrawerURLTemplate = cfg.clientRevenueRunDrawerURL
+
+			// ListClients — reuse the existing client list use case.
+			if useCases.Entity != nil && useCases.Entity.Client != nil &&
+				useCases.Entity.Client.ListClients != nil {
+				lc := useCases.Entity.Client.ListClients.Execute
+				rrDeps.ListClients = func(fctx context.Context, cursor string) ([]revenuerunmod.QueueClientRecord, string, error) {
+					resp, err := lc(fctx, &clientpb.ListClientsRequest{})
+					if err != nil {
+						return nil, "", err
+					}
+					if resp == nil {
+						return []revenuerunmod.QueueClientRecord{}, "", nil
+					}
+					records := make([]revenuerunmod.QueueClientRecord, 0, len(resp.GetData()))
+					for _, c := range resp.GetData() {
+						records = append(records, revenuerunmod.QueueClientRecord{
+							ID:   c.GetId(),
+							Name: c.GetName(),
+						})
+					}
+					return records, "", nil
+				}
+			}
+
+			// ListRevenueRunCandidates — thin shim over consumer.ListRevenueRunCandidates.
+			if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
+				useCases.Revenue.Revenue.ListRevenueRunCandidates != nil {
+				rrDeps.ListRevenueRunCandidates = func(fctx context.Context, clientID, asOfDate string) ([]revenuerunmod.QueueCandidateInput, error) {
+					candidates, _, err := consumer.ListRevenueRunCandidates(useCases, fctx, consumer.RevenueRunScope{
+						ClientID: clientID,
+						AsOfDate: asOfDate,
+					})
+					if err != nil {
+						return nil, err
+					}
+					out := make([]revenuerunmod.QueueCandidateInput, 0, len(candidates))
+					for _, c := range candidates {
+						out = append(out, revenuerunmod.QueueCandidateInput{
+							SubscriptionID: c.SubscriptionID,
+							Currency:       c.Currency,
+							Amount:         c.Amount,
+							Eligible:       c.Eligible,
+						})
+					}
+					return out, nil
+				}
+			}
+
+			// GenerateRevenueRun — thin shim over consumer.GenerateRevenueRun.
+			if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
+				useCases.Revenue.Revenue.GenerateRevenueRun != nil {
+				rrDeps.GenerateRevenueRun = func(fctx context.Context, in revenuerunmod.BatchRunInput) (*revenuerunmod.BatchRunOutput, error) {
+					result, err := consumer.GenerateRevenueRun(
+						useCases,
+						fctx,
+						consumer.RevenueRunScope{
+							ClientID: in.ClientID,
+							AsOfDate: in.AsOfDate,
+						},
+						consumer.RevenueRunSelections{},
+					)
+					if err != nil {
+						return nil, err
+					}
+					if result == nil || result.Run == nil {
+						return nil, nil
+					}
+					var created, skipped, errored int
+					for _, a := range result.Attempts {
+						switch a.GetOutcome() {
+						case revenuerunpb.RevenueRunAttemptOutcome_REVENUE_RUN_ATTEMPT_OUTCOME_CREATED:
+							created++
+						case revenuerunpb.RevenueRunAttemptOutcome_REVENUE_RUN_ATTEMPT_OUTCOME_SKIPPED:
+							skipped++
+						case revenuerunpb.RevenueRunAttemptOutcome_REVENUE_RUN_ATTEMPT_OUTCOME_ERRORED:
+							errored++
+						}
+					}
+					return &revenuerunmod.BatchRunOutput{
+						RunID:   result.Run.GetId(),
+						Created: created,
+						Skipped: skipped,
+						Errored: errored,
+					}, nil
+				}
+			}
+
+			rrDeps.UploadFile = uploadFile
+			rrDeps.ListAttachments = listAttachments
+			rrDeps.CreateAttachment = createAttachment
+			rrDeps.DeleteAttachment = deleteAttachment
+			rrDeps.NewAttachmentID = newAttachmentID
+			revenuerunmod.NewModule(rrDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// P3 — CostSchedule module
+		// =====================================================================
+		if cfg.wantCostSchedule() {
+			csDeps := &costschedulemod.ModuleDeps{
+				Routes:       costScheduleRoutes,
+				Labels:       costScheduleLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+				SetCostScheduleActive: func(fctx context.Context, id string, active bool) error {
+					_, err := db.Update(fctx, "cost_schedule", id, map[string]any{"active": active})
+					return err
+				},
+			}
+			if useCases.Procurement != nil && useCases.Procurement.CostSchedule != nil {
+				uc := useCases.Procurement.CostSchedule
+				if uc.CreateCostSchedule != nil {
+					csDeps.CreateCostSchedule = uc.CreateCostSchedule.Execute
+				}
+				if uc.ReadCostSchedule != nil {
+					csDeps.ReadCostSchedule = uc.ReadCostSchedule.Execute
+				}
+				if uc.UpdateCostSchedule != nil {
+					csDeps.UpdateCostSchedule = uc.UpdateCostSchedule.Execute
+				}
+				if uc.DeleteCostSchedule != nil {
+					csDeps.DeleteCostSchedule = uc.DeleteCostSchedule.Execute
+				}
+				if uc.GetCostScheduleListPageData != nil {
+					csDeps.GetCostScheduleListPageData = uc.GetCostScheduleListPageData.Execute
+				}
+				if uc.GetCostScheduleItemPageData != nil {
+					csDeps.GetCostScheduleItemPageData = uc.GetCostScheduleItemPageData.Execute
+				}
+			}
+			costschedulemod.NewModule(csDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// P3 — SupplierPlan module
+		// =====================================================================
+		if cfg.wantSupplierPlan() {
+			spDeps := &supplierplanmod.ModuleDeps{
+				Routes:       supplierPlanRoutes,
+				Labels:       supplierPlanLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+				SetSupplierPlanActive: func(fctx context.Context, id string, active bool) error {
+					_, err := db.Update(fctx, "supplier_plan", id, map[string]any{"active": active})
+					return err
+				},
+				SearchSupplierURL: supplierPlanRoutes.SearchSupplierURL,
+			}
+			if useCases.Procurement != nil && useCases.Procurement.SupplierPlan != nil {
+				uc := useCases.Procurement.SupplierPlan
+				if uc.CreateSupplierPlan != nil {
+					spDeps.CreateSupplierPlan = uc.CreateSupplierPlan.Execute
+				}
+				if uc.ReadSupplierPlan != nil {
+					spDeps.ReadSupplierPlan = uc.ReadSupplierPlan.Execute
+				}
+				if uc.UpdateSupplierPlan != nil {
+					spDeps.UpdateSupplierPlan = uc.UpdateSupplierPlan.Execute
+				}
+				if uc.DeleteSupplierPlan != nil {
+					spDeps.DeleteSupplierPlan = uc.DeleteSupplierPlan.Execute
+				}
+				if uc.GetSupplierPlanListPageData != nil {
+					spDeps.GetSupplierPlanListPageData = uc.GetSupplierPlanListPageData.Execute
+				}
+				if uc.GetSupplierPlanItemPageData != nil {
+					spDeps.GetSupplierPlanItemPageData = uc.GetSupplierPlanItemPageData.Execute
+				}
+			}
+			supplierplanmod.NewModule(spDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// P3 — CostPlan module (with inline SupplierProductCostPlan editor)
+		// =====================================================================
+		if cfg.wantCostPlan() {
+			cpDeps := &costplanmod.ModuleDeps{
+				Routes:            costPlanRoutes,
+				Labels:            costPlanLabels,
+				ProductCostLabels: supplierProductCostPlanLabels,
+				CommonLabels:      ctx.Common,
+				TableLabels:       centymoTableLabels,
+				SetCostPlanActive: func(fctx context.Context, id string, active bool) error {
+					_, err := db.Update(fctx, "cost_plan", id, map[string]any{"active": active})
+					return err
+				},
+				SearchSupplierPlanURL:        costPlanRoutes.SearchSupplierPlanURL,
+				SearchCostScheduleURL:        costPlanRoutes.SearchCostScheduleURL,
+				SearchSupplierProductPlanURL: costPlanRoutes.SearchSupplierProductPlanURL,
+			}
+			if useCases.Procurement != nil && useCases.Procurement.CostPlan != nil {
+				uc := useCases.Procurement.CostPlan
+				if uc.CreateCostPlan != nil {
+					cpDeps.CreateCostPlan = uc.CreateCostPlan.Execute
+				}
+				if uc.ReadCostPlan != nil {
+					cpDeps.ReadCostPlan = uc.ReadCostPlan.Execute
+				}
+				if uc.UpdateCostPlan != nil {
+					cpDeps.UpdateCostPlan = uc.UpdateCostPlan.Execute
+				}
+				if uc.DeleteCostPlan != nil {
+					cpDeps.DeleteCostPlan = uc.DeleteCostPlan.Execute
+				}
+				if uc.GetCostPlanListPageData != nil {
+					cpDeps.GetCostPlanListPageData = uc.GetCostPlanListPageData.Execute
+				}
+				if uc.GetCostPlanItemPageData != nil {
+					cpDeps.GetCostPlanItemPageData = uc.GetCostPlanItemPageData.Execute
+				}
+			}
+			if useCases.Procurement != nil && useCases.Procurement.SupplierProductCostPlan != nil {
+				uc := useCases.Procurement.SupplierProductCostPlan
+				if uc.CreateSupplierProductCostPlan != nil {
+					cpDeps.CreateSupplierProductCostPlan = uc.CreateSupplierProductCostPlan.Execute
+				}
+				if uc.ReadSupplierProductCostPlan != nil {
+					cpDeps.ReadSupplierProductCostPlan = uc.ReadSupplierProductCostPlan.Execute
+				}
+				if uc.UpdateSupplierProductCostPlan != nil {
+					cpDeps.UpdateSupplierProductCostPlan = uc.UpdateSupplierProductCostPlan.Execute
+				}
+				if uc.DeleteSupplierProductCostPlan != nil {
+					cpDeps.DeleteSupplierProductCostPlan = uc.DeleteSupplierProductCostPlan.Execute
+				}
+			}
+			cpMod := costplanmod.NewModule(cpDeps)
+			cpMod.RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// P3 — SupplierProductPlan module
+		// =====================================================================
+		if cfg.wantSupplierProductPlan() {
+			sppDeps := &supplierproductplanmod.ModuleDeps{
+				Routes:       supplierProductPlanRoutes,
+				Labels:       supplierProductPlanLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+				SetSupplierProductPlanActive: func(fctx context.Context, id string, active bool) error {
+					_, err := db.Update(fctx, "supplier_product_plan", id, map[string]any{"active": active})
+					return err
+				},
+				SearchSupplierPlanURL: supplierProductPlanRoutes.SearchSupplierPlanURL,
+				SearchProductURL:      supplierProductPlanRoutes.SearchProductURL,
+			}
+			if useCases.Procurement != nil && useCases.Procurement.SupplierProductPlan != nil {
+				uc := useCases.Procurement.SupplierProductPlan
+				if uc.CreateSupplierProductPlan != nil {
+					sppDeps.CreateSupplierProductPlan = uc.CreateSupplierProductPlan.Execute
+				}
+				if uc.ReadSupplierProductPlan != nil {
+					sppDeps.ReadSupplierProductPlan = uc.ReadSupplierProductPlan.Execute
+				}
+				if uc.UpdateSupplierProductPlan != nil {
+					sppDeps.UpdateSupplierProductPlan = uc.UpdateSupplierProductPlan.Execute
+				}
+				if uc.DeleteSupplierProductPlan != nil {
+					sppDeps.DeleteSupplierProductPlan = uc.DeleteSupplierProductPlan.Execute
+				}
+				if uc.GetSupplierProductPlanListPageData != nil {
+					sppDeps.GetSupplierProductPlanListPageData = uc.GetSupplierProductPlanListPageData.Execute
+				}
+				if uc.GetSupplierProductPlanItemPageData != nil {
+					sppDeps.GetSupplierProductPlanItemPageData = uc.GetSupplierProductPlanItemPageData.Execute
+				}
+			}
+			supplierproductplanmod.NewModule(sppDeps).RegisterRoutes(ctx.Routes)
+		}
+
+		// =====================================================================
+		// P3 — SupplierProductCostPlan inline module (standalone routes; also
+		// mounted inside CostPlan via cpMod above when both wantCostPlan and
+		// wantSupplierProductCostPlan are active).
+		// =====================================================================
+		if cfg.wantSupplierProductCostPlan() && !cfg.wantCostPlan() {
+			// Only register standalone SPCP routes when CostPlan module is NOT
+			// already registered (which would mount the same URLs twice).
+			spcpDeps := &supplierproductcostplanmod.ModuleDeps{
+				CostPlanRoutes:               costPlanRoutes,
+				Labels:                       supplierProductCostPlanLabels,
+				CommonLabels:                 ctx.Common,
+				SearchSupplierProductPlanURL: costPlanRoutes.SearchSupplierProductPlanURL,
+			}
+			if useCases.Procurement != nil && useCases.Procurement.SupplierProductCostPlan != nil {
+				uc := useCases.Procurement.SupplierProductCostPlan
+				if uc.CreateSupplierProductCostPlan != nil {
+					spcpDeps.CreateSupplierProductCostPlan = uc.CreateSupplierProductCostPlan.Execute
+				}
+				if uc.ReadSupplierProductCostPlan != nil {
+					spcpDeps.ReadSupplierProductCostPlan = uc.ReadSupplierProductCostPlan.Execute
+				}
+				if uc.UpdateSupplierProductCostPlan != nil {
+					spcpDeps.UpdateSupplierProductCostPlan = uc.UpdateSupplierProductCostPlan.Execute
+				}
+				if uc.DeleteSupplierProductCostPlan != nil {
+					spcpDeps.DeleteSupplierProductCostPlan = uc.DeleteSupplierProductCostPlan.Execute
+				}
+				if uc.GetSupplierProductCostPlanItemPageData != nil {
+					spcpDeps.GetSupplierProductCostPlanItemPageData = uc.GetSupplierProductCostPlanItemPageData.Execute
+				}
+			}
+			spcpMod := supplierproductcostplanmod.NewModule(spcpDeps)
+			if spcpMod.Add != nil && costPlanRoutes.ProductCostAddURL != "" {
+				ctx.Routes.GET(costPlanRoutes.ProductCostAddURL, spcpMod.Add)
+				ctx.Routes.POST(costPlanRoutes.ProductCostAddURL, spcpMod.Add)
+			}
+			if spcpMod.Edit != nil && costPlanRoutes.ProductCostEditURL != "" {
+				ctx.Routes.GET(costPlanRoutes.ProductCostEditURL, spcpMod.Edit)
+				ctx.Routes.POST(costPlanRoutes.ProductCostEditURL, spcpMod.Edit)
+			}
+			if spcpMod.Delete != nil && costPlanRoutes.ProductCostDeleteURL != "" {
+				ctx.Routes.POST(costPlanRoutes.ProductCostDeleteURL, spcpMod.Delete)
+			}
+		}
+
+		// =====================================================================
+		// P3 — SupplierSubscription module
+		// =====================================================================
+		if cfg.wantSupplierSubscription() {
+			ssDeps := &suppliersubscriptionmod.ModuleDeps{
+				Routes:       supplierSubscriptionRoutes,
+				Labels:       supplierSubscriptionLabels,
+				CommonLabels: ctx.Common,
+				TableLabels:  centymoTableLabels,
+				SetSupplierSubscriptionActive: func(fctx context.Context, id string, active bool) error {
+					_, err := db.Update(fctx, "supplier_subscription", id, map[string]any{"active": active})
+					return err
+				},
+			}
+			if useCases.Procurement != nil && useCases.Procurement.SupplierSubscription != nil {
+				uc := useCases.Procurement.SupplierSubscription
+				if uc.CreateSupplierSubscription != nil {
+					ssDeps.CreateSupplierSubscription = uc.CreateSupplierSubscription.Execute
+				}
+				if uc.ReadSupplierSubscription != nil {
+					ssDeps.ReadSupplierSubscription = uc.ReadSupplierSubscription.Execute
+				}
+				if uc.UpdateSupplierSubscription != nil {
+					ssDeps.UpdateSupplierSubscription = uc.UpdateSupplierSubscription.Execute
+				}
+				if uc.DeleteSupplierSubscription != nil {
+					ssDeps.DeleteSupplierSubscription = uc.DeleteSupplierSubscription.Execute
+				}
+				if uc.GetSupplierSubscriptionListPageData != nil {
+					ssDeps.GetSupplierSubscriptionListPageData = uc.GetSupplierSubscriptionListPageData.Execute
+				}
+				if uc.GetSupplierSubscriptionItemPageData != nil {
+					ssDeps.GetSupplierSubscriptionItemPageData = uc.GetSupplierSubscriptionItemPageData.Execute
+				}
+			}
+			suppliersubscriptionmod.NewModule(ssDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		log.Println("  centymo commerce domain initialized")
@@ -2882,5 +3630,124 @@ func wireCustomizePlanForClient(useCases *consumer.UseCases, subActionDeps *subs
 			NewScheduleID:  resp.NewScheduleID,
 			Reused:         resp.Reused,
 		}, nil
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 — Revenue Run proto → view-type shim helpers
+// ---------------------------------------------------------------------------
+
+// revenueRunMillisToRFC3339 converts a proto epoch-millisecond int64 to
+// RFC3339 UTC. Returns "" when ms is zero (field absent / unset).
+func revenueRunMillisToRFC3339(ms int64) string {
+	if ms == 0 {
+		return ""
+	}
+	return time.UnixMilli(ms).UTC().Format(time.RFC3339)
+}
+
+// revenueRunScopeKindString maps the proto ScopeKind enum to a short
+// lowercase string used by the view layer ("subscription", "client",
+// "workspace", or "" for unspecified).
+func revenueRunScopeKindString(sk revenuerunpb.RevenueRunScopeKind) string {
+	switch sk {
+	case revenuerunpb.RevenueRunScopeKind_REVENUE_RUN_SCOPE_KIND_SUBSCRIPTION:
+		return "subscription"
+	case revenuerunpb.RevenueRunScopeKind_REVENUE_RUN_SCOPE_KIND_CLIENT:
+		return "client"
+	case revenuerunpb.RevenueRunScopeKind_REVENUE_RUN_SCOPE_KIND_WORKSPACE:
+		return "workspace"
+	default:
+		return ""
+	}
+}
+
+// revenueRunStatusString maps the proto Status enum to the lowercase string
+// expected by the view layer ("pending", "complete", "failed", or "").
+func revenueRunStatusString(s revenuerunpb.RevenueRunStatus) string {
+	switch s {
+	case revenuerunpb.RevenueRunStatus_REVENUE_RUN_STATUS_PENDING:
+		return "pending"
+	case revenuerunpb.RevenueRunStatus_REVENUE_RUN_STATUS_COMPLETE:
+		return "complete"
+	case revenuerunpb.RevenueRunStatus_REVENUE_RUN_STATUS_FAILED:
+		return "failed"
+	default:
+		return ""
+	}
+}
+
+// revenueRunAttemptOutcomeString maps the proto Outcome enum to the lowercase
+// string expected by the view layer ("created", "skipped", "errored", or "").
+func revenueRunAttemptOutcomeString(o revenuerunpb.RevenueRunAttemptOutcome) string {
+	switch o {
+	case revenuerunpb.RevenueRunAttemptOutcome_REVENUE_RUN_ATTEMPT_OUTCOME_CREATED:
+		return "created"
+	case revenuerunpb.RevenueRunAttemptOutcome_REVENUE_RUN_ATTEMPT_OUTCOME_SKIPPED:
+		return "skipped"
+	case revenuerunpb.RevenueRunAttemptOutcome_REVENUE_RUN_ATTEMPT_OUTCOME_ERRORED:
+		return "errored"
+	default:
+		return ""
+	}
+}
+
+// protoRevenueRunToRow translates a *revenuerunpb.RevenueRun proto message
+// to the view-typed revenuerunmod.RevenueRunRow.
+// IsStalePending is computed here: status=pending AND initiated_at is older
+// than REVENUE_RUN_PENDING_STALE_MINUTES (default 5) minutes ago.
+func protoRevenueRunToRow(r *revenuerunpb.RevenueRun) revenuerunmod.RevenueRunRow {
+	if r == nil {
+		return revenuerunmod.RevenueRunRow{}
+	}
+	initiatedAt := revenueRunMillisToRFC3339(r.GetInitiatedAt())
+	completedAt := revenueRunMillisToRFC3339(r.GetCompletedAt())
+	status := revenueRunStatusString(r.GetStatus())
+
+	// Compute IsStalePending: pending run whose initiated_at is > 5 minutes ago.
+	isPending := r.GetStatus() == revenuerunpb.RevenueRunStatus_REVENUE_RUN_STATUS_PENDING
+	isStalePending := false
+	if isPending && r.GetInitiatedAt() > 0 {
+		age := time.Since(time.UnixMilli(r.GetInitiatedAt()))
+		isStalePending = age > 5*time.Minute
+	}
+
+	return revenuerunmod.RevenueRunRow{
+		ID:             r.GetId(),
+		ScopeKind:      revenueRunScopeKindString(r.GetScopeKind()),
+		ClientID:       r.GetClientId(),
+		SubscriptionID: r.GetSubscriptionId(),
+		AsOfDate:       r.GetAsOfDate(),
+		Initiator:      r.GetInitiatedBy(),
+		InitiatedAt:    initiatedAt,
+		CompletedAt:    completedAt,
+		Status:         status,
+		SelectionCount: r.GetSelectionCount(),
+		CreatedCount:   r.GetCreatedCount(),
+		SkippedCount:   r.GetSkippedCount(),
+		ErroredCount:   r.GetErroredCount(),
+		IsStalePending: isStalePending,
+		Notes:          r.GetNotes(),
+	}
+}
+
+// protoRevenueRunAttemptToRow translates a *revenuerunpb.RevenueRunAttempt
+// proto message to the view-typed revenuerunmod.RevenueRunAttemptRow.
+func protoRevenueRunAttemptToRow(a *revenuerunpb.RevenueRunAttempt) revenuerunmod.RevenueRunAttemptRow {
+	if a == nil {
+		return revenuerunmod.RevenueRunAttemptRow{}
+	}
+	return revenuerunmod.RevenueRunAttemptRow{
+		ID:           a.GetId(),
+		RunID:        a.GetRunId(),
+		SubscriptionID: a.GetSubscriptionId(),
+		PeriodStart:  a.GetPeriodStart(),
+		PeriodEnd:    a.GetPeriodEnd(),
+		PeriodMarker: a.GetPeriodMarker(),
+		AttemptedAt:  revenueRunMillisToRFC3339(a.GetAttemptedAt()),
+		Outcome:      revenueRunAttemptOutcomeString(a.GetOutcome()),
+		RevenueID:    a.GetRevenueId(),
+		ErrorCode:    a.GetErrorCode(),
+		ErrorMessage: a.GetErrorMessage(),
 	}
 }

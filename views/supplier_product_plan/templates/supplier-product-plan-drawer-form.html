@@ -1,0 +1,40 @@
+{{define "supplier-product-plan-drawer-form"}}
+<form method="POST" action="{{.FormAction}}">
+  {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+  <div class="form-section">
+    <div class="form-group">
+      <label>{{.Labels.SupplierPlan}}</label>
+      <input type="hidden" name="supplier_plan_id" value="{{.SupplierPlanID}}">
+      <input type="text" placeholder="{{.Labels.SupplierPlanPlaceholder}}" value="{{.SupplierPlanLabel}}"
+             data-autocomplete-url="{{.SearchSupplierPlanURL}}"
+             data-autocomplete-target="supplier_plan_id">
+    </div>
+    <div class="form-group">
+      <label>{{.Labels.Product}}</label>
+      <input type="hidden" name="product_id" value="{{.ProductID}}">
+      <input type="text" placeholder="{{.Labels.ProductPlaceholder}}" value="{{.ProductLabel}}"
+             data-autocomplete-url="{{.SearchProductURL}}"
+             data-autocomplete-target="product_id">
+    </div>
+    <div class="form-group">
+      <label>{{.Labels.SupplierSKU}}</label>
+      <input type="text" name="supplier_sku" value="{{.SupplierSKU}}" placeholder="{{.Labels.SupplierSKUPlaceholder}}">
+    </div>
+    <div class="form-group">
+      <label>{{.Labels.SupplierUnit}}</label>
+      <input type="text" name="supplier_unit" value="{{.SupplierUnit}}" placeholder="{{.Labels.SupplierUnitPlaceholder}}">
+    </div>
+  </div>
+  {{if .IsEdit}}
+  <div class="form-section">
+    <label>
+      <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+      {{.Labels.Active}}
+    </label>
+  </div>
+  {{end}}
+  <div class="form-actions">
+    <button type="submit">Save</button>
+  </div>
+</form>
+{{end}}

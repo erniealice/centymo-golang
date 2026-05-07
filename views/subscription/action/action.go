@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	pyeza "github.com/erniealice/pyeza-golang"
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
 
 	centymo "github.com/erniealice/centymo-golang"
@@ -27,8 +28,9 @@ import (
 
 // Deps holds dependencies for subscription action handlers.
 type Deps struct {
-	Routes centymo.SubscriptionRoutes
-	Labels centymo.SubscriptionLabels
+	Routes       centymo.SubscriptionRoutes
+	Labels       centymo.SubscriptionLabels
+	CommonLabels pyeza.CommonLabels
 
 	CreateSubscription  func(ctx context.Context, req *subscriptionpb.CreateSubscriptionRequest) (*subscriptionpb.CreateSubscriptionResponse, error)
 	ReadSubscription    func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
@@ -100,6 +102,15 @@ type Deps struct {
 	// the subscription block. Used by the retroactive spawn handler. nil-safe.
 	MaterializeJobsForSubscription func(ctx context.Context, subscriptionID string, spawnJobs bool) (jobCount int, skippedReason string, err error)
 
+	// ListRevenueRunCandidates enumerates un-invoiced billing periods for the
+	// subscription. Wired by block.go when the use case is available. nil-safe —
+	// the revenue-run drawer falls back to an empty candidate list.
+	ListRevenueRunCandidates func(ctx context.Context, scope RevenueRunScopeAction) ([]RevenueRunCandidateAction, string, error)
+
+	// GenerateRevenueRun executes the batch revenue generation run for this
+	// subscription. Wired by block.go. nil-safe — POST returns an error when unset.
+	GenerateRevenueRun func(ctx context.Context, scope RevenueRunScopeAction, sels RevenueRunSelectionsAction) (*RevenueRunResultAction, error)
+
 	// 2026-04-30 cyclic-subscription-jobs plan §5.3 / Phase D — adapter for
 	// espyna's MaterializeInstanceJobsForSubscription consumer. Wired by
 	// centymo block.go after both this Phase D and the parallel block.go-
@@ -156,6 +167,72 @@ type CustomizePlanForClientResponse struct {
 	NewPricePlanID string
 	NewScheduleID  string
 	Reused         bool
+}
+
+// ---------------------------------------------------------------------------
+// Revenue-run view-local types
+//
+// Defined here (in the action package) so that subscriptionaction.Deps can
+// carry the callback signatures. The revenue_run sub-package imports these
+// via its own identically-shaped local types; block.go translates consumer.*
+// shapes into these types when wiring the callbacks. Plan rule D12: types are
+// duplicated per package rather than shared to keep view packages decoupled
+// from each other.
+// ---------------------------------------------------------------------------
+
+// RevenueRunScopeAction is the view-layer scope for revenue-run callbacks.
+// (Defined in subscriptionaction to avoid an import cycle with the revenue_run
+// sub-package; the sub-package has its own mirror type.)
+type RevenueRunScopeAction struct {
+	WorkspaceID    string
+	ClientID       string
+	SubscriptionID string
+	AsOfDate       string
+	Cursor         string
+	Limit          int32
+}
+
+// RevenueRunCandidateAction is the view-layer representation of one pending period.
+type RevenueRunCandidateAction struct {
+	SubscriptionID    string
+	SubscriptionName  string
+	ClientID          string
+	ClientName        string
+	PlanName          string
+	BillingCycleLabel string
+	Currency          string
+	PeriodStart       string
+	PeriodEnd         string
+	PeriodLabel       string
+	PeriodMarker      string
+	Amount            int64
+	AmountDisplay     string
+	LineItemCount     int
+	Eligible          bool
+	BlockerReason     string
+}
+
+// SelectedRevenueRunCandidateAction is one confirmed selection.
+type SelectedRevenueRunCandidateAction struct {
+	SubscriptionID string
+	PeriodStart    string
+	PeriodEnd      string
+	PeriodMarker   string
+}
+
+// RevenueRunSelectionsAction carries operator selections for GenerateRevenueRun.
+type RevenueRunSelectionsAction struct {
+	ExplicitList []SelectedRevenueRunCandidateAction
+	FilterToken  string
+}
+
+// RevenueRunResultAction is the output of a GenerateRevenueRun call.
+type RevenueRunResultAction struct {
+	RunID   string
+	Status  string
+	Created int32
+	Skipped int32
+	Errored int32
 }
 
 // buildFormLabels builds a form.Labels from centymo.SubscriptionLabels.

@@ -60,9 +60,8 @@ type VariantPageData struct {
 	// Images tab
 	Images []ImageData
 	// Attachments tab
-	AttachmentTable     *types.TableConfig
-	AttachmentUploadURL string
-	Labels              centymo.ProductLabels
+	AttachmentTable *types.TableConfig
+	Labels          centymo.ProductLabels
 }
 
 // NewPageView creates the variant detail view (full page).
@@ -190,9 +189,8 @@ func NewPageView(deps *DetailViewDeps) view.View {
 				if resp != nil {
 					items = resp.GetData()
 				}
-				pageData.AttachmentTable = attachment.BuildTable(items, cfg, vid)
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id, "vid", vid)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantAttachmentUploadURL, "id", id, "vid", vid)
 		}
 
 		return view.OK("variant-detail", pageData)
@@ -283,9 +281,8 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				if resp != nil {
 					items = resp.GetData()
 				}
-				pageData.AttachmentTable = attachment.BuildTable(items, cfg, vid)
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id, "vid", vid)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantAttachmentUploadURL, "id", id, "vid", vid)
 		}
 
 		templateName := "variant-tab-" + tab

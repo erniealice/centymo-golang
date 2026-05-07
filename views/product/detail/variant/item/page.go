@@ -56,9 +56,8 @@ type StockDetailPageData struct {
 	SerialTable   *types.TableConfig
 	SerialSummary *SerialSummary
 	// Attachments tab
-	AttachmentTable     *types.TableConfig
-	AttachmentUploadURL string
-	Labels              centymo.ProductLabels
+	AttachmentTable *types.TableConfig
+	Labels          centymo.ProductLabels
 }
 
 // NewPageView creates the inventory item detail view (full page).
@@ -181,9 +180,8 @@ func NewPageView(deps *variant.DetailViewDeps) view.View {
 				if resp != nil {
 					items = resp.GetData()
 				}
-				pageData.AttachmentTable = attachment.BuildTable(items, cfg, itemID)
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, productID, "vid", variantID, "iid", itemID)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantStockAttachmentUploadURL, "id", productID, "vid", variantID, "iid", itemID)
 		}
 
 		return view.OK("variant-stock-detail", pageData)
@@ -273,9 +271,8 @@ func NewTabAction(deps *variant.DetailViewDeps) view.View {
 				if resp != nil {
 					items = resp.GetData()
 				}
-				pageData.AttachmentTable = attachment.BuildTable(items, cfg, itemID)
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, productID, "vid", variantID, "iid", itemID)
 			}
-			pageData.AttachmentUploadURL = route.ResolveURL(deps.Routes.VariantStockAttachmentUploadURL, "id", productID, "vid", variantID, "iid", itemID)
 		}
 
 		templateName := "stock-tab-" + tab

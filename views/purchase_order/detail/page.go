@@ -6,12 +6,14 @@ import (
 	"log"
 
 	centymo "github.com/erniealice/centymo-golang"
+	"github.com/erniealice/hybra-golang/views/attachment"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
 )
@@ -35,6 +37,8 @@ type DetailViewDeps struct {
 
 	ReadPurchaseOrder          func(ctx context.Context, req *purchaseorderpb.ReadPurchaseOrderRequest) (*purchaseorderpb.ReadPurchaseOrderResponse, error)
 	ListPurchaseOrderLineItems func(ctx context.Context, req *purchaseorderlineitempb.ListPurchaseOrderLineItemsRequest) (*purchaseorderlineitempb.ListPurchaseOrderLineItemsResponse, error)
+
+	attachment.AttachmentOps
 }
 
 // PageData holds the data for the purchase order detail page.
@@ -50,6 +54,7 @@ type PageData struct {
 	TotalAmount        string
 	SetStatusURL       string
 	ConfirmReceiptURL  string
+	AttachmentTable    *types.TableConfig
 }
 
 // purchaseOrderToMap converts a PurchaseOrder proto to a map for template use.
@@ -107,9 +112,14 @@ func buildTabItems(l centymo.ExpenditureLabels, id string, routes centymo.Expend
 	if tabLineItems == "" {
 		tabLineItems = "Line Items"
 	}
+	tabAttachmentsLabel := l.PurchaseOrder.Detail.TabAttachments
+	if tabAttachmentsLabel == "" {
+		tabAttachmentsLabel = "Attachments"
+	}
 	return []pyeza.TabItem{
 		{Key: "info", Label: tabDetails, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "items", Label: tabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
+		{Key: "attachments", Label: tabAttachmentsLabel, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 	}
 }
 
@@ -301,6 +311,15 @@ func NewView(deps *DetailViewDeps) view.View {
 					pageData.TotalAmount = cell.Currency + " " + cell.Value
 				}
 			}
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				var attachItems []*attachmentpb.Attachment
+				if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+					attachItems = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
+			}
 		}
 
 		return view.OK("purchase-order-detail", pageData)
@@ -366,9 +385,21 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 					pageData.TotalAmount = cell.Currency + " " + cell.Value
 				}
 			}
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				var attachItems []*attachmentpb.Attachment
+				if resp, err := deps.ListAttachments(ctx, cfg.EntityType, id); err == nil && resp != nil {
+					attachItems = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(attachItems, cfg, id)
+			}
 		}
 
 		templateName := "purchase-order-tab-" + tab
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
 		return view.OK(templateName, pageData)
 	})
 }

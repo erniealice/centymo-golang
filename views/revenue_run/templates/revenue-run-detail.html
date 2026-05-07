@@ -1,0 +1,164 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "revenue-run-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "revenue-run-detail-content"}}
+<div class="page-content detail-layout"
+     data-page-title="{{.Title}}"
+     data-page-css="/assets/css/centymo/centymo-revenue-run-detail.css?v={{.CacheVersion}}">
+
+    {{/* ─── Tabs ─── */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "revenue-run-tabs")}}
+    </div>
+
+    {{/* ─── Tab Body ─── */}}
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "summary"}}
+        {{template "revenue-run-summary-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "selections"}}
+        {{template "revenue-run-selections-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "results"}}
+        {{template "revenue-run-results-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "invoices"}}
+        {{template "revenue-run-invoices-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "audit-history"}}
+        {{template "revenue-run-audit-history-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "attachments"}}
+        {{template "attachment-tab" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    SUMMARY TAB
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "revenue-run-summary-tab"}}
+<div class="tab-scroll">
+
+    {{/* ── Stale-pending warning banner ── */}}
+    {{if .IsPossiblyInterrupted}}
+    {{template "alert" (dict
+        "State"   "warning"
+        "Message" .Labels.Detail.Summary.PossiblyInterruptedNote
+    )}}
+    {{end}}
+
+    {{/* ── Totals stat cards ── */}}
+    <div class="stats-row">
+        {{template "stat-card" (dict
+            "Icon"  "icon-check-circle"
+            "Value" (printf "%d" .Run.CreatedCount)
+            "Label" .Labels.List.Columns.Created
+            "Color" "sage"
+        )}}
+        {{template "stat-card" (dict
+            "Icon"  "icon-skip-forward"
+            "Value" (printf "%d" .Run.SkippedCount)
+            "Label" .Labels.List.Columns.Skipped
+            "Color" "amber"
+        )}}
+        {{template "stat-card" (dict
+            "Icon"  "icon-x-circle"
+            "Value" (printf "%d" .Run.ErroredCount)
+            "Label" .Labels.List.Columns.Errored
+            "Color" "terracotta"
+        )}}
+    </div>
+
+    {{/* ── Info sections ── */}}
+    {{template "pyeza-info-sections" (dict
+        "TestID"   "revenue-run-summary-info"
+        "Sections" (list
+            (dict "Title" ""
+                  "Rows" (list
+                      (dict "Label" .Labels.Detail.Summary.Status
+                            "Value" (printf "%s" .Run.Status))
+                      (dict "Label" .Labels.Detail.Summary.Scope
+                            "Value" (printf "%s" .Run.ScopeLabel))
+                      (dict "Label" .Labels.Detail.Summary.AsOfDate
+                            "Value" (printf "%s" .Run.AsOfDate))
+                      (dict "Label" .Labels.Detail.Summary.Initiator
+                            "Value" (printf "%s" .Run.InitiatorName))
+                      (dict "Label" .Labels.Detail.Summary.InitiatedAt
+                            "Value" (printf "%s" .Run.InitiatedAt))
+                      (dict "Label" .Labels.Detail.Summary.CompletedAt
+                            "Value" (printf "%s" .Run.CompletedAt))
+                  )
+            )
+        )
+    )}}
+
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    SELECTIONS TAB
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "revenue-run-selections-tab"}}
+<div class="tab-scroll">
+    {{if .SelectionsTable}}
+        {{template "table-card" .SelectionsTable}}
+    {{else}}
+        {{template "empty-state" (dict
+            "Icon"  "icon-list"
+            "Title" .Labels.Detail.Selections.EmptyTitle
+            "Desc"  .Labels.Detail.Selections.EmptyMessage
+        )}}
+    {{end}}
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    RESULTS TAB
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "revenue-run-results-tab"}}
+<div class="tab-scroll">
+    {{if .ResultsTable}}
+        {{template "table-card" .ResultsTable}}
+    {{else}}
+        {{template "empty-state" (dict
+            "Icon"  "icon-check-circle"
+            "Title" .Labels.Detail.Results.EmptyTitle
+            "Desc"  .Labels.Detail.Results.EmptyMessage
+        )}}
+    {{end}}
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    INVOICES TAB
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "revenue-run-invoices-tab"}}
+<div class="tab-scroll">
+    {{if .InvoicesTable}}
+        {{template "table-card" .InvoicesTable}}
+    {{else}}
+        {{template "empty-state" (dict
+            "Icon"  "icon-file-text"
+            "Title" .Labels.Detail.Invoices.EmptyTitle
+            "Desc"  .Labels.Detail.Invoices.EmptyMessage
+        )}}
+    {{end}}
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    AUDIT HISTORY TAB — deferred (coming soon)
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "revenue-run-audit-history-tab"}}
+<div class="tab-scroll">
+    {{template "alert" (dict
+        "State"   "info"
+        "Message" .Labels.Detail.Invoices.AuditHistoryComingSoon
+    )}}
+</div>
+{{end}}
