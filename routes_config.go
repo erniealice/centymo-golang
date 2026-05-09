@@ -2202,6 +2202,9 @@ type SupplierSubscriptionRoutes struct {
 	// Search autocomplete endpoints for the add/edit drawer
 	SearchCostPlanURL  string `json:"search_cost_plan_url"`
 	SearchSupplierURL  string `json:"search_supplier_url"`
+
+	// Recognition CTA — POST; opens the recognize-expense drawer on the detail page.
+	RecognizeExpenseURL string `json:"recognize_expense_url"`
 }
 
 // DefaultSupplierSubscriptionRoutes returns a SupplierSubscriptionRoutes using route constants.
@@ -2220,8 +2223,9 @@ func DefaultSupplierSubscriptionRoutes() SupplierSubscriptionRoutes {
 		SetStatusURL:     SupplierSubscriptionSetStatusURL,
 		BulkSetStatusURL: SupplierSubscriptionBulkSetStatusURL,
 		TabActionURL:     SupplierSubscriptionTabActionURL,
-		SearchCostPlanURL:  SupplierSubscriptionSearchCostPlanURL,
-		SearchSupplierURL:  SupplierSubscriptionSearchSupplierURL,
+		SearchCostPlanURL:   SupplierSubscriptionSearchCostPlanURL,
+		SearchSupplierURL:   SupplierSubscriptionSearchSupplierURL,
+		RecognizeExpenseURL: SupplierSubscriptionRecognizeExpenseURL,
 	}
 }
 
@@ -2238,8 +2242,9 @@ func (r SupplierSubscriptionRoutes) RouteMap() map[string]string {
 		"supplier_subscription.set_status":    r.SetStatusURL,
 		"supplier_subscription.bulk_set_status": r.BulkSetStatusURL,
 		"supplier_subscription.tab_action":    r.TabActionURL,
-		"supplier_subscription.search_cost_plan": r.SearchCostPlanURL,
-		"supplier_subscription.search_supplier":  r.SearchSupplierURL,
+		"supplier_subscription.search_cost_plan":   r.SearchCostPlanURL,
+		"supplier_subscription.search_supplier":    r.SearchSupplierURL,
+		"supplier_subscription.recognize_expense":  r.RecognizeExpenseURL,
 	}
 }
 

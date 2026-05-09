@@ -2,18 +2,119 @@
 {{template "app-shell" .}}
 {{end}}
 
+{{define "supplier-subscription-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Record.GetName}}">
+    {{/* Recognize Expense CTA — mirrors selling-side "Recognize Revenue" on subscription detail. */}}
+    {{if .RecognizeExpenseURL}}
+    <div class="detail-header-actions">
+        <button type="button"
+                class="btn btn--primary"
+                data-testid="supplier-subscription-recognize-expense"
+                hx-get="{{.RecognizeExpenseURL}}"
+                hx-target="#sheetContent"
+                hx-swap="innerHTML">
+            Recognize Expense
+        </button>
+    </div>
+    {{end}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "supplier-subscription-tabs")}}
+    </div>
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+        {{template "supplier-subscription-tab-info" .}}
+        {{else if eq .ActiveTab "cost_plan"}}
+        {{template "supplier-subscription-tab-cost_plan" .}}
+        {{else if eq .ActiveTab "recognitions"}}
+        {{template "supplier-subscription-tab-recognitions" .}}
+        {{else if eq .ActiveTab "activity"}}
+        {{template "supplier-subscription-tab-activity" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
 {{define "supplier-subscription-detail-tab-info"}}
-<div class="tab-pane" id="tab-info">
-  <p>{{.Record.GetName}}</p>
+{{template "supplier-subscription-tab-info" .}}
+{{end}}
+
+{{define "supplier-subscription-tab-info"}}
+<div class="tab-pane tab-scroll" id="tab-info">
+  <h3 class="detail-section-title">{{.Record.GetName}}</h3>
+  <div class="detail-info-grid">
+    <div class="detail-info-item">
+      <span class="detail-info-label">Code</span>
+      <span class="detail-info-value mono">{{.Record.GetCode}}</span>
+    </div>
+    <div class="detail-info-item">
+      <span class="detail-info-label">Status</span>
+      <span class="detail-info-value">
+        {{if .Record.GetActive}}<span class="badge badge--success">Active</span>{{else}}<span class="badge badge--default">Inactive</span>{{end}}
+      </span>
+    </div>
+  </div>
 </div>
 {{end}}
 
 {{define "supplier-subscription-detail-tab-cost_plan"}}
+{{template "supplier-subscription-tab-cost_plan" .}}
+{{end}}
+
+{{define "supplier-subscription-tab-cost_plan"}}
 <div class="tab-pane" id="tab-cost_plan">
 </div>
 {{end}}
 
+{{/* Linked Recognitions tab — mirrors selling-side "Invoices" tab on subscription detail.
+     Queries expense_recognition rows where supplier_subscription_id = this subscription's id.
+     FK was added in Wave 1 (plan §P2); use case threads it in Wave 2 (plan §P3). */}}
+{{define "supplier-subscription-detail-tab-recognitions"}}
+{{template "supplier-subscription-tab-recognitions" .}}
+{{end}}
+
+{{define "supplier-subscription-tab-recognitions"}}
+<div class="tab-scroll"
+     data-testid="supplier-subscription-tab-recognitions"
+     hx-trigger="expense-recognitions-table from:body"
+     hx-get="{{.RecognitionsTabRefreshURL}}"
+     hx-target="this"
+     hx-swap="outerHTML">
+    {{if .Recognitions}}
+    <table class="data-table data-table--compact">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Recognition Date</th>
+                <th class="cell-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Recognitions}}
+            <tr data-testid="expense-recognition-row-{{.ID}}"
+                {{if .DetailURL}}class="row--clickable" onclick="location.href='{{.DetailURL}}'"{{end}}>
+                <td>{{.Name}}</td>
+                <td><span class="badge badge--{{.StatusVariant}}">{{.Status}}</span></td>
+                <td>{{.RecognitionDate}}</td>
+                <td class="cell-right mono">{{template "table-cell-money" .TotalAmount}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <div class="empty-state">
+        <h4 class="empty-state-title">No recognitions yet</h4>
+        <p class="empty-state-message">Expense recognitions linked to this subscription will appear here.</p>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
 {{define "supplier-subscription-detail-tab-activity"}}
+{{template "supplier-subscription-tab-activity" .}}
+{{end}}
+
+{{define "supplier-subscription-tab-activity"}}
 <div class="tab-pane" id="tab-activity">
 </div>
 {{end}}

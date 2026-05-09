@@ -108,6 +108,17 @@ func NewModule(deps *ModuleDeps) *Module {
 		SearchSupplierProductPlanURL:  deps.SearchSupplierProductPlanURL,
 	}
 
+	lineDeps := &costplanaction.CostPlanLineDeps{
+		CostPlanRoutes:                         deps.Routes,
+		Labels:                                 deps.ProductCostLabels,
+		CommonLabels:                           deps.CommonLabels,
+		CreateSupplierProductCostPlan:          deps.CreateSupplierProductCostPlan,
+		ReadSupplierProductCostPlan:            deps.ReadSupplierProductCostPlan,
+		UpdateSupplierProductCostPlan:          deps.UpdateSupplierProductCostPlan,
+		DeleteSupplierProductCostPlan:          deps.DeleteSupplierProductCostPlan,
+		SearchSupplierProductPlanURL:           deps.SearchSupplierProductPlanURL,
+	}
+
 	return &Module{
 		routes:            deps.Routes,
 		Dashboard:         listView,
@@ -121,9 +132,9 @@ func NewModule(deps *ModuleDeps) *Module {
 		BulkSetStatus:     costplanaction.NewBulkSetStatusAction(actionDeps),
 		Detail:            costplandetail.NewView(detailDeps),
 		TabAction:         costplandetail.NewTabAction(detailDeps),
-		ProductCostAdd:    nil, // stub — inline SPCP add action wired via block.go
-		ProductCostEdit:   nil, // stub
-		ProductCostDelete: nil, // stub
+		ProductCostAdd:    costplanaction.NewCostPlanLineAddAction(lineDeps),
+		ProductCostEdit:   costplanaction.NewCostPlanLineEditAction(lineDeps),
+		ProductCostDelete: costplanaction.NewCostPlanLineDeleteAction(lineDeps),
 	}
 }
 

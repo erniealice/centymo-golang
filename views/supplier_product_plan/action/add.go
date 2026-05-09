@@ -26,6 +26,7 @@ func NewAddAction(deps *Deps) view.View {
 				SearchSupplierPlanURL: deps.SearchSupplierPlanURL,
 				SearchProductURL:      deps.SearchProductURL,
 				Labels:                buildFormLabels(deps.Labels),
+				CommonLabels:          deps.CommonLabels,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {

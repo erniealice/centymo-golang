@@ -8110,11 +8110,12 @@ type SupplierSubscriptionColumnLabels struct {
 }
 
 type SupplierSubscriptionTabLabels struct {
-	Info                 string `json:"info"`
-	CostPlan             string `json:"costPlan"`
-	LinkedExpenditures   string `json:"linkedExpenditures"`
-	LinkedPurchaseOrders string `json:"linkedPurchaseOrders"`
-	Activity             string `json:"activity"`
+	Info                  string `json:"info"`
+	CostPlan              string `json:"costPlan"`
+	LinkedExpenditures    string `json:"linkedExpenditures"`
+	LinkedPurchaseOrders  string `json:"linkedPurchaseOrders"`
+	LinkedRecognitions    string `json:"linkedRecognitions"`
+	Activity              string `json:"activity"`
 }
 
 type SupplierSubscriptionDetailLabels struct {
@@ -8190,6 +8191,7 @@ type SupplierSubscriptionConfirmLabels struct {
 
 type SupplierSubscriptionButtonLabels struct {
 	AddSupplierSubscription string `json:"addSupplierSubscription"`
+	RecognizeExpense        string `json:"recognizeExpense"`
 }
 
 type SupplierSubscriptionBulkLabels struct {
@@ -8245,6 +8247,7 @@ func DefaultSupplierSubscriptionLabels() SupplierSubscriptionLabels {
 			CostPlan:             "Cost Plan",
 			LinkedExpenditures:   "Expenditures",
 			LinkedPurchaseOrders: "Purchase Orders",
+			LinkedRecognitions:   "Recognitions",
 			Activity:             "Activity",
 		},
 		Detail: SupplierSubscriptionDetailLabels{
@@ -8315,6 +8318,7 @@ func DefaultSupplierSubscriptionLabels() SupplierSubscriptionLabels {
 		},
 		Buttons: SupplierSubscriptionButtonLabels{
 			AddSupplierSubscription: "Add Supplier Subscription",
+			RecognizeExpense:        "Recognize Expense",
 		},
 		Bulk: SupplierSubscriptionBulkLabels{
 			Delete: "Delete",

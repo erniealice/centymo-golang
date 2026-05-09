@@ -21,9 +21,10 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("cost-schedule-drawer-form", &form.Data{
-				FormAction: deps.Routes.AddURL,
-				Active:     true,
-				Labels:     buildFormLabels(deps.Labels),
+				FormAction:   deps.Routes.AddURL,
+				Active:       true,
+				Labels:       buildFormLabels(deps.Labels),
+				CommonLabels: deps.CommonLabels,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {

@@ -39,5 +39,6 @@ type Data struct {
 	SearchSupplierPlanURL string
 	SearchProductURL      string
 
-	Labels Labels
+	Labels       Labels
+	CommonLabels any
 }

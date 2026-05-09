@@ -41,13 +41,14 @@ func NewEditAction(deps *Deps) view.View {
 				record = resp.GetData()[0]
 			}
 			return view.OK("cost-schedule-drawer-form", &form.Data{
-				FormAction:  route.ResolveURL(deps.Routes.EditURL, "id", id),
-				IsEdit:      true,
-				ID:          id,
-				Name:        record.GetName(),
-				Description: record.GetDescription(),
-				Active:      record.GetActive(),
-				Labels:      buildFormLabels(deps.Labels),
+				FormAction:   route.ResolveURL(deps.Routes.EditURL, "id", id),
+				IsEdit:       true,
+				ID:           id,
+				Name:         record.GetName(),
+				Description:  record.GetDescription(),
+				Active:       record.GetActive(),
+				Labels:       buildFormLabels(deps.Labels),
+				CommonLabels: deps.CommonLabels,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {

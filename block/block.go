@@ -72,10 +72,10 @@ import (
 	suppliercontractpricescheduleinemod "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule_line"
 	// P3 — six new procurement view modules (20260506-supplier-subscriptions).
 	costplanmod "github.com/erniealice/centymo-golang/views/cost_plan"
+	costplanaction "github.com/erniealice/centymo-golang/views/cost_plan/action"
 	costschedulemod "github.com/erniealice/centymo-golang/views/cost_schedule"
 	supplierplanmod "github.com/erniealice/centymo-golang/views/supplier_plan"
 	supplierproductplanmod "github.com/erniealice/centymo-golang/views/supplier_product_plan"
-	supplierproductcostplanmod "github.com/erniealice/centymo-golang/views/supplier_product_cost_plan"
 	suppliersubscriptionmod "github.com/erniealice/centymo-golang/views/supplier_subscription"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
@@ -3506,7 +3506,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if cfg.wantSupplierProductCostPlan() && !cfg.wantCostPlan() {
 			// Only register standalone SPCP routes when CostPlan module is NOT
 			// already registered (which would mount the same URLs twice).
-			spcpDeps := &supplierproductcostplanmod.ModuleDeps{
+			// Action handlers now live in cost_plan/action (templates-only refactor
+			// per docs/plan/20260509-buying-selling-parity-audit plan.md §5.4 θ).
+			spcpDeps := &costplanaction.CostPlanLineDeps{
 				CostPlanRoutes:               costPlanRoutes,
 				Labels:                       supplierProductCostPlanLabels,
 				CommonLabels:                 ctx.Common,
@@ -3530,17 +3532,18 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 					spcpDeps.GetSupplierProductCostPlanItemPageData = uc.GetSupplierProductCostPlanItemPageData.Execute
 				}
 			}
-			spcpMod := supplierproductcostplanmod.NewModule(spcpDeps)
-			if spcpMod.Add != nil && costPlanRoutes.ProductCostAddURL != "" {
-				ctx.Routes.GET(costPlanRoutes.ProductCostAddURL, spcpMod.Add)
-				ctx.Routes.POST(costPlanRoutes.ProductCostAddURL, spcpMod.Add)
+			if costPlanRoutes.ProductCostAddURL != "" {
+				addView := costplanaction.NewCostPlanLineAddAction(spcpDeps)
+				ctx.Routes.GET(costPlanRoutes.ProductCostAddURL, addView)
+				ctx.Routes.POST(costPlanRoutes.ProductCostAddURL, addView)
 			}
-			if spcpMod.Edit != nil && costPlanRoutes.ProductCostEditURL != "" {
-				ctx.Routes.GET(costPlanRoutes.ProductCostEditURL, spcpMod.Edit)
-				ctx.Routes.POST(costPlanRoutes.ProductCostEditURL, spcpMod.Edit)
+			if costPlanRoutes.ProductCostEditURL != "" {
+				editView := costplanaction.NewCostPlanLineEditAction(spcpDeps)
+				ctx.Routes.GET(costPlanRoutes.ProductCostEditURL, editView)
+				ctx.Routes.POST(costPlanRoutes.ProductCostEditURL, editView)
 			}
-			if spcpMod.Delete != nil && costPlanRoutes.ProductCostDeleteURL != "" {
-				ctx.Routes.POST(costPlanRoutes.ProductCostDeleteURL, spcpMod.Delete)
+			if costPlanRoutes.ProductCostDeleteURL != "" {
+				ctx.Routes.POST(costPlanRoutes.ProductCostDeleteURL, costplanaction.NewCostPlanLineDeleteAction(spcpDeps))
 			}
 		}
 

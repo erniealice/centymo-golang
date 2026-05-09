@@ -1,7 +1,8 @@
 package form
 
-// Labels holds all UI labels for the supplier_product_cost_plan inline drawer form.
-type Labels struct {
+// CostPlanLineLabels holds all UI labels for the SupplierProductCostPlan
+// inline drawer form (rendered within the CostPlan Lines tab).
+type CostPlanLineLabels struct {
 	SectionIdentification string
 	SectionRelationships  string
 	SectionConfiguration  string
@@ -22,8 +23,9 @@ type Labels struct {
 	TreatmentMinimumCommitment string
 }
 
-// Data holds the form state for the supplier_product_cost_plan inline drawer form.
-type Data struct {
+// CostPlanLineData holds the form state for the SupplierProductCostPlan
+// inline drawer form.
+type CostPlanLineData struct {
 	FormAction string
 	IsEdit     bool
 	ID         string
@@ -39,5 +41,6 @@ type Data struct {
 
 	SearchSupplierProductPlanURL string
 
-	Labels Labels
+	Labels       CostPlanLineLabels
+	CommonLabels any
 }

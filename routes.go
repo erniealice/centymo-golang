@@ -636,8 +636,9 @@ const (
 	SupplierSubscriptionSetStatusURL     = "/action/supplier-subscription/set-status"
 	SupplierSubscriptionBulkSetStatusURL = "/action/supplier-subscription/bulk-set-status"
 	SupplierSubscriptionTabActionURL     = "/action/supplier-subscription/detail/{id}/tab/{tab}"
-	SupplierSubscriptionSearchCostPlanURL = "/action/supplier-subscription/search/cost-plans"
-	SupplierSubscriptionSearchSupplierURL = "/action/supplier-subscription/search/suppliers"
+	SupplierSubscriptionSearchCostPlanURL   = "/action/supplier-subscription/search/cost-plans"
+	SupplierSubscriptionSearchSupplierURL   = "/action/supplier-subscription/search/suppliers"
+	SupplierSubscriptionRecognizeExpenseURL = "/action/supplier-subscription/recognize-expense/{id}"
 
 	// ---------------------------------------------------------------------------
 	// P3 — CostSchedule route constants

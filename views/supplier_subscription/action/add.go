@@ -38,6 +38,7 @@ func NewAddAction(deps *Deps) view.View {
 				SearchCostPlanURL: deps.Routes.SearchCostPlanURL,
 				SearchSupplierURL: deps.Routes.SearchSupplierURL,
 				Labels:            labels,
+				CommonLabels:      deps.CommonLabels,
 			})
 		}
 

@@ -12,6 +12,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	suppliersubscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/supplier_subscription"
 )
 
@@ -32,22 +33,38 @@ type ModuleDeps struct {
 	// SetSupplierSubscriptionActive performs a raw DB update to toggle active.
 	// Required because proto3 omits bool=false on serialization.
 	SetSupplierSubscriptionActive func(ctx context.Context, id string, active bool) error
+
+	// ListExpenseRecognitions is used to populate the "Linked Recognitions" tab on
+	// the supplier_subscription detail page. Post-filtered by supplier_subscription_id.
+	// Nil-safe — tab renders empty state when unset.
+	ListExpenseRecognitions func(ctx context.Context, req *expenserecognitionpb.ListExpenseRecognitionsRequest) (*expenserecognitionpb.ListExpenseRecognitionsResponse, error)
+
+	// ExpenseRecognitionDetailURL is the path template for deep-linking to an
+	// expense_recognition detail page from the Linked Recognitions tab.
+	// Empty string disables row click-through (rows still render, just not linked).
+	ExpenseRecognitionDetailURL string
+
+	// RecognizeFromExpenditure is the espyna use case called by the
+	// "Recognize Expense" CTA on the detail page.
+	// Nil-safe — CTA is hidden when this dep is unset.
+	RecognizeFromExpenditure func(ctx context.Context, req *expenserecognitionpb.RecognizeFromExpenditureRequest) (*expenserecognitionpb.RecognizeFromExpenditureResponse, error)
 }
 
 // Module holds all constructed supplier_subscription views.
 type Module struct {
-	routes        centymo.SupplierSubscriptionRoutes
-	Dashboard     view.View
-	List          view.View
-	Table         view.View
-	Add           view.View
-	Edit          view.View
-	Delete        view.View
-	BulkDelete    view.View
-	SetStatus     view.View
-	BulkSetStatus view.View
-	Detail        view.View
-	TabAction     view.View
+	routes          centymo.SupplierSubscriptionRoutes
+	Dashboard       view.View
+	List            view.View
+	Table           view.View
+	Add             view.View
+	Edit            view.View
+	Delete          view.View
+	BulkDelete      view.View
+	SetStatus       view.View
+	BulkSetStatus   view.View
+	Detail          view.View
+	TabAction       view.View
+	RecognizeExpense view.View
 }
 
 // NewModule creates the supplier_subscription module with all views wired.
@@ -81,21 +98,31 @@ func NewModule(deps *ModuleDeps) *Module {
 		TableLabels:                         deps.TableLabels,
 		ReadSupplierSubscription:            deps.ReadSupplierSubscription,
 		GetSupplierSubscriptionItemPageData: deps.GetSupplierSubscriptionItemPageData,
+		ListExpenseRecognitions:             deps.ListExpenseRecognitions,
+		ExpenseRecognitionDetailURL:         deps.ExpenseRecognitionDetailURL,
+	}
+
+	recognizeExpenseDeps := &suppliersubscriptionaction.RecognizeExpenseDeps{
+		Routes:                              deps.Routes,
+		Labels:                              deps.Labels,
+		GetSupplierSubscriptionItemPageData: deps.GetSupplierSubscriptionItemPageData,
+		RecognizeFromExpenditure:            deps.RecognizeFromExpenditure,
 	}
 
 	return &Module{
-		routes:        deps.Routes,
-		Dashboard:     listView,
-		List:          listView,
-		Table:         tableView,
-		Add:           suppliersubscriptionaction.NewAddAction(actionDeps),
-		Edit:          suppliersubscriptionaction.NewEditAction(actionDeps),
-		Delete:        suppliersubscriptionaction.NewDeleteAction(actionDeps),
-		BulkDelete:    suppliersubscriptionaction.NewBulkDeleteAction(actionDeps),
-		SetStatus:     suppliersubscriptionaction.NewSetStatusAction(actionDeps),
-		BulkSetStatus: suppliersubscriptionaction.NewBulkSetStatusAction(actionDeps),
-		Detail:        suppliersubscriptiondetail.NewView(detailDeps),
-		TabAction:     suppliersubscriptiondetail.NewTabAction(detailDeps),
+		routes:           deps.Routes,
+		Dashboard:        listView,
+		List:             listView,
+		Table:            tableView,
+		Add:              suppliersubscriptionaction.NewAddAction(actionDeps),
+		Edit:             suppliersubscriptionaction.NewEditAction(actionDeps),
+		Delete:           suppliersubscriptionaction.NewDeleteAction(actionDeps),
+		BulkDelete:       suppliersubscriptionaction.NewBulkDeleteAction(actionDeps),
+		SetStatus:        suppliersubscriptionaction.NewSetStatusAction(actionDeps),
+		BulkSetStatus:    suppliersubscriptionaction.NewBulkSetStatusAction(actionDeps),
+		Detail:           suppliersubscriptiondetail.NewView(detailDeps),
+		TabAction:        suppliersubscriptiondetail.NewTabAction(detailDeps),
+		RecognizeExpense: suppliersubscriptionaction.NewRecognizeExpenseAction(recognizeExpenseDeps),
 	}
 }
 
@@ -116,5 +143,8 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.TabAction != nil && m.routes.TabActionURL != "" {
 		r.GET(m.routes.TabActionURL, m.TabAction)
+	}
+	if m.RecognizeExpense != nil && m.routes.RecognizeExpenseURL != "" {
+		r.POST(m.routes.RecognizeExpenseURL, m.RecognizeExpense)
 	}
 }
