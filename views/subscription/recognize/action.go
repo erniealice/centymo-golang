@@ -458,6 +458,12 @@ func buildLabels(l centymo.SubscriptionLabels) recognizeform.Labels {
 		PartialReason:              l.Recognize.PartialReason,
 		PartialReasonRequired:      l.Recognize.PartialReasonRequired,
 		OverBillingRejected:        l.Recognize.OverBillingRejected,
+		// Tax preview (Phase 5)
+		TaxPreviewSection:       l.Recognize.TaxPreviewSection,
+		TaxDirectionSurcharge:   l.Recognize.TaxDirectionSurcharge,
+		TaxDirectionWithholding: l.Recognize.TaxDirectionWithholding,
+		NetReceivable:           l.Recognize.NetReceivable,
+		WHTAmount:               l.Recognize.WHTAmount,
 	}
 }
 
@@ -474,6 +480,7 @@ func applyResponse(
 	if resp != nil {
 		data.PreviewLines = convertPreviewLines(resp.GetPreviewLines(), pricePlan, deps.Labels)
 		data.TotalAmount = sumPreview(data.PreviewLines)
+		data.TaxPreviewLines = convertPreviewTaxLines(resp.GetPreviewTaxLines(), deps.Labels)
 		data.Warnings = resp.GetWarnings()
 		if cid := resp.GetConflictingRevenueId(); cid != "" {
 			data.IdempotencyConflict = true
@@ -517,6 +524,52 @@ func convertPreviewLines(
 			Currency:           lineCurrency,
 			Treatment:          p.GetTreatment(),
 			TreatmentLabel:     treatmentLabel(p.GetTreatment(), labels),
+		})
+	}
+	return out
+}
+
+// convertPreviewTaxLines maps proto PreviewTaxLine items into the recognize
+// form's TaxPreviewLine view-models.
+// NOTE: resp.GetPreviewTaxLines() is populated by ComputeTaxes dry-run which
+// is Phase 4 work; until then this returns nil/empty. Wiring the call here
+// ensures the template path works once Phase 4 delivers.
+func convertPreviewTaxLines(
+	in []*revenuepb.PreviewTaxLine,
+	labels centymo.SubscriptionLabels,
+) []recognizeform.TaxPreviewLine {
+	if len(in) == 0 {
+		return nil
+	}
+	l := labels.Recognize
+	out := make([]recognizeform.TaxPreviewLine, 0, len(in))
+	for _, p := range in {
+		dirStr := p.GetDirection()
+		dirLabel := l.TaxDirectionSurcharge
+		if dirStr == "WITHHOLDING" {
+			dirLabel = l.TaxDirectionWithholding
+		}
+		kindSnapshot := p.GetTaxKindSnapshot()
+		kindLabel := ""
+		if l.TaxKindLabels != nil {
+			kindLabel = l.TaxKindLabels[kindSnapshot]
+		}
+		if kindLabel == "" {
+			kindLabel = dirLabel
+		}
+		rateBP := int64(p.GetRateBasisPoints())
+		rateDisplay := fmt.Sprintf("%.2f%%", float64(rateBP)/100.0)
+		taxAmtDisplay := fmt.Sprintf("%.2f", float64(p.GetTaxAmount())/100.0)
+
+		out = append(out, recognizeform.TaxPreviewLine{
+			Direction:        dirStr,
+			DirectionLabel:   dirLabel,
+			KindLabel:        kindLabel,
+			TaxKindSnapshot:  kindSnapshot,
+			RegulatoryCode:   p.GetRegulatorCodeSnapshot(),
+			RateDisplay:      rateDisplay,
+			TaxAmount:        p.GetTaxAmount(),
+			TaxAmountDisplay: taxAmtDisplay,
 		})
 	}
 	return out

@@ -384,6 +384,7 @@ const (
 	RevenueSearchLocationURL          = "/action/revenue/search/locations"
 	RevenueSearchProductURL           = "/action/revenue/search/products"
 	RevenuePriceLookupURL             = "/action/revenue/price-lookup"
+	RevenueRecomputeTaxesURL          = "/action/revenue/detail/{id}/taxes/recompute"
 
 	// Revenue Run (invoice-run) routes
 	RevenueRunQueueURL           = "/app/revenue-run/queue"

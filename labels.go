@@ -597,6 +597,9 @@ type RevenueErrorLabels struct {
 	BulkNoItems             string `json:"bulkNoItems"`
 	PaymentNotFound         string `json:"paymentNotFound"`
 	InvalidDiscount         string `json:"invalidDiscount"`
+	// RecomputeUnavailable is the 501 body returned by the RecomputeTaxes stub
+	// until Phase 4 wires ComputeTaxesForRevenue (Phase 5 M2).
+	RecomputeUnavailable string `json:"recomputeUnavailable"`
 }
 
 type RevenueDashboardLabels struct {
@@ -1145,6 +1148,15 @@ type ProductFormLabels struct {
 	TrackingModeLabel     string            `json:"trackingModeLabel"`
 	TrackingModeInfo      string            `json:"trackingModeInfo"`
 	TrackingModeValueInfo map[string]string `json:"trackingModeValueInfo,omitempty"`
+
+	// Tax section labels (Phase 5)
+	SectionTax                   string `json:"sectionTax"`
+	TaxTreatmentLabel            string `json:"taxTreatmentLabel"`
+	TaxTreatmentPlaceholder      string `json:"taxTreatmentPlaceholder"`
+	TaxTreatmentInfo             string `json:"taxTreatmentInfo"`
+	WithholdingClassLabel        string `json:"withholdingClassLabel"`
+	WithholdingClassPlaceholder  string `json:"withholdingClassPlaceholder"`
+	WithholdingClassInfo         string `json:"withholdingClassInfo"`
 }
 
 type ProductActionLabels struct {
@@ -3518,6 +3530,15 @@ type ProductPricePlanFormLabels struct {
 	MilestonePhaseLabel       string `json:"milestonePhaseLabel"`
 	MilestonePhaseFallthrough string `json:"milestonePhaseFallthrough"`
 	MilestonePhaseBillable    string `json:"milestonePhaseBillable"`
+
+	// Tax override labels (Phase 5) — optional per-PPP tax overrides.
+	SectionTax                  string `json:"sectionTax"`
+	TaxTreatmentLabel           string `json:"taxTreatmentLabel"`
+	TaxTreatmentPlaceholder     string `json:"taxTreatmentPlaceholder"`
+	TaxTreatmentInfo            string `json:"taxTreatmentInfo"`
+	WithholdingClassLabel       string `json:"withholdingClassLabel"`
+	WithholdingClassPlaceholder string `json:"withholdingClassPlaceholder"`
+	WithholdingClassInfo        string `json:"withholdingClassInfo"`
 }
 
 // DefaultProductPricePlanLabels returns ProductPricePlanLabels with sensible English defaults.
@@ -4051,6 +4072,16 @@ type SubscriptionRecognizeLabels struct {
 	PartialReason              string `json:"partialReason"`
 	PartialReasonRequired      string `json:"partialReasonRequired"`
 	OverBillingRejected        string `json:"overBillingRejected"`
+
+	// Tax preview labels (Phase 5)
+	TaxPreviewSection       string `json:"taxPreviewSection"`
+	TaxDirectionSurcharge   string `json:"taxDirectionSurcharge"`
+	TaxDirectionWithholding string `json:"taxDirectionWithholding"`
+	NetReceivable           string `json:"netReceivable"`
+	WHTAmount               string `json:"whtAmount"`
+	// TaxKindLabels maps tax_kind_snapshot values to localized display names.
+	// Populated from lyngua; used by convertPreviewTaxLines in the recognize view.
+	TaxKindLabels map[string]string `json:"taxKindLabels"`
 }
 
 // SubscriptionRevenueRunLabels holds drawer-form labels for the per-subscription

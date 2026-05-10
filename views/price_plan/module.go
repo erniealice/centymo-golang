@@ -20,6 +20,8 @@ import (
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
+	taxclasspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_class"
+	taxtreatmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_treatment"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
@@ -77,6 +79,11 @@ type ModuleDeps struct {
 	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
 	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	NewAttachmentID  func() string
+
+	// Phase 5 H1 — tax override dropdowns on the PPP add/edit drawer.
+	// Nil-safe: when not wired the selects render with no options.
+	ListTaxTreatments func(ctx context.Context, req *taxtreatmentpb.ListTaxTreatmentsRequest) (*taxtreatmentpb.ListTaxTreatmentsResponse, error)
+	ListTaxClasses    func(ctx context.Context, req *taxclasspb.ListTaxClassesRequest) (*taxclasspb.ListTaxClassesResponse, error)
 }
 
 // Module holds all constructed price_plan views.
@@ -152,6 +159,8 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListPriceSchedules:                 deps.ListPriceSchedules,
 		ReadPlan:                           deps.ReadPlan,
 		ListJobTemplatePhasesByJobTemplate: deps.ListJobTemplatePhasesByJobTemplate,
+		ListTaxTreatments:                  deps.ListTaxTreatments,
+		ListTaxClasses:                     deps.ListTaxClasses,
 	}
 	detailDeps.UploadFile = deps.UploadFile
 	detailDeps.ListAttachments = deps.ListAttachments

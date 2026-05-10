@@ -28,6 +28,7 @@ import (
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	revenuetaxlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_tax_line"
 )
 
 // PaymentTermOption is a minimal struct for rendering payment term options in the form.
@@ -91,6 +92,15 @@ type Deps struct {
 	// — single source of truth across the recognize-drawer + manual flows.
 	// Optional — falls back to the legacy in-line implementation when nil.
 	RecognizeRevenueFromSubscription func(ctx context.Context, req *revenuepb.CreateRevenueWithLineItemsRequest) (*revenuepb.CreateRevenueWithLineItemsResponse, error)
+
+	// ListRevenueTaxLines fetches tax lines for a revenue record (read-only,
+	// never triggers recompute). Optional — degrades to no Tax section when nil.
+	ListRevenueTaxLines func(ctx context.Context, req *revenuetaxlinepb.ListRevenueTaxLinesRequest) (*revenuetaxlinepb.ListRevenueTaxLinesResponse, error)
+	// AddWHTCertURL is the URL pattern for the Add Withholding Certificate drawer.
+	// "{id}" is replaced with the revenue ID. Optional.
+	AddWHTCertURL string
+	// WithholdingCertificateRoutes holds URL constants for withholding cert actions.
+	WithholdingCertAddURL string
 }
 
 // buildFormLabels constructs form.Labels from the translation function.
@@ -137,6 +147,35 @@ func buildFormLabels(t func(string) string) form.Labels {
 		SubscriptionInfo: t("revenue.form.subscriptionInfo"),
 		CurrencyInfo:     t("revenue.form.currencyInfo"),
 		NotesInfo:        t("revenue.form.notesInfo"),
+		// Tax section (Phase 5)
+		SectionTax:              t("revenue.form.sectionTax"),
+		TaxDirectionSurcharge:   t("revenue.form.taxDirectionSurcharge"),
+		TaxDirectionWithholding: t("revenue.form.taxDirectionWithholding"),
+		TaxKind:                 t("revenue.form.taxKind"),
+		TaxRegCode:              t("revenue.form.taxRegCode"),
+		TaxRate:                 t("revenue.form.taxRate"),
+		TaxableBase:             t("revenue.form.taxableBase"),
+		TaxAmount:               t("revenue.form.taxAmount"),
+		NetReceivable:           t("revenue.form.netReceivable"),
+		WHTAmount:               t("revenue.form.whtAmount"),
+		GrandTotal:              t("revenue.form.grandTotal"),
+		SettlementStatus:        t("revenue.form.settlementStatus"),
+		Recompute:               t("revenue.form.recompute"),
+		AddWHTCertificate:       t("revenue.form.addWHTCertificate"),
+		Billed:                  t("revenue.form.billed"),
+		Recorded:                t("revenue.form.recorded"),
+		Rate:                    t("revenue.form.rate"),
+		RateSourceOperator:      t("revenue.form.rateSourceOperator"),
+		// TaxKindLabels maps tax_kind_snapshot values to localized display names (Phase 5 M1).
+		TaxKindLabels: map[string]string{
+			"VAT_STANDARD":                 t("revenue.form.taxKindVatStandard"),
+			"WHT_PROFESSIONAL_INDIVIDUAL":  t("revenue.form.taxKindWhtProfessionalIndividual"),
+			"WHT_PROFESSIONAL_CORPORATE":   t("revenue.form.taxKindWhtProfessionalCorporate"),
+			"WHT_RENTAL":                   t("revenue.form.taxKindWhtRental"),
+			"WHT_GOODS_TWA":                t("revenue.form.taxKindWhtGoodsTwa"),
+			"WHT_SERVICES_TWA":             t("revenue.form.taxKindWhtServicesTwa"),
+			"WHT_NON_RESIDENT":             t("revenue.form.taxKindWhtNonResident"),
+		},
 	}
 }
 
@@ -470,6 +509,61 @@ func autoPopulateLineItems(ctx context.Context, deps *Deps, revenueID, subscript
 	}
 }
 
+// loadTaxLines fetches RevenueTaxLine rows for a revenue and converts them to
+// form.TaxLineRow view-models. Never triggers recompute — read-only.
+func loadTaxLines(ctx context.Context, deps *Deps, revenueID string, labels form.Labels) []form.TaxLineRow {
+	if deps.ListRevenueTaxLines == nil {
+		return nil
+	}
+	resp, err := deps.ListRevenueTaxLines(ctx, &revenuetaxlinepb.ListRevenueTaxLinesRequest{
+		RevenueId: &revenueID,
+	})
+	if err != nil {
+		log.Printf("loadTaxLines: %v", err)
+		return nil
+	}
+	rows := make([]form.TaxLineRow, 0, len(resp.GetData()))
+	for _, line := range resp.GetData() {
+		if line == nil {
+			continue
+		}
+		dirStr := line.GetDirection().String()
+		dirLabel := labels.TaxDirectionSurcharge
+		if line.GetDirection() == revenuetaxlinepb.RevenueTaxLineDirection_REVENUE_TAX_LINE_DIRECTION_WITHHOLDING {
+			dirLabel = labels.TaxDirectionWithholding
+			dirStr = "WITHHOLDING"
+		} else {
+			dirStr = "SURCHARGE"
+		}
+		rateBP := int64(line.GetRateBasisPointsSnapshot())
+		rateDisplay := fmt.Sprintf("%.2f%%", float64(rateBP)/100.0)
+		taxAmtDisplay := fmt.Sprintf("%.2f", float64(line.GetTaxAmount())/100.0)
+		taxableDisplay := fmt.Sprintf("%.2f", float64(line.GetTaxableBase())/100.0)
+
+		kindSnapshot := line.GetTaxKindSnapshot()
+		kindLabel := labels.TaxKindLabels[kindSnapshot]
+		if kindLabel == "" {
+			// Fall back to direction label if kind snapshot not in map
+			kindLabel = dirLabel
+		}
+		rows = append(rows, form.TaxLineRow{
+			ID:                 line.GetId(),
+			Direction:          dirStr,
+			DirectionLabel:     dirLabel,
+			KindLabel:          kindLabel,
+			TaxKindSnapshot:    kindSnapshot,
+			RegulatoryCode:     line.GetRegulatorCodeSnapshot(),
+			RateBasisPoints:    rateBP,
+			TaxableBase:        line.GetTaxableBase(),
+			TaxAmount:          line.GetTaxAmount(),
+			TaxableBaseDisplay: taxableDisplay,
+			TaxAmountDisplay:   taxAmtDisplay,
+			RateDisplay:        rateDisplay,
+		})
+	}
+	return rows
+}
+
 // NewEditAction creates the sales edit action (GET = form, POST = update).
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -506,6 +600,48 @@ func NewEditAction(deps *Deps) view.View {
 			if existingSubscriptionID != "" {
 				revenueType = "from_engagement"
 			}
+			labels := buildFormLabels(viewCtx.T)
+			taxLines := loadTaxLines(ctx, deps, id, labels)
+
+			// Build FX display when billing_currency is set.
+			billingCurrency := record.GetBillingCurrency()
+			billingAmtDisplay := ""
+			forexRateDisplay := ""
+			forexRateSource := ""
+			if billingCurrency != "" {
+				billingAmtDisplay = fmt.Sprintf("%.2f", float64(record.GetBillingAmount())/100.0)
+				rateUnits := record.GetForexRateMicroUnits()
+				rateFloat := float64(rateUnits) / 1_000_000.0
+				forexRateDisplay = fmt.Sprintf("%.4f %s per %s", rateFloat, record.GetCurrency(), billingCurrency)
+				forexRateSource = record.GetForexRateSource()
+				if forexRateSource != "" {
+					forexRateSource = fmt.Sprintf("%s, %s", labels.RateSourceOperator, forexRateSource)
+				}
+			}
+
+			// Grand-total computed from cash_amount_expected.
+			cashExpected := record.GetCashAmountExpected()
+			whtExpected := record.GetWhtAmountExpected()
+			grandTotalDisplay := fmt.Sprintf("%.2f", float64(cashExpected)/100.0)
+			whtDisplay := ""
+			if whtExpected > 0 {
+				whtDisplay = fmt.Sprintf("%.2f", float64(whtExpected)/100.0)
+			}
+
+			canRecompute := perms.Can("revenue", "update")
+
+			// Build Add WHT Certificate URL if configured.
+			addWHTCertURL := ""
+			if deps.WithholdingCertAddURL != "" {
+				addWHTCertURL = strings.ReplaceAll(deps.WithholdingCertAddURL, "{id}", id)
+			}
+
+			// Build recompute taxes URL (stub — Phase 4 wires the actual use case).
+			recomputeURL := ""
+			if deps.Routes.RecomputeTaxesURL != "" {
+				recomputeURL = route.ResolveURL(deps.Routes.RecomputeTaxesURL, "id", id)
+			}
+
 			return view.OK("revenue-drawer-form", &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
@@ -529,8 +665,27 @@ func NewEditAction(deps *Deps) view.View {
 				SelectedPaymentTermID: selectedPaymentTermID,
 				DueDateString:         record.GetDueDate(),
 				RevenueType:           revenueType,
-				Labels:                buildFormLabels(viewCtx.T),
-				CommonLabels:          nil, // injected by ViewAdapter
+				// Tax fields (Phase 5)
+				TaxLines:             taxLines,
+				GrandTotalAmount:     cashExpected,
+				GrandTotalDisplay:    grandTotalDisplay,
+				CashAmountExpected:   cashExpected,
+				CashAmountDisplay:    grandTotalDisplay,
+				WhtAmountExpected:    whtExpected,
+				WhtAmountDisplay:     whtDisplay,
+				SettlementStatus:     record.GetSettlementStatus(),
+				CanRecompute:         canRecompute,
+				RecomputeURL:         recomputeURL,
+				AddWHTCertURL:        addWHTCertURL,
+				// FX fields
+				BillingCurrency:      billingCurrency,
+				BillingAmount:        record.GetBillingAmount(),
+				BillingAmountDisplay: billingAmtDisplay,
+				ForexRateMicroUnits:  record.GetForexRateMicroUnits(),
+				ForexRateDisplay:     forexRateDisplay,
+				ForexRateSource:      forexRateSource,
+				Labels:               labels,
+				CommonLabels:         nil, // injected by ViewAdapter
 			})
 		}
 

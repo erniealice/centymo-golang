@@ -18,6 +18,8 @@ import (
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
+	taxclasspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_class"
+	taxtreatmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_treatment"
 )
 
 // Deps holds dependencies for product action handlers.
@@ -59,6 +61,10 @@ type Deps struct {
 	// Default "product" when empty. Mounts override: services → "service",
 	// supplies → "supplies". See ModuleDeps.PermissionEntity doc for rationale.
 	PermissionEntity string
+
+	// Tax lookups (Phase 5) — optional; when nil the Tax section is hidden.
+	ListTaxTreatments func(ctx context.Context, req *taxtreatmentpb.ListTaxTreatmentsRequest) (*taxtreatmentpb.ListTaxTreatmentsResponse, error)
+	ListTaxClasses    func(ctx context.Context, req *taxclasspb.ListTaxClassesRequest) (*taxclasspb.ListTaxClassesResponse, error)
 }
 
 // permEntity returns the configured PermissionEntity with a safe default so
@@ -219,6 +225,58 @@ func loadLineOptions(ctx context.Context, deps *Deps, selectedID string) []types
 	return options
 }
 
+// loadTaxTreatmentOptions fetches TaxTreatment records and builds select options.
+func loadTaxTreatmentOptions(ctx context.Context, deps *Deps, selectedID string) []types.SelectOption {
+	if deps.ListTaxTreatments == nil {
+		return nil
+	}
+	resp, err := deps.ListTaxTreatments(ctx, &taxtreatmentpb.ListTaxTreatmentsRequest{})
+	if err != nil {
+		log.Printf("Failed to load tax treatments for product form: %v", err)
+		return nil
+	}
+	options := make([]types.SelectOption, 0, len(resp.GetData()))
+	for _, t := range resp.GetData() {
+		if t == nil {
+			continue
+		}
+		options = append(options, types.SelectOption{
+			Value:    t.GetId(),
+			Label:    t.GetName(),
+			Selected: t.GetId() == selectedID,
+		})
+	}
+	return options
+}
+
+// loadWithholdingClassOptions fetches TaxClass records with WITHHOLDING direction.
+func loadWithholdingClassOptions(ctx context.Context, deps *Deps, selectedID string) []types.SelectOption {
+	if deps.ListTaxClasses == nil {
+		return nil
+	}
+	resp, err := deps.ListTaxClasses(ctx, &taxclasspb.ListTaxClassesRequest{})
+	if err != nil {
+		log.Printf("Failed to load tax classes for product form: %v", err)
+		return nil
+	}
+	options := make([]types.SelectOption, 0)
+	for _, c := range resp.GetData() {
+		if c == nil {
+			continue
+		}
+		// Filter to WITHHOLDING direction only.
+		if c.GetDirection() != taxclasspb.TaxClassDirection_TAX_CLASS_DIRECTION_WITHHOLDING {
+			continue
+		}
+		options = append(options, types.SelectOption{
+			Value:    c.GetId(),
+			Label:    c.GetName(),
+			Selected: c.GetId() == selectedID,
+		})
+	}
+	return options
+}
+
 // NewAddAction creates the product add action (GET = form, POST = create).
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -236,20 +294,22 @@ func NewAddAction(deps *Deps) view.View {
 			deliveryMode := firstNonEmpty(deps.DefaultDeliveryMode, firstAllowed(deps.AllowedDeliveryModes, allDeliveryModes))
 			trackingMode := firstNonEmpty(deps.DefaultTrackingMode, firstAllowed(deps.AllowedTrackingModes, allTrackingModes))
 			return view.OK("product-drawer-form", &productform.Data{
-				FormAction:           deps.Routes.AddURL,
-				Active:               true,
-				Currency:             "PHP",
-				VariantMode:          "none",
-				CanToggleVariantMode: true, // new products have no options/variants yet
-				LineOptions:          loadLineOptions(ctx, deps, ""),
-				ProductKind:          productKind,
-				ProductKindOptions:   buildEnumOptions(allProductKinds, deps.AllowedProductKinds, productKind, productKindLabelMap(deps.Labels.ProductKind), deps.Labels.Form.ProductKindValueInfo),
-				DeliveryMode:         deliveryMode,
-				DeliveryModeOptions:  buildEnumOptions(allDeliveryModes, deps.AllowedDeliveryModes, deliveryMode, deliveryModeLabelMap(deps.Labels.DeliveryMode), deps.Labels.Form.DeliveryModeValueInfo),
-				TrackingMode:         trackingMode,
-				TrackingModeOptions:  buildEnumOptions(allTrackingModes, deps.AllowedTrackingModes, trackingMode, trackingModeLabelMap(deps.Labels.TrackingMode), deps.Labels.Form.TrackingModeValueInfo),
-				Labels:               deps.Labels.Form,
-				CommonLabels:         nil, // injected by ViewAdapter
+				FormAction:              deps.Routes.AddURL,
+				Active:                  true,
+				Currency:                "PHP",
+				VariantMode:             "none",
+				CanToggleVariantMode:    true, // new products have no options/variants yet
+				LineOptions:             loadLineOptions(ctx, deps, ""),
+				ProductKind:             productKind,
+				ProductKindOptions:      buildEnumOptions(allProductKinds, deps.AllowedProductKinds, productKind, productKindLabelMap(deps.Labels.ProductKind), deps.Labels.Form.ProductKindValueInfo),
+				DeliveryMode:            deliveryMode,
+				DeliveryModeOptions:     buildEnumOptions(allDeliveryModes, deps.AllowedDeliveryModes, deliveryMode, deliveryModeLabelMap(deps.Labels.DeliveryMode), deps.Labels.Form.DeliveryModeValueInfo),
+				TrackingMode:            trackingMode,
+				TrackingModeOptions:     buildEnumOptions(allTrackingModes, deps.AllowedTrackingModes, trackingMode, trackingModeLabelMap(deps.Labels.TrackingMode), deps.Labels.Form.TrackingModeValueInfo),
+				TaxTreatmentOptions:     loadTaxTreatmentOptions(ctx, deps, ""),
+				WithholdingClassOptions: loadWithholdingClassOptions(ctx, deps, ""),
+				Labels:                  deps.Labels.Form,
+				CommonLabels:            nil, // injected by ViewAdapter
 			})
 		}
 
@@ -317,6 +377,12 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if lineID := r.FormValue("line_id"); lineID != "" {
 			productData.LineId = &lineID
+		}
+		if taxTreatmentID := r.FormValue("tax_treatment_id"); taxTreatmentID != "" {
+			productData.TaxTreatmentId = &taxTreatmentID
+		}
+		if withholdingClassID := r.FormValue("withholding_class_id"); withholdingClassID != "" {
+			productData.WithholdingClassId = &withholdingClassID
 		}
 
 		_, err := deps.CreateProduct(ctx, &productpb.CreateProductRequest{
@@ -417,10 +483,14 @@ func NewEditAction(deps *Deps) view.View {
 				ProductKindOptions:   buildEnumOptions(allProductKinds, deps.AllowedProductKinds, productKind, productKindLabelMap(deps.Labels.ProductKind), deps.Labels.Form.ProductKindValueInfo),
 				DeliveryMode:         deliveryMode,
 				DeliveryModeOptions:  buildEnumOptions(allDeliveryModes, deps.AllowedDeliveryModes, deliveryMode, deliveryModeLabelMap(deps.Labels.DeliveryMode), deps.Labels.Form.DeliveryModeValueInfo),
-				TrackingMode:         trackingMode,
-				TrackingModeOptions:  buildEnumOptions(allTrackingModes, deps.AllowedTrackingModes, trackingMode, trackingModeLabelMap(deps.Labels.TrackingMode), deps.Labels.Form.TrackingModeValueInfo),
-				Labels:               deps.Labels.Form,
-				CommonLabels:         nil, // injected by ViewAdapter
+				TrackingMode:            trackingMode,
+				TrackingModeOptions:     buildEnumOptions(allTrackingModes, deps.AllowedTrackingModes, trackingMode, trackingModeLabelMap(deps.Labels.TrackingMode), deps.Labels.Form.TrackingModeValueInfo),
+				TaxTreatmentID:          p.GetTaxTreatmentId(),
+				WithholdingClassID:      p.GetWithholdingClassId(),
+				TaxTreatmentOptions:     loadTaxTreatmentOptions(ctx, deps, p.GetTaxTreatmentId()),
+				WithholdingClassOptions: loadWithholdingClassOptions(ctx, deps, p.GetWithholdingClassId()),
+				Labels:                  deps.Labels.Form,
+				CommonLabels:            nil, // injected by ViewAdapter
 			})
 		}
 
@@ -527,6 +597,12 @@ func NewEditAction(deps *Deps) view.View {
 		}
 		if lineID := r.FormValue("line_id"); lineID != "" {
 			updatedProduct.LineId = &lineID
+		}
+		if taxTreatmentID := r.FormValue("tax_treatment_id"); taxTreatmentID != "" {
+			updatedProduct.TaxTreatmentId = &taxTreatmentID
+		}
+		if withholdingClassID := r.FormValue("withholding_class_id"); withholdingClassID != "" {
+			updatedProduct.WithholdingClassId = &withholdingClassID
 		}
 
 		_, err := deps.UpdateProduct(ctx, &productpb.UpdateProductRequest{

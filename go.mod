@@ -9,6 +9,7 @@ require (
 	github.com/erniealice/hybra-golang v0.0.0-00010101000000-000000000000
 	github.com/erniealice/lyngua v0.0.0-00010101000000-000000000000
 	github.com/erniealice/pyeza-golang v0.0.8-alpha
+	golang.org/x/sync v0.19.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -107,7 +108,6 @@ require (
 	golang.org/x/mod v0.31.0 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/oauth2 v0.31.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.13.0 // indirect

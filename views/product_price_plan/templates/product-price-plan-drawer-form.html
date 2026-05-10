@@ -95,6 +95,41 @@ Data: ProductPricePlanFormData — see views/price_plan/detail/page.go
             "PricingSectionTitle" ""
             "EffectiveSectionTitle" ""
         )}}
+
+        {{/* ── Tax overrides (Phase 5) — optional per-PPP overrides ── */}}
+        {{if or .TaxTreatmentOptions .WithholdingClassOptions}}
+        {{template "form-section" (dict "Title" .Labels.SectionTax)}}
+
+        {{if .TaxTreatmentOptions}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "tax_treatment_id"
+                "Label" .Labels.TaxTreatmentLabel
+                "Value" .TaxTreatmentID
+                "Placeholder" .Labels.TaxTreatmentPlaceholder
+                "Options" .TaxTreatmentOptions
+                "Info" .Labels.TaxTreatmentInfo
+                "TestId" "ppp-tax-treatment"
+            )}}
+        </div>
+        {{end}}
+
+        {{if .WithholdingClassOptions}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "withholding_class_id"
+                "Label" .Labels.WithholdingClassLabel
+                "Value" .WithholdingClassID
+                "Placeholder" .Labels.WithholdingClassPlaceholder
+                "Options" .WithholdingClassOptions
+                "Info" .Labels.WithholdingClassInfo
+                "TestId" "ppp-withholding-class"
+            )}}
+        </div>
+        {{end}}
+        {{end}}
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

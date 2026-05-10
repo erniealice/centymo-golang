@@ -10,6 +10,23 @@ type PaymentTermOption struct {
 	NetDays int32
 }
 
+// TaxLineRow is a single tax row displayed in the Taxes section of the revenue drawer.
+type TaxLineRow struct {
+	ID              string
+	Direction       string // "SURCHARGE" or "WITHHOLDING"
+	DirectionLabel  string // lyngua-translated display value for direction
+	KindLabel       string // lyngua-translated display label for the specific tax kind (M1)
+	TaxKindSnapshot string
+	RegulatoryCode  string
+	RateBasisPoints int64
+	TaxableBase     int64
+	TaxAmount       int64
+	// Display strings (formatted centavos ÷ 100)
+	TaxableBaseDisplay string
+	TaxAmountDisplay   string
+	RateDisplay        string // e.g. "12.00%"
+}
+
 // Inner holds nested form labels accessed via .Labels.Form.* in templates.
 type Inner struct {
 	SectionInfo               string
@@ -57,6 +74,32 @@ type Labels struct {
 	SubscriptionInfo string
 	CurrencyInfo     string
 	NotesInfo        string
+
+	// Tax section labels (Phase 5)
+	SectionTax             string
+	TaxDirectionSurcharge  string
+	TaxDirectionWithholding string
+	TaxKind                string
+	TaxRegCode             string
+	TaxRate                string
+	TaxableBase            string
+	TaxAmount              string
+	NetReceivable          string
+	WHTAmount              string
+	GrandTotal             string
+	SettlementStatus       string
+	Recompute              string
+	AddWHTCertificate      string
+	// FX dual-amount display labels
+	Billed             string
+	Recorded           string
+	Rate               string
+	RateSourceOperator string
+
+	// TaxKindLabels maps TaxKindSnapshot enum values (e.g. "VAT_STANDARD") to
+	// their translated display names. Populated at handler time from lyngua keys.
+	// Used by the template via TaxLineRow.KindLabel (Phase 5 M1).
+	TaxKindLabels map[string]string
 }
 
 // Data is the template data for the revenue drawer form.
@@ -84,6 +127,29 @@ type Data struct {
 	DueDateString         string
 	RevenueType           string
 	ActivityIDs           string
-	Labels                Labels
-	CommonLabels          any
+
+	// Tax fields (Phase 5)
+	TaxLines           []TaxLineRow
+	GrandTotalAmount   int64
+	GrandTotalDisplay  string
+	CashAmountExpected int64
+	CashAmountDisplay  string
+	WhtAmountExpected  int64
+	WhtAmountDisplay   string
+	SettlementStatus   string
+	CanRecompute       bool // admin permission gate
+	RecomputeURL       string
+	AddWHTCertURL      string
+
+	// FX dual-amount fields (Phase 5)
+	// When BillingCurrency is set, show dual-amount display.
+	BillingCurrency       string
+	BillingAmount         int64
+	BillingAmountDisplay  string
+	ForexRateMicroUnits   int64
+	ForexRateDisplay      string // e.g. "56.5000 PHP per USD"
+	ForexRateSource       string // e.g. "operator entered, 2026-05-01"
+
+	Labels       Labels
+	CommonLabels any
 }

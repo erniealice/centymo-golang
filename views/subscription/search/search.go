@@ -349,14 +349,8 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				groupOrder = append(groupOrder, groupKey)
 			}
 
-			amount := float64(pp.GetBillingAmount()) / 100.0
 			currency := pp.GetBillingCurrency()
-			var label string
-			if currency != "" {
-				label = fmt.Sprintf("%s · ₱%s %s", displayName, formatAmount(amount), currency)
-			} else {
-				label = fmt.Sprintf("%s · ₱%s", displayName, formatAmount(amount))
-			}
+			label := fmt.Sprintf("%s · %s", displayName, pyezatypes.FormatMoney(pp.GetBillingAmount(), currency))
 
 			groupMap[groupKey].options = append(groupMap[groupKey].options, option{
 				Value: pp.GetId(),
@@ -432,26 +426,6 @@ func searchPlansLegacy(ctx context.Context, w http.ResponseWriter, query string,
 	writeJSON(w, results)
 }
 
-func formatAmount(amount float64) string {
-	s := fmt.Sprintf("%.2f", amount)
-	parts := strings.Split(s, ".")
-	intPart := parts[0]
-	decPart := parts[1]
-
-	n := len(intPart)
-	if n <= 3 {
-		return intPart + "." + decPart
-	}
-
-	var result []byte
-	for i, c := range intPart {
-		if i > 0 && (n-i)%3 == 0 {
-			result = append(result, ',')
-		}
-		result = append(result, byte(c))
-	}
-	return string(result) + "." + decPart
-}
 
 func writeJSON(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")

@@ -19,6 +19,8 @@ import (
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
+	taxclasspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_class"
+	taxtreatmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_treatment"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
@@ -73,6 +75,11 @@ type DetailViewDeps struct {
 	// false and the field is hidden.
 	ReadPlan                           func(ctx context.Context, req *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error)
 	ListJobTemplatePhasesByJobTemplate func(ctx context.Context, req *jobtemplatephasepb.ListByJobTemplateRequest) (*jobtemplatephasepb.ListByJobTemplateResponse, error)
+
+	// Phase 5 H1 — tax override dropdowns on the PPP drawer.
+	// Both are nil-safe; when not wired the selects render empty (no options).
+	ListTaxTreatments func(ctx context.Context, req *taxtreatmentpb.ListTaxTreatmentsRequest) (*taxtreatmentpb.ListTaxTreatmentsResponse, error)
+	ListTaxClasses    func(ctx context.Context, req *taxclasspb.ListTaxClassesRequest) (*taxclasspb.ListTaxClassesResponse, error)
 
 	attachment.AttachmentOps
 }
@@ -221,6 +228,14 @@ type ProductPricePlanFormData struct {
 	JobTemplatePhaseID      string
 	JobTemplatePhaseOptions []types.SelectOption
 	ShowJobTemplatePhase    bool
+
+	// Tax override fields (Phase 5) — optional per-PPP overrides for
+	// tax_treatment_id and withholding_class_id. When set, take precedence
+	// over the product's defaults during ComputeTaxesForRevenue.
+	TaxTreatmentID          string
+	TaxTreatmentOptions     []types.SelectOption
+	WithholdingClassID      string
+	WithholdingClassOptions []types.SelectOption
 }
 
 // NewView creates the price plan detail view (full page).
@@ -299,6 +314,8 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 			showTreatment := parentKind != "BILLING_KIND_ONE_TIME"
 			pplLabels := deps.ProductPricePlanLabels.Form
 			showJobTemplatePhase, jobTemplatePhaseOptions := loadJobTemplatePhaseOptions(ctx, deps, parent.pricePlan, "", pplLabels)
+			taxTreatmentOptions := loadTaxTreatmentOptions(ctx, deps, "")
+			withholdingClassOptions := loadTaxClassOptions(ctx, deps, "")
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
 				FormAction:              route.ResolveURL(deps.Routes.ProductPriceAddURL, "id", id),
 				PricePlanID:             id,
@@ -316,6 +333,8 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 				ParentCurrencyDisplay:   parent.parentCurrencyDisplay,
 				ShowJobTemplatePhase:    showJobTemplatePhase,
 				JobTemplatePhaseOptions: jobTemplatePhaseOptions,
+				TaxTreatmentOptions:     taxTreatmentOptions,
+				WithholdingClassOptions: withholdingClassOptions,
 				Labels:                  pplLabels,
 			})
 		}
@@ -355,11 +374,11 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		}
 
 		record := &productpriceplanpb.ProductPricePlan{
-			PricePlanId:   id,
-			ProductPlanId: productPlanID,
-			BillingAmount: priceCentavos,
+			PricePlanId:     id,
+			ProductPlanId:   productPlanID,
+			BillingAmount:   priceCentavos,
 			BillingCurrency: currency,
-			Active:        true,
+			Active:          true,
 		}
 		if billingTreatment != "" {
 			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
@@ -374,6 +393,13 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		}
 		if jobTemplatePhaseID != "" {
 			record.JobTemplatePhaseId = &jobTemplatePhaseID
+		}
+		// Phase 5 H1: tax override fields
+		if ttid := viewCtx.Request.FormValue("tax_treatment_id"); ttid != "" {
+			record.TaxTreatmentId = &ttid
+		}
+		if wcid := viewCtx.Request.FormValue("withholding_class_id"); wcid != "" {
+			record.WithholdingClassId = &wcid
 		}
 
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{Data: record}); err != nil {
@@ -431,6 +457,10 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			showTreatment := parentKind != "BILLING_KIND_ONE_TIME"
 			existingJobTemplatePhaseID := existing.GetJobTemplatePhaseId()
 			showJobTemplatePhase, jobTemplatePhaseOptions := loadJobTemplatePhaseOptions(ctx, deps, parent.pricePlan, existingJobTemplatePhaseID, pplLabels)
+			existingTaxTreatmentID := existing.GetTaxTreatmentId()
+			existingWithholdingClassID := existing.GetWithholdingClassId()
+			taxTreatmentOptions := loadTaxTreatmentOptions(ctx, deps, existingTaxTreatmentID)
+			withholdingClassOptions := loadTaxClassOptions(ctx, deps, existingWithholdingClassID)
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
 				FormAction:              route.ResolveURL(deps.Routes.ProductPriceEditURL, "id", id, "ppid", ppid),
 				IsEdit:                  true,
@@ -458,6 +488,10 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 				ShowJobTemplatePhase:    showJobTemplatePhase,
 				JobTemplatePhaseOptions: jobTemplatePhaseOptions,
 				JobTemplatePhaseID:      existingJobTemplatePhaseID,
+				TaxTreatmentID:          existingTaxTreatmentID,
+				TaxTreatmentOptions:     taxTreatmentOptions,
+				WithholdingClassID:      existingWithholdingClassID,
+				WithholdingClassOptions: withholdingClassOptions,
 				Labels:                  pplLabels,
 			})
 		}
@@ -520,6 +554,13 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		}
 		if jobTemplatePhaseID != "" {
 			updated.JobTemplatePhaseId = &jobTemplatePhaseID
+		}
+		// Phase 5 H1: tax override fields
+		if ttid := viewCtx.Request.FormValue("tax_treatment_id"); ttid != "" {
+			updated.TaxTreatmentId = &ttid
+		}
+		if wcid := viewCtx.Request.FormValue("withholding_class_id"); wcid != "" {
+			updated.WithholdingClassId = &wcid
 		}
 
 		if _, err := deps.UpdateProductPricePlan(ctx, &productpriceplanpb.UpdateProductPricePlanRequest{Data: updated}); err != nil {
@@ -1406,6 +1447,50 @@ func resolveProductPlanDisplay(ctx context.Context, deps *DetailViewDeps, produc
 // job_template_id) → JobTemplatePhase rows. Any link missing yields an empty
 // options slice with showGate still true so the drawer renders the empty
 // fallthrough state instead of silently hiding the field.
+// loadTaxTreatmentOptions fetches TaxTreatment rows and converts them to
+// select options. Nil-safe — returns empty slice when not wired.
+func loadTaxTreatmentOptions(ctx context.Context, deps *DetailViewDeps, selectedID string) []types.SelectOption {
+	if deps.ListTaxTreatments == nil {
+		return nil
+	}
+	resp, err := deps.ListTaxTreatments(ctx, &taxtreatmentpb.ListTaxTreatmentsRequest{})
+	if err != nil {
+		log.Printf("loadTaxTreatmentOptions: %v", err)
+		return nil
+	}
+	opts := make([]types.SelectOption, 0, len(resp.GetData()))
+	for _, t := range resp.GetData() {
+		opts = append(opts, types.SelectOption{
+			Value:    t.GetId(),
+			Label:    t.GetName(),
+			Selected: t.GetId() == selectedID,
+		})
+	}
+	return opts
+}
+
+// loadTaxClassOptions fetches TaxClass rows and converts them to
+// select options. Nil-safe — returns empty slice when not wired.
+func loadTaxClassOptions(ctx context.Context, deps *DetailViewDeps, selectedID string) []types.SelectOption {
+	if deps.ListTaxClasses == nil {
+		return nil
+	}
+	resp, err := deps.ListTaxClasses(ctx, &taxclasspb.ListTaxClassesRequest{})
+	if err != nil {
+		log.Printf("loadTaxClassOptions: %v", err)
+		return nil
+	}
+	opts := make([]types.SelectOption, 0, len(resp.GetData()))
+	for _, c := range resp.GetData() {
+		opts = append(opts, types.SelectOption{
+			Value:    c.GetId(),
+			Label:    c.GetName(),
+			Selected: c.GetId() == selectedID,
+		})
+	}
+	return opts
+}
+
 func loadJobTemplatePhaseOptions(ctx context.Context, deps *DetailViewDeps, parent *priceplanpb.PricePlan, selectedPhaseID string, labels centymo.ProductPricePlanFormLabels) (bool, []types.SelectOption) {
 	if parent == nil || parent.GetBillingKind().String() != "BILLING_KIND_MILESTONE" {
 		return false, nil

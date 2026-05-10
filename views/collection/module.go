@@ -43,6 +43,11 @@ type ModuleDeps struct {
 	// Orchestrator wraps the espyna treasury/collection/dashboard use case
 	// here, projecting workspace_id from the request context.
 	GetCashDashboardPageData func(ctx context.Context, req *collectiondashboard.Request) (*collectiondashboard.Response, error)
+
+	// GetFunctionalCurrency returns the workspace ISO 4217 currency code for
+	// money display in the dashboard. Nil-safe — when absent, money strings
+	// omit the currency prefix.
+	GetFunctionalCurrency func(ctx context.Context) string
 }
 
 // Module holds all constructed collection views.
@@ -96,10 +101,11 @@ func NewModule(deps *ModuleDeps) *Module {
 	})
 
 	dashboardView := collectiondashboard.NewView(&collectiondashboard.Deps{
-		Routes:       deps.Routes,
-		Labels:       deps.Labels,
-		CommonLabels: deps.CommonLabels,
-		GetPageData:  deps.GetCashDashboardPageData,
+		Routes:                deps.Routes,
+		Labels:                deps.Labels,
+		CommonLabels:          deps.CommonLabels,
+		GetPageData:           deps.GetCashDashboardPageData,
+		GetFunctionalCurrency: deps.GetFunctionalCurrency,
 	})
 
 	return &Module{

@@ -286,6 +286,91 @@ Used by both Add and Edit actions.
                 "Info" .Labels.NotesInfo
             )}}
         </div>
+
+        {{/* ─── Taxes (Phase 5) — read-only section shown on edit ─── */}}
+        {{if .IsEdit}}
+        {{template "form-section" (dict "Title" .Labels.SectionTax)}}
+
+        {{/* FX dual-amount display — gated only on BillingCurrency being present */}}
+        {{if .BillingCurrency}}
+        <div class="form-row single" data-testid="revenue-fx-display">
+            <dl class="form-summary">
+                <dt>{{.Labels.Billed}}</dt><dd>{{.BillingAmountDisplay}} {{.BillingCurrency}}</dd>
+                <dt>{{.Labels.Recorded}}</dt><dd>{{.CashAmountDisplay}} {{.Currency}}</dd>
+                <dt>{{.Labels.Rate}}</dt><dd>{{.ForexRateDisplay}}</dd>
+                {{if .ForexRateSource}}<dt></dt><dd class="form-hint">{{.ForexRateSource}}</dd>{{end}}
+            </dl>
+        </div>
+        {{end}}
+
+        {{/* Tax rows table — gated on TaxLines being non-empty */}}
+        {{if .TaxLines}}
+        <div data-testid="revenue-taxes" class="form-summary" style="margin-bottom: 1rem;">
+            <table style="width:100%; border-collapse: collapse; font-size: var(--text-sm);">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding: 4px 8px;">{{.Labels.TaxKind}}</th>
+                        <th style="text-align:right; padding: 4px 8px;">{{.Labels.TaxRate}}</th>
+                        <th style="text-align:right; padding: 4px 8px;">{{.Labels.TaxAmount}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .TaxLines}}
+                    <tr data-testid="revenue-tax-row-{{.Direction}}-{{.TaxKindSnapshot}}">
+                        <td style="padding: 4px 8px;">
+                            {{if .KindLabel}}{{.KindLabel}}{{else}}{{.DirectionLabel}}{{end}}
+                            {{if .RegulatoryCode}}<span class="form-hint">({{.RegulatoryCode}})</span>{{end}}
+                        </td>
+                        <td style="text-align:right; padding: 4px 8px;">{{.RateDisplay}}</td>
+                        <td style="text-align:right; padding: 4px 8px;">
+                            {{if eq .Direction "WITHHOLDING"}}({{.TaxAmountDisplay}}){{else}}+{{.TaxAmountDisplay}}{{end}}
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight: 600; border-top: 1px solid var(--border);">
+                        <td colspan="2" style="padding: 4px 8px;">{{.Labels.NetReceivable}}</td>
+                        <td style="text-align:right; padding: 4px 8px;">{{.GrandTotalDisplay}}</td>
+                    </tr>
+                    {{if .WhtAmountDisplay}}
+                    <tr>
+                        <td colspan="2" style="padding: 4px 8px; color: var(--text-subtle);">{{.Labels.WHTAmount}}</td>
+                        <td style="text-align:right; padding: 4px 8px; color: var(--text-subtle);">{{.WhtAmountDisplay}}</td>
+                    </tr>
+                    {{end}}
+                </tfoot>
+            </table>
+        </div>
+        {{end}}
+
+        {{/* Settlement status — independent of TaxLines */}}
+        {{if .SettlementStatus}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">{{.Labels.SettlementStatus}}</label>
+                <div class="form-input" style="background: var(--bg-subtle); cursor: default;">{{.SettlementStatus}}</div>
+            </div>
+        </div>
+        {{end}}
+
+        {{/* Action CTAs — independent of TaxLines */}}
+        <div class="form-row" style="gap: 0.5rem; margin-top: 0.5rem;">
+            {{if .AddWHTCertURL}}
+            <a href="{{.AddWHTCertURL}}" class="btn btn-secondary" data-testid="revenue-add-wht-certificate"
+               hx-get="{{.AddWHTCertURL}}" hx-target="#sheetContent" hx-swap="innerHTML">
+                {{.Labels.AddWHTCertificate}}
+            </a>
+            {{end}}
+            {{if and .CanRecompute .RecomputeURL}}
+            <button type="button" class="btn btn-secondary" data-testid="revenue-recompute-taxes"
+                    hx-post="{{.RecomputeURL}}" hx-swap="none"
+                    hx-on::after-request="lf.Sheet.handleResponse(event)">
+                {{.Labels.Recompute}}
+            </button>
+            {{end}}
+        </div>
+        {{end}}
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

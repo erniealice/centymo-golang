@@ -23,6 +23,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 )
 
+
 // Stats is the cash dashboard's KPI tile values (centavos).
 type Stats struct {
 	Pending           int64
@@ -61,6 +62,10 @@ type Deps struct {
 	// Orchestrator wraps the espyna treasury/collection/dashboard use case
 	// (workspace_id pulled from request context inside the wrapper).
 	GetPageData func(ctx context.Context, req *Request) (*Response, error)
+
+	// GetFunctionalCurrency returns the workspace's ISO 4217 functional currency
+	// (e.g. "PHP"). Nil-safe — when absent, money strings omit the currency prefix.
+	GetFunctionalCurrency func(ctx context.Context) string
 }
 
 // PageData is what the cash dashboard template receives.
@@ -75,6 +80,12 @@ func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		l := deps.Labels.Dashboard
 		now := time.Now()
+
+		// Resolve workspace functional currency once (nil-safe).
+		currency := ""
+		if deps.GetFunctionalCurrency != nil {
+			currency = deps.GetFunctionalCurrency(ctx)
+		}
 
 		// Load aggregates (nil-safe).
 		var resp *Response
@@ -96,7 +107,7 @@ func NewView(deps *Deps) view.View {
 				Values: resp.DailyValues,
 				Color:  "sage",
 			}},
-			Currency: "PHP",
+			Currency: currency,
 		}
 		if len(dailyChart.Labels) == 0 {
 			dailyChart.Labels = []string{"-"}
@@ -112,7 +123,7 @@ func NewView(deps *Deps) view.View {
 				Values: resp.ModeValues,
 				Color:  "terracotta",
 			}},
-			Currency: "PHP",
+			Currency: currency,
 		}
 		if len(modeChart.Labels) == 0 {
 			modeChart.Labels = []string{"-"}
@@ -130,7 +141,7 @@ func NewView(deps *Deps) view.View {
 			if title == "" {
 				title = l.NewCollection
 			}
-			amount := fmt.Sprintf("₱%s", formatCentavos(c.GetAmount()))
+			amount := types.FormatMoney(c.GetAmount(), currency)
 			desc := amount
 			if c.GetCollectionMethodId() != "" {
 				desc = fmt.Sprintf("%s — %s", amount, c.GetCollectionMethodId())
@@ -156,10 +167,10 @@ func NewView(deps *Deps) view.View {
 				{Icon: "icon-check", Label: l.QuickMarkCleared, Href: deps.Routes.ListURL, TestID: "cash-action-cleared"},
 			},
 			Stats: []types.StatCardData{
-				{Icon: "icon-clock", Value: formatPesoSummary(resp.Stats.Pending), Label: l.StatPending, Color: "amber", TestID: "cash-stat-pending"},
-				{Icon: "icon-alert-triangle", Value: formatPesoSummary(resp.Stats.Overdue), Label: l.StatOverdue, Color: "navy", TestID: "cash-stat-overdue"},
-				{Icon: "icon-dollar-sign", Value: formatPesoSummary(resp.Stats.CollectedToday), Label: l.StatCollectedToday, Color: "terracotta", TestID: "cash-stat-today"},
-				{Icon: "icon-trending-up", Value: formatPesoSummary(resp.Stats.CollectedThisWeek), Label: l.StatCollectedWeek, Color: "sage", TestID: "cash-stat-week"},
+				{Icon: "icon-clock", Value: types.FormatMoneyCompact(resp.Stats.Pending, currency), Label: l.StatPending, Color: "amber", TestID: "cash-stat-pending"},
+				{Icon: "icon-alert-triangle", Value: types.FormatMoneyCompact(resp.Stats.Overdue, currency), Label: l.StatOverdue, Color: "navy", TestID: "cash-stat-overdue"},
+				{Icon: "icon-dollar-sign", Value: types.FormatMoneyCompact(resp.Stats.CollectedToday, currency), Label: l.StatCollectedToday, Color: "terracotta", TestID: "cash-stat-today"},
+				{Icon: "icon-trending-up", Value: types.FormatMoneyCompact(resp.Stats.CollectedThisWeek, currency), Label: l.StatCollectedWeek, Color: "sage", TestID: "cash-stat-week"},
 			},
 			Widgets: []types.DashboardWidget{
 				{
@@ -215,66 +226,3 @@ func NewView(deps *Deps) view.View {
 	})
 }
 
-// formatCentavos renders centavos as "1,234.50" (no currency symbol).
-func formatCentavos(centavos int64) string {
-	negative := centavos < 0
-	if negative {
-		centavos = -centavos
-	}
-	whole := centavos / 100
-	cents := centavos % 100
-	wholeStr := withThousandsSeparators(whole)
-	out := fmt.Sprintf("%s.%02d", wholeStr, cents)
-	if negative {
-		out = "-" + out
-	}
-	return out
-}
-
-// formatPesoSummary returns a compact peso amount like "₱4.8M" for stat cards.
-func formatPesoSummary(centavos int64) string {
-	if centavos == 0 {
-		return "₱0"
-	}
-	pesos := float64(centavos) / 100.0
-	abs := pesos
-	if abs < 0 {
-		abs = -abs
-	}
-	switch {
-	case abs >= 1_000_000:
-		return fmt.Sprintf("₱%.1fM", pesos/1_000_000)
-	case abs >= 10_000:
-		return fmt.Sprintf("₱%.0fK", pesos/1_000)
-	case abs >= 1_000:
-		return fmt.Sprintf("₱%.1fK", pesos/1_000)
-	default:
-		return fmt.Sprintf("₱%.0f", pesos)
-	}
-}
-
-// withThousandsSeparators inserts comma thousands separators.
-func withThousandsSeparators(n int64) string {
-	s := fmt.Sprintf("%d", n)
-	if n < 0 {
-		return s
-	}
-	if len(s) <= 3 {
-		return s
-	}
-	out := make([]byte, 0, len(s)+len(s)/3)
-	pre := len(s) % 3
-	if pre > 0 {
-		out = append(out, s[:pre]...)
-		if len(s) > pre {
-			out = append(out, ',')
-		}
-	}
-	for i := pre; i < len(s); i += 3 {
-		out = append(out, s[i:i+3]...)
-		if i+3 < len(s) {
-			out = append(out, ',')
-		}
-	}
-	return string(out)
-}

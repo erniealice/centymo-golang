@@ -218,6 +218,41 @@ Data: .Name, .Description, .Price, .Currency, .Active, .Unit, .VariantMode,
                 {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
             </div>
         </div>
+
+        {{/* ── Tax section (Phase 5) ── */}}
+        {{if or .TaxTreatmentOptions .WithholdingClassOptions}}
+        {{template "form-section" (dict "Title" .Labels.SectionTax)}}
+
+        {{if .TaxTreatmentOptions}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "tax_treatment_id"
+                "Label" .Labels.TaxTreatmentLabel
+                "Value" .TaxTreatmentID
+                "Placeholder" .Labels.TaxTreatmentPlaceholder
+                "Options" .TaxTreatmentOptions
+                "Info" .Labels.TaxTreatmentInfo
+                "TestId" "product-tax-treatment"
+            )}}
+        </div>
+        {{end}}
+
+        {{if .WithholdingClassOptions}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "withholding_class_id"
+                "Label" .Labels.WithholdingClassLabel
+                "Value" .WithholdingClassID
+                "Placeholder" .Labels.WithholdingClassPlaceholder
+                "Options" .WithholdingClassOptions
+                "Info" .Labels.WithholdingClassInfo
+                "TestId" "product-withholding-class"
+            )}}
+        </div>
+        {{end}}
+        {{end}}
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

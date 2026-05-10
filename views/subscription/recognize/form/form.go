@@ -45,6 +45,13 @@ type Labels struct {
 	IdempotencyExistingLink string
 	NoLinesError            string
 
+	// Tax preview labels (Phase 5)
+	TaxPreviewSection       string
+	TaxDirectionSurcharge   string
+	TaxDirectionWithholding string
+	NetReceivable           string
+	WHTAmount               string
+
 	// 2026-04-29 milestone-billing plan §5 / Phase D — milestone-specific
 	// drawer labels. Surfaced only when pricePlan.billing_kind = MILESTONE.
 	MilestoneSelect            string
@@ -57,6 +64,20 @@ type Labels struct {
 	PartialReason              string
 	PartialReasonRequired      string
 	OverBillingRejected        string
+}
+
+// TaxPreviewLine is a single row in the Taxes (preview) block.
+// Mirrors revenuepb.PreviewTaxLine but exposes only fields the template
+// actually renders.
+type TaxPreviewLine struct {
+	Direction       string // "SURCHARGE" or "WITHHOLDING"
+	DirectionLabel  string // direction-level label (e.g. "VAT / Sales Tax")
+	KindLabel       string // kind-level label (e.g. "VAT (Standard)"); falls back to DirectionLabel
+	TaxKindSnapshot string
+	RegulatoryCode  string
+	RateDisplay     string // e.g. "12.00%"
+	TaxAmount       int64
+	TaxAmountDisplay string
 }
 
 // MilestoneOption is a single row in the milestone select.
@@ -132,6 +153,11 @@ type Data struct {
 
 	// Non-blocking warnings (e.g. usage-based skipped notice).
 	Warnings []string
+
+	// Tax preview (Phase 5) — populated from ComputeTaxes dry-run output.
+	TaxPreviewLines  []TaxPreviewLine
+	GrandTotalAmount int64
+	GrandTotalDisplay string
 
 	// 2026-04-29 milestone-billing plan §5 / Phase D — milestone fields.
 	// IsMilestone gates the drawer's milestone-only rows (select +

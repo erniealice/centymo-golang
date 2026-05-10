@@ -107,6 +107,11 @@ type ModuleDeps struct {
 	GetPurchaseDashboardPageData func(ctx context.Context, req *purchaseboard.Request) (*purchaseboard.Response, error)
 	GetExpenseDashboardPageData  func(ctx context.Context, req *expenseboard.Request) (*expenseboard.Response, error)
 
+	// GetFunctionalCurrency returns the workspace ISO 4217 currency code for
+	// money display in the dashboards. Nil-safe — when absent, money strings
+	// omit the currency prefix.
+	GetFunctionalCurrency func(ctx context.Context) string
+
 	// Attachment operations (for expenditure detail attachments tab)
 	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
 	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
@@ -195,16 +200,18 @@ func NewModule(deps *ModuleDeps) *Module {
 		// Phase 5 — real dashboards backed by espyna expenditure dashboard
 		// use case (kind=purchase / kind=expense via separate callbacks).
 		PurchaseDashboard: purchaseboard.NewView(&purchaseboard.Deps{
-			Routes:       deps.Routes,
-			Labels:       deps.Labels,
-			CommonLabels: deps.CommonLabels,
-			GetPageData:  deps.GetPurchaseDashboardPageData,
+			Routes:                deps.Routes,
+			Labels:                deps.Labels,
+			CommonLabels:          deps.CommonLabels,
+			GetPageData:           deps.GetPurchaseDashboardPageData,
+			GetFunctionalCurrency: deps.GetFunctionalCurrency,
 		}),
 		ExpenseDashboard: expenseboard.NewView(&expenseboard.Deps{
-			Routes:       deps.Routes,
-			Labels:       deps.Labels,
-			CommonLabels: deps.CommonLabels,
-			GetPageData:  deps.GetExpenseDashboardPageData,
+			Routes:                deps.Routes,
+			Labels:                deps.Labels,
+			CommonLabels:          deps.CommonLabels,
+			GetPageData:           deps.GetExpenseDashboardPageData,
+			GetFunctionalCurrency: deps.GetFunctionalCurrency,
 		}),
 	}
 

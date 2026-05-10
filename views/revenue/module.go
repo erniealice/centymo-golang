@@ -28,6 +28,7 @@ import (
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	revenuetaxlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_tax_line"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
@@ -125,6 +126,13 @@ type ModuleDeps struct {
 	// autoPopulateLineItems path goes through the use case so the recognize
 	// drawer + manual flow share one source of truth.
 	RecognizeRevenueFromSubscription func(ctx context.Context, req *revenuepb.CreateRevenueWithLineItemsRequest) (*revenuepb.CreateRevenueWithLineItemsResponse, error)
+
+	// Tax lines for revenue drawer (Phase 5 — optional, gracefully degrades when nil)
+	ListRevenueTaxLines func(ctx context.Context, req *revenuetaxlinepb.ListRevenueTaxLinesRequest) (*revenuetaxlinepb.ListRevenueTaxLinesResponse, error)
+
+	// WithholdingCertAddURL is the URL pattern for the Add WHT Certificate CTA
+	// in the revenue taxes section. Substitutes {id} with the revenue ID.
+	WithholdingCertAddURL string
 }
 
 // Module holds all constructed revenue views.
@@ -163,6 +171,9 @@ type Module struct {
 	SettingsSetDefault view.View
 	AttachmentUpload   view.View
 	AttachmentDelete   view.View
+
+	// RecomputeTaxes is a 501 stub until Phase 4 (ComputeTaxesForRevenue) wires the use case.
+	RecomputeTaxes http.HandlerFunc
 }
 
 func NewModule(deps *ModuleDeps) *Module {
@@ -194,6 +205,8 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListPriceProducts:                deps.ListPriceProducts,
 		ReadJobActivity:                  deps.ReadJobActivity,
 		RecognizeRevenueFromSubscription: deps.RecognizeRevenueFromSubscription,
+		ListRevenueTaxLines:              deps.ListRevenueTaxLines,
+		WithholdingCertAddURL:            deps.WithholdingCertAddURL,
 	}
 	paymentDeps := &revenuepayment.Deps{Routes: deps.Routes, DB: deps.DB, Labels: deps.Labels}
 	searchDeps := &revenuesearch.Deps{
@@ -285,6 +298,16 @@ func NewModule(deps *ModuleDeps) *Module {
 		settingsSetDefault = revenuesettings.NewSetDefaultAction(settingsDeps)
 	}
 
+	// RecomputeTaxes stub — returns 501 until Phase 4 wires ComputeTaxesForRevenue.
+	recomputeUnavailableMsg := deps.Labels.Errors.RecomputeUnavailable
+	if recomputeUnavailableMsg == "" {
+		recomputeUnavailableMsg = "Tax recompute is not yet available."
+	}
+	recomputeTaxesStub := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("HX-Reswap", "none")
+		http.Error(w, recomputeUnavailableMsg, http.StatusNotImplemented)
+	})
+
 	return &Module{
 		routes:    deps.Routes,
 		Dashboard: revenuedashboard.NewView(&revenuedashboard.Deps{Labels: deps.Labels, Routes: deps.Routes, CommonLabels: deps.CommonLabels}),
@@ -326,6 +349,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		SettingsSetDefault: settingsSetDefault,
 		AttachmentUpload:   revenuedetail.NewAttachmentUploadAction(detailDeps),
 		AttachmentDelete:   revenuedetail.NewAttachmentDeleteAction(detailDeps),
+		RecomputeTaxes:     recomputeTaxesStub,
 	}
 }
 
@@ -374,5 +398,6 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
 		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
 	}
+	// Taxes recompute stub (501 until Phase 4 wires ComputeTaxesForRevenue)
 	// Note: InvoiceDownload + SendEmailHandler are http.HandlerFunc — register via routes.HandleFunc() in views.go
 }

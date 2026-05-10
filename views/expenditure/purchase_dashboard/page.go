@@ -61,6 +61,10 @@ type Deps struct {
 	// GetPageData is nil-safe; orchestrator wraps the espyna expenditure
 	// dashboard use case (kind="purchase", workspace_id from ctx).
 	GetPageData func(ctx context.Context, req *Request) (*Response, error)
+
+	// GetFunctionalCurrency returns the workspace's ISO 4217 functional currency
+	// (e.g. "PHP"). Nil-safe — when absent, money strings omit the currency prefix.
+	GetFunctionalCurrency func(ctx context.Context) string
 }
 
 // PageData is what the dashboard template receives.
@@ -75,6 +79,12 @@ func NewView(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		l := deps.Labels.PurchaseDashboard
 		now := time.Now()
+
+		// Resolve workspace functional currency once (nil-safe).
+		currency := ""
+		if deps.GetFunctionalCurrency != nil {
+			currency = deps.GetFunctionalCurrency(ctx)
+		}
 
 		var resp *Response
 		if deps.GetPageData != nil {
@@ -95,7 +105,7 @@ func NewView(deps *Deps) view.View {
 				Values: resp.MonthValues,
 				Color:  "terracotta",
 			}},
-			Currency: "PHP",
+			Currency: currency,
 		}
 		if len(monthChart.Labels) == 0 {
 			monthChart.Labels = []string{"-"}
@@ -113,7 +123,7 @@ func NewView(deps *Deps) view.View {
 			if title == "" {
 				title = l.NewPurchase
 			}
-			amount := fmt.Sprintf("₱%s", formatCentavos(e.GetTotalAmount()))
+			amount := types.FormatMoney(e.GetTotalAmount(), currency)
 			desc := amount
 			if e.GetStatus() != "" {
 				desc = fmt.Sprintf("%s — %s", amount, e.GetStatus())
@@ -146,7 +156,7 @@ func NewView(deps *Deps) view.View {
 			Stats: []types.StatCardData{
 				{Icon: "icon-shopping-bag", Value: fmt.Sprintf("%d", resp.Stats.OpenCount), Label: l.StatOpenPOs, Color: "terracotta", TestID: "purchase-stat-open"},
 				{Icon: "icon-package", Value: fmt.Sprintf("%d", resp.Stats.AwaitingCount), Label: l.StatAwaiting, Color: "amber", TestID: "purchase-stat-awaiting"},
-				{Icon: "icon-dollar-sign", Value: formatPesoSummary(resp.Stats.SpentMTD), Label: l.StatSpentMTD, Color: "navy", TestID: "purchase-stat-mtd"},
+				{Icon: "icon-dollar-sign", Value: types.FormatMoneyCompact(resp.Stats.SpentMTD, currency), Label: l.StatSpentMTD, Color: "navy", TestID: "purchase-stat-mtd"},
 				{Icon: "icon-trending-up", Value: topSupplierStat, Label: l.StatTopSupplier, Color: "sage", TestID: "purchase-stat-supplier"},
 			},
 			Widgets: []types.DashboardWidget{
@@ -166,7 +176,7 @@ func NewView(deps *Deps) view.View {
 					HeaderActions: []types.QuickAction{
 						{Label: l.ViewAll, Href: deps.Routes.PurchaseListURL},
 					},
-					Custom: renderTopSuppliersTable(resp.TopSuppliers, l),
+					Custom: renderTopSuppliersTable(resp.TopSuppliers, l, currency),
 				},
 				{
 					ID:    "recent",
@@ -206,7 +216,7 @@ func NewView(deps *Deps) view.View {
 }
 
 // renderTopSuppliersTable renders the top-suppliers table inside a custom widget.
-func renderTopSuppliersTable(rows []TopSupplierRow, l centymo.PurchaseDashboardLabels) template.HTML {
+func renderTopSuppliersTable(rows []TopSupplierRow, l centymo.PurchaseDashboardLabels, currency string) template.HTML {
 	if len(rows) == 0 {
 		return template.HTML(fmt.Sprintf(
 			`<div class="empty-state" data-testid="purchase-dashboard-suppliers-empty"><p>%s</p></div>`,
@@ -222,68 +232,10 @@ func renderTopSuppliersTable(rows []TopSupplierRow, l centymo.PurchaseDashboardL
 	for i, r := range rows {
 		buf.WriteString(fmt.Sprintf(`<tr data-testid="purchase-table-row-%d"><td>`, i))
 		buf.WriteString(template.HTMLEscapeString(r.SupplierName))
-		buf.WriteString(`</td><td>₱`)
-		buf.WriteString(template.HTMLEscapeString(formatCentavos(r.Total)))
+		buf.WriteString(`</td><td>`)
+		buf.WriteString(template.HTMLEscapeString(types.FormatMoney(r.Total, currency)))
 		buf.WriteString(`</td></tr>`)
 	}
 	buf.WriteString(`</tbody></table>`)
 	return template.HTML(buf.String())
-}
-
-func formatCentavos(centavos int64) string {
-	negative := centavos < 0
-	if negative {
-		centavos = -centavos
-	}
-	whole := centavos / 100
-	cents := centavos % 100
-	wholeStr := withThousandsSeparators(whole)
-	out := fmt.Sprintf("%s.%02d", wholeStr, cents)
-	if negative {
-		out = "-" + out
-	}
-	return out
-}
-
-func formatPesoSummary(centavos int64) string {
-	if centavos == 0 {
-		return "₱0"
-	}
-	pesos := float64(centavos) / 100.0
-	abs := pesos
-	if abs < 0 {
-		abs = -abs
-	}
-	switch {
-	case abs >= 1_000_000:
-		return fmt.Sprintf("₱%.1fM", pesos/1_000_000)
-	case abs >= 10_000:
-		return fmt.Sprintf("₱%.0fK", pesos/1_000)
-	case abs >= 1_000:
-		return fmt.Sprintf("₱%.1fK", pesos/1_000)
-	default:
-		return fmt.Sprintf("₱%.0f", pesos)
-	}
-}
-
-func withThousandsSeparators(n int64) string {
-	s := fmt.Sprintf("%d", n)
-	if n < 0 || len(s) <= 3 {
-		return s
-	}
-	out := make([]byte, 0, len(s)+len(s)/3)
-	pre := len(s) % 3
-	if pre > 0 {
-		out = append(out, s[:pre]...)
-		if len(s) > pre {
-			out = append(out, ',')
-		}
-	}
-	for i := pre; i < len(s); i += 3 {
-		out = append(out, s[i:i+3]...)
-		if i+3 < len(s) {
-			out = append(out, ',')
-		}
-	}
-	return string(out)
 }

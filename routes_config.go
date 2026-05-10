@@ -668,6 +668,9 @@ type RevenueRoutes struct {
 
 	// Price lookup for revenue line item (product_id + location_id + date → price)
 	PriceLookupURL string `json:"price_lookup_url"`
+
+	// Tax recompute (Phase 4 wiring — stub until ComputeTaxesForRevenue is available)
+	RecomputeTaxesURL string `json:"recompute_taxes_url"`
 }
 
 // DefaultRevenueRoutes returns a RevenueRoutes populated from the package-level
@@ -713,6 +716,7 @@ func DefaultRevenueRoutes() RevenueRoutes {
 		SearchLocationURL:          RevenueSearchLocationURL,
 		SearchProductURL:           RevenueSearchProductURL,
 		PriceLookupURL:             RevenuePriceLookupURL,
+		RecomputeTaxesURL:          RevenueRecomputeTaxesURL,
 	}
 }
 
@@ -759,6 +763,7 @@ func (r RevenueRoutes) RouteMap() map[string]string {
 		"revenue.search.locations":     r.SearchLocationURL,
 		"revenue.search.products":      r.SearchProductURL,
 		"revenue.price_lookup":         r.PriceLookupURL,
+		"revenue.taxes.recompute":      r.RecomputeTaxesURL,
 	}
 }
 
