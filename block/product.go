@@ -10,7 +10,6 @@ package block
 import (
 	"context"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
 	"github.com/erniealice/espyna-golang/reference"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
@@ -54,7 +53,7 @@ type productWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the product wiring used to be.
-func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer.UseCases, w productWiring) {
+func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w productWiring) {
 	// =====================================================================
 	// Product module
 	// =====================================================================
@@ -113,93 +112,85 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consu
 			DeleteAttachment: w.deleteAttachment,
 			NewID:            w.newAttachmentID,
 		}
-		if useCases.Product != nil {
-			if uc := useCases.Product.Product; uc != nil {
-				productDeps.ListProducts = uc.ListProducts.Execute
-				productDeps.ReadProduct = uc.ReadProduct.Execute
-				productDeps.CreateProduct = uc.CreateProduct.Execute
-				productDeps.UpdateProduct = uc.UpdateProduct.Execute
-				productDeps.DeleteProduct = uc.DeleteProduct.Execute
-			}
-			if uc := useCases.Product.ProductVariant; uc != nil {
-				productDeps.ListProductVariants = uc.ListProductVariants.Execute
-				productDeps.ReadProductVariant = uc.ReadProductVariant.Execute
-				productDeps.CreateProductVariant = uc.CreateProductVariant.Execute
-				productDeps.UpdateProductVariant = uc.UpdateProductVariant.Execute
-				productDeps.DeleteProductVariant = uc.DeleteProductVariant.Execute
-			}
-			if uc := useCases.Product.ProductVariantOption; uc != nil {
-				productDeps.ListProductVariantOptions = uc.ListProductVariantOptions.Execute
-				productDeps.CreateProductVariantOption = uc.CreateProductVariantOption.Execute
-			}
-			if uc := useCases.Product.ProductOption; uc != nil {
-				productDeps.ListProductOptions = uc.ListProductOptions.Execute
-				productDeps.ReadProductOption = uc.ReadProductOption.Execute
-				productDeps.CreateProductOption = uc.CreateProductOption.Execute
-				productDeps.UpdateProductOption = uc.UpdateProductOption.Execute
-				productDeps.DeleteProductOption = uc.DeleteProductOption.Execute
-			}
-			if uc := useCases.Product.ProductOptionValue; uc != nil {
-				productDeps.ListProductOptionValues = uc.ListProductOptionValues.Execute
-				productDeps.ReadProductOptionValue = uc.ReadProductOptionValue.Execute
-				productDeps.CreateProductOptionValue = uc.CreateProductOptionValue.Execute
-				productDeps.UpdateProductOptionValue = uc.UpdateProductOptionValue.Execute
-				productDeps.DeleteProductOptionValue = uc.DeleteProductOptionValue.Execute
-			}
-			if uc := useCases.Product.ProductAttribute; uc != nil {
-				productDeps.ListProductAttributes = uc.ListProductAttributes.Execute
-				productDeps.CreateProductAttribute = uc.CreateProductAttribute.Execute
-				productDeps.DeleteProductAttribute = uc.DeleteProductAttribute.Execute
-			}
-			if uc := useCases.Product.Line; uc != nil {
-				productDeps.ListLines = uc.ListLines.Execute
-			}
-			if uc := useCases.Product.ProductLine; uc != nil {
-				productDeps.ListProductLines = uc.ListProductLines.Execute
-				productDeps.CreateProductLine = uc.CreateProductLine.Execute
-				productDeps.UpdateProductLine = uc.UpdateProductLine.Execute
-				productDeps.DeleteProductLine = uc.DeleteProductLine.Execute
-			}
-			if uc := useCases.Product.ProductVariantImage; uc != nil {
-				productDeps.ListProductVariantImages = uc.ListProductVariantImages.Execute
-				productDeps.CreateProductVariantImage = uc.CreateProductVariantImage.Execute
-				productDeps.DeleteProductVariantImage = uc.DeleteProductVariantImage.Execute
-			}
+		if useCases.Product.ListProducts != nil {
+			productDeps.ListProducts = useCases.Product.ListProducts
+			productDeps.ReadProduct = useCases.Product.ReadProduct
+			productDeps.CreateProduct = useCases.Product.CreateProduct
+			productDeps.UpdateProduct = useCases.Product.UpdateProduct
+			productDeps.DeleteProduct = useCases.Product.DeleteProduct
+		}
+		if useCases.Product.ListProductVariants != nil {
+			productDeps.ListProductVariants = useCases.Product.ListProductVariants
+			productDeps.ReadProductVariant = useCases.Product.ReadProductVariant
+			productDeps.CreateProductVariant = useCases.Product.CreateProductVariant
+			productDeps.UpdateProductVariant = useCases.Product.UpdateProductVariant
+			productDeps.DeleteProductVariant = useCases.Product.DeleteProductVariant
+		}
+		if useCases.Product.ListProductVariantOptions != nil {
+			productDeps.ListProductVariantOptions = useCases.Product.ListProductVariantOptions
+			productDeps.CreateProductVariantOption = useCases.Product.CreateProductVariantOption
+		}
+		if useCases.Product.ListProductOptions != nil {
+			productDeps.ListProductOptions = useCases.Product.ListProductOptions
+			productDeps.ReadProductOption = useCases.Product.ReadProductOption
+			productDeps.CreateProductOption = useCases.Product.CreateProductOption
+			productDeps.UpdateProductOption = useCases.Product.UpdateProductOption
+			productDeps.DeleteProductOption = useCases.Product.DeleteProductOption
+		}
+		if useCases.Product.ListProductOptionValues != nil {
+			productDeps.ListProductOptionValues = useCases.Product.ListProductOptionValues
+			productDeps.ReadProductOptionValue = useCases.Product.ReadProductOptionValue
+			productDeps.CreateProductOptionValue = useCases.Product.CreateProductOptionValue
+			productDeps.UpdateProductOptionValue = useCases.Product.UpdateProductOptionValue
+			productDeps.DeleteProductOptionValue = useCases.Product.DeleteProductOptionValue
+		}
+		if useCases.Product.ListProductAttributes != nil {
+			productDeps.ListProductAttributes = useCases.Product.ListProductAttributes
+			productDeps.CreateProductAttribute = useCases.Product.CreateProductAttribute
+			productDeps.DeleteProductAttribute = useCases.Product.DeleteProductAttribute
+		}
+		if useCases.Product.ListLines != nil {
+			productDeps.ListLines = useCases.Product.ListLines
+		}
+		if useCases.Product.ListProductLines != nil {
+			productDeps.ListProductLines = useCases.Product.ListProductLines
+			productDeps.CreateProductLine = useCases.Product.CreateProductLine
+			productDeps.UpdateProductLine = useCases.Product.UpdateProductLine
+			productDeps.DeleteProductLine = useCases.Product.DeleteProductLine
+		}
+		if useCases.Product.ListProductVariantImages != nil {
+			productDeps.ListProductVariantImages = useCases.Product.ListProductVariantImages
+			productDeps.CreateProductVariantImage = useCases.Product.CreateProductVariantImage
+			productDeps.DeleteProductVariantImage = useCases.Product.DeleteProductVariantImage
 		}
 		// Common Attribute (for attribute dropdowns in product detail)
-		if useCases.Common != nil && useCases.Common.Attribute != nil {
-			productDeps.ListAttributes = useCases.Common.Attribute.ListAttributes.Execute
-			productDeps.ReadAttribute = useCases.Common.Attribute.ReadAttribute.Execute
+		if useCases.Common.ListAttributes != nil {
+			productDeps.ListAttributes = useCases.Common.ListAttributes
+			productDeps.ReadAttribute = useCases.Common.ReadAttribute
 		}
 		// Inventory (for variant detail page + variant stock detail)
-		if useCases.Inventory != nil {
-			if uc := useCases.Inventory.InventoryItem; uc != nil {
-				productDeps.ListInventoryItems = uc.ListInventoryItems.Execute
-				productDeps.ReadInventoryItem = uc.ReadInventoryItem.Execute
-			}
-			if uc := useCases.Inventory.InventorySerial; uc != nil {
-				productDeps.ListInventorySerials = uc.ListInventorySerials.Execute
-			}
+		if useCases.Inventory.ListInventoryItems != nil {
+			productDeps.ListInventoryItems = useCases.Inventory.ListInventoryItems
+			productDeps.ReadInventoryItem = useCases.Inventory.ReadInventoryItem
+		}
+		if useCases.Inventory.ListInventorySerials != nil {
+			productDeps.ListInventorySerials = useCases.Inventory.ListInventorySerials
 		}
 		// Pricing deps (for variant detail Pricing tab).
-		if useCases.Product != nil {
-			if uc := useCases.Product.ProductPlan; uc != nil {
-				productDeps.ListProductPlans = uc.ListProductPlans.Execute
-			}
+		if useCases.Product.ListProductPlans != nil {
+			productDeps.ListProductPlans = useCases.Product.ListProductPlans
 		}
-		if useCases.Subscription != nil {
-			if uc := useCases.Subscription.ProductPricePlan; uc != nil {
-				productDeps.ListProductPricePlans = uc.ListProductPricePlans.Execute
-			}
-			if uc := useCases.Subscription.PricePlan; uc != nil {
-				productDeps.ListPricePlans = uc.ListPricePlans.Execute
-			}
-			if uc := useCases.Subscription.PriceSchedule; uc != nil {
-				productDeps.ListPriceSchedules = uc.ListPriceSchedules.Execute
-			}
-			if uc := useCases.Subscription.Plan; uc != nil {
-				productDeps.ListPlans = uc.ListPlans.Execute
-			}
+		if useCases.PricePlan.ListProductPricePlans != nil {
+			productDeps.ListProductPricePlans = useCases.PricePlan.ListProductPricePlans
+		}
+		if useCases.PricePlan.ListPricePlans != nil {
+			productDeps.ListPricePlans = useCases.PricePlan.ListPricePlans
+		}
+		if useCases.PriceSchedule.ListPriceSchedules != nil {
+			productDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
+		}
+		if useCases.Plan.ListPlans != nil {
+			productDeps.ListPlans = useCases.Plan.ListPlans
 		}
 		wireServiceDashboard(productDeps, useCases)
 		productmod.NewModule(productDeps).RegisterRoutes(ctx.Routes)
@@ -270,18 +261,17 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consu
 	// =====================================================================
 
 	if cfg.wantProductLine() {
-		if useCases.Product != nil && useCases.Product.Line != nil {
-			uc := useCases.Product.Line
+		if useCases.Product.ListLines != nil {
 			modDeps := &productlinemod.ModuleDeps{
 				Routes:       w.productLineRoutes,
 				Labels:       w.productLineLabels,
 				CommonLabels: ctx.Common,
 				TableLabels:  w.centymoTableLabels,
-				ListLines:    uc.ListLines.Execute,
-				ReadLine:     uc.ReadLine.Execute,
-				CreateLine:   uc.CreateLine.Execute,
-				UpdateLine:   uc.UpdateLine.Execute,
-				DeleteLine:   uc.DeleteLine.Execute,
+				ListLines:    useCases.Product.ListLines,
+				ReadLine:     useCases.Product.ReadLine,
+				CreateLine:   useCases.Product.CreateLine,
+				UpdateLine:   useCases.Product.UpdateLine,
+				DeleteLine:   useCases.Product.DeleteLine,
 			}
 			if w.refChecker != nil {
 				modDeps.GetInUseIDs = w.refChecker.GetLineInUseIDs
@@ -298,11 +288,11 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consu
 					Labels:       w.productLineLabels,
 					CommonLabels: ctx.Common,
 					TableLabels:  w.centymoTableLabels,
-					ListLines:    uc.ListLines.Execute,
-					ReadLine:     uc.ReadLine.Execute,
-					CreateLine:   uc.CreateLine.Execute,
-					UpdateLine:   uc.UpdateLine.Execute,
-					DeleteLine:   uc.DeleteLine.Execute,
+					ListLines:    useCases.Product.ListLines,
+					ReadLine:     useCases.Product.ReadLine,
+					CreateLine:   useCases.Product.CreateLine,
+					UpdateLine:   useCases.Product.UpdateLine,
+					DeleteLine:   useCases.Product.DeleteLine,
 				}
 				if w.refChecker != nil {
 					productLineInventoryDeps.GetInUseIDs = w.refChecker.GetLineInUseIDs

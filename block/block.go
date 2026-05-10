@@ -43,7 +43,6 @@ import (
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 	pyeza "github.com/erniealice/pyeza-golang"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
 	"github.com/erniealice/espyna-golang/reference"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
@@ -126,11 +125,14 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			return fmt.Errorf("centymo.Block: ctx.Translations must be *lynguaV1.TranslationProvider")
 		}
 
-		// --- Type-assert use cases ---
-		useCases, ok := ctx.UseCases.(*consumer.UseCases)
-		if !ok || useCases == nil {
-			return fmt.Errorf("centymo.Block: ctx.UseCases must be *consumer.UseCases")
+		// --- Validate use cases ---
+		if cfg.useCases == nil {
+			return fmt.Errorf("centymo.Block: WithUseCases(...) was not supplied")
 		}
+		if err := cfg.useCases.RequireFor(cfg); err != nil {
+			return err
+		}
+		useCases := cfg.useCases
 
 		// --- Type-assert DB ---
 		db, ok := ctx.DB.(centymo.DataSource)
@@ -403,53 +405,29 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				DeleteAttachment: deleteAttachment,
 				NewID:            newAttachmentID,
 			}
-			if useCases.Inventory != nil {
-				if uc := useCases.Inventory.InventoryItem; uc != nil {
-					invDeps.ListInventoryItems = uc.ListInventoryItems.Execute
-					invDeps.CreateInventoryItem = uc.CreateInventoryItem.Execute
-					invDeps.ReadInventoryItem = uc.ReadInventoryItem.Execute
-					invDeps.UpdateInventoryItem = uc.UpdateInventoryItem.Execute
-					invDeps.DeleteInventoryItem = uc.DeleteInventoryItem.Execute
-				}
-				if uc := useCases.Inventory.InventorySerial; uc != nil {
-					invDeps.ListInventorySerials = uc.ListInventorySerials.Execute
-					invDeps.CreateInventorySerial = uc.CreateInventorySerial.Execute
-					invDeps.ReadInventorySerial = uc.ReadInventorySerial.Execute
-					invDeps.UpdateInventorySerial = uc.UpdateInventorySerial.Execute
-					invDeps.DeleteInventorySerial = uc.DeleteInventorySerial.Execute
-				}
-				if uc := useCases.Inventory.InventoryTransaction; uc != nil {
-					invDeps.ListInventoryTransactions = uc.ListInventoryTransactions.Execute
-					invDeps.CreateInventoryTransaction = uc.CreateInventoryTransaction.Execute
-					if uc.GetInventoryMovementsListPageData != nil {
-						invDeps.GetInventoryMovementsListPageData = uc.GetInventoryMovementsListPageData.Execute
-					}
-				}
-				if uc := useCases.Inventory.InventoryDepreciation; uc != nil {
-					invDeps.ListInventoryDepreciations = uc.ListInventoryDepreciations.Execute
-					invDeps.CreateInventoryDepreciation = uc.CreateInventoryDepreciation.Execute
-					invDeps.ReadInventoryDepreciation = uc.ReadInventoryDepreciation.Execute
-					invDeps.UpdateInventoryDepreciation = uc.UpdateInventoryDepreciation.Execute
-				}
-			}
+			invDeps.ListInventoryItems = useCases.Inventory.ListInventoryItems
+			invDeps.CreateInventoryItem = useCases.Inventory.CreateInventoryItem
+			invDeps.ReadInventoryItem = useCases.Inventory.ReadInventoryItem
+			invDeps.UpdateInventoryItem = useCases.Inventory.UpdateInventoryItem
+			invDeps.DeleteInventoryItem = useCases.Inventory.DeleteInventoryItem
+			invDeps.ListInventorySerials = useCases.Inventory.ListInventorySerials
+			invDeps.CreateInventorySerial = useCases.Inventory.CreateInventorySerial
+			invDeps.ReadInventorySerial = useCases.Inventory.ReadInventorySerial
+			invDeps.UpdateInventorySerial = useCases.Inventory.UpdateInventorySerial
+			invDeps.DeleteInventorySerial = useCases.Inventory.DeleteInventorySerial
+			invDeps.ListInventoryTransactions = useCases.Inventory.ListInventoryTransactions
+			invDeps.CreateInventoryTransaction = useCases.Inventory.CreateInventoryTransaction
+			invDeps.GetInventoryMovementsListPageData = useCases.Inventory.GetInventoryMovementsListPageData
+			invDeps.ListInventoryDepreciations = useCases.Inventory.ListInventoryDepreciations
+			invDeps.CreateInventoryDepreciation = useCases.Inventory.CreateInventoryDepreciation
+			invDeps.ReadInventoryDepreciation = useCases.Inventory.ReadInventoryDepreciation
+			invDeps.UpdateInventoryDepreciation = useCases.Inventory.UpdateInventoryDepreciation
 			// Cross-domain: product options + locations for inventory item views
-			if useCases.Product != nil {
-				if uc := useCases.Product.Product; uc != nil {
-					invDeps.ReadProduct = uc.ReadProduct.Execute
-				}
-				if uc := useCases.Product.ProductVariantOption; uc != nil {
-					invDeps.ListProductVariantOptions = uc.ListProductVariantOptions.Execute
-				}
-				if uc := useCases.Product.ProductOptionValue; uc != nil {
-					invDeps.ListProductOptionValues = uc.ListProductOptionValues.Execute
-				}
-				if uc := useCases.Product.ProductOption; uc != nil {
-					invDeps.ListProductOptions = uc.ListProductOptions.Execute
-				}
-			}
-			if useCases.Entity != nil && useCases.Entity.Location != nil {
-				invDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
-			}
+			invDeps.ReadProduct = useCases.Product.ReadProduct
+			invDeps.ListProductVariantOptions = useCases.Product.ListProductVariantOptions
+			invDeps.ListProductOptionValues = useCases.Product.ListProductOptionValues
+			invDeps.ListProductOptions = useCases.Product.ListProductOptions
+			invDeps.ListLocations = useCases.Entity.Location.ListLocations
 
 			invMod := inventorymod.NewModule(invDeps)
 			invMod.RegisterRoutes(ctx.Routes)
@@ -514,96 +492,42 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				NewID:            newAttachmentID,
 			}
 			// Client search for revenue form autocomplete
-			if useCases.Entity != nil && useCases.Entity.Client != nil {
-				revDeps.ListClients = useCases.Entity.Client.ListClients.Execute
-				if useCases.Entity.Client.SearchClientsByName != nil {
-					revDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName.Execute
-				}
-			}
-			// Subscription search for revenue form autocomplete
-			if useCases.Subscription != nil && useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.ListSubscriptions != nil {
-				revDeps.ListSubscriptions = useCases.Subscription.Subscription.ListSubscriptions.Execute
-			}
-			// Subscription auto-populate for revenue add (read subscription + price plan + product price plans)
-			if useCases.Subscription != nil {
-				if useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.ReadSubscription != nil {
-					revDeps.ReadSubscription = useCases.Subscription.Subscription.ReadSubscription.Execute
-				}
-				if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.ReadPricePlan != nil {
-					revDeps.ReadPricePlan = useCases.Subscription.PricePlan.ReadPricePlan.Execute
-				}
-				if useCases.Subscription.ProductPricePlan != nil && useCases.Subscription.ProductPricePlan.ListProductPricePlans != nil {
-					revDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
-				}
-			}
-			if useCases.Product != nil && useCases.Product.Product != nil {
-				if useCases.Product.Product.ReadProduct != nil {
-					revDeps.ReadProduct = useCases.Product.Product.ReadProduct.Execute
-				}
-				if useCases.Product.Product.ListProducts != nil {
-					revDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
-				}
-			}
+			revDeps.ListClients = useCases.Entity.Client.ListClients
+			revDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName
+			// Subscription search + auto-populate
+			revDeps.ListSubscriptions = useCases.Subscription.ListSubscriptions
+			revDeps.ReadSubscription = useCases.Subscription.ReadSubscription
+			revDeps.ReadPricePlan = useCases.PricePlan.ReadPricePlan
+			revDeps.ListProductPricePlans = useCases.PricePlan.ListProductPricePlans
+			revDeps.ReadProduct = useCases.Product.ReadProduct
+			revDeps.ListProducts = useCases.Product.ListProducts
 			// Revenue CRUD + list page data
-			if useCases.Revenue != nil && useCases.Revenue.Revenue != nil {
-				revDeps.GetListPageData = useCases.Revenue.Revenue.GetRevenueListPageData.Execute
-				revDeps.CreateRevenue = useCases.Revenue.Revenue.CreateRevenue.Execute
-				revDeps.ReadRevenue = useCases.Revenue.Revenue.ReadRevenue.Execute
-				revDeps.UpdateRevenue = useCases.Revenue.Revenue.UpdateRevenue.Execute
-				revDeps.DeleteRevenue = useCases.Revenue.Revenue.DeleteRevenue.Execute
-			}
+			revDeps.GetListPageData = useCases.Revenue.GetListPageData
+			revDeps.CreateRevenue = useCases.Revenue.CreateRevenue
+			revDeps.ReadRevenue = useCases.Revenue.ReadRevenue
+			revDeps.UpdateRevenue = useCases.Revenue.UpdateRevenue
+			revDeps.DeleteRevenue = useCases.Revenue.DeleteRevenue
 			// Revenue Line Item CRUD
-			if useCases.Revenue != nil && useCases.Revenue.RevenueLineItem != nil {
-				uc := useCases.Revenue.RevenueLineItem
-				revDeps.CreateRevenueLineItem = uc.CreateRevenueLineItem.Execute
-				revDeps.ReadRevenueLineItem = uc.ReadRevenueLineItem.Execute
-				revDeps.UpdateRevenueLineItem = uc.UpdateRevenueLineItem.Execute
-				revDeps.DeleteRevenueLineItem = uc.DeleteRevenueLineItem.Execute
-				revDeps.ListRevenueLineItems = uc.ListRevenueLineItems.Execute
-			}
+			revDeps.CreateRevenueLineItem = useCases.Revenue.CreateRevenueLineItem
+			revDeps.ReadRevenueLineItem = useCases.Revenue.ReadRevenueLineItem
+			revDeps.UpdateRevenueLineItem = useCases.Revenue.UpdateRevenueLineItem
+			revDeps.DeleteRevenueLineItem = useCases.Revenue.DeleteRevenueLineItem
+			revDeps.ListRevenueLineItems = useCases.Revenue.ListRevenueLineItems
 			// Inventory (for stock deduction on status change)
-			if useCases.Inventory != nil {
-				if uc := useCases.Inventory.InventoryItem; uc != nil {
-					revDeps.ReadInventoryItem = uc.ReadInventoryItem.Execute
-					revDeps.UpdateInventoryItem = uc.UpdateInventoryItem.Execute
-					revDeps.ListInventoryItems = uc.ListInventoryItems.Execute
-				}
-				if uc := useCases.Inventory.InventorySerial; uc != nil {
-					revDeps.UpdateInventorySerial = uc.UpdateInventorySerial.Execute
-				}
-				if uc := useCases.Inventory.InventorySerialHistory; uc != nil {
-					revDeps.CreateInventorySerialHistory = uc.CreateInventorySerialHistory.Execute
-				}
-			}
-
+			revDeps.ReadInventoryItem = useCases.Inventory.ReadInventoryItem
+			revDeps.UpdateInventoryItem = useCases.Inventory.UpdateInventoryItem
+			revDeps.ListInventoryItems = useCases.Inventory.ListInventoryItems
+			revDeps.UpdateInventorySerial = useCases.Inventory.UpdateInventorySerial
+			revDeps.CreateInventorySerialHistory = useCases.Inventory.CreateInventorySerialHistory
 			// Price lookup for line item (find applicable price list + price product)
-			if useCases.Product != nil && useCases.Product.PriceList != nil && useCases.Product.PriceList.FindApplicablePriceList != nil {
-				revDeps.FindApplicablePriceList = useCases.Product.PriceList.FindApplicablePriceList.Execute
-			}
-			if useCases.Product != nil && useCases.Product.PriceProduct != nil && useCases.Product.PriceProduct.ListPriceProducts != nil {
-				revDeps.ListPriceProducts = useCases.Product.PriceProduct.ListPriceProducts.Execute
-			}
-
+			revDeps.FindApplicablePriceList = useCases.Product.FindApplicablePriceList
+			revDeps.ListPriceProducts = useCases.Product.ListPriceProducts
 			// Job activity lookup for "from_activities" revenue type
-			if useCases.Operation != nil && useCases.Operation.JobActivity != nil && useCases.Operation.JobActivity.ReadJobActivity != nil {
-				revDeps.ReadJobActivity = useCases.Operation.JobActivity.ReadJobActivity.Execute
-			}
-
-			// Recognize-revenue use case — shared with the subscription
-			// recognize-drawer flow. When the manual revenue-add picks a
-			// subscription, autoPopulateLineItems delegates to this same use
-			// case (skip_header=true mode) so both paths converge.
-			if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
-				useCases.Revenue.Revenue.RecognizeRevenueFromSubscription != nil {
-				revDeps.RecognizeRevenueFromSubscription =
-					useCases.Revenue.Revenue.RecognizeRevenueFromSubscription.Execute
-			}
-
-			// Phase 5: wire tax lines read-access (nil-safe — gracefully absent until DB migration lands)
-			if useCases.Revenue != nil && useCases.Revenue.RevenueTaxLine != nil &&
-				useCases.Revenue.RevenueTaxLine.ListRevenueTaxLines != nil {
-				revDeps.ListRevenueTaxLines = useCases.Revenue.RevenueTaxLine.ListRevenueTaxLines.Execute
-			}
+			revDeps.ReadJobActivity = useCases.Operation.JobActivity.ReadJobActivity
+			// Recognize-revenue use case — shared with the subscription recognize-drawer flow
+			revDeps.RecognizeRevenueFromSubscription = useCases.Revenue.RecognizeRevenueFromSubscription
+			// Phase 5: wire tax lines read-access
+			revDeps.ListRevenueTaxLines = useCases.Revenue.ListRevenueTaxLines
 
 			revenueMod := revenuemod.NewModule(revDeps)
 			revenueMod.RegisterRoutes(ctx.Routes)
@@ -696,30 +620,28 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantCollection() {
-			if useCases.Treasury != nil && useCases.Treasury.Collection != nil {
-				collDeps := &collectionmod.ModuleDeps{
-					Routes:           collectionRoutes,
-					Labels:           collectionLabels,
-					CommonLabels:     ctx.Common,
-					TableLabels:      centymoTableLabels,
-					CreateCollection: useCases.Treasury.Collection.CreateCollection.Execute,
-					ReadCollection:   useCases.Treasury.Collection.ReadCollection.Execute,
-					UpdateCollection: useCases.Treasury.Collection.UpdateCollection.Execute,
-					DeleteCollection: useCases.Treasury.Collection.DeleteCollection.Execute,
-					ListCollections:  useCases.Treasury.Collection.ListCollections.Execute,
-					// Attachments
-					UploadFile:       uploadFile,
-					ListAttachments:  listAttachments,
-					CreateAttachment: createAttachment,
-					DeleteAttachment: deleteAttachment,
-					NewID:            newAttachmentID,
-				}
-				wireCashDashboard(collDeps, useCases)
-				collDeps.GetFunctionalCurrency = func(fctx context.Context) string {
-					return getFunctionalCurrency(fctx, useCases)
-				}
-				collectionmod.NewModule(collDeps).RegisterRoutes(ctx.Routes)
+			collDeps := &collectionmod.ModuleDeps{
+				Routes:           collectionRoutes,
+				Labels:           collectionLabels,
+				CommonLabels:     ctx.Common,
+				TableLabels:      centymoTableLabels,
+				CreateCollection: useCases.Collection.CreateCollection,
+				ReadCollection:   useCases.Collection.ReadCollection,
+				UpdateCollection: useCases.Collection.UpdateCollection,
+				DeleteCollection: useCases.Collection.DeleteCollection,
+				ListCollections:  useCases.Collection.ListCollections,
+				// Attachments
+				UploadFile:       uploadFile,
+				ListAttachments:  listAttachments,
+				CreateAttachment: createAttachment,
+				DeleteAttachment: deleteAttachment,
+				NewID:            newAttachmentID,
 			}
+			wireCashDashboard(collDeps, useCases)
+			collDeps.GetFunctionalCurrency = func(fctx context.Context) string {
+				return getFunctionalCurrency(fctx, useCases)
+			}
+			collectionmod.NewModule(collDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		// =====================================================================
@@ -727,25 +649,23 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantDisbursement() {
-			if useCases.Treasury != nil && useCases.Treasury.Disbursement != nil {
-				disbursementmod.NewModule(&disbursementmod.ModuleDeps{
-					Routes:             disbursementRoutes,
-					Labels:             disbursementLabels,
-					CommonLabels:       ctx.Common,
-					TableLabels:        centymoTableLabels,
-					CreateDisbursement: useCases.Treasury.Disbursement.CreateDisbursement.Execute,
-					ReadDisbursement:   useCases.Treasury.Disbursement.ReadDisbursement.Execute,
-					UpdateDisbursement: useCases.Treasury.Disbursement.UpdateDisbursement.Execute,
-					DeleteDisbursement: useCases.Treasury.Disbursement.DeleteDisbursement.Execute,
-					ListDisbursements:  useCases.Treasury.Disbursement.ListDisbursements.Execute,
-					// Attachments
-					UploadFile:       uploadFile,
-					ListAttachments:  listAttachments,
-					CreateAttachment: createAttachment,
-					DeleteAttachment: deleteAttachment,
-					NewID:            newAttachmentID,
-				}).RegisterRoutes(ctx.Routes)
-			}
+			disbursementmod.NewModule(&disbursementmod.ModuleDeps{
+				Routes:             disbursementRoutes,
+				Labels:             disbursementLabels,
+				CommonLabels:       ctx.Common,
+				TableLabels:        centymoTableLabels,
+				CreateDisbursement: useCases.Disbursement.CreateDisbursement,
+				ReadDisbursement:   useCases.Disbursement.ReadDisbursement,
+				UpdateDisbursement: useCases.Disbursement.UpdateDisbursement,
+				DeleteDisbursement: useCases.Disbursement.DeleteDisbursement,
+				ListDisbursements:  useCases.Disbursement.ListDisbursements,
+				// Attachments
+				UploadFile:       uploadFile,
+				ListAttachments:  listAttachments,
+				CreateAttachment: createAttachment,
+				DeleteAttachment: deleteAttachment,
+				NewID:            newAttachmentID,
+			}).RegisterRoutes(ctx.Routes)
 		}
 
 		// =====================================================================
@@ -797,50 +717,31 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				DeleteDocumentTemplate: deleteDocTemplate,
 				UploadFile:             uploadTemplate,
 			}
-			if useCases.Expenditure != nil && useCases.Expenditure.Expenditure != nil {
-				uc := useCases.Expenditure.Expenditure
-				expDeps.ListExpenditures = uc.ListExpenditures.Execute
-				expDeps.CreateExpenditure = uc.CreateExpenditure.Execute
-				expDeps.ReadExpenditure = uc.ReadExpenditure.Execute
-				expDeps.UpdateExpenditure = uc.UpdateExpenditure.Execute
-				expDeps.DeleteExpenditure = uc.DeleteExpenditure.Execute
-			}
-			if useCases.Expenditure != nil && useCases.Expenditure.ExpenditureCategory != nil {
-				uc := useCases.Expenditure.ExpenditureCategory
-				expDeps.ListExpenditureCategories = uc.ListExpenditureCategories.Execute
-				expDeps.CreateExpenditureCategory = uc.CreateExpenditureCategory.Execute
-				expDeps.ReadExpenditureCategory = uc.ReadExpenditureCategory.Execute
-				expDeps.UpdateExpenditureCategory = uc.UpdateExpenditureCategory.Execute
-				expDeps.DeleteExpenditureCategory = uc.DeleteExpenditureCategory.Execute
-			}
-			if useCases.Expenditure != nil && useCases.Expenditure.ExpenditureLineItem != nil {
-				uc := useCases.Expenditure.ExpenditureLineItem
-				expDeps.CreateExpenditureLineItem = uc.CreateExpenditureLineItem.Execute
-				expDeps.ReadExpenditureLineItem = uc.ReadExpenditureLineItem.Execute
-				expDeps.UpdateExpenditureLineItem = uc.UpdateExpenditureLineItem.Execute
-				expDeps.DeleteExpenditureLineItem = uc.DeleteExpenditureLineItem.Execute
-				expDeps.ListExpenditureLineItems = uc.ListExpenditureLineItems.Execute
-			}
-			if useCases.Entity != nil && useCases.Entity.Supplier != nil {
-				expDeps.ListSuppliers = useCases.Entity.Supplier.ListSuppliers.Execute
-			}
-			if useCases.Treasury != nil && useCases.Treasury.Disbursement != nil {
+			expDeps.ListExpenditures = useCases.Expenditure.ListExpenditures
+			expDeps.CreateExpenditure = useCases.Expenditure.CreateExpenditure
+			expDeps.ReadExpenditure = useCases.Expenditure.ReadExpenditure
+			expDeps.UpdateExpenditure = useCases.Expenditure.UpdateExpenditure
+			expDeps.DeleteExpenditure = useCases.Expenditure.DeleteExpenditure
+			expDeps.ListExpenditureCategories = useCases.Expenditure.ListExpenditureCategories
+			expDeps.CreateExpenditureCategory = useCases.Expenditure.CreateExpenditureCategory
+			expDeps.ReadExpenditureCategory = useCases.Expenditure.ReadExpenditureCategory
+			expDeps.UpdateExpenditureCategory = useCases.Expenditure.UpdateExpenditureCategory
+			expDeps.DeleteExpenditureCategory = useCases.Expenditure.DeleteExpenditureCategory
+			expDeps.CreateExpenditureLineItem = useCases.Expenditure.CreateExpenditureLineItem
+			expDeps.ReadExpenditureLineItem = useCases.Expenditure.ReadExpenditureLineItem
+			expDeps.UpdateExpenditureLineItem = useCases.Expenditure.UpdateExpenditureLineItem
+			expDeps.DeleteExpenditureLineItem = useCases.Expenditure.DeleteExpenditureLineItem
+			expDeps.ListExpenditureLineItems = useCases.Expenditure.ListExpenditureLineItems
+			expDeps.ListSuppliers = useCases.Entity.Supplier.ListSuppliers
+			if useCases.Disbursement.CreateDisbursement != nil {
 				expDeps.DisbursementRoutes = disbursementRoutes
 				expDeps.DisbursementLabels = disbursementLabels
-				expDeps.CreateDisbursement = useCases.Treasury.Disbursement.CreateDisbursement.Execute
+				expDeps.CreateDisbursement = useCases.Disbursement.CreateDisbursement
 			}
 			// SPS Wave 4 — Recognition + Accrual tabs on the expense detail page.
 			// Nil-safe — when the use case is missing, the tab renders an empty state.
-			if useCases.Expenditure != nil && useCases.Expenditure.ExpenseRecognition != nil {
-				if uc := useCases.Expenditure.ExpenseRecognition.ReadExpenseRecognition; uc != nil {
-					expDeps.ReadExpenseRecognition = uc.Execute
-				}
-			}
-			if useCases.Expenditure != nil && useCases.Expenditure.AccruedExpense != nil {
-				if uc := useCases.Expenditure.AccruedExpense.ListAccruedExpenses; uc != nil {
-					expDeps.ListAccruedExpenses = uc.Execute
-				}
-			}
+			expDeps.ReadExpenseRecognition = useCases.Expenditure.ReadExpenseRecognition
+			expDeps.ListAccruedExpenses = useCases.Expenditure.ListAccruedExpenses
 			expDeps.ExpenseRecognitionDetailURL = expenseRecognitionRoutes.DetailURL
 			expDeps.AccruedExpenseDetailURL = accruedExpenseRoutes.DetailURL
 			// RecognizeFromExpenditureURL is the espyna trigger surfaced as the
@@ -866,31 +767,17 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantResource() {
-			resourceDeps := &resourcemod.ModuleDeps{
-				Routes:       resourceRoutes,
-				Labels:       resourceLabels,
-				CommonLabels: ctx.Common,
-				TableLabels:  centymoTableLabels,
-			}
-			if useCases.Product != nil && useCases.Product.Resource != nil {
-				uc := useCases.Product.Resource
-				if uc.ListResources != nil {
-					resourceDeps.ListResources = uc.ListResources.Execute
-				}
-				if uc.ReadResource != nil {
-					resourceDeps.ReadResource = uc.ReadResource.Execute
-				}
-				if uc.CreateResource != nil {
-					resourceDeps.CreateResource = uc.CreateResource.Execute
-				}
-				if uc.UpdateResource != nil {
-					resourceDeps.UpdateResource = uc.UpdateResource.Execute
-				}
-				if uc.DeleteResource != nil {
-					resourceDeps.DeleteResource = uc.DeleteResource.Execute
-				}
-			}
-			resourcemod.NewModule(resourceDeps).RegisterRoutes(ctx.Routes)
+			resourcemod.NewModule(&resourcemod.ModuleDeps{
+				Routes:        resourceRoutes,
+				Labels:        resourceLabels,
+				CommonLabels:  ctx.Common,
+				TableLabels:   centymoTableLabels,
+				ListResources:  useCases.Product.ListResources,
+				ReadResource:   useCases.Product.ReadResource,
+				CreateResource: useCases.Product.CreateResource,
+				UpdateResource: useCases.Product.UpdateResource,
+				DeleteResource: useCases.Product.DeleteResource,
+			}).RegisterRoutes(ctx.Routes)
 		}
 
 		// =====================================================================
@@ -1015,12 +902,11 @@ func getDefaultWorkspaceID() string {
 // case is not wired or the read fails — types.FormatMoney handles empty
 // currency by omitting the prefix, so the worst-case fallback is the bare
 // number rather than a hardcoded peso glyph.
-func getFunctionalCurrency(ctx context.Context, useCases *consumer.UseCases) string {
-	if useCases == nil || useCases.Entity == nil || useCases.Entity.Workspace == nil ||
-		useCases.Entity.Workspace.ReadWorkspace == nil {
+func getFunctionalCurrency(ctx context.Context, useCases *UseCases) string {
+	if useCases == nil || useCases.Entity.Workspace.ReadWorkspace == nil {
 		return ""
 	}
-	resp, err := useCases.Entity.Workspace.ReadWorkspace.Execute(ctx, &workspacepb.ReadWorkspaceRequest{
+	resp, err := useCases.Entity.Workspace.ReadWorkspace(ctx, &workspacepb.ReadWorkspaceRequest{
 		Data: &workspacepb.Workspace{Id: getDefaultWorkspaceID()},
 	})
 	if err != nil || resp == nil {

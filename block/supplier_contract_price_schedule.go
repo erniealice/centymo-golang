@@ -10,8 +10,6 @@ package block
 import (
 	"context"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
-
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	scpspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
 
@@ -42,7 +40,7 @@ type supplierContractPriceScheduleWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the SPS Wave 4 wiring used to be.
-func wireSupplierContractPriceScheduleModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer.UseCases, w supplierContractPriceScheduleWiring) {
+func wireSupplierContractPriceScheduleModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w supplierContractPriceScheduleWiring) {
 	// SupplierContractPriceSchedule module
 	if cfg.wantSupplierContractPriceSchedule() {
 		scpsDeps := &suppliercontractpriceschedulemod.ModuleDeps{
@@ -51,62 +49,39 @@ func wireSupplierContractPriceScheduleModules(ctx *pyeza.AppContext, cfg *blockC
 			CommonLabels: ctx.Common,
 			TableLabels:  w.centymoTableLabels,
 		}
-		if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractPriceSchedule != nil {
-			uc := useCases.Expenditure.SupplierContractPriceSchedule
-			if uc.ListSupplierContractPriceSchedules != nil {
-				scpsDeps.ListSupplierContractPriceSchedules = uc.ListSupplierContractPriceSchedules.Execute
+		scpsDeps.ListSupplierContractPriceSchedules = useCases.SupplierContract.ListSupplierContractPriceSchedules
+		scpsDeps.ReadSupplierContractPriceSchedule = useCases.SupplierContract.ReadSupplierContractPriceSchedule
+		scpsDeps.CreateSupplierContractPriceSchedule = useCases.SupplierContract.CreateSupplierContractPriceSchedule
+		scpsDeps.UpdateSupplierContractPriceSchedule = useCases.SupplierContract.UpdateSupplierContractPriceSchedule
+		scpsDeps.DeleteSupplierContractPriceSchedule = useCases.SupplierContract.DeleteSupplierContractPriceSchedule
+		// Workflow — wrap with the closure shapes the view expects.
+		if useCases.SupplierContract.ActivateSupplierContractPriceSchedule != nil {
+			activateUC := useCases.SupplierContract.ActivateSupplierContractPriceSchedule
+			scpsDeps.ActivateSupplierContractPriceSchedule = func(fctx context.Context, id string) error {
+				userID := useCases.ExtractUserID(fctx)
+				_, err := activateUC(fctx, &scpspb.ActivateSupplierContractPriceScheduleRequest{
+					SupplierContractPriceScheduleId: id,
+					ActivatedBy:                     userID,
+				})
+				return err
 			}
-			if uc.ReadSupplierContractPriceSchedule != nil {
-				scpsDeps.ReadSupplierContractPriceSchedule = uc.ReadSupplierContractPriceSchedule.Execute
-			}
-			if uc.CreateSupplierContractPriceSchedule != nil {
-				scpsDeps.CreateSupplierContractPriceSchedule = uc.CreateSupplierContractPriceSchedule.Execute
-			}
-			if uc.UpdateSupplierContractPriceSchedule != nil {
-				scpsDeps.UpdateSupplierContractPriceSchedule = uc.UpdateSupplierContractPriceSchedule.Execute
-			}
-			if uc.DeleteSupplierContractPriceSchedule != nil {
-				scpsDeps.DeleteSupplierContractPriceSchedule = uc.DeleteSupplierContractPriceSchedule.Execute
-			}
-			// Workflow — wrap Execute() with the closure shapes the view expects.
-			if uc.ActivateSupplierContractPriceSchedule != nil {
-				activateUC := uc.ActivateSupplierContractPriceSchedule
-				scpsDeps.ActivateSupplierContractPriceSchedule = func(fctx context.Context, id string) error {
-					userID := consumer.ExtractUserIDFromContext(fctx)
-					_, err := activateUC.Execute(fctx, &scpspb.ActivateSupplierContractPriceScheduleRequest{
-						SupplierContractPriceScheduleId: id,
-						ActivatedBy:                     userID,
-					})
-					return err
+		}
+		if useCases.SupplierContract.SupersedeSupplierContractPriceSchedule != nil {
+			supersedeUC := useCases.SupplierContract.SupersedeSupplierContractPriceSchedule
+			scpsDeps.SupersedeSupplierContractPriceSchedule = func(fctx context.Context, id, reason string) error {
+				req := &scpspb.SupersedeSupplierContractPriceScheduleRequest{SupplierContractPriceScheduleId: id}
+				if reason != "" {
+					req.Reason = &reason
 				}
-			}
-			if uc.SupersedeSupplierContractPriceSchedule != nil {
-				supersedeUC := uc.SupersedeSupplierContractPriceSchedule
-				scpsDeps.SupersedeSupplierContractPriceSchedule = func(fctx context.Context, id, reason string) error {
-					req := &scpspb.SupersedeSupplierContractPriceScheduleRequest{SupplierContractPriceScheduleId: id}
-					if reason != "" {
-						req.Reason = &reason
-					}
-					_, err := supersedeUC.Execute(fctx, req)
-					return err
-				}
+				_, err := supersedeUC(fctx, req)
+				return err
 			}
 		}
 		// Schedule lines — list query for the schedule detail's Lines tab.
-		if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractPriceScheduleLine != nil {
-			if uc := useCases.Expenditure.SupplierContractPriceScheduleLine.ListSupplierContractPriceScheduleLines; uc != nil {
-				scpsDeps.ListSupplierContractPriceScheduleLines = uc.Execute
-			}
-		}
+		scpsDeps.ListSupplierContractPriceScheduleLines = useCases.SupplierContract.ListSupplierContractPriceScheduleLines
 		// Parent contract picker for the drawer form + line picker on detail.
-		if useCases.Expenditure != nil && useCases.Expenditure.SupplierContract != nil &&
-			useCases.Expenditure.SupplierContract.ListSupplierContracts != nil {
-			scpsDeps.ListSupplierContracts = useCases.Expenditure.SupplierContract.ListSupplierContracts.Execute
-		}
-		if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractLine != nil &&
-			useCases.Expenditure.SupplierContractLine.ListSupplierContractLines != nil {
-			scpsDeps.ListSupplierContractLines = useCases.Expenditure.SupplierContractLine.ListSupplierContractLines.Execute
-		}
+		scpsDeps.ListSupplierContracts = useCases.SupplierContract.ListSupplierContracts
+		scpsDeps.ListSupplierContractLines = useCases.SupplierContract.ListSupplierContractLines
 		scpsDeps.UploadFile = w.uploadFile
 		scpsDeps.ListAttachments = w.listAttachments
 		scpsDeps.CreateAttachment = w.createAttachment
@@ -122,26 +97,12 @@ func wireSupplierContractPriceScheduleModules(ctx *pyeza.AppContext, cfg *blockC
 			Labels:       w.supplierContractPriceScheduleLabels,
 			CommonLabels: ctx.Common,
 		}
-		if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractPriceScheduleLine != nil {
-			uc := useCases.Expenditure.SupplierContractPriceScheduleLine
-			if uc.CreateSupplierContractPriceScheduleLine != nil {
-				scpslDeps.CreateSupplierContractPriceScheduleLine = uc.CreateSupplierContractPriceScheduleLine.Execute
-			}
-			if uc.ReadSupplierContractPriceScheduleLine != nil {
-				scpslDeps.ReadSupplierContractPriceScheduleLine = uc.ReadSupplierContractPriceScheduleLine.Execute
-			}
-			if uc.UpdateSupplierContractPriceScheduleLine != nil {
-				scpslDeps.UpdateSupplierContractPriceScheduleLine = uc.UpdateSupplierContractPriceScheduleLine.Execute
-			}
-			if uc.DeleteSupplierContractPriceScheduleLine != nil {
-				scpslDeps.DeleteSupplierContractPriceScheduleLine = uc.DeleteSupplierContractPriceScheduleLine.Execute
-			}
-		}
+		scpslDeps.CreateSupplierContractPriceScheduleLine = useCases.SupplierContract.CreateSupplierContractPriceScheduleLine
+		scpslDeps.ReadSupplierContractPriceScheduleLine = useCases.SupplierContract.ReadSupplierContractPriceScheduleLine
+		scpslDeps.UpdateSupplierContractPriceScheduleLine = useCases.SupplierContract.UpdateSupplierContractPriceScheduleLine
+		scpslDeps.DeleteSupplierContractPriceScheduleLine = useCases.SupplierContract.DeleteSupplierContractPriceScheduleLine
 		// Parent contract-line picker for the drawer form (line drawer needs a contract-line FK).
-		if useCases.Expenditure != nil && useCases.Expenditure.SupplierContractLine != nil &&
-			useCases.Expenditure.SupplierContractLine.ListSupplierContractLines != nil {
-			scpslDeps.ListSupplierContractLines = useCases.Expenditure.SupplierContractLine.ListSupplierContractLines.Execute
-		}
+		scpslDeps.ListSupplierContractLines = useCases.SupplierContract.ListSupplierContractLines
 		suppliercontractpricescheduleinemod.NewModule(scpslDeps).RegisterRoutes(ctx.Routes)
 	}
 }

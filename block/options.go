@@ -17,6 +17,7 @@ type BlockOption func(*blockConfig)
 
 type blockConfig struct {
 	enableAll    bool
+	useCases     *UseCases
 	inventory    bool
 	revenue      bool
 	product      bool
@@ -68,6 +69,13 @@ type blockConfig struct {
 	// WithJobDetailURL. Optional — Operations tab renders job rows without a
 	// link when unset.
 	jobDetailURL string
+}
+
+// WithUseCases supplies the typed use-case aggregate for centymo.Block.
+// It must be provided before any module options. Block() will fail at startup
+// with a descriptive error if required fields are nil for the enabled modules.
+func WithUseCases(uc *UseCases) BlockOption {
+	return func(c *blockConfig) { c.useCases = uc }
 }
 
 func WithInventory() BlockOption    { return func(c *blockConfig) { c.inventory = true } }

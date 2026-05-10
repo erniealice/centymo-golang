@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
 	expreportpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/expenditure_report"
 	reportpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/gross_profit"
 	agingpb    "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/reporting/receivables_aging"
@@ -16,13 +15,35 @@ import (
 	fycha "github.com/erniealice/fycha-golang"
 )
 
-// espynaLedgerDataSource adapts consumer.LedgerReportingService to the
+// LedgerReportingService is the subset of the espyna consumer.LedgerReportingService
+// interface that centymo's block actually calls. The concrete implementation
+// (espyna's postgres adapter) satisfies this interface implicitly via duck typing.
+// Defined here so the block package does not need to import consumer.
+//
+// Mirrors the pattern in packages/entydad-golang/block/helpers.go.
+type LedgerReportingService interface {
+	GetGrossProfitReport(ctx context.Context, req *reportpb.GrossProfitReportRequest) (*reportpb.GrossProfitReportResponse, error)
+	GetRevenueReport(ctx context.Context, req *revreportpb.RevenueReportRequest) (*revreportpb.RevenueReportResponse, error)
+	GetExpenditureReport(ctx context.Context, req *expreportpb.ExpenditureReportRequest) (*expreportpb.ExpenditureReportResponse, error)
+	GetDisbursementReport(ctx context.Context, req *disbreportpb.DisbursementReportRequest) (*disbreportpb.DisbursementReportResponse, error)
+	GetReceivablesAgingReport(ctx context.Context, req *agingpb.ReceivablesAgingRequest) (*agingpb.ReceivablesAgingResponse, error)
+	GetPayablesAgingReport(ctx context.Context, req *payagingpb.PayablesAgingRequest) (*payagingpb.PayablesAgingResponse, error)
+	GetCollectionSummaryReport(ctx context.Context, req *collsumpb.CollectionSummaryRequest) (*collsumpb.CollectionSummaryResponse, error)
+	GetSupplierStatement(ctx context.Context, req *suppstmtpb.SupplierStatementRequest) (*suppstmtpb.SupplierStatementResponse, error)
+	GetSupplierBalances(ctx context.Context) (map[string]int64, error)
+	ListRevenue(ctx context.Context, start, end *time.Time) ([]map[string]any, error)
+	ListExpenses(ctx context.Context, start, end *time.Time) ([]map[string]any, error)
+	GetCashBookReport(ctx context.Context, req *reportpb.CashBookReportRequest) (*reportpb.CashBookReportResponse, error)
+	GetSimplePayablesAgingReport(ctx context.Context, req *reportpb.PayablesAgingReportRequest) (*reportpb.PayablesAgingReportResponse, error)
+}
+
+// espynaLedgerDataSource adapts LedgerReportingService to the
 // fycha.DataSource interface. centymo.Block() uses this when the
 // AppContext supplies a LedgerReportingSvc so that fycha report views
 // (gross profit, revenue report, etc.) can be registered alongside the
 // centymo commerce domain routes.
 type espynaLedgerDataSource struct {
-	svc consumer.LedgerReportingService
+	svc LedgerReportingService
 }
 
 // Ensure espynaLedgerDataSource satisfies fycha.DataSource at compile time.
@@ -130,9 +151,9 @@ func (d *espynaLedgerDataSource) GetSimplePayablesAgingReport(
 	return d.svc.GetSimplePayablesAgingReport(ctx, req)
 }
 
-// newLedgerDataSource wraps a consumer.LedgerReportingService as a fycha.DataSource.
+// newLedgerDataSource wraps a LedgerReportingService as a fycha.DataSource.
 // Returns nil if svc is nil (report views will be skipped gracefully).
-func newLedgerDataSource(svc consumer.LedgerReportingService) fycha.DataSource {
+func newLedgerDataSource(svc LedgerReportingService) fycha.DataSource {
 	if svc == nil {
 		return nil
 	}

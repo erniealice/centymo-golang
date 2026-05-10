@@ -14,8 +14,6 @@ import (
 	"log"
 	"time"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
-
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
@@ -48,7 +46,7 @@ type revenueRunWiring struct {
 // wireRevenueRunModule lifts the body of `if cfg.wantRevenueRun()` from Block().
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once when cfg.wantRevenueRun().
-func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer.UseCases, w revenueRunWiring) {
+func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w revenueRunWiring) {
 	rrDeps := &revenuerunmod.ModuleDeps{
 		Routes:       w.revenueRunRoutes,
 		Labels:       w.revenueRunLabels,
@@ -59,7 +57,7 @@ func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *con
 	// Wire ListRevenueRuns — translate proto response to view-typed rows.
 	rrDeps.ListRevenueRuns = func(fctx context.Context, scope revenuerunmod.ListRevenueRunsScope) ([]revenuerunmod.RevenueRunRow, string, error) {
 		req := &revenuerunpb.ListRevenueRunsRequest{}
-		resp, err := consumer.ListRevenueRuns(useCases, fctx, req)
+		resp, err := useCases.RevenueRun.ListRevenueRuns(fctx, req)
 		if err != nil {
 			return nil, "", err
 		}
@@ -81,7 +79,7 @@ func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *con
 	// Wire ReadRevenueRun — translate proto response to view-typed struct.
 	rrDeps.ReadRevenueRun = func(fctx context.Context, id string) (*revenuerunmod.RevenueRunWithAttempts, error) {
 		runID := id
-		resp, err := consumer.ReadRevenueRun(useCases, fctx, &revenuerunpb.ReadRevenueRunRequest{
+		resp, err := useCases.RevenueRun.ReadRevenueRun(fctx, &revenuerunpb.ReadRevenueRunRequest{
 			Data: &revenuerunpb.RevenueRun{Id: runID},
 		})
 		if err != nil {
@@ -92,7 +90,7 @@ func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *con
 		}
 		run := protoRevenueRunToRow(resp.GetData()[0])
 
-		attResp, err := consumer.ListRevenueRunAttempts(useCases, fctx, &revenuerunpb.ListRevenueRunAttemptsRequest{
+		attResp, err := useCases.RevenueRun.ListRevenueRunAttempts(fctx, &revenuerunpb.ListRevenueRunAttemptsRequest{
 			RunId: runID,
 		})
 		if err != nil {
@@ -110,11 +108,10 @@ func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *con
 	}
 
 	// Wire ListRevenueByRunID — filter revenue list by run_id for the Invoices tab.
-	if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
-		useCases.Revenue.Revenue.GetRevenueListPageData != nil {
+	if useCases.Revenue.GetListPageData != nil {
 		revenueDetailURLPattern := w.revenueRoutes.DetailURL
 		rrDeps.ListRevenueByRunID = func(fctx context.Context, runID string) ([]revenuerunmod.RevenueRow, error) {
-			resp, err := useCases.Revenue.Revenue.GetRevenueListPageData.Execute(fctx, &revenuepb.GetRevenueListPageDataRequest{
+			resp, err := useCases.Revenue.GetListPageData(fctx, &revenuepb.GetRevenueListPageDataRequest{
 				Filters: &commonpb.FilterRequest{
 					Filters: []*commonpb.TypedFilter{
 						{
@@ -161,9 +158,8 @@ func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *con
 	rrDeps.ClientDrawerURLTemplate = cfg.clientRevenueRunDrawerURL
 
 	// ListClients — reuse the existing client list use case.
-	if useCases.Entity != nil && useCases.Entity.Client != nil &&
-		useCases.Entity.Client.ListClients != nil {
-		lc := useCases.Entity.Client.ListClients.Execute
+	if useCases.Entity.Client.ListClients != nil {
+		lc := useCases.Entity.Client.ListClients
 		rrDeps.ListClients = func(fctx context.Context, cursor string) ([]revenuerunmod.QueueClientRecord, string, error) {
 			resp, err := lc(fctx, &clientpb.ListClientsRequest{})
 			if err != nil {
@@ -183,51 +179,49 @@ func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *con
 		}
 	}
 
-	// ListRevenueRunCandidates — thin shim over consumer.ListRevenueRunCandidates.
-	if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
-		useCases.Revenue.Revenue.ListRevenueRunCandidates != nil {
+	// ListRevenueRunCandidates — direct proto call (ex-consumer helper).
+	if useCases.Revenue.ListRevenueRunCandidates != nil {
 		rrDeps.ListRevenueRunCandidates = func(fctx context.Context, clientID, asOfDate string) ([]revenuerunmod.QueueCandidateInput, error) {
-			candidates, _, err := consumer.ListRevenueRunCandidates(useCases, fctx, consumer.RevenueRunScope{
-				ClientID: clientID,
-				AsOfDate: asOfDate,
+			resp, err := useCases.Revenue.ListRevenueRunCandidates(fctx, &revenuerunpb.ListRevenueRunCandidatesRequest{
+				Scope: &revenuerunpb.RevenueRunScope{
+					ClientId: &clientID,
+					AsOfDate: &asOfDate,
+				},
 			})
 			if err != nil {
 				return nil, err
 			}
+			candidates := resp.GetData()
 			out := make([]revenuerunmod.QueueCandidateInput, 0, len(candidates))
 			for _, c := range candidates {
 				out = append(out, revenuerunmod.QueueCandidateInput{
-					SubscriptionID: c.SubscriptionID,
-					Currency:       c.Currency,
-					Amount:         c.Amount,
-					Eligible:       c.Eligible,
+					SubscriptionID: c.GetSubscriptionId(),
+					Currency:       c.GetCurrency(),
+					Amount:         c.GetAmount(),
+					Eligible:       c.GetEligible(),
 				})
 			}
 			return out, nil
 		}
 	}
 
-	// GenerateRevenueRun — thin shim over consumer.GenerateRevenueRun.
-	if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
-		useCases.Revenue.Revenue.GenerateRevenueRun != nil {
+	// GenerateRevenueRun — direct proto call (ex-consumer helper).
+	if useCases.Revenue.GenerateRevenueRun != nil {
 		rrDeps.GenerateRevenueRun = func(fctx context.Context, in revenuerunmod.BatchRunInput) (*revenuerunmod.BatchRunOutput, error) {
-			result, err := consumer.GenerateRevenueRun(
-				useCases,
-				fctx,
-				consumer.RevenueRunScope{
-					ClientID: in.ClientID,
-					AsOfDate: in.AsOfDate,
+			resp, err := useCases.Revenue.GenerateRevenueRun(fctx, &revenuerunpb.GenerateRevenueRunRequest{
+				Scope: &revenuerunpb.RevenueRunScope{
+					ClientId: &in.ClientID,
+					AsOfDate: &in.AsOfDate,
 				},
-				consumer.RevenueRunSelections{},
-			)
+			})
 			if err != nil {
 				return nil, err
 			}
-			if result == nil || result.Run == nil {
+			if resp == nil || resp.GetRun() == nil {
 				return nil, nil
 			}
 			var created, skipped, errored int
-			for _, a := range result.Attempts {
+			for _, a := range resp.GetAttempts() {
 				switch a.GetOutcome() {
 				case revenuerunpb.RevenueRunAttemptOutcome_REVENUE_RUN_ATTEMPT_OUTCOME_CREATED:
 					created++
@@ -238,7 +232,7 @@ func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *con
 				}
 			}
 			return &revenuerunmod.BatchRunOutput{
-				RunID:   result.Run.GetId(),
+				RunID:   resp.GetRun().GetId(),
 				Created: created,
 				Skipped: skipped,
 				Errored: errored,

@@ -10,8 +10,6 @@ package block
 import (
 	"context"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
-
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
@@ -48,7 +46,7 @@ type supplierSubscriptionWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the P3 supplier-subscription wiring used to be.
-func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer.UseCases, w supplierSubscriptionWiring) {
+func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w supplierSubscriptionWiring) {
 	// =====================================================================
 	// P3 — CostSchedule module
 	// =====================================================================
@@ -63,26 +61,24 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 				return err
 			},
 		}
-		if useCases.Procurement != nil && useCases.Procurement.CostSchedule != nil {
-			uc := useCases.Procurement.CostSchedule
-			if uc.CreateCostSchedule != nil {
-				csDeps.CreateCostSchedule = uc.CreateCostSchedule.Execute
-			}
-			if uc.ReadCostSchedule != nil {
-				csDeps.ReadCostSchedule = uc.ReadCostSchedule.Execute
-			}
-			if uc.UpdateCostSchedule != nil {
-				csDeps.UpdateCostSchedule = uc.UpdateCostSchedule.Execute
-			}
-			if uc.DeleteCostSchedule != nil {
-				csDeps.DeleteCostSchedule = uc.DeleteCostSchedule.Execute
-			}
-			if uc.GetCostScheduleListPageData != nil {
-				csDeps.GetCostScheduleListPageData = uc.GetCostScheduleListPageData.Execute
-			}
-			if uc.GetCostScheduleItemPageData != nil {
-				csDeps.GetCostScheduleItemPageData = uc.GetCostScheduleItemPageData.Execute
-			}
+		cs := useCases.Procurement.CostSchedule
+		if cs.CreateCostSchedule != nil {
+			csDeps.CreateCostSchedule = cs.CreateCostSchedule
+		}
+		if cs.ReadCostSchedule != nil {
+			csDeps.ReadCostSchedule = cs.ReadCostSchedule
+		}
+		if cs.UpdateCostSchedule != nil {
+			csDeps.UpdateCostSchedule = cs.UpdateCostSchedule
+		}
+		if cs.DeleteCostSchedule != nil {
+			csDeps.DeleteCostSchedule = cs.DeleteCostSchedule
+		}
+		if cs.GetCostScheduleListPageData != nil {
+			csDeps.GetCostScheduleListPageData = cs.GetCostScheduleListPageData
+		}
+		if cs.GetCostScheduleItemPageData != nil {
+			csDeps.GetCostScheduleItemPageData = cs.GetCostScheduleItemPageData
 		}
 		costschedulemod.NewModule(csDeps).RegisterRoutes(ctx.Routes)
 	}
@@ -102,26 +98,24 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 			},
 			SearchSupplierURL: w.supplierPlanRoutes.SearchSupplierURL,
 		}
-		if useCases.Procurement != nil && useCases.Procurement.SupplierPlan != nil {
-			uc := useCases.Procurement.SupplierPlan
-			if uc.CreateSupplierPlan != nil {
-				spDeps.CreateSupplierPlan = uc.CreateSupplierPlan.Execute
-			}
-			if uc.ReadSupplierPlan != nil {
-				spDeps.ReadSupplierPlan = uc.ReadSupplierPlan.Execute
-			}
-			if uc.UpdateSupplierPlan != nil {
-				spDeps.UpdateSupplierPlan = uc.UpdateSupplierPlan.Execute
-			}
-			if uc.DeleteSupplierPlan != nil {
-				spDeps.DeleteSupplierPlan = uc.DeleteSupplierPlan.Execute
-			}
-			if uc.GetSupplierPlanListPageData != nil {
-				spDeps.GetSupplierPlanListPageData = uc.GetSupplierPlanListPageData.Execute
-			}
-			if uc.GetSupplierPlanItemPageData != nil {
-				spDeps.GetSupplierPlanItemPageData = uc.GetSupplierPlanItemPageData.Execute
-			}
+		sp := useCases.Procurement.SupplierPlan
+		if sp.CreateSupplierPlan != nil {
+			spDeps.CreateSupplierPlan = sp.CreateSupplierPlan
+		}
+		if sp.ReadSupplierPlan != nil {
+			spDeps.ReadSupplierPlan = sp.ReadSupplierPlan
+		}
+		if sp.UpdateSupplierPlan != nil {
+			spDeps.UpdateSupplierPlan = sp.UpdateSupplierPlan
+		}
+		if sp.DeleteSupplierPlan != nil {
+			spDeps.DeleteSupplierPlan = sp.DeleteSupplierPlan
+		}
+		if sp.GetSupplierPlanListPageData != nil {
+			spDeps.GetSupplierPlanListPageData = sp.GetSupplierPlanListPageData
+		}
+		if sp.GetSupplierPlanItemPageData != nil {
+			spDeps.GetSupplierPlanItemPageData = sp.GetSupplierPlanItemPageData
 		}
 		supplierplanmod.NewModule(spDeps).RegisterRoutes(ctx.Routes)
 	}
@@ -144,41 +138,37 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 			SearchCostScheduleURL:        w.costPlanRoutes.SearchCostScheduleURL,
 			SearchSupplierProductPlanURL: w.costPlanRoutes.SearchSupplierProductPlanURL,
 		}
-		if useCases.Procurement != nil && useCases.Procurement.CostPlan != nil {
-			uc := useCases.Procurement.CostPlan
-			if uc.CreateCostPlan != nil {
-				cpDeps.CreateCostPlan = uc.CreateCostPlan.Execute
-			}
-			if uc.ReadCostPlan != nil {
-				cpDeps.ReadCostPlan = uc.ReadCostPlan.Execute
-			}
-			if uc.UpdateCostPlan != nil {
-				cpDeps.UpdateCostPlan = uc.UpdateCostPlan.Execute
-			}
-			if uc.DeleteCostPlan != nil {
-				cpDeps.DeleteCostPlan = uc.DeleteCostPlan.Execute
-			}
-			if uc.GetCostPlanListPageData != nil {
-				cpDeps.GetCostPlanListPageData = uc.GetCostPlanListPageData.Execute
-			}
-			if uc.GetCostPlanItemPageData != nil {
-				cpDeps.GetCostPlanItemPageData = uc.GetCostPlanItemPageData.Execute
-			}
+		cp := useCases.Procurement.CostPlan
+		if cp.CreateCostPlan != nil {
+			cpDeps.CreateCostPlan = cp.CreateCostPlan
 		}
-		if useCases.Procurement != nil && useCases.Procurement.SupplierProductCostPlan != nil {
-			uc := useCases.Procurement.SupplierProductCostPlan
-			if uc.CreateSupplierProductCostPlan != nil {
-				cpDeps.CreateSupplierProductCostPlan = uc.CreateSupplierProductCostPlan.Execute
-			}
-			if uc.ReadSupplierProductCostPlan != nil {
-				cpDeps.ReadSupplierProductCostPlan = uc.ReadSupplierProductCostPlan.Execute
-			}
-			if uc.UpdateSupplierProductCostPlan != nil {
-				cpDeps.UpdateSupplierProductCostPlan = uc.UpdateSupplierProductCostPlan.Execute
-			}
-			if uc.DeleteSupplierProductCostPlan != nil {
-				cpDeps.DeleteSupplierProductCostPlan = uc.DeleteSupplierProductCostPlan.Execute
-			}
+		if cp.ReadCostPlan != nil {
+			cpDeps.ReadCostPlan = cp.ReadCostPlan
+		}
+		if cp.UpdateCostPlan != nil {
+			cpDeps.UpdateCostPlan = cp.UpdateCostPlan
+		}
+		if cp.DeleteCostPlan != nil {
+			cpDeps.DeleteCostPlan = cp.DeleteCostPlan
+		}
+		if cp.GetCostPlanListPageData != nil {
+			cpDeps.GetCostPlanListPageData = cp.GetCostPlanListPageData
+		}
+		if cp.GetCostPlanItemPageData != nil {
+			cpDeps.GetCostPlanItemPageData = cp.GetCostPlanItemPageData
+		}
+		spcp := useCases.Procurement.SupplierProductCostPlan
+		if spcp.CreateSupplierProductCostPlan != nil {
+			cpDeps.CreateSupplierProductCostPlan = spcp.CreateSupplierProductCostPlan
+		}
+		if spcp.ReadSupplierProductCostPlan != nil {
+			cpDeps.ReadSupplierProductCostPlan = spcp.ReadSupplierProductCostPlan
+		}
+		if spcp.UpdateSupplierProductCostPlan != nil {
+			cpDeps.UpdateSupplierProductCostPlan = spcp.UpdateSupplierProductCostPlan
+		}
+		if spcp.DeleteSupplierProductCostPlan != nil {
+			cpDeps.DeleteSupplierProductCostPlan = spcp.DeleteSupplierProductCostPlan
 		}
 		cpMod := costplanmod.NewModule(cpDeps)
 		cpMod.RegisterRoutes(ctx.Routes)
@@ -200,26 +190,24 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 			SearchSupplierPlanURL: w.supplierProductPlanRoutes.SearchSupplierPlanURL,
 			SearchProductURL:      w.supplierProductPlanRoutes.SearchProductURL,
 		}
-		if useCases.Procurement != nil && useCases.Procurement.SupplierProductPlan != nil {
-			uc := useCases.Procurement.SupplierProductPlan
-			if uc.CreateSupplierProductPlan != nil {
-				sppDeps.CreateSupplierProductPlan = uc.CreateSupplierProductPlan.Execute
-			}
-			if uc.ReadSupplierProductPlan != nil {
-				sppDeps.ReadSupplierProductPlan = uc.ReadSupplierProductPlan.Execute
-			}
-			if uc.UpdateSupplierProductPlan != nil {
-				sppDeps.UpdateSupplierProductPlan = uc.UpdateSupplierProductPlan.Execute
-			}
-			if uc.DeleteSupplierProductPlan != nil {
-				sppDeps.DeleteSupplierProductPlan = uc.DeleteSupplierProductPlan.Execute
-			}
-			if uc.GetSupplierProductPlanListPageData != nil {
-				sppDeps.GetSupplierProductPlanListPageData = uc.GetSupplierProductPlanListPageData.Execute
-			}
-			if uc.GetSupplierProductPlanItemPageData != nil {
-				sppDeps.GetSupplierProductPlanItemPageData = uc.GetSupplierProductPlanItemPageData.Execute
-			}
+		spp := useCases.Procurement.SupplierProductPlan
+		if spp.CreateSupplierProductPlan != nil {
+			sppDeps.CreateSupplierProductPlan = spp.CreateSupplierProductPlan
+		}
+		if spp.ReadSupplierProductPlan != nil {
+			sppDeps.ReadSupplierProductPlan = spp.ReadSupplierProductPlan
+		}
+		if spp.UpdateSupplierProductPlan != nil {
+			sppDeps.UpdateSupplierProductPlan = spp.UpdateSupplierProductPlan
+		}
+		if spp.DeleteSupplierProductPlan != nil {
+			sppDeps.DeleteSupplierProductPlan = spp.DeleteSupplierProductPlan
+		}
+		if spp.GetSupplierProductPlanListPageData != nil {
+			sppDeps.GetSupplierProductPlanListPageData = spp.GetSupplierProductPlanListPageData
+		}
+		if spp.GetSupplierProductPlanItemPageData != nil {
+			sppDeps.GetSupplierProductPlanItemPageData = spp.GetSupplierProductPlanItemPageData
 		}
 		supplierproductplanmod.NewModule(sppDeps).RegisterRoutes(ctx.Routes)
 	}
@@ -240,23 +228,21 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 			CommonLabels:                 ctx.Common,
 			SearchSupplierProductPlanURL: w.costPlanRoutes.SearchSupplierProductPlanURL,
 		}
-		if useCases.Procurement != nil && useCases.Procurement.SupplierProductCostPlan != nil {
-			uc := useCases.Procurement.SupplierProductCostPlan
-			if uc.CreateSupplierProductCostPlan != nil {
-				spcpDeps.CreateSupplierProductCostPlan = uc.CreateSupplierProductCostPlan.Execute
-			}
-			if uc.ReadSupplierProductCostPlan != nil {
-				spcpDeps.ReadSupplierProductCostPlan = uc.ReadSupplierProductCostPlan.Execute
-			}
-			if uc.UpdateSupplierProductCostPlan != nil {
-				spcpDeps.UpdateSupplierProductCostPlan = uc.UpdateSupplierProductCostPlan.Execute
-			}
-			if uc.DeleteSupplierProductCostPlan != nil {
-				spcpDeps.DeleteSupplierProductCostPlan = uc.DeleteSupplierProductCostPlan.Execute
-			}
-			if uc.GetSupplierProductCostPlanItemPageData != nil {
-				spcpDeps.GetSupplierProductCostPlanItemPageData = uc.GetSupplierProductCostPlanItemPageData.Execute
-			}
+		spcp := useCases.Procurement.SupplierProductCostPlan
+		if spcp.CreateSupplierProductCostPlan != nil {
+			spcpDeps.CreateSupplierProductCostPlan = spcp.CreateSupplierProductCostPlan
+		}
+		if spcp.ReadSupplierProductCostPlan != nil {
+			spcpDeps.ReadSupplierProductCostPlan = spcp.ReadSupplierProductCostPlan
+		}
+		if spcp.UpdateSupplierProductCostPlan != nil {
+			spcpDeps.UpdateSupplierProductCostPlan = spcp.UpdateSupplierProductCostPlan
+		}
+		if spcp.DeleteSupplierProductCostPlan != nil {
+			spcpDeps.DeleteSupplierProductCostPlan = spcp.DeleteSupplierProductCostPlan
+		}
+		if spcp.GetSupplierProductCostPlanItemPageData != nil {
+			spcpDeps.GetSupplierProductCostPlanItemPageData = spcp.GetSupplierProductCostPlanItemPageData
 		}
 		if w.costPlanRoutes.ProductCostAddURL != "" {
 			addView := costplanaction.NewCostPlanLineAddAction(spcpDeps)
@@ -287,26 +273,24 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 				return err
 			},
 		}
-		if useCases.Procurement != nil && useCases.Procurement.SupplierSubscription != nil {
-			uc := useCases.Procurement.SupplierSubscription
-			if uc.CreateSupplierSubscription != nil {
-				ssDeps.CreateSupplierSubscription = uc.CreateSupplierSubscription.Execute
-			}
-			if uc.ReadSupplierSubscription != nil {
-				ssDeps.ReadSupplierSubscription = uc.ReadSupplierSubscription.Execute
-			}
-			if uc.UpdateSupplierSubscription != nil {
-				ssDeps.UpdateSupplierSubscription = uc.UpdateSupplierSubscription.Execute
-			}
-			if uc.DeleteSupplierSubscription != nil {
-				ssDeps.DeleteSupplierSubscription = uc.DeleteSupplierSubscription.Execute
-			}
-			if uc.GetSupplierSubscriptionListPageData != nil {
-				ssDeps.GetSupplierSubscriptionListPageData = uc.GetSupplierSubscriptionListPageData.Execute
-			}
-			if uc.GetSupplierSubscriptionItemPageData != nil {
-				ssDeps.GetSupplierSubscriptionItemPageData = uc.GetSupplierSubscriptionItemPageData.Execute
-			}
+		ss := useCases.Procurement.SupplierSubscription
+		if ss.CreateSupplierSubscription != nil {
+			ssDeps.CreateSupplierSubscription = ss.CreateSupplierSubscription
+		}
+		if ss.ReadSupplierSubscription != nil {
+			ssDeps.ReadSupplierSubscription = ss.ReadSupplierSubscription
+		}
+		if ss.UpdateSupplierSubscription != nil {
+			ssDeps.UpdateSupplierSubscription = ss.UpdateSupplierSubscription
+		}
+		if ss.DeleteSupplierSubscription != nil {
+			ssDeps.DeleteSupplierSubscription = ss.DeleteSupplierSubscription
+		}
+		if ss.GetSupplierSubscriptionListPageData != nil {
+			ssDeps.GetSupplierSubscriptionListPageData = ss.GetSupplierSubscriptionListPageData
+		}
+		if ss.GetSupplierSubscriptionItemPageData != nil {
+			ssDeps.GetSupplierSubscriptionItemPageData = ss.GetSupplierSubscriptionItemPageData
 		}
 		suppliersubscriptionmod.NewModule(ssDeps).RegisterRoutes(ctx.Routes)
 	}

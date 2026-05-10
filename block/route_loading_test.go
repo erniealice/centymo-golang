@@ -5,11 +5,13 @@ import (
 	"testing"
 
 	centymo "github.com/erniealice/centymo-golang"
-	consumer "github.com/erniealice/espyna-golang/consumer"
 	lyngua "github.com/erniealice/lyngua"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/view"
+
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
 type testRouteRegistrar struct {
@@ -52,24 +54,65 @@ func (d *testDataSource) HardDelete(context.Context, string, string) error {
 	return nil
 }
 
+// newPlanUseCases returns a UseCases value with no-op stubs for the required
+// Plan CRUD fields, as validated by RequireFor when WithPlan() is enabled.
+func newPlanUseCases() *UseCases {
+	return &UseCases{
+		Plan: PlanUseCases{
+			ListPlans:  func(_ context.Context, _ *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error) { return &planpb.ListPlansResponse{}, nil },
+			ReadPlan:   func(_ context.Context, _ *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error) { return &planpb.ReadPlanResponse{}, nil },
+			CreatePlan: func(_ context.Context, _ *planpb.CreatePlanRequest) (*planpb.CreatePlanResponse, error) { return &planpb.CreatePlanResponse{}, nil },
+			UpdatePlan: func(_ context.Context, _ *planpb.UpdatePlanRequest) (*planpb.UpdatePlanResponse, error) { return &planpb.UpdatePlanResponse{}, nil },
+			DeletePlan: func(_ context.Context, _ *planpb.DeletePlanRequest) (*planpb.DeletePlanResponse, error) { return &planpb.DeletePlanResponse{}, nil },
+		},
+	}
+}
+
+// newSubscriptionUseCases returns a UseCases value with no-op stubs for the required
+// Subscription CRUD fields, as validated by RequireFor when WithSubscription() is enabled.
+func newSubscriptionUseCases() *UseCases {
+	return &UseCases{
+		Subscription: SubscriptionUseCases{
+			GetSubscriptionListPageData: func(_ context.Context, _ *subscriptionpb.GetSubscriptionListPageDataRequest) (*subscriptionpb.GetSubscriptionListPageDataResponse, error) {
+				return &subscriptionpb.GetSubscriptionListPageDataResponse{}, nil
+			},
+			CreateSubscription: func(_ context.Context, _ *subscriptionpb.CreateSubscriptionRequest) (*subscriptionpb.CreateSubscriptionResponse, error) {
+				return &subscriptionpb.CreateSubscriptionResponse{}, nil
+			},
+			ReadSubscription: func(_ context.Context, _ *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error) {
+				return &subscriptionpb.ReadSubscriptionResponse{}, nil
+			},
+			UpdateSubscription: func(_ context.Context, _ *subscriptionpb.UpdateSubscriptionRequest) (*subscriptionpb.UpdateSubscriptionResponse, error) {
+				return &subscriptionpb.UpdateSubscriptionResponse{}, nil
+			},
+			DeleteSubscription: func(_ context.Context, _ *subscriptionpb.DeleteSubscriptionRequest) (*subscriptionpb.DeleteSubscriptionResponse, error) {
+				return &subscriptionpb.DeleteSubscriptionResponse{}, nil
+			},
+		},
+	}
+}
+
 func TestBlockLoadsRouteOverridesForSelectedModules(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name        string
 		option      BlockOption
+		useCases    *UseCases
 		expectPath  string
 		defaultPath string
 	}{
 		{
 			name:        "subscription routes use service override",
 			option:      WithSubscription(),
+			useCases:    newSubscriptionUseCases(),
 			expectPath:  "/app/memberships/list/{status}",
 			defaultPath: centymo.SubscriptionListURL,
 		},
 		{
 			name:        "plan routes use service override",
 			option:      WithPlan(),
+			useCases:    newPlanUseCases(),
 			expectPath:  "/app/packages/list/{status}",
 			defaultPath: centymo.PlanListURL,
 		},
@@ -86,11 +129,10 @@ func TestBlockLoadsRouteOverridesForSelectedModules(t *testing.T) {
 				Common:       pyeza.CommonLabels{},
 				BusinessType: "service",
 				Translations: lynguaV1.NewTranslationProviderFromFS(lyngua.TranslationsFS),
-				UseCases:     &consumer.UseCases{},
 				DB:           &testDataSource{},
 			}
 
-			if err := Block(tc.option)(ctx); err != nil {
+			if err := Block(tc.option, WithUseCases(tc.useCases))(ctx); err != nil {
 				t.Fatalf("Block() returned error: %v", err)
 			}
 

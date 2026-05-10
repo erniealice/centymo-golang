@@ -11,10 +11,12 @@ import (
 	"context"
 	"fmt"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
 	"github.com/erniealice/espyna-golang/reference"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
+	revenuerunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_run"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 
@@ -54,7 +56,7 @@ type subscriptionWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the Subscription wiring used to be.
-func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer.UseCases, w subscriptionWiring) {
+func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w subscriptionWiring) {
 	if !cfg.wantSubscription() {
 		return
 	}
@@ -65,8 +67,8 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 		CommonLabels: ctx.Common,
 		TableLabels:  w.centymoTableLabels,
 	}
-	if useCases.Subscription != nil && useCases.Subscription.Subscription != nil {
-		subListDeps.GetSubscriptionListPageData = useCases.Subscription.Subscription.GetSubscriptionListPageData.Execute
+	if useCases.Subscription.GetSubscriptionListPageData != nil {
+		subListDeps.GetSubscriptionListPageData = useCases.Subscription.GetSubscriptionListPageData
 	}
 	if w.refChecker != nil {
 		subListDeps.GetInUseIDs = w.refChecker.GetSubscriptionInUseIDs
@@ -80,15 +82,15 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 	}
 
 	// Subscription CRUD actions
-	if useCases.Subscription != nil && useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.CreateSubscription != nil {
+	if useCases.Subscription.CreateSubscription != nil {
 		subActionDeps := &subscriptionaction.Deps{
 			Routes:             w.subscriptionRoutes,
 			Labels:             w.subscriptionLabels,
 			CommonLabels:       ctx.Common,
-			CreateSubscription: useCases.Subscription.Subscription.CreateSubscription.Execute,
-			ReadSubscription:   useCases.Subscription.Subscription.ReadSubscription.Execute,
-			UpdateSubscription: useCases.Subscription.Subscription.UpdateSubscription.Execute,
-			DeleteSubscription: useCases.Subscription.Subscription.DeleteSubscription.Execute,
+			CreateSubscription: useCases.Subscription.CreateSubscription,
+			ReadSubscription:   useCases.Subscription.ReadSubscription,
+			UpdateSubscription: useCases.Subscription.UpdateSubscription,
+			DeleteSubscription: useCases.Subscription.DeleteSubscription,
 			// SetSubscriptionActive uses raw DB update (proto3 omits false booleans)
 			SetSubscriptionActive: func(fctx context.Context, id string, active bool) error {
 				_, err := w.db.Update(fctx, "subscription", id, map[string]any{"active": active})
@@ -98,106 +100,134 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 		if w.refChecker != nil {
 			subActionDeps.GetInUseIDs = w.refChecker.GetSubscriptionInUseIDs
 		}
-		if useCases.Subscription.Subscription.GetSubscriptionItemPageData != nil {
-			subActionDeps.GetSubscriptionItemPageData = useCases.Subscription.Subscription.GetSubscriptionItemPageData.Execute
+		if useCases.Subscription.GetSubscriptionItemPageData != nil {
+			subActionDeps.GetSubscriptionItemPageData = useCases.Subscription.GetSubscriptionItemPageData
 		}
-		if useCases.Entity != nil && useCases.Entity.Client != nil {
-			subActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
-			if useCases.Entity.Client.SearchClientsByName != nil {
-				subActionDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName.Execute
-			}
+		if useCases.Entity.Client.ListClients != nil {
+			subActionDeps.ListClients = useCases.Entity.Client.ListClients
 		}
-		if useCases.Subscription.Plan != nil {
-			subActionDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
-			if useCases.Subscription.Plan.ReadPlan != nil {
-				subActionDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
-			}
-			if useCases.Subscription.Plan.SearchPlansByName != nil {
-				subActionDeps.SearchPlansByName = useCases.Subscription.Plan.SearchPlansByName.Execute
-			}
+		if useCases.Entity.Client.SearchClientsByName != nil {
+			subActionDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName
 		}
-		if useCases.Subscription.PricePlan != nil {
-			subActionDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
-			if useCases.Subscription.PricePlan.ReadPricePlan != nil {
-				subActionDeps.ReadPricePlan = useCases.Subscription.PricePlan.ReadPricePlan.Execute
-			}
+		if useCases.Plan.ListPlans != nil {
+			subActionDeps.ListPlans = useCases.Plan.ListPlans
 		}
-		if useCases.Subscription.PriceSchedule != nil && useCases.Subscription.PriceSchedule.ListPriceSchedules != nil {
-			subActionDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+		if useCases.Plan.ReadPlan != nil {
+			subActionDeps.ReadPlan = useCases.Plan.ReadPlan
+		}
+		if useCases.Plan.SearchPlansByName != nil {
+			subActionDeps.SearchPlansByName = useCases.Plan.SearchPlansByName
+		}
+		if useCases.PricePlan.ListPricePlans != nil {
+			subActionDeps.ListPricePlans = useCases.PricePlan.ListPricePlans
+		}
+		if useCases.PricePlan.ReadPricePlan != nil {
+			subActionDeps.ReadPricePlan = useCases.PricePlan.ReadPricePlan
+		}
+		if useCases.PriceSchedule.ListPriceSchedules != nil {
+			subActionDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
 		}
 		// Wire the espyna recognize-revenue use case so the new
 		// drawer + the existing manual-revenue-add auto-populate
 		// path share one source of truth.
-		if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
-			useCases.Revenue.Revenue.RecognizeRevenueFromSubscription != nil {
-			subActionDeps.RecognizeRevenueFromSubscription =
-				useCases.Revenue.Revenue.RecognizeRevenueFromSubscription.Execute
+		if useCases.Revenue.RecognizeRevenueFromSubscription != nil {
+			subActionDeps.RecognizeRevenueFromSubscription = useCases.Revenue.RecognizeRevenueFromSubscription
 		}
 
 		// 2026-05-06 revenue-run plan Phase 6 (Surface C) — wire the
 		// per-subscription Invoice Run drawer callbacks.
 		// Both use cases must be present; the drawer gates on nil callbacks.
-		if useCases.Revenue != nil && useCases.Revenue.Revenue != nil &&
-			useCases.Revenue.Revenue.ListRevenueRunCandidates != nil &&
-			useCases.Revenue.Revenue.GenerateRevenueRun != nil {
+		if useCases.Revenue.ListRevenueRunCandidates != nil &&
+			useCases.Revenue.GenerateRevenueRun != nil {
+			listCandidatesUC := useCases.Revenue.ListRevenueRunCandidates
 			subActionDeps.ListRevenueRunCandidates = func(fctx context.Context, scope subscriptionaction.RevenueRunScopeAction) ([]subscriptionaction.RevenueRunCandidateAction, string, error) {
-				candidates, nextCursor, err := consumer.ListRevenueRunCandidates(useCases, fctx, consumer.RevenueRunScope{
-					WorkspaceID:    scope.WorkspaceID,
-					ClientID:       scope.ClientID,
-					SubscriptionID: scope.SubscriptionID,
-					AsOfDate:       scope.AsOfDate,
-					Cursor:         scope.Cursor,
-					Limit:          scope.Limit,
-				})
+				req := &revenuerunpb.ListRevenueRunCandidatesRequest{
+					Scope: &revenuerunpb.RevenueRunScope{},
+				}
+				if scope.Cursor != "" {
+					req.Cursor = &scope.Cursor
+				}
+				if scope.Limit != 0 {
+					req.Limit = &scope.Limit
+				}
+				if scope.WorkspaceID != "" {
+					req.Scope.WorkspaceId = &scope.WorkspaceID
+				}
+				if scope.ClientID != "" {
+					req.Scope.ClientId = &scope.ClientID
+				}
+				if scope.SubscriptionID != "" {
+					req.Scope.SubscriptionId = &scope.SubscriptionID
+				}
+				if scope.AsOfDate != "" {
+					req.Scope.AsOfDate = &scope.AsOfDate
+				}
+				resp, err := listCandidatesUC(fctx, req)
 				if err != nil {
 					return nil, "", err
 				}
+				nextCursor := resp.GetNextCursor()
+				candidates := resp.GetData()
 				out := make([]subscriptionaction.RevenueRunCandidateAction, 0, len(candidates))
 				for _, c := range candidates {
-					amtDisplay := fmt.Sprintf("%.2f", float64(c.Amount)/100)
+					amtDisplay := fmt.Sprintf("%.2f", float64(c.GetAmount())/100)
 					out = append(out, subscriptionaction.RevenueRunCandidateAction{
-						SubscriptionID:    c.SubscriptionID,
-						SubscriptionName:  c.SubscriptionName,
-						ClientID:          c.ClientID,
-						ClientName:        c.ClientName,
-						PlanName:          c.PlanName,
-						BillingCycleLabel: c.BillingCycleLabel,
-						Currency:          c.Currency,
-						PeriodStart:       c.PeriodStart,
-						PeriodEnd:         c.PeriodEnd,
-						PeriodLabel:       c.PeriodLabel,
-						PeriodMarker:      c.PeriodMarker,
-						Amount:            c.Amount,
+						SubscriptionID:    c.GetSubscriptionId(),
+						SubscriptionName:  c.GetSubscriptionName(),
+						ClientID:          c.GetClientId(),
+						ClientName:        c.GetClientName(),
+						PlanName:          c.GetPlanName(),
+						BillingCycleLabel: c.GetBillingCycleLabel(),
+						Currency:          c.GetCurrency(),
+						PeriodStart:       c.GetPeriodStart(),
+						PeriodEnd:         c.GetPeriodEnd(),
+						PeriodLabel:       c.GetPeriodLabel(),
+						PeriodMarker:      c.GetPeriodMarker(),
+						Amount:            c.GetAmount(),
 						AmountDisplay:     amtDisplay,
-						LineItemCount:     c.LineItemCount,
-						Eligible:          c.Eligible,
-						BlockerReason:     c.BlockerReason,
+						LineItemCount:     int(c.GetLineItemCount()),
+						Eligible:          c.GetEligible(),
+						BlockerReason:     c.GetBlockerReason(),
 					})
 				}
 				return out, nextCursor, nil
 			}
+			generateUC := useCases.Revenue.GenerateRevenueRun
 			subActionDeps.GenerateRevenueRun = func(fctx context.Context, scope subscriptionaction.RevenueRunScopeAction, sels subscriptionaction.RevenueRunSelectionsAction) (*subscriptionaction.RevenueRunResultAction, error) {
-				consumerSels := consumer.RevenueRunSelections{
-					FilterToken: sels.FilterToken,
+				protoScope := &revenuerunpb.RevenueRunScope{}
+				if scope.WorkspaceID != "" {
+					protoScope.WorkspaceId = &scope.WorkspaceID
+				}
+				if scope.ClientID != "" {
+					protoScope.ClientId = &scope.ClientID
+				}
+				if scope.SubscriptionID != "" {
+					protoScope.SubscriptionId = &scope.SubscriptionID
+				}
+				if scope.AsOfDate != "" {
+					protoScope.AsOfDate = &scope.AsOfDate
+				}
+				protoSels := &revenuerunpb.RevenueRunSelections{}
+				if sels.FilterToken != "" {
+					ft := sels.FilterToken
+					protoSels.FilterToken = &ft
 				}
 				for _, s := range sels.ExplicitList {
-					consumerSels.ExplicitList = append(consumerSels.ExplicitList, consumer.SelectedRevenueRunCandidate{
-						SubscriptionID: s.SubscriptionID,
+					protoSels.ExplicitList = append(protoSels.ExplicitList, &revenuerunpb.SelectedRevenueRunCandidate{
+						SubscriptionId: s.SubscriptionID,
 						PeriodStart:    s.PeriodStart,
 						PeriodEnd:      s.PeriodEnd,
 						PeriodMarker:   s.PeriodMarker,
 					})
 				}
-				result, err := consumer.GenerateRevenueRun(useCases, fctx, consumer.RevenueRunScope{
-					WorkspaceID:    scope.WorkspaceID,
-					ClientID:       scope.ClientID,
-					SubscriptionID: scope.SubscriptionID,
-					AsOfDate:       scope.AsOfDate,
-				}, consumerSels)
+				result, err := generateUC(fctx, &revenuerunpb.GenerateRevenueRunRequest{
+					Scope:      protoScope,
+					Selections: protoSels,
+				})
 				if err != nil || result == nil {
 					return nil, err
 				}
-				run := result.Run
+				run := result.GetRun()
 				runID := ""
 				runStatus := ""
 				if run != nil {
@@ -205,7 +235,7 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 					runStatus = run.GetStatus().String()
 				}
 				var created, skipped, errored int32
-				for _, a := range result.Attempts {
+				for _, a := range result.GetAttempts() {
 					switch a.GetOutcome().String() {
 					case "REVENUE_RUN_ATTEMPT_OUTCOME_CREATED":
 						created++
@@ -235,37 +265,33 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 
 		// 2026-04-29 milestone-billing plan §5 / Phase D — wire the
 		// BillingEvent server through to the recognize drawer +
-		// mark-ready/waive handlers. nil-safe: the espyna subscription
-		// composition exposes the server pointer directly (no use-case
-		// wrapper yet).
-		if useCases.Subscription.BillingEvent != nil {
-			be := useCases.Subscription.BillingEvent
-			subActionDeps.ListBillingEventsBySubscription = be.ListBySubscription
-			subActionDeps.SetBillingEventStatus = be.SetStatus
+		// mark-ready/waive handlers.
+		if useCases.Subscription.ListBillingEventsBySubscription != nil {
+			subActionDeps.ListBillingEventsBySubscription = useCases.Subscription.ListBillingEventsBySubscription
+			subActionDeps.SetBillingEventStatus = useCases.Subscription.SetBillingEventStatus
 		}
 
 		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / Phase D —
 		// wire the JobTemplate read deps that drive the Spawn Jobs
 		// section detection on the subscription create drawer + the
 		// retroactive spawn drawer. nil-safe.
-		if useCases.Operation != nil {
-			if uc := useCases.Operation.JobTemplate; uc != nil && uc.ReadJobTemplate != nil {
-				subActionDeps.ReadJobTemplate = uc.ReadJobTemplate.Execute
-			}
-			if uc := useCases.Operation.JobTemplatePhase; uc != nil && uc.ListByJobTemplate != nil {
-				subActionDeps.ListJobTemplatePhases = uc.ListByJobTemplate.Execute
-			}
-			if uc := useCases.Operation.JobTemplateTask; uc != nil && uc.ListByPhase != nil {
-				subActionDeps.ListJobTemplateTasks = uc.ListByPhase.Execute
-			}
-			if useCases.Operation.JobTemplateRelation != nil {
-				subActionDeps.ListJobTemplateRelations = useCases.Operation.JobTemplateRelation.ListByParent
-			}
+		if useCases.Operation.JobTemplate.ReadJobTemplate != nil {
+			subActionDeps.ReadJobTemplate = useCases.Operation.JobTemplate.ReadJobTemplate
+		}
+		if useCases.Operation.JobTemplatePhase.ListByJobTemplate != nil {
+			subActionDeps.ListJobTemplatePhases = useCases.Operation.JobTemplatePhase.ListByJobTemplate
+		}
+		if useCases.Operation.JobTemplateTask.ListByPhase != nil {
+			subActionDeps.ListJobTemplateTasks = useCases.Operation.JobTemplateTask.ListByPhase
+		}
+		if useCases.Operation.JobTemplateRelation.ListByParent != nil {
+			subActionDeps.ListJobTemplateRelations = useCases.Operation.JobTemplateRelation.ListByParent
 		}
 		if useCases.Subscription.MaterializeJobsForSubscription != nil {
+			materializeUC := useCases.Subscription.MaterializeJobsForSubscription
 			subActionDeps.MaterializeJobsForSubscription = func(fctx context.Context, subID string, spawn bool) (int, string, error) {
-				resp, err := consumer.MaterializeJobsForSubscription(useCases, fctx, &consumer.MaterializeJobsForSubscriptionRequest{
-					SubscriptionID: subID,
+				resp, err := materializeUC(fctx, &subscriptionpb.MaterializeJobsForSubscriptionRequest{
+					SubscriptionId: subID,
 					SpawnJobs:      spawn,
 				})
 				if err != nil {
@@ -274,7 +300,7 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 				if resp == nil {
 					return 0, "", nil
 				}
-				return resp.JobCount, resp.SkippedReason, nil
+				return len(resp.GetSpawnedJobs()), resp.GetSkippedReason(), nil
 			}
 		}
 		// 2026-04-30 cyclic-subscription-jobs plan §5.3 / Phase D —
@@ -284,15 +310,19 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 		// without importing espyna directly. nil-safe: the cycle-spawn
 		// and backfill action handlers gate on the adapter pointer.
 		if useCases.Subscription.MaterializeInstanceJobsForSubscription != nil {
+			materializeInstanceUC := useCases.Subscription.MaterializeInstanceJobsForSubscription
 			subActionDeps.MaterializeInstanceJobsForSubscription = func(fctx context.Context, req *subscriptionaction.MaterializeInstanceJobsRequest) (*subscriptionaction.MaterializeInstanceJobsResponse, error) {
 				if req == nil {
 					return nil, nil
 				}
-				resp, err := consumer.MaterializeInstanceJobsForSubscription(useCases, fctx, &consumer.MaterializeInstanceJobsForSubscriptionRequest{
-					SubscriptionID:   req.SubscriptionID,
-					CyclePeriodStart: req.CyclePeriodStart,
-					Backfill:         req.Backfill,
-				})
+				protoReq := &subscriptionpb.MaterializeInstanceJobsForSubscriptionRequest{
+					SubscriptionId: req.SubscriptionID,
+					Backfill:       req.Backfill,
+				}
+				if req.CyclePeriodStart != "" {
+					protoReq.CyclePeriodStart = &req.CyclePeriodStart
+				}
+				resp, err := materializeInstanceUC(fctx, protoReq)
 				if err != nil {
 					return nil, err
 				}
@@ -300,12 +330,12 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 					return &subscriptionaction.MaterializeInstanceJobsResponse{}, nil
 				}
 				return &subscriptionaction.MaterializeInstanceJobsResponse{
-					SpawnedCycleCount:         resp.SpawnedCycleCount,
-					SpawnedJobCount:           resp.SpawnedJobCount,
-					OnceAtStartJobCount:       resp.OnceAtStartJobCount,
-					EngagementWasNewlyCreated: resp.EngagementWasNewlyCreated,
-					SkippedReason:             resp.SkippedReason,
-					BackfillCappedAt:          resp.BackfillCappedAt,
+					SpawnedCycleCount:         int(resp.GetSpawnedCycleCount()),
+					SpawnedJobCount:           int(resp.GetSpawnedJobCount()),
+					OnceAtStartJobCount:       int(resp.GetOnceAtStartJobCount()),
+					EngagementWasNewlyCreated: resp.GetEngagementWasNewlyCreated(),
+					SkippedReason:             resp.GetSkippedReason(),
+					BackfillCappedAt:          resp.GetBackfillCappedAt(),
 				}, nil
 			}
 		}
@@ -395,10 +425,10 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 	}
 
 	// Subscription detail page + tab action
-	if useCases.Subscription != nil && useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.ReadSubscription != nil {
+	if useCases.Subscription.ReadSubscription != nil {
 		subDetailDeps := &subscriptiondetail.DetailViewDeps{
 			Routes:           w.subscriptionRoutes,
-			ReadSubscription: useCases.Subscription.Subscription.ReadSubscription.Execute,
+			ReadSubscription: useCases.Subscription.ReadSubscription,
 			Labels:           w.subscriptionLabels,
 			CommonLabels:     ctx.Common,
 			TableLabels:      w.centymoTableLabels,
@@ -412,29 +442,27 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 				NewAttachmentID:  w.newAttachmentID,
 			},
 		}
-		if useCases.Subscription.Subscription.GetSubscriptionItemPageData != nil {
-			subDetailDeps.GetSubscriptionItemPageData = useCases.Subscription.Subscription.GetSubscriptionItemPageData.Execute
+		if useCases.Subscription.GetSubscriptionItemPageData != nil {
+			subDetailDeps.GetSubscriptionItemPageData = useCases.Subscription.GetSubscriptionItemPageData
 		}
-		if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ReadClient != nil {
-			subDetailDeps.ReadClient = useCases.Entity.Client.ReadClient.Execute
+		if useCases.Entity.Client.ReadClient != nil {
+			subDetailDeps.ReadClient = useCases.Entity.Client.ReadClient
 		}
-		if useCases.Revenue != nil && useCases.Revenue.Revenue != nil && useCases.Revenue.Revenue.GetRevenueListPageData != nil {
-			subDetailDeps.GetRevenueListPageData = useCases.Revenue.Revenue.GetRevenueListPageData.Execute
+		if useCases.Revenue.GetListPageData != nil {
+			subDetailDeps.GetRevenueListPageData = useCases.Revenue.GetListPageData
 		}
 		// 2026-04-29 milestone-billing — wire BillingEvent listing into
 		// the subscription detail Package tab.
-		if useCases.Subscription.BillingEvent != nil {
-			subDetailDeps.ListBillingEventsBySubscription = useCases.Subscription.BillingEvent.ListBySubscription
+		if useCases.Subscription.ListBillingEventsBySubscription != nil {
+			subDetailDeps.ListBillingEventsBySubscription = useCases.Subscription.ListBillingEventsBySubscription
 		}
 		// 2026-04-29 auto-spawn-jobs-from-subscription Phase D — wire
 		// the Operations tab data ops + spawn-jobs CTA URL.
-		if useCases.Operation != nil {
-			if uc := useCases.Operation.Job; uc != nil && uc.GetJobsByOrigin != nil {
-				subDetailDeps.GetJobsByOrigin = uc.GetJobsByOrigin.Execute
-			}
-			if uc := useCases.Operation.JobPhase; uc != nil && uc.ListByJob != nil {
-				subDetailDeps.ListJobPhasesByJob = uc.ListByJob.Execute
-			}
+		if useCases.Operation.Job.GetJobsByOrigin != nil {
+			subDetailDeps.GetJobsByOrigin = useCases.Operation.Job.GetJobsByOrigin
+		}
+		if useCases.Operation.JobPhase.ListByJob != nil {
+			subDetailDeps.ListJobPhasesByJob = useCases.Operation.JobPhase.ListByJob
 		}
 		subDetailDeps.SpawnJobsURL = w.subscriptionRoutes.SpawnJobsURL
 		subDetailDeps.JobDetailURL = cfg.jobDetailURL
@@ -442,11 +470,11 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 		// 2026-05-04 — engagement breadcrumb (rate-card → plan).
 		subDetailDeps.PriceScheduleDetailURL = w.priceScheduleRoutes.DetailURL
 		subDetailDeps.PricePlanDetailURL = w.priceScheduleRoutes.PlanDetailURL
-		if useCases.Subscription.PriceSchedule != nil && useCases.Subscription.PriceSchedule.ReadPriceSchedule != nil {
-			subDetailDeps.ReadPriceSchedule = useCases.Subscription.PriceSchedule.ReadPriceSchedule.Execute
+		if useCases.PriceSchedule.ReadPriceSchedule != nil {
+			subDetailDeps.ReadPriceSchedule = useCases.PriceSchedule.ReadPriceSchedule
 		}
-		if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.ReadPricePlan != nil {
-			subDetailDeps.ReadPricePlan = useCases.Subscription.PricePlan.ReadPricePlan.Execute
+		if useCases.PricePlan.ReadPricePlan != nil {
+			subDetailDeps.ReadPricePlan = useCases.PricePlan.ReadPricePlan
 		}
 		ctx.Routes.GET(w.subscriptionRoutes.DetailURL, subscriptiondetail.NewView(subDetailDeps))
 		ctx.Routes.GET(w.subscriptionRoutes.TabActionURL, subscriptiondetail.NewTabAction(subDetailDeps))
@@ -472,11 +500,10 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 	}
 }
 
-// wireCustomizePlanForClient threads the espyna Plan.CustomizePlanForClient use
-// case into the centymo subscription action Deps. The espyna side ships an
-// independent request/response shape; the centymo side uses an in-package
-// type-narrow shape so its handlers don't depend directly on the espyna
-// generated proto/use-case structs.
+// wireCustomizePlanForClient threads the Plan.CustomizePlanForClient use
+// case into the centymo subscription action Deps. The centymo side uses an
+// in-package type-narrow shape so its handlers don't depend directly on the
+// espyna generated proto/use-case structs.
 //
 // When the use case isn't wired (composition layer didn't initialize it), we
 // leave the function pointer nil; the handler falls through to a generic
@@ -484,25 +511,26 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *c
 //
 // 2026-04-27 plan-client-scope plan §4. Same adapter pattern as
 // RecognizeRevenueFromSubscription above.
-func wireCustomizePlanForClient(useCases *consumer.UseCases, subActionDeps *subscriptionaction.Deps) {
-	if useCases == nil || useCases.Subscription == nil || useCases.Subscription.Plan == nil {
+func wireCustomizePlanForClient(useCases *UseCases, subActionDeps *subscriptionaction.Deps) {
+	if useCases.Plan.CustomizePlanForClient == nil {
 		return
 	}
-	customizeUC := useCases.Subscription.Plan.CustomizePlanForClient
-	if customizeUC == nil {
-		return
-	}
-	_ = customizeUC
+	customizeUC := useCases.Plan.CustomizePlanForClient
 	subActionDeps.CustomizePlanForClient = func(
 		ctx context.Context, req *subscriptionaction.CustomizePlanForClientRequest,
 	) (*subscriptionaction.CustomizePlanForClientResponse, error) {
-		resp, err := consumer.CustomizePlanForClient(useCases, ctx, &consumer.CustomizePlanForClientRequest{
-			SourcePlanID:      req.SourcePlanID,
-			SourcePricePlanID: req.SourcePricePlanID,
-			ClientID:          req.ClientID,
-			SubscriptionID:    req.SubscriptionID,
-			NewScheduleName:   req.NewScheduleName,
-		})
+		protoReq := &planpb.CustomizePlanForClientRequest{
+			SourcePlanId:      req.SourcePlanID,
+			SourcePricePlanId: req.SourcePricePlanID,
+			ClientId:          req.ClientID,
+		}
+		if req.SubscriptionID != "" {
+			protoReq.SubscriptionId = &req.SubscriptionID
+		}
+		if req.NewScheduleName != "" {
+			protoReq.NewScheduleName = &req.NewScheduleName
+		}
+		resp, err := customizeUC(ctx, protoReq)
 		if err != nil {
 			return nil, err
 		}
@@ -510,10 +538,10 @@ func wireCustomizePlanForClient(useCases *consumer.UseCases, subActionDeps *subs
 			return &subscriptionaction.CustomizePlanForClientResponse{}, nil
 		}
 		return &subscriptionaction.CustomizePlanForClientResponse{
-			NewPlanID:      resp.NewPlanID,
-			NewPricePlanID: resp.NewPricePlanID,
-			NewScheduleID:  resp.NewScheduleID,
-			Reused:         resp.Reused,
+			NewPlanID:      resp.GetNewPlanId(),
+			NewPricePlanID: resp.GetNewPricePlanId(),
+			NewScheduleID:  resp.GetNewPriceScheduleId(),
+			Reused:         resp.GetReused(),
 		}, nil
 	}
 }

@@ -9,7 +9,6 @@ package block
 import (
 	"context"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
 	"github.com/erniealice/espyna-golang/reference"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
@@ -67,14 +66,13 @@ type planWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the plan wiring used to be.
-func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer.UseCases, w planWiring) {
+func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w planWiring) {
 	// =====================================================================
 	// Price Plan module (standalone — separate from plan-nested price plans)
 	// =====================================================================
 
 	if cfg.wantPricePlan() {
-		if useCases.Subscription != nil && useCases.Subscription.PricePlan != nil {
-			uc := useCases.Subscription.PricePlan
+		if useCases.PricePlan.ListPricePlans != nil {
 			var getPricePlanInUseIDs func(context.Context, []string) (map[string]bool, error)
 			if w.refChecker != nil {
 				getPricePlanInUseIDs = w.refChecker.GetPricePlanInUseIDs
@@ -83,8 +81,8 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 			// up the parent PriceSchedule's client name for the info banner
 			// rendered on the price-plan drawer.
 			var ppListClientNames func(ctx context.Context) map[string]string
-			if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
-				lc := useCases.Entity.Client.ListClients.Execute
+			if useCases.Entity.Client.ListClients != nil {
+				lc := useCases.Entity.Client.ListClients
 				ppListClientNames = func(fctx context.Context) map[string]string {
 					out := map[string]string{}
 					resp, err := lc(fctx, &clientpb.ListClientsRequest{})
@@ -111,46 +109,45 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 				PriceScheduleDetailLabels: w.priceScheduleLabels.Detail,
 				CommonLabels:              ctx.Common,
 				TableLabels:               w.centymoTableLabels,
-				ListPricePlans:         uc.ListPricePlans.Execute,
-				ReadPricePlan:          uc.ReadPricePlan.Execute,
-				CreatePricePlan:        uc.CreatePricePlan.Execute,
-				UpdatePricePlan:        uc.UpdatePricePlan.Execute,
-				DeletePricePlan:        uc.DeletePricePlan.Execute,
+				ListPricePlans:         useCases.PricePlan.ListPricePlans,
+				ReadPricePlan:          useCases.PricePlan.ReadPricePlan,
+				CreatePricePlan:        useCases.PricePlan.CreatePricePlan,
+				UpdatePricePlan:        useCases.PricePlan.UpdatePricePlan,
+				DeletePricePlan:        useCases.PricePlan.DeletePricePlan,
 				GetPricePlanInUseIDs:   getPricePlanInUseIDs,
 				ListClientNames:        ppListClientNames,
 			}
 			// Price schedule listing — parent container (owns location + date range)
-			if useCases.Subscription.PriceSchedule != nil {
-				pricePlanDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+			if useCases.PriceSchedule.ListPriceSchedules != nil {
+				pricePlanDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
 			}
 			// Add plan listing if available
-			if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
-				pricePlanDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+			if useCases.Plan.ListPlans != nil {
+				pricePlanDeps.ListPlans = useCases.Plan.ListPlans
 			}
 			// Add product listing for detail page product selector
-			if useCases.Product != nil && useCases.Product.Product != nil {
-				pricePlanDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+			if useCases.Product.ListProducts != nil {
+				pricePlanDeps.ListProducts = useCases.Product.ListProducts
 			}
 			// Add product plan listing for scoping product selector to plan's products
-			if useCases.Product != nil && useCases.Product.ProductPlan != nil {
-				pricePlanDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+			if useCases.Product.ListProductPlans != nil {
+				pricePlanDeps.ListProductPlans = useCases.Product.ListProductPlans
 			}
 			// Add ProductPricePlan CRUD for detail page
-			if useCases.Subscription.ProductPricePlan != nil {
-				ppp := useCases.Subscription.ProductPricePlan
-				pricePlanDeps.ListProductPricePlans = ppp.ListProductPricePlans.Execute
-				pricePlanDeps.CreateProductPricePlan = ppp.CreateProductPricePlan.Execute
-				pricePlanDeps.UpdateProductPricePlan = ppp.UpdateProductPricePlan.Execute
-				pricePlanDeps.DeleteProductPricePlan = ppp.DeleteProductPricePlan.Execute
+			if useCases.PricePlan.ListProductPricePlans != nil {
+				pricePlanDeps.ListProductPricePlans = useCases.PricePlan.ListProductPricePlans
+				pricePlanDeps.CreateProductPricePlan = useCases.PricePlan.CreateProductPricePlan
+				pricePlanDeps.UpdateProductPricePlan = useCases.PricePlan.UpdateProductPricePlan
+				pricePlanDeps.DeleteProductPricePlan = useCases.PricePlan.DeleteProductPricePlan
 			}
 			// 2026-04-29 milestone-billing plan §5 / Phase D — milestone phase
 			// select on the PPP drawer needs ReadPlan (to resolve job_template_id)
 			// and ListByJobTemplate (to load phase rows).
-			if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
-				pricePlanDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+			if useCases.Plan.ReadPlan != nil {
+				pricePlanDeps.ReadPlan = useCases.Plan.ReadPlan
 			}
-			if useCases.Operation != nil && useCases.Operation.JobTemplatePhase != nil && useCases.Operation.JobTemplatePhase.ListByJobTemplate != nil {
-				pricePlanDeps.ListJobTemplatePhasesByJobTemplate = useCases.Operation.JobTemplatePhase.ListByJobTemplate.Execute
+			if useCases.Operation.JobTemplatePhase.ListByJobTemplate != nil {
+				pricePlanDeps.ListJobTemplatePhasesByJobTemplate = useCases.Operation.JobTemplatePhase.ListByJobTemplate
 			}
 			pricePlanDeps.UploadFile = w.uploadFile
 			pricePlanDeps.ListAttachments = w.listAttachments
@@ -166,8 +163,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 	// =====================================================================
 
 	if cfg.wantPriceSchedule() {
-		if useCases.Subscription != nil && useCases.Subscription.PriceSchedule != nil {
-			uc := useCases.Subscription.PriceSchedule
+		if useCases.PriceSchedule.ListPriceSchedules != nil {
 			var getPriceScheduleInUseIDs func(context.Context, []string) (map[string]bool, error)
 			if w.refChecker != nil {
 				getPriceScheduleInUseIDs = w.refChecker.GetPriceScheduleInUseIDs
@@ -176,8 +172,8 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 			// Client column lookup + drawer Client picker. Same listClientNames
 			// helper used by the plan list.
 			var psListClientNames func(ctx context.Context) map[string]string
-			if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
-				lc := useCases.Entity.Client.ListClients.Execute
+			if useCases.Entity.Client.ListClients != nil {
+				lc := useCases.Entity.Client.ListClients
 				psListClientNames = func(fctx context.Context) map[string]string {
 					out := map[string]string{}
 					resp, err := lc(fctx, &clientpb.ListClientsRequest{})
@@ -204,57 +200,56 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 				ProductPricePlanLabels:   w.productPricePlanLabels,
 				CommonLabels:             ctx.Common,
 				TableLabels:              w.centymoTableLabels,
-				ListPriceSchedules:       uc.ListPriceSchedules.Execute,
-				ReadPriceSchedule:        uc.ReadPriceSchedule.Execute,
-				CreatePriceSchedule:      uc.CreatePriceSchedule.Execute,
-				UpdatePriceSchedule:      uc.UpdatePriceSchedule.Execute,
-				DeletePriceSchedule:      uc.DeletePriceSchedule.Execute,
+				ListPriceSchedules:       useCases.PriceSchedule.ListPriceSchedules,
+				ReadPriceSchedule:        useCases.PriceSchedule.ReadPriceSchedule,
+				CreatePriceSchedule:      useCases.PriceSchedule.CreatePriceSchedule,
+				UpdatePriceSchedule:      useCases.PriceSchedule.UpdatePriceSchedule,
+				DeletePriceSchedule:      useCases.PriceSchedule.DeletePriceSchedule,
 				GetPriceScheduleInUseIDs: getPriceScheduleInUseIDs,
 				ListClientNames:          psListClientNames,
 			}
 			// 2026-04-27 plan-client-scope plan §6.7 / §4.4.1 — Client picker
 			// for the schedule add/edit drawer.
-			if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
-				priceScheduleDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+			if useCases.Entity.Client.ListClients != nil {
+				priceScheduleDeps.ListClients = useCases.Entity.Client.ListClients
 			}
 			// Add location listing if available
-			if useCases.Entity != nil && useCases.Entity.Location != nil {
-				priceScheduleDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+			if useCases.Entity.Location.ListLocations != nil {
+				priceScheduleDeps.ListLocations = useCases.Entity.Location.ListLocations
 			}
 			// Plans tab on the detail page lists price_plans filtered by price_schedule_id FK.
-			if useCases.Subscription.PricePlan != nil {
-				priceScheduleDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
-				priceScheduleDeps.CreatePricePlan = useCases.Subscription.PricePlan.CreatePricePlan.Execute
-				priceScheduleDeps.ReadPricePlan = useCases.Subscription.PricePlan.ReadPricePlan.Execute
-				priceScheduleDeps.UpdatePricePlan = useCases.Subscription.PricePlan.UpdatePricePlan.Execute
-				priceScheduleDeps.DeletePricePlan = useCases.Subscription.PricePlan.DeletePricePlan.Execute
+			if useCases.PricePlan.ListPricePlans != nil {
+				priceScheduleDeps.ListPricePlans = useCases.PricePlan.ListPricePlans
+				priceScheduleDeps.CreatePricePlan = useCases.PricePlan.CreatePricePlan
+				priceScheduleDeps.ReadPricePlan = useCases.PricePlan.ReadPricePlan
+				priceScheduleDeps.UpdatePricePlan = useCases.PricePlan.UpdatePricePlan
+				priceScheduleDeps.DeletePricePlan = useCases.PricePlan.DeletePricePlan
 			}
 			// Reference checker for in-use guard (disables row Delete + locks pricing fields
 			// on the edit drawer when a price_plan is referenced by active subscriptions).
 			if w.refChecker != nil {
 				priceScheduleDeps.GetPricePlanInUseIDs = w.refChecker.GetPricePlanInUseIDs
 			}
-			if useCases.Subscription.Plan != nil {
-				priceScheduleDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+			if useCases.Plan.ListPlans != nil {
+				priceScheduleDeps.ListPlans = useCases.Plan.ListPlans
 			}
 			// Schedule-scoped plan detail (info + product-prices tabs) needs product lookups + ProductPricePlan CRUD
-			if useCases.Product != nil && useCases.Product.Product != nil {
-				priceScheduleDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+			if useCases.Product.ListProducts != nil {
+				priceScheduleDeps.ListProducts = useCases.Product.ListProducts
 			}
-			if useCases.Product != nil && useCases.Product.ProductPlan != nil {
-				priceScheduleDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+			if useCases.Product.ListProductPlans != nil {
+				priceScheduleDeps.ListProductPlans = useCases.Product.ListProductPlans
 			}
-			if useCases.Subscription.ProductPricePlan != nil {
-				ppp := useCases.Subscription.ProductPricePlan
-				priceScheduleDeps.ListProductPricePlans = ppp.ListProductPricePlans.Execute
-				priceScheduleDeps.CreateProductPricePlan = ppp.CreateProductPricePlan.Execute
-				priceScheduleDeps.UpdateProductPricePlan = ppp.UpdateProductPricePlan.Execute
-				priceScheduleDeps.DeleteProductPricePlan = ppp.DeleteProductPricePlan.Execute
+			if useCases.PricePlan.ListProductPricePlans != nil {
+				priceScheduleDeps.ListProductPricePlans = useCases.PricePlan.ListProductPricePlans
+				priceScheduleDeps.CreateProductPricePlan = useCases.PricePlan.CreateProductPricePlan
+				priceScheduleDeps.UpdateProductPricePlan = useCases.PricePlan.UpdateProductPricePlan
+				priceScheduleDeps.DeleteProductPricePlan = useCases.PricePlan.DeleteProductPricePlan
 			}
 			// 2026-05-04 — Engagements (subscriptions) tab on the schedule-scoped
 			// price_plan detail page. See docs/plan/20260504-price-plan-engagements-tab/.
-			if useCases.Subscription.Subscription != nil && useCases.Subscription.Subscription.ListSubscriptionsByPricePlan != nil {
-				priceScheduleDeps.ListSubscriptionsByPricePlan = useCases.Subscription.Subscription.ListSubscriptionsByPricePlan.Execute
+			if useCases.PriceSchedule.ListSubscriptionsByPricePlan != nil {
+				priceScheduleDeps.ListSubscriptionsByPricePlan = useCases.PriceSchedule.ListSubscriptionsByPricePlan
 			}
 			priceScheduleDeps.SubscriptionDetailURL = w.subscriptionRoutes.DetailURL
 			priceScheduleDeps.SubscriptionEditURL = w.subscriptionRoutes.EditURL
@@ -280,11 +275,11 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 					ProductPricePlanLabels:   w.productPricePlanLabels,
 					CommonLabels:             ctx.Common,
 					TableLabels:              w.centymoTableLabels,
-					ListPriceSchedules:       uc.ListPriceSchedules.Execute,
-					ReadPriceSchedule:        uc.ReadPriceSchedule.Execute,
-					CreatePriceSchedule:      uc.CreatePriceSchedule.Execute,
-					UpdatePriceSchedule:      uc.UpdatePriceSchedule.Execute,
-					DeletePriceSchedule:      uc.DeletePriceSchedule.Execute,
+					ListPriceSchedules:       useCases.PriceSchedule.ListPriceSchedules,
+					ReadPriceSchedule:        useCases.PriceSchedule.ReadPriceSchedule,
+					CreatePriceSchedule:      useCases.PriceSchedule.CreatePriceSchedule,
+					UpdatePriceSchedule:      useCases.PriceSchedule.UpdatePriceSchedule,
+					DeletePriceSchedule:      useCases.PriceSchedule.DeletePriceSchedule,
 					GetPriceScheduleInUseIDs: getPriceScheduleInUseIDs,
 					ListLocations:            priceScheduleDeps.ListLocations,
 					ListPricePlans:           priceScheduleDeps.ListPricePlans,
@@ -327,15 +322,15 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 			CommonLabels:       ctx.Common,
 			TableLabels:        w.centymoTableLabels,
 			GetInUseIDs:        getPriceListInUseIDs,
-			ListPriceLists:     useCases.Product.PriceList.ListPriceLists.Execute,
-			ReadPriceList:      useCases.Product.PriceList.ReadPriceList.Execute,
-			CreatePriceList:    useCases.Product.PriceList.CreatePriceList.Execute,
-			UpdatePriceList:    useCases.Product.PriceList.UpdatePriceList.Execute,
-			DeletePriceList:    useCases.Product.PriceList.DeletePriceList.Execute,
-			ListPriceProducts:  useCases.Product.PriceProduct.ListPriceProducts.Execute,
-			CreatePriceProduct: useCases.Product.PriceProduct.CreatePriceProduct.Execute,
-			DeletePriceProduct: useCases.Product.PriceProduct.DeletePriceProduct.Execute,
-			ListProducts:       useCases.Product.Product.ListProducts.Execute,
+			ListPriceLists:     useCases.Product.ListPriceLists,
+			ReadPriceList:      useCases.Product.ReadPriceList,
+			CreatePriceList:    useCases.Product.CreatePriceList,
+			UpdatePriceList:    useCases.Product.UpdatePriceList,
+			DeletePriceList:    useCases.Product.DeletePriceList,
+			ListPriceProducts:  useCases.Product.ListPriceProducts,
+			CreatePriceProduct: useCases.Product.CreatePriceProduct,
+			DeletePriceProduct: useCases.Product.DeletePriceProduct,
+			ListProducts:       useCases.Product.ListProducts,
 			// Attachments
 			UploadFile:       w.uploadFile,
 			ListAttachments:  w.listAttachments,
@@ -355,8 +350,8 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 		// plan-drawer Client picker label resolution. Falls back to the
 		// bare client_id when no use case is wired (e.g. tests).
 		var listClientNames func(ctx context.Context) map[string]string
-		if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
-			lc := useCases.Entity.Client.ListClients.Execute
+		if useCases.Entity.Client.ListClients != nil {
+			lc := useCases.Entity.Client.ListClients
 			listClientNames = func(fctx context.Context) map[string]string {
 				out := map[string]string{}
 				resp, err := lc(fctx, &clientpb.ListClientsRequest{})
@@ -381,8 +376,8 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 		// list. Mirrors the listClientNames pattern; falls back to the
 		// bare job_template_id when the use case is unwired.
 		var listJobTemplateNames func(ctx context.Context) map[string]string
-		if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ListJobTemplates != nil {
-			ljt := useCases.Operation.JobTemplate.ListJobTemplates.Execute
+		if useCases.Operation.JobTemplate.ListJobTemplates != nil {
+			ljt := useCases.Operation.JobTemplate.ListJobTemplates
 			listJobTemplateNames = func(fctx context.Context) map[string]string {
 				out := map[string]string{}
 				resp, err := ljt(fctx, &jobtemplatepb.ListJobTemplatesRequest{})
@@ -407,8 +402,8 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 			ListClientNames:      listClientNames,
 			ListJobTemplateNames: listJobTemplateNames,
 		}
-		if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
-			planListDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+		if useCases.Plan.ListPlans != nil {
+			planListDeps.ListPlans = useCases.Plan.ListPlans
 		}
 		if w.refChecker != nil {
 			planListDeps.GetInUseIDs = w.refChecker.GetPlanInUseIDs
@@ -417,14 +412,14 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 		ctx.Routes.GET(w.planRoutes.TableURL, planlist.NewTableView(planListDeps))
 
 		// Plan CRUD actions
-		if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.CreatePlan != nil {
+		if useCases.Plan.CreatePlan != nil {
 			planActionDeps := &planaction.Deps{
 				Routes:     w.planRoutes,
 				Labels:     w.planLabels,
-				CreatePlan: useCases.Subscription.Plan.CreatePlan.Execute,
-				ReadPlan:   useCases.Subscription.Plan.ReadPlan.Execute,
-				UpdatePlan: useCases.Subscription.Plan.UpdatePlan.Execute,
-				DeletePlan: useCases.Subscription.Plan.DeletePlan.Execute,
+				CreatePlan: useCases.Plan.CreatePlan,
+				ReadPlan:   useCases.Plan.ReadPlan,
+				UpdatePlan: useCases.Plan.UpdatePlan,
+				DeletePlan: useCases.Plan.DeletePlan,
 				// SetPlanActive uses raw DB update (proto3 omits false booleans)
 				SetPlanActive: func(fctx context.Context, id string, active bool) error {
 					_, err := w.db.Update(fctx, "plan", id, map[string]any{"active": active})
@@ -433,21 +428,19 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 			}
 			// 2026-04-27 plan-client-scope plan §6.2 — Client picker support
 			// + reference-checker lock state.
-			if useCases.Entity != nil && useCases.Entity.Client != nil {
-				if useCases.Entity.Client.ListClients != nil {
-					planActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
-				}
-				if useCases.Entity.Client.SearchClientsByName != nil {
-					planActionDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName.Execute
-				}
+			if useCases.Entity.Client.ListClients != nil {
+				planActionDeps.ListClients = useCases.Entity.Client.ListClients
+			}
+			if useCases.Entity.Client.SearchClientsByName != nil {
+				planActionDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName
 			}
 			if w.refChecker != nil {
 				planActionDeps.GetPlanClientScopeLockedIDs = w.refChecker.GetPlanClientScopeLockedIDs
 			}
 			// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 —
 			// JobTemplate select for Plan.job_template_id assignment.
-			if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ListJobTemplates != nil {
-				planActionDeps.ListJobTemplates = useCases.Operation.JobTemplate.ListJobTemplates.Execute
+			if useCases.Operation.JobTemplate.ListJobTemplates != nil {
+				planActionDeps.ListJobTemplates = useCases.Operation.JobTemplate.ListJobTemplates
 			}
 			ctx.Routes.GET(w.planRoutes.AddURL, planaction.NewAddAction(planActionDeps))
 			ctx.Routes.POST(w.planRoutes.AddURL, planaction.NewAddAction(planActionDeps))
@@ -460,11 +453,11 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 		}
 
 		// Plan detail page + tab action
-		if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
+		if useCases.Plan.ReadPlan != nil {
 			planDetailDeps := &plandetail.DetailViewDeps{
 				Routes:                     w.planRoutes,
 				PriceSchedulePlanDetailURL: w.priceScheduleRoutes.PlanDetailURL,
-				ReadPlan:                   useCases.Subscription.Plan.ReadPlan.Execute,
+				ReadPlan:                   useCases.Plan.ReadPlan,
 				Labels:                     w.planLabels,
 				CommonLabels:               ctx.Common,
 				TableLabels:                w.centymoTableLabels,
@@ -478,35 +471,35 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 					NewAttachmentID:  w.newAttachmentID,
 				},
 			}
-			if useCases.Product != nil && useCases.Product.ProductPlan != nil {
-				planDetailDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+			if useCases.Product.ListProductPlans != nil {
+				planDetailDeps.ListProductPlans = useCases.Product.ListProductPlans
 			}
-			if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
-				planDetailDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+			if useCases.Product.ListProducts != nil {
+				planDetailDeps.ListProducts = useCases.Product.ListProducts
 			}
-			if useCases.Product != nil && useCases.Product.ProductVariant != nil {
-				planDetailDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+			if useCases.Product.ListProductVariants != nil {
+				planDetailDeps.ListProductVariants = useCases.Product.ListProductVariants
 			}
-			if useCases.Subscription.PricePlan != nil {
-				planDetailDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
+			if useCases.PricePlan.ListPricePlans != nil {
+				planDetailDeps.ListPricePlans = useCases.PricePlan.ListPricePlans
 			}
-			if useCases.Entity != nil && useCases.Entity.Location != nil {
-				planDetailDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+			if useCases.Entity.Location.ListLocations != nil {
+				planDetailDeps.ListLocations = useCases.Entity.Location.ListLocations
 			}
-			if useCases.Subscription.PriceSchedule != nil {
-				planDetailDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+			if useCases.PriceSchedule.ListPriceSchedules != nil {
+				planDetailDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
 			}
 			// 2026-04-28 plan-client-scope — Info tab Client row needs to
 			// resolve the plan's client_id label and (optionally) link to
 			// the entydad client-detail page.
-			if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
-				planDetailDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+			if useCases.Entity.Client.ListClients != nil {
+				planDetailDeps.ListClients = useCases.Entity.Client.ListClients
 			}
 			planDetailDeps.ClientDetailURL = cfg.clientDetailURL
 			// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Info
 			// tab JobTemplate row resolution.
-			if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ReadJobTemplate != nil {
-				planDetailDeps.ReadJobTemplate = useCases.Operation.JobTemplate.ReadJobTemplate.Execute
+			if useCases.Operation.JobTemplate.ReadJobTemplate != nil {
+				planDetailDeps.ReadJobTemplate = useCases.Operation.JobTemplate.ReadJobTemplate
 			}
 			ctx.Routes.GET(w.planRoutes.DetailURL, plandetail.NewView(planDetailDeps))
 			ctx.Routes.GET(w.planRoutes.TabActionURL, plandetail.NewTabAction(planDetailDeps))
@@ -516,7 +509,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 			// Services > Packages and points the breadcrumb back at the
 			// package's package-prices tab. The {id} path value is plan_id;
 			// the handler resolves schedule_id from the price_plan record.
-			if w.planRoutes.PricePlanDetailURL != "" && useCases.Subscription.PricePlan != nil {
+			if w.planRoutes.PricePlanDetailURL != "" && useCases.PricePlan.ReadPricePlan != nil {
 				// The plan detail's "Package prices" tab is registered under the
 				// `pricePlan` key in plan tab labels; the lyngua professional
 				// override surfaces it as the slug "package-prices" in the URL.
@@ -528,7 +521,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 					ProductPricePlanLabels: w.productPricePlanLabels,
 					CommonLabels:           ctx.Common,
 					TableLabels:            w.centymoTableLabels,
-					ReadPricePlan:          useCases.Subscription.PricePlan.ReadPricePlan.Execute,
+					ReadPricePlan:          useCases.PricePlan.ReadPricePlan,
 					// Mount overrides — keep the page anchored to Packages.
 					ActiveNavOverride:      w.planRoutes.ActiveNav,
 					ActiveSubNavOverride:   w.planRoutes.ActiveSubNav,
@@ -537,23 +530,23 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 					PlanScopedDetailURL:    w.planRoutes.PricePlanDetailURL,
 					PlanScopedTabActionURL: w.planRoutes.PricePlanTabActionURL,
 				}
-				if useCases.Subscription.PriceSchedule != nil {
-					planScopedDeps.ReadPriceSchedule = useCases.Subscription.PriceSchedule.ReadPriceSchedule.Execute
+				if useCases.PriceSchedule.ReadPriceSchedule != nil {
+					planScopedDeps.ReadPriceSchedule = useCases.PriceSchedule.ReadPriceSchedule
 				}
-				if useCases.Subscription.Plan != nil {
-					planScopedDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+				if useCases.Plan.ListPlans != nil {
+					planScopedDeps.ListPlans = useCases.Plan.ListPlans
 				}
-				if useCases.Product != nil && useCases.Product.Product != nil {
-					planScopedDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+				if useCases.Product.ListProducts != nil {
+					planScopedDeps.ListProducts = useCases.Product.ListProducts
 				}
-				if useCases.Product != nil && useCases.Product.ProductPlan != nil {
-					planScopedDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+				if useCases.Product.ListProductPlans != nil {
+					planScopedDeps.ListProductPlans = useCases.Product.ListProductPlans
 				}
-				if useCases.Product != nil && useCases.Product.ProductVariant != nil {
-					planScopedDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+				if useCases.Product.ListProductVariants != nil {
+					planScopedDeps.ListProductVariants = useCases.Product.ListProductVariants
 				}
-				if useCases.Subscription.ProductPricePlan != nil {
-					planScopedDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
+				if useCases.PricePlan.ListProductPricePlans != nil {
+					planScopedDeps.ListProductPricePlans = useCases.PricePlan.ListProductPricePlans
 				}
 				ctx.Routes.GET(w.planRoutes.PricePlanDetailURL, priceschedulepricepldetail.NewPlanScopedView(planScopedDeps))
 				if w.planRoutes.PricePlanTabActionURL != "" {
@@ -567,44 +560,44 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 				ctx.Routes.POST(w.planRoutes.AttachmentDeleteURL, plandetail.NewAttachmentDeleteAction(planDetailDeps))
 			}
 			// PricePlan CRUD within plan detail
-			if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.CreatePricePlan != nil {
+			if useCases.PricePlan.CreatePricePlan != nil {
 				ppActionDeps := &planaction.PricePlanDeps{
 					Routes:              w.planRoutes,
 					Labels:              w.planLabels,
 					PricePlanLabels:     w.pricePlanLabels,
 					PriceScheduleLabels: w.priceScheduleLabels,
 					CommonLabels:        ctx.Common,
-					CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
-					ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
-					UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,
-					DeletePricePlan: useCases.Subscription.PricePlan.DeletePricePlan.Execute,
+					CreatePricePlan: useCases.PricePlan.CreatePricePlan,
+					ReadPricePlan:   useCases.PricePlan.ReadPricePlan,
+					UpdatePricePlan: useCases.PricePlan.UpdatePricePlan,
+					DeletePricePlan: useCases.PricePlan.DeletePricePlan,
 				}
-				if useCases.Subscription.PriceSchedule != nil {
-					ppActionDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+				if useCases.PriceSchedule.ListPriceSchedules != nil {
+					ppActionDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
 				}
-				if useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
-					ppActionDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+				if useCases.Plan.ReadPlan != nil {
+					ppActionDeps.ReadPlan = useCases.Plan.ReadPlan
 				}
 				// Plan §6.7 — ListClients powers the readonly schedule
 				// label + lock tooltip when the parent Plan is client-scoped.
-				if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
-					ppActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+				if useCases.Entity.Client.ListClients != nil {
+					ppActionDeps.ListClients = useCases.Entity.Client.ListClients
 				}
-				if useCases.Entity != nil && useCases.Entity.Location != nil && useCases.Entity.Location.ListLocations != nil {
-					ppActionDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+				if useCases.Entity.Location.ListLocations != nil {
+					ppActionDeps.ListLocations = useCases.Entity.Location.ListLocations
 				}
 				if w.refChecker != nil {
 					ppActionDeps.GetPricePlanInUseIDs = w.refChecker.GetPricePlanInUseIDs
 				}
-				if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
-					ppActionDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+				if useCases.Product.ListProducts != nil {
+					ppActionDeps.ListProducts = useCases.Product.ListProducts
 				}
-				if useCases.Product != nil && useCases.Product.ProductPlan != nil {
-					ppActionDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+				if useCases.Product.ListProductPlans != nil {
+					ppActionDeps.ListProductPlans = useCases.Product.ListProductPlans
 				}
-				if useCases.Subscription.ProductPricePlan != nil {
-					ppActionDeps.CreateProductPricePlan = useCases.Subscription.ProductPricePlan.CreateProductPricePlan.Execute
-					ppActionDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
+				if useCases.PricePlan.ListProductPricePlans != nil {
+					ppActionDeps.CreateProductPricePlan = useCases.PricePlan.CreateProductPricePlan
+					ppActionDeps.ListProductPricePlans = useCases.PricePlan.ListProductPricePlans
 				}
 				ctx.Routes.GET(w.planRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppActionDeps))
 				ctx.Routes.POST(w.planRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppActionDeps))
@@ -613,32 +606,32 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 				ctx.Routes.POST(w.planRoutes.PricePlanDeleteURL, planaction.NewPricePlanDeleteAction(ppActionDeps))
 			}
 			// ProductPlan CRUD within plan detail
-			if useCases.Product != nil && useCases.Product.ProductPlan != nil && useCases.Product.ProductPlan.CreateProductPlan != nil {
+			if useCases.Product.CreateProductPlan != nil {
 				productPlanActionDeps := &planaction.ProductPlanDeps{
 					Routes:            w.planRoutes,
 					Labels:            w.planLabels,
-					CreateProductPlan: useCases.Product.ProductPlan.CreateProductPlan.Execute,
-					ReadProductPlan:   useCases.Product.ProductPlan.ReadProductPlan.Execute,
-					UpdateProductPlan: useCases.Product.ProductPlan.UpdateProductPlan.Execute,
-					DeleteProductPlan: useCases.Product.ProductPlan.DeleteProductPlan.Execute,
+					CreateProductPlan: useCases.Product.CreateProductPlan,
+					ReadProductPlan:   useCases.Product.ReadProductPlan,
+					UpdateProductPlan: useCases.Product.UpdateProductPlan,
+					DeleteProductPlan: useCases.Product.DeleteProductPlan,
 				}
-				if useCases.Product.Product != nil {
-					productPlanActionDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+				if useCases.Product.ListProducts != nil {
+					productPlanActionDeps.ListProducts = useCases.Product.ListProducts
 				}
-				if useCases.Product.ProductPlan.ListProductPlans != nil {
-					productPlanActionDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+				if useCases.Product.ListProductPlans != nil {
+					productPlanActionDeps.ListProductPlans = useCases.Product.ListProductPlans
 				}
-				if useCases.Product.ProductVariant != nil {
-					productPlanActionDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+				if useCases.Product.ListProductVariants != nil {
+					productPlanActionDeps.ListProductVariants = useCases.Product.ListProductVariants
 				}
-				if useCases.Product.ProductVariantOption != nil {
-					productPlanActionDeps.ListProductVariantOptions = useCases.Product.ProductVariantOption.ListProductVariantOptions.Execute
+				if useCases.Product.ListProductVariantOptions != nil {
+					productPlanActionDeps.ListProductVariantOptions = useCases.Product.ListProductVariantOptions
 				}
-				if useCases.Product.ProductOptionValue != nil {
-					productPlanActionDeps.ListProductOptionValues = useCases.Product.ProductOptionValue.ListProductOptionValues.Execute
+				if useCases.Product.ListProductOptionValues != nil {
+					productPlanActionDeps.ListProductOptionValues = useCases.Product.ListProductOptionValues
 				}
-				if useCases.Product.ProductOption != nil {
-					productPlanActionDeps.ListProductOptions = useCases.Product.ProductOption.ListProductOptions.Execute
+				if useCases.Product.ListProductOptions != nil {
+					productPlanActionDeps.ListProductOptions = useCases.Product.ListProductOptions
 				}
 				ctx.Routes.GET(w.planRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(productPlanActionDeps))
 				ctx.Routes.POST(w.planRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(productPlanActionDeps))
@@ -664,8 +657,8 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 				ListClientNames:      listClientNames,
 				ListJobTemplateNames: listJobTemplateNames,
 			}
-			if useCases.Subscription != nil && useCases.Subscription.Plan != nil {
-				planBundleListDeps.ListPlans = useCases.Subscription.Plan.ListPlans.Execute
+			if useCases.Plan.ListPlans != nil {
+				planBundleListDeps.ListPlans = useCases.Plan.ListPlans
 			}
 			if w.refChecker != nil {
 				planBundleListDeps.GetInUseIDs = w.refChecker.GetPlanInUseIDs
@@ -673,14 +666,14 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 			ctx.Routes.GET(w.planBundleRoutes.ListURL, planlist.NewView(planBundleListDeps))
 			ctx.Routes.GET(w.planBundleRoutes.TableURL, planlist.NewTableView(planBundleListDeps))
 
-			if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.CreatePlan != nil {
+			if useCases.Plan.CreatePlan != nil {
 				planBundleActionDeps := &planaction.Deps{
 					Routes:     w.planBundleRoutes,
 					Labels:     w.planLabels,
-					CreatePlan: useCases.Subscription.Plan.CreatePlan.Execute,
-					ReadPlan:   useCases.Subscription.Plan.ReadPlan.Execute,
-					UpdatePlan: useCases.Subscription.Plan.UpdatePlan.Execute,
-					DeletePlan: useCases.Subscription.Plan.DeletePlan.Execute,
+					CreatePlan: useCases.Plan.CreatePlan,
+					ReadPlan:   useCases.Plan.ReadPlan,
+					UpdatePlan: useCases.Plan.UpdatePlan,
+					DeletePlan: useCases.Plan.DeletePlan,
 					// SetPlanActive uses raw DB update (proto3 omits false booleans)
 					SetPlanActive: func(fctx context.Context, id string, active bool) error {
 						_, err := w.db.Update(fctx, "plan", id, map[string]any{"active": active})
@@ -689,21 +682,19 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 				}
 				// 2026-04-27 plan-client-scope plan §6.2 — same Client picker
 				// + lock state on the bundle mount.
-				if useCases.Entity != nil && useCases.Entity.Client != nil {
-					if useCases.Entity.Client.ListClients != nil {
-						planBundleActionDeps.ListClients = useCases.Entity.Client.ListClients.Execute
-					}
-					if useCases.Entity.Client.SearchClientsByName != nil {
-						planBundleActionDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName.Execute
-					}
+				if useCases.Entity.Client.ListClients != nil {
+					planBundleActionDeps.ListClients = useCases.Entity.Client.ListClients
+				}
+				if useCases.Entity.Client.SearchClientsByName != nil {
+					planBundleActionDeps.SearchClientsByName = useCases.Entity.Client.SearchClientsByName
 				}
 				if w.refChecker != nil {
 					planBundleActionDeps.GetPlanClientScopeLockedIDs = w.refChecker.GetPlanClientScopeLockedIDs
 				}
 				// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 —
 				// JobTemplate select on the bundle mount.
-				if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ListJobTemplates != nil {
-					planBundleActionDeps.ListJobTemplates = useCases.Operation.JobTemplate.ListJobTemplates.Execute
+				if useCases.Operation.JobTemplate.ListJobTemplates != nil {
+					planBundleActionDeps.ListJobTemplates = useCases.Operation.JobTemplate.ListJobTemplates
 				}
 				ctx.Routes.GET(w.planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
 				ctx.Routes.POST(w.planBundleRoutes.AddURL, planaction.NewAddAction(planBundleActionDeps))
@@ -715,11 +706,11 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 				ctx.Routes.POST(w.planBundleRoutes.BulkSetStatusURL, planaction.NewBulkSetStatusAction(planBundleActionDeps))
 			}
 
-			if useCases.Subscription != nil && useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
+			if useCases.Plan.ReadPlan != nil {
 				planBundleDetailDeps := &plandetail.DetailViewDeps{
 					Routes:                     w.planBundleRoutes,
 					PriceSchedulePlanDetailURL: w.priceScheduleRoutes.PlanDetailURL,
-					ReadPlan:                   useCases.Subscription.Plan.ReadPlan.Execute,
+					ReadPlan:                   useCases.Plan.ReadPlan,
 					Labels:                     w.planLabels,
 					CommonLabels:               ctx.Common,
 					TableLabels:                w.centymoTableLabels,
@@ -733,34 +724,34 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 						NewAttachmentID:  w.newAttachmentID,
 					},
 				}
-				if useCases.Product != nil && useCases.Product.ProductPlan != nil {
-					planBundleDetailDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+				if useCases.Product.ListProductPlans != nil {
+					planBundleDetailDeps.ListProductPlans = useCases.Product.ListProductPlans
 				}
-				if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
-					planBundleDetailDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+				if useCases.Product.ListProducts != nil {
+					planBundleDetailDeps.ListProducts = useCases.Product.ListProducts
 				}
-				if useCases.Product != nil && useCases.Product.ProductVariant != nil {
-					planBundleDetailDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+				if useCases.Product.ListProductVariants != nil {
+					planBundleDetailDeps.ListProductVariants = useCases.Product.ListProductVariants
 				}
-				if useCases.Subscription.PricePlan != nil {
-					planBundleDetailDeps.ListPricePlans = useCases.Subscription.PricePlan.ListPricePlans.Execute
+				if useCases.PricePlan.ListPricePlans != nil {
+					planBundleDetailDeps.ListPricePlans = useCases.PricePlan.ListPricePlans
 				}
-				if useCases.Entity != nil && useCases.Entity.Location != nil {
-					planBundleDetailDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+				if useCases.Entity.Location.ListLocations != nil {
+					planBundleDetailDeps.ListLocations = useCases.Entity.Location.ListLocations
 				}
-				if useCases.Subscription.PriceSchedule != nil {
-					planBundleDetailDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+				if useCases.PriceSchedule.ListPriceSchedules != nil {
+					planBundleDetailDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
 				}
 				// 2026-04-28 plan-client-scope — same Info tab Client row
 				// wiring on the bundle mount.
-				if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
-					planBundleDetailDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+				if useCases.Entity.Client.ListClients != nil {
+					planBundleDetailDeps.ListClients = useCases.Entity.Client.ListClients
 				}
 				planBundleDetailDeps.ClientDetailURL = cfg.clientDetailURL
 				// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 —
 				// Info tab JobTemplate row on the bundle mount.
-				if useCases.Operation != nil && useCases.Operation.JobTemplate != nil && useCases.Operation.JobTemplate.ReadJobTemplate != nil {
-					planBundleDetailDeps.ReadJobTemplate = useCases.Operation.JobTemplate.ReadJobTemplate.Execute
+				if useCases.Operation.JobTemplate.ReadJobTemplate != nil {
+					planBundleDetailDeps.ReadJobTemplate = useCases.Operation.JobTemplate.ReadJobTemplate
 				}
 				ctx.Routes.GET(w.planBundleRoutes.DetailURL, plandetail.NewView(planBundleDetailDeps))
 				ctx.Routes.GET(w.planBundleRoutes.TabActionURL, plandetail.NewTabAction(planBundleDetailDeps))
@@ -769,44 +760,44 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 					ctx.Routes.POST(w.planBundleRoutes.AttachmentUploadURL, plandetail.NewAttachmentUploadAction(planBundleDetailDeps))
 					ctx.Routes.POST(w.planBundleRoutes.AttachmentDeleteURL, plandetail.NewAttachmentDeleteAction(planBundleDetailDeps))
 				}
-				if useCases.Subscription.PricePlan != nil && useCases.Subscription.PricePlan.CreatePricePlan != nil {
+				if useCases.PricePlan.CreatePricePlan != nil {
 					ppBundleDeps := &planaction.PricePlanDeps{
 						Routes:              w.planBundleRoutes,
 						Labels:              w.planLabels,
 						PricePlanLabels:     w.pricePlanLabels,
 						PriceScheduleLabels: w.priceScheduleLabels,
 						CommonLabels:        ctx.Common,
-						CreatePricePlan: useCases.Subscription.PricePlan.CreatePricePlan.Execute,
-						ReadPricePlan:   useCases.Subscription.PricePlan.ReadPricePlan.Execute,
-						UpdatePricePlan: useCases.Subscription.PricePlan.UpdatePricePlan.Execute,
-						DeletePricePlan: useCases.Subscription.PricePlan.DeletePricePlan.Execute,
+						CreatePricePlan: useCases.PricePlan.CreatePricePlan,
+						ReadPricePlan:   useCases.PricePlan.ReadPricePlan,
+						UpdatePricePlan: useCases.PricePlan.UpdatePricePlan,
+						DeletePricePlan: useCases.PricePlan.DeletePricePlan,
 					}
-					if useCases.Subscription.PriceSchedule != nil {
-						ppBundleDeps.ListPriceSchedules = useCases.Subscription.PriceSchedule.ListPriceSchedules.Execute
+					if useCases.PriceSchedule.ListPriceSchedules != nil {
+						ppBundleDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
 					}
-					if useCases.Subscription.Plan != nil && useCases.Subscription.Plan.ReadPlan != nil {
-						ppBundleDeps.ReadPlan = useCases.Subscription.Plan.ReadPlan.Execute
+					if useCases.Plan.ReadPlan != nil {
+						ppBundleDeps.ReadPlan = useCases.Plan.ReadPlan
 					}
 					// Plan §6.7 — ListClients powers the readonly schedule
 					// label + lock tooltip on the bundle-mount drawer.
-					if useCases.Entity != nil && useCases.Entity.Client != nil && useCases.Entity.Client.ListClients != nil {
-						ppBundleDeps.ListClients = useCases.Entity.Client.ListClients.Execute
+					if useCases.Entity.Client.ListClients != nil {
+						ppBundleDeps.ListClients = useCases.Entity.Client.ListClients
 					}
-					if useCases.Entity != nil && useCases.Entity.Location != nil && useCases.Entity.Location.ListLocations != nil {
-						ppBundleDeps.ListLocations = useCases.Entity.Location.ListLocations.Execute
+					if useCases.Entity.Location.ListLocations != nil {
+						ppBundleDeps.ListLocations = useCases.Entity.Location.ListLocations
 					}
 					if w.refChecker != nil {
 						ppBundleDeps.GetPricePlanInUseIDs = w.refChecker.GetPricePlanInUseIDs
 					}
-					if useCases.Product != nil && useCases.Product.Product != nil && useCases.Product.Product.ListProducts != nil {
-						ppBundleDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+					if useCases.Product.ListProducts != nil {
+						ppBundleDeps.ListProducts = useCases.Product.ListProducts
 					}
-					if useCases.Product != nil && useCases.Product.ProductPlan != nil {
-						ppBundleDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+					if useCases.Product.ListProductPlans != nil {
+						ppBundleDeps.ListProductPlans = useCases.Product.ListProductPlans
 					}
-					if useCases.Subscription.ProductPricePlan != nil {
-						ppBundleDeps.CreateProductPricePlan = useCases.Subscription.ProductPricePlan.CreateProductPricePlan.Execute
-						ppBundleDeps.ListProductPricePlans = useCases.Subscription.ProductPricePlan.ListProductPricePlans.Execute
+					if useCases.PricePlan.ListProductPricePlans != nil {
+						ppBundleDeps.CreateProductPricePlan = useCases.PricePlan.CreateProductPricePlan
+						ppBundleDeps.ListProductPricePlans = useCases.PricePlan.ListProductPricePlans
 					}
 					ctx.Routes.GET(w.planBundleRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppBundleDeps))
 					ctx.Routes.POST(w.planBundleRoutes.PricePlanAddURL, planaction.NewPricePlanAddAction(ppBundleDeps))
@@ -821,32 +812,32 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer
 				// (`Labels.ProductPlanForm`), so threading `Labels: planLabels` is
 				// sufficient. If a future change adds a separate label struct (e.g.
 				// ProductPlanLabels), thread it into BOTH registrations.
-				if useCases.Product != nil && useCases.Product.ProductPlan != nil && useCases.Product.ProductPlan.CreateProductPlan != nil {
+				if useCases.Product.CreateProductPlan != nil {
 					ppBundleProductPlanDeps := &planaction.ProductPlanDeps{
 						Routes:            w.planBundleRoutes,
 						Labels:            w.planLabels,
-						CreateProductPlan: useCases.Product.ProductPlan.CreateProductPlan.Execute,
-						ReadProductPlan:   useCases.Product.ProductPlan.ReadProductPlan.Execute,
-						UpdateProductPlan: useCases.Product.ProductPlan.UpdateProductPlan.Execute,
-						DeleteProductPlan: useCases.Product.ProductPlan.DeleteProductPlan.Execute,
+						CreateProductPlan: useCases.Product.CreateProductPlan,
+						ReadProductPlan:   useCases.Product.ReadProductPlan,
+						UpdateProductPlan: useCases.Product.UpdateProductPlan,
+						DeleteProductPlan: useCases.Product.DeleteProductPlan,
 					}
-					if useCases.Product.Product != nil {
-						ppBundleProductPlanDeps.ListProducts = useCases.Product.Product.ListProducts.Execute
+					if useCases.Product.ListProducts != nil {
+						ppBundleProductPlanDeps.ListProducts = useCases.Product.ListProducts
 					}
-					if useCases.Product.ProductPlan.ListProductPlans != nil {
-						ppBundleProductPlanDeps.ListProductPlans = useCases.Product.ProductPlan.ListProductPlans.Execute
+					if useCases.Product.ListProductPlans != nil {
+						ppBundleProductPlanDeps.ListProductPlans = useCases.Product.ListProductPlans
 					}
-					if useCases.Product.ProductVariant != nil {
-						ppBundleProductPlanDeps.ListProductVariants = useCases.Product.ProductVariant.ListProductVariants.Execute
+					if useCases.Product.ListProductVariants != nil {
+						ppBundleProductPlanDeps.ListProductVariants = useCases.Product.ListProductVariants
 					}
-					if useCases.Product.ProductVariantOption != nil {
-						ppBundleProductPlanDeps.ListProductVariantOptions = useCases.Product.ProductVariantOption.ListProductVariantOptions.Execute
+					if useCases.Product.ListProductVariantOptions != nil {
+						ppBundleProductPlanDeps.ListProductVariantOptions = useCases.Product.ListProductVariantOptions
 					}
-					if useCases.Product.ProductOptionValue != nil {
-						ppBundleProductPlanDeps.ListProductOptionValues = useCases.Product.ProductOptionValue.ListProductOptionValues.Execute
+					if useCases.Product.ListProductOptionValues != nil {
+						ppBundleProductPlanDeps.ListProductOptionValues = useCases.Product.ListProductOptionValues
 					}
-					if useCases.Product.ProductOption != nil {
-						ppBundleProductPlanDeps.ListProductOptions = useCases.Product.ProductOption.ListProductOptions.Execute
+					if useCases.Product.ListProductOptions != nil {
+						ppBundleProductPlanDeps.ListProductOptions = useCases.Product.ListProductOptions
 					}
 					ctx.Routes.GET(w.planBundleRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(ppBundleProductPlanDeps))
 					ctx.Routes.POST(w.planBundleRoutes.ProductPlanAddURL, planaction.NewProductPlanAddAction(ppBundleProductPlanDeps))

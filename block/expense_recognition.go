@@ -10,8 +10,6 @@ package block
 import (
 	"context"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
-
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 
@@ -42,7 +40,7 @@ type expenseRecognitionWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the SPS Wave 4 ExpRec wiring used to be.
-func wireExpenseRecognitionModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *consumer.UseCases, w expenseRecognitionWiring) {
+func wireExpenseRecognitionModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w expenseRecognitionWiring) {
 	// ExpenseRecognition module — no Add/Edit drawer (created BY use case).
 	if cfg.wantExpenseRecognition() {
 		erDeps := &expenserecognitionmod.ModuleDeps{
@@ -51,47 +49,34 @@ func wireExpenseRecognitionModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 			CommonLabels: ctx.Common,
 			TableLabels:  w.centymoTableLabels,
 		}
-		if useCases.Expenditure != nil && useCases.Expenditure.ExpenseRecognition != nil {
-			uc := useCases.Expenditure.ExpenseRecognition
-			if uc.ListExpenseRecognitions != nil {
-				erDeps.ListExpenseRecognitions = uc.ListExpenseRecognitions.Execute
-			}
-			if uc.ReadExpenseRecognition != nil {
-				erDeps.ReadExpenseRecognition = uc.ReadExpenseRecognition.Execute
-			}
-			if uc.DeleteExpenseRecognition != nil {
-				erDeps.DeleteExpenseRecognition = uc.DeleteExpenseRecognition.Execute
-			}
-			if uc.ReverseExpenseRecognition != nil {
-				reverseUC := uc.ReverseExpenseRecognition
-				erDeps.ReverseExpenseRecognition = func(fctx context.Context, id, reason string) error {
-					req := &expenserecognitionpb.ReverseExpenseRecognitionRequest{ExpenseRecognitionId: id}
-					if reason != "" {
-						req.Reason = &reason
-					}
-					_, err := reverseUC.Execute(fctx, req)
-					return err
+		erDeps.ListExpenseRecognitions = useCases.Expenditure.ListExpenseRecognitions
+		erDeps.ReadExpenseRecognition = useCases.Expenditure.ReadExpenseRecognition
+		erDeps.DeleteExpenseRecognition = useCases.Expenditure.DeleteExpenseRecognition
+		if useCases.Expenditure.ReverseExpenseRecognition != nil {
+			reverseUC := useCases.Expenditure.ReverseExpenseRecognition
+			erDeps.ReverseExpenseRecognition = func(fctx context.Context, id, reason string) error {
+				req := &expenserecognitionpb.ReverseExpenseRecognitionRequest{ExpenseRecognitionId: id}
+				if reason != "" {
+					req.Reason = &reason
 				}
+				_, err := reverseUC(fctx, req)
+				return err
 			}
-			if uc.RecognizeFromExpenditure != nil {
-				rfeUC := uc.RecognizeFromExpenditure
-				erDeps.RecognizeFromExpenditure = func(fctx context.Context, req *expenserecognitionpb.RecognizeFromExpenditureRequest) (*expenserecognitionpb.RecognizeFromExpenditureResponse, error) {
-					return rfeUC.Execute(fctx, req)
-				}
+		}
+		if useCases.Expenditure.RecognizeFromExpenditure != nil {
+			rfeUC := useCases.Expenditure.RecognizeFromExpenditure
+			erDeps.RecognizeFromExpenditure = func(fctx context.Context, req *expenserecognitionpb.RecognizeFromExpenditureRequest) (*expenserecognitionpb.RecognizeFromExpenditureResponse, error) {
+				return rfeUC(fctx, req)
 			}
-			if uc.RecognizeFromContract != nil {
-				rfcUC := uc.RecognizeFromContract
-				erDeps.RecognizeFromContract = func(fctx context.Context, req *expenserecognitionpb.RecognizeFromContractRequest) (*expenserecognitionpb.RecognizeFromContractResponse, error) {
-					return rfcUC.Execute(fctx, req)
-				}
+		}
+		if useCases.Expenditure.RecognizeFromContract != nil {
+			rfcUC := useCases.Expenditure.RecognizeFromContract
+			erDeps.RecognizeFromContract = func(fctx context.Context, req *expenserecognitionpb.RecognizeFromContractRequest) (*expenserecognitionpb.RecognizeFromContractResponse, error) {
+				return rfcUC(fctx, req)
 			}
 		}
 		// Inline child — recognition lines.
-		if useCases.Expenditure != nil && useCases.Expenditure.ExpenseRecognitionLine != nil {
-			if uc := useCases.Expenditure.ExpenseRecognitionLine.ListExpenseRecognitionLines; uc != nil {
-				erDeps.ListExpenseRecognitionLines = uc.Execute
-			}
-		}
+		erDeps.ListExpenseRecognitionLines = useCases.Expenditure.ListExpenseRecognitionLines
 		erDeps.UploadFile = w.uploadFile
 		erDeps.ListAttachments = w.listAttachments
 		erDeps.CreateAttachment = w.createAttachment
@@ -107,21 +92,10 @@ func wireExpenseRecognitionModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 			Labels:       w.expenseRecognitionLabels,
 			CommonLabels: ctx.Common,
 		}
-		if useCases.Expenditure != nil && useCases.Expenditure.ExpenseRecognitionLine != nil {
-			uc := useCases.Expenditure.ExpenseRecognitionLine
-			if uc.CreateExpenseRecognitionLine != nil {
-				erlDeps.CreateExpenseRecognitionLine = uc.CreateExpenseRecognitionLine.Execute
-			}
-			if uc.ReadExpenseRecognitionLine != nil {
-				erlDeps.ReadExpenseRecognitionLine = uc.ReadExpenseRecognitionLine.Execute
-			}
-			if uc.UpdateExpenseRecognitionLine != nil {
-				erlDeps.UpdateExpenseRecognitionLine = uc.UpdateExpenseRecognitionLine.Execute
-			}
-			if uc.DeleteExpenseRecognitionLine != nil {
-				erlDeps.DeleteExpenseRecognitionLine = uc.DeleteExpenseRecognitionLine.Execute
-			}
-		}
+		erlDeps.CreateExpenseRecognitionLine = useCases.Expenditure.CreateExpenseRecognitionLine
+		erlDeps.ReadExpenseRecognitionLine = useCases.Expenditure.ReadExpenseRecognitionLine
+		erlDeps.UpdateExpenseRecognitionLine = useCases.Expenditure.UpdateExpenseRecognitionLine
+		erlDeps.DeleteExpenseRecognitionLine = useCases.Expenditure.DeleteExpenseRecognitionLine
 		expenserecognitionlinemod.NewModule(erlDeps).RegisterRoutes(ctx.Routes)
 	}
 }
