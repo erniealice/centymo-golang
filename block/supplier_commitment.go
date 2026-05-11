@@ -14,9 +14,9 @@ package block
 import (
 	"context"
 
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
-	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -33,19 +33,19 @@ import (
 // needs from the surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type supplierCommitmentWiring struct {
-	supplierContractRoutes            centymo.SupplierContractRoutes
-	supplierContractLabels            centymo.SupplierContractLabels
+	supplierContractRoutes              centymo.SupplierContractRoutes
+	supplierContractLabels              centymo.SupplierContractLabels
 	supplierContractPriceScheduleRoutes centymo.SupplierContractPriceScheduleRoutes
-	procurementRequestRoutes          centymo.ProcurementRequestRoutes
-	procurementRequestLabels          centymo.ProcurementRequestLabels
-	procurementRoutes                 centymo.ProcurementRoutes
-	procurementLabels                 centymo.ProcurementLabels
-	centymoTableLabels                types.TableLabels
-	uploadFile                        func(context.Context, string, string, []byte, string) error
-	listAttachments                   func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)
-	createAttachment                  func(context.Context, *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	deleteAttachment                  func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	newAttachmentID                   func() string
+	procurementRequestRoutes            centymo.ProcurementRequestRoutes
+	procurementRequestLabels            centymo.ProcurementRequestLabels
+	procurementRoutes                   centymo.ProcurementRoutes
+	procurementLabels                   centymo.ProcurementLabels
+	centymoTableLabels                  types.TableLabels
+	uploadFile                          func(context.Context, string, string, []byte, string) error
+	listAttachments                     func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)
+	createAttachment                    func(context.Context, *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	deleteAttachment                    func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	newAttachmentID                     func() string
 }
 
 // wireSupplierCommitmentModules lifts the bodies of the five

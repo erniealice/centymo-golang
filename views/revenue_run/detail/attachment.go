@@ -9,6 +9,7 @@ func attachmentConfig(deps *DetailViewDeps) *attachment.Config {
 	return &attachment.Config{
 		EntityType:       "revenue_run",
 		BucketName:       "attachments",
+		RefreshURL:       deps.Routes.DetailTabActionURL,
 		UploadURL:        deps.Routes.AttachmentUploadURL,
 		DeleteURL:        deps.Routes.AttachmentDeleteURL,
 		Labels:           attachment.DefaultLabels(),

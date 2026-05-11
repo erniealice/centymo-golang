@@ -497,7 +497,7 @@
 {{/* Invoices Tab */}}
 {{define "subscription-tab-invoices"}}
 <div
-  class="tab-scroll"
+  class="tab-scroll tab-scroll--table"
   hx-trigger="refresh-invoices from:body"
   hx-get="{{index .Subscription "tab_invoices_url"}}"
   hx-target="this"

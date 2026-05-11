@@ -3,12 +3,13 @@
 // detail page Lines tab — there is no standalone list view.
 //
 // MAIN-THREAD WIRING NOTE (block.go):
-//   Block-level wiring is intentionally DEFERRED to the main thread. The
-//   integrator must construct ModuleDeps from the espyna use cases and call
-//   NewModule + RegisterRoutes inside a centymo block.go entry. Routes use
-//   the parent's ExpenseRecognitionRoutes — the integrator should pass the
-//   same routes struct used to register the parent module.
-//   See plan §7 (Phase P10) for the integrator checklist.
+//
+//	Block-level wiring is intentionally DEFERRED to the main thread. The
+//	integrator must construct ModuleDeps from the espyna use cases and call
+//	NewModule + RegisterRoutes inside a centymo block.go entry. Routes use
+//	the parent's ExpenseRecognitionRoutes — the integrator should pass the
+//	same routes struct used to register the parent module.
+//	See plan §7 (Phase P10) for the integrator checklist.
 package expense_recognition_line
 
 import (

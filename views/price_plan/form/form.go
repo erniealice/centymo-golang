@@ -63,8 +63,8 @@ type Data struct {
 	AmountBasis         string
 	BillingCycleValue   string // int32 as string for form field
 	BillingCycleUnit    string
-	TermValue           string // int32 as string for form field; backs default_term_value on the wire
-	TermUnit            string // backs default_term_unit on the wire
+	TermValue           string               // int32 as string for form field; backs default_term_value on the wire
+	TermUnit            string               // backs default_term_unit on the wire
 	DurationUnitOptions []types.SelectOption // reused for both billing_cycle_unit and term unit
 	// 2026-05-01 ad-hoc-subscription-billing plan §5.5 — int32 as string for
 	// form field. Surfaced only when (BillingKind=AD_HOC AND
@@ -118,7 +118,7 @@ type Data struct {
 	// Modes:
 	//   "picker"   → standard auto-complete (default, when plan.client_id == "").
 	//   "readonly" → static label + hidden input (when plan.client_id != "").
-	ScheduleFieldMode        string
+	ScheduleFieldMode string
 	// ScheduleLabel is the resolved or derived display label for the
 	// readonly mode (e.g. "Cruz Engineering - Rate Cards"). Empty in picker
 	// mode.
@@ -302,9 +302,9 @@ func LabelsFromPricePlan(pp centymo.PricePlanFormLabels) Labels {
 		AmountBasisTotalPackageHint:     pp.AmountBasisTotalPackageHint,
 		AmountBasisDerivedFromLinesHint: pp.AmountBasisDerivedFromLinesHint,
 		AmountBasisPerOccurrenceHint:    pp.AmountBasisPerOccurrenceHint,
-		EntitledOccurrencesLabel:       pp.EntitledOccurrencesLabel,
-		EntitledOccurrencesPlaceholder: pp.EntitledOccurrencesPlaceholder,
-		EntitledOccurrencesInfo:        pp.EntitledOccurrencesInfo,
+		EntitledOccurrencesLabel:        pp.EntitledOccurrencesLabel,
+		EntitledOccurrencesPlaceholder:  pp.EntitledOccurrencesPlaceholder,
+		EntitledOccurrencesInfo:         pp.EntitledOccurrencesInfo,
 		// Field-level info popovers
 		PlanInfo:         pp.PlanInfo,
 		ScheduleInfo:     pp.ScheduleInfo,

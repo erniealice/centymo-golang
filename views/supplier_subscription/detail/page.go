@@ -257,4 +257,3 @@ func recognitionStatusVariant(status string) string {
 		return "default"
 	}
 }
-

@@ -54,24 +54,24 @@ type Data struct {
 	IsEdit     bool
 	ID         string
 
-	Name            string
-	Description     string
-	SupplierPlanID  string
+	Name              string
+	Description       string
+	SupplierPlanID    string
 	SupplierPlanLabel string
-	CostScheduleID  string
+	CostScheduleID    string
 	CostScheduleLabel string
-	BillingKind     string
-	AmountBasis     string
-	Amount          string
-	Currency        string
+	BillingKind       string
+	AmountBasis       string
+	Amount            string
+	Currency          string
 	BillingCycleValue string
 	BillingCycleUnit  string
 	DefaultTermValue  string
 	DefaultTermUnit   string
-	Active          bool
+	Active            bool
 
-	SearchSupplierPlanURL  string
-	SearchCostScheduleURL  string
+	SearchSupplierPlanURL string
+	SearchCostScheduleURL string
 
 	Labels       Labels
 	CommonLabels any

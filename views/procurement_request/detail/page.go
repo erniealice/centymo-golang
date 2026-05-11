@@ -16,9 +16,9 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
-	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
+	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 )
 
 // DetailViewDeps holds dependencies for the procurement request detail page.
@@ -220,18 +220,18 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		}
 
 		requestMap := map[string]any{
-			"id":                     req.GetId(),
-			"request_number":         req.GetRequestNumber(),
-			"status":                 req.GetStatus().String(),
-			"status_label":           statusDisplayLabel(l, req.GetStatus().String()),
-			"requester_user_id":      req.GetRequesterUserId(),
-			"supplier_name":          supplierName,
-			"currency":               req.GetCurrency(),
-			"estimated_total_amount": req.GetEstimatedTotalAmount(),
-			"needed_by_date":         req.GetNeededByDate(),
-			"justification":          req.GetJustification(),
-			"approved_by":            req.GetApprovedBy(),
-			"date_created_string":    req.GetDateCreatedString(),
+			"id":                         req.GetId(),
+			"request_number":             req.GetRequestNumber(),
+			"status":                     req.GetStatus().String(),
+			"status_label":               statusDisplayLabel(l, req.GetStatus().String()),
+			"requester_user_id":          req.GetRequesterUserId(),
+			"supplier_name":              supplierName,
+			"currency":                   req.GetCurrency(),
+			"estimated_total_amount":     req.GetEstimatedTotalAmount(),
+			"needed_by_date":             req.GetNeededByDate(),
+			"justification":              req.GetJustification(),
+			"approved_by":                req.GetApprovedBy(),
+			"date_created_string":        req.GetDateCreatedString(),
 			"fulfillment_strategy":       req.GetFulfillmentStrategy().String(),
 			"fulfillment_strategy_label": strategyDisplayLabel(l, req.GetFulfillmentStrategy().String()),
 			"policy_decision_log":        req.GetPolicyDecisionLog(),
@@ -549,9 +549,9 @@ func buildLineTable(ctx context.Context, deps *DetailViewDeps, requestID string,
 		spawnedHTML := buildSpawnedCellHTML(line, l, requestID, deps.Routes)
 
 		modeCell := types.TableCell{
-			Type:    "html",
-			HTML:    template.HTML(fmt.Sprintf(`<span class="badge" data-mode="%s" data-testid="prl-mode-badge">%s</span>`, htmlEsc(modeToken), htmlEsc(modeLabel))),
-			Value:   modeLabel,
+			Type:  "html",
+			HTML:  template.HTML(fmt.Sprintf(`<span class="badge" data-mode="%s" data-testid="prl-mode-badge">%s</span>`, htmlEsc(modeToken), htmlEsc(modeLabel))),
+			Value: modeLabel,
 		}
 
 		spawnCell := types.TableCell{
@@ -622,8 +622,8 @@ func buildSpawnedCellHTML(line *procurementrequestlinepb.ProcurementRequestLine,
 			return types.TableCell{Type: "text", Value: l.Spawn.NotApplicable}
 		}
 		return types.TableCell{
-			Type: "html",
-			HTML: template.HTML(fmt.Sprintf(`<a href="%s" class="btn-link" data-testid="prl-spawned-link">%s</a>`, htmlEsc(href), htmlEsc(label))),
+			Type:  "html",
+			HTML:  template.HTML(fmt.Sprintf(`<a href="%s" class="btn-link" data-testid="prl-spawned-link">%s</a>`, htmlEsc(href), htmlEsc(label))),
 			Value: label,
 		}
 

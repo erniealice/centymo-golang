@@ -33,11 +33,11 @@ type DetailViewDeps struct {
 // PageData holds the data for the collection detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate     string
-	Collection          map[string]any
-	Labels              centymo.CollectionLabels
-	ActiveTab           string
-	TabItems            []pyeza.TabItem
+	ContentTemplate string
+	Collection      map[string]any
+	Labels          centymo.CollectionLabels
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
 	AuditTable      *types.TableConfig
 	AttachmentTable *types.TableConfig
 	// Audit history tab

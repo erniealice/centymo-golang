@@ -16,11 +16,9 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
-	taxclasspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_class"
-	taxtreatmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_treatment"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
@@ -31,6 +29,8 @@ import (
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
+	taxclasspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_class"
+	taxtreatmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_treatment"
 )
 
 // DetailViewDeps holds view dependencies for the price plan detail page.
@@ -45,10 +45,10 @@ type DetailViewDeps struct {
 	CommonLabels              pyeza.CommonLabels
 	TableLabels               types.TableLabels
 
-	ReadPricePlan          func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
-	ListProductPlans       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
-	ListProducts           func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	ListProductVariants    func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ReadPricePlan       func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	ListProductPlans    func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProducts        func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
 	// ListProductOptions / ListProductOptionValues / ListProductVariantOptions
 	// power the enriched variant label in the catalog-line picker
 	// ("Product — SKU — Red / Large / Cotton"). Optional — when nil the
@@ -56,10 +56,10 @@ type DetailViewDeps struct {
 	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
 	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
 	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
-	ListProductPricePlans  func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
-	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
-	UpdateProductPricePlan func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
-	DeleteProductPricePlan func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
+	ListProductPricePlans     func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	CreateProductPricePlan    func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
+	UpdateProductPricePlan    func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
+	DeleteProductPricePlan    func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
 
 	// Optional — used by the PPP drawer to render the read-only parent-context
 	// block (Plan name / Rate card name) above the editable fields. When nil,
@@ -95,24 +95,24 @@ type ProductPlanGroup struct {
 // PageData holds the data for the price plan detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate      string
-	PricePlan            *priceplanpb.PricePlan
-	Labels               centymo.PricePlanLabels
-	ActiveTab            string
-	TabItems             []pyeza.TabItem
-	ID                   string
-	PricePlanName        string
-	PricePlanDesc        string
-	PricePlanAmount      types.TableCell
-	PricePlanCurrency    string
-	PricePlanLocation    string
-	PricePlanDuration    string
-	PricePlanStatus      string
-	StatusVariant        string
-	CreatedDate          string
-	ModifiedDate         string
-	ProductPricesTable   *types.TableConfig
-	AttachmentTable      *types.TableConfig
+	ContentTemplate    string
+	PricePlan          *priceplanpb.PricePlan
+	Labels             centymo.PricePlanLabels
+	ActiveTab          string
+	TabItems           []pyeza.TabItem
+	ID                 string
+	PricePlanName      string
+	PricePlanDesc      string
+	PricePlanAmount    types.TableCell
+	PricePlanCurrency  string
+	PricePlanLocation  string
+	PricePlanDuration  string
+	PricePlanStatus    string
+	StatusVariant      string
+	CreatedDate        string
+	ModifiedDate       string
+	ProductPricesTable *types.TableConfig
+	AttachmentTable    *types.TableConfig
 
 	// EditURL is the resolved URL for the "Edit Package" CTA on the Info tab.
 	// Routed through the plan-tab handler (centymo.PricePlanEditURL,
@@ -172,11 +172,11 @@ type PricePlanBillingSummaryWarning struct {
 // parent Plan. The read-only SelectedProductName + SelectedVariantName
 // surface the resolved product + variant context above the price input.
 type ProductPricePlanFormData struct {
-	FormAction         string
-	IsEdit             bool
-	ID                 string
-	PricePlanID        string
-	ProductPlanID      string
+	FormAction    string
+	IsEdit        bool
+	ID            string
+	PricePlanID   string
+	ProductPlanID string
 	// Grouped by parent product — each ProductPlanGroup renders as an
 	// <optgroup>. Within each group, Options is alphabetically sorted; the
 	// outer slice is sorted by ProductName.
@@ -194,9 +194,9 @@ type ProductPricePlanFormData struct {
 	// 2026-04-30 enum-select-canonicalize — BillingTreatmentOptions removed.
 	// The drawer template (_ppp-fields.html) hardcodes the option list; only
 	// the selected value is passed in.
-	BillingTreatment        string
-	DateStart               string // ISO 8601 (YYYY-MM-DD) or empty
-	DateEnd                 string // ISO 8601 (YYYY-MM-DD) or empty
+	BillingTreatment string
+	DateStart        string // ISO 8601 (YYYY-MM-DD) or empty
+	DateEnd          string // ISO 8601 (YYYY-MM-DD) or empty
 
 	// Parent PricePlan context — drives field visibility on the shared
 	// ppp-fields partial. ShowTreatment is false when the parent's
@@ -210,13 +210,13 @@ type ProductPricePlanFormData struct {
 	// operator can see the parent PricePlan config without leaving the
 	// drawer. All fields are pre-formatted display strings (the template
 	// only renders rows whose values are non-empty).
-	PlanName                string
-	RateCardName            string
-	BillingKindDisplay      string
-	AmountBasisDisplay      string
-	BillingCycleDisplay     string
-	TermDisplay             string
-	ParentCurrencyDisplay   string
+	PlanName              string
+	RateCardName          string
+	BillingKindDisplay    string
+	AmountBasisDisplay    string
+	BillingCycleDisplay   string
+	TermDisplay           string
+	ParentCurrencyDisplay string
 
 	// Wave 2: labels for the new fields (populated from ProductPricePlanLabels).
 	Labels centymo.ProductPricePlanFormLabels
@@ -836,9 +836,9 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 	}
 
 	billingLabels := map[productpriceplanpb.BillingTreatment]string{
-		productpriceplanpb.BillingTreatment_BILLING_TREATMENT_RECURRING:          deps.ProductPricePlanLabels.Form.BillingTreatmentRecurring,
-		productpriceplanpb.BillingTreatment_BILLING_TREATMENT_ONE_TIME_INITIAL:   deps.ProductPricePlanLabels.Form.BillingTreatmentOneTimeInitial,
-		productpriceplanpb.BillingTreatment_BILLING_TREATMENT_USAGE_BASED:        deps.ProductPricePlanLabels.Form.BillingTreatmentUsageBased,
+		productpriceplanpb.BillingTreatment_BILLING_TREATMENT_RECURRING:        deps.ProductPricePlanLabels.Form.BillingTreatmentRecurring,
+		productpriceplanpb.BillingTreatment_BILLING_TREATMENT_ONE_TIME_INITIAL: deps.ProductPricePlanLabels.Form.BillingTreatmentOneTimeInitial,
+		productpriceplanpb.BillingTreatment_BILLING_TREATMENT_USAGE_BASED:      deps.ProductPricePlanLabels.Form.BillingTreatmentUsageBased,
 	}
 
 	rows := []types.TableRow{}
@@ -934,6 +934,7 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 		DefaultSortColumn:    "product",
 		DefaultSortDirection: "asc",
 		Labels:               deps.TableLabels,
+		RefreshURL:           route.ResolveURL(deps.Routes.TabActionURL, "id", pricePlanID, "tab", "product-prices"),
 		EmptyState: types.TableEmptyState{
 			Title:   l.ProductPrice.EmptyTitle,
 			Message: l.ProductPrice.EmptyMsg,
@@ -1707,4 +1708,3 @@ func collectBillingSummaryWarnings(
 	}
 	return out
 }
-

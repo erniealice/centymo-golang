@@ -14,9 +14,9 @@ import (
 	"log"
 	"time"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
-	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuerunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_run"
 
@@ -32,15 +32,15 @@ import (
 // surrounding Block() scope. More than 6 fields → use a struct per convention.
 // Kept private; never re-exported.
 type revenueRunWiring struct {
-	revenueRunRoutes centymo.RevenueRunRoutes
-	revenueRunLabels centymo.RevenueRunLabels
-	revenueRoutes    centymo.RevenueRoutes
+	revenueRunRoutes   centymo.RevenueRunRoutes
+	revenueRunLabels   centymo.RevenueRunLabels
+	revenueRoutes      centymo.RevenueRoutes
 	centymoTableLabels types.TableLabels
-	uploadFile       func(context.Context, string, string, []byte, string) error
-	listAttachments  func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)
-	createAttachment func(context.Context, *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
-	deleteAttachment func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	newAttachmentID  func() string
+	uploadFile         func(context.Context, string, string, []byte, string) error
+	listAttachments    func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)
+	createAttachment   func(context.Context, *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	deleteAttachment   func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	newAttachmentID    func() string
 }
 
 // wireRevenueRunModule lifts the body of `if cfg.wantRevenueRun()` from Block().

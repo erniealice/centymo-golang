@@ -69,19 +69,19 @@ func (d *DetailViewDeps) permEntity() string {
 // PageData holds the data for the product detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate     string
-	Product             *productpb.Product
-	Labels              centymo.ProductLabels
-	ActiveTab           string
-	TabItems            []pyeza.TabItem
-	ID                  string
-	ProductName         string
-	ProductDesc         string
-	ProductPrice        string
-	ProductCurrency     string
-	ProductStatus       string
-	StatusVariant       string
-	LineName            string // resolved name of the product's primary line (from product.line_id)
+	ContentTemplate string
+	Product         *productpb.Product
+	Labels          centymo.ProductLabels
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
+	ID              string
+	ProductName     string
+	ProductDesc     string
+	ProductPrice    string
+	ProductCurrency string
+	ProductStatus   string
+	StatusVariant   string
+	LineName        string // resolved name of the product's primary line (from product.line_id)
 	// Model D — display-formatted unit of measure and variant mode for the Info tab.
 	ProductUnit        string
 	ProductVariantMode string
@@ -92,8 +92,8 @@ type PageData struct {
 	VariantModeRowLabel string
 	VariantsTable       *types.TableConfig
 	OptionsTable        *types.TableConfig
-	LinesTable      *types.TableConfig
-	AttachmentTable *types.TableConfig
+	LinesTable          *types.TableConfig
+	AttachmentTable     *types.TableConfig
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
 	AuditHasNext    bool
@@ -331,16 +331,16 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 			HeaderIcon:     "icon-package",
 			CommonLabels:   deps.CommonLabels,
 		},
-		ContentTemplate: "product-detail-content",
-		Product:         product,
-		Labels:          l,
-		ActiveTab:       activeTab,
-		TabItems:        tabItems,
-		ID:              id,
-		ProductName:     name,
-		ProductDesc:     description,
-		ProductPrice:    priceFormatted,
-		ProductCurrency: currency,
+		ContentTemplate:     "product-detail-content",
+		Product:             product,
+		Labels:              l,
+		ActiveTab:           activeTab,
+		TabItems:            tabItems,
+		ID:                  id,
+		ProductName:         name,
+		ProductDesc:         description,
+		ProductPrice:        priceFormatted,
+		ProductCurrency:     currency,
 		ProductStatus:       productStatus,
 		StatusVariant:       StatusVariant,
 		LineName:            productLineName,
@@ -511,6 +511,7 @@ func buildLinesTable(ctx context.Context, deps *DetailViewDeps, productID string
 		ID:          "product-lines-table",
 		Columns:     columns,
 		Rows:        rows,
+		RefreshURL:  route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "lines"),
 		ShowActions: true,
 		ShowEntries: true,
 		PrimaryAction: &types.PrimaryAction{

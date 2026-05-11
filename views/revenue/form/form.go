@@ -76,20 +76,20 @@ type Labels struct {
 	NotesInfo        string
 
 	// Tax section labels (Phase 5)
-	SectionTax             string
-	TaxDirectionSurcharge  string
+	SectionTax              string
+	TaxDirectionSurcharge   string
 	TaxDirectionWithholding string
-	TaxKind                string
-	TaxRegCode             string
-	TaxRate                string
-	TaxableBase            string
-	TaxAmount              string
-	NetReceivable          string
-	WHTAmount              string
-	GrandTotal             string
-	SettlementStatus       string
-	Recompute              string
-	AddWHTCertificate      string
+	TaxKind                 string
+	TaxRegCode              string
+	TaxRate                 string
+	TaxableBase             string
+	TaxAmount               string
+	NetReceivable           string
+	WHTAmount               string
+	GrandTotal              string
+	SettlementStatus        string
+	Recompute               string
+	AddWHTCertificate       string
 	// FX dual-amount display labels
 	Billed             string
 	Recorded           string
@@ -143,12 +143,12 @@ type Data struct {
 
 	// FX dual-amount fields (Phase 5)
 	// When BillingCurrency is set, show dual-amount display.
-	BillingCurrency       string
-	BillingAmount         int64
-	BillingAmountDisplay  string
-	ForexRateMicroUnits   int64
-	ForexRateDisplay      string // e.g. "56.5000 PHP per USD"
-	ForexRateSource       string // e.g. "operator entered, 2026-05-01"
+	BillingCurrency      string
+	BillingAmount        int64
+	BillingAmountDisplay string
+	ForexRateMicroUnits  int64
+	ForexRateDisplay     string // e.g. "56.5000 PHP per USD"
+	ForexRateSource      string // e.g. "operator entered, 2026-05-01"
 
 	Labels       Labels
 	CommonLabels any

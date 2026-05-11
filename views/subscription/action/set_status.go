@@ -86,4 +86,3 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		return centymo.HTMXSuccess("subscriptions-table")
 	})
 }
-

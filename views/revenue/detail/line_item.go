@@ -461,10 +461,11 @@ func buildLineItemTableWithActions(items []map[string]any, l centymo.RevenueLabe
 	types.ApplyColumnStyles(columns, rows)
 
 	return &types.TableConfig{
-		ID:      "line-items-table",
-		Columns: columns,
-		Rows:    rows,
-		Labels:  tableLabels,
+		ID:         "line-items-table",
+		Columns:    columns,
+		Rows:       rows,
+		Labels:     tableLabels,
+		RefreshURL: route.ResolveURL(routes.LineItemTableURL, "id", revenueID),
 		EmptyState: types.TableEmptyState{
 			Title:   l.Detail.ItemEmptyTitle,
 			Message: l.Detail.ItemEmptyMessage,

@@ -149,7 +149,23 @@ Data: .Code, .ClientID, .PricePlanID,
         {{/* --- Price Plan ---
              Action-mode auto-complete: server-side client/general grouping is
              handled by the search endpoint, so the dropdown fetches on first
-             open via SearchURL — no inline pre-render. */}}
+             open via SearchURL — no inline pre-render.
+             When PricePlanLocked (drawer opened from a price-plan detail page),
+             render a readonly text field + hidden id input instead — mirror of
+             the ClientLocked branch above. */}}
+        {{if .PricePlanLocked}}
+        <div class="form-row single">
+            <input type="hidden" name="price_plan_id" value="{{.PricePlanID}}">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "plan_display"
+                "Label" .Labels.Plan
+                "Value" .PlanLabel
+                "Readonly" true
+                "Info" .Labels.PlanInfo
+            )}}
+        </div>
+        {{else}}
         <div class="form-row single">
             {{template "auto-complete" (dict
                 "ID" "plan-search"
@@ -165,6 +181,7 @@ Data: .Code, .ClientID, .PricePlanID,
                 "Info" .Labels.PlanInfo
             )}}
         </div>
+        {{end}}
 
         {{/* --- Engagement Code --- */}}
         <div class="form-row single">
@@ -261,14 +278,16 @@ Data: .Code, .ClientID, .PricePlanID,
     var endISO    = form.querySelector('[name="date_time_end_iso"]');
     var tzLabel   = form.querySelector('[data-tz-label]');
 
-    if (!planContainer || !startDate || !endDate || !startISO || !endISO) {
+    // Date+time → ISO conversion is required regardless of plan picker mode;
+    // the plan picker is optional (absent when PricePlanLocked).
+    if (!startDate || !endDate || !startISO || !endISO) {
         return;
     }
 
-    var planHidden = planContainer.querySelector('.auto-complete-input');
-    var planTrigger = planContainer.querySelector('.auto-complete-trigger');
+    var planHidden = planContainer ? planContainer.querySelector('.auto-complete-input') : null;
+    var planTrigger = planContainer ? planContainer.querySelector('.auto-complete-trigger') : null;
 
-    var baseURL = planContainer.dataset.searchUrl || '';
+    var baseURL = planContainer ? (planContainer.dataset.searchUrl || '') : '';
     var clientBillingCurrency = {{.ClientBillingCurrency}};
     // 2026-05-03 — propagate client_id + client_name to the search endpoint so
     // it can filter (drop other-client-scoped plans) and group (For {Client} /
@@ -277,7 +296,7 @@ Data: .Code, .ClientID, .PricePlanID,
     var clientNameForSearch = {{.ClientLabel}};
     var defaultTZ = form.dataset.defaultTz || 'Asia/Manila';
 
-    var initialPlaceholderHTML = '<span class="auto-complete-placeholder">{{.Labels.PlanPlaceholder}}</span>';
+    var initialPlaceholderHTML = planContainer ? '<span class="auto-complete-placeholder">{{.Labels.PlanPlaceholder}}</span>' : '';
 
     // Compute the offset (e.g. "+08:00") for the chosen IANA tz at the given
     // wall-clock moment. Fallback to local browser offset if the Intl API
@@ -339,6 +358,7 @@ Data: .Code, .ClientID, .PricePlanID,
     }
 
     function updatePlanSearchURL() {
+        if (!planContainer) { return; }
         var url = baseURL;
         var sep = '?';
         if (startISO.value) {
@@ -365,7 +385,7 @@ Data: .Code, .ClientID, .PricePlanID,
     }
 
     function clearPlanSelection() {
-        if (!planHidden || !planTrigger) { return; }
+        if (!planContainer || !planHidden || !planTrigger) { return; }
         planHidden.value = '';
         planHidden.removeAttribute('value');
 
@@ -387,7 +407,7 @@ Data: .Code, .ClientID, .PricePlanID,
         // 2026-05-03 — if the dropdown is open, force a refetch by toggling
         // closed→open. Auto-complete's openDropdown() calls doSearch('') in
         // action mode, so this picks up the new dataset.searchUrl.
-        if (planContainer.classList.contains('open')) {
+        if (planContainer && planContainer.classList.contains('open')) {
             var trigger = planContainer.querySelector('.auto-complete-trigger');
             if (trigger) {
                 trigger.click(); // close

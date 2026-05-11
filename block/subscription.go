@@ -14,8 +14,8 @@ import (
 	"github.com/erniealice/espyna-golang/reference"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
-	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	revenuerunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_run"
+	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
@@ -33,8 +33,8 @@ import (
 // surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type subscriptionWiring struct {
-	db           centymo.DataSource
-	refChecker   reference.Checker
+	db         centymo.DataSource
+	refChecker reference.Checker
 	// Attachment ops
 	uploadFile       func(context.Context, string, string, []byte, string) error
 	downloadFile     func(context.Context, string, string) ([]byte, error)

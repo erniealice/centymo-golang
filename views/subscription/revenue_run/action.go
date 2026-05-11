@@ -14,7 +14,10 @@ import (
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
+	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
+
+	consumer "github.com/erniealice/espyna-golang/consumer"
 
 	centymo "github.com/erniealice/centymo-golang"
 	revenuerunform "github.com/erniealice/centymo-golang/views/subscription/revenue_run/form"
@@ -145,14 +148,17 @@ func renderDrawer(
 ) view.ViewResult {
 	l := deps.Labels.RevenueRun
 
-	// Resolve as-of date: prefer query param, fall back to today.
+	// Resolve as-of date: prefer query param, fall back to today in workspace TZ.
+	tz := pyezatypes.LocationFromContext(ctx)
+	today := time.Now().In(tz).Format(pyezatypes.DateInputLayout)
+
 	asOfDate := viewCtx.Request.URL.Query().Get("as_of_date")
 	if asOfDate == "" {
-		asOfDate = time.Now().Format("2006-01-02")
+		asOfDate = today
 	}
-	today := time.Now().Format("2006-01-02")
 
 	scope := RevenueRunScope{
+		WorkspaceID:    consumer.GetWorkspaceIDFromContext(ctx),
 		SubscriptionID: subscriptionID,
 		AsOfDate:       asOfDate,
 	}
@@ -196,7 +202,8 @@ func submitDrawer(
 
 	asOfDate := viewCtx.Request.FormValue("as_of_date")
 	if asOfDate == "" {
-		asOfDate = time.Now().Format("2006-01-02")
+		tz := pyezatypes.LocationFromContext(ctx)
+		asOfDate = time.Now().In(tz).Format(pyezatypes.DateInputLayout)
 	}
 
 	// Parse "selection" form values: each is "{sub_id}|{start}|{end}|{marker}".
@@ -223,6 +230,7 @@ func submitDrawer(
 	}
 
 	scope := RevenueRunScope{
+		WorkspaceID:    consumer.GetWorkspaceIDFromContext(ctx),
 		SubscriptionID: subscriptionID,
 		AsOfDate:       asOfDate,
 	}
@@ -284,6 +292,15 @@ func toastStateFromCounts(created, _ /*skipped*/, errored int32) string {
 // Builder helpers
 // ---------------------------------------------------------------------------
 
+// buildClientHint substitutes the {client} token in the label template with
+// the actual client name. Returns an empty string when either argument is empty.
+func buildClientHint(template, name string) string {
+	if template == "" || name == "" {
+		return ""
+	}
+	return strings.Replace(template, "{client}", name, 1)
+}
+
 // buildDrawerData constructs the template-facing Data from the raw candidate slice.
 func buildDrawerData(
 	candidates []RevenueRunCandidate,
@@ -296,13 +313,19 @@ func buildDrawerData(
 	periods := make([]revenuerunform.Period, 0, len(candidates))
 	eligibleCount := 0
 
-	var subName, planName string
+	var subName, planName, currency, clientName string
 	for _, c := range candidates {
 		if subName == "" && c.SubscriptionName != "" {
 			subName = c.SubscriptionName
 		}
 		if planName == "" && c.PlanName != "" {
 			planName = c.PlanName
+		}
+		if currency == "" && c.Currency != "" {
+			currency = c.Currency
+		}
+		if clientName == "" && c.ClientName != "" {
+			clientName = c.ClientName
 		}
 		period := revenuerunform.Period{
 			SubscriptionID: c.SubscriptionID,
@@ -329,11 +352,13 @@ func buildDrawerData(
 		FragmentURL:      fragmentURL,
 		SubscriptionID:   subscriptionID,
 		SubscriptionName: subName,
+		ClientHint:       buildClientHint(l.ClientHintTemplate, clientName),
 		PlanName:         planName,
 		AsOfDate:         asOfDate,
 		MaxAsOfDate:      maxAsOfDate,
 		EligibleCount:    eligibleCount,
 		Periods:          periods,
+		Currency:         currency,
 		Labels:           l,
 		CommonLabels:     commonLabels,
 	}

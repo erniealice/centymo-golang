@@ -10,9 +10,9 @@ import (
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
-	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
+	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -59,15 +59,15 @@ type ModuleDeps struct {
 
 // Module holds all constructed procurement_request views.
 type Module struct {
-	routes        centymo.ProcurementRequestRoutes
-	List          view.View
-	Detail        view.View
-	TabAction     view.View
-	Add           view.View
-	Edit          view.View
-	Delete        view.View
-	SetStatus     view.View
-	BulkSetStatus view.View
+	routes           centymo.ProcurementRequestRoutes
+	List             view.View
+	Detail           view.View
+	TabAction        view.View
+	Add              view.View
+	Edit             view.View
+	Delete           view.View
+	SetStatus        view.View
+	BulkSetStatus    view.View
 	Submit           view.View
 	Approve          view.View
 	Reject           view.View

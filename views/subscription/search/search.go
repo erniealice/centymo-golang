@@ -426,7 +426,6 @@ func searchPlansLegacy(ctx context.Context, w http.ResponseWriter, query string,
 	writeJSON(w, results)
 }
 
-
 func writeJSON(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(data); err != nil {

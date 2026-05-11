@@ -1,15 +1,16 @@
 // Package expense_recognition is the centymo views package for ExpenseRecognition.
 //
 // MAIN-THREAD WIRING NOTE (block.go):
-//   Block-level wiring (NewModule call + dependency injection from espyna use
-//   cases) is intentionally DEFERRED to the main thread. This package
-//   exposes Module + ModuleDeps + RegisterRoutes following the same
-//   convention as views/supplier_contract/. The integrator must:
-//     1. Register routes/labels in apps/service-admin sidebar.
-//     2. Add a centymo block.go entry that constructs ModuleDeps from the
-//        domain providers and calls NewModule + RegisterRoutes.
-//     3. Wire the per-tier translation file via translations.go.
-//   See plan §7 (Phase P10) for the full integrator checklist.
+//
+//	Block-level wiring (NewModule call + dependency injection from espyna use
+//	cases) is intentionally DEFERRED to the main thread. This package
+//	exposes Module + ModuleDeps + RegisterRoutes following the same
+//	convention as views/supplier_contract/. The integrator must:
+//	  1. Register routes/labels in apps/service-admin sidebar.
+//	  2. Add a centymo block.go entry that constructs ModuleDeps from the
+//	     domain providers and calls NewModule + RegisterRoutes.
+//	  3. Wire the per-tier translation file via translations.go.
+//	See plan §7 (Phase P10) for the full integrator checklist.
 package expense_recognition
 
 import (

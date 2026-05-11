@@ -7,15 +7,15 @@ import (
 	"context"
 
 	centymo "github.com/erniealice/centymo-golang"
-	rrshared "github.com/erniealice/centymo-golang/views/revenue_run/shared"
 	revenuerundetail "github.com/erniealice/centymo-golang/views/revenue_run/detail"
 	revenuerunlist "github.com/erniealice/centymo-golang/views/revenue_run/list"
 	revenuerunqueue "github.com/erniealice/centymo-golang/views/revenue_run/queue"
 	revenuerunqueueaction "github.com/erniealice/centymo-golang/views/revenue_run/queue/action"
+	rrshared "github.com/erniealice/centymo-golang/views/revenue_run/shared"
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
-	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 )
 
 // ---------------------------------------------------------------------------
@@ -114,16 +114,16 @@ type ModuleDeps struct {
 
 // Module holds all constructed revenue-run views.
 type Module struct {
-	routes    centymo.RevenueRunRoutes
+	routes centymo.RevenueRunRoutes
 	// Surface D.
 	List      view.View
 	Table     view.View
 	Detail    view.View
 	TabAction view.View
 	// Surface B.
-	Queue     view.View
+	Queue      view.View
 	QueueTable view.View
-	BatchRun  view.View
+	BatchRun   view.View
 	// Attachments.
 	AttachmentUpload view.View
 	AttachmentDelete view.View

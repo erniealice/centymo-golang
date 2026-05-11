@@ -1,15 +1,16 @@
 // Package accrued_expense is the centymo views package for AccruedExpense.
 //
 // MAIN-THREAD WIRING NOTE (block.go):
-//   Block-level wiring is intentionally DEFERRED to the main thread. The
-//   integrator must:
-//     1. Register routes/labels in apps/service-admin sidebar.
-//     2. Add a centymo block.go entry that constructs ModuleDeps from the
-//        domain providers (espyna AccruedExpense + AccruedExpenseSettlement
-//        use case groups) and calls NewModule + RegisterRoutes.
-//     3. Wire the per-tier translation file via translations.go using the
-//        lyngua key root "accruedExpense".
-//   See plan §7 (Phase P10) for the full integrator checklist.
+//
+//	Block-level wiring is intentionally DEFERRED to the main thread. The
+//	integrator must:
+//	  1. Register routes/labels in apps/service-admin sidebar.
+//	  2. Add a centymo block.go entry that constructs ModuleDeps from the
+//	     domain providers (espyna AccruedExpense + AccruedExpenseSettlement
+//	     use case groups) and calls NewModule + RegisterRoutes.
+//	  3. Wire the per-tier translation file via translations.go using the
+//	     lyngua key root "accruedExpense".
+//	See plan §7 (Phase P10) for the full integrator checklist.
 package accrued_expense
 
 import (

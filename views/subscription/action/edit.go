@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/erniealice/pyeza-golang/route"
-	"github.com/erniealice/pyeza-golang/view"
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
+	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/subscription/form"

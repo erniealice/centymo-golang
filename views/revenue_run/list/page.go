@@ -226,7 +226,7 @@ func buildTableRows(rows []rrshared.RevenueRunRow, l centymo.RevenueRunLabels, r
 			}
 		}
 
-				// Scope cell: show kind label + scope name when available
+		// Scope cell: show kind label + scope name when available
 		scopeDisplay := scopeKindLabel(l, r.ScopeKind)
 		if r.ScopeLabel != "" {
 			scopeDisplay = scopeKindLabel(l, r.ScopeKind) + ": " + r.ScopeLabel

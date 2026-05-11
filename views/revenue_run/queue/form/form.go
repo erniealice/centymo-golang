@@ -17,9 +17,9 @@ type PageData struct {
 	// AsOfDateMax is the maximum selectable date (today, YYYY-MM-DD).
 	AsOfDateMax string
 	// RefreshURL is the HTMX target for the date picker to hit.
-	RefreshURL string
-	Filters     QueueFilters
-	Labels      centymo.RevenueRunQueueLabels
+	RefreshURL   string
+	Filters      QueueFilters
+	Labels       centymo.RevenueRunQueueLabels
 	CommonLabels pyeza.CommonLabels
 }
 

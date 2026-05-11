@@ -108,8 +108,8 @@ func buildFormLabels(l centymo.SupplierSubscriptionLabels) form.Labels {
 		EndTime:               l.Form.EndTime,
 		TimePlaceholder:       l.Form.TimePlaceholder,
 
-		Notes:                 l.Form.Notes,
-		NotesPlaceholder:      l.Form.NotesPlaceholder,
+		Notes:            l.Form.Notes,
+		NotesPlaceholder: l.Form.NotesPlaceholder,
 	}
 }
 

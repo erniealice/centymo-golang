@@ -25,7 +25,7 @@ type DetailViewDeps struct {
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
-	ReadAccruedExpense           func(ctx context.Context, req *accruedexpensepb.ReadAccruedExpenseRequest) (*accruedexpensepb.ReadAccruedExpenseResponse, error)
+	ReadAccruedExpense            func(ctx context.Context, req *accruedexpensepb.ReadAccruedExpenseRequest) (*accruedexpensepb.ReadAccruedExpenseResponse, error)
 	ListAccruedExpenseSettlements func(ctx context.Context, req *accruedexpensepb.ListAccruedExpenseSettlementsRequest) (*accruedexpensepb.ListAccruedExpenseSettlementsResponse, error)
 
 	// Workflow — provided as closures from block.go
@@ -46,8 +46,8 @@ type PageData struct {
 	TabItems  []pyeza.TabItem
 	ActiveTab string
 
-	SettlementTable     *types.TableConfig
-	SettlementAddURL    string
+	SettlementTable  *types.TableConfig
+	SettlementAddURL string
 
 	AttachmentTable *types.TableConfig
 
@@ -405,6 +405,7 @@ func buildSettlementTable(ctx context.Context, deps *DetailViewDeps, accrualID s
 		Columns:     columns,
 		Rows:        rows,
 		ShowActions: true,
+		RefreshURL:  route.ResolveURL(deps.Routes.TabActionURL, "id", accrualID, "tab", "settlements"),
 		EmptyState: types.TableEmptyState{
 			Title:   l.Settlements.EmptyTitle,
 			Message: l.Settlements.EmptyMessage,

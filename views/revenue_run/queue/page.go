@@ -36,9 +36,9 @@ type ClientRecord struct {
 type CandidateSummary struct {
 	// CandidatesBySubscription groups candidates by subscription ID.
 	// Key = subscription ID, value = count of pending periods.
-	SubscriptionIDs   map[string]struct{}
-	TotalByCurrency   map[string]int64
-	PeriodCount       int
+	SubscriptionIDs map[string]struct{}
+	TotalByCurrency map[string]int64
+	PeriodCount     int
 }
 
 // RevenueRunCandidateInput is the minimal shape the queue needs from a candidate.
@@ -78,7 +78,7 @@ type QueueViewDeps struct {
 // NewView creates the full-page revenue-run queue view.
 func NewView(deps *QueueViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		asOfDate, asOfDateMax := resolveAsOfDate(viewCtx.Request.URL.Query().Get("as_of_date"))
+		asOfDate, asOfDateMax := resolveAsOfDate(ctx, viewCtx.Request.URL.Query().Get("as_of_date"))
 		cursor := viewCtx.Request.URL.Query().Get("cursor")
 
 		tableConfig, rows, err := buildTableConfig(ctx, deps, asOfDate, cursor)
@@ -116,7 +116,7 @@ func NewView(deps *QueueViewDeps) view.View {
 // NewTableView returns only the table-card HTML (used as HTMX refresh target).
 func NewTableView(deps *QueueViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		asOfDate, _ := resolveAsOfDate(viewCtx.Request.URL.Query().Get("as_of_date"))
+		asOfDate, _ := resolveAsOfDate(ctx, viewCtx.Request.URL.Query().Get("as_of_date"))
 		cursor := viewCtx.Request.URL.Query().Get("cursor")
 
 		tableConfig, _, err := buildTableConfig(ctx, deps, asOfDate, cursor)
@@ -257,19 +257,19 @@ func buildTableConfig(
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = []types.BulkAction{
 		{
-			Key:      "run-selected",
-			Label:    lq.Bulk.RunSelected,
-			Icon:     "icon-zap",
-			Variant:  "primary",
-			Endpoint: deps.Routes.SubmitBatchURL,
+			Key:             "run-selected",
+			Label:           lq.Bulk.RunSelected,
+			Icon:            "icon-zap",
+			Variant:         "primary",
+			Endpoint:        deps.Routes.SubmitBatchURL,
 			ExtraParamsJSON: `{"selection_mode":"selected"}`,
 		},
 		{
-			Key:      "run-all-matching",
-			Label:    lq.Bulk.RunAllMatching,
-			Icon:     "icon-zap",
-			Variant:  "warning",
-			Endpoint: deps.Routes.SubmitBatchURL,
+			Key:             "run-all-matching",
+			Label:           lq.Bulk.RunAllMatching,
+			Icon:            "icon-zap",
+			Variant:         "warning",
+			Endpoint:        deps.Routes.SubmitBatchURL,
 			ExtraParamsJSON: `{"selection_mode":"all_matching"}`,
 		},
 	}
@@ -292,7 +292,7 @@ func buildTableConfig(
 			Title:   lq.Empty.Title,
 			Message: lq.Empty.Message,
 		},
-		BulkActions: &bulkCfg,
+		BulkActions:      &bulkCfg,
 		ServerPagination: sp,
 	}
 
@@ -433,13 +433,14 @@ func flattenCurrencyTotals(totals map[string]int64) (total int64, currency strin
 }
 
 // resolveAsOfDate returns the asOfDate to use and the max allowed date (today).
-// Falls back to today when input is empty or invalid.
-func resolveAsOfDate(input string) (asOfDate, maxDate string) {
-	today := time.Now().UTC().Format("2006-01-02")
+// Falls back to today in the workspace timezone when input is empty or invalid.
+func resolveAsOfDate(ctx context.Context, input string) (asOfDate, maxDate string) {
+	tz := types.LocationFromContext(ctx)
+	today := time.Now().In(tz).Format(types.DateInputLayout)
 	if input == "" {
 		return today, today
 	}
-	if _, err := time.Parse("2006-01-02", input); err != nil {
+	if _, err := time.Parse(types.DateInputLayout, input); err != nil {
 		return today, today
 	}
 	return input, today

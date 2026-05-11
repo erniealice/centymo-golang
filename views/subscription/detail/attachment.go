@@ -11,6 +11,7 @@ func attachmentConfig(deps *DetailViewDeps) *attachment.Config {
 	return &attachment.Config{
 		EntityType:       "subscription",
 		BucketName:       "attachments",
+		RefreshURL:       deps.Routes.TabActionURL,
 		UploadURL:        deps.Routes.AttachmentUploadURL,
 		DeleteURL:        deps.Routes.AttachmentDeleteURL,
 		DownloadURL:      deps.Routes.AttachmentDownloadURL,

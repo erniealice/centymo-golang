@@ -60,16 +60,16 @@ type FormData struct {
 }
 
 type Deps struct {
-	Routes                 centymo.PricePlanRoutes
-	Labels                 centymo.PricePlanLabels
-	CommonLabels           pyeza.CommonLabels
-	CreatePricePlan        func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
-	ReadPricePlan          func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
-	UpdatePricePlan        func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
-	DeletePricePlan        func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
-	ListPlans              func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
-	ListPriceSchedules     func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
-	GetPricePlanInUseIDs   func(ctx context.Context, ids []string) (map[string]bool, error)
+	Routes               centymo.PricePlanRoutes
+	Labels               centymo.PricePlanLabels
+	CommonLabels         pyeza.CommonLabels
+	CreatePricePlan      func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
+	ReadPricePlan        func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	UpdatePricePlan      func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
+	DeletePricePlan      func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
+	ListPlans            func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListPriceSchedules   func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 
 	// 2026-04-27 plan-client-scope plan §6.7. Optional — when set, used to
 	// resolve the parent-schedule client name for the info banner.
@@ -351,21 +351,21 @@ func NewEditAction(deps *Deps) view.View {
 				ScheduleID:               selectedScheduleID,
 				ParentScheduleClientID:   parentScheduleClientID,
 				ParentScheduleClientName: parentScheduleClientName,
-				Name:                  record.GetName(),
-				Description:           record.GetDescription(),
-				Amount:                formatAmount(record.GetBillingAmount()),
-				Currency:              record.GetBillingCurrency(),
-				DurationValue:         fmt.Sprintf("%d", record.GetDurationValue()),
-				DurationUnit:          record.GetDurationUnit(),
-				Active:                record.GetActive(),
+				Name:                     record.GetName(),
+				Description:              record.GetDescription(),
+				Amount:                   formatAmount(record.GetBillingAmount()),
+				Currency:                 record.GetBillingCurrency(),
+				DurationValue:            fmt.Sprintf("%d", record.GetDurationValue()),
+				DurationUnit:             record.GetDurationUnit(),
+				Active:                   record.GetActive(),
 				// Wave 2: populate new billing fields from existing record.
-				BillingKind:         record.GetBillingKind().String(),
-				AmountBasis:         record.GetAmountBasis().String(),
-				BillingCycleValue:   billingCycleValue,
-				BillingCycleUnit:    record.GetBillingCycleUnit(),
-				TermValue:           defaultTermValue,
-				TermUnit:            record.GetDefaultTermUnit(),
-				DurationUnitOptions: buildDurationUnitOptions(deps.CommonLabels),
+				BillingKind:           record.GetBillingKind().String(),
+				AmountBasis:           record.GetAmountBasis().String(),
+				BillingCycleValue:     billingCycleValue,
+				BillingCycleUnit:      record.GetBillingCycleUnit(),
+				TermValue:             defaultTermValue,
+				TermUnit:              record.GetDefaultTermUnit(),
+				DurationUnitOptions:   buildDurationUnitOptions(deps.CommonLabels),
 				PlanOptions:           buildPlanAutoCompleteOptions(plans, selectedPlanID),
 				ScheduleOptions:       buildScheduleAutoCompleteOptions(schedules, selectedScheduleID),
 				SelectedPlanID:        selectedPlanID,

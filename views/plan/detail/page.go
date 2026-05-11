@@ -14,9 +14,9 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -39,12 +39,12 @@ type DetailViewDeps struct {
 	Labels                     centymo.PlanLabels
 	CommonLabels               pyeza.CommonLabels
 	TableLabels                types.TableLabels
-	ListProductPlans    func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
-	ListProducts        func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	ListProductVariants func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
-	ListPricePlans      func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
-	ListLocations       func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
-	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	ListProductPlans           func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProducts               func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductVariants        func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ListPricePlans             func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListLocations              func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	ListPriceSchedules         func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 
 	// 2026-04-28 plan-client-scope — Info tab Client row.
 	// ListClients resolves the display label for Plan.client_id (mirrors the
@@ -69,18 +69,18 @@ type DetailViewDeps struct {
 // PageData holds the data for the plan detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate     string
-	Plan                *planpb.Plan
-	Labels              centymo.PlanLabels
-	ActiveTab           string
-	TabItems            []pyeza.TabItem
-	ID                  string
-	PlanName            string
-	PlanDesc            string
-	PlanStatus          string
-	StatusVariant       string
-	CreatedDate         string
-	ModifiedDate        string
+	ContentTemplate string
+	Plan            *planpb.Plan
+	Labels          centymo.PlanLabels
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
+	ID              string
+	PlanName        string
+	PlanDesc        string
+	PlanStatus      string
+	StatusVariant   string
+	CreatedDate     string
+	ModifiedDate    string
 	// 2026-04-28 plan-client-scope — Info tab Client row.
 	// IsCustomPlan is true when the plan has a non-empty client_id (i.e.
 	// scoped to a specific client). When false, the Info tab renders the
@@ -91,13 +91,13 @@ type PageData struct {
 	// ClientHref is the resolved entydad client-detail URL for ClientID. Empty
 	// when ClientDetailURL was not supplied or the plan is not custom; the
 	// template gracefully falls back to plain text.
-	ClientHref          string
+	ClientHref string
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Info tab Job
 	// Template row. JobTemplateID is the raw FK; JobTemplateName is the
 	// resolved display label (falls back to ID when ReadJobTemplate is nil
 	// or the template is missing). Empty JobTemplateID = advisory-only plan.
-	JobTemplateID       string
-	JobTemplateName     string
+	JobTemplateID   string
+	JobTemplateName string
 	ProductsTable   *types.TableConfig
 	PricePlansTable *types.TableConfig
 	AttachmentTable *types.TableConfig

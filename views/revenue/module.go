@@ -137,40 +137,40 @@ type ModuleDeps struct {
 
 // Module holds all constructed revenue views.
 type Module struct {
-	routes             centymo.RevenueRoutes
-	Dashboard          view.View
-	List               view.View
-	Table              view.View
-	Detail             view.View
-	TabAction          view.View
-	Add                view.View
-	Edit               view.View
-	Delete             view.View
-	BulkDelete         view.View
-	SetStatus          view.View
-	BulkSetStatus      view.View
-	LineItemTable      view.View
-	LineItemAdd        view.View
-	LineItemEdit       view.View
-	LineItemRemove     view.View
-	LineItemDiscount   view.View
-	PaymentTable       view.View
-	PaymentAdd         view.View
-	PaymentEdit        view.View
-	PaymentRemove      view.View
-	InvoiceDownload       http.HandlerFunc
-	SendEmailHandler      http.HandlerFunc
-	SearchClients         http.HandlerFunc
-	SearchSubscriptions   http.HandlerFunc
-	SearchLocations       http.HandlerFunc
-	SearchProducts        http.HandlerFunc
-	PriceLookup           http.HandlerFunc
-	SettingsTemplates     view.View
-	SettingsUpload     view.View
-	SettingsDelete     view.View
-	SettingsSetDefault view.View
-	AttachmentUpload   view.View
-	AttachmentDelete   view.View
+	routes              centymo.RevenueRoutes
+	Dashboard           view.View
+	List                view.View
+	Table               view.View
+	Detail              view.View
+	TabAction           view.View
+	Add                 view.View
+	Edit                view.View
+	Delete              view.View
+	BulkDelete          view.View
+	SetStatus           view.View
+	BulkSetStatus       view.View
+	LineItemTable       view.View
+	LineItemAdd         view.View
+	LineItemEdit        view.View
+	LineItemRemove      view.View
+	LineItemDiscount    view.View
+	PaymentTable        view.View
+	PaymentAdd          view.View
+	PaymentEdit         view.View
+	PaymentRemove       view.View
+	InvoiceDownload     http.HandlerFunc
+	SendEmailHandler    http.HandlerFunc
+	SearchClients       http.HandlerFunc
+	SearchSubscriptions http.HandlerFunc
+	SearchLocations     http.HandlerFunc
+	SearchProducts      http.HandlerFunc
+	PriceLookup         http.HandlerFunc
+	SettingsTemplates   view.View
+	SettingsUpload      view.View
+	SettingsDelete      view.View
+	SettingsSetDefault  view.View
+	AttachmentUpload    view.View
+	AttachmentDelete    view.View
 
 	// RecomputeTaxes is a 501 stub until Phase 4 (ComputeTaxesForRevenue) wires the use case.
 	RecomputeTaxes http.HandlerFunc
@@ -178,29 +178,29 @@ type Module struct {
 
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &revenueaction.Deps{
-		Routes:                       deps.Routes,
-		Labels:                       deps.Labels,
-		DB:                           deps.DB,
-		ListPaymentTerms:             deps.ListPaymentTerms,
-		ListClients:                  deps.ListClients,
-		SearchClientsByName:          deps.SearchClientsByName,
-		ListSubscriptions:            deps.ListSubscriptions,
-		ReadSubscription:             deps.ReadSubscription,
-		ReadPricePlan:                deps.ReadPricePlan,
-		ListProductPricePlans:        deps.ListProductPricePlans,
-		ReadProduct:                  deps.ReadProduct,
-		ListProducts:                 deps.ListProducts,
-		CreateRevenue:                deps.CreateRevenue,
-		ReadRevenue:                  deps.ReadRevenue,
-		UpdateRevenue:                deps.UpdateRevenue,
-		DeleteRevenue:                deps.DeleteRevenue,
-		CreateRevenueLineItem:        deps.CreateRevenueLineItem,
-		ListRevenueLineItems:         deps.ListRevenueLineItems,
-		ReadInventoryItem:            deps.ReadInventoryItem,
-		UpdateInventoryItem:          deps.UpdateInventoryItem,
-		ListInventoryItems:           deps.ListInventoryItems,
-		UpdateInventorySerial:        deps.UpdateInventorySerial,
-		CreateInventorySerialHistory: deps.CreateInventorySerialHistory,
+		Routes:                           deps.Routes,
+		Labels:                           deps.Labels,
+		DB:                               deps.DB,
+		ListPaymentTerms:                 deps.ListPaymentTerms,
+		ListClients:                      deps.ListClients,
+		SearchClientsByName:              deps.SearchClientsByName,
+		ListSubscriptions:                deps.ListSubscriptions,
+		ReadSubscription:                 deps.ReadSubscription,
+		ReadPricePlan:                    deps.ReadPricePlan,
+		ListProductPricePlans:            deps.ListProductPricePlans,
+		ReadProduct:                      deps.ReadProduct,
+		ListProducts:                     deps.ListProducts,
+		CreateRevenue:                    deps.CreateRevenue,
+		ReadRevenue:                      deps.ReadRevenue,
+		UpdateRevenue:                    deps.UpdateRevenue,
+		DeleteRevenue:                    deps.DeleteRevenue,
+		CreateRevenueLineItem:            deps.CreateRevenueLineItem,
+		ListRevenueLineItems:             deps.ListRevenueLineItems,
+		ReadInventoryItem:                deps.ReadInventoryItem,
+		UpdateInventoryItem:              deps.UpdateInventoryItem,
+		ListInventoryItems:               deps.ListInventoryItems,
+		UpdateInventorySerial:            deps.UpdateInventorySerial,
+		CreateInventorySerialHistory:     deps.CreateInventorySerialHistory,
 		FindApplicablePriceList:          deps.FindApplicablePriceList,
 		ListPriceProducts:                deps.ListPriceProducts,
 		ReadJobActivity:                  deps.ReadJobActivity,
@@ -319,23 +319,23 @@ func NewModule(deps *ModuleDeps) *Module {
 			Routes: deps.Routes, GetListPageData: deps.GetListPageData,
 			Labels: deps.Labels, CommonLabels: deps.CommonLabels, TableLabels: deps.TableLabels,
 		}),
-		Detail:             revenuedetail.NewView(detailDeps),
-		TabAction:          revenuedetail.NewTabAction(detailDeps),
-		Add:                revenueaction.NewAddAction(actionDeps),
-		Edit:               revenueaction.NewEditAction(actionDeps),
-		Delete:             revenueaction.NewDeleteAction(actionDeps),
-		BulkDelete:         revenueaction.NewBulkDeleteAction(actionDeps),
-		SetStatus:          revenueaction.NewSetStatusAction(actionDeps),
-		BulkSetStatus:      revenueaction.NewBulkSetStatusAction(actionDeps),
-		LineItemTable:      revenuedetail.NewLineItemTableView(lineItemDeps),
-		LineItemAdd:        revenuedetail.NewLineItemAddView(lineItemDeps),
-		LineItemEdit:       revenuedetail.NewLineItemEditView(lineItemDeps),
-		LineItemRemove:     revenuedetail.NewLineItemRemoveView(lineItemDeps),
-		LineItemDiscount:   revenuedetail.NewLineItemDiscountView(lineItemDeps),
-		PaymentTable:       revenuepayment.NewTableAction(paymentDeps),
-		PaymentAdd:         revenuepayment.NewAddAction(paymentDeps),
-		PaymentEdit:        revenuepayment.NewEditAction(paymentDeps),
-		PaymentRemove:      revenuepayment.NewRemoveAction(paymentDeps),
+		Detail:              revenuedetail.NewView(detailDeps),
+		TabAction:           revenuedetail.NewTabAction(detailDeps),
+		Add:                 revenueaction.NewAddAction(actionDeps),
+		Edit:                revenueaction.NewEditAction(actionDeps),
+		Delete:              revenueaction.NewDeleteAction(actionDeps),
+		BulkDelete:          revenueaction.NewBulkDeleteAction(actionDeps),
+		SetStatus:           revenueaction.NewSetStatusAction(actionDeps),
+		BulkSetStatus:       revenueaction.NewBulkSetStatusAction(actionDeps),
+		LineItemTable:       revenuedetail.NewLineItemTableView(lineItemDeps),
+		LineItemAdd:         revenuedetail.NewLineItemAddView(lineItemDeps),
+		LineItemEdit:        revenuedetail.NewLineItemEditView(lineItemDeps),
+		LineItemRemove:      revenuedetail.NewLineItemRemoveView(lineItemDeps),
+		LineItemDiscount:    revenuedetail.NewLineItemDiscountView(lineItemDeps),
+		PaymentTable:        revenuepayment.NewTableAction(paymentDeps),
+		PaymentAdd:          revenuepayment.NewAddAction(paymentDeps),
+		PaymentEdit:         revenuepayment.NewEditAction(paymentDeps),
+		PaymentRemove:       revenuepayment.NewRemoveAction(paymentDeps),
 		InvoiceDownload:     invoiceDownload,
 		SendEmailHandler:    sendEmailHandler,
 		SearchClients:       revenuesearch.NewSearchClientsAction(searchDeps),
@@ -344,12 +344,12 @@ func NewModule(deps *ModuleDeps) *Module {
 		SearchProducts:      revenuesearch.NewSearchProductsAction(searchDeps),
 		PriceLookup:         revenueaction.NewPriceLookupAction(actionDeps),
 		SettingsTemplates:   settingsTemplates,
-		SettingsUpload:     settingsUpload,
-		SettingsDelete:     settingsDelete,
-		SettingsSetDefault: settingsSetDefault,
-		AttachmentUpload:   revenuedetail.NewAttachmentUploadAction(detailDeps),
-		AttachmentDelete:   revenuedetail.NewAttachmentDeleteAction(detailDeps),
-		RecomputeTaxes:     recomputeTaxesStub,
+		SettingsUpload:      settingsUpload,
+		SettingsDelete:      settingsDelete,
+		SettingsSetDefault:  settingsSetDefault,
+		AttachmentUpload:    revenuedetail.NewAttachmentUploadAction(detailDeps),
+		AttachmentDelete:    revenuedetail.NewAttachmentDeleteAction(detailDeps),
+		RecomputeTaxes:      recomputeTaxesStub,
 	}
 }
 

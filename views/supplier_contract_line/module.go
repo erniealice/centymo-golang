@@ -6,8 +6,8 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	suppliercontractlineaction "github.com/erniealice/centymo-golang/views/supplier_contract_line/action"
 
-	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/view"

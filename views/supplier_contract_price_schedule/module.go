@@ -6,11 +6,11 @@
 // packages/centymo-golang/block/block.go alongside the existing
 // supplier_contract module. Mirror the supplier_contract_line wiring pattern:
 //
-//   if cfg.wantSupplierContractPriceSchedule() {
-//       deps := &supplier_contract_price_schedule.ModuleDeps{ ... }
-//       mod := supplier_contract_price_schedule.NewModule(deps)
-//       mod.RegisterRoutes(ctx.Routes)
-//   }
+//	if cfg.wantSupplierContractPriceSchedule() {
+//	    deps := &supplier_contract_price_schedule.ModuleDeps{ ... }
+//	    mod := supplier_contract_price_schedule.NewModule(deps)
+//	    mod.RegisterRoutes(ctx.Routes)
+//	}
 //
 // The block.go edit is intentionally deferred to the main thread because a
 // sister Wave 3 CYC agent is currently editing block.go.

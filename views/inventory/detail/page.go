@@ -88,8 +88,8 @@ type PageData struct {
 	SerialSummary       *SerialSummary
 	TransactionTable    *types.TableConfig
 	Depreciation        *DepreciationInfo
-	AuditTable      *types.TableConfig
-	AttachmentTable *types.TableConfig
+	AuditTable          *types.TableConfig
+	AttachmentTable     *types.TableConfig
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
 	AuditHasNext    bool
@@ -149,17 +149,17 @@ func NewView(deps *DetailViewDeps) view.View {
 				HeaderIcon:     "icon-package",
 				CommonLabels:   deps.CommonLabels,
 			},
-			ContentTemplate:   "inventory-detail-content",
-			Item:              itemMap,
-			Labels:            l,
-			ActiveTab:         activeTab,
-			TabItems:          tabItems,
-			IsSerialized:      isSerialized,
-			TrackingMode:      trackingMode,
-			TrackingModeLabel: trackingModeDisplayLabel(trackingMode, l),
+			ContentTemplate:     "inventory-detail-content",
+			Item:                itemMap,
+			Labels:              l,
+			ActiveTab:           activeTab,
+			TabItems:            tabItems,
+			IsSerialized:        isSerialized,
+			TrackingMode:        trackingMode,
+			TrackingModeLabel:   trackingModeDisplayLabel(trackingMode, l),
 			TrackingModeVariant: trackingModeDisplayVariant(trackingMode),
-			LocationName:      locationName,
-			AvailableQty:      available,
+			LocationName:        locationName,
+			AvailableQty:        available,
 		}
 
 		// KB help content

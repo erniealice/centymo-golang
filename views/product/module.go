@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"net/http"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -160,8 +161,10 @@ type ModuleDeps struct {
 
 	// Attachment operations
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	DownloadFile     func(ctx context.Context, bucket, key string) ([]byte, error)
 	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
 	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	ReadAttachment   func(ctx context.Context, req *attachmentpb.ReadAttachmentRequest) (*attachmentpb.ReadAttachmentResponse, error)
 	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	NewID            func() string
 
@@ -218,6 +221,7 @@ type Module struct {
 	// Attachments (product, variant, variant stock)
 	AttachmentUpload             view.View
 	AttachmentDelete             view.View
+	AttachmentDownload           http.HandlerFunc
 	VariantAttachmentUpload      view.View
 	VariantAttachmentDelete      view.View
 	VariantStockAttachmentUpload view.View
@@ -226,16 +230,16 @@ type Module struct {
 
 func NewModule(deps *ModuleDeps) *Module {
 	actionDeps := &productaction.Deps{
-		Routes:              deps.Routes,
-		Labels:              deps.Labels,
-		CreateProduct:       deps.CreateProduct,
-		ReadProduct:         deps.ReadProduct,
-		UpdateProduct:       deps.UpdateProduct,
-		DeleteProduct:       deps.DeleteProduct,
-		SetProductActive:    deps.SetProductActive,
-		ListLines:           deps.ListLines,
-		ListProductOptions:  deps.ListProductOptions,
-		ListProductVariants: deps.ListProductVariants,
+		Routes:               deps.Routes,
+		Labels:               deps.Labels,
+		CreateProduct:        deps.CreateProduct,
+		ReadProduct:          deps.ReadProduct,
+		UpdateProduct:        deps.UpdateProduct,
+		DeleteProduct:        deps.DeleteProduct,
+		SetProductActive:     deps.SetProductActive,
+		ListLines:            deps.ListLines,
+		ListProductOptions:   deps.ListProductOptions,
+		ListProductVariants:  deps.ListProductVariants,
 		DefaultProductKind:   deps.DefaultProductKind,
 		DefaultDeliveryMode:  deps.DefaultDeliveryMode,
 		DefaultTrackingMode:  deps.DefaultTrackingMode,
@@ -263,8 +267,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		PermissionEntity:          deps.PermissionEntity,
 		AttachmentOps: attachment.AttachmentOps{
 			UploadFile:       deps.UploadFile,
+			DownloadFile:     deps.DownloadFile,
 			ListAttachments:  deps.ListAttachments,
 			CreateAttachment: deps.CreateAttachment,
+			ReadAttachment:   deps.ReadAttachment,
 			DeleteAttachment: deps.DeleteAttachment,
 			NewAttachmentID:  deps.NewID,
 		},
@@ -305,8 +311,10 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListPlans:             deps.ListPlans,
 		AttachmentOps: attachment.AttachmentOps{
 			UploadFile:       deps.UploadFile,
+			DownloadFile:     deps.DownloadFile,
 			ListAttachments:  deps.ListAttachments,
 			CreateAttachment: deps.CreateAttachment,
+			ReadAttachment:   deps.ReadAttachment,
 			DeleteAttachment: deps.DeleteAttachment,
 			NewAttachmentID:  deps.NewID,
 		},
@@ -365,10 +373,10 @@ func NewModule(deps *ModuleDeps) *Module {
 	})
 
 	return &Module{
-		routes:    deps.Routes,
-		Dashboard: dashboardView,
-		List:      productlist.NewView(listDeps),
-		Table:     productlist.NewTableView(listDeps),
+		routes:                       deps.Routes,
+		Dashboard:                    dashboardView,
+		List:                         productlist.NewView(listDeps),
+		Table:                        productlist.NewTableView(listDeps),
 		Detail:                       productdetail.NewView(detailDeps),
 		TabAction:                    productdetail.NewTabAction(detailDeps),
 		Add:                          productaction.NewAddAction(actionDeps),
@@ -401,6 +409,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		VariantImageDelete:           productvariant.NewImageDeleteAction(variantDeps),
 		AttachmentUpload:             productdetail.NewAttachmentUploadAction(detailDeps),
 		AttachmentDelete:             productdetail.NewAttachmentDeleteAction(detailDeps),
+		AttachmentDownload:           productdetail.NewAttachmentDownloadHandler(detailDeps),
 		VariantAttachmentUpload:      productvariant.NewAttachmentUploadAction(variantDeps),
 		VariantAttachmentDelete:      productvariant.NewAttachmentDeleteAction(variantDeps),
 		VariantStockAttachmentUpload: variantitem.NewAttachmentUploadAction(variantDeps),

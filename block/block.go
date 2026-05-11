@@ -550,8 +550,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			refChecker:                 refChecker,
 			uploadImage:                uploadImage,
 			uploadFile:                 uploadFile,
+			downloadFile:               downloadFile,
 			listAttachments:            listAttachments,
 			createAttachment:           createAttachment,
+			readAttachment:             readAttachment,
 			deleteAttachment:           deleteAttachment,
 			newAttachmentID:            newAttachmentID,
 			productRoutes:              productRoutes,
@@ -613,7 +615,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			priceScheduleLabels: priceScheduleLabels,
 			centymoTableLabels:  centymoTableLabels,
 		})
-
 
 		// =====================================================================
 		// Collection module (conditional: only when treasury collection use cases are available)
@@ -768,10 +769,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		if cfg.wantResource() {
 			resourcemod.NewModule(&resourcemod.ModuleDeps{
-				Routes:        resourceRoutes,
-				Labels:        resourceLabels,
-				CommonLabels:  ctx.Common,
-				TableLabels:   centymoTableLabels,
+				Routes:         resourceRoutes,
+				Labels:         resourceLabels,
+				CommonLabels:   ctx.Common,
+				TableLabels:    centymoTableLabels,
 				ListResources:  useCases.Product.ListResources,
 				ReadResource:   useCases.Product.ReadResource,
 				CreateResource: useCases.Product.CreateResource,

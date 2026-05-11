@@ -14,17 +14,17 @@ import (
 func TestFormLabelsFromExpenditureAllFieldsPopulated(t *testing.T) {
 	src := centymo.ExpenditureLabels{
 		Form: centymo.ExpenditureFormLabels{
-			VendorName:          "VendorName",
+			VendorName:            "VendorName",
 			VendorNamePlaceholder: "VendorNamePlaceholder",
-			ExpenditureCategory: "ExpenditureCategory",
-			ExpenditureDate:     "ExpenditureDate",
-			TotalAmount:         "TotalAmount",
-			Currency:            "Currency",
-			ReferenceNumber:     "ReferenceNumber",
-			Notes:               "Notes",
-			NotesPlaceholder:    "NotesPlaceholder",
-			Status:              "Status",
-			ExpenditureType:     "ExpenditureType",
+			ExpenditureCategory:   "ExpenditureCategory",
+			ExpenditureDate:       "ExpenditureDate",
+			TotalAmount:           "TotalAmount",
+			Currency:              "Currency",
+			ReferenceNumber:       "ReferenceNumber",
+			Notes:                 "Notes",
+			NotesPlaceholder:      "NotesPlaceholder",
+			Status:                "Status",
+			ExpenditureType:       "ExpenditureType",
 			// Info fields
 			NameInfo:            "NameInfo",
 			ExpenditureTypeInfo: "ExpenditureTypeInfo",

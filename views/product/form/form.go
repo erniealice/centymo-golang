@@ -45,9 +45,9 @@ type Data struct {
 	TrackingModeOptions []types.SelectOption
 
 	// Tax fields (Phase 5) — treatment + withholding class selects.
-	TaxTreatmentID      string
-	WithholdingClassID  string
-	TaxTreatmentOptions []types.SelectOption
+	TaxTreatmentID          string
+	WithholdingClassID      string
+	TaxTreatmentOptions     []types.SelectOption
 	WithholdingClassOptions []types.SelectOption
 
 	Labels       centymo.ProductFormLabels

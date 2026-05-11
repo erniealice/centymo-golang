@@ -25,25 +25,25 @@ import (
 	planaction "github.com/erniealice/centymo-golang/views/plan/action"
 	plandetail "github.com/erniealice/centymo-golang/views/plan/detail"
 	planlist "github.com/erniealice/centymo-golang/views/plan/list"
-	pricelistmod "github.com/erniealice/centymo-golang/views/pricelist"
 	priceplanmod "github.com/erniealice/centymo-golang/views/price_plan"
 	priceschedulemod "github.com/erniealice/centymo-golang/views/price_schedule"
 	priceschedulepricepldetail "github.com/erniealice/centymo-golang/views/price_schedule/detail/plan"
+	pricelistmod "github.com/erniealice/centymo-golang/views/pricelist"
 )
 
 // planWiring holds everything wirePlanModules needs from the surrounding Block()
 // scope. More than 6 fields → struct. Kept private; never re-exported.
 type planWiring struct {
-	db           centymo.DataSource
-	refChecker   reference.Checker
+	db         centymo.DataSource
+	refChecker reference.Checker
 	// Attachment ops
-	uploadFile      func(context.Context, string, string, []byte, string) error
-	downloadFile    func(context.Context, string, string) ([]byte, error)
-	readAttachment  func(context.Context, *attachmentpb.ReadAttachmentRequest) (*attachmentpb.ReadAttachmentResponse, error)
-	listAttachments func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)
+	uploadFile       func(context.Context, string, string, []byte, string) error
+	downloadFile     func(context.Context, string, string) ([]byte, error)
+	readAttachment   func(context.Context, *attachmentpb.ReadAttachmentRequest) (*attachmentpb.ReadAttachmentResponse, error)
+	listAttachments  func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)
 	createAttachment func(context.Context, *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
 	deleteAttachment func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
-	newAttachmentID func() string
+	newAttachmentID  func() string
 	// Routes
 	pricePlanRoutes              centymo.PricePlanRoutes
 	priceScheduleRoutes          centymo.PriceScheduleRoutes
@@ -53,12 +53,12 @@ type planWiring struct {
 	planBundleRoutes             centymo.PlanRoutes
 	subscriptionRoutes           centymo.SubscriptionRoutes
 	// Labels
-	pricePlanLabels           centymo.PricePlanLabels
-	productPricePlanLabels    centymo.ProductPricePlanLabels
-	priceScheduleLabels       centymo.PriceScheduleLabels
-	priceListLabels           centymo.PriceListLabels
-	planLabels                centymo.PlanLabels
-	centymoTableLabels        types.TableLabels
+	pricePlanLabels        centymo.PricePlanLabels
+	productPricePlanLabels centymo.ProductPricePlanLabels
+	priceScheduleLabels    centymo.PriceScheduleLabels
+	priceListLabels        centymo.PriceListLabels
+	planLabels             centymo.PlanLabels
+	centymoTableLabels     types.TableLabels
 }
 
 // wirePlanModules lifts the bodies of the four plan-related `if cfg.wantXxx()`
@@ -109,13 +109,13 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 				PriceScheduleDetailLabels: w.priceScheduleLabels.Detail,
 				CommonLabels:              ctx.Common,
 				TableLabels:               w.centymoTableLabels,
-				ListPricePlans:         useCases.PricePlan.ListPricePlans,
-				ReadPricePlan:          useCases.PricePlan.ReadPricePlan,
-				CreatePricePlan:        useCases.PricePlan.CreatePricePlan,
-				UpdatePricePlan:        useCases.PricePlan.UpdatePricePlan,
-				DeletePricePlan:        useCases.PricePlan.DeletePricePlan,
-				GetPricePlanInUseIDs:   getPricePlanInUseIDs,
-				ListClientNames:        ppListClientNames,
+				ListPricePlans:            useCases.PricePlan.ListPricePlans,
+				ReadPricePlan:             useCases.PricePlan.ReadPricePlan,
+				CreatePricePlan:           useCases.PricePlan.CreatePricePlan,
+				UpdatePricePlan:           useCases.PricePlan.UpdatePricePlan,
+				DeletePricePlan:           useCases.PricePlan.DeletePricePlan,
+				GetPricePlanInUseIDs:      getPricePlanInUseIDs,
+				ListClientNames:           ppListClientNames,
 			}
 			// Price schedule listing — parent container (owns location + date range)
 			if useCases.PriceSchedule.ListPriceSchedules != nil {
@@ -254,6 +254,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 			priceScheduleDeps.SubscriptionDetailURL = w.subscriptionRoutes.DetailURL
 			priceScheduleDeps.SubscriptionEditURL = w.subscriptionRoutes.EditURL
 			priceScheduleDeps.SubscriptionDeleteURL = w.subscriptionRoutes.DeleteURL
+			priceScheduleDeps.SubscriptionAddURL = w.subscriptionRoutes.AddURL
 			priceScheduleDeps.UploadFile = w.uploadFile
 			priceScheduleDeps.ListAttachments = w.listAttachments
 			priceScheduleDeps.CreateAttachment = w.createAttachment
@@ -567,10 +568,10 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 					PricePlanLabels:     w.pricePlanLabels,
 					PriceScheduleLabels: w.priceScheduleLabels,
 					CommonLabels:        ctx.Common,
-					CreatePricePlan: useCases.PricePlan.CreatePricePlan,
-					ReadPricePlan:   useCases.PricePlan.ReadPricePlan,
-					UpdatePricePlan: useCases.PricePlan.UpdatePricePlan,
-					DeletePricePlan: useCases.PricePlan.DeletePricePlan,
+					CreatePricePlan:     useCases.PricePlan.CreatePricePlan,
+					ReadPricePlan:       useCases.PricePlan.ReadPricePlan,
+					UpdatePricePlan:     useCases.PricePlan.UpdatePricePlan,
+					DeletePricePlan:     useCases.PricePlan.DeletePricePlan,
 				}
 				if useCases.PriceSchedule.ListPriceSchedules != nil {
 					ppActionDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
@@ -767,10 +768,10 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 						PricePlanLabels:     w.pricePlanLabels,
 						PriceScheduleLabels: w.priceScheduleLabels,
 						CommonLabels:        ctx.Common,
-						CreatePricePlan: useCases.PricePlan.CreatePricePlan,
-						ReadPricePlan:   useCases.PricePlan.ReadPricePlan,
-						UpdatePricePlan: useCases.PricePlan.UpdatePricePlan,
-						DeletePricePlan: useCases.PricePlan.DeletePricePlan,
+						CreatePricePlan:     useCases.PricePlan.CreatePricePlan,
+						ReadPricePlan:       useCases.PricePlan.ReadPricePlan,
+						UpdatePricePlan:     useCases.PricePlan.UpdatePricePlan,
+						DeletePricePlan:     useCases.PricePlan.DeletePricePlan,
 					}
 					if useCases.PriceSchedule.ListPriceSchedules != nil {
 						ppBundleDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules

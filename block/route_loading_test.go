@@ -59,11 +59,21 @@ func (d *testDataSource) HardDelete(context.Context, string, string) error {
 func newPlanUseCases() *UseCases {
 	return &UseCases{
 		Plan: PlanUseCases{
-			ListPlans:  func(_ context.Context, _ *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error) { return &planpb.ListPlansResponse{}, nil },
-			ReadPlan:   func(_ context.Context, _ *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error) { return &planpb.ReadPlanResponse{}, nil },
-			CreatePlan: func(_ context.Context, _ *planpb.CreatePlanRequest) (*planpb.CreatePlanResponse, error) { return &planpb.CreatePlanResponse{}, nil },
-			UpdatePlan: func(_ context.Context, _ *planpb.UpdatePlanRequest) (*planpb.UpdatePlanResponse, error) { return &planpb.UpdatePlanResponse{}, nil },
-			DeletePlan: func(_ context.Context, _ *planpb.DeletePlanRequest) (*planpb.DeletePlanResponse, error) { return &planpb.DeletePlanResponse{}, nil },
+			ListPlans: func(_ context.Context, _ *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error) {
+				return &planpb.ListPlansResponse{}, nil
+			},
+			ReadPlan: func(_ context.Context, _ *planpb.ReadPlanRequest) (*planpb.ReadPlanResponse, error) {
+				return &planpb.ReadPlanResponse{}, nil
+			},
+			CreatePlan: func(_ context.Context, _ *planpb.CreatePlanRequest) (*planpb.CreatePlanResponse, error) {
+				return &planpb.CreatePlanResponse{}, nil
+			},
+			UpdatePlan: func(_ context.Context, _ *planpb.UpdatePlanRequest) (*planpb.UpdatePlanResponse, error) {
+				return &planpb.UpdatePlanResponse{}, nil
+			},
+			DeletePlan: func(_ context.Context, _ *planpb.DeletePlanRequest) (*planpb.DeletePlanResponse, error) {
+				return &planpb.DeletePlanResponse{}, nil
+			},
 		},
 	}
 }

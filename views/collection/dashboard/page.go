@@ -23,7 +23,6 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 )
 
-
 // Stats is the cash dashboard's KPI tile values (centavos).
 type Stats struct {
 	Pending           int64
@@ -225,4 +224,3 @@ func NewView(deps *Deps) view.View {
 		return view.OK("cash-dashboard", pageData)
 	})
 }
-

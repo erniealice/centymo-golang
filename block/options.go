@@ -16,21 +16,21 @@ package block
 type BlockOption func(*blockConfig)
 
 type blockConfig struct {
-	enableAll    bool
-	useCases     *UseCases
-	inventory    bool
-	revenue      bool
-	product      bool
-	productLine  bool
+	enableAll     bool
+	useCases      *UseCases
+	inventory     bool
+	revenue       bool
+	product       bool
+	productLine   bool
 	pricePlan     bool
 	priceSchedule bool
 	priceList     bool
-	plan         bool
-	subscription bool
-	collection   bool
-	disbursement bool
-	expenditure  bool
-	resource     bool
+	plan          bool
+	subscription  bool
+	collection    bool
+	disbursement  bool
+	expenditure   bool
+	resource      bool
 	// 20260427-supplier-commitments P3a/P3b — five new modules wired by Block.
 	supplierContract       bool
 	supplierContractLine   bool
@@ -78,26 +78,32 @@ func WithUseCases(uc *UseCases) BlockOption {
 	return func(c *blockConfig) { c.useCases = uc }
 }
 
-func WithInventory() BlockOption    { return func(c *blockConfig) { c.inventory = true } }
-func WithRevenue() BlockOption      { return func(c *blockConfig) { c.revenue = true } }
-func WithProduct() BlockOption      { return func(c *blockConfig) { c.product = true } }
-func WithProductLine() BlockOption  { return func(c *blockConfig) { c.productLine = true } }
+func WithInventory() BlockOption     { return func(c *blockConfig) { c.inventory = true } }
+func WithRevenue() BlockOption       { return func(c *blockConfig) { c.revenue = true } }
+func WithProduct() BlockOption       { return func(c *blockConfig) { c.product = true } }
+func WithProductLine() BlockOption   { return func(c *blockConfig) { c.productLine = true } }
 func WithPricePlan() BlockOption     { return func(c *blockConfig) { c.pricePlan = true } }
 func WithPriceSchedule() BlockOption { return func(c *blockConfig) { c.priceSchedule = true } }
 func WithPriceList() BlockOption     { return func(c *blockConfig) { c.priceList = true } }
-func WithPlan() BlockOption         { return func(c *blockConfig) { c.plan = true } }
-func WithSubscription() BlockOption { return func(c *blockConfig) { c.subscription = true } }
-func WithCollection() BlockOption   { return func(c *blockConfig) { c.collection = true } }
-func WithDisbursement() BlockOption { return func(c *blockConfig) { c.disbursement = true } }
-func WithExpenditure() BlockOption  { return func(c *blockConfig) { c.expenditure = true } }
-func WithResource() BlockOption     { return func(c *blockConfig) { c.resource = true } }
+func WithPlan() BlockOption          { return func(c *blockConfig) { c.plan = true } }
+func WithSubscription() BlockOption  { return func(c *blockConfig) { c.subscription = true } }
+func WithCollection() BlockOption    { return func(c *blockConfig) { c.collection = true } }
+func WithDisbursement() BlockOption  { return func(c *blockConfig) { c.disbursement = true } }
+func WithExpenditure() BlockOption   { return func(c *blockConfig) { c.expenditure = true } }
+func WithResource() BlockOption      { return func(c *blockConfig) { c.resource = true } }
 
 // 20260427-supplier-commitments — five new module toggles.
-func WithSupplierContract() BlockOption       { return func(c *blockConfig) { c.supplierContract = true } }
-func WithSupplierContractLine() BlockOption   { return func(c *blockConfig) { c.supplierContractLine = true } }
-func WithProcurementRequest() BlockOption     { return func(c *blockConfig) { c.procurementRequest = true } }
-func WithProcurementRequestLine() BlockOption { return func(c *blockConfig) { c.procurementRequestLine = true } }
-func WithProcurement() BlockOption            { return func(c *blockConfig) { c.procurement = true } }
+func WithSupplierContract() BlockOption { return func(c *blockConfig) { c.supplierContract = true } }
+func WithSupplierContractLine() BlockOption {
+	return func(c *blockConfig) { c.supplierContractLine = true }
+}
+func WithProcurementRequest() BlockOption {
+	return func(c *blockConfig) { c.procurementRequest = true }
+}
+func WithProcurementRequestLine() BlockOption {
+	return func(c *blockConfig) { c.procurementRequestLine = true }
+}
+func WithProcurement() BlockOption { return func(c *blockConfig) { c.procurement = true } }
 
 // SPS Wave 4 — six new module toggles (supplier-side pricing graph + accrual layer).
 func WithSupplierContractPriceSchedule() BlockOption {
@@ -170,26 +176,28 @@ func WithJobDetailURL(url string) BlockOption {
 	return func(c *blockConfig) { c.jobDetailURL = url }
 }
 
-func (c *blockConfig) wantInventory() bool    { return c.enableAll || c.inventory }
-func (c *blockConfig) wantRevenue() bool      { return c.enableAll || c.revenue }
-func (c *blockConfig) wantProduct() bool      { return c.enableAll || c.product }
-func (c *blockConfig) wantProductLine() bool  { return c.enableAll || c.productLine }
+func (c *blockConfig) wantInventory() bool     { return c.enableAll || c.inventory }
+func (c *blockConfig) wantRevenue() bool       { return c.enableAll || c.revenue }
+func (c *blockConfig) wantProduct() bool       { return c.enableAll || c.product }
+func (c *blockConfig) wantProductLine() bool   { return c.enableAll || c.productLine }
 func (c *blockConfig) wantPricePlan() bool     { return c.enableAll || c.pricePlan }
 func (c *blockConfig) wantPriceSchedule() bool { return c.enableAll || c.priceSchedule }
 func (c *blockConfig) wantPriceList() bool     { return c.enableAll || c.priceList }
-func (c *blockConfig) wantPlan() bool         { return c.enableAll || c.plan }
-func (c *blockConfig) wantSubscription() bool { return c.enableAll || c.subscription }
-func (c *blockConfig) wantCollection() bool   { return c.enableAll || c.collection }
-func (c *blockConfig) wantDisbursement() bool { return c.enableAll || c.disbursement }
-func (c *blockConfig) wantExpenditure() bool  { return c.enableAll || c.expenditure }
-func (c *blockConfig) wantResource() bool     { return c.enableAll || c.resource }
+func (c *blockConfig) wantPlan() bool          { return c.enableAll || c.plan }
+func (c *blockConfig) wantSubscription() bool  { return c.enableAll || c.subscription }
+func (c *blockConfig) wantCollection() bool    { return c.enableAll || c.collection }
+func (c *blockConfig) wantDisbursement() bool  { return c.enableAll || c.disbursement }
+func (c *blockConfig) wantExpenditure() bool   { return c.enableAll || c.expenditure }
+func (c *blockConfig) wantResource() bool      { return c.enableAll || c.resource }
 
 // 20260427-supplier-commitments — five new module toggles.
-func (c *blockConfig) wantSupplierContract() bool       { return c.enableAll || c.supplierContract }
-func (c *blockConfig) wantSupplierContractLine() bool   { return c.enableAll || c.supplierContractLine }
-func (c *blockConfig) wantProcurementRequest() bool     { return c.enableAll || c.procurementRequest }
-func (c *blockConfig) wantProcurementRequestLine() bool { return c.enableAll || c.procurementRequestLine }
-func (c *blockConfig) wantProcurement() bool            { return c.enableAll || c.procurement }
+func (c *blockConfig) wantSupplierContract() bool     { return c.enableAll || c.supplierContract }
+func (c *blockConfig) wantSupplierContractLine() bool { return c.enableAll || c.supplierContractLine }
+func (c *blockConfig) wantProcurementRequest() bool   { return c.enableAll || c.procurementRequest }
+func (c *blockConfig) wantProcurementRequestLine() bool {
+	return c.enableAll || c.procurementRequestLine
+}
+func (c *blockConfig) wantProcurement() bool { return c.enableAll || c.procurement }
 
 // SPS Wave 4 — six new module want() helpers.
 func (c *blockConfig) wantSupplierContractPriceSchedule() bool {

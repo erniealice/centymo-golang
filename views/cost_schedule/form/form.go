@@ -21,15 +21,15 @@ type Labels struct {
 
 // Data is the template data for the cost_schedule drawer form.
 type Data struct {
-	FormAction  string
-	IsEdit      bool
-	ID          string
-	Name        string
-	Description string
-	StartDate   string
-	EndDate     string
-	LocationID  string
-	Active      bool
-	Labels      Labels
+	FormAction   string
+	IsEdit       bool
+	ID           string
+	Name         string
+	Description  string
+	StartDate    string
+	EndDate      string
+	LocationID   string
+	Active       bool
+	Labels       Labels
 	CommonLabels any
 }

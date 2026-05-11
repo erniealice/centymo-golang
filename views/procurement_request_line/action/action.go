@@ -13,17 +13,17 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
 	"github.com/erniealice/centymo-golang/views/procurement_request_line/form"
 )
 
 // Deps holds dependencies for procurement request line action handlers.
 type Deps struct {
-	Routes                      centymo.ProcurementRequestRoutes
-	Labels                      centymo.ProcurementRequestLabels
-	CommonLabels                pyeza.CommonLabels
+	Routes                       centymo.ProcurementRequestRoutes
+	Labels                       centymo.ProcurementRequestLabels
+	CommonLabels                 pyeza.CommonLabels
 	CreateProcurementRequestLine func(ctx context.Context, req *procurementrequestlinepb.CreateProcurementRequestLineRequest) (*procurementrequestlinepb.CreateProcurementRequestLineResponse, error)
 	ReadProcurementRequestLine   func(ctx context.Context, req *procurementrequestlinepb.ReadProcurementRequestLineRequest) (*procurementrequestlinepb.ReadProcurementRequestLineResponse, error)
 	UpdateProcurementRequestLine func(ctx context.Context, req *procurementrequestlinepb.UpdateProcurementRequestLineRequest) (*procurementrequestlinepb.UpdateProcurementRequestLineResponse, error)

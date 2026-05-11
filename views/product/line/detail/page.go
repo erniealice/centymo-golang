@@ -32,17 +32,17 @@ type DetailViewDeps struct {
 // PageData holds the data for the line detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate     string
-	Line                map[string]any
-	Labels              centymo.ProductLineLabels
-	ActiveTab           string
-	TabItems            []pyeza.TabItem
+	ContentTemplate string
+	Line            map[string]any
+	Labels          centymo.ProductLineLabels
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
 	AuditTable      *types.TableConfig
 	AttachmentTable *types.TableConfig
 	AuditEntries    []auditlog.AuditEntryView
-	AuditHasNext        bool
-	AuditNextCursor     string
-	AuditHistoryURL     string
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
 }
 
 func lineToMap(line *linepb.Line) map[string]any {

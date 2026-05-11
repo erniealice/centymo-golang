@@ -15,10 +15,10 @@ import (
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
-	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
@@ -50,10 +50,10 @@ type ModuleDeps struct {
 	DeletePricePlan func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
 
 	// Plan detail page (schedule-scoped) — ProductPricePlan CRUD + supporting lists
-	ListProducts            func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	ListProductPlans        func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
-	ListProductVariants     func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
-	ListProductPricePlans   func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	ListProducts           func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductPlans       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProductVariants    func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ListProductPricePlans  func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
 	DeleteProductPricePlan func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
@@ -74,6 +74,9 @@ type ModuleDeps struct {
 	SubscriptionDetailURL        string
 	SubscriptionEditURL          string
 	SubscriptionDeleteURL        string
+	// 2026-05-11 — primary "Add Subscription" CTA on the engagements tab.
+	// Drawer is opened in price-plan-locked mode via query params.
+	SubscriptionAddURL string
 
 	// Attachment operations (price_schedule detail + nested plan detail)
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
@@ -99,13 +102,13 @@ type Module struct {
 	TabAction     view.View
 	PlanAdd       view.View
 
-	PlanDetail              view.View
-	PlanTabAction           view.View
-	PlanEdit                view.View
-	PlanDelete              view.View
-	PlanProductPriceAdd     view.View
-	PlanProductPriceEdit    view.View
-	PlanProductPriceDelete  view.View
+	PlanDetail             view.View
+	PlanTabAction          view.View
+	PlanEdit               view.View
+	PlanDelete             view.View
+	PlanProductPriceAdd    view.View
+	PlanProductPriceEdit   view.View
+	PlanProductPriceDelete view.View
 
 	AttachmentUpload     view.View
 	AttachmentDelete     view.View
@@ -188,6 +191,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		SubscriptionDetailURL:        deps.SubscriptionDetailURL,
 		SubscriptionEditURL:          deps.SubscriptionEditURL,
 		SubscriptionDeleteURL:        deps.SubscriptionDeleteURL,
+		SubscriptionAddURL:           deps.SubscriptionAddURL,
 	}
 	detailDeps.UploadFile = deps.UploadFile
 	detailDeps.ListAttachments = deps.ListAttachments

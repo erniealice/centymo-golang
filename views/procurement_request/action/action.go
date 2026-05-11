@@ -22,13 +22,13 @@ import (
 
 // Deps holds all dependencies for the procurement request action handlers.
 type Deps struct {
-	Routes                     centymo.ProcurementRequestRoutes
-	Labels                     centymo.ProcurementRequestLabels
-	CommonLabels               pyeza.CommonLabels
-	CreateProcurementRequest   func(ctx context.Context, req *procurementrequestpb.CreateProcurementRequestRequest) (*procurementrequestpb.CreateProcurementRequestResponse, error)
-	ReadProcurementRequest     func(ctx context.Context, req *procurementrequestpb.ReadProcurementRequestRequest) (*procurementrequestpb.ReadProcurementRequestResponse, error)
-	UpdateProcurementRequest   func(ctx context.Context, req *procurementrequestpb.UpdateProcurementRequestRequest) (*procurementrequestpb.UpdateProcurementRequestResponse, error)
-	DeleteProcurementRequest   func(ctx context.Context, req *procurementrequestpb.DeleteProcurementRequestRequest) (*procurementrequestpb.DeleteProcurementRequestResponse, error)
+	Routes                      centymo.ProcurementRequestRoutes
+	Labels                      centymo.ProcurementRequestLabels
+	CommonLabels                pyeza.CommonLabels
+	CreateProcurementRequest    func(ctx context.Context, req *procurementrequestpb.CreateProcurementRequestRequest) (*procurementrequestpb.CreateProcurementRequestResponse, error)
+	ReadProcurementRequest      func(ctx context.Context, req *procurementrequestpb.ReadProcurementRequestRequest) (*procurementrequestpb.ReadProcurementRequestResponse, error)
+	UpdateProcurementRequest    func(ctx context.Context, req *procurementrequestpb.UpdateProcurementRequestRequest) (*procurementrequestpb.UpdateProcurementRequestResponse, error)
+	DeleteProcurementRequest    func(ctx context.Context, req *procurementrequestpb.DeleteProcurementRequestRequest) (*procurementrequestpb.DeleteProcurementRequestResponse, error)
 	SetProcurementRequestStatus func(ctx context.Context, id, status string) error
 	ListSuppliers               func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)
 }

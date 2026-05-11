@@ -19,8 +19,8 @@ import (
 // not by user input. The only operator-driven action is Reverse (handled by
 // the detail package).
 type Deps struct {
-	Routes                  centymo.ExpenseRecognitionRoutes
-	Labels                  centymo.ExpenseRecognitionLabels
+	Routes                   centymo.ExpenseRecognitionRoutes
+	Labels                   centymo.ExpenseRecognitionLabels
 	DeleteExpenseRecognition func(ctx context.Context, req *expenserecognitionpb.DeleteExpenseRecognitionRequest) (*expenserecognitionpb.DeleteExpenseRecognitionResponse, error)
 }
 

@@ -9,6 +9,7 @@ func variantAttachmentConfig(deps *DetailViewDeps) *attachment.Config {
 	return &attachment.Config{
 		EntityType:         "variant",
 		BucketName:         "attachments",
+		RefreshURL:         deps.Routes.VariantTabActionURL,
 		UploadURL:          deps.Routes.VariantAttachmentUploadURL,
 		DeleteURL:          deps.Routes.VariantAttachmentDeleteURL,
 		PrimaryIDPathParam: "vid",

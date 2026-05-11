@@ -52,18 +52,18 @@ type ModuleDeps struct {
 
 // Module holds all constructed supplier_subscription views.
 type Module struct {
-	routes          centymo.SupplierSubscriptionRoutes
-	Dashboard       view.View
-	List            view.View
-	Table           view.View
-	Add             view.View
-	Edit            view.View
-	Delete          view.View
-	BulkDelete      view.View
-	SetStatus       view.View
-	BulkSetStatus   view.View
-	Detail          view.View
-	TabAction       view.View
+	routes           centymo.SupplierSubscriptionRoutes
+	Dashboard        view.View
+	List             view.View
+	Table            view.View
+	Add              view.View
+	Edit             view.View
+	Delete           view.View
+	BulkDelete       view.View
+	SetStatus        view.View
+	BulkSetStatus    view.View
+	Detail           view.View
+	TabAction        view.View
 	RecognizeExpense view.View
 }
 

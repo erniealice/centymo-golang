@@ -59,21 +59,21 @@ type ModuleDeps struct {
 
 // Module holds all constructed purchase order views.
 type Module struct {
-	routes                       centymo.ExpenditureRoutes
-	PurchaseOrderList            view.View
-	PurchaseOrderAdd             view.View
-	PurchaseOrderEdit            view.View
-	PurchaseOrderDelete          view.View
-	PurchaseOrderSetStatus       view.View
-	PurchaseOrderDetail          view.View
-	PurchaseOrderTabAction       view.View
-	PurchaseOrderLineItemTable   view.View
-	PurchaseOrderLineItemAdd     view.View
-	PurchaseOrderLineItemEdit    view.View
-	PurchaseOrderLineItemRemove  view.View
-	PurchaseOrderConfirmReceipt  view.View
-	AttachmentUpload             view.View
-	AttachmentDelete             view.View
+	routes                      centymo.ExpenditureRoutes
+	PurchaseOrderList           view.View
+	PurchaseOrderAdd            view.View
+	PurchaseOrderEdit           view.View
+	PurchaseOrderDelete         view.View
+	PurchaseOrderSetStatus      view.View
+	PurchaseOrderDetail         view.View
+	PurchaseOrderTabAction      view.View
+	PurchaseOrderLineItemTable  view.View
+	PurchaseOrderLineItemAdd    view.View
+	PurchaseOrderLineItemEdit   view.View
+	PurchaseOrderLineItemRemove view.View
+	PurchaseOrderConfirmReceipt view.View
+	AttachmentUpload            view.View
+	AttachmentDelete            view.View
 }
 
 // NewModule creates the purchase order module views.

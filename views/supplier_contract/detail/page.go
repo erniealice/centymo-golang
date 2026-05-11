@@ -91,13 +91,13 @@ type PageData struct {
 }
 
 const (
-	tabInfo            = "info"
-	tabLines           = "lines"
-	tabLinkedPOs       = "linked-pos"
-	tabLinkedExp       = "linked-expenditures"
-	tabPriceSchedules  = "price-schedules"
-	tabActivity        = "activity"
-	tabAttachments     = "attachments"
+	tabInfo           = "info"
+	tabLines          = "lines"
+	tabLinkedPOs      = "linked-pos"
+	tabLinkedExp      = "linked-expenditures"
+	tabPriceSchedules = "price-schedules"
+	tabActivity       = "activity"
+	tabAttachments    = "attachments"
 )
 
 // NewView creates the supplier contract detail page view.

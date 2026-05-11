@@ -30,8 +30,10 @@ type productWiring struct {
 	// Image + attachment ops
 	uploadImage      func(context.Context, string, string, []byte, string) error
 	uploadFile       func(context.Context, string, string, []byte, string) error
+	downloadFile     func(context.Context, string, string) ([]byte, error)
 	listAttachments  func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)
 	createAttachment func(context.Context, *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	readAttachment   func(context.Context, *attachmentpb.ReadAttachmentRequest) (*attachmentpb.ReadAttachmentResponse, error)
 	deleteAttachment func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	newAttachmentID  func() string
 	// Routes
@@ -107,8 +109,10 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 			UploadImage: w.uploadImage,
 			// Attachments
 			UploadFile:       w.uploadFile,
+			DownloadFile:     w.downloadFile,
 			ListAttachments:  w.listAttachments,
 			CreateAttachment: w.createAttachment,
+			ReadAttachment:   w.readAttachment,
 			DeleteAttachment: w.deleteAttachment,
 			NewID:            w.newAttachmentID,
 		}
@@ -193,7 +197,14 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 			productDeps.ListPlans = useCases.Plan.ListPlans
 		}
 		wireServiceDashboard(productDeps, useCases)
-		productmod.NewModule(productDeps).RegisterRoutes(ctx.Routes)
+		productModule := productmod.NewModule(productDeps)
+		productModule.RegisterRoutes(ctx.Routes)
+		// Attachment preview/download streams raw bytes — registered at the
+		// block layer because RegisterRoutes only handles view.View, not
+		// http.HandlerFunc. Mirrors the subscription pattern in subscription.go.
+		if w.downloadFile != nil && w.readAttachment != nil && w.productRoutes.AttachmentDownloadURL != "" {
+			handleFunc(ctx.Routes, "GET", w.productRoutes.AttachmentDownloadURL, productModule.AttachmentDownload)
+		}
 
 		// Inventory-flavoured product mount. Reuses the same product module
 		// (single view module, Option B from the dual-mount plan) but with

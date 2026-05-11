@@ -36,11 +36,11 @@ type DetailViewDeps struct {
 // PageData holds the data for the price list detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate     string
-	PriceList           *pricelistpb.PriceList
-	ActiveTab           string
-	TabItems            []pyeza.TabItem
-	ID                  string
+	ContentTemplate string
+	PriceList       *pricelistpb.PriceList
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
+	ID              string
 	PricesTable     *types.TableConfig
 	AttachmentTable *types.TableConfig
 	Labels          centymo.PriceListLabels
@@ -304,6 +304,7 @@ func buildPricesTable(ctx context.Context, deps *DetailViewDeps, priceListID str
 		ID:                   "price-products-table",
 		Columns:              columns,
 		Rows:                 rows,
+		RefreshURL:           route.ResolveURL(routes.TabActionURL, "id", priceListID, "tab", "prices"),
 		ShowSearch:           true,
 		ShowActions:          true,
 		DefaultSortColumn:    "product_name",

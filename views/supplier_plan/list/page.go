@@ -20,11 +20,11 @@ import (
 
 // ListViewDeps holds view dependencies for the supplier_plan list.
 type ListViewDeps struct {
-	Routes                     centymo.SupplierPlanRoutes
+	Routes                      centymo.SupplierPlanRoutes
 	GetSupplierPlanListPageData func(ctx context.Context, req *supplierplanpb.GetSupplierPlanListPageDataRequest) (*supplierplanpb.GetSupplierPlanListPageDataResponse, error)
-	Labels                     centymo.SupplierPlanLabels
-	CommonLabels               pyeza.CommonLabels
-	TableLabels                types.TableLabels
+	Labels                      centymo.SupplierPlanLabels
+	CommonLabels                pyeza.CommonLabels
+	TableLabels                 types.TableLabels
 }
 
 // PageData holds the data for the supplier_plan list page.

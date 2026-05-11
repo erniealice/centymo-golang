@@ -29,11 +29,11 @@ type Deps struct {
 	Labels       centymo.AccruedExpenseLabels
 	CommonLabels pyeza.CommonLabels
 
-	CreateAccruedExpense       func(ctx context.Context, req *accruedexpensepb.CreateAccruedExpenseRequest) (*accruedexpensepb.CreateAccruedExpenseResponse, error)
-	ReadAccruedExpense         func(ctx context.Context, req *accruedexpensepb.ReadAccruedExpenseRequest) (*accruedexpensepb.ReadAccruedExpenseResponse, error)
-	UpdateAccruedExpense       func(ctx context.Context, req *accruedexpensepb.UpdateAccruedExpenseRequest) (*accruedexpensepb.UpdateAccruedExpenseResponse, error)
-	DeleteAccruedExpense       func(ctx context.Context, req *accruedexpensepb.DeleteAccruedExpenseRequest) (*accruedexpensepb.DeleteAccruedExpenseResponse, error)
-	SetAccruedExpenseStatus    func(ctx context.Context, id, status string) error
+	CreateAccruedExpense    func(ctx context.Context, req *accruedexpensepb.CreateAccruedExpenseRequest) (*accruedexpensepb.CreateAccruedExpenseResponse, error)
+	ReadAccruedExpense      func(ctx context.Context, req *accruedexpensepb.ReadAccruedExpenseRequest) (*accruedexpensepb.ReadAccruedExpenseResponse, error)
+	UpdateAccruedExpense    func(ctx context.Context, req *accruedexpensepb.UpdateAccruedExpenseRequest) (*accruedexpensepb.UpdateAccruedExpenseResponse, error)
+	DeleteAccruedExpense    func(ctx context.Context, req *accruedexpensepb.DeleteAccruedExpenseRequest) (*accruedexpensepb.DeleteAccruedExpenseResponse, error)
+	SetAccruedExpenseStatus func(ctx context.Context, id, status string) error
 
 	// Dropdowns
 	ListSuppliers         func(ctx context.Context, req *supplierpb.ListSuppliersRequest) (*supplierpb.ListSuppliersResponse, error)

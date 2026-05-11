@@ -22,6 +22,9 @@ type Data struct {
 	SubscriptionID string
 	// SubscriptionName is the display name for the subscription.
 	SubscriptionName string
+	// ClientHint is the pre-formatted hint string shown beneath the
+	// read-only Subscription field, e.g. "Client: Acme Corp".
+	ClientHint string
 	// PlanName is the price-plan name (read-only context row).
 	PlanName string
 	// AsOfDate is the current as-of date value (YYYY-MM-DD).
@@ -36,6 +39,8 @@ type Data struct {
 	// CurrencyMismatch is true when the subscription currency differs from the
 	// client's billing currency; triggers the mismatch alert.
 	CurrencyMismatch bool
+	// Currency is the ISO currency code for this subscription's periods.
+	Currency string
 	// Labels carries all user-facing strings for this drawer.
 	Labels centymo.SubscriptionRevenueRunLabels
 	// CommonLabels carries shared UI strings (Save / Cancel / etc.).

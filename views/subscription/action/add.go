@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erniealice/pyeza-golang/view"
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
+	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/subscription/form"
@@ -25,10 +25,18 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
-			clientID := viewCtx.Request.URL.Query().Get("client_id")
-			clientName := viewCtx.Request.URL.Query().Get("client_name")
-			clientBillingCurrency := viewCtx.Request.URL.Query().Get("billing_currency")
+			q := viewCtx.Request.URL.Query()
+			clientID := q.Get("client_id")
+			clientName := q.Get("client_name")
+			clientBillingCurrency := q.Get("billing_currency")
 			clientLocked := clientID != ""
+
+			// 2026-05-11 — opposite-context entrypoint (price-plan detail
+			// "Add Subscription" primary action). When price_plan_id is
+			// present, lock the Plan picker and pre-fill its display label.
+			pricePlanID := q.Get("price_plan_id")
+			pricePlanLabel := q.Get("plan_label")
+			pricePlanLocked := pricePlanID != ""
 
 			tz := pyezatypes.LocationFromContext(ctx)
 			// Default new engagement to "today, 00:00" in the operator's TZ.
@@ -50,6 +58,9 @@ func NewAddAction(deps *Deps) view.View {
 				ClientLabel:           clientName,
 				ClientLocked:          clientLocked,
 				ClientBillingCurrency: clientBillingCurrency,
+				PricePlanID:           pricePlanID,
+				PlanLabel:             pricePlanLabel,
+				PricePlanLocked:       pricePlanLocked,
 				Code:                  generateCode(),
 				DateStartDate:         defaultDate,
 				DateStartISO:          defaultISO,

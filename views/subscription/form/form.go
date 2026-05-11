@@ -87,6 +87,11 @@ type Data struct {
 	ClientLabel     string
 	PlanLabel       string
 	ClientLocked    bool
+	// PricePlanLocked is the mirror of ClientLocked for callers that open
+	// the drawer with a fixed price plan context (e.g. the price-plan detail
+	// page's "Add Subscription" primary action). When true, the Plan field
+	// renders as readonly+hidden instead of an auto-complete picker.
+	PricePlanLocked bool
 	// ClientBillingCurrency is the selected client's billing currency, passed to
 	// the plan search URL so the grouped auto-complete only shows plans in that
 	// currency. Empty = no currency filter.

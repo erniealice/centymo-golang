@@ -143,8 +143,8 @@ type PageData struct {
 	RecognizeFromExpenditureURL string
 
 	// SPS P10 — Accrual tab data
-	AccrualTable        *types.TableConfig
-	AccrualDetailURL    string
+	AccrualTable     *types.TableConfig
+	AccrualDetailURL string
 
 	AttachmentTable *types.TableConfig
 }
@@ -153,20 +153,20 @@ type PageData struct {
 func expenditureToMap(e *expenditurepb.Expenditure) map[string]any {
 	currency := e.GetCurrency()
 	return map[string]any{
-		"id":                      e.GetId(),
-		"name":                    e.GetName(),
-		"reference_number":        e.GetReferenceNumber(),
-		"expenditure_type":        e.GetExpenditureType(),
-		"total_amount":            types.MoneyCell(float64(e.GetTotalAmount()), currency, true),
-		"currency":                currency,
-		"status":                  e.GetStatus(),
-		"notes":                   e.GetNotes(),
-		"active":                  e.GetActive(),
-		"date_created_string":     e.GetDateCreatedString(),
-		"date_modified_string":    e.GetDateModifiedString(),
-		"supplier_contract_id":    e.GetSupplierContractId(),
-		"expense_recognition_id":  e.GetExpenseRecognitionId(),
-		"accrued_expense_id":      e.GetAccruedExpenseId(),
+		"id":                     e.GetId(),
+		"name":                   e.GetName(),
+		"reference_number":       e.GetReferenceNumber(),
+		"expenditure_type":       e.GetExpenditureType(),
+		"total_amount":           types.MoneyCell(float64(e.GetTotalAmount()), currency, true),
+		"currency":               currency,
+		"status":                 e.GetStatus(),
+		"notes":                  e.GetNotes(),
+		"active":                 e.GetActive(),
+		"date_created_string":    e.GetDateCreatedString(),
+		"date_modified_string":   e.GetDateModifiedString(),
+		"supplier_contract_id":   e.GetSupplierContractId(),
+		"expense_recognition_id": e.GetExpenseRecognitionId(),
+		"accrued_expense_id":     e.GetAccruedExpenseId(),
 	}
 }
 
@@ -724,10 +724,11 @@ func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tab
 	types.ApplyColumnStyles(columns, rows)
 
 	return &types.TableConfig{
-		ID:      "line-items-table",
-		Columns: columns,
-		Rows:    rows,
-		Labels:  tableLabels,
+		ID:         "line-items-table",
+		Columns:    columns,
+		Rows:       rows,
+		Labels:     tableLabels,
+		RefreshURL: route.ResolveURL(routes.LineItemTableURL, "id", expenditureID),
 		EmptyState: types.TableEmptyState{
 			Title:   "No line items",
 			Message: "Add line items to this expense.",
@@ -885,9 +886,9 @@ func populateRecognition(ctx context.Context, deps *DetailViewDeps, exp *expendi
 
 // populateAccruals loads AccruedExpense rows linked to this expenditure.
 // Two link paths are merged:
-//   1. expenditure.accrued_expense_id — bills that settled an accrual.
-//   2. accrued_expense.supplier_contract_id == expenditure.supplier_contract_id
-//      — sibling accruals on the same contract (helpful read-side context).
+//  1. expenditure.accrued_expense_id — bills that settled an accrual.
+//  2. accrued_expense.supplier_contract_id == expenditure.supplier_contract_id
+//     — sibling accruals on the same contract (helpful read-side context).
 //
 // When both are empty, the Accrual tab renders an empty state.
 func populateAccruals(ctx context.Context, deps *DetailViewDeps, exp *expenditurepb.Expenditure, pageData *PageData) {

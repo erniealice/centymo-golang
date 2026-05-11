@@ -71,8 +71,8 @@ type OptionSelection struct {
 	DataType      string
 	FieldName     string // "option_value_<optionID>" (select types) or "option_free_<optionID>" (free types)
 	Values        []OptionValueChoice
-	Selected      string  // for edit mode — value ID for select types
-	SelectedLabel string  // for edit mode — raw text/number for free types
+	Selected      string // for edit mode — value ID for select types
+	SelectedLabel string // for edit mode — raw text/number for free types
 	MinValue      *float64
 	MaxValue      *float64
 	Required      bool
@@ -144,11 +144,11 @@ type DetailViewDeps struct {
 	//     → price_plan (for amount/currency/name)
 	//       → price_schedule (for date range + rate-card name)
 	//         → plan (for fallback package name)
-	ListProductPlans     func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProductPlans      func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
 	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
-	ListPricePlans       func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
-	ListPriceSchedules   func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
-	ListPlans            func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListPricePlans        func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
+	ListPriceSchedules    func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	ListPlans             func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 
 	// Storage uploader (for file content → object storage)
 	UploadImage func(ctx context.Context, bucketName, objectKey string, content []byte, contentType string) error

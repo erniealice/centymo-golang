@@ -12,9 +12,9 @@
 // The drawer form templates are now the source of truth — the option values
 // are hardcoded as <option value="..."> tags in the HTML. Each enum has a
 // drift test below that:
-//   1. Reads the template HTML via os.ReadFile.
-//   2. Extracts the <option value="..."> values for the named <select>.
-//   3. Asserts the set equals the proto enum's _name map (minus UNSPECIFIED).
+//  1. Reads the template HTML via os.ReadFile.
+//  2. Extracts the <option value="..."> values for the named <select>.
+//  3. Asserts the set equals the proto enum's _name map (minus UNSPECIFIED).
 //
 // When someone adds a proto enum value (e.g. BILLING_KIND_MILESTONE), the
 // matching test fails until the template is updated. No html parser

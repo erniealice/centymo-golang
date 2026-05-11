@@ -3,12 +3,13 @@
 // render inside the parent's Settlements tab — no standalone list view.
 //
 // MAIN-THREAD WIRING NOTE (block.go):
-//   Block-level wiring is intentionally DEFERRED to the main thread. Routes
-//   share AccruedExpenseRoutes with the parent module. The integrator must
-//   construct ModuleDeps from the espyna AccruedExpenseSettlement use case
-//   group and call NewModule + RegisterRoutes inside the centymo block.go
-//   entry that already wires the parent accrued_expense module.
-//   See plan §7 (Phase P10) for the integrator checklist.
+//
+//	Block-level wiring is intentionally DEFERRED to the main thread. Routes
+//	share AccruedExpenseRoutes with the parent module. The integrator must
+//	construct ModuleDeps from the espyna AccruedExpenseSettlement use case
+//	group and call NewModule + RegisterRoutes inside the centymo block.go
+//	entry that already wires the parent accrued_expense module.
+//	See plan §7 (Phase P10) for the integrator checklist.
 package accrued_expense_settlement
 
 import (

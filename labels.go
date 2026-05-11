@@ -7,7 +7,6 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 )
 
-
 // ---------------------------------------------------------------------------
 // Inventory labels
 // ---------------------------------------------------------------------------
@@ -650,14 +649,14 @@ type RevenueSettingsLabels struct {
 // except the user-visible VALUE "Invoice Run" (supplied by lyngua).
 type RevenueRunLabels struct {
 	AppLabel       string                      `json:"appLabel"`
-	Queue          RevenueRunQueueLabels        `json:"queue"`
-	List           RevenueRunListLabels         `json:"list"`
-	Detail         RevenueRunDetailLabels       `json:"detail"`
-	StatusBadges   RevenueRunStatusBadgeLabels  `json:"statusBadges"`
-	Actions        RevenueRunActionLabels       `json:"actions"`
-	ScopeKind      RevenueRunScopeKindLabels    `json:"scopeKind"`
-	AttemptOutcome RevenueRunOutcomeLabels      `json:"attemptOutcome"`
-	Errors         RevenueRunErrorLabels        `json:"errors"`
+	Queue          RevenueRunQueueLabels       `json:"queue"`
+	List           RevenueRunListLabels        `json:"list"`
+	Detail         RevenueRunDetailLabels      `json:"detail"`
+	StatusBadges   RevenueRunStatusBadgeLabels `json:"statusBadges"`
+	Actions        RevenueRunActionLabels      `json:"actions"`
+	ScopeKind      RevenueRunScopeKindLabels   `json:"scopeKind"`
+	AttemptOutcome RevenueRunOutcomeLabels     `json:"attemptOutcome"`
+	Errors         RevenueRunErrorLabels       `json:"errors"`
 	// ToastBatchSuccess is the message shown after a Surface B batch-run
 	// submission. Supports the standard {{.Created}}/{{.Skipped}}/{{.Errored}}
 	// placeholders, substituted Go-side before the toast is dispatched.
@@ -669,13 +668,13 @@ type RevenueRunLabels struct {
 
 // RevenueRunQueueLabels holds copy for the workspace-queue page (Surface B).
 type RevenueRunQueueLabels struct {
-	Title        string `json:"title"`
-	Subtitle     string `json:"subtitle"`
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
 	// AsOfDateLabel is the label for the AsOfDate date picker above the table.
-	AsOfDateLabel string `json:"asOfDateLabel"`
-	Columns  RevenueRunQueueColumnLabels `json:"columns"`
-	Empty    RevenueRunQueueEmptyLabels  `json:"empty"`
-	Bulk     RevenueRunQueueBulkLabels   `json:"bulk"`
+	AsOfDateLabel string                      `json:"asOfDateLabel"`
+	Columns       RevenueRunQueueColumnLabels `json:"columns"`
+	Empty         RevenueRunQueueEmptyLabels  `json:"empty"`
+	Bulk          RevenueRunQueueBulkLabels   `json:"bulk"`
 }
 
 type RevenueRunQueueColumnLabels struct {
@@ -701,11 +700,11 @@ type RevenueRunQueueBulkLabels struct {
 
 // RevenueRunListLabels holds copy for the run history list page (Surface D).
 type RevenueRunListLabels struct {
-	Title    string `json:"title"`
-	Subtitle string `json:"subtitle"`
-	Columns  RevenueRunListColumnLabels       `json:"columns"`
-	Empty    RevenueRunListEmptyLabels         `json:"empty"`
-	Filters  RevenueRunListFilterLabels        `json:"filterLabels"`
+	Title    string                     `json:"title"`
+	Subtitle string                     `json:"subtitle"`
+	Columns  RevenueRunListColumnLabels `json:"columns"`
+	Empty    RevenueRunListEmptyLabels  `json:"empty"`
+	Filters  RevenueRunListFilterLabels `json:"filterLabels"`
 }
 
 type RevenueRunListColumnLabels struct {
@@ -740,23 +739,23 @@ type RevenueRunListFilterLabels struct {
 
 // RevenueRunDetailLabels holds copy for the run detail page (Surface D).
 type RevenueRunDetailLabels struct {
-	Title      string                          `json:"title"`
-	Tabs       RevenueRunDetailTabLabels       `json:"tabs"`
-	Summary    RevenueRunSummaryLabels         `json:"summary"`
-	Selections RevenueRunSelectionsTabLabels   `json:"selections"`
-	Results    RevenueRunResultsTabLabels      `json:"results"`
-	Invoices   RevenueRunInvoicesTabLabels     `json:"invoices"`
+	Title      string                        `json:"title"`
+	Tabs       RevenueRunDetailTabLabels     `json:"tabs"`
+	Summary    RevenueRunSummaryLabels       `json:"summary"`
+	Selections RevenueRunSelectionsTabLabels `json:"selections"`
+	Results    RevenueRunResultsTabLabels    `json:"results"`
+	Invoices   RevenueRunInvoicesTabLabels   `json:"invoices"`
 }
 
 // RevenueRunSelectionsTabLabels holds column headers and empty-state copy for
 // the Selections tab on the run detail page.
 type RevenueRunSelectionsTabLabels struct {
-	ColSubscription  string `json:"colSubscription"`
-	ColPeriodStart   string `json:"colPeriodStart"`
-	ColPeriodEnd     string `json:"colPeriodEnd"`
-	ColPeriodMarker  string `json:"colPeriodMarker"`
-	EmptyTitle       string `json:"emptyTitle"`
-	EmptyMessage     string `json:"emptyMessage"`
+	ColSubscription string `json:"colSubscription"`
+	ColPeriodStart  string `json:"colPeriodStart"`
+	ColPeriodEnd    string `json:"colPeriodEnd"`
+	ColPeriodMarker string `json:"colPeriodMarker"`
+	EmptyTitle      string `json:"emptyTitle"`
+	EmptyMessage    string `json:"emptyMessage"`
 }
 
 // RevenueRunResultsTabLabels holds column headers and empty-state copy for
@@ -775,23 +774,23 @@ type RevenueRunResultsTabLabels struct {
 // the Invoices tab on the run detail page. Also holds the coming-soon label
 // for the Audit History tab.
 type RevenueRunInvoicesTabLabels struct {
-	ColReference    string `json:"colReference"`
-	ColDate         string `json:"colDate"`
-	ColAmount       string `json:"colAmount"`
-	ColStatus       string `json:"colStatus"`
-	EmptyTitle      string `json:"emptyTitle"`
-	EmptyMessage    string `json:"emptyMessage"`
+	ColReference string `json:"colReference"`
+	ColDate      string `json:"colDate"`
+	ColAmount    string `json:"colAmount"`
+	ColStatus    string `json:"colStatus"`
+	EmptyTitle   string `json:"emptyTitle"`
+	EmptyMessage string `json:"emptyMessage"`
 	// AuditHistoryComingSoon is the coming-soon message for the Audit History tab.
 	AuditHistoryComingSoon string `json:"auditHistoryComingSoon"`
 }
 
 type RevenueRunDetailTabLabels struct {
-	Summary        string `json:"summary"`
-	Selections     string `json:"selections"`
-	Results        string `json:"results"`
-	Invoices       string `json:"invoices"`
-	AuditHistory   string `json:"auditHistory"`
-	Attachments    string `json:"attachments"`
+	Summary      string `json:"summary"`
+	Selections   string `json:"selections"`
+	Results      string `json:"results"`
+	Invoices     string `json:"invoices"`
+	AuditHistory string `json:"auditHistory"`
+	Attachments  string `json:"attachments"`
 }
 
 type RevenueRunSummaryLabels struct {
@@ -815,12 +814,12 @@ type RevenueRunStatusBadgeLabels struct {
 
 // RevenueRunActionLabels holds labels for interactive actions on run rows/pages.
 type RevenueRunActionLabels struct {
-	Run                  string `json:"run"`
-	ReRunFailed          string `json:"reRunFailed"`
+	Run                   string `json:"run"`
+	ReRunFailed           string `json:"reRunFailed"`
 	ReRunFailedComingSoon string `json:"reRunFailedComingSoon"`
-	ViewRun              string `json:"viewRun"`
-	ViewClient           string `json:"viewClient"`
-	ViewSubscription     string `json:"viewSubscription"`
+	ViewRun               string `json:"viewRun"`
+	ViewClient            string `json:"viewClient"`
+	ViewSubscription      string `json:"viewSubscription"`
 }
 
 // RevenueRunScopeKindLabels holds display labels for each scope kind value.
@@ -839,14 +838,14 @@ type RevenueRunOutcomeLabels struct {
 
 // RevenueRunErrorLabels holds error message strings for the revenue-run module.
 type RevenueRunErrorLabels struct {
-	CapExceeded          string `json:"capExceeded"`
-	PermissionDenied     string `json:"permissionDenied"`
-	UseCaseUnavailable   string `json:"useCaseUnavailable"`
-	InvalidSelection     string `json:"invalidSelection"`
-	IdempotencyConflict  string `json:"idempotencyConflict"`
-	ClientMismatch       string `json:"clientMismatch"`
-	WorkspaceMismatch    string `json:"workspaceMismatch"`
-	TamperedPeriod       string `json:"tamperedPeriod"`
+	CapExceeded         string `json:"capExceeded"`
+	PermissionDenied    string `json:"permissionDenied"`
+	UseCaseUnavailable  string `json:"useCaseUnavailable"`
+	InvalidSelection    string `json:"invalidSelection"`
+	IdempotencyConflict string `json:"idempotencyConflict"`
+	ClientMismatch      string `json:"clientMismatch"`
+	WorkspaceMismatch   string `json:"workspaceMismatch"`
+	TamperedPeriod      string `json:"tamperedPeriod"`
 	// RunAllMatchingNotImplemented is shown when the operator attempts
 	// "run for all matching" before FilterToken signing is wired (Wave 3 stub).
 	RunAllMatchingNotImplemented string `json:"runAllMatchingNotImplemented"`
@@ -1150,13 +1149,13 @@ type ProductFormLabels struct {
 	TrackingModeValueInfo map[string]string `json:"trackingModeValueInfo,omitempty"`
 
 	// Tax section labels (Phase 5)
-	SectionTax                   string `json:"sectionTax"`
-	TaxTreatmentLabel            string `json:"taxTreatmentLabel"`
-	TaxTreatmentPlaceholder      string `json:"taxTreatmentPlaceholder"`
-	TaxTreatmentInfo             string `json:"taxTreatmentInfo"`
-	WithholdingClassLabel        string `json:"withholdingClassLabel"`
-	WithholdingClassPlaceholder  string `json:"withholdingClassPlaceholder"`
-	WithholdingClassInfo         string `json:"withholdingClassInfo"`
+	SectionTax                  string `json:"sectionTax"`
+	TaxTreatmentLabel           string `json:"taxTreatmentLabel"`
+	TaxTreatmentPlaceholder     string `json:"taxTreatmentPlaceholder"`
+	TaxTreatmentInfo            string `json:"taxTreatmentInfo"`
+	WithholdingClassLabel       string `json:"withholdingClassLabel"`
+	WithholdingClassPlaceholder string `json:"withholdingClassPlaceholder"`
+	WithholdingClassInfo        string `json:"withholdingClassInfo"`
 }
 
 type ProductActionLabels struct {
@@ -1958,26 +1957,26 @@ type PurchaseDashboardLabels struct {
 // ExpenseDashboardLabels holds translatable strings for the expense
 // dashboard (expenditure_type=expense surface).
 type ExpenseDashboardLabels struct {
-	Title              string `json:"title"`
-	Subtitle           string `json:"subtitle"`
-	StatPendingApproval string `json:"statPendingApproval"`
-	StatApprovedMTD     string `json:"statApprovedMTD"`
-	StatReimbursable    string `json:"statReimbursable"`
-	StatCategoriesUsed  string `json:"statCategoriesUsed"`
-	WidgetByCategory    string `json:"widgetByCategory"`
-	WidgetTopCategory   string `json:"widgetTopCategory"`
-	WidgetRecent        string `json:"widgetRecent"`
-	QuickNew            string `json:"quickNew"`
-	QuickApprove        string `json:"quickApprove"`
-	QuickReimburse      string `json:"quickReimburse"`
+	Title                 string `json:"title"`
+	Subtitle              string `json:"subtitle"`
+	StatPendingApproval   string `json:"statPendingApproval"`
+	StatApprovedMTD       string `json:"statApprovedMTD"`
+	StatReimbursable      string `json:"statReimbursable"`
+	StatCategoriesUsed    string `json:"statCategoriesUsed"`
+	WidgetByCategory      string `json:"widgetByCategory"`
+	WidgetTopCategory     string `json:"widgetTopCategory"`
+	WidgetRecent          string `json:"widgetRecent"`
+	QuickNew              string `json:"quickNew"`
+	QuickApprove          string `json:"quickApprove"`
+	QuickReimburse        string `json:"quickReimburse"`
 	QuickCategorySettings string `json:"quickCategorySettings"`
-	ViewAll             string `json:"viewAll"`
-	EmptyRecentTitle    string `json:"emptyRecentTitle"`
-	EmptyRecentDesc     string `json:"emptyRecentDesc"`
-	EmptyCategories     string `json:"emptyCategories"`
-	NewExpense          string `json:"newExpense"`
-	ColCategory         string `json:"colCategory"`
-	ColTotal            string `json:"colTotal"`
+	ViewAll               string `json:"viewAll"`
+	EmptyRecentTitle      string `json:"emptyRecentTitle"`
+	EmptyRecentDesc       string `json:"emptyRecentDesc"`
+	EmptyCategories       string `json:"emptyCategories"`
+	NewExpense            string `json:"newExpense"`
+	ColCategory           string `json:"colCategory"`
+	ColTotal              string `json:"colTotal"`
 }
 
 // ExpenditureCategoryLabels holds translatable strings for the expenditure
@@ -2605,42 +2604,42 @@ type PurchaseOrderReceiptLabels struct {
 
 // CollectionLabels holds all translatable strings for the collection module.
 type CollectionLabels struct {
-	Page      CollectionPageLabels      `json:"page"`
-	Buttons   CollectionButtonLabels    `json:"buttons"`
-	Columns   CollectionColumnLabels    `json:"columns"`
-	Empty     CollectionEmptyLabels     `json:"empty"`
-	Form      CollectionFormLabels      `json:"form"`
-	Actions   CollectionActionLabels    `json:"actions"`
-	Bulk      CollectionBulkLabels      `json:"bulkActions"`
-	Detail    CollectionDetailLabels    `json:"detail"`
-	Status    CollectionStatusLabels    `json:"status"`
-	Confirm   CollectionConfirmLabels   `json:"confirm"`
-	Errors    CollectionErrorLabels     `json:"errors"`
-	Dashboard CashDashboardLabels       `json:"dashboard"`
+	Page      CollectionPageLabels    `json:"page"`
+	Buttons   CollectionButtonLabels  `json:"buttons"`
+	Columns   CollectionColumnLabels  `json:"columns"`
+	Empty     CollectionEmptyLabels   `json:"empty"`
+	Form      CollectionFormLabels    `json:"form"`
+	Actions   CollectionActionLabels  `json:"actions"`
+	Bulk      CollectionBulkLabels    `json:"bulkActions"`
+	Detail    CollectionDetailLabels  `json:"detail"`
+	Status    CollectionStatusLabels  `json:"status"`
+	Confirm   CollectionConfirmLabels `json:"confirm"`
+	Errors    CollectionErrorLabels   `json:"errors"`
+	Dashboard CashDashboardLabels     `json:"dashboard"`
 }
 
 // CashDashboardLabels holds translatable strings for the cash (collection)
 // dashboard page. The "Cash" wording is preferred at the dashboard surface
 // because the sidebar key is "cash"; underlying entity is still Collection.
 type CashDashboardLabels struct {
-	Title             string `json:"title"`
-	Subtitle          string `json:"subtitle"`
-	StatPending       string `json:"statPending"`
-	StatOverdue       string `json:"statOverdue"`
+	Title              string `json:"title"`
+	Subtitle           string `json:"subtitle"`
+	StatPending        string `json:"statPending"`
+	StatOverdue        string `json:"statOverdue"`
 	StatCollectedToday string `json:"statCollectedToday"`
 	StatCollectedWeek  string `json:"statCollectedWeek"`
-	WidgetDailyTrend  string `json:"widgetDailyTrend"`
-	WidgetByMode      string `json:"widgetByMode"`
-	WidgetRecent      string `json:"widgetRecent"`
-	QuickRecord       string `json:"quickRecord"`
-	QuickReconcile    string `json:"quickReconcile"`
-	QuickAging        string `json:"quickAging"`
-	QuickMarkCleared  string `json:"quickMarkCleared"`
-	ViewAll           string `json:"viewAll"`
-	EmptyRecentTitle  string `json:"emptyRecentTitle"`
-	EmptyRecentDesc   string `json:"emptyRecentDesc"`
-	NewCollection     string `json:"newCollection"`
-	CollectionUpdated string `json:"collectionUpdated"`
+	WidgetDailyTrend   string `json:"widgetDailyTrend"`
+	WidgetByMode       string `json:"widgetByMode"`
+	WidgetRecent       string `json:"widgetRecent"`
+	QuickRecord        string `json:"quickRecord"`
+	QuickReconcile     string `json:"quickReconcile"`
+	QuickAging         string `json:"quickAging"`
+	QuickMarkCleared   string `json:"quickMarkCleared"`
+	ViewAll            string `json:"viewAll"`
+	EmptyRecentTitle   string `json:"emptyRecentTitle"`
+	EmptyRecentDesc    string `json:"emptyRecentDesc"`
+	NewCollection      string `json:"newCollection"`
+	CollectionUpdated  string `json:"collectionUpdated"`
 }
 
 type CollectionPageLabels struct {
@@ -3794,20 +3793,20 @@ type PlanConfirmLabels struct {
 
 // SubscriptionLabels holds all translatable strings for the subscription module.
 type SubscriptionLabels struct {
-	Page      SubscriptionPageLabels      `json:"page"`
-	Buttons   SubscriptionButtonLabels    `json:"buttons"`
-	Columns   SubscriptionColumnLabels    `json:"columns"`
-	Empty     SubscriptionEmptyLabels     `json:"empty"`
-	Form      SubscriptionFormLabels      `json:"form"`
-	Actions   SubscriptionActionLabels    `json:"actions"`
-	Bulk      SubscriptionBulkLabels      `json:"bulkActions"`
-	Status    SubscriptionStatusLabels    `json:"status"`
-	Detail    SubscriptionDetailLabels    `json:"detail"`
-	Tabs      SubscriptionTabLabels       `json:"tabs"`
-	Invoices   SubscriptionInvoicesLabels    `json:"invoices"`
-	Recognize  SubscriptionRecognizeLabels   `json:"recognize"`
-	RevenueRun SubscriptionRevenueRunLabels  `json:"revenueRun"`
-	Milestone  SubscriptionMilestoneLabels   `json:"milestone"`
+	Page       SubscriptionPageLabels       `json:"page"`
+	Buttons    SubscriptionButtonLabels     `json:"buttons"`
+	Columns    SubscriptionColumnLabels     `json:"columns"`
+	Empty      SubscriptionEmptyLabels      `json:"empty"`
+	Form       SubscriptionFormLabels       `json:"form"`
+	Actions    SubscriptionActionLabels     `json:"actions"`
+	Bulk       SubscriptionBulkLabels       `json:"bulkActions"`
+	Status     SubscriptionStatusLabels     `json:"status"`
+	Detail     SubscriptionDetailLabels     `json:"detail"`
+	Tabs       SubscriptionTabLabels        `json:"tabs"`
+	Invoices   SubscriptionInvoicesLabels   `json:"invoices"`
+	Recognize  SubscriptionRecognizeLabels  `json:"recognize"`
+	RevenueRun SubscriptionRevenueRunLabels `json:"revenueRun"`
+	Milestone  SubscriptionMilestoneLabels  `json:"milestone"`
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / §9 — Operations
 	// tab on the subscription detail page + retroactive spawn drawer copy.
 	Operations SubscriptionOperationsLabels `json:"operations"`
@@ -4005,6 +4004,19 @@ type SubscriptionInvoicesLabels struct {
 	RunInvoicesAction   string `json:"runInvoicesAction"`
 	PoolRecognizeAction string `json:"poolRecognizeAction"`
 	RequestUsageAction  string `json:"requestUsageAction"`
+
+	// 2026-05-11 run-invoices-polish Phase 3 — per-row action labels surfaced
+	// on the Invoices tab table (view, send email, print, edit).
+	RowActions SubscriptionInvoicesRowActionsLabels `json:"rowActions"`
+}
+
+// SubscriptionInvoicesRowActionsLabels holds per-row action button labels for
+// the Invoices tab on a subscription detail page.
+type SubscriptionInvoicesRowActionsLabels struct {
+	View      string `json:"view"`
+	SendEmail string `json:"sendEmail"`
+	Print     string `json:"print"`
+	Edit      string `json:"edit"`
 }
 
 // SubscriptionRecognizeLabels holds drawer-form labels for the
@@ -4089,13 +4101,16 @@ type SubscriptionRecognizeLabels struct {
 // `subscription.revenueRun`. Drops the engagement column that the client-level
 // drawer (Surface A) carries — per-sub context makes it redundant.
 type SubscriptionRevenueRunLabels struct {
-	Title    string `json:"title"`
+	Title string `json:"title"`
 	// Subtitle is templated with the subscription name — e.g. "Run invoices for {{.Name}}"
 	Subtitle string `json:"subtitle"`
 
 	// Read-only context row labels (subscription name + plan name)
-	SubscriptionLabel string `json:"subscriptionLabel"`
-	PlanLabel         string `json:"planLabel"`
+	SubscriptionLabel  string `json:"subscriptionLabel"`
+	PlanLabel          string `json:"planLabel"`
+	// ClientHintTemplate is shown as a hint beneath the subscription field.
+	// Use {client} as the substitution token. E.g. "Client: {client}".
+	ClientHintTemplate string `json:"clientHintTemplate"`
 
 	AsOfDateLabel         string `json:"asOfDateLabel"`
 	AsOfDateHint          string `json:"asOfDateHint"`
@@ -4112,16 +4127,20 @@ type SubscriptionRevenueRunLabels struct {
 	EmptyTitle            string `json:"emptyTitle"`
 	EmptyMessage          string `json:"emptyMessage"`
 
+	// IntroMessage is shown at the top of the drawer body as an info alert.
+	IntroMessage string `json:"introMessage"`
+
 	// Footer buttons
-	GenerateButton      string `json:"generateButton"`
-	GenerateButtonCount string `json:"generateButtonCount"`
-	CancelButton        string `json:"cancelButton"`
+	GenerateButton          string `json:"generateButton"`
+	GenerateButtonCountOne  string `json:"generateButtonCountOne"`
+	GenerateButtonCountMany string `json:"generateButtonCountMany"`
+	CancelButton            string `json:"cancelButton"`
 
 	// Post-submit feedback
-	ToastSuccess  string `json:"toastSuccess"`
-	ToastSkipped  string `json:"toastSkipped"`
-	ToastErrored  string `json:"toastErrored"`
-	ViewRunLink   string `json:"viewRunLink"`
+	ToastSuccess string `json:"toastSuccess"`
+	ToastSkipped string `json:"toastSkipped"`
+	ToastErrored string `json:"toastErrored"`
+	ViewRunLink  string `json:"viewRunLink"`
 
 	// Inline error messages
 	Errors SubscriptionRevenueRunErrorLabels `json:"errors"`
@@ -4651,15 +4670,15 @@ type PricePlanTabLabels2 struct {
 // and confirm-delete copy for the price-plan detail "Subscriptions" tab —
 // professional tier overrides this block to use the engagement vocabulary.
 type PricePlanSubscriptionsSectionLabels struct {
-	ColumnName             string `json:"columnName"`
-	ColumnClient           string `json:"columnClient"`
-	ColumnPlan             string `json:"columnPlan"`
-	ColumnStartDate        string `json:"columnStartDate"`
-	ColumnEndDate          string `json:"columnEndDate"`
-	EmptyTitle             string `json:"emptyTitle"`
-	EmptyMessage           string `json:"emptyMessage"`
-	ConfirmDeleteTitle     string `json:"confirmDeleteTitle"`
-	ConfirmDeleteMessage   string `json:"confirmDeleteMessage"`
+	ColumnName           string `json:"columnName"`
+	ColumnClient         string `json:"columnClient"`
+	ColumnPlan           string `json:"columnPlan"`
+	ColumnStartDate      string `json:"columnStartDate"`
+	ColumnEndDate        string `json:"columnEndDate"`
+	EmptyTitle           string `json:"emptyTitle"`
+	EmptyMessage         string `json:"emptyMessage"`
+	ConfirmDeleteTitle   string `json:"confirmDeleteTitle"`
+	ConfirmDeleteMessage string `json:"confirmDeleteMessage"`
 }
 
 type PricePlanConfirmLabels struct {
@@ -5189,21 +5208,21 @@ type PriceScheduleDetailLabels struct {
 	ProductField              string `json:"productField"`        // drawer product select label ("Product" / "Service")
 
 	// Plans table columns (price-schedule-detail plans tab).
-	PlanColumnPlan         string `json:"planColumnPlan"`
-	PlanColumnAmount       string `json:"planColumnAmount"`
-	PlanColumnBillingKind  string `json:"planColumnBillingKind"`
-	PlanColumnAmountBasis  string `json:"planColumnAmountBasis"`
-	PlanColumnCadence      string `json:"planColumnCadence"`
-	PlanColumnDuration     string `json:"planColumnDuration"` // deprecated; replaced by PlanColumnCadence
-	PlanColumnStatus       string `json:"planColumnStatus"`
+	PlanColumnPlan        string `json:"planColumnPlan"`
+	PlanColumnAmount      string `json:"planColumnAmount"`
+	PlanColumnBillingKind string `json:"planColumnBillingKind"`
+	PlanColumnAmountBasis string `json:"planColumnAmountBasis"`
+	PlanColumnCadence     string `json:"planColumnCadence"`
+	PlanColumnDuration    string `json:"planColumnDuration"` // deprecated; replaced by PlanColumnCadence
+	PlanColumnStatus      string `json:"planColumnStatus"`
 
 	// Cadence cell prefixes per BillingKind (rendered as "{prefix} {cycle}" or
 	// just "{prefix}" when no cycle applies).
-	CadenceOneTime    string `json:"cadenceOneTime"`    // e.g. "One-time payment"
-	CadenceRecurring  string `json:"cadenceRecurring"`  // e.g. "Every {cycle}"
-	CadenceContract   string `json:"cadenceContract"`   // e.g. "Contract — billed every {cycle}"
-	CadenceMilestone  string `json:"cadenceMilestone"`  // e.g. "Per milestone"
-	CadenceAdHoc      string `json:"cadenceAdHoc"`      // e.g. "Per occurrence"
+	CadenceOneTime     string `json:"cadenceOneTime"`   // e.g. "One-time payment"
+	CadenceRecurring   string `json:"cadenceRecurring"` // e.g. "Every {cycle}"
+	CadenceContract    string `json:"cadenceContract"`  // e.g. "Contract — billed every {cycle}"
+	CadenceMilestone   string `json:"cadenceMilestone"` // e.g. "Per milestone"
+	CadenceAdHoc       string `json:"cadenceAdHoc"`     // e.g. "Per occurrence"
 	CadenceUnspecified string `json:"cadenceUnspecified"`
 
 	// Compact labels for the BillingKind / AmountBasis cells in the plans table.
@@ -5556,16 +5575,16 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			Code:                      "Code",
 			CodePlaceholder:           "e.g. A3K7PXR",
 			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
-			CustomerInfo:  "The client this subscription is billed to.",
-			PlanInfo:      "The price plan this subscription follows. Determines amount, billing cycle, and any per-product prices.",
-			CodeInfo:      "Short reference used on invoices and receipts. Leave blank to auto-generate.",
+			CustomerInfo:     "The client this subscription is billed to.",
+			PlanInfo:         "The price plan this subscription follows. Determines amount, billing cycle, and any per-product prices.",
+			CodeInfo:         "Short reference used on invoices and receipts. Leave blank to auto-generate.",
 			StartDateInfo:    "First day the subscription is active. Billing cycles are counted from this date.",
 			EndDateInfo:      "Last day the subscription is active. Leave blank for open-ended.",
 			StartDateRowHelp: "Start date and time affect which plans are available below — only plans active in this date range can be selected.",
 			EndDateRowHelp:   "End date and time control when recurring invoices stop being issued for this subscription. Leave blank for open-ended billing.",
-			StartTimeInfo: "Optional time of day in the operator's display timezone. Leave blank for start of day (00:00).",
-			EndTimeInfo:   "Optional time of day in the operator's display timezone. Leave blank for end of day (23:59).",
-			NotesInfo:     "Internal remarks — shown on detail pages but not on customer-facing documents.",
+			StartTimeInfo:    "Optional time of day in the operator's display timezone. Leave blank for start of day (00:00).",
+			EndTimeInfo:      "Optional time of day in the operator's display timezone. Leave blank for end of day (23:59).",
+			NotesInfo:        "Internal remarks — shown on detail pages but not on customer-facing documents.",
 			// 2026-04-27 plan-client-scope plan §5.1 / §7 — grouped picker headers.
 			PlanGroupForClient:    "For {{.ClientName}}",
 			PlanGroupGeneral:      "General packages",
@@ -5635,12 +5654,20 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			RunInvoicesAction:   "Run Invoices",
 			PoolRecognizeAction: "Recognize Revenue",
 			RequestUsageAction:  "Request Usage",
+			// 2026-05-11 run-invoices-polish Phase 3 — row action defaults.
+			RowActions: SubscriptionInvoicesRowActionsLabels{
+				View:      "View",
+				SendEmail: "Send email",
+				Print:     "Print",
+				Edit:      "Edit",
+			},
 		},
 		RevenueRun: SubscriptionRevenueRunLabels{
 			Title:                 "Invoice Run",
 			Subtitle:              "Run invoices for {{.Name}}",
 			SubscriptionLabel:     "Engagement",
 			PlanLabel:             "Plan",
+			ClientHintTemplate:    "Client: {client}",
 			AsOfDateLabel:         "As of date",
 			AsOfDateHint:          "Only periods ending on or before this date will be included.",
 			BillThroughTodayLabel: "Bill through today",
@@ -5651,9 +5678,11 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			GroupCurrencyMismatch: "Currency mismatch — cannot run",
 			EmptyTitle:            "Nothing to invoice",
 			EmptyMessage:          "This subscription has no pending billing periods as of the selected date.",
-			GenerateButton:        "Generate",
-			GenerateButtonCount:   "Generate ({{.Count}})",
-			CancelButton:          "Cancel",
+			IntroMessage:            "Generate invoices for the eligible billing periods of this engagement. Select the periods you want to bill below — each will produce a separate invoice.",
+			GenerateButton:          "Generate",
+			GenerateButtonCountOne:  "Generate {count} Invoice",
+			GenerateButtonCountMany: "Generate {count} Invoices",
+			CancelButton:            "Cancel",
 			ToastSuccess:          "Invoice run complete — {{.Created}} invoice(s) created.",
 			ToastSkipped:          "Invoice run complete — all periods skipped.",
 			ToastErrored:          "Invoice run completed with errors — {{.Errored}} period(s) failed.",
@@ -6608,18 +6637,18 @@ type ProcurementRequestTabLabels struct {
 }
 
 type ProcurementRequestDetailLabels struct {
-	InfoSection     string `json:"infoSection"`
-	RequestNumber   string `json:"requestNumber"`
-	Status          string `json:"status"`
-	Requester       string `json:"requester"`
-	Supplier        string `json:"supplier"`
-	Currency        string `json:"currency"`
-	EstimatedTotal  string `json:"estimatedTotal"`
-	NeededBy        string `json:"neededBy"`
-	DateCreated     string `json:"dateCreated"`
-	ApprovedBy      string `json:"approvedBy"`
-	Justification   string `json:"justification"`
-	TabAttachments  string `json:"tabAttachments"`
+	InfoSection    string `json:"infoSection"`
+	RequestNumber  string `json:"requestNumber"`
+	Status         string `json:"status"`
+	Requester      string `json:"requester"`
+	Supplier       string `json:"supplier"`
+	Currency       string `json:"currency"`
+	EstimatedTotal string `json:"estimatedTotal"`
+	NeededBy       string `json:"neededBy"`
+	DateCreated    string `json:"dateCreated"`
+	ApprovedBy     string `json:"approvedBy"`
+	Justification  string `json:"justification"`
+	TabAttachments string `json:"tabAttachments"`
 }
 
 type ProcurementRequestLineLabels struct {
@@ -8141,27 +8170,27 @@ type SupplierSubscriptionColumnLabels struct {
 }
 
 type SupplierSubscriptionTabLabels struct {
-	Info                  string `json:"info"`
-	CostPlan              string `json:"costPlan"`
-	LinkedExpenditures    string `json:"linkedExpenditures"`
-	LinkedPurchaseOrders  string `json:"linkedPurchaseOrders"`
-	LinkedRecognitions    string `json:"linkedRecognitions"`
-	Activity              string `json:"activity"`
+	Info                 string `json:"info"`
+	CostPlan             string `json:"costPlan"`
+	LinkedExpenditures   string `json:"linkedExpenditures"`
+	LinkedPurchaseOrders string `json:"linkedPurchaseOrders"`
+	LinkedRecognitions   string `json:"linkedRecognitions"`
+	Activity             string `json:"activity"`
 }
 
 type SupplierSubscriptionDetailLabels struct {
-	InfoSection  string `json:"infoSection"`
-	Name         string `json:"name"`
-	Supplier     string `json:"supplier"`
-	CostPlan     string `json:"costPlan"`
-	Code         string `json:"code"`
-	StartDate    string `json:"startDate"`
-	EndDate      string `json:"endDate"`
-	Active       string `json:"active"`
-	Inactive     string `json:"inactive"`
-	AutoRenew    string `json:"autoRenew"`
-	Location     string `json:"location"`
-	Notes        string `json:"notes"`
+	InfoSection string `json:"infoSection"`
+	Name        string `json:"name"`
+	Supplier    string `json:"supplier"`
+	CostPlan    string `json:"costPlan"`
+	Code        string `json:"code"`
+	StartDate   string `json:"startDate"`
+	EndDate     string `json:"endDate"`
+	Active      string `json:"active"`
+	Inactive    string `json:"inactive"`
+	AutoRenew   string `json:"autoRenew"`
+	Location    string `json:"location"`
+	Notes       string `json:"notes"`
 }
 
 type SupplierSubscriptionFormLabels struct {
@@ -8171,37 +8200,37 @@ type SupplierSubscriptionFormLabels struct {
 	SectionSchedule       string `json:"sectionSchedule"`
 	SectionNotes          string `json:"sectionNotes"`
 
-	Name                     string `json:"name"`
-	NamePlaceholder          string `json:"namePlaceholder"`
-	Code                     string `json:"code"`
-	CodePlaceholder          string `json:"codePlaceholder"`
-	Supplier                 string `json:"supplier"`
-	SupplierPlaceholder      string `json:"supplierPlaceholder"`
-	SupplierSearch           string `json:"supplierSearch"`
-	SupplierNoResults        string `json:"supplierNoResults"`
-	CostPlan                 string `json:"costPlan"`
-	CostPlanPlaceholder      string `json:"costPlanPlaceholder"`
-	CostPlanSearch           string `json:"costPlanSearch"`
-	CostPlanNoResults        string `json:"costPlanNoResults"`
-	AutoRenew                string `json:"autoRenew"`
-	Active                   string `json:"active"`
-	StartDate                string `json:"startDate"`
-	StartTime                string `json:"startTime"`
-	EndDate                  string `json:"endDate"`
-	EndTime                  string `json:"endTime"`
-	TimePlaceholder          string `json:"timePlaceholder"`
-	Notes                    string `json:"notes"`
-	NotesPlaceholder         string `json:"notesPlaceholder"`
-	CurrencyError            string `json:"currencyError"`
-	EditLockedReason         string `json:"editLockedReason"`
+	Name                string `json:"name"`
+	NamePlaceholder     string `json:"namePlaceholder"`
+	Code                string `json:"code"`
+	CodePlaceholder     string `json:"codePlaceholder"`
+	Supplier            string `json:"supplier"`
+	SupplierPlaceholder string `json:"supplierPlaceholder"`
+	SupplierSearch      string `json:"supplierSearch"`
+	SupplierNoResults   string `json:"supplierNoResults"`
+	CostPlan            string `json:"costPlan"`
+	CostPlanPlaceholder string `json:"costPlanPlaceholder"`
+	CostPlanSearch      string `json:"costPlanSearch"`
+	CostPlanNoResults   string `json:"costPlanNoResults"`
+	AutoRenew           string `json:"autoRenew"`
+	Active              string `json:"active"`
+	StartDate           string `json:"startDate"`
+	StartTime           string `json:"startTime"`
+	EndDate             string `json:"endDate"`
+	EndTime             string `json:"endTime"`
+	TimePlaceholder     string `json:"timePlaceholder"`
+	Notes               string `json:"notes"`
+	NotesPlaceholder    string `json:"notesPlaceholder"`
+	CurrencyError       string `json:"currencyError"`
+	EditLockedReason    string `json:"editLockedReason"`
 }
 
 type SupplierSubscriptionActionLabels struct {
-	View       string `json:"view"`
-	Edit       string `json:"edit"`
-	Delete     string `json:"delete"`
-	Activate   string `json:"activate"`
-	Deactivate string `json:"deactivate"`
+	View         string `json:"view"`
+	Edit         string `json:"edit"`
+	Delete       string `json:"delete"`
+	Activate     string `json:"activate"`
+	Deactivate   string `json:"deactivate"`
 	NoPermission string `json:"noPermission"`
 }
 
@@ -8296,34 +8325,34 @@ func DefaultSupplierSubscriptionLabels() SupplierSubscriptionLabels {
 			Notes:       "Notes",
 		},
 		Form: SupplierSubscriptionFormLabels{
-			SectionIdentification:   "Identification",
-			SectionRelationships:    "Relationships",
-			SectionConfiguration:    "Configuration",
-			SectionSchedule:         "Schedule",
-			SectionNotes:            "Notes",
-			Name:                    "Name",
-			NamePlaceholder:         "e.g. Cloud Hosting — AWS",
-			Code:                    "Code",
-			CodePlaceholder:         "e.g. SUB-2026-001",
-			Supplier:                "Supplier",
-			SupplierPlaceholder:     "Search supplier…",
-			SupplierSearch:          "Search suppliers",
-			SupplierNoResults:       "No suppliers found",
-			CostPlan:                "Cost Plan",
-			CostPlanPlaceholder:     "Search cost plan…",
-			CostPlanSearch:          "Search cost plans",
-			CostPlanNoResults:       "No cost plans found",
-			AutoRenew:               "Auto-renew",
-			Active:                  "Active",
-			StartDate:               "Start Date",
-			StartTime:               "Start Time",
-			EndDate:                 "End Date",
-			EndTime:                 "End Time",
-			TimePlaceholder:         "HH:MM",
-			Notes:                   "Notes",
-			NotesPlaceholder:        "Internal notes about this subscription",
-			CurrencyError:           "The selected cost plan's billing currency does not match the workspace functional currency.",
-			EditLockedReason:        "This subscription has linked expenditures and cannot be fully edited.",
+			SectionIdentification: "Identification",
+			SectionRelationships:  "Relationships",
+			SectionConfiguration:  "Configuration",
+			SectionSchedule:       "Schedule",
+			SectionNotes:          "Notes",
+			Name:                  "Name",
+			NamePlaceholder:       "e.g. Cloud Hosting — AWS",
+			Code:                  "Code",
+			CodePlaceholder:       "e.g. SUB-2026-001",
+			Supplier:              "Supplier",
+			SupplierPlaceholder:   "Search supplier…",
+			SupplierSearch:        "Search suppliers",
+			SupplierNoResults:     "No suppliers found",
+			CostPlan:              "Cost Plan",
+			CostPlanPlaceholder:   "Search cost plan…",
+			CostPlanSearch:        "Search cost plans",
+			CostPlanNoResults:     "No cost plans found",
+			AutoRenew:             "Auto-renew",
+			Active:                "Active",
+			StartDate:             "Start Date",
+			StartTime:             "Start Time",
+			EndDate:               "End Date",
+			EndTime:               "End Time",
+			TimePlaceholder:       "HH:MM",
+			Notes:                 "Notes",
+			NotesPlaceholder:      "Internal notes about this subscription",
+			CurrencyError:         "The selected cost plan's billing currency does not match the workspace functional currency.",
+			EditLockedReason:      "This subscription has linked expenditures and cannot be fully edited.",
 		},
 		Actions: SupplierSubscriptionActionLabels{
 			View:         "View",
@@ -8416,9 +8445,9 @@ type CostScheduleColumnLabels struct {
 }
 
 type CostScheduleTabLabels struct {
-	Info       string `json:"info"`
-	CostPlans  string `json:"costPlans"`
-	Activity   string `json:"activity"`
+	Info      string `json:"info"`
+	CostPlans string `json:"costPlans"`
+	Activity  string `json:"activity"`
 }
 
 type CostScheduleDetailLabels struct {
@@ -8642,10 +8671,10 @@ type SupplierPlanColumnLabels struct {
 }
 
 type SupplierPlanTabLabels struct {
-	Info            string `json:"info"`
-	CostPlans       string `json:"costPlans"`
-	ProductPlans    string `json:"productPlans"`
-	Activity        string `json:"activity"`
+	Info         string `json:"info"`
+	CostPlans    string `json:"costPlans"`
+	ProductPlans string `json:"productPlans"`
+	Activity     string `json:"activity"`
 }
 
 type SupplierPlanDetailLabels struct {
@@ -8852,13 +8881,13 @@ type CostPlanPageLabels struct {
 }
 
 type CostPlanColumnLabels struct {
-	Name            string `json:"name"`
-	BillingKind     string `json:"billingKind"`
-	Amount          string `json:"amount"`
-	Currency        string `json:"currency"`
-	SupplierPlan    string `json:"supplierPlan"`
-	CostSchedule    string `json:"costSchedule"`
-	Active          string `json:"active"`
+	Name         string `json:"name"`
+	BillingKind  string `json:"billingKind"`
+	Amount       string `json:"amount"`
+	Currency     string `json:"currency"`
+	SupplierPlan string `json:"supplierPlan"`
+	CostSchedule string `json:"costSchedule"`
+	Active       string `json:"active"`
 }
 
 type CostPlanTabLabels struct {
@@ -8869,18 +8898,18 @@ type CostPlanTabLabels struct {
 }
 
 type CostPlanDetailLabels struct {
-	InfoSection     string `json:"infoSection"`
-	Name            string `json:"name"`
-	BillingKind     string `json:"billingKind"`
-	AmountBasis     string `json:"amountBasis"`
-	Amount          string `json:"amount"`
-	Currency        string `json:"currency"`
-	BillingCycle    string `json:"billingCycle"`
-	DefaultTerm     string `json:"defaultTerm"`
-	SupplierPlan    string `json:"supplierPlan"`
-	CostSchedule    string `json:"costSchedule"`
-	Active          string `json:"active"`
-	Inactive        string `json:"inactive"`
+	InfoSection  string `json:"infoSection"`
+	Name         string `json:"name"`
+	BillingKind  string `json:"billingKind"`
+	AmountBasis  string `json:"amountBasis"`
+	Amount       string `json:"amount"`
+	Currency     string `json:"currency"`
+	BillingCycle string `json:"billingCycle"`
+	DefaultTerm  string `json:"defaultTerm"`
+	SupplierPlan string `json:"supplierPlan"`
+	CostSchedule string `json:"costSchedule"`
+	Active       string `json:"active"`
+	Inactive     string `json:"inactive"`
 }
 
 type CostPlanFormLabels struct {
@@ -9027,43 +9056,43 @@ func DefaultCostPlanLabels() CostPlanLabels {
 			Inactive:     "Inactive",
 		},
 		Form: CostPlanFormLabels{
-			SectionIdentification:   "Identification",
-			SectionRelationships:    "Relationships",
-			SectionConfiguration:    "Configuration",
-			SectionSchedule:         "Schedule",
-			SectionNotes:            "Notes",
-			Name:                    "Name",
-			NamePlaceholder:         "e.g. AWS EC2 Monthly",
-			Description:             "Description",
-			DescPlaceholder:         "Internal notes about this cost plan",
-			SupplierPlan:            "Supplier Plan",
-			SupplierPlanPlaceholder: "Select supplier plan",
-			CostSchedule:            "Cost Schedule",
-			CostSchedulePlaceholder: "Select cost schedule",
-			BillingKind:             "Billing Kind",
-			AmountBasis:             "Amount Basis",
-			Amount:                  "Amount",
-			AmountPlaceholder:       "0.00",
-			Currency:                "Currency",
-			CurrencyPlaceholder:     "e.g. PHP",
-			BillingCycle:            "Billing Cycle",
-			BillingCyclePlaceholder: "e.g. 1",
-			DefaultTerm:             "Default Term",
-			DefaultTermPlaceholder:  "e.g. 12",
-			Active:                  "Active",
-			BillingKindOneTime:      "One Time",
-			BillingKindRecurring:    "Recurring",
-			BillingKindContract:     "Contract",
-			BillingKindUsageBased:   "Usage Based",
-			BillingKindAdHoc:        "Ad Hoc",
-			AmountBasisPerCycle:          "Per Cycle",
-			AmountBasisTotalPackage:      "Total Package",
-			AmountBasisDerivedFromLines:  "Derived From Lines",
-			AmountBasisPerOccurrence:     "Per Occurrence",
-			DurationUnitDay:   "Day",
-			DurationUnitWeek:  "Week",
-			DurationUnitMonth: "Month",
-			DurationUnitYear:  "Year",
+			SectionIdentification:       "Identification",
+			SectionRelationships:        "Relationships",
+			SectionConfiguration:        "Configuration",
+			SectionSchedule:             "Schedule",
+			SectionNotes:                "Notes",
+			Name:                        "Name",
+			NamePlaceholder:             "e.g. AWS EC2 Monthly",
+			Description:                 "Description",
+			DescPlaceholder:             "Internal notes about this cost plan",
+			SupplierPlan:                "Supplier Plan",
+			SupplierPlanPlaceholder:     "Select supplier plan",
+			CostSchedule:                "Cost Schedule",
+			CostSchedulePlaceholder:     "Select cost schedule",
+			BillingKind:                 "Billing Kind",
+			AmountBasis:                 "Amount Basis",
+			Amount:                      "Amount",
+			AmountPlaceholder:           "0.00",
+			Currency:                    "Currency",
+			CurrencyPlaceholder:         "e.g. PHP",
+			BillingCycle:                "Billing Cycle",
+			BillingCyclePlaceholder:     "e.g. 1",
+			DefaultTerm:                 "Default Term",
+			DefaultTermPlaceholder:      "e.g. 12",
+			Active:                      "Active",
+			BillingKindOneTime:          "One Time",
+			BillingKindRecurring:        "Recurring",
+			BillingKindContract:         "Contract",
+			BillingKindUsageBased:       "Usage Based",
+			BillingKindAdHoc:            "Ad Hoc",
+			AmountBasisPerCycle:         "Per Cycle",
+			AmountBasisTotalPackage:     "Total Package",
+			AmountBasisDerivedFromLines: "Derived From Lines",
+			AmountBasisPerOccurrence:    "Per Occurrence",
+			DurationUnitDay:             "Day",
+			DurationUnitWeek:            "Week",
+			DurationUnitMonth:           "Month",
+			DurationUnitYear:            "Year",
 		},
 		Actions: CostPlanActionLabels{
 			View:         "View",
@@ -9143,12 +9172,12 @@ type SupplierProductPlanPageLabels struct {
 }
 
 type SupplierProductPlanColumnLabels struct {
-	SupplierPlan    string `json:"supplierPlan"`
-	Product         string `json:"product"`
-	ProductVariant  string `json:"productVariant"`
-	SupplierSKU     string `json:"supplierSku"`
-	SupplierUnit    string `json:"supplierUnit"`
-	Active          string `json:"active"`
+	SupplierPlan   string `json:"supplierPlan"`
+	Product        string `json:"product"`
+	ProductVariant string `json:"productVariant"`
+	SupplierSKU    string `json:"supplierSku"`
+	SupplierUnit   string `json:"supplierUnit"`
+	Active         string `json:"active"`
 }
 
 type SupplierProductPlanTabLabels struct {
@@ -9175,17 +9204,17 @@ type SupplierProductPlanFormLabels struct {
 	SectionSchedule       string `json:"sectionSchedule"`
 	SectionNotes          string `json:"sectionNotes"`
 
-	SupplierPlan            string `json:"supplierPlan"`
-	SupplierPlanPlaceholder string `json:"supplierPlanPlaceholder"`
-	Product                 string `json:"product"`
-	ProductPlaceholder      string `json:"productPlaceholder"`
-	ProductVariant          string `json:"productVariant"`
+	SupplierPlan              string `json:"supplierPlan"`
+	SupplierPlanPlaceholder   string `json:"supplierPlanPlaceholder"`
+	Product                   string `json:"product"`
+	ProductPlaceholder        string `json:"productPlaceholder"`
+	ProductVariant            string `json:"productVariant"`
 	ProductVariantPlaceholder string `json:"productVariantPlaceholder"`
-	SupplierSKU             string `json:"supplierSku"`
-	SupplierSKUPlaceholder  string `json:"supplierSkuPlaceholder"`
-	SupplierUnit            string `json:"supplierUnit"`
-	SupplierUnitPlaceholder string `json:"supplierUnitPlaceholder"`
-	Active                  string `json:"active"`
+	SupplierSKU               string `json:"supplierSku"`
+	SupplierSKUPlaceholder    string `json:"supplierSkuPlaceholder"`
+	SupplierUnit              string `json:"supplierUnit"`
+	SupplierUnitPlaceholder   string `json:"supplierUnitPlaceholder"`
+	Active                    string `json:"active"`
 }
 
 type SupplierProductPlanActionLabels struct {
@@ -9349,11 +9378,11 @@ func DefaultSupplierProductPlanLabels() SupplierProductPlanLabels {
 
 // SupplierProductCostPlanLabels holds translatable strings for the inline cost plan line editor.
 type SupplierProductCostPlanLabels struct {
-	Form    SupplierProductCostPlanFormLabels    `json:"form"`
-	Columns SupplierProductCostPlanColumnLabels  `json:"columns"`
-	Empty   SupplierProductCostPlanEmptyLabels   `json:"empty"`
-	Actions SupplierProductCostPlanActionLabels  `json:"actions"`
-	Errors  SupplierProductCostPlanErrorLabels   `json:"errors"`
+	Form    SupplierProductCostPlanFormLabels   `json:"form"`
+	Columns SupplierProductCostPlanColumnLabels `json:"columns"`
+	Empty   SupplierProductCostPlanEmptyLabels  `json:"empty"`
+	Actions SupplierProductCostPlanActionLabels `json:"actions"`
+	Errors  SupplierProductCostPlanErrorLabels  `json:"errors"`
 }
 
 type SupplierProductCostPlanFormLabels struct {
@@ -9373,10 +9402,10 @@ type SupplierProductCostPlanFormLabels struct {
 	Active                         string `json:"active"`
 
 	// BillingTreatment option labels
-	TreatmentRecurring          string `json:"treatmentRecurring"`
-	TreatmentOneTimeInitial     string `json:"treatmentOneTimeInitial"`
-	TreatmentUsageBased         string `json:"treatmentUsageBased"`
-	TreatmentMinimumCommitment  string `json:"treatmentMinimumCommitment"`
+	TreatmentRecurring         string `json:"treatmentRecurring"`
+	TreatmentOneTimeInitial    string `json:"treatmentOneTimeInitial"`
+	TreatmentUsageBased        string `json:"treatmentUsageBased"`
+	TreatmentMinimumCommitment string `json:"treatmentMinimumCommitment"`
 }
 
 type SupplierProductCostPlanColumnLabels struct {

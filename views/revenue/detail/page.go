@@ -54,25 +54,25 @@ type PaymentInfo struct {
 // PageData holds the data for the sales detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate     string
-	Revenue             map[string]any
-	Labels              centymo.RevenueLabels
-	ActiveTab           string
-	TabItems            []pyeza.TabItem
-	LineItemTable       *types.TableConfig
-	LineItemAddURL      string
-	LineItemDiscountURL string
-	TotalAmount         types.TableCell
-	Payment             *PaymentInfo
-	PaymentTable        *types.TableConfig
-	PaymentAddURL       string
-	TotalPaid           string
-	RemainingBalance    string
+	ContentTemplate      string
+	Revenue              map[string]any
+	Labels               centymo.RevenueLabels
+	ActiveTab            string
+	TabItems             []pyeza.TabItem
+	LineItemTable        *types.TableConfig
+	LineItemAddURL       string
+	LineItemDiscountURL  string
+	TotalAmount          types.TableCell
+	Payment              *PaymentInfo
+	PaymentTable         *types.TableConfig
+	PaymentAddURL        string
+	TotalPaid            string
+	RemainingBalance     string
 	PaymentStatus        string
 	PaymentStatusVariant string
-	AuditTable         *types.TableConfig
-	AttachmentTable    *types.TableConfig
-	InvoiceDownloadURL string
+	AuditTable           *types.TableConfig
+	AttachmentTable      *types.TableConfig
+	InvoiceDownloadURL   string
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
 	AuditHasNext    bool
@@ -510,10 +510,11 @@ func buildPaymentTable(payments []map[string]any, l centymo.RevenueLabels, table
 	types.ApplyColumnStyles(columns, rows)
 
 	return &types.TableConfig{
-		ID:      "payment-table",
-		Columns: columns,
-		Rows:    rows,
-		Labels:  tableLabels,
+		ID:         "payment-table",
+		Columns:    columns,
+		Rows:       rows,
+		Labels:     tableLabels,
+		RefreshURL: route.ResolveURL(routes.PaymentTableURL, "id", revenueID),
 		EmptyState: types.TableEmptyState{
 			Title:   l.Detail.PaymentEmptyTitle,
 			Message: l.Detail.PaymentEmptyMessage,

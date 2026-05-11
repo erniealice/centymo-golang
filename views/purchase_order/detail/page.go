@@ -44,17 +44,17 @@ type DetailViewDeps struct {
 // PageData holds the data for the purchase order detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate    string
-	PurchaseOrder      map[string]any
-	Labels             centymo.ExpenditureLabels
-	ActiveTab          string
-	TabItems           []pyeza.TabItem
-	LineItemTable      *types.TableConfig
-	LineItemAddURL     string
-	TotalAmount        string
-	SetStatusURL       string
-	ConfirmReceiptURL  string
-	AttachmentTable    *types.TableConfig
+	ContentTemplate   string
+	PurchaseOrder     map[string]any
+	Labels            centymo.ExpenditureLabels
+	ActiveTab         string
+	TabItems          []pyeza.TabItem
+	LineItemTable     *types.TableConfig
+	LineItemAddURL    string
+	TotalAmount       string
+	SetStatusURL      string
+	ConfirmReceiptURL string
+	AttachmentTable   *types.TableConfig
 }
 
 // purchaseOrderToMap converts a PurchaseOrder proto to a map for template use.
@@ -193,10 +193,11 @@ func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, c
 	types.ApplyColumnStyles(columns, rows)
 
 	return &types.TableConfig{
-		ID:      "po-line-items-table",
-		Columns: columns,
-		Rows:    rows,
-		Labels:  tableLabels,
+		ID:         "po-line-items-table",
+		Columns:    columns,
+		Rows:       rows,
+		Labels:     tableLabels,
+		RefreshURL: route.ResolveURL(routes.PurchaseOrderLineItemTableURL, "id", purchaseOrderID),
 		EmptyState: types.TableEmptyState{
 			Title:   "No line items",
 			Message: "This purchase order has no line items yet.",

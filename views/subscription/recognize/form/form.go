@@ -7,37 +7,37 @@ package form
 // Built from centymo.SubscriptionRecognizeLabels + centymo.SubscriptionInvoicesLabels
 // at handler time so the template only touches a single ".Labels.X" path per string.
 type Labels struct {
-	Title                 string
-	Subtitle              string
-	ContextSection        string
-	ClientLabel           string
-	PlanLabel             string
-	QuantityLabel         string
-	PeriodSection         string
-	PeriodStart           string
-	PeriodEnd             string
-	RevenueDate           string
-	LineItemsSection      string
-	ColumnDescription     string
-	ColumnUnitPrice       string
-	ColumnQuantity        string
-	ColumnLineTotal       string
-	ColumnTreatment       string
-	TotalLabel            string
-	RemoveLine            string
-	TreatmentRecurring    string
-	TreatmentFirstCycle   string
-	TreatmentUsageBased   string
-	TreatmentOneTime      string
-	NotesLabel            string
-	NotesPlaceholder      string
-	Generate              string
-	Cancel                string
-	Timezone              string
-	StartDateInfo         string
-	EndDateInfo           string
-	StartTimeInfo         string
-	EndTimeInfo           string
+	Title               string
+	Subtitle            string
+	ContextSection      string
+	ClientLabel         string
+	PlanLabel           string
+	QuantityLabel       string
+	PeriodSection       string
+	PeriodStart         string
+	PeriodEnd           string
+	RevenueDate         string
+	LineItemsSection    string
+	ColumnDescription   string
+	ColumnUnitPrice     string
+	ColumnQuantity      string
+	ColumnLineTotal     string
+	ColumnTreatment     string
+	TotalLabel          string
+	RemoveLine          string
+	TreatmentRecurring  string
+	TreatmentFirstCycle string
+	TreatmentUsageBased string
+	TreatmentOneTime    string
+	NotesLabel          string
+	NotesPlaceholder    string
+	Generate            string
+	Cancel              string
+	Timezone            string
+	StartDateInfo       string
+	EndDateInfo         string
+	StartTimeInfo       string
+	EndTimeInfo         string
 
 	// Blocking error banners.
 	CurrencyMismatchError   string
@@ -70,13 +70,13 @@ type Labels struct {
 // Mirrors revenuepb.PreviewTaxLine but exposes only fields the template
 // actually renders.
 type TaxPreviewLine struct {
-	Direction       string // "SURCHARGE" or "WITHHOLDING"
-	DirectionLabel  string // direction-level label (e.g. "VAT / Sales Tax")
-	KindLabel       string // kind-level label (e.g. "VAT (Standard)"); falls back to DirectionLabel
-	TaxKindSnapshot string
-	RegulatoryCode  string
-	RateDisplay     string // e.g. "12.00%"
-	TaxAmount       int64
+	Direction        string // "SURCHARGE" or "WITHHOLDING"
+	DirectionLabel   string // direction-level label (e.g. "VAT / Sales Tax")
+	KindLabel        string // kind-level label (e.g. "VAT (Standard)"); falls back to DirectionLabel
+	TaxKindSnapshot  string
+	RegulatoryCode   string
+	RateDisplay      string // e.g. "12.00%"
+	TaxAmount        int64
 	TaxAmountDisplay string
 }
 
@@ -155,8 +155,8 @@ type Data struct {
 	Warnings []string
 
 	// Tax preview (Phase 5) — populated from ComputeTaxes dry-run output.
-	TaxPreviewLines  []TaxPreviewLine
-	GrandTotalAmount int64
+	TaxPreviewLines   []TaxPreviewLine
+	GrandTotalAmount  int64
 	GrandTotalDisplay string
 
 	// 2026-04-29 milestone-billing plan §5 / Phase D — milestone fields.

@@ -33,9 +33,9 @@ type DetailViewDeps struct {
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
-	ReadSupplierContractPriceSchedule       func(ctx context.Context, req *scpspb.ReadSupplierContractPriceScheduleRequest) (*scpspb.ReadSupplierContractPriceScheduleResponse, error)
-	ListSupplierContractPriceScheduleLines  func(ctx context.Context, req *scpslpb.ListSupplierContractPriceScheduleLinesRequest) (*scpslpb.ListSupplierContractPriceScheduleLinesResponse, error)
-	ListSupplierContractLines               func(ctx context.Context, req *suppliercontractlinepb.ListSupplierContractLinesRequest) (*suppliercontractlinepb.ListSupplierContractLinesResponse, error)
+	ReadSupplierContractPriceSchedule      func(ctx context.Context, req *scpspb.ReadSupplierContractPriceScheduleRequest) (*scpspb.ReadSupplierContractPriceScheduleResponse, error)
+	ListSupplierContractPriceScheduleLines func(ctx context.Context, req *scpslpb.ListSupplierContractPriceScheduleLinesRequest) (*scpslpb.ListSupplierContractPriceScheduleLinesResponse, error)
+	ListSupplierContractLines              func(ctx context.Context, req *suppliercontractlinepb.ListSupplierContractLinesRequest) (*suppliercontractlinepb.ListSupplierContractLinesResponse, error)
 
 	attachment.AttachmentOps
 }

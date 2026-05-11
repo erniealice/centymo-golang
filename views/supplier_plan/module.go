@@ -68,11 +68,11 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	listDeps := &supplierplanlist.ListViewDeps{
-		Routes:                     deps.Routes,
+		Routes:                      deps.Routes,
 		GetSupplierPlanListPageData: deps.GetSupplierPlanListPageData,
-		Labels:                     deps.Labels,
-		CommonLabels:               deps.CommonLabels,
-		TableLabels:                deps.TableLabels,
+		Labels:                      deps.Labels,
+		CommonLabels:                deps.CommonLabels,
+		TableLabels:                 deps.TableLabels,
 	}
 	listView := supplierplanlist.NewView(listDeps)
 	tableView := supplierplanlist.NewTableView(listDeps)

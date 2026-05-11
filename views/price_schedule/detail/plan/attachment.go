@@ -9,6 +9,7 @@ func attachmentConfig(deps *DetailViewDeps) *attachment.Config {
 	return &attachment.Config{
 		EntityType:         "price_plan",
 		BucketName:         "attachments",
+		RefreshURL:         deps.Routes.PlanTabActionURL,
 		UploadURL:          deps.Routes.PlanAttachmentUploadURL,
 		DeleteURL:          deps.Routes.PlanAttachmentDeleteURL,
 		PrimaryIDPathParam: "ppid",

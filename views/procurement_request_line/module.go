@@ -6,8 +6,8 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	procurementrequestlineaction "github.com/erniealice/centymo-golang/views/procurement_request_line/action"
 
-	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/view"
@@ -30,11 +30,11 @@ type ModuleDeps struct {
 
 // Module holds all constructed procurement_request_line views.
 type Module struct {
-	routes      centymo.ProcurementRequestRoutes
-	Add         view.View
-	Edit        view.View
-	Delete      view.View
-	RetrySpawn  view.View // SPS Wave 3 — CRIT-3 retry placeholder
+	routes     centymo.ProcurementRequestRoutes
+	Add        view.View
+	Edit       view.View
+	Delete     view.View
+	RetrySpawn view.View // SPS Wave 3 — CRIT-3 retry placeholder
 }
 
 // NewModule creates the procurement_request_line module.

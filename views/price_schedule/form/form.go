@@ -13,10 +13,10 @@ type LocationOption struct {
 
 // Data is the template data for the price_schedule drawer form.
 type Data struct {
-	FormAction string
-	IsEdit     bool
-	ID         string
-	Name       string
+	FormAction  string
+	IsEdit      bool
+	ID          string
+	Name        string
 	Description string
 	// Date + optional time inputs (2026-04-28 date+time field plan).
 	// The drawer renders <input type="date"> + <input type="time"> side

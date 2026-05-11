@@ -26,19 +26,19 @@ import (
 // needs from the surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type supplierSubscriptionWiring struct {
-	db                          centymo.DataSource
-	costScheduleRoutes          centymo.CostScheduleRoutes
-	costScheduleLabels          centymo.CostScheduleLabels
-	supplierPlanRoutes          centymo.SupplierPlanRoutes
-	supplierPlanLabels          centymo.SupplierPlanLabels
-	costPlanRoutes              centymo.CostPlanRoutes
-	costPlanLabels              centymo.CostPlanLabels
-	supplierProductPlanRoutes   centymo.SupplierProductPlanRoutes
-	supplierProductPlanLabels   centymo.SupplierProductPlanLabels
+	db                            centymo.DataSource
+	costScheduleRoutes            centymo.CostScheduleRoutes
+	costScheduleLabels            centymo.CostScheduleLabels
+	supplierPlanRoutes            centymo.SupplierPlanRoutes
+	supplierPlanLabels            centymo.SupplierPlanLabels
+	costPlanRoutes                centymo.CostPlanRoutes
+	costPlanLabels                centymo.CostPlanLabels
+	supplierProductPlanRoutes     centymo.SupplierProductPlanRoutes
+	supplierProductPlanLabels     centymo.SupplierProductPlanLabels
 	supplierProductCostPlanLabels centymo.SupplierProductCostPlanLabels
-	supplierSubscriptionRoutes  centymo.SupplierSubscriptionRoutes
-	supplierSubscriptionLabels  centymo.SupplierSubscriptionLabels
-	centymoTableLabels          types.TableLabels
+	supplierSubscriptionRoutes    centymo.SupplierSubscriptionRoutes
+	supplierSubscriptionLabels    centymo.SupplierSubscriptionLabels
+	centymoTableLabels            types.TableLabels
 }
 
 // wireSupplierSubscriptionModules lifts the bodies of the six P3 procurement

@@ -9,6 +9,7 @@ func attachmentConfig(deps *DetailViewDeps) *attachment.Config {
 	return &attachment.Config{
 		EntityType:       "purchase_order",
 		BucketName:       "attachments",
+		RefreshURL:       deps.Routes.PurchaseOrderTabActionURL,
 		UploadURL:        deps.Routes.PurchaseOrderAttachmentUploadURL,
 		DeleteURL:        deps.Routes.PurchaseOrderAttachmentDeleteURL,
 		Labels:           attachment.DefaultLabels(),

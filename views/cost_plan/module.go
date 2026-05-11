@@ -50,21 +50,21 @@ type ModuleDeps struct {
 
 // Module holds all constructed cost_plan views.
 type Module struct {
-	routes             centymo.CostPlanRoutes
-	Dashboard          view.View
-	List               view.View
-	Table              view.View
-	Add                view.View
-	Edit               view.View
-	Delete             view.View
-	BulkDelete         view.View
-	SetStatus          view.View
-	BulkSetStatus      view.View
-	Detail             view.View
-	TabAction          view.View
-	ProductCostAdd     view.View
-	ProductCostEdit    view.View
-	ProductCostDelete  view.View
+	routes            centymo.CostPlanRoutes
+	Dashboard         view.View
+	List              view.View
+	Table             view.View
+	Add               view.View
+	Edit              view.View
+	Delete            view.View
+	BulkDelete        view.View
+	SetStatus         view.View
+	BulkSetStatus     view.View
+	Detail            view.View
+	TabAction         view.View
+	ProductCostAdd    view.View
+	ProductCostEdit   view.View
+	ProductCostDelete view.View
 }
 
 // NewModule creates the cost_plan module with all views wired.
@@ -109,14 +109,14 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	lineDeps := &costplanaction.CostPlanLineDeps{
-		CostPlanRoutes:                         deps.Routes,
-		Labels:                                 deps.ProductCostLabels,
-		CommonLabels:                           deps.CommonLabels,
-		CreateSupplierProductCostPlan:          deps.CreateSupplierProductCostPlan,
-		ReadSupplierProductCostPlan:            deps.ReadSupplierProductCostPlan,
-		UpdateSupplierProductCostPlan:          deps.UpdateSupplierProductCostPlan,
-		DeleteSupplierProductCostPlan:          deps.DeleteSupplierProductCostPlan,
-		SearchSupplierProductPlanURL:           deps.SearchSupplierProductPlanURL,
+		CostPlanRoutes:                deps.Routes,
+		Labels:                        deps.ProductCostLabels,
+		CommonLabels:                  deps.CommonLabels,
+		CreateSupplierProductCostPlan: deps.CreateSupplierProductCostPlan,
+		ReadSupplierProductCostPlan:   deps.ReadSupplierProductCostPlan,
+		UpdateSupplierProductCostPlan: deps.UpdateSupplierProductCostPlan,
+		DeleteSupplierProductCostPlan: deps.DeleteSupplierProductCostPlan,
+		SearchSupplierProductPlanURL:  deps.SearchSupplierProductPlanURL,
 	}
 
 	return &Module{

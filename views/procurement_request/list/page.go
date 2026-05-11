@@ -31,9 +31,9 @@ type PageData struct {
 
 	// SPS Wave 3 — F3 fulfillment_strategy filter chips. Rendered above the
 	// table; current selection echoed back as `ActiveStrategy`.
-	StrategyChips   []StrategyChip
-	ActiveStrategy  string
-	StrategyLabel   string
+	StrategyChips  []StrategyChip
+	ActiveStrategy string
+	StrategyLabel  string
 }
 
 // StrategyChip describes a single F3 fulfillment-strategy filter chip.

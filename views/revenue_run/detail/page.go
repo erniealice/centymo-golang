@@ -354,4 +354,3 @@ func revenueStatusCell(status string) (label, variant string) {
 		return status, "info"
 	}
 }
-

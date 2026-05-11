@@ -23,12 +23,12 @@ import (
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
-	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
-	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
-	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 	revenuetaxlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_tax_line"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
 // PaymentTermOption is a minimal struct for rendering payment term options in the form.
@@ -168,13 +168,13 @@ func buildFormLabels(t func(string) string) form.Labels {
 		RateSourceOperator:      t("revenue.form.rateSourceOperator"),
 		// TaxKindLabels maps tax_kind_snapshot values to localized display names (Phase 5 M1).
 		TaxKindLabels: map[string]string{
-			"VAT_STANDARD":                 t("revenue.form.taxKindVatStandard"),
-			"WHT_PROFESSIONAL_INDIVIDUAL":  t("revenue.form.taxKindWhtProfessionalIndividual"),
-			"WHT_PROFESSIONAL_CORPORATE":   t("revenue.form.taxKindWhtProfessionalCorporate"),
-			"WHT_RENTAL":                   t("revenue.form.taxKindWhtRental"),
-			"WHT_GOODS_TWA":                t("revenue.form.taxKindWhtGoodsTwa"),
-			"WHT_SERVICES_TWA":             t("revenue.form.taxKindWhtServicesTwa"),
-			"WHT_NON_RESIDENT":             t("revenue.form.taxKindWhtNonResident"),
+			"VAT_STANDARD":                t("revenue.form.taxKindVatStandard"),
+			"WHT_PROFESSIONAL_INDIVIDUAL": t("revenue.form.taxKindWhtProfessionalIndividual"),
+			"WHT_PROFESSIONAL_CORPORATE":  t("revenue.form.taxKindWhtProfessionalCorporate"),
+			"WHT_RENTAL":                  t("revenue.form.taxKindWhtRental"),
+			"WHT_GOODS_TWA":               t("revenue.form.taxKindWhtGoodsTwa"),
+			"WHT_SERVICES_TWA":            t("revenue.form.taxKindWhtServicesTwa"),
+			"WHT_NON_RESIDENT":            t("revenue.form.taxKindWhtNonResident"),
 		},
 	}
 }
@@ -314,7 +314,7 @@ func NewAddAction(deps *Deps) view.View {
 			Currency:        r.FormValue("currency"),
 			Status:          r.FormValue("status"),
 			Notes:           strPtr(r.FormValue("notes")),
-			LocationId: r.FormValue("location_id"),
+			LocationId:      r.FormValue("location_id"),
 			PaymentTermId: func() *string {
 				if v := r.FormValue("payment_term_id"); v != "" {
 					return &v
@@ -666,17 +666,17 @@ func NewEditAction(deps *Deps) view.View {
 				DueDateString:         record.GetDueDate(),
 				RevenueType:           revenueType,
 				// Tax fields (Phase 5)
-				TaxLines:             taxLines,
-				GrandTotalAmount:     cashExpected,
-				GrandTotalDisplay:    grandTotalDisplay,
-				CashAmountExpected:   cashExpected,
-				CashAmountDisplay:    grandTotalDisplay,
-				WhtAmountExpected:    whtExpected,
-				WhtAmountDisplay:     whtDisplay,
-				SettlementStatus:     record.GetSettlementStatus(),
-				CanRecompute:         canRecompute,
-				RecomputeURL:         recomputeURL,
-				AddWHTCertURL:        addWHTCertURL,
+				TaxLines:           taxLines,
+				GrandTotalAmount:   cashExpected,
+				GrandTotalDisplay:  grandTotalDisplay,
+				CashAmountExpected: cashExpected,
+				CashAmountDisplay:  grandTotalDisplay,
+				WhtAmountExpected:  whtExpected,
+				WhtAmountDisplay:   whtDisplay,
+				SettlementStatus:   record.GetSettlementStatus(),
+				CanRecompute:       canRecompute,
+				RecomputeURL:       recomputeURL,
+				AddWHTCertURL:      addWHTCertURL,
 				// FX fields
 				BillingCurrency:      billingCurrency,
 				BillingAmount:        record.GetBillingAmount(),
@@ -714,8 +714,8 @@ func NewEditAction(deps *Deps) view.View {
 				RevenueDate:     strPtr(r.FormValue("revenue_date_string")),
 				Currency:        r.FormValue("currency"),
 				Status:          r.FormValue("status"),
-				Notes:      strPtr(r.FormValue("notes")),
-				LocationId: r.FormValue("location_id"),
+				Notes:           strPtr(r.FormValue("notes")),
+				LocationId:      r.FormValue("location_id"),
 				PaymentTermId: func() *string {
 					if v := r.FormValue("payment_term_id"); v != "" {
 						return &v

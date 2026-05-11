@@ -31,9 +31,9 @@ func writeJSON(w http.ResponseWriter, data any) {
 // PriceLookupResponse is the JSON shape returned by the price lookup handler.
 type PriceLookupResponse struct {
 	Found          bool   `json:"found"`
-	Price          int64  `json:"price,omitempty"`          // centavos
+	Price          int64  `json:"price,omitempty"` // centavos
 	Currency       string `json:"currency,omitempty"`
-	PriceDisplay   string `json:"price_display,omitempty"`  // e.g. "15.00"
+	PriceDisplay   string `json:"price_display,omitempty"` // e.g. "15.00"
 	PriceListID    string `json:"price_list_id,omitempty"`
 	PriceProductID string `json:"price_product_id,omitempty"`
 }

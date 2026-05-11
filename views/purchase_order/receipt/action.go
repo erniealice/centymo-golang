@@ -16,11 +16,11 @@ import (
 	centymo "github.com/erniealice/centymo-golang"
 	receiptform "github.com/erniealice/centymo-golang/views/purchase_order/receipt/form"
 
-	enumspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/enums"
-	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
-	inventorymovementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/inventory_movement"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
 	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
+	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
+	enumspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/enums"
+	inventorymovementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/inventory_movement"
 )
 
 // Deps holds dependencies for the confirm-receipt action handler.

@@ -25,9 +25,9 @@ type DetailViewDeps struct {
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
-	ReadExpenseRecognition       func(ctx context.Context, req *expenserecognitionpb.ReadExpenseRecognitionRequest) (*expenserecognitionpb.ReadExpenseRecognitionResponse, error)
-	ListExpenseRecognitionLines  func(ctx context.Context, req *expenserecognitionlinepb.ListExpenseRecognitionLinesRequest) (*expenserecognitionlinepb.ListExpenseRecognitionLinesResponse, error)
-	ReverseExpenseRecognition    func(ctx context.Context, id, reason string) error
+	ReadExpenseRecognition      func(ctx context.Context, req *expenserecognitionpb.ReadExpenseRecognitionRequest) (*expenserecognitionpb.ReadExpenseRecognitionResponse, error)
+	ListExpenseRecognitionLines func(ctx context.Context, req *expenserecognitionlinepb.ListExpenseRecognitionLinesRequest) (*expenserecognitionlinepb.ListExpenseRecognitionLinesResponse, error)
+	ReverseExpenseRecognition   func(ctx context.Context, id, reason string) error
 
 	attachment.AttachmentOps
 }

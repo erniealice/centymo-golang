@@ -34,19 +34,19 @@ type PricePlanDeps struct {
 	// Labels carries plan-level strings (errors, actions). Form-field labels
 	// live on PricePlanLabels.Form (sourced from lyngua price_plan.json →
 	// price_plan.form, which is the single source for the drawer).
-	Labels              centymo.PlanLabels
-	PricePlanLabels     centymo.PricePlanLabels
+	Labels          centymo.PlanLabels
+	PricePlanLabels centymo.PricePlanLabels
 	// PriceScheduleLabels surfaces the customClientPriceScheduleLabelSuffix
 	// used to derive the readonly Schedule label when the parent Plan is
 	// client-scoped (plan §6.7). Optional — when zero-value, the helper
 	// falls back to the proto-generic "Price Schedule".
 	PriceScheduleLabels centymo.PriceScheduleLabels
 	CommonLabels        pyeza.CommonLabels
-	CreatePricePlan    func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
-	ReadPricePlan      func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
-	UpdatePricePlan    func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
-	DeletePricePlan    func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
-	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	CreatePricePlan     func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
+	ReadPricePlan       func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	UpdatePricePlan     func(ctx context.Context, req *priceplanpb.UpdatePricePlanRequest) (*priceplanpb.UpdatePricePlanResponse, error)
+	DeletePricePlan     func(ctx context.Context, req *priceplanpb.DeletePricePlanRequest) (*priceplanpb.DeletePricePlanResponse, error)
+	ListPriceSchedules  func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 
 	// ReadPlan resolves the parent plan's name for display in the locked
 	// "Package" field on the drawer, plus its client_id for the
@@ -567,26 +567,26 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			editScheduleAutoHint := buildScheduleAutoHint(formLabels, editScheduleMode, editScheduleLockID, editScheduleLockClient)
 
 			return view.OK("price-plan-drawer-form", &form.Data{
-				FormAction:            route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
-				IsEdit:                true,
-				Context:               form.ContextPlan,
-				ID:                    ppID,
-				PlanID:                planID,
-				PlanName:              planName,
-				ScheduleID:            editScheduleID,
-				Name:                  pp.GetName(),
-				Description:           pp.GetDescription(),
-				Amount:                amountStr,
-				Currency:              pp.GetBillingCurrency(),
-				DurationValue:         durationStr,
-				DurationUnit:          pp.GetDurationUnit(),
-				Active:                pp.GetActive(),
-				BillingKind:           pp.GetBillingKind().String(),
-				AmountBasis:           pp.GetAmountBasis().String(),
-				BillingCycleValue:     billingCycleStr,
-				BillingCycleUnit:      pp.GetBillingCycleUnit(),
-				TermValue:             defaultTermStr,
-				TermUnit:              pp.GetDefaultTermUnit(),
+				FormAction:        route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
+				IsEdit:            true,
+				Context:           form.ContextPlan,
+				ID:                ppID,
+				PlanID:            planID,
+				PlanName:          planName,
+				ScheduleID:        editScheduleID,
+				Name:              pp.GetName(),
+				Description:       pp.GetDescription(),
+				Amount:            amountStr,
+				Currency:          pp.GetBillingCurrency(),
+				DurationValue:     durationStr,
+				DurationUnit:      pp.GetDurationUnit(),
+				Active:            pp.GetActive(),
+				BillingKind:       pp.GetBillingKind().String(),
+				AmountBasis:       pp.GetAmountBasis().String(),
+				BillingCycleValue: billingCycleStr,
+				BillingCycleUnit:  pp.GetBillingCycleUnit(),
+				TermValue:         defaultTermStr,
+				TermUnit:          pp.GetDefaultTermUnit(),
 				EntitledOccurrences: func() string {
 					if pp.GetEntitledOccurrences() > 0 {
 						return strconv.FormatInt(int64(pp.GetEntitledOccurrences()), 10)
@@ -748,4 +748,3 @@ func applyBillingFields(pp *priceplanpb.PricePlan, r *http.Request) {
 		}
 	}
 }
-

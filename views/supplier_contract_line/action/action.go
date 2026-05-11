@@ -13,8 +13,8 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
+	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
 	"github.com/erniealice/centymo-golang/views/supplier_contract_line/form"
 )

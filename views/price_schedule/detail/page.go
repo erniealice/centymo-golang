@@ -18,8 +18,8 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
@@ -70,16 +70,16 @@ type PageData struct {
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
 
-	ID             string
-	Name           string
-	Description    string
-	DateStart      string
-	DateEnd        string
-	LocationName   string
-	Status         string
-	StatusVariant  string
-	CreatedDate    string
-	ModifiedDate   string
+	ID            string
+	Name          string
+	Description   string
+	DateStart     string
+	DateEnd       string
+	LocationName  string
+	Status        string
+	StatusVariant string
+	CreatedDate   string
+	ModifiedDate  string
 
 	PlansTable      *types.TableConfig
 	AttachmentTable *types.TableConfig
@@ -649,7 +649,6 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 	}
 
 	types.ApplyColumnStyles(columns, rows)
-
 
 	refreshURL := route.ResolveURL(deps.Routes.TabActionURL, "id", ps.GetId(), "tab", l.Tabs.ResolveTabSlug("pricePlan"))
 	tableConfig := &types.TableConfig{

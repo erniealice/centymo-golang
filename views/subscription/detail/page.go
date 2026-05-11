@@ -17,9 +17,9 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
-	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	enums "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/enums"
 	jobpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job"
 	jobphasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_phase"
@@ -40,7 +40,7 @@ type DetailViewDeps struct {
 
 	// 2026-04-29 auto-spawn-jobs-from-subscription Phase D — Operations tab
 	// data ops. nil-safe; tab degrades to empty state.
-	GetJobsByOrigin   func(ctx context.Context, req *jobpb.GetJobsByOriginRequest) (*jobpb.GetJobsByOriginResponse, error)
+	GetJobsByOrigin    func(ctx context.Context, req *jobpb.GetJobsByOriginRequest) (*jobpb.GetJobsByOriginResponse, error)
 	ListJobPhasesByJob func(ctx context.Context, req *jobphasepb.ListJobPhasesByJobRequest) (*jobphasepb.ListJobPhasesByJobResponse, error)
 	// JobDetailURL is the absolute URL pattern (e.g. /app/jobs/detail/{id})
 	// used to deep-link to fayna's Job detail page from the Operations tab.
@@ -78,9 +78,9 @@ type DetailViewDeps struct {
 	ReadPriceSchedule      func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
 	ReadPricePlan          func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 
-	Labels          centymo.SubscriptionLabels
-	CommonLabels    pyeza.CommonLabels
-	TableLabels     types.TableLabels
+	Labels       centymo.SubscriptionLabels
+	CommonLabels pyeza.CommonLabels
+	TableLabels  types.TableLabels
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -117,11 +117,11 @@ func loadSubscriptionWithRelations(ctx context.Context, deps *DetailViewDeps, id
 // PageData holds the data for the subscription detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate     string
-	Subscription        map[string]any
-	Labels              centymo.SubscriptionLabels
-	ActiveTab           string
-	TabItems            []pyeza.TabItem
+	ContentTemplate string
+	Subscription    map[string]any
+	Labels          centymo.SubscriptionLabels
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
 	// Invoices tab
 	Invoices        *types.TableConfig
 	AttachmentTable *types.TableConfig
@@ -133,19 +133,19 @@ type PageData struct {
 
 	// 2026-04-27 plan-client-scope plan §6.5 — Package tab.
 	// CTA shown on the package tab when pricePlan.client_id IS NULL.
-	PackageCustomizeURL    string // POST endpoint for the customize CTA
-	PackageCustomizeLabel  string // pre-resolved label with {{.ClientName}}
-	PackageCustomizeShown  bool   // false hides the CTA (already client-scoped)
-	PackageCustomizeDisabled bool // true grays the CTA (no permission, etc.)
-	PackageClientName      string
-	PackagePricePlan       map[string]any // {id, name, currency, amount, plan_id, client_id}
+	PackageCustomizeURL      string // POST endpoint for the customize CTA
+	PackageCustomizeLabel    string // pre-resolved label with {{.ClientName}}
+	PackageCustomizeShown    bool   // false hides the CTA (already client-scoped)
+	PackageCustomizeDisabled bool   // true grays the CTA (no permission, etc.)
+	PackageClientName        string
+	PackagePricePlan         map[string]any // {id, name, currency, amount, plan_id, client_id}
 
 	// 2026-04-29 milestone-billing plan §5 / Phase D — Milestones section
 	// inside Package tab. Rendered only when pricePlan.billing_kind = MILESTONE.
-	MilestonesShown        bool
-	Milestones             []MilestoneRow
-	TotalInvoicedDisplay   string // formatted "₱430,000.00"
-	MilestoneCurrency      string
+	MilestonesShown      bool
+	Milestones           []MilestoneRow
+	TotalInvoicedDisplay string // formatted "₱430,000.00"
+	MilestoneCurrency    string
 
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 / Phase D —
 	// Operations tab data. OperationsHasJobs flips the empty-state CTA;
@@ -161,9 +161,9 @@ type PageData struct {
 	// renders the cycle accordion + spawn / backfill CTAs; the legacy flat
 	// rendering above stays for non-cyclic engagements (regression guard
 	// per progress.md "key gotchas").
-	IsCyclic                  bool
-	OperationsCyclic          *SubscriptionCyclesData
-	SpawnCycleJobsURL         string // POST endpoint for "Spawn this cycle now"
+	IsCyclic                   bool
+	OperationsCyclic           *SubscriptionCyclesData
+	SpawnCycleJobsURL          string // POST endpoint for "Spawn this cycle now"
 	BackfillCycleJobsDrawerURL string // GET endpoint for the backfill drawer
 
 	// 2026-05-01 ad-hoc-subscription-billing plan §5.1 — Mode branching for
@@ -173,12 +173,12 @@ type PageData struct {
 	// for AD_HOC × TOTAL_PACKAGE the entitlement counter banner shows
 	// `EntitlementUsed / EntitlementTotal` with a Pool-Generate-Invoice CTA
 	// when no pool Revenue exists yet.
-	IsAdHoc                 bool
-	AdHocBasis              string // "AMOUNT_BASIS_TOTAL_PACKAGE" | "AMOUNT_BASIS_PER_OCCURRENCE"
-	EntitlementUsed         int32
-	EntitlementTotal        int32
-	EntitlementBannerText   string // pre-resolved counter copy ("3 of 5 used")
-	EntitlementHeadingText  string // pre-resolved heading copy ("Pool — 3 of 5 ...")
+	IsAdHoc                bool
+	AdHocBasis             string // "AMOUNT_BASIS_TOTAL_PACKAGE" | "AMOUNT_BASIS_PER_OCCURRENCE"
+	EntitlementUsed        int32
+	EntitlementTotal       int32
+	EntitlementBannerText  string // pre-resolved counter copy ("3 of 5 used")
+	EntitlementHeadingText string // pre-resolved heading copy ("Pool — 3 of 5 ...")
 	// 2026-05-01 ad-hoc-subscription-billing v1.5 — operator CTAs.
 	// RequestUsageURL: POST endpoint that spawns one usage Job. Empty when
 	// the route isn't wired (defensive — Operations tab template hides the
@@ -219,34 +219,34 @@ type SubscriptionCyclesData struct {
 
 	// MissingCycleCount is the number of cycle windows from sub.date_time_start
 	// → today that have no Jobs yet. > 0 surfaces the backfill banner.
-	MissingCycleCount int
+	MissingCycleCount  int
 	BackfillBannerText string // pre-resolved {{.Count}} substitution
 }
 
 // SubscriptionCycleView is one cycle accordion row. View-side only — no
 // proto changes (cycle metadata read from Job.cycle_* nullable fields).
 type SubscriptionCycleView struct {
-	CycleIndex   int32
-	PeriodStart  string                 // ISO 8601 (YYYY-MM-DD)
-	PeriodEnd    string
-	PeriodLabel  string                 // human-readable, "May 2026"
-	HeadingText  string                 // pre-resolved cycleHeading template
-	StatusKey    string                 // pending | inProgress | completed | overdue
-	StatusLabel  string                 // lyngua-resolved
-	StatusVariant string                // pyeza badge variant (success / warning / etc.)
-	Jobs         []OperationsJobRow     // cycle Jobs (1 or N for multi-visit)
-	InvoiceID    string                 // matched Revenue.id (empty if not yet recognized)
-	InvoiceLabel string                 // pre-resolved cycleInvoiceLinked OR cycleNoInvoice
-	IsPlaceholder bool                  // true for the next-un-spawned cycle (operator click → spawn)
-	OpenByDefault bool                  // current cycle expanded; past cycles collapsed
+	CycleIndex    int32
+	PeriodStart   string // ISO 8601 (YYYY-MM-DD)
+	PeriodEnd     string
+	PeriodLabel   string             // human-readable, "May 2026"
+	HeadingText   string             // pre-resolved cycleHeading template
+	StatusKey     string             // pending | inProgress | completed | overdue
+	StatusLabel   string             // lyngua-resolved
+	StatusVariant string             // pyeza badge variant (success / warning / etc.)
+	Jobs          []OperationsJobRow // cycle Jobs (1 or N for multi-visit)
+	InvoiceID     string             // matched Revenue.id (empty if not yet recognized)
+	InvoiceLabel  string             // pre-resolved cycleInvoiceLinked OR cycleNoInvoice
+	IsPlaceholder bool               // true for the next-un-spawned cycle (operator click → spawn)
+	OpenByDefault bool               // current cycle expanded; past cycles collapsed
 }
 
 // SubscriptionJobsTabData backs the new flat Jobs tab (plan §21.5).
 type SubscriptionJobsTabData struct {
 	Rows         []SubscriptionJobRow
-	HasJobs      bool                   // tab hidden when false
-	StatusCounts map[string]int         // for filter pill counts (by status key)
-	TypeCounts   map[string]int         // for filter pill counts (by type key)
+	HasJobs      bool           // tab hidden when false
+	StatusCounts map[string]int // for filter pill counts (by status key)
+	TypeCounts   map[string]int // for filter pill counts (by type key)
 }
 
 // SubscriptionJobRow is one row in the flat Jobs tab table.
@@ -572,10 +572,11 @@ func resolveRecognizeDisabledTooltip(canRecognize, active bool, l centymo.Subscr
 // resolveClientBreadcrumb returns the (label, href) pair for the page-header
 // breadcrumb when the subscription is being viewed under a client context.
 // Resolution order:
-//   1. clientIDFromPath set and ReadClient available → live lookup (most reliable
-//      because the joined client may be missing or stale).
-//   2. clientIDFromPath set, no ReadClient → use the joined client's name if any.
-//   3. clientIDFromPath empty → no breadcrumb (returns empty strings).
+//  1. clientIDFromPath set and ReadClient available → live lookup (most reliable
+//     because the joined client may be missing or stale).
+//  2. clientIDFromPath set, no ReadClient → use the joined client's name if any.
+//  3. clientIDFromPath empty → no breadcrumb (returns empty strings).
+//
 // The href points at the client's engagements tab so "back" lands where the
 // operator clicked through from.
 func resolveClientBreadcrumb(ctx context.Context, deps *DetailViewDeps, clientIDFromPath string, sub *subscriptionpb.Subscription) (string, string) {
@@ -707,12 +708,12 @@ func buildPackageTabData(sub *subscriptionpb.Subscription, customizeURL, customi
 	}
 	if pricePlan := sub.GetPricePlan(); pricePlan != nil {
 		pp = map[string]any{
-			"id":         pricePlan.GetId(),
-			"name":       pricePlan.GetName(),
-			"plan_id":    pricePlan.GetPlanId(),
-			"client_id":  pricePlan.GetClientId(),
-			"amount":     pricePlan.GetBillingAmount(),
-			"currency":   pricePlan.GetBillingCurrency(),
+			"id":        pricePlan.GetId(),
+			"name":      pricePlan.GetName(),
+			"plan_id":   pricePlan.GetPlanId(),
+			"client_id": pricePlan.GetClientId(),
+			"amount":    pricePlan.GetBillingAmount(),
+			"currency":  pricePlan.GetBillingCurrency(),
 		}
 		// CTA gating per plan §6.5 / decision #6:
 		//   - master (client_id == "") → show.
@@ -1008,6 +1009,39 @@ func buildInvoicesTable(
 			detailHref = route.ResolveURL(detailURLTemplate, "id", id)
 		}
 
+		// 2026-05-11 run-invoices-polish Phase 3 — per-row actions.
+		// View is always present (mirrors row-click navigation).
+		// SendEmail is wired to the existing revenue/action/send_email route
+		// (centymo.RevenueEmailURL — registered on RevenueRoutes.SendEmailURL).
+		// Edit is gated to draft status and uses centymo.RevenueEditURL.
+		// Print is intentionally omitted — no dedicated print route exists today.
+		actions := []types.TableAction{
+			{
+				Type:   "view",
+				Label:  l.Invoices.RowActions.View,
+				Action: "view",
+				Href:   detailHref,
+			},
+			{
+				Type:           "mail",
+				Label:          l.Invoices.RowActions.SendEmail,
+				Action:         "send-email",
+				URL:            route.ResolveURL(centymo.RevenueEmailURL, "id", id),
+				ItemName:       refNumber,
+				ConfirmTitle:   l.Invoices.RowActions.SendEmail,
+				ConfirmMessage: refNumber,
+			},
+		}
+		if status == "draft" {
+			actions = append(actions, types.TableAction{
+				Type:        "edit",
+				Label:       l.Invoices.RowActions.Edit,
+				Action:      "edit",
+				URL:         route.ResolveURL(centymo.RevenueEditURL, "id", id),
+				DrawerTitle: l.Invoices.RowActions.Edit,
+			})
+		}
+
 		rows = append(rows, types.TableRow{
 			ID:   id,
 			Href: detailHref,
@@ -1017,6 +1051,7 @@ func buildInvoicesTable(
 				types.MoneyCell(float64(r.GetTotalAmount()), currency, true),
 				{Type: "badge", Value: status, Variant: statusVariant},
 			},
+			Actions: actions,
 		})
 	}
 
@@ -1028,7 +1063,7 @@ func buildInvoicesTable(
 		Rows:                 rows,
 		Labels:               tableLabels,
 		ShowSearch:           false,
-		ShowActions:          false,
+		ShowActions:          true,
 		ShowSort:             true,
 		ShowColumns:          true,
 		ShowDensity:          true,

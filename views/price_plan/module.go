@@ -20,12 +20,12 @@ import (
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
-	taxclasspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_class"
-	taxtreatmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_treatment"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
+	taxclasspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_class"
+	taxtreatmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/tax/tax_treatment"
 )
 
 // ModuleDeps holds all dependencies for the price_plan module.
@@ -49,8 +49,8 @@ type ModuleDeps struct {
 	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 
 	// Detail page — ProductPricePlan CRUD
-	ListProductPlans         func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
-	ListProducts             func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductPlans func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProducts     func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	// ListProductVariants / ListProductOptions / ListProductOptionValues /
 	// ListProductVariantOptions feed the enriched catalog-line picker labels
 	// ("Product — SKU — Red / Large / Cotton") in the price drawer.
@@ -58,10 +58,10 @@ type ModuleDeps struct {
 	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
 	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
 	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
-	ListProductPricePlans    func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
-	CreateProductPricePlan   func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
-	UpdateProductPricePlan   func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
-	DeleteProductPricePlan   func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
+	ListProductPricePlans     func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	CreateProductPricePlan    func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
+	UpdateProductPricePlan    func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
+	DeleteProductPricePlan    func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
 
 	// 2026-04-27 plan-client-scope plan §6.7 — used by the price-plan drawer
 	// to resolve the parent PriceSchedule's client name for the info banner.
@@ -88,23 +88,23 @@ type ModuleDeps struct {
 
 // Module holds all constructed price_plan views.
 type Module struct {
-	routes                 centymo.PricePlanRoutes
-	Dashboard              view.View
-	List                   view.View
-	Table                  view.View
-	Add                    view.View
-	Edit                   view.View
-	Delete                 view.View
-	BulkDelete             view.View
-	SetStatus              view.View
-	BulkSetStatus          view.View
-	Detail                 view.View
-	TabAction              view.View
-	ProductPriceAdd        view.View
-	ProductPriceEdit       view.View
-	ProductPriceDelete     view.View
-	AttachmentUpload       view.View
-	AttachmentDelete       view.View
+	routes             centymo.PricePlanRoutes
+	Dashboard          view.View
+	List               view.View
+	Table              view.View
+	Add                view.View
+	Edit               view.View
+	Delete             view.View
+	BulkDelete         view.View
+	SetStatus          view.View
+	BulkSetStatus      view.View
+	Detail             view.View
+	TabAction          view.View
+	ProductPriceAdd    view.View
+	ProductPriceEdit   view.View
+	ProductPriceDelete view.View
+	AttachmentUpload   view.View
+	AttachmentDelete   view.View
 }
 
 // NewModule creates the price_plan module with all views wired.

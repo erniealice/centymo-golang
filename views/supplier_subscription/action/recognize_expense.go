@@ -16,8 +16,8 @@ import (
 // RecognizeExpenseDeps holds deps for the Recognize Expense CTA on the
 // supplier_subscription detail page.
 type RecognizeExpenseDeps struct {
-	Routes       centymo.SupplierSubscriptionRoutes
-	Labels       centymo.SupplierSubscriptionLabels
+	Routes centymo.SupplierSubscriptionRoutes
+	Labels centymo.SupplierSubscriptionLabels
 
 	// GetSupplierSubscriptionItemPageData is used to resolve the supplier_subscription
 	// record (to find the most-recent linked expenditure_id for recognition).
