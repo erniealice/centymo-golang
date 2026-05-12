@@ -85,10 +85,10 @@
 <div class="subscription-operations-cyclic"
      data-testid="subscription-operations-cyclic-shell">
 
-    {{if .OperationsCyclic.EngagementHeading}}
-    <header class="subscription-operations-cyclic__engagement"
-            data-testid="subscription-operations-engagement-header">
-        <h4 class="detail-section-title">{{.OperationsCyclic.EngagementHeading}}</h4>
+    {{if .OperationsCyclic.SubscriptionHeading}}
+    <header class="subscription-operations-cyclic__shell"
+            data-testid="subscription-operations-shell-header">
+        <h4 class="detail-section-title">{{.OperationsCyclic.SubscriptionHeading}}</h4>
     </header>
     {{end}}
 
@@ -187,10 +187,10 @@
      data-testid="subscription-operations-ad-hoc-shell"
      data-ad-hoc-basis="{{.AdHocBasis}}">
 
-    {{if .OperationsCyclic.EngagementHeading}}
-    <header class="subscription-operations-cyclic__engagement"
-            data-testid="subscription-operations-engagement-header">
-        <h4 class="detail-section-title">{{.OperationsCyclic.EngagementHeading}}</h4>
+    {{if .OperationsCyclic.SubscriptionHeading}}
+    <header class="subscription-operations-cyclic__shell"
+            data-testid="subscription-operations-shell-header">
+        <h4 class="detail-section-title">{{.OperationsCyclic.SubscriptionHeading}}</h4>
     </header>
     {{end}}
 

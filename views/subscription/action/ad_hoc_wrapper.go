@@ -30,7 +30,7 @@ func NewRequestUsageAction(deps *Deps) view.View {
 				SpawnedCycleCount:         resp.SpawnedCycleCount,
 				SpawnedJobCount:           resp.SpawnedJobCount,
 				OnceAtStartJobCount:       resp.OnceAtStartJobCount,
-				EngagementWasNewlyCreated: resp.EngagementWasNewlyCreated,
+				ShellJobWasNewlyCreated: resp.ShellJobWasNewlyCreated,
 				SkippedReason:             resp.SkippedReason,
 				BackfillCappedAt:          resp.BackfillCappedAt,
 			}, nil

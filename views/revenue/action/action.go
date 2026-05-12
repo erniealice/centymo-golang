@@ -123,7 +123,7 @@ func buildFormLabels(t func(string) string) form.Labels {
 		SubscriptionNoResults:     t("revenue.form.subscriptionNoResults"),
 		RevenueType:               t("revenue.form.revenueType"),
 		RevenueTypeOneTime:        t("revenue.form.revenueTypeOneTime"),
-		RevenueTypeFromEngagement: t("revenue.form.revenueTypeFromEngagement"),
+		RevenueTypeFromSubscription: t("revenue.form.revenueTypeFromSubscription"),
 		RevenueTypeFromActivities: t("revenue.form.revenueTypeFromActivities"),
 		ActivityIDs:               t("revenue.form.activityIDs"),
 		ActivityIDsPlaceholder:    t("revenue.form.activityIDsPlaceholder"),
@@ -598,7 +598,7 @@ func NewEditAction(deps *Deps) view.View {
 			locationLabel := resolveLocationLabel(ctx, existingLocationID, deps.DB)
 			revenueType := "one_time"
 			if existingSubscriptionID != "" {
-				revenueType = "from_engagement"
+				revenueType = "from_subscription"
 			}
 			labels := buildFormLabels(viewCtx.T)
 			taxLines := loadTaxLines(ctx, deps, id, labels)

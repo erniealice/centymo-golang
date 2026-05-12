@@ -124,7 +124,7 @@ func NewAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
-		newURL := "/app/clients/detail/" + clientID + "/engagements/" + subscriptionID + "/package/" + resp.NewPricePlanID
+		newURL := "/app/clients/detail/" + clientID + "/subscriptions/" + subscriptionID + "/package/" + resp.NewPricePlanID
 		return view.ViewResult{
 			StatusCode: http.StatusOK,
 			Headers: map[string]string{

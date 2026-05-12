@@ -43,7 +43,7 @@ func adaptSpawnCycleDeps(deps *Deps) *spawncyclepkg.Deps {
 				SpawnedCycleCount:         resp.SpawnedCycleCount,
 				SpawnedJobCount:           resp.SpawnedJobCount,
 				OnceAtStartJobCount:       resp.OnceAtStartJobCount,
-				EngagementWasNewlyCreated: resp.EngagementWasNewlyCreated,
+				ShellJobWasNewlyCreated: resp.ShellJobWasNewlyCreated,
 				SkippedReason:             resp.SkippedReason,
 				BackfillCappedAt:          resp.BackfillCappedAt,
 			}, nil

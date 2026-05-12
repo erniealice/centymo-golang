@@ -48,12 +48,12 @@ Used by both Add and Edit actions.
                 <legend class="form-label">{{.Labels.RevenueType}}</legend>
                 <div class="radio-group" data-testid="revenue-type-radio">
                     <label class="radio-option">
-                        <input type="radio" name="revenue_type" value="one_time" {{if and (ne .RevenueType "from_engagement") (ne .RevenueType "from_activities")}}checked{{end}}>
+                        <input type="radio" name="revenue_type" value="one_time" {{if and (ne .RevenueType "from_subscription") (ne .RevenueType "from_activities")}}checked{{end}}>
                         <span>{{.Labels.RevenueTypeOneTime}}</span>
                     </label>
                     <label class="radio-option">
-                        <input type="radio" name="revenue_type" value="from_engagement" {{if eq .RevenueType "from_engagement"}}checked{{end}}>
-                        <span>{{.Labels.RevenueTypeFromEngagement}}</span>
+                        <input type="radio" name="revenue_type" value="from_subscription" {{if eq .RevenueType "from_subscription"}}checked{{end}}>
+                        <span>{{.Labels.RevenueTypeFromSubscription}}</span>
                     </label>
                     <label class="radio-option">
                         <input type="radio" name="revenue_type" value="from_activities" {{if eq .RevenueType "from_activities"}}checked{{end}}>

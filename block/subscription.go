@@ -333,7 +333,7 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 					SpawnedCycleCount:         int(resp.GetSpawnedCycleCount()),
 					SpawnedJobCount:           int(resp.GetSpawnedJobCount()),
 					OnceAtStartJobCount:       int(resp.GetOnceAtStartJobCount()),
-					EngagementWasNewlyCreated: resp.GetEngagementWasNewlyCreated(),
+					ShellJobWasNewlyCreated: resp.GetEngagementWasNewlyCreated(),
 					SkippedReason:             resp.GetSkippedReason(),
 					BackfillCappedAt:          resp.GetBackfillCappedAt(),
 				}, nil
@@ -482,11 +482,11 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 		if w.subscriptionRoutes.UnderClientDetailURL != "" {
 			ctx.Routes.GET(w.subscriptionRoutes.UnderClientDetailURL, subscriptiondetail.NewView(subDetailDeps))
 		}
-		// 2026-05-04 — Engagement detail nested under the rate-card → plan
+		// 2026-05-04 — Subscription detail nested under the rate-card → plan
 		// path. Same view; the URL alone activates the schedule + plan
 		// breadcrumb segments inside the subscription detail page.
-		if w.priceScheduleRoutes.PlanEngagementDetailURL != "" {
-			ctx.Routes.GET(w.priceScheduleRoutes.PlanEngagementDetailURL, subscriptiondetail.NewView(subDetailDeps))
+		if w.priceScheduleRoutes.PlanSubscriptionDetailURL != "" {
+			ctx.Routes.GET(w.priceScheduleRoutes.PlanSubscriptionDetailURL, subscriptiondetail.NewView(subDetailDeps))
 		}
 		// Subscription attachments
 		if w.uploadFile != nil {

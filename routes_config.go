@@ -1264,12 +1264,12 @@ type PriceScheduleRoutes struct {
 	PlanProductPriceDeleteURL string `json:"plan_product_price_delete_url"`
 	PlanAttachmentUploadURL   string `json:"plan_attachment_upload_url"`
 	PlanAttachmentDeleteURL   string `json:"plan_attachment_delete_url"`
-	// 2026-05-04 — Engagement (subscription) detail nested under the
+	// 2026-05-04 — Subscription detail nested under the
 	// schedule-scoped price_plan path. Activates the rate-card → plan →
-	// engagement breadcrumb in the subscription detail view. Empty string
+	// subscription breadcrumb in the subscription detail view. Empty string
 	// disables the nested route. See
 	// docs/plan/20260504-price-plan-engagements-tab/.
-	PlanEngagementDetailURL string `json:"plan_engagement_detail_url"`
+	PlanSubscriptionDetailURL string `json:"plan_subscription_detail_url"`
 }
 
 // DefaultPriceScheduleRoutes returns a PriceScheduleRoutes populated from the package-level
@@ -1301,7 +1301,7 @@ func DefaultPriceScheduleRoutes() PriceScheduleRoutes {
 		PlanProductPriceDeleteURL: PriceSchedulePlanProductPriceDeleteURL,
 		PlanAttachmentUploadURL:   PriceSchedulePlanAttachmentUploadURL,
 		PlanAttachmentDeleteURL:   PriceSchedulePlanAttachmentDeleteURL,
-		PlanEngagementDetailURL:   PriceSchedulePlanEngagementDetailURL,
+		PlanSubscriptionDetailURL: PriceSchedulePlanSubscriptionDetailURL,
 	}
 }
 
@@ -1346,7 +1346,7 @@ func DefaultPriceScheduleInventoryRoutes() PriceScheduleRoutes {
 	r.PlanProductPriceDeleteURL = shift(r.PlanProductPriceDeleteURL)
 	r.PlanAttachmentUploadURL = shift(r.PlanAttachmentUploadURL)
 	r.PlanAttachmentDeleteURL = shift(r.PlanAttachmentDeleteURL)
-	r.PlanEngagementDetailURL = shift(r.PlanEngagementDetailURL)
+	r.PlanSubscriptionDetailURL = shift(r.PlanSubscriptionDetailURL)
 	return r
 }
 
@@ -1377,7 +1377,7 @@ func (r PriceScheduleRoutes) RouteMap() map[string]string {
 		"price_schedule.plan.product_price.delete": r.PlanProductPriceDeleteURL,
 		"price_schedule.plan.attachment.upload":    r.PlanAttachmentUploadURL,
 		"price_schedule.plan.attachment.delete":    r.PlanAttachmentDeleteURL,
-		"price_schedule.plan.engagement.detail":    r.PlanEngagementDetailURL,
+		"price_schedule.plan.subscription.detail":   r.PlanSubscriptionDetailURL,
 	}
 }
 

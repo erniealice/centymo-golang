@@ -4191,7 +4191,7 @@ type SubscriptionOperationsLabels struct {
 	ViewJobLink  string `json:"viewJobLink"`
 
 	// 2026-04-30 cyclic-subscription-jobs plan §9.1 — cycle accordion copy.
-	EngagementHeading     string `json:"engagementHeading"`
+	SubscriptionHeading   string `json:"subscriptionHeading"`
 	CycleHeading          string `json:"cycleHeading"`
 	CyclePlaceholder      string `json:"cyclePlaceholder"`
 	CycleSpawnNow         string `json:"cycleSpawnNow"`
@@ -4259,7 +4259,7 @@ type SubscriptionJobsTabLabels struct {
 	ColumnPhase      string `json:"columnPhase"`
 	ColumnStatus     string `json:"columnStatus"`
 	ColumnPeriod     string `json:"columnPeriod"`
-	TypeEngagement   string `json:"typeEngagement"`
+	TypeSubscription string `json:"typeSubscription"`
 	TypeOnboarding   string `json:"typeOnboarding"`
 	TypeCycle        string `json:"typeCycle"`
 	TypeVisit        string `json:"typeVisit"`
@@ -4691,7 +4691,7 @@ type PricePlanConfirmLabels struct {
 	// dialog when an operator changes monetary fields on a client-scoped
 	// PricePlan that has N > 1 active subscriptions. Templated via
 	// {{.Count}} and {{.ClientName}}.
-	EditAmountMultipleEngagements string `json:"editAmountMultipleEngagements"`
+	EditAmountMultipleSubscriptions string `json:"editAmountMultipleSubscriptions"`
 }
 
 type PricePlanErrorLabels struct {
@@ -4719,7 +4719,7 @@ type PricePlanErrorLabels struct {
 	ScheduleRequiredForClientScope string `json:"scheduleRequiredForClientScope"`
 	// Server-side-only error key — the centymo confirm dialog catches the
 	// N>1-engagements gate before this surfaces.
-	MultiEngagementConfirmRequired string `json:"multiEngagementConfirmRequired"`
+	MultiSubscriptionConfirmRequired string `json:"multiSubscriptionConfirmRequired"`
 }
 
 // DefaultPricePlanLabels returns PricePlanLabels with sensible English defaults.
@@ -4935,7 +4935,7 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			DeactivateTitle:   "Deactivate Rate Card",
 			DeactivateMessage: "Are you sure you want to deactivate this rate card?",
 			// 2026-04-27 plan-client-scope plan §3.5 / §7.
-			EditAmountMultipleEngagements: "This price plan is attached to {{.Count}} active subscriptions for {{.ClientName}}. Changing the amount or cycle will affect all of them on the next bill cycle. Continue?",
+			EditAmountMultipleSubscriptions: "This price plan is attached to {{.Count}} active subscriptions for {{.ClientName}}. Changing the amount or cycle will affect all of them on the next bill cycle. Continue?",
 		},
 		Errors: PricePlanErrorLabels{
 			NotFound:                       "Rate card not found.",
@@ -4948,7 +4948,7 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			ClientScopeMismatch:            "Price plan client must match its parent plan's client.",
 			ScheduleClientMismatch:         "Selected schedule belongs to a different client and cannot be attached to this price plan.",
 			ScheduleRequiredForClientScope: "This package is scoped to a client. Pick or create a rate card for that client before adding a price plan.",
-			MultiEngagementConfirmRequired: "Confirmation required — multiple attached subscriptions and monetary fields changing.",
+			MultiSubscriptionConfirmRequired: "Confirmation required — multiple attached subscriptions and monetary fields changing.",
 		},
 		ProductPrice: PricePlanProductPriceLabels{
 			EditTitle:   "Edit Product Price",
@@ -5507,7 +5507,7 @@ type ClientPackagesLabels struct {
 	// Column headers for the table on the tab.
 	ColumnName        string `json:"columnName"`
 	ColumnSchedule    string `json:"columnSchedule"`
-	ColumnEngagements string `json:"columnEngagements"`
+	ColumnSubscriptions string `json:"columnSubscriptions"`
 }
 
 // DefaultClientPackagesLabels returns ClientPackagesLabels with sensible English
@@ -5523,7 +5523,7 @@ func DefaultClientPackagesLabels() ClientPackagesLabels {
 		AddAction:         "Add custom package",
 		ColumnName:        "Name",
 		ColumnSchedule:    "Rate card",
-		ColumnEngagements: "Engagements",
+		ColumnSubscriptions: "Engagements",
 	}
 }
 
@@ -5770,7 +5770,7 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			ViewJobLink:  "View in Operations",
 
 			// Cycle accordion + backfill copy.
-			EngagementHeading:     "Engagement (since {{.Started}})",
+			SubscriptionHeading:   "Engagement (since {{.Started}})",
 			CycleHeading:          "Cycle {{.CycleIndex}} — {{.PeriodLabel}}",
 			CyclePlaceholder:      "Cycle starts {{.PeriodStart}} — Jobs will spawn at cycle start, or click below to spawn now.",
 			CycleSpawnNow:         "Spawn this cycle now",
@@ -5811,7 +5811,7 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			ColumnPhase:      "Phase",
 			ColumnStatus:     "Status",
 			ColumnPeriod:     "Period",
-			TypeEngagement:   "Engagement",
+			TypeSubscription: "Engagement",
 			TypeOnboarding:   "Onboarding",
 			TypeCycle:        "Cycle",
 			TypeVisit:        "Visit",

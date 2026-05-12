@@ -198,12 +198,12 @@ type PageData struct {
 // subscription's Operations tab. Built by buildSubscriptionCyclesData per
 // cyclic-subscription-jobs plan §7.1.
 type SubscriptionCyclesData struct {
-	// EngagementJob is the parent shell Job (parent_job_id == NULL for cyclic
-	// subscriptions). Empty struct when the engagement hasn't been spawned
+	// SubscriptionShellJob is the parent shell Job (parent_job_id == NULL for cyclic
+	// subscriptions). Empty struct when the shell hasn't been spawned
 	// yet (legacy subscriptions created pre-this-plan).
-	EngagementJobID   string
-	EngagementName    string
-	EngagementHeading string // pre-resolved {{.Started}} / {{.Name}}
+	SubscriptionShellJobID   string
+	SubscriptionShellName    string
+	SubscriptionHeading      string // pre-resolved {{.Started}} / {{.Name}}
 
 	// OnceAtStartJobs are children of the engagement with cycle_index=NULL
 	// (e.g. onboarding fired by JOB_TEMPLATE_RELATION_TYPE_ONCE_AT_ENGAGEMENT_START).
@@ -1423,26 +1423,26 @@ func buildSubscriptionCyclesData(
 		CycleEmpty: deps.Labels.Operations.CycleEmpty,
 	}
 
-	// Pass 1 — find engagement shell (parent_job_id == "").
-	var engagementJob *jobpb.Job
+	// Pass 1 — find subscription shell job (parent_job_id == "").
+	var subscriptionShellJob *jobpb.Job
 	for _, j := range jobs {
 		if j.GetParentJobId() == "" {
-			engagementJob = j
+			subscriptionShellJob = j
 			break
 		}
 	}
-	if engagementJob != nil {
-		data.EngagementJobID = engagementJob.GetId()
-		data.EngagementName = engagementJob.GetName()
+	if subscriptionShellJob != nil {
+		data.SubscriptionShellJobID = subscriptionShellJob.GetId()
+		data.SubscriptionShellName = subscriptionShellJob.GetName()
 		started := ""
 		if ts := sub.GetDateTimeStart(); ts != nil && ts.IsValid() {
 			started = ts.AsTime().Format("2006-01-02")
 		}
 		r := strings.NewReplacer(
 			"{{.Started}}", started,
-			"{{.Name}}", engagementJob.GetName(),
+			"{{.Name}}", subscriptionShellJob.GetName(),
 		)
-		data.EngagementHeading = r.Replace(deps.Labels.Operations.EngagementHeading)
+		data.SubscriptionHeading = r.Replace(deps.Labels.Operations.SubscriptionHeading)
 	}
 
 	// Pass 2 — bucket children: cycle Jobs (have cycle_index) vs onboarding
@@ -1662,7 +1662,7 @@ func jobTypeKey(j *jobpb.Job) string {
 func jobTypeLabel(key string, l centymo.SubscriptionJobsTabLabels) string {
 	switch key {
 	case "engagement":
-		return l.TypeEngagement
+		return l.TypeSubscription
 	case "onboarding":
 		return l.TypeOnboarding
 	case "cycle":

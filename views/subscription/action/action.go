@@ -136,9 +136,9 @@ type MaterializeInstanceJobsResponse struct {
 	SpawnedCycleCount         int
 	SpawnedJobCount           int
 	OnceAtStartJobCount       int
-	EngagementWasNewlyCreated bool
-	SkippedReason             string
-	BackfillCappedAt          int32
+	ShellJobWasNewlyCreated bool
+	SkippedReason           string
+	BackfillCappedAt        int32
 }
 
 // MaterializeInstanceJobsForSubscriptionAdapter is the function-pointer type

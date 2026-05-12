@@ -83,21 +83,21 @@ type DetailViewDeps struct {
 	// SubscriptionEditURL / SubscriptionDeleteURL drive the row actions on
 	// the subscriptions tab table. When empty, the row's edit/delete actions
 	// render disabled (display-only). DetailURL is overridden by the nested
-	// engagement URL when PlanEngagementDetailURL is non-empty.
+	// subscription URL when PlanSubscriptionDetailURL is non-empty.
 	SubscriptionEditURL   string
 	SubscriptionDeleteURL string
 	// SubscriptionAddURL is the route for the "Add Subscription" primary
-	// action on the engagements tab. The drawer is opened in
+	// action on the subscriptions tab. The drawer is opened in
 	// price-plan-locked mode via ?price_plan_id=&plan_label=&client_id=...
-	// query params, mirroring how the client-detail engagements tab opens
+	// query params, mirroring how the client-detail subscriptions tab opens
 	// the same drawer in client-locked mode.
 	SubscriptionAddURL string
-	// PlanEngagementDetailURL is the schedule-scoped engagement URL template
-	// /app/price-schedules/detail/{id}/plan/{ppid}/engagement/{eid}. When
+	// PlanSubscriptionDetailURL is the schedule-scoped subscription URL template
+	// /app/price-schedules/detail/{id}/plan/{ppid}/subscription/{eid}. When
 	// set, the row's "View" action targets this nested URL so the
-	// subscription detail page renders with a rate-card → plan → engagement
+	// subscription detail page renders with a rate-card → plan → subscription
 	// breadcrumb. Empty falls back to SubscriptionDetailURL.
-	PlanEngagementDetailURL string
+	PlanSubscriptionDetailURL string
 	SubscriptionDetailURL   string
 
 	attachment.AttachmentOps

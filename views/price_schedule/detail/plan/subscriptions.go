@@ -137,8 +137,8 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 	tableRows := make([]types.TableRow, 0, len(rows))
 	for _, r := range rows {
 		viewURL := ""
-		if deps.PlanEngagementDetailURL != "" {
-			viewURL = route.ResolveURL(deps.PlanEngagementDetailURL, "id", sid, "ppid", ppid, "eid", r.ID)
+		if deps.PlanSubscriptionDetailURL != "" {
+			viewURL = route.ResolveURL(deps.PlanSubscriptionDetailURL, "id", sid, "ppid", ppid, "eid", r.ID)
 		} else if deps.SubscriptionDetailURL != "" {
 			viewURL = route.ResolveURL(deps.SubscriptionDetailURL, "id", r.ID)
 		}

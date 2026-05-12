@@ -187,7 +187,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		GetPricePlanInUseIDs:   deps.GetPricePlanInUseIDs,
 		// 2026-05-04 engagements tab.
 		ListSubscriptionsByPricePlan: deps.ListSubscriptionsByPricePlan,
-		PlanEngagementDetailURL:      deps.Routes.PlanEngagementDetailURL,
+		PlanSubscriptionDetailURL:     deps.Routes.PlanSubscriptionDetailURL,
 		SubscriptionDetailURL:        deps.SubscriptionDetailURL,
 		SubscriptionEditURL:          deps.SubscriptionEditURL,
 		SubscriptionDeleteURL:        deps.SubscriptionDeleteURL,

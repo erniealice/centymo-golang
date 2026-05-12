@@ -89,11 +89,11 @@ const (
 	PriceSchedulePlanAttachmentUploadURL = "/action/price-schedule/{id}/plan/{ppid}/attachments/upload"
 	PriceSchedulePlanAttachmentDeleteURL = "/action/price-schedule/{id}/plan/{ppid}/attachments/delete"
 
-	// 2026-05-04 — Engagements (subscriptions) tab on the schedule-scoped
+	// 2026-05-04 — Subscriptions tab on the schedule-scoped
 	// price_plan detail page. Same handler as SubscriptionDetailURL; the
-	// nested URL alone activates the rate-card → plan → engagement breadcrumb.
+	// nested URL alone activates the rate-card → plan → subscription breadcrumb.
 	// See docs/plan/20260504-price-plan-engagements-tab/.
-	PriceSchedulePlanEngagementDetailURL = "/app/price-schedules/detail/{id}/plan/{ppid}/engagement/{eid}"
+	PriceSchedulePlanSubscriptionDetailURL = "/app/price-schedules/detail/{id}/plan/{ppid}/subscription/{eid}"
 
 	SubscriptionListURL = "/app/subscriptions/list/{status}"
 	// SubscriptionTableURL returns ONLY the table-card partial — used as the

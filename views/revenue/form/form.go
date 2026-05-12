@@ -60,7 +60,7 @@ type Labels struct {
 	SubscriptionNoResults     string
 	RevenueType               string
 	RevenueTypeOneTime        string
-	RevenueTypeFromEngagement string
+	RevenueTypeFromSubscription string
 	RevenueTypeFromActivities string
 	ActivityIDs               string
 	ActivityIDsPlaceholder    string
