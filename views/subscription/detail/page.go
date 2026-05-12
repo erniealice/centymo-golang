@@ -253,7 +253,7 @@ type SubscriptionJobsTabData struct {
 type SubscriptionJobRow struct {
 	JobID         string
 	JobName       string
-	JobType       string // engagement | cycle | onboarding | visit
+	JobType       string // shell | cycle | onboarding | visit (derived from parent_job_id + cycle_index)
 	JobTypeLabel  string // lyngua-resolved
 	Status        string
 	StatusLabel   string
@@ -1629,10 +1629,10 @@ func applyJobsTabData(
 	// cycles); ties broken by name. Engagement shell has cycle_index=0 and
 	// parent_job_id="" — pin it to top by giving it a sentinel.
 	sort.SliceStable(rows, func(i, jj int) bool {
-		if rows[i].JobType == "engagement" {
+		if rows[i].JobType == "shell" {
 			return true
 		}
-		if rows[jj].JobType == "engagement" {
+		if rows[jj].JobType == "shell" {
 			return false
 		}
 		if rows[i].CycleIndex != rows[jj].CycleIndex {
@@ -1644,14 +1644,18 @@ func applyJobsTabData(
 }
 
 // jobTypeKey classifies a Job for the Jobs tab Type column / filter chips.
-// engagement = parent_job_id empty (shell);
-// onboarding = parent_job_id set AND cycle_index == 0 (ONCE_AT_ENGAGEMENT_START);
+// shell      = parent_job_id empty (the subscription's parent shell Job);
+// onboarding = parent_job_id set AND cycle_index == 0 (the once-at-shell-start child);
 // cycle      = parent_job_id set AND cycle_index > 0.
 // AD_HOC plan reinterprets "cycle" as "visit" — that override lives in the
 // downstream plan, not here.
+//
+// These values are NOT DB-stored — they are derived at render time from the
+// Job entity's parent_job_id and cycle_index. Renaming them is a pure code
+// change with no migration required.
 func jobTypeKey(j *jobpb.Job) string {
 	if j.GetParentJobId() == "" {
-		return "engagement"
+		return "shell"
 	}
 	if j.GetCycleIndex() == 0 {
 		return "onboarding"
@@ -1661,7 +1665,7 @@ func jobTypeKey(j *jobpb.Job) string {
 
 func jobTypeLabel(key string, l centymo.SubscriptionJobsTabLabels) string {
 	switch key {
-	case "engagement":
+	case "shell":
 		return l.TypeSubscription
 	case "onboarding":
 		return l.TypeOnboarding

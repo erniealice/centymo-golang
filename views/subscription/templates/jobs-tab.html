@@ -30,7 +30,7 @@ Data: PageData with .Jobs == *SubscriptionJobsTabData and .Labels for i18n.
         <button type="button"
                 class="chip chip--filter"
                 data-testid="subscription-jobs-filter-shell"
-                data-filter-type="engagement">
+                data-filter-type="shell">
             {{.Labels.Jobs.TypeSubscription}}
         </button>
         <button type="button"
@@ -65,7 +65,7 @@ Data: PageData with .Jobs == *SubscriptionJobsTabData and .Labels for i18n.
                 data-job-type="{{.JobType}}"
                 data-job-status="{{.Status}}">
                 <td>
-                    {{if eq .JobType "engagement"}}—{{else if eq .JobType "onboarding"}}⚙{{else}}{{.CycleIndex}}{{end}}
+                    {{if eq .JobType "shell"}}—{{else if eq .JobType "onboarding"}}⚙{{else}}{{.CycleIndex}}{{end}}
                 </td>
                 <td>
                     {{if .DetailURL}}
