@@ -47,6 +47,11 @@ type StrategyChip struct {
 // NewView creates the procurement request list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("procurement_request", "list") {
+			return view.Forbidden("procurement_request:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "draft"

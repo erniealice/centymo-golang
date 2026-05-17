@@ -36,6 +36,10 @@ type Deps struct {
 // NewAddAction handles GET (form) + POST (create) on the line add URL.
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition_line", "create") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:create"))
+		}
 		recognitionID := viewCtx.Request.PathValue("id")
 		if recognitionID == "" {
 			return centymo.HTMXError("missing recognition id")
@@ -86,6 +90,10 @@ func NewAddAction(deps *Deps) view.View {
 // NewEditAction handles GET (form) + POST (update) on the line edit URL.
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition_line", "update") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:update"))
+		}
 		recognitionID := viewCtx.Request.PathValue("id")
 		lineID := viewCtx.Request.PathValue("lid")
 		if recognitionID == "" || lineID == "" {
@@ -150,6 +158,10 @@ func NewEditAction(deps *Deps) view.View {
 // NewDeleteAction handles POST .../lines/delete.
 func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition_line", "delete") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:delete"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return centymo.HTMXError("method not allowed")
 		}

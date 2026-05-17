@@ -62,6 +62,11 @@ const (
 // NewView creates the expense_recognition detail page view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition", "read") {
+			return view.Forbidden("expense_recognition:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		if id == "" {
 			return view.Redirect(deps.Routes.ListURL)
@@ -140,6 +145,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // NewTabAction handles HTMX tab switch.
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition", "read") {
+			return view.Forbidden("expense_recognition:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if id == "" || tab == "" {

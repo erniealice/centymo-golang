@@ -53,6 +53,11 @@ var planSearchFields = []string{"name", "description"}
 // NewView creates the plan list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("plan", "list") {
+			return view.Forbidden("plan:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
@@ -214,7 +219,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 			ActionURL:       deps.Routes.AddURL,
 			Icon:            "icon-plus",
 			Disabled:        !perms.Can("plan", "create"),
-			DisabledTooltip: l.Errors.NoPermission,
+			DisabledTooltip: fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "plan:create"),
 		}
 	}
 
@@ -286,7 +291,7 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 
 		actions := []types.TableAction{
 			{Type: "view", Label: l.Actions.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("plan", "update"), DisabledTooltip: l.Errors.NoPermission},
+			{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("plan", "update"), DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "plan:update")},
 		}
 
 		if recordStatus == "active" {
@@ -297,7 +302,7 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 				URL:             route.ResolveURL(routes.EditURL, "id", id),
 				DrawerTitle:     cl.Actions.Clone,
 				Disabled:        !perms.Can("plan", "create"),
-				DisabledTooltip: l.Errors.NoPermission,
+				DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "plan:create"),
 			})
 			actions = append(actions, types.TableAction{
 				Type:            "deactivate",
@@ -308,7 +313,7 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 				ConfirmTitle:    l.Confirm.Deactivate,
 				ConfirmMessage:  fmt.Sprintf(l.Confirm.DeactivateMessage, name),
 				Disabled:        !perms.Can("plan", "update"),
-				DisabledTooltip: l.Errors.NoPermission,
+				DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "plan:update"),
 			})
 		} else {
 			actions = append(actions, types.TableAction{
@@ -320,7 +325,7 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 				ConfirmTitle:    l.Confirm.Activate,
 				ConfirmMessage:  fmt.Sprintf(l.Confirm.ActivateMessage, name),
 				Disabled:        !perms.Can("plan", "update"),
-				DisabledTooltip: l.Errors.NoPermission,
+				DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "plan:update"),
 			})
 		}
 
@@ -337,7 +342,7 @@ func buildTableRows(plans []*planpb.Plan, status string, l centymo.PlanLabels, c
 		}
 		if !perms.Can("plan", "delete") {
 			deleteAction.Disabled = true
-			deleteAction.DisabledTooltip = l.Errors.NoPermission
+			deleteAction.DisabledTooltip = fmt.Sprintf(cl.Errors.MissingPermission, "plan:delete")
 		}
 		actions = append(actions, deleteAction)
 

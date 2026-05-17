@@ -46,6 +46,10 @@ var costPlanSearchFields = []string{"name"}
 // NewView creates the cost_plan list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("cost_plan", "list") {
+			return view.Forbidden("cost_plan:list")
+		}
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
@@ -147,6 +151,10 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	sp.BuildDisplay()
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	updateDisabled := !perms.Can("cost_plan", "update")
+	updateTip := fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "cost_plan:update")
+	deleteDisabled := !perms.Can("cost_plan", "delete")
+	deleteTip := fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "cost_plan:delete")
 	bulkCfg.Actions = []types.BulkAction{
 		{
 			Key:              "activate",
@@ -158,6 +166,8 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 			ConfirmTitle:     l.Confirm.BulkActivate,
 			ConfirmMessage:   l.Confirm.BulkActivateMessage,
 			RequiresDataAttr: "activatable",
+			Disabled:         updateDisabled,
+			DisabledTooltip:  updateTip,
 		},
 		{
 			Key:              "deactivate",
@@ -169,6 +179,8 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 			ConfirmTitle:     l.Confirm.BulkDeactivate,
 			ConfirmMessage:   l.Confirm.BulkDeactivateMessage,
 			RequiresDataAttr: "deactivatable",
+			Disabled:         updateDisabled,
+			DisabledTooltip:  updateTip,
 		},
 		{
 			Key:              "delete",
@@ -179,6 +191,8 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 			ConfirmTitle:     l.Confirm.BulkDelete,
 			ConfirmMessage:   l.Confirm.BulkDeleteMessage,
 			RequiresDataAttr: "deletable",
+			Disabled:         deleteDisabled,
+			DisabledTooltip:  deleteTip,
 		},
 	}
 

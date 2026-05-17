@@ -103,6 +103,11 @@ const (
 // NewView creates the supplier contract detail page view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "read") {
+			return view.Forbidden("supplier_contract:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		if id == "" {
 			return view.Redirect(deps.Routes.ListURL)
@@ -219,6 +224,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // NewTabAction handles HTMX tab switch requests (/action/supplier-contract/detail/{id}/tab/{tab}).
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "read") {
+			return view.Forbidden("supplier_contract:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if id == "" || tab == "" {
@@ -325,6 +335,10 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 // HX-Redirects back to the detail page.
 func NewApproveAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "approve") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:approve"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}
@@ -353,6 +367,10 @@ func NewApproveAction(deps *DetailViewDeps) view.View {
 // detail page. Optional reason from form body is forwarded to the use case.
 func NewTerminateAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "terminate") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:terminate"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

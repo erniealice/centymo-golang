@@ -125,6 +125,11 @@ type ProductLineFormData struct {
 // NewView creates the product detail view (full page).
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product", "read") {
+			return view.Forbidden("product:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		activeTab := viewCtx.Request.URL.Query().Get("tab")
@@ -155,6 +160,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // Handles GET /action/products/detail/{id}/tab/{tab}
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product", "read") {
+			return view.Forbidden("product:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {

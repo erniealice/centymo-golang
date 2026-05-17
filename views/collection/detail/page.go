@@ -70,6 +70,11 @@ func collectionToMap(c *collectionpb.Collection) map[string]any {
 // NewView creates the collection detail view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("collection", "read") {
+			return view.Forbidden("collection:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		resp, err := deps.ReadCollection(ctx, &collectionpb.ReadCollectionRequest{
@@ -172,6 +177,11 @@ func buildTabItems(l centymo.CollectionLabels, id string, routes centymo.Collect
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("collection", "read") {
+			return view.Forbidden("collection:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {

@@ -32,6 +32,10 @@ type PageData struct {
 // NewView creates the accrued_expense list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense", "list") {
+			return view.Forbidden("accrued_expense:list")
+		}
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "all"
@@ -62,8 +66,10 @@ func NewView(deps *ListViewDeps) view.View {
 		var primaryAction *types.PrimaryAction
 		if deps.Routes.AddURL != "" {
 			primaryAction = &types.PrimaryAction{
-				Label:     l.Buttons.Add,
-				ActionURL: deps.Routes.AddURL,
+				Label:           l.Buttons.Add,
+				ActionURL:       deps.Routes.AddURL,
+				Disabled:        !perms.Can("accrued_expense", "create"),
+				DisabledTooltip: fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:create"),
 			}
 		}
 

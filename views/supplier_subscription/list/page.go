@@ -50,6 +50,11 @@ var supplierSubscriptionSearchFields = []string{"name"}
 // NewView creates the supplier_subscription list view (full page).
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_subscription", "list") {
+			return view.Forbidden("supplier_subscription:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"

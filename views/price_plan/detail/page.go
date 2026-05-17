@@ -241,6 +241,11 @@ type ProductPricePlanFormData struct {
 // NewView creates the price plan detail view (full page).
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_plan", "read") {
+			return view.Forbidden("price_plan:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		activeTab := viewCtx.Request.URL.Query().Get("tab")
@@ -286,6 +291,9 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		id := viewCtx.Request.PathValue("id")
 
 		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_plan", "read") {
+			return view.Forbidden("price_plan:read")
+		}
 		if !perms.Can("product_price_plan", "create") {
 			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
 		}

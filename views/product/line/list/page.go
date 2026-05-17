@@ -38,6 +38,11 @@ var productLineSearchFields = []string{"name", "description"}
 
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product_line", "list") {
+			return view.Forbidden("product_line:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"

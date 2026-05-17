@@ -38,6 +38,10 @@ type Deps struct {
 // URL pattern: /action/supplier-contract-price-schedule/{id}/lines/add  ({id}=schedule id)
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract_price_schedule_line", "create") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:create"))
+		}
 		scheduleID := viewCtx.Request.PathValue("id")
 		if scheduleID == "" {
 			return view.Error(fmt.Errorf("missing schedule id"))
@@ -115,6 +119,10 @@ func NewAddAction(deps *Deps) view.View {
 // URL pattern: /action/supplier-contract-price-schedule/{id}/lines/edit/{lid}
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract_price_schedule_line", "update") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:update"))
+		}
 		lineID := viewCtx.Request.PathValue("lid")
 		scheduleID := viewCtx.Request.PathValue("id")
 		if lineID == "" || scheduleID == "" {
@@ -222,6 +230,10 @@ func NewEditAction(deps *Deps) view.View {
 // NewDeleteAction handles POST /action/supplier-contract-price-schedule/{id}/lines/delete.
 func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract_price_schedule_line", "delete") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:delete"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

@@ -238,6 +238,11 @@ func listLineItemMaps(ctx context.Context, listFn func(context.Context, *purchas
 // NewView creates the purchase order detail view (full page).
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("purchase_order", "read") {
+			return view.Forbidden("purchase_order:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		resp, err := deps.ReadPurchaseOrder(ctx, &purchaseorderpb.ReadPurchaseOrderRequest{
@@ -330,6 +335,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("purchase_order", "read") {
+			return view.Forbidden("purchase_order:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {

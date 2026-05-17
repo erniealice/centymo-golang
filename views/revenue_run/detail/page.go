@@ -38,6 +38,11 @@ type DetailViewDeps struct {
 // NewView creates the full-page revenue-run detail view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "read") {
+			return view.Forbidden("invoice:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		runWithAttempts, err := deps.ReadRevenueRun(ctx, id)
@@ -90,6 +95,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // Called via HTMX when the user clicks a tab button.
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "read") {
+			return view.Forbidden("invoice:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {

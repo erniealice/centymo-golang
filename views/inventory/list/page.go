@@ -40,6 +40,11 @@ var inventorySearchFields = []string{"product_name", "sku"}
 // NewView creates the inventory list view (full page).
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "list") {
+			return view.Forbidden("inventory_item:list")
+		}
+		_ = perms
 		location := viewCtx.Request.PathValue("location")
 		if location == "" {
 			location = "ayala-central-bloc"

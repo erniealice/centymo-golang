@@ -83,6 +83,11 @@ type PageData struct {
 // NewView creates the sales detail view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "read") {
+			return view.Forbidden("invoice:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		resp, err := deps.ReadRevenue(ctx, &revenuepb.ReadRevenueRequest{
@@ -244,6 +249,11 @@ func buildTabItems(l centymo.RevenueLabels, id string, routes centymo.RevenueRou
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "read") {
+			return view.Forbidden("invoice:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {
@@ -501,8 +511,8 @@ func buildPaymentTable(payments []map[string]any, l centymo.RevenueLabels, table
 				{Type: "text", Value: paymentDate},
 			},
 			Actions: []types.TableAction{
-				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.PaymentEditURL, "id", revenueID, "pid", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
-				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: route.ResolveURL(routes.PaymentRemoveURL, "id", revenueID), ItemName: method, Disabled: !perms.Can("invoice", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+				{Type: "edit", Label: l.Actions.Edit, Action: "edit", URL: route.ResolveURL(routes.PaymentEditURL, "id", revenueID, "pid", id), DrawerTitle: l.Actions.Edit, Disabled: !perms.Can("payment", "update"), DisabledTooltip: l.Errors.PermissionDenied},
+				{Type: "delete", Label: l.Actions.Delete, Action: "delete", URL: route.ResolveURL(routes.PaymentRemoveURL, "id", revenueID), ItemName: method, Disabled: !perms.Can("payment", "delete"), DisabledTooltip: l.Errors.PermissionDenied},
 			},
 		})
 	}

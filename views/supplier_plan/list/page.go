@@ -46,6 +46,11 @@ var supplierPlanSearchFields = []string{"name"}
 // NewView creates the supplier_plan list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_plan", "list") {
+			return view.Forbidden("supplier_plan:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"

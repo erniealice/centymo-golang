@@ -36,6 +36,9 @@ type PageData struct {
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("disbursement", "list") {
+			return view.Forbidden("disbursement:list")
+		}
 
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {

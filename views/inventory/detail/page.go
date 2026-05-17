@@ -100,6 +100,11 @@ type PageData struct {
 // NewView creates the inventory detail view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "read") {
+			return view.Forbidden("inventory_item:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		resp, err := deps.ReadInventoryItem(ctx, &inventoryitempb.ReadInventoryItemRequest{
@@ -238,6 +243,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // NewTabAction creates an HTMX tab action view that returns only the tab content partial.
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("inventory_item", "read") {
+			return view.Forbidden("inventory_item:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 

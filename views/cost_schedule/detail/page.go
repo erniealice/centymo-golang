@@ -63,6 +63,11 @@ func loadRecord(ctx context.Context, deps *DetailViewDeps, id string) (*costsche
 // NewView creates the cost_schedule detail page view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("cost_schedule", "read") {
+			return view.Forbidden("cost_schedule:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		activeTab := viewCtx.Request.URL.Query().Get("tab")
 		if activeTab == "" {
@@ -99,6 +104,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // NewTabAction handles HTMX tab-swap requests.
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("cost_schedule", "read") {
+			return view.Forbidden("cost_schedule:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {

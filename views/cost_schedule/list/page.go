@@ -50,6 +50,11 @@ var costScheduleSearchFields = []string{"name"}
 // NewView creates the cost_schedule list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("cost_schedule", "list") {
+			return view.Forbidden("cost_schedule:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"

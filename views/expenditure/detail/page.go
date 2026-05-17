@@ -173,6 +173,11 @@ func expenditureToMap(e *expenditurepb.Expenditure) map[string]any {
 // NewView creates the expense detail view (full page).
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expenditure", "read") {
+			return view.Forbidden("expenditure:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		resp, err := deps.ReadExpenditure(ctx, &expenditurepb.ReadExpenditureRequest{
@@ -264,6 +269,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expenditure", "read") {
+			return view.Forbidden("expenditure:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {
@@ -356,7 +366,7 @@ func NewLineItemTableView(deps *LineItemDeps) view.View {
 func NewLineItemAddView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("expense", "update") {
+		if !perms.Can("expenditure_line_item", "create") {
 			return lineItemHTMXError("Permission denied")
 		}
 
@@ -415,7 +425,7 @@ func NewLineItemAddView(deps *LineItemDeps) view.View {
 func NewLineItemEditView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("expense", "update") {
+		if !perms.Can("expenditure_line_item", "update") {
 			return lineItemHTMXError("Permission denied")
 		}
 
@@ -487,7 +497,7 @@ func NewLineItemEditView(deps *LineItemDeps) view.View {
 func NewLineItemRemoveView(deps *LineItemDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("expense", "update") {
+		if !perms.Can("expenditure_line_item", "delete") {
 			return lineItemHTMXError("Permission denied")
 		}
 
@@ -695,7 +705,7 @@ func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tab
 				Action:          "edit",
 				URL:             route.ResolveURL(routes.LineItemEditURL, "id", expenditureID, "itemId", id),
 				DrawerTitle:     "Edit Line Item",
-				Disabled:        !perms.Can("expense", "update"),
+				Disabled:        !perms.Can("expenditure_line_item", "update"),
 				DisabledTooltip: l.Errors.NoPermission,
 			},
 			{
@@ -704,7 +714,7 @@ func buildLineItemTable(items []map[string]any, l centymo.ExpenditureLabels, tab
 				Action:          "delete",
 				URL:             route.ResolveURL(routes.LineItemRemoveURL, "id", expenditureID) + "?itemId=" + id,
 				ItemName:        description,
-				Disabled:        !perms.Can("expense", "update"),
+				Disabled:        !perms.Can("expenditure_line_item", "delete"),
 				DisabledTooltip: l.Errors.NoPermission,
 			},
 		}

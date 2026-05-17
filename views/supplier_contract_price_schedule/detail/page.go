@@ -68,6 +68,11 @@ type PageData struct {
 // NewView creates the SCPS detail page view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract_price_schedule", "read") {
+			return view.Forbidden("supplier_contract_price_schedule:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		if id == "" {
 			return view.Redirect(deps.Routes.ListURL)
@@ -107,6 +112,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // NewTabAction handles HTMX tab switch requests.
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract_price_schedule", "read") {
+			return view.Forbidden("supplier_contract_price_schedule:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if id == "" || tab == "" {

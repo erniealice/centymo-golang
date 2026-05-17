@@ -40,6 +40,9 @@ var collectionSearchFields = []string{"name", "reference_number", "status"}
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("collection", "list") {
+			return view.Forbidden("collection:list")
+		}
 
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
@@ -84,7 +87,7 @@ func NewView(deps *ListViewDeps) view.View {
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
-		bulkCfg.Actions = buildBulkActions(l, status, deps.Routes)
+		bulkCfg.Actions = buildBulkActions(l, deps.CommonLabels, status, deps.Routes, perms)
 
 		tableConfig := &types.TableConfig{
 			ID:                   "collections-table",
@@ -298,8 +301,12 @@ func statusVariant(status string) string {
 	}
 }
 
-func buildBulkActions(l centymo.CollectionLabels, status string, routes centymo.CollectionRoutes) []types.BulkAction {
+func buildBulkActions(l centymo.CollectionLabels, cl pyeza.CommonLabels, status string, routes centymo.CollectionRoutes, perms *types.UserPermissions) []types.BulkAction {
 	actions := []types.BulkAction{}
+	updateDisabled := !perms.Can("collection", "update")
+	updateTip := fmt.Sprintf(cl.Errors.MissingPermission, "collection:update")
+	deleteDisabled := !perms.Can("collection", "delete")
+	deleteTip := fmt.Sprintf(cl.Errors.MissingPermission, "collection:delete")
 
 	switch status {
 	case "pending":
@@ -312,15 +319,19 @@ func buildBulkActions(l centymo.CollectionLabels, status string, routes centymo.
 			ConfirmTitle:    l.Confirm.BulkComplete,
 			ConfirmMessage:  l.Confirm.BulkCompleteMessage,
 			ExtraParamsJSON: `{"target_status":"completed"}`,
+			Disabled:        updateDisabled,
+			DisabledTooltip: updateTip,
 		})
 		actions = append(actions, types.BulkAction{
-			Key:            "delete",
-			Label:          l.Confirm.BulkDelete,
-			Icon:           "icon-trash",
-			Variant:        "danger",
-			Endpoint:       routes.BulkDeleteURL,
-			ConfirmTitle:   l.Confirm.BulkDelete,
-			ConfirmMessage: l.Confirm.BulkDeleteMessage,
+			Key:             "delete",
+			Label:           l.Confirm.BulkDelete,
+			Icon:            "icon-trash",
+			Variant:         "danger",
+			Endpoint:        routes.BulkDeleteURL,
+			ConfirmTitle:    l.Confirm.BulkDelete,
+			ConfirmMessage:  l.Confirm.BulkDeleteMessage,
+			Disabled:        deleteDisabled,
+			DisabledTooltip: deleteTip,
 		})
 	case "completed":
 		actions = append(actions, types.BulkAction{
@@ -332,6 +343,8 @@ func buildBulkActions(l centymo.CollectionLabels, status string, routes centymo.
 			ConfirmTitle:    l.Confirm.BulkReactivate,
 			ConfirmMessage:  l.Confirm.BulkReactivateMessage,
 			ExtraParamsJSON: `{"target_status":"pending"}`,
+			Disabled:        updateDisabled,
+			DisabledTooltip: updateTip,
 		})
 	case "failed":
 		actions = append(actions, types.BulkAction{
@@ -343,15 +356,19 @@ func buildBulkActions(l centymo.CollectionLabels, status string, routes centymo.
 			ConfirmTitle:    l.Confirm.BulkReactivate,
 			ConfirmMessage:  l.Confirm.BulkReactivateMessage,
 			ExtraParamsJSON: `{"target_status":"pending"}`,
+			Disabled:        updateDisabled,
+			DisabledTooltip: updateTip,
 		})
 		actions = append(actions, types.BulkAction{
-			Key:            "delete",
-			Label:          l.Confirm.BulkDelete,
-			Icon:           "icon-trash",
-			Variant:        "danger",
-			Endpoint:       routes.BulkDeleteURL,
-			ConfirmTitle:   l.Confirm.BulkDelete,
-			ConfirmMessage: l.Confirm.BulkDeleteMessage,
+			Key:             "delete",
+			Label:           l.Confirm.BulkDelete,
+			Icon:            "icon-trash",
+			Variant:         "danger",
+			Endpoint:        routes.BulkDeleteURL,
+			ConfirmTitle:    l.Confirm.BulkDelete,
+			ConfirmMessage:  l.Confirm.BulkDeleteMessage,
+			Disabled:        deleteDisabled,
+			DisabledTooltip: deleteTip,
 		})
 	}
 

@@ -43,7 +43,7 @@ type PriceProductDeps struct {
 func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("price_list", "create") {
+		if !perms.Can("price_product", "create") {
 			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
@@ -124,7 +124,7 @@ func NewPriceProductAddAction(deps *PriceProductDeps) view.View {
 func NewPriceProductDeleteAction(deps *PriceProductDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
-		if !perms.Can("price_list", "delete") {
+		if !perms.Can("price_product", "delete") {
 			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 

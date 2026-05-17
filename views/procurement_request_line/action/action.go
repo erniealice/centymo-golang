@@ -34,6 +34,10 @@ type Deps struct {
 // NewAddAction handles GET+POST for adding a procurement request line.
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("procurement_request_line", "create") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:create"))
+		}
 		requestID := viewCtx.Request.PathValue("id")
 		if requestID == "" {
 			return view.Error(fmt.Errorf("missing request id"))
@@ -108,6 +112,10 @@ func NewAddAction(deps *Deps) view.View {
 // NewEditAction handles GET+POST for editing a procurement request line.
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("procurement_request_line", "update") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:update"))
+		}
 		lineID := viewCtx.Request.PathValue("lid")
 		requestID := viewCtx.Request.PathValue("id")
 		if lineID == "" || requestID == "" {
@@ -216,6 +224,10 @@ func NewEditAction(deps *Deps) view.View {
 // NewDeleteAction handles POST for deleting a procurement request line.
 func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("procurement_request_line", "delete") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:delete"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}
@@ -240,6 +252,10 @@ func NewDeleteAction(deps *Deps) view.View {
 // is re-rendered. Wired so the operator-facing button works end-to-end UX-wise.
 func NewRetrySpawnAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("purchase_order", "create") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "purchase_order:create"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

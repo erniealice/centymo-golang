@@ -67,6 +67,11 @@ const (
 // NewView creates the accrued_expense detail page view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense", "read") {
+			return view.Forbidden("accrued_expense:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		if id == "" {
 			return view.Redirect(deps.Routes.ListURL)
@@ -147,6 +152,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // NewTabAction handles HTMX tab switch.
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense", "read") {
+			return view.Forbidden("accrued_expense:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if id == "" || tab == "" {
@@ -222,6 +232,10 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 // from the form body and forwards to the SettleAccrual use case.
 func NewSettleAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense", "settle") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:settle"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}
@@ -273,6 +287,10 @@ func NewSettleAction(deps *DetailViewDeps) view.View {
 // NewReverseAction handles POST .../reverse/{id}.
 func NewReverseAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense", "reverse") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:reverse"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

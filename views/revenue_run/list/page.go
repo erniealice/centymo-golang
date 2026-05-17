@@ -37,6 +37,11 @@ type PageData struct {
 // NewView creates the full-page revenue-run list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "list") {
+			return view.Forbidden("invoice:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "pending"

@@ -50,6 +50,10 @@ type Deps struct {
 // NewAddAction handles GET (form) + POST (create).
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense_settlement", "create") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:create"))
+		}
 		accrualID := viewCtx.Request.PathValue("id")
 		if accrualID == "" {
 			return centymo.HTMXError("missing accrual id")
@@ -98,6 +102,10 @@ func NewAddAction(deps *Deps) view.View {
 // NewEditAction handles GET (form) + POST (update).
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense_settlement", "update") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:update"))
+		}
 		accrualID := viewCtx.Request.PathValue("id")
 		settlementID := viewCtx.Request.PathValue("sid")
 		if accrualID == "" || settlementID == "" {
@@ -159,6 +167,10 @@ func NewEditAction(deps *Deps) view.View {
 // NewDeleteAction handles POST .../settlements/delete.
 func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense_settlement", "delete") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:delete"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return centymo.HTMXError("method not allowed")
 		}

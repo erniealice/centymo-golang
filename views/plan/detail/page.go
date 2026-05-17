@@ -111,6 +111,11 @@ type PageData struct {
 // NewView creates the plan detail view (full page).
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("plan", "read") {
+			return view.Forbidden("plan:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		activeTab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.URL.Query().Get("tab"))
@@ -131,6 +136,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // Handles GET /action/plans/detail/{id}/tab/{tab}
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("plan", "read") {
+			return view.Forbidden("plan:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.PathValue("tab"))
 		if tab == "" {

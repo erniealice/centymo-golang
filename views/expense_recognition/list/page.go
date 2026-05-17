@@ -32,6 +32,11 @@ type PageData struct {
 // NewView creates the expense_recognition list view.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition", "list") {
+			return view.Forbidden("expense_recognition:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "all"

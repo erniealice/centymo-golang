@@ -88,6 +88,11 @@ type PageData struct {
 // NewView creates the price schedule detail view (full page).
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_schedule", "read") {
+			return view.Forbidden("price_schedule:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		activeTab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.URL.Query().Get("tab"))
@@ -132,6 +137,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 func NewPlanAddAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_schedule", "read") {
+			return view.Forbidden("price_schedule:read")
+		}
 		if !perms.Can("price_plan", "create") {
 			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
 		}

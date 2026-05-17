@@ -209,6 +209,11 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 // NewView creates the subscription list view (full page).
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("subscription", "list") {
+			return view.Forbidden("subscription:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"

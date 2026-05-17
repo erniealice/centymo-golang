@@ -54,6 +54,11 @@ type PageData struct {
 // NewView creates the price list detail view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_list", "read") {
+			return view.Forbidden("price_list:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		tab := viewCtx.Request.URL.Query().Get("tab")
@@ -162,6 +167,11 @@ func NewView(deps *DetailViewDeps) view.View {
 // Handles GET /action/price-lists/{id}/tab/{tab}
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_list", "read") {
+			return view.Forbidden("price_list:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {
@@ -293,7 +303,7 @@ func buildPricesTable(ctx context.Context, deps *DetailViewDeps, priceListID str
 				{Type: "text", Value: currency},
 			},
 			Actions: []types.TableAction{
-				{Type: "delete", Label: l.Detail.RemoveLabel, Action: "delete", URL: deleteURL, ItemName: productName, Disabled: !perms.Can("price_list", "delete"), DisabledTooltip: l.Errors.PermissionDenied},
+				{Type: "delete", Label: l.Detail.RemoveLabel, Action: "delete", URL: deleteURL, ItemName: productName, Disabled: !perms.Can("price_product", "delete"), DisabledTooltip: l.Errors.PermissionDenied},
 			},
 		})
 	}
@@ -318,7 +328,7 @@ func buildPricesTable(ctx context.Context, deps *DetailViewDeps, priceListID str
 			Label:           l.Detail.AddPrice,
 			ActionURL:       addURL,
 			Icon:            "icon-plus",
-			Disabled:        !perms.Can("price_list", "create"),
+			Disabled:        !perms.Can("price_product", "create"),
 			DisabledTooltip: l.Errors.PermissionDenied,
 		},
 	}

@@ -42,6 +42,10 @@ type RecognizeExpenseDeps struct {
 // Linked Recognitions tab refreshes inline (mirrors selling-side pattern).
 func NewRecognizeExpenseAction(deps *RecognizeExpenseDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition", "create") {
+			return centymo.HTMXError("Missing permission: expense_recognition:create")
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

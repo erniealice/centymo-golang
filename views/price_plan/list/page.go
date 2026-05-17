@@ -41,6 +41,11 @@ var pricePlanSearchFields = []string{"name", "description"}
 
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_plan", "list") {
+			return view.Forbidden("price_plan:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
@@ -157,7 +162,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 	}
 
 	l := deps.Labels
-	rows := buildTableRows(resp.GetData(), status, l, deps.Routes, inUseIDs, perms, planNames, scheduleNames, deps.CommonLabels.DurationUnit)
+	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, planNames, scheduleNames, deps.CommonLabels.DurationUnit)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
@@ -200,7 +205,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 			ActionURL:       deps.Routes.AddURL,
 			Icon:            "icon-plus",
 			Disabled:        !perms.Can("price_plan", "create"),
-			DisabledTooltip: l.Errors.Unauthorized,
+			DisabledTooltip: fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "price_plan:create"),
 		},
 		BulkActions: &bulkCfg,
 	}
@@ -219,7 +224,7 @@ func pricePlanColumns(l centymo.PricePlanLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centymo.PricePlanLabels, routes centymo.PricePlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, planNames, scheduleNames map[string]string, durationLabels pyeza.DurationUnitLabels) []types.TableRow {
+func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centymo.PricePlanLabels, cl pyeza.CommonLabels, routes centymo.PricePlanRoutes, inUseIDs map[string]bool, perms *types.UserPermissions, planNames, scheduleNames map[string]string, durationLabels pyeza.DurationUnitLabels) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, pp := range pricePlans {
 		recordStatus := "active"
@@ -263,7 +268,7 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 		}
 		if !perms.Can("price_plan", "delete") {
 			deleteAction.Disabled = true
-			deleteAction.DisabledTooltip = l.Errors.Unauthorized
+			deleteAction.DisabledTooltip = fmt.Sprintf(cl.Errors.MissingPermission, "price_plan:delete")
 		}
 
 		rows = append(rows, types.TableRow{
@@ -283,7 +288,7 @@ func buildTableRows(pricePlans []*priceplanpb.PricePlan, status string, l centym
 			},
 			Actions: []types.TableAction{
 				{Type: "view", Label: l.Buttons.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
-				{Type: "edit", Label: l.Buttons.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Buttons.Edit, Disabled: !perms.Can("price_plan", "update"), DisabledTooltip: l.Errors.Unauthorized},
+				{Type: "edit", Label: l.Buttons.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Buttons.Edit, Disabled: !perms.Can("price_plan", "update"), DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "price_plan:update")},
 				deleteAction,
 			},
 		})

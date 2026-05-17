@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -43,6 +44,11 @@ var priceScheduleSearchFields = []string{"name", "description"}
 
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("price_schedule", "list") {
+			return view.Forbidden("price_schedule:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "active"
@@ -168,7 +174,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 			ActionURL:       deps.Routes.AddURL,
 			Icon:            "icon-plus",
 			Disabled:        !perms.Can("price_schedule", "create"),
-			DisabledTooltip: l.Errors.Unauthorized,
+			DisabledTooltip: fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "price_schedule:create"),
 		}
 	}
 
@@ -275,7 +281,7 @@ func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceSched
 	actions := []types.TableAction{
 		{Type: "view", Label: l.Buttons.View, Action: "view", Href: route.ResolveURL(routes.DetailURL, "id", id)},
 		{Type: "edit", Label: l.Buttons.Edit, Action: "edit", URL: route.ResolveURL(routes.EditURL, "id", id), DrawerTitle: l.Buttons.Edit,
-			Disabled: !perms.Can("price_schedule", "update"), DisabledTooltip: l.Errors.Unauthorized},
+			Disabled: !perms.Can("price_schedule", "update"), DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "price_schedule:update")},
 	}
 
 	if active {
@@ -286,7 +292,7 @@ func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceSched
 			URL:             route.ResolveURL(routes.EditURL, "id", id),
 			DrawerTitle:     cl.Actions.Clone,
 			Disabled:        !perms.Can("price_schedule", "create"),
-			DisabledTooltip: l.Errors.Unauthorized,
+			DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "price_schedule:create"),
 		})
 		actions = append(actions, types.TableAction{
 			Type: "deactivate", Label: l.Buttons.Deactivate, Action: "deactivate",
@@ -294,7 +300,7 @@ func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceSched
 			ConfirmTitle:    l.Confirm.DeactivateTitle,
 			ConfirmMessage:  strings.ReplaceAll(l.Confirm.DeactivateMessage, "{{name}}", name),
 			Disabled:        !perms.Can("price_schedule", "update"),
-			DisabledTooltip: l.Errors.Unauthorized,
+			DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "price_schedule:update"),
 		})
 	} else {
 		actions = append(actions, types.TableAction{
@@ -303,7 +309,7 @@ func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceSched
 			ConfirmTitle:    l.Confirm.ActivateTitle,
 			ConfirmMessage:  strings.ReplaceAll(l.Confirm.ActivateMessage, "{{name}}", name),
 			Disabled:        !perms.Can("price_schedule", "update"),
-			DisabledTooltip: l.Errors.Unauthorized,
+			DisabledTooltip: fmt.Sprintf(cl.Errors.MissingPermission, "price_schedule:update"),
 		})
 	}
 
@@ -319,7 +325,7 @@ func buildRowActions(id, name string, active, isInUse bool, l centymo.PriceSched
 		deleteAction.DisabledTooltip = l.Errors.InUse
 	} else if !perms.Can("price_schedule", "delete") {
 		deleteAction.Disabled = true
-		deleteAction.DisabledTooltip = l.Errors.Unauthorized
+		deleteAction.DisabledTooltip = fmt.Sprintf(cl.Errors.MissingPermission, "price_schedule:delete")
 	}
 	actions = append(actions, deleteAction)
 	return actions

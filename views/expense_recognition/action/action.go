@@ -27,6 +27,10 @@ type Deps struct {
 // NewDeleteAction handles POST /action/expense-recognition/delete (Draft only).
 func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition", "delete") {
+			return centymo.HTMXError("Missing permission: expense_recognition:delete")
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

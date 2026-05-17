@@ -36,6 +36,10 @@ type Deps struct {
 // NewAddAction handles GET+POST /action/supplier-contract/add.
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "create") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:create"))
+		}
 		l := deps.Labels
 		if viewCtx.Request.Method == http.MethodGet {
 			fd := buildEmptyFormData(ctx, deps, l)
@@ -95,6 +99,10 @@ func NewAddAction(deps *Deps) view.View {
 // NewEditAction handles GET+POST /action/supplier-contract/edit/{id}.
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "update") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
+		}
 		l := deps.Labels
 		id := viewCtx.Request.PathValue("id")
 		if id == "" {
@@ -190,6 +198,10 @@ func NewEditAction(deps *Deps) view.View {
 // NewDeleteAction handles POST /action/supplier-contract/delete.
 func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "delete") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:delete"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}
@@ -211,6 +223,10 @@ func NewDeleteAction(deps *Deps) view.View {
 // NewSetStatusAction handles POST /action/supplier-contract/set-status.
 func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "update") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}
@@ -231,6 +247,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 // NewBulkSetStatusAction handles POST /action/supplier-contract/bulk-set-status.
 func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract", "update") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

@@ -20,6 +20,10 @@ import (
 // per S7: partials supporting parent CRUD handlers live in action/.
 func NewSpawnJobsPartialAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("subscription", "update") && !perms.Can("subscription", "create") {
+			return view.Forbidden("subscription:update")
+		}
 		pricePlanID := viewCtx.Request.URL.Query().Get("price_plan_id")
 		labels := buildFormLabels(deps.Labels)
 

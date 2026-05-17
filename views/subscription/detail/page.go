@@ -363,6 +363,11 @@ func subscriptionToMap(ctx context.Context, s *subscriptionpb.Subscription) map[
 // breadcrumb.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("subscription", "read") {
+			return view.Forbidden("subscription:read")
+		}
+		_ = perms
 		// 2026-05-04 — three URL mounts share this view:
 		//   /app/subscriptions/detail/{id}                                  (flat)
 		//   /app/clients/detail/{client_id}/subscriptions/{id}              (under client)
@@ -481,9 +486,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		// tab can refresh inline (HX-Trigger refresh-invoices listens here).
 		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
 
-		perms := view.GetUserPermissions(ctx)
-		// nil perms = no restrictions (dev / mock mode). Consistent with
-		// the comment on UserPermissions.Can() and most other view checks.
+		// perms already resolved at top of handler
 		canRecognize := perms == nil || perms.Can("revenue", "create")
 		subscriptionActive, _ := subscription["active"].(bool)
 
@@ -1098,6 +1101,11 @@ func buildInvoicesTable(
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("subscription", "read") {
+			return view.Forbidden("subscription:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {
@@ -1142,9 +1150,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		// Same tab_invoices_url + perms gating as the full-page handler so a
 		// tab-only refresh sees a consistent PrimaryAction state.
 		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
-		perms := view.GetUserPermissions(ctx)
-		// nil perms = no restrictions (dev / mock mode). Consistent with
-		// the comment on UserPermissions.Can() and most other view checks.
+		// perms already resolved at top of handler
 		canRecognize := perms == nil || perms.Can("revenue", "create")
 		subscriptionActive, _ := subscription["active"].(bool)
 

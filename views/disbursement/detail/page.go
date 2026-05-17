@@ -77,6 +77,11 @@ func disbursementToMap(d *disbursementpb.Disbursement) map[string]any {
 // NewView creates the disbursement detail view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("disbursement", "read") {
+			return view.Forbidden("disbursement:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 
 		resp, err := deps.ReadDisbursement(ctx, &disbursementpb.ReadDisbursementRequest{
@@ -189,6 +194,11 @@ func buildTabItems(l centymo.DisbursementLabels, id string, routes centymo.Disbu
 // NewTabAction creates the tab action view (partial — returns only the tab content).
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("disbursement", "read") {
+			return view.Forbidden("disbursement:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {

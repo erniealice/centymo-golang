@@ -34,6 +34,11 @@ type PageData struct {
 // NewView creates the purchase order list view, optionally filtered by status.
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("purchase_order", "list") {
+			return view.Forbidden("purchase_order:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "all"

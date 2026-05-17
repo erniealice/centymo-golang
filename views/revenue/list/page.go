@@ -41,6 +41,11 @@ var revenueSearchFields = []string{"reference_number", "client_name"}
 // NewView creates the sales list view (full page).
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("invoice", "list") {
+			return view.Forbidden("invoice:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "draft"

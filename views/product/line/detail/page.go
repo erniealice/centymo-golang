@@ -63,6 +63,11 @@ func lineToMap(line *linepb.Line) map[string]any {
 // NewView creates the line detail view.
 func NewView(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product_line", "read") {
+			return view.Forbidden("product_line:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		resp, err := deps.ReadLine(ctx, &linepb.ReadLineRequest{Data: &linepb.Line{Id: id}})
 		if err != nil {
@@ -159,6 +164,11 @@ func buildTabItems(l centymo.ProductLineLabels, id string, routes centymo.Produc
 // NewTabAction creates the tab action view.
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("product_line", "read") {
+			return view.Forbidden("product_line:read")
+		}
+		_ = perms
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
 		if tab == "" {

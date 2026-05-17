@@ -28,6 +28,10 @@ type RecognizeFromExpenditureFunc func(ctx context.Context, req *expenserecognit
 // 200 with HX-Trigger on success.
 func NewRecognizeFromExpenditureAction(fn RecognizeFromExpenditureFunc) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition", "create") {
+			return centymo.HTMXError("Missing permission: expense_recognition:create")
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

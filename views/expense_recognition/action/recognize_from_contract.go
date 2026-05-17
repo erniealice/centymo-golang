@@ -29,6 +29,10 @@ type RecognizeFromContractFunc func(ctx context.Context, req *expenserecognition
 // Returns 422 on missing required fields or use-case error; 200 on success.
 func NewRecognizeFromContractAction(fn RecognizeFromContractFunc) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition", "create") {
+			return centymo.HTMXError("Missing permission: expense_recognition:create")
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

@@ -28,6 +28,10 @@ type AccrueFromContractFunc func(ctx context.Context, req *accruedexpensepb.Accr
 // Returns 422 on missing required fields or use-case error; 200 on success.
 func NewAccrueFromContractAction(fn AccrueFromContractFunc) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("accrued_expense", "create") {
+			return centymo.HTMXError("Missing permission: accrued_expense:create")
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}

@@ -35,6 +35,11 @@ type PageData struct {
 // NewView creates the expenditure list view, filtered by type (purchase or expense).
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expenditure", "list") {
+			return view.Forbidden("expenditure:list")
+		}
+		_ = perms
 		status := viewCtx.Request.PathValue("status")
 		if status == "" {
 			status = "all"

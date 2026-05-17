@@ -34,6 +34,10 @@ type Deps struct {
 // NewAddAction handles GET+POST for adding a supplier contract line.
 func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract_line", "create") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:create"))
+		}
 		contractID := viewCtx.Request.PathValue("id")
 		if contractID == "" {
 			return view.Error(fmt.Errorf("missing contract id"))
@@ -86,6 +90,10 @@ func NewAddAction(deps *Deps) view.View {
 // NewEditAction handles GET+POST for editing a supplier contract line.
 func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract_line", "update") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:update"))
+		}
 		lineID := viewCtx.Request.PathValue("lid")
 		contractID := viewCtx.Request.PathValue("id")
 		if lineID == "" || contractID == "" {
@@ -163,6 +171,10 @@ func NewEditAction(deps *Deps) view.View {
 // NewDeleteAction handles POST /action/supplier-contract/{id}/lines/delete.
 func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("supplier_contract_line", "delete") {
+			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:delete"))
+		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}
