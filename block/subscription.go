@@ -141,8 +141,11 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 			useCases.Revenue.GenerateRevenueRun != nil {
 			listCandidatesUC := useCases.Revenue.ListRevenueRunCandidates
 			subActionDeps.ListRevenueRunCandidates = func(fctx context.Context, scope subscriptionaction.RevenueRunScopeAction) ([]subscriptionaction.RevenueRunCandidateAction, string, error) {
+				// Plan B Phase 5c — opt-in to advance Collection candidates by default.
+				includeAdv := true
 				req := &revenuerunpb.ListRevenueRunCandidatesRequest{
-					Scope: &revenuerunpb.RevenueRunScope{},
+					Scope:                     &revenuerunpb.RevenueRunScope{},
+					IncludeAdvanceCollections: &includeAdv,
 				}
 				if scope.Cursor != "" {
 					req.Cursor = &scope.Cursor
@@ -172,22 +175,25 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 				for _, c := range candidates {
 					amtDisplay := fmt.Sprintf("%.2f", float64(c.GetAmount())/100)
 					out = append(out, subscriptionaction.RevenueRunCandidateAction{
-						SubscriptionID:    c.GetSubscriptionId(),
-						SubscriptionName:  c.GetSubscriptionName(),
-						ClientID:          c.GetClientId(),
-						ClientName:        c.GetClientName(),
-						PlanName:          c.GetPlanName(),
-						BillingCycleLabel: c.GetBillingCycleLabel(),
-						Currency:          c.GetCurrency(),
-						PeriodStart:       c.GetPeriodStart(),
-						PeriodEnd:         c.GetPeriodEnd(),
-						PeriodLabel:       c.GetPeriodLabel(),
-						PeriodMarker:      c.GetPeriodMarker(),
-						Amount:            c.GetAmount(),
-						AmountDisplay:     amtDisplay,
-						LineItemCount:     int(c.GetLineItemCount()),
-						Eligible:          c.GetEligible(),
-						BlockerReason:     c.GetBlockerReason(),
+						SubscriptionID:                 c.GetSubscriptionId(),
+						SubscriptionName:               c.GetSubscriptionName(),
+						ClientID:                       c.GetClientId(),
+						ClientName:                     c.GetClientName(),
+						PlanName:                       c.GetPlanName(),
+						BillingCycleLabel:              c.GetBillingCycleLabel(),
+						Currency:                       c.GetCurrency(),
+						PeriodStart:                    c.GetPeriodStart(),
+						PeriodEnd:                      c.GetPeriodEnd(),
+						PeriodLabel:                    c.GetPeriodLabel(),
+						PeriodMarker:                   c.GetPeriodMarker(),
+						Amount:                         c.GetAmount(),
+						AmountDisplay:                  amtDisplay,
+						LineItemCount:                  int(c.GetLineItemCount()),
+						Eligible:                       c.GetEligible(),
+						BlockerReason:                  c.GetBlockerReason(),
+						SourceKind:                     c.GetSourceKind().String(),
+						AdvanceCollectionID:            c.GetAdvanceCollectionId(),
+						SuppressingAdvanceCollectionID: c.GetSuppressingAdvanceCollectionId(),
 					})
 				}
 				return out, nextCursor, nil
@@ -213,12 +219,21 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 					protoSels.FilterToken = &ft
 				}
 				for _, s := range sels.ExplicitList {
-					protoSels.ExplicitList = append(protoSels.ExplicitList, &revenuerunpb.SelectedRevenueRunCandidate{
+					protoSel := &revenuerunpb.SelectedRevenueRunCandidate{
 						SubscriptionId: s.SubscriptionID,
 						PeriodStart:    s.PeriodStart,
 						PeriodEnd:      s.PeriodEnd,
 						PeriodMarker:   s.PeriodMarker,
-					})
+					}
+					// Plan B Phase 5c — dispatch on source_kind.
+					if s.SourceKind == "REVENUE_RUN_SOURCE_KIND_ADVANCE_COLLECTION" || s.SourceKind == "ADVANCE_COLLECTION" {
+						protoSel.SourceKind = revenuerunpb.RevenueRunSourceKind_REVENUE_RUN_SOURCE_KIND_ADVANCE_COLLECTION
+						if s.AdvanceCollectionID != "" {
+							advID := s.AdvanceCollectionID
+							protoSel.AdvanceCollectionId = &advID
+						}
+					}
+					protoSels.ExplicitList = append(protoSels.ExplicitList, protoSel)
 				}
 				result, err := generateUC(fctx, &revenuerunpb.GenerateRevenueRunRequest{
 					Scope:      protoScope,
@@ -387,6 +402,20 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 						subActionDeps.SetBillingEventStatus,
 						subActionDeps.Labels.Errors))
 			}
+		}
+		// 20260517-advance-cash-events Plan B Phase 7 — Recognize handler for
+		// a BillingEvent row when it is linked to a MILESTONE advance Collection
+		// (via the treasury_collection_billing_event junction). Mounted under
+		// the same /action/subscription/.../billing-event/... prefix as the
+		// mark-ready + waive handlers so the URL grouping stays cohesive. Only
+		// registered when service-admin wired the
+		// useCases.TreasuryAdvances.RecognizeMilestoneAdvanceCollection closure.
+		if useCases.TreasuryAdvances.RecognizeMilestoneAdvanceCollection != nil &&
+			w.subscriptionRoutes.MilestoneRecognizeURL != "" {
+			ctx.Routes.POST(w.subscriptionRoutes.MilestoneRecognizeURL,
+				subscriptionaction.NewMilestoneRecognizeAction(
+					useCases.TreasuryAdvances.RecognizeMilestoneAdvanceCollection,
+					subActionDeps.Labels.Errors))
 		}
 
 		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / Phase D —

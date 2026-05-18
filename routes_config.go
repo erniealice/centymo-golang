@@ -1466,6 +1466,11 @@ type SubscriptionRoutes struct {
 	MilestoneMarkReadyURL string `json:"milestone_mark_ready_url"`
 	MilestoneWaiveURL     string `json:"milestone_waive_url"`
 
+	// 20260517-advance-cash-events Plan B Phase 7 — Recognize button on a
+	// BillingEvent row when it is linked to a MILESTONE advance Collection.
+	// POSTs through espyna RecognizeMilestoneAdvanceCollection.
+	MilestoneRecognizeURL string `json:"milestone_recognize_url"`
+
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / Phase D —
 	// retroactive spawn drawer URL + HTMX-driven partial URL for the
 	// Spawn Jobs section on the create form.
@@ -1519,6 +1524,9 @@ func DefaultSubscriptionRoutes() SubscriptionRoutes {
 		MilestoneMarkReadyURL: MilestoneMarkReadyURL,
 		MilestoneWaiveURL:     MilestoneWaiveURL,
 
+		// 20260517-advance-cash-events Plan B Phase 7.
+		MilestoneRecognizeURL: MilestoneRecognizeURL,
+
 		// 2026-04-29 auto-spawn-jobs-from-subscription.
 		SpawnJobsURL:        SubscriptionSpawnJobsURL,
 		SpawnJobsPartialURL: SubscriptionSpawnJobsPartialURL,
@@ -1563,6 +1571,9 @@ func (r SubscriptionRoutes) RouteMap() map[string]string {
 		"milestone.mark_ready": r.MilestoneMarkReadyURL,
 		"milestone.waive":      r.MilestoneWaiveURL,
 
+		// 20260517-advance-cash-events Plan B Phase 7.
+		"milestone.recognize": r.MilestoneRecognizeURL,
+
 		// 2026-04-29 auto-spawn-jobs-from-subscription routes.
 		"subscription.spawn_jobs":         r.SpawnJobsURL,
 		"subscription.spawn_jobs_partial": r.SpawnJobsPartialURL,
@@ -1600,6 +1611,14 @@ type CollectionRoutes struct {
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
+
+	// Advance Cash Events (Plan B Phase 3) — UNSCHEDULED workflow drawers +
+	// the Advance Schedule tab partial. Empty defaults render the actions as
+	// disabled / hidden.
+	AdvanceScheduleTabURL string `json:"advance_schedule_tab_url"`
+	SettleURL             string `json:"settle_url"`
+	RefundURL             string `json:"refund_url"`
+	CancelURL             string `json:"cancel_url"`
 }
 
 // DefaultCollectionRoutes returns a CollectionRoutes populated from the
@@ -1619,6 +1638,12 @@ func DefaultCollectionRoutes() CollectionRoutes {
 
 		AttachmentUploadURL: CollectionAttachmentUploadURL,
 		AttachmentDeleteURL: CollectionAttachmentDeleteURL,
+
+		// 20260517-advance-cash-events Plan B Phase 3.
+		AdvanceScheduleTabURL: TreasuryCollectionAdvanceScheduleTabURL,
+		SettleURL:             TreasuryCollectionSettleURL,
+		RefundURL:             TreasuryCollectionRefundURL,
+		CancelURL:             TreasuryCollectionCancelURL,
 	}
 }
 
@@ -1639,6 +1664,12 @@ func (r CollectionRoutes) RouteMap() map[string]string {
 
 		"collection.attachment.upload": r.AttachmentUploadURL,
 		"collection.attachment.delete": r.AttachmentDeleteURL,
+
+		// 20260517-advance-cash-events Plan B Phase 3.
+		"collection.advance_schedule_tab": r.AdvanceScheduleTabURL,
+		"collection.settle":               r.SettleURL,
+		"collection.refund":               r.RefundURL,
+		"collection.cancel":               r.CancelURL,
 	}
 }
 
@@ -1659,6 +1690,13 @@ type DisbursementRoutes struct {
 	// Attachment routes
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
+
+	// Advance Cash Events (Plan B Phase 3) — UNSCHEDULED workflow drawers +
+	// the Advance Schedule tab partial. Mirrors CollectionRoutes.
+	AdvanceScheduleTabURL string `json:"advance_schedule_tab_url"`
+	SettleURL             string `json:"settle_url"`
+	RefundURL             string `json:"refund_url"`
+	CancelURL             string `json:"cancel_url"`
 }
 
 // DefaultDisbursementRoutes returns a DisbursementRoutes populated from the
@@ -1678,6 +1716,12 @@ func DefaultDisbursementRoutes() DisbursementRoutes {
 
 		AttachmentUploadURL: DisbursementAttachmentUploadURL,
 		AttachmentDeleteURL: DisbursementAttachmentDeleteURL,
+
+		// 20260517-advance-cash-events Plan B Phase 3.
+		AdvanceScheduleTabURL: TreasuryDisbursementAdvanceScheduleTabURL,
+		SettleURL:             TreasuryDisbursementSettleURL,
+		RefundURL:             TreasuryDisbursementRefundURL,
+		CancelURL:             TreasuryDisbursementCancelURL,
 	}
 }
 
@@ -1698,6 +1742,73 @@ func (r DisbursementRoutes) RouteMap() map[string]string {
 
 		"disbursement.attachment.upload": r.AttachmentUploadURL,
 		"disbursement.attachment.delete": r.AttachmentDeleteURL,
+
+		// 20260517-advance-cash-events Plan B Phase 3.
+		"disbursement.advance_schedule_tab": r.AdvanceScheduleTabURL,
+		"disbursement.settle":               r.SettleURL,
+		"disbursement.refund":               r.RefundURL,
+		"disbursement.cancel":               r.CancelURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// 20260517-advance-cash-events Plan B Phase 3 — TreasuryAdvancesRoutes
+// ---------------------------------------------------------------------------
+
+// TreasuryAdvancesRoutes holds all route paths for the cash-app "Advances"
+// section: the workspace-level dashboard plus the filtered-list URLs for
+// advance Collections / advance Disbursements (which point at the existing
+// list pages with the `advance_kind` filter chip pre-applied).
+//
+// The Settle / Refund / Cancel drawer routes live on CollectionRoutes /
+// DisbursementRoutes because they are anchored on the existing detail pages
+// — there is no separate "advance" entity.
+type TreasuryAdvancesRoutes struct {
+	// ActiveNav is the sidebar navigation context; the Advances section sits
+	// inside the Cash app so this remains "cash".
+	ActiveNav string `json:"active_nav"`
+
+	// DashboardURL is the workspace-level Advances Dashboard.
+	DashboardURL string `json:"dashboard_url"`
+
+	// AdvanceCollectionListURL / AdvanceDisbursementListURL are deep-links
+	// into the existing Collection / Disbursement list pages with the
+	// `advance_kind=any` chip pre-applied via the query string.
+	AdvanceCollectionListURL   string `json:"advance_collection_list_url"`
+	AdvanceDisbursementListURL string `json:"advance_disbursement_list_url"`
+
+	// SupplierBillingEvent surfaces (buying-side MILESTONE anchor). Listed
+	// here so the cash-app sidebar can deep-link to them, even though the
+	// entity is buying-side. (Plan B Phase 7 wires the Recognize button.)
+	SupplierBillingEventListURL      string `json:"supplier_billing_event_list_url"`
+	SupplierBillingEventDetailURL    string `json:"supplier_billing_event_detail_url"`
+	SupplierBillingEventRecognizeURL string `json:"supplier_billing_event_recognize_url"`
+}
+
+// DefaultTreasuryAdvancesRoutes returns a TreasuryAdvancesRoutes populated
+// from the package-level route constants defined in routes.go.
+func DefaultTreasuryAdvancesRoutes() TreasuryAdvancesRoutes {
+	return TreasuryAdvancesRoutes{
+		ActiveNav:                        "cash",
+		DashboardURL:                     AdvancesDashboardURL,
+		AdvanceCollectionListURL:         AdvanceCollectionListURL,
+		AdvanceDisbursementListURL:       AdvanceDisbursementListURL,
+		SupplierBillingEventListURL:      SupplierBillingEventListURL,
+		SupplierBillingEventDetailURL:    SupplierBillingEventDetailURL,
+		SupplierBillingEventRecognizeURL: SupplierBillingEventRecognizeURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// treasury-advances routes.
+func (r TreasuryAdvancesRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"treasury_advances.dashboard":                  r.DashboardURL,
+		"treasury_advances.advance_collection_list":    r.AdvanceCollectionListURL,
+		"treasury_advances.advance_disbursement_list":  r.AdvanceDisbursementListURL,
+		"supplier_billing_event.list":                  r.SupplierBillingEventListURL,
+		"supplier_billing_event.detail":                r.SupplierBillingEventDetailURL,
+		"supplier_billing_event.recognize":             r.SupplierBillingEventRecognizeURL,
 	}
 }
 
@@ -2214,6 +2325,12 @@ type SupplierSubscriptionRoutes struct {
 
 	// Recognition CTA — POST; opens the recognize-expense drawer on the detail page.
 	RecognizeExpenseURL string `json:"recognize_expense_url"`
+
+	// ExpenseRecognitionRunURL — GET; opens the per-SupplierSubscription Expense
+	// Recognition Run drawer (Surface C). Resolved by resolveRecognitionsPrimaryAction
+	// for CostPlan.billing_kind RECURRING / CONTRACT-with-cycle.
+	// Plan A 20260517-expense-run Phase 4 / Surface C.
+	ExpenseRecognitionRunURL string `json:"expense_recognition_run_url"`
 }
 
 // DefaultSupplierSubscriptionRoutes returns a SupplierSubscriptionRoutes using route constants.
@@ -2222,38 +2339,111 @@ func DefaultSupplierSubscriptionRoutes() SupplierSubscriptionRoutes {
 		ActiveNav:    "supplier",
 		ActiveSubNav: "supplier-subscriptions",
 
-		ListURL:             SupplierSubscriptionListURL,
-		TableURL:            SupplierSubscriptionTableURL,
-		DetailURL:           SupplierSubscriptionDetailURL,
-		AddURL:              SupplierSubscriptionAddURL,
-		EditURL:             SupplierSubscriptionEditURL,
-		DeleteURL:           SupplierSubscriptionDeleteURL,
-		BulkDeleteURL:       SupplierSubscriptionBulkDeleteURL,
-		SetStatusURL:        SupplierSubscriptionSetStatusURL,
-		BulkSetStatusURL:    SupplierSubscriptionBulkSetStatusURL,
-		TabActionURL:        SupplierSubscriptionTabActionURL,
-		SearchCostPlanURL:   SupplierSubscriptionSearchCostPlanURL,
-		SearchSupplierURL:   SupplierSubscriptionSearchSupplierURL,
-		RecognizeExpenseURL: SupplierSubscriptionRecognizeExpenseURL,
+		ListURL:                  SupplierSubscriptionListURL,
+		TableURL:                 SupplierSubscriptionTableURL,
+		DetailURL:                SupplierSubscriptionDetailURL,
+		AddURL:                   SupplierSubscriptionAddURL,
+		EditURL:                  SupplierSubscriptionEditURL,
+		DeleteURL:                SupplierSubscriptionDeleteURL,
+		BulkDeleteURL:            SupplierSubscriptionBulkDeleteURL,
+		SetStatusURL:             SupplierSubscriptionSetStatusURL,
+		BulkSetStatusURL:         SupplierSubscriptionBulkSetStatusURL,
+		TabActionURL:             SupplierSubscriptionTabActionURL,
+		SearchCostPlanURL:        SupplierSubscriptionSearchCostPlanURL,
+		SearchSupplierURL:        SupplierSubscriptionSearchSupplierURL,
+		RecognizeExpenseURL:      SupplierSubscriptionRecognizeExpenseURL,
+		ExpenseRecognitionRunURL: ExpenseRecognitionRunPerSubscriptionDrawerURL,
 	}
 }
 
 // RouteMap returns a map of dot-notation keys to route paths.
 func (r SupplierSubscriptionRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"supplier_subscription.list":              r.ListURL,
-		"supplier_subscription.table":             r.TableURL,
-		"supplier_subscription.detail":            r.DetailURL,
-		"supplier_subscription.add":               r.AddURL,
-		"supplier_subscription.edit":              r.EditURL,
-		"supplier_subscription.delete":            r.DeleteURL,
-		"supplier_subscription.bulk_delete":       r.BulkDeleteURL,
-		"supplier_subscription.set_status":        r.SetStatusURL,
-		"supplier_subscription.bulk_set_status":   r.BulkSetStatusURL,
-		"supplier_subscription.tab_action":        r.TabActionURL,
-		"supplier_subscription.search_cost_plan":  r.SearchCostPlanURL,
-		"supplier_subscription.search_supplier":   r.SearchSupplierURL,
-		"supplier_subscription.recognize_expense": r.RecognizeExpenseURL,
+		"supplier_subscription.list":                    r.ListURL,
+		"supplier_subscription.table":                   r.TableURL,
+		"supplier_subscription.detail":                  r.DetailURL,
+		"supplier_subscription.add":                     r.AddURL,
+		"supplier_subscription.edit":                    r.EditURL,
+		"supplier_subscription.delete":                  r.DeleteURL,
+		"supplier_subscription.bulk_delete":             r.BulkDeleteURL,
+		"supplier_subscription.set_status":              r.SetStatusURL,
+		"supplier_subscription.bulk_set_status":         r.BulkSetStatusURL,
+		"supplier_subscription.tab_action":              r.TabActionURL,
+		"supplier_subscription.search_cost_plan":        r.SearchCostPlanURL,
+		"supplier_subscription.search_supplier":         r.SearchSupplierURL,
+		"supplier_subscription.recognize_expense":       r.RecognizeExpenseURL,
+		"supplier_subscription.expense_recognition_run": r.ExpenseRecognitionRunURL,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ExpenseRecognitionRunRoutes — Plan A 20260517-expense-run
+// ---------------------------------------------------------------------------
+
+// ExpenseRecognitionRunRoutes holds all route paths for the Expense Recognition
+// Run (buying-side) module. Mirrors RevenueRunRoutes shape.
+// Surfaces: A (per-supplier drawer — entydad), B (workspace queue),
+// C (per-supplier-subscription drawer), D (run history list + detail).
+type ExpenseRecognitionRunRoutes struct {
+	// Sidebar navigation context.
+	ActiveNav string `json:"active_nav"`
+
+	// Surface B — workspace queue page.
+	QueueURL      string `json:"queue_url"`
+	QueueTableURL string `json:"queue_table_url"`
+
+	// Surface D — run history list + detail.
+	ListURL            string `json:"list_url"`
+	ListTableURL       string `json:"list_table_url"`
+	DetailURL          string `json:"detail_url"`
+	DetailTabActionURL string `json:"detail_tab_action_url"`
+
+	// Action endpoints.
+	NewURL         string `json:"new_url"`
+	GenerateURL    string `json:"generate_url"`
+	SubmitBatchURL string `json:"submit_batch_url"`
+
+	// Surface A — per-supplier drawer (entydad supplier statement tab).
+	PerSupplierDrawerURL string `json:"per_supplier_drawer_url"`
+
+	// Surface C — per-SupplierSubscription drawer.
+	PerSubscriptionDrawerURL string `json:"per_subscription_drawer_url"`
+}
+
+// DefaultExpenseRecognitionRunRoutes returns ExpenseRecognitionRunRoutes
+// populated from the package-level route constants.
+func DefaultExpenseRecognitionRunRoutes() ExpenseRecognitionRunRoutes {
+	return ExpenseRecognitionRunRoutes{
+		ActiveNav:                "expense-recognition-run",
+		QueueURL:                 ExpenseRecognitionRunQueueURL,
+		QueueTableURL:            ExpenseRecognitionRunQueueTableURL,
+		ListURL:                  ExpenseRecognitionRunListURL,
+		ListTableURL:             ExpenseRecognitionRunListTableURL,
+		DetailURL:                ExpenseRecognitionRunDetailURL,
+		DetailTabActionURL:       ExpenseRecognitionRunDetailTabActionURL,
+		NewURL:                   ExpenseRecognitionRunNewURL,
+		GenerateURL:              ExpenseRecognitionRunGenerateURL,
+		SubmitBatchURL:           ExpenseRecognitionRunSubmitBatchURL,
+		PerSupplierDrawerURL:     ExpenseRecognitionRunPerSupplierDrawerURL,
+		PerSubscriptionDrawerURL: ExpenseRecognitionRunPerSubscriptionDrawerURL,
+	}
+}
+
+// RouteMap returns a map of dot-notation keys to route paths for all
+// expense-recognition-run routes.
+func (r ExpenseRecognitionRunRoutes) RouteMap() map[string]string {
+	return map[string]string{
+		"expense_recognition_run.queue":                   r.QueueURL,
+		"expense_recognition_run.queue_table":             r.QueueTableURL,
+		"expense_recognition_run.list":                    r.ListURL,
+		"expense_recognition_run.list_table":              r.ListTableURL,
+		"expense_recognition_run.detail":                  r.DetailURL,
+		"expense_recognition_run.detail_tab_action":       r.DetailTabActionURL,
+		"expense_recognition_run.new":                     r.NewURL,
+		"expense_recognition_run.generate":                r.GenerateURL,
+		"expense_recognition_run.submit_batch":            r.SubmitBatchURL,
+		"expense_recognition_run.per_supplier_drawer":     r.PerSupplierDrawerURL,
+		"expense_recognition_run.per_subscription_drawer": r.PerSubscriptionDrawerURL,
 	}
 }
 

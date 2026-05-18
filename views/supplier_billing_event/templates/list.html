@@ -1,0 +1,66 @@
+{{/*
+20260517-advance-cash-events Plan B Phase 7 — supplier_billing_event list.
+
+Minimal table. data-testid="supplier-billing-event-row" on each row. The
+Recognize button appears only when status == BILLED AND
+expense_recognition_id IS NULL (i.e. the BILLED milestone is still anchored
+to a junction.expense_recognition_id == NULL row on the buying side).
+*/}}
+
+{{define "supplier-billing-event-list"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{define "supplier-billing-event-list-content"}}
+<div class="content-card" data-testid="supplier-billing-event-list-card">
+    <table class="data-table data-table--compact" data-testid="supplier-billing-events-table">
+        <thead>
+            <tr>
+                <th>{{.Labels.Columns.ID}}</th>
+                <th>{{.Labels.Columns.SupplierSubscription}}</th>
+                <th class="cell-right">{{.Labels.Columns.BillableAmount}}</th>
+                <th>{{.Labels.Columns.Currency}}</th>
+                <th>{{.Labels.Columns.Status}}</th>
+                <th>{{.Labels.Columns.Trigger}}</th>
+                <th>{{.Labels.Columns.ExpenseRecognition}}</th>
+                <th scope="col"><span class="visually-hidden">{{.Labels.Columns.Actions}}</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Rows}}
+            <tr data-testid="supplier-billing-event-row" data-event-id="{{.ID}}" data-status="{{.StatusKey}}">
+                <td><a href="{{.DetailURL}}" data-testid="supplier-billing-event-detail-link">{{.ID}}</a></td>
+                <td>{{.SupplierSubscription}}</td>
+                <td class="cell-right">{{.BillableDisplay}}</td>
+                <td>{{.Currency}}</td>
+                <td>
+                    <span class="badge badge--{{.StatusKey}}" data-testid="supplier-billing-event-status-{{.StatusKey}}">
+                        {{.StatusLabel}}
+                    </span>
+                </td>
+                <td>{{.TriggerLabel}}</td>
+                <td>{{.ExpenseRecognitionID}}</td>
+                <td>
+                    {{if .ShowRecognize}}
+                    <button type="button"
+                            class="btn btn--primary btn--sm"
+                            data-testid="supplier-billing-event-recognize"
+                            hx-post="{{.RecognizeURL}}"
+                            hx-swap="none">
+                        {{$.Labels.Actions.Recognize}}
+                    </button>
+                    {{end}}
+                </td>
+            </tr>
+            {{else}}
+            <tr data-testid="supplier-billing-event-empty">
+                <td colspan="8" class="cell-empty">
+                    <strong>{{.Labels.Empty.Title}}</strong><br>
+                    <span class="text-muted">{{.Labels.Empty.Message}}</span>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}

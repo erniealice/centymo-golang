@@ -1,0 +1,149 @@
+{{/*
+20260517-advance-cash-events Plan B Phase 4 — Advance Schedule tab content
+for TreasuryDisbursement detail. Mirrors the collection-side template; only
+the account-label vocabulary (Asset / Expense) differs. All operator-facing
+strings flow through .AdvanceLabels (TreasuryAdvanceLabels, sourced from
+treasury_disbursement.json `advance.*`).
+*/}}
+
+{{define "disbursement-tab-advance-schedule"}}
+<div class="tab-scroll" data-testid="advance-schedule-tab" data-advance-kind="{{index .Disbursement "advance_kind"}}">
+    <h3 class="detail-section-title">{{.AdvanceLabels.Tab}}</h3>
+
+    <div class="stats-row">
+        {{template "stat-card" (dict
+            "Label" .AdvanceLabels.RemainingLabel
+            "Value" (printf "%d" (index .Disbursement "advance_remaining"))
+            "Icon"  "icon-credit-card"
+            "TestID" "advance-schedule-stat-remaining"
+        )}}
+        {{template "stat-card" (dict
+            "Label" .AdvanceLabels.RecognizedLabel
+            "Value" (printf "%d" (index .Disbursement "advance_recognized"))
+            "Icon"  "icon-check-circle"
+            "TestID" "advance-schedule-stat-recognized"
+        )}}
+        {{template "stat-card" (dict
+            "Label" .AdvanceLabels.TotalLabel
+            "Value" (printf "%d" (index .Disbursement "advance_total_amount"))
+            "Icon"  "icon-trending-down"
+            "TestID" "advance-schedule-stat-total"
+        )}}
+    </div>
+
+    <div class="detail-info-grid">
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.KindShort}}</span>
+            <span class="detail-info-value"><span class="badge" data-testid="advance-schedule-kind-badge">{{index .Disbursement "advance_kind_label"}}</span></span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.StatusShort}}</span>
+            <span class="detail-info-value"><span class="badge" data-testid="advance-schedule-status-badge">{{index .Disbursement "advance_status_label"}}</span></span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.StartDate}}</span>
+            <span class="detail-info-value">{{index .Disbursement "advance_start_date"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.EndDate}}</span>
+            <span class="detail-info-value">{{index .Disbursement "advance_end_date"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.PeriodCount}}</span>
+            <span class="detail-info-value">{{index .Disbursement "advance_period_count"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.PeriodUnit}}</span>
+            <span class="detail-info-value">{{index .Disbursement "advance_period_unit"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.BalanceAccount}}</span>
+            <span class="detail-info-value mono">{{index .Disbursement "advance_balance_account"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.TargetAccount}}</span>
+            <span class="detail-info-value mono">{{index .Disbursement "advance_target_account"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.ProrationPolicyField}}</span>
+            <span class="detail-info-value">{{index .Disbursement "advance_proration_policy_label"}}</span>
+        </div>
+    </div>
+
+    <div class="transaction-section-spacer">
+        <h3 class="detail-section-title">{{.AdvanceLabels.Tranches}}</h3>
+        <div data-testid="advance-tranches-table">
+            {{template "empty-state" (dict
+                "Icon"  "icon-clock"
+                "Title" .AdvanceLabels.EmptyTranchesTitle
+                "Desc"  .AdvanceLabels.EmptyTranchesDesc
+            )}}
+        </div>
+    </div>
+
+    {{/* --- MILESTONE linked supplier billing events ------------------- */}}
+    {{/* 20260517-advance-cash-events Plan B Phase 7 — visible only when the
+         advance is MILESTONE and there is at least one junction row. */}}
+    {{if .MilestoneLinks}}
+    <div class="transaction-section-spacer" data-testid="advance-milestone-links">
+        <h3 class="detail-section-title">{{.AdvanceLabels.LinkedMilestones}}</h3>
+        <table class="data-table data-table--compact" data-testid="advance-milestone-links-table">
+            <thead>
+                <tr>
+                    <th>{{.AdvanceLabels.SupplierBillingEventColumn}}</th>
+                    <th class="cell-right">{{.AdvanceLabels.TrancheColumn}}</th>
+                    <th>{{.AdvanceLabels.CurrencyColumn}}</th>
+                    <th>{{.AdvanceLabels.StatusShort}}</th>
+                    <th>{{.AdvanceLabels.ExpenseRecognitionColumn}}</th>
+                    <th scope="col"><span class="visually-hidden">{{.AdvanceLabels.ActionsSection}}</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .MilestoneLinks}}
+                <tr data-testid="advance-milestone-link-row" data-event-id="{{.SupplierBillingEventID}}">
+                    <td class="mono">{{.SupplierBillingEventID}}</td>
+                    <td class="cell-right">{{.TrancheDisplay}}</td>
+                    <td>{{.Currency}}</td>
+                    <td>
+                        <span class="badge badge--{{.StatusKey}}" data-testid="advance-milestone-status-{{.StatusKey}}">
+                            {{.StatusLabel}}
+                        </span>
+                    </td>
+                    <td class="mono">{{.ExpenseRecognitionID}}</td>
+                    <td>
+                        {{if .ShowRecognize}}
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                data-testid="advance-milestone-recognize"
+                                hx-post="{{.RecognizeURL}}"
+                                hx-vals='{"advance_id": "{{index $.Disbursement "id"}}"}'
+                                hx-swap="none">
+                            {{$.AdvanceLabels.RecognizeButton}}
+                        </button>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{end}}
+
+    {{if index .Disbursement "is_unscheduled_active"}}
+    <div class="transaction-section-spacer" data-testid="advance-schedule-actions">
+        <h3 class="detail-section-title">{{.AdvanceLabels.ActionsSection}}</h3>
+        <div class="form-row">
+            <button type="button"
+                    class="btn-primary"
+                    data-testid="advance-settle-button"
+                    hx-get="/action/disbursement/settle/{{index .Disbursement "id"}}"
+                    hx-target="#sheetContent"
+                    hx-trigger="click">{{.AdvanceLabels.Actions.Settle}}</button>
+            <button type="button"
+                    class="btn-secondary"
+                    data-testid="advance-refund-button"
+                    hx-get="/action/disbursement/refund/{{index .Disbursement "id"}}"
+                    hx-target="#sheetContent"
+                    hx-trigger="click">{{.AdvanceLabels.Actions.Refund}}</button>
+            <button type="button"
+                    class="btn-danger"
+                    data-testid="advance-cancel-button"
+                    hx-get="/action/disbursement/cancel/{{index .Disbursement "id"}}"
+                    hx-target="#sheetContent"
+                    hx-trigger="click">{{.AdvanceLabels.Actions.Cancel}}</button>
+        </div>
+    </div>
+    {{end}}
+</div>
+{{end}}

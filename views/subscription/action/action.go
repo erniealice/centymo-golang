@@ -210,6 +210,14 @@ type RevenueRunCandidateAction struct {
 	LineItemCount     int
 	Eligible          bool
 	BlockerReason     string
+	// SourceKind discriminates SUBSCRIPTION_CYCLE vs ADVANCE_COLLECTION origin
+	// (Plan B Phase 5b). Empty / UNSPECIFIED is treated as SUBSCRIPTION_CYCLE.
+	SourceKind string
+	// AdvanceCollectionID is set when SourceKind == ADVANCE_COLLECTION.
+	AdvanceCollectionID string
+	// SuppressingAdvanceCollectionID is set on subscription-cycle rows that
+	// overlap an active TIME_BASED advance Collection (Decision A).
+	SuppressingAdvanceCollectionID string
 }
 
 // SelectedRevenueRunCandidateAction is one confirmed selection.
@@ -218,6 +226,11 @@ type SelectedRevenueRunCandidateAction struct {
 	PeriodStart    string
 	PeriodEnd      string
 	PeriodMarker   string
+	// SourceKind discriminates dispatcher branch. Empty defaults to
+	// SUBSCRIPTION_CYCLE. "ADVANCE_COLLECTION" routes to AmortizeAdvanceCollection.
+	SourceKind string
+	// AdvanceCollectionID is required when SourceKind == ADVANCE_COLLECTION.
+	AdvanceCollectionID string
 }
 
 // RevenueRunSelectionsAction carries operator selections for GenerateRevenueRun.

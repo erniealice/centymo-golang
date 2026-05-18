@@ -41,6 +41,13 @@ type ModuleDeps struct {
 	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
 	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	NewID            func() string
+
+	// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow.
+	AdvanceLabels     centymo.TreasuryAdvanceLabels
+	AdvanceEnumLabels centymo.AdvanceEnumLabels
+	SettleUnscheduledAdvance func(ctx context.Context, in centymo.AdvanceSettleViewInput) (*centymo.AdvanceSettleViewOutput, error)
+	RefundUnscheduledAdvance func(ctx context.Context, in centymo.AdvanceRefundViewInput) (*centymo.AdvanceRefundViewOutput, error)
+	CancelAdvance            func(ctx context.Context, in centymo.AdvanceCancelViewInput) (*centymo.AdvanceCancelViewOutput, error)
 }
 
 // Module holds all constructed disbursement views.
@@ -58,6 +65,10 @@ type Module struct {
 	BulkSetStatus    view.View
 	AttachmentUpload view.View
 	AttachmentDelete view.View
+	// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow drawers.
+	AdvanceSettle view.View
+	AdvanceRefund view.View
+	AdvanceCancel view.View
 }
 
 // NewModule creates the disbursement module with all views.
@@ -72,11 +83,13 @@ func NewModule(deps *ModuleDeps) *Module {
 	}
 
 	detailDeps := &disbursementdetail.DetailViewDeps{
-		Routes:           deps.Routes,
-		ReadDisbursement: deps.ReadDisbursement,
-		Labels:           deps.Labels,
-		CommonLabels:     deps.CommonLabels,
-		TableLabels:      deps.TableLabels,
+		Routes:            deps.Routes,
+		ReadDisbursement:  deps.ReadDisbursement,
+		Labels:            deps.Labels,
+		CommonLabels:      deps.CommonLabels,
+		TableLabels:       deps.TableLabels,
+		AdvanceLabels:     deps.AdvanceLabels,
+		AdvanceEnumLabels: deps.AdvanceEnumLabels,
 	}
 	detailDeps.UploadFile = deps.UploadFile
 	detailDeps.ListAttachments = deps.ListAttachments
@@ -94,6 +107,18 @@ func NewModule(deps *ModuleDeps) *Module {
 		ListExpenditures:   deps.ListExpenditures,
 	}
 
+	// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow.
+	advanceActionDeps := &disbursementaction.AdvanceActionDeps{
+		Routes:            deps.Routes,
+		Labels:            deps.Labels,
+		AdvanceLabels:     deps.AdvanceLabels,
+		EnumLabels:        deps.AdvanceEnumLabels,
+		CommonLabels:      deps.CommonLabels,
+		SettleUnscheduled: deps.SettleUnscheduledAdvance,
+		RefundUnscheduled: deps.RefundUnscheduledAdvance,
+		Cancel:            deps.CancelAdvance,
+	}
+
 	return &Module{
 		routes:           deps.Routes,
 		Dashboard:        disbursementlist.NewView(listDeps),
@@ -108,6 +133,9 @@ func NewModule(deps *ModuleDeps) *Module {
 		BulkSetStatus:    disbursementaction.NewBulkSetStatusAction(actionDeps),
 		AttachmentUpload: disbursementdetail.NewAttachmentUploadAction(detailDeps),
 		AttachmentDelete: disbursementdetail.NewAttachmentDeleteAction(detailDeps),
+		AdvanceSettle:    disbursementaction.NewSettleAction(advanceActionDeps),
+		AdvanceRefund:    disbursementaction.NewRefundAction(advanceActionDeps),
+		AdvanceCancel:    disbursementaction.NewCancelAction(advanceActionDeps),
 	}
 }
 
@@ -134,5 +162,18 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
 		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
 		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
+	}
+	// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow drawers.
+	if m.routes.SettleURL != "" {
+		r.GET(m.routes.SettleURL, m.AdvanceSettle)
+		r.POST(m.routes.SettleURL, m.AdvanceSettle)
+	}
+	if m.routes.RefundURL != "" {
+		r.GET(m.routes.RefundURL, m.AdvanceRefund)
+		r.POST(m.routes.RefundURL, m.AdvanceRefund)
+	}
+	if m.routes.CancelURL != "" {
+		r.GET(m.routes.CancelURL, m.AdvanceCancel)
+		r.POST(m.routes.CancelURL, m.AdvanceCancel)
 	}
 }

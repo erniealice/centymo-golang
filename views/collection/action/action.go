@@ -26,6 +26,10 @@ type Deps struct {
 	ReadCollection   func(ctx context.Context, req *collectionpb.ReadCollectionRequest) (*collectionpb.ReadCollectionResponse, error)
 	UpdateCollection func(ctx context.Context, req *collectionpb.UpdateCollectionRequest) (*collectionpb.UpdateCollectionResponse, error)
 	DeleteCollection func(ctx context.Context, req *collectionpb.DeleteCollectionRequest) (*collectionpb.DeleteCollectionResponse, error)
+	// 20260517-advance-cash-events Plan B Phase 4 — option-label tables for
+	// the advance_kind + advance_proration_policy dropdowns rendered in the
+	// drawer form. Sourced from advance_kind.json via lyngua.
+	AdvanceEnumLabels centymo.AdvanceEnumLabels
 }
 
 // parseAmount converts a form string amount (decimal) to int64 centavos.
@@ -51,6 +55,7 @@ func NewAddAction(deps *Deps) view.View {
 				Currency:     "PHP",
 				Status:       "pending",
 				Labels:       deps.Labels.Form,
+				EnumLabels:   deps.AdvanceEnumLabels,
 				CommonLabels: nil, // injected by ViewAdapter
 			})
 		}
@@ -138,6 +143,7 @@ func NewEditAction(deps *Deps) view.View {
 				CollectionType:   record.GetCollectionType(),
 				Status:           record.GetStatus(),
 				Labels:           deps.Labels.Form,
+				EnumLabels:       deps.AdvanceEnumLabels,
 				CommonLabels:     nil, // injected by ViewAdapter
 			})
 		}

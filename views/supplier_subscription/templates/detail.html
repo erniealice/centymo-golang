@@ -4,8 +4,24 @@
 
 {{define "supplier-subscription-detail-content"}}
 <div class="page-content detail-layout" data-page-title="{{.Record.GetName}}">
-    {{/* Recognize Expense CTA — mirrors selling-side "Recognize Revenue" on subscription detail. */}}
-    {{if .RecognizeExpenseURL}}
+    {{/* CostPlan-billing-kind-aware CTA — resolveRecognitionsPrimaryAction
+         returns the URL/Label/Icon per billing_kind. URL == "" hides the button.
+         Plan A Surface C 20260517-expense-run. */}}
+    {{if .RecognitionsPrimaryAction.URL}}
+    <div class="detail-header-actions">
+        <button type="button"
+                class="btn btn--primary"
+                data-testid="supplier-subscription-recognitions-primary-action"
+                hx-get="{{.RecognitionsPrimaryAction.URL}}"
+                hx-target="#sheetContent"
+                hx-swap="innerHTML">
+            {{if .RecognitionsPrimaryAction.Icon}}{{template "icon" .RecognitionsPrimaryAction.Icon}}{{end}}
+            {{.RecognitionsPrimaryAction.Label}}
+        </button>
+    </div>
+    {{else if .RecognizeExpenseURL}}
+    {{/* Legacy fallback — backward compatibility when ExpenseRecognitionRunLabels
+         + ReadCostPlan are not yet wired by the consumer composition layer. */}}
     <div class="detail-header-actions">
         <button type="button"
                 class="btn btn--primary"
@@ -13,7 +29,7 @@
                 hx-get="{{.RecognizeExpenseURL}}"
                 hx-target="#sheetContent"
                 hx-swap="innerHTML">
-            Recognize Expense
+            {{.Labels.Buttons.RecognizeExpense}}
         </button>
     </div>
     {{end}}

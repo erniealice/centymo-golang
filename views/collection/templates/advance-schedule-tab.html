@@ -1,0 +1,161 @@
+{{/*
+20260517-advance-cash-events Plan B Phase 4 — Advance Schedule tab content
+for TreasuryCollection detail.
+
+Renders the schedule metadata (kind/status/start/end/period/balance+target
+accounts), three stat cards (Remaining / Recognized / Total), the tranches
+table (empty in v1 — tranches are recognized via the AmortizeAdvanceCollection
+use case downstream), and a banner placeholder for the linked-advance
+precedence suppression.
+
+Data shape: same as the existing collection-tab-info template — the .Collection
+map carries every advance_* field collectionToMap populated. Operator-facing
+strings flow through .AdvanceLabels (TreasuryAdvanceLabels, sourced from
+treasury_collection.json `advance.*`); no hardcoded English remains.
+*/}}
+
+{{define "collection-tab-advance-schedule"}}
+<div class="tab-scroll" data-testid="advance-schedule-tab" data-advance-kind="{{index .Collection "advance_kind"}}">
+    <h3 class="detail-section-title">{{.AdvanceLabels.Tab}}</h3>
+
+    {{/* --- Stat cards ------------------------------------------------- */}}
+    <div class="stats-row">
+        {{template "stat-card" (dict
+            "Label" .AdvanceLabels.RemainingLabel
+            "Value" (printf "%d" (index .Collection "advance_remaining"))
+            "Icon"  "icon-credit-card"
+            "TestID" "advance-schedule-stat-remaining"
+        )}}
+        {{template "stat-card" (dict
+            "Label" .AdvanceLabels.RecognizedLabel
+            "Value" (printf "%d" (index .Collection "advance_recognized"))
+            "Icon"  "icon-check-circle"
+            "TestID" "advance-schedule-stat-recognized"
+        )}}
+        {{template "stat-card" (dict
+            "Label" .AdvanceLabels.TotalLabel
+            "Value" (printf "%d" (index .Collection "advance_total_amount"))
+            "Icon"  "icon-trending-up"
+            "TestID" "advance-schedule-stat-total"
+        )}}
+    </div>
+
+    {{/* --- Metadata ---------------------------------------------------- */}}
+    <div class="detail-info-grid">
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.KindShort}}</span>
+            <span class="detail-info-value"><span class="badge" data-testid="advance-schedule-kind-badge">{{index .Collection "advance_kind_label"}}</span></span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.StatusShort}}</span>
+            <span class="detail-info-value"><span class="badge" data-testid="advance-schedule-status-badge">{{index .Collection "advance_status_label"}}</span></span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.StartDate}}</span>
+            <span class="detail-info-value">{{index .Collection "advance_start_date"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.EndDate}}</span>
+            <span class="detail-info-value">{{index .Collection "advance_end_date"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.PeriodCount}}</span>
+            <span class="detail-info-value">{{index .Collection "advance_period_count"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.PeriodUnit}}</span>
+            <span class="detail-info-value">{{index .Collection "advance_period_unit"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.BalanceAccount}}</span>
+            <span class="detail-info-value mono">{{index .Collection "advance_balance_account"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.TargetAccount}}</span>
+            <span class="detail-info-value mono">{{index .Collection "advance_target_account"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.AdvanceLabels.ProrationPolicyField}}</span>
+            <span class="detail-info-value">{{index .Collection "advance_proration_policy_label"}}</span>
+        </div>
+    </div>
+
+    {{/* --- Tranches table (empty-state in v1) -------------------------- */}}
+    <div class="transaction-section-spacer">
+        <h3 class="detail-section-title">{{.AdvanceLabels.Tranches}}</h3>
+        <div data-testid="advance-tranches-table">
+            {{template "empty-state" (dict
+                "Icon"  "icon-clock"
+                "Title" .AdvanceLabels.EmptyTranchesTitle
+                "Desc"  .AdvanceLabels.EmptyTranchesDesc
+            )}}
+        </div>
+    </div>
+
+    {{/* --- MILESTONE linked billing events ----------------------------- */}}
+    {{/* 20260517-advance-cash-events Plan B Phase 7 — visible only when the
+         advance is MILESTONE and there is at least one junction row. */}}
+    {{if .MilestoneLinks}}
+    <div class="transaction-section-spacer" data-testid="advance-milestone-links">
+        <h3 class="detail-section-title">{{.AdvanceLabels.LinkedMilestones}}</h3>
+        <table class="data-table data-table--compact" data-testid="advance-milestone-links-table">
+            <thead>
+                <tr>
+                    <th>{{.AdvanceLabels.BillingEventColumn}}</th>
+                    <th class="cell-right">{{.AdvanceLabels.TrancheColumn}}</th>
+                    <th>{{.AdvanceLabels.CurrencyColumn}}</th>
+                    <th>{{.AdvanceLabels.StatusShort}}</th>
+                    <th>{{.AdvanceLabels.RevenueColumn}}</th>
+                    <th scope="col"><span class="visually-hidden">{{.AdvanceLabels.ActionsSection}}</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .MilestoneLinks}}
+                <tr data-testid="advance-milestone-link-row" data-event-id="{{.BillingEventID}}">
+                    <td class="mono">{{.BillingEventID}}</td>
+                    <td class="cell-right">{{.TrancheDisplay}}</td>
+                    <td>{{.Currency}}</td>
+                    <td>
+                        <span class="badge badge--{{.StatusKey}}" data-testid="advance-milestone-status-{{.StatusKey}}">
+                            {{.StatusLabel}}
+                        </span>
+                    </td>
+                    <td class="mono">{{.RevenueID}}</td>
+                    <td>
+                        {{if .ShowRecognize}}
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                data-testid="advance-milestone-recognize"
+                                hx-post="{{.RecognizeURL}}"
+                                hx-vals='{"advance_id": "{{index $.Collection "id"}}"}'
+                                hx-swap="none">
+                            {{$.AdvanceLabels.RecognizeButton}}
+                        </button>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{end}}
+
+    {{/* --- UNSCHEDULED actions ---------------------------------------- */}}
+    {{if index .Collection "is_unscheduled_active"}}
+    <div class="transaction-section-spacer" data-testid="advance-schedule-actions">
+        <h3 class="detail-section-title">{{.AdvanceLabels.ActionsSection}}</h3>
+        <div class="form-row">
+            <button type="button"
+                    class="btn-primary"
+                    data-testid="advance-settle-button"
+                    hx-get="/action/collection/settle/{{index .Collection "id"}}"
+                    hx-target="#sheetContent"
+                    hx-trigger="click">{{.AdvanceLabels.Actions.Settle}}</button>
+            <button type="button"
+                    class="btn-secondary"
+                    data-testid="advance-refund-button"
+                    hx-get="/action/collection/refund/{{index .Collection "id"}}"
+                    hx-target="#sheetContent"
+                    hx-trigger="click">{{.AdvanceLabels.Actions.Refund}}</button>
+            <button type="button"
+                    class="btn-danger"
+                    data-testid="advance-cancel-button"
+                    hx-get="/action/collection/cancel/{{index .Collection "id"}}"
+                    hx-target="#sheetContent"
+                    hx-trigger="click">{{.AdvanceLabels.Actions.Cancel}}</button>
+        </div>
+    </div>
+    {{end}}
+</div>
+{{end}}

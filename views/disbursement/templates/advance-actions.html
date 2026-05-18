@@ -1,0 +1,147 @@
+{{/*
+20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow drawers.
+
+Three drawer forms: Settle / Refund / Cancel. Each is loaded into #sheetContent
+via HTMX and posts back to the corresponding action endpoint. Shared shape so
+the same template helpers (form-section + form-group + sheet-form-footer)
+keep the surfaces consistent across both treasury_collection and
+treasury_disbursement sides.
+
+Data shape (from action/advance_actions.go::AdvanceDrawerData):
+  .FormAction, .AdvanceID, .Action
+  .Labels (centymo.TreasuryAdvanceLabels)
+  .EnumLabels (centymo.AdvanceEnumLabels)
+  .CommonLabels, .ConfirmTitle
+  .ShowAmount, .ShowTargetAccount, .ShowReason, .ShowDestination
+*/}}
+
+{{define "advance-settle-drawer-form"}}
+<form hx-post="{{.FormAction}}"
+      hx-swap="none"
+      hx-on::after-request="lf.Sheet.handleResponse(event)"
+      data-testid="advance-settle-form">
+    <input type="hidden" name="advance_id" value="{{.AdvanceID}}">
+
+    <div class="sheet-body">
+        {{template "form-section" (dict "Title" .Labels.Actions.SettleConfirm)}}
+
+        {{template "alert" (dict
+            "State" "warning"
+            "Message" "Settlement records a cash event and cannot be undone via this drawer."
+            "TestID"  "advance-settle-warning"
+        )}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "amount"
+                "Label" .Labels.Actions.AmountField
+                "Required" true
+                "Placeholder" "0.00"
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "target_account_id"
+                "Label" .Labels.Actions.TargetAccountField
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "reason"
+                "Label" .Labels.Actions.ReasonField
+                "Required" true
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true)}}
+</form>
+{{end}}
+
+{{define "advance-refund-drawer-form"}}
+<form hx-post="{{.FormAction}}"
+      hx-swap="none"
+      hx-on::after-request="lf.Sheet.handleResponse(event)"
+      data-testid="advance-refund-form">
+    <input type="hidden" name="advance_id" value="{{.AdvanceID}}">
+
+    <div class="sheet-body">
+        {{template "form-section" (dict "Title" .Labels.Actions.RefundConfirm)}}
+
+        {{template "alert" (dict
+            "State" "warning"
+            "Message" "Refund records a cash outflow. Records and reverses the held balance."
+            "TestID"  "advance-refund-warning"
+        )}}
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "amount"
+                "Label" .Labels.Actions.AmountField
+                "Required" true
+                "Placeholder" "0.00"
+            )}}
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "refund_method"
+                "Label" .Labels.Actions.RefundMethodField
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "destination_account"
+                "Label" .Labels.Actions.DestinationAccountField
+            )}}
+        </div>
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "reason"
+                "Label" .Labels.Actions.ReasonField
+                "Required" true
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true)}}
+</form>
+{{end}}
+
+{{define "advance-cancel-drawer-form"}}
+<form hx-post="{{.FormAction}}"
+      hx-swap="none"
+      hx-on::after-request="lf.Sheet.handleResponse(event)"
+      data-testid="advance-cancel-form">
+    <input type="hidden" name="advance_id" value="{{.AdvanceID}}">
+
+    <div class="sheet-body">
+        {{template "form-section" (dict "Title" .Labels.Actions.CancelConfirm)}}
+
+        {{template "alert" (dict
+            "State" "error"
+            "Message" "Cancel reverses any remaining balance to the balance-sheet account via a journal entry."
+            "TestID"  "advance-cancel-warning"
+        )}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "textarea"
+                "Name" "reason"
+                "Label" .Labels.Actions.ReasonField
+                "Required" true
+            )}}
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true)}}
+</form>
+{{end}}

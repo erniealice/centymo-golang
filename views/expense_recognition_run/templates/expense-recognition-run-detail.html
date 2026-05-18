@@ -1,0 +1,188 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "expense-recognition-run-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "expense-recognition-run-detail-content"}}
+<div class="page-content detail-layout" data-testid="expense-run-detail-page">
+
+    {{/* ─── Tabs ─── */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "expense-run-tabs")}}
+    </div>
+
+    {{/* ─── Tab Body ─── */}}
+    <div id="expense-run-tab-content" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "summary"}}
+        {{template "expense-recognition-run-summary-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "selections"}}
+        {{template "expense-recognition-run-selections-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "results"}}
+        {{template "expense-recognition-run-results-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "bills"}}
+        {{template "expense-recognition-run-bills-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "recognitions"}}
+        {{template "expense-recognition-run-recognitions-tab" .}}
+        {{end}}
+        {{if eq .ActiveTab "audit-history"}}
+        {{template "expense-recognition-run-audit-history-tab" .}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    SUMMARY TAB
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "expense-recognition-run-summary-tab"}}
+<div class="tab-scroll" data-testid="expense-run-detail-tab-summary">
+
+    {{if .IsPossiblyInterrupted}}
+    {{template "alert" (dict
+        "State"   "warning"
+        "Message" .Labels.Detail.Summary.PossiblyInterruptedNote
+    )}}
+    {{end}}
+
+    <div class="stats-row">
+        {{template "stat-card" (dict
+            "Icon"  "icon-check-circle"
+            "Value" (printf "%d" .Run.CreatedCount)
+            "Label" .Labels.List.Columns.Created
+            "Color" "sage"
+        )}}
+        {{template "stat-card" (dict
+            "Icon"  "icon-skip-forward"
+            "Value" (printf "%d" .Run.SkippedCount)
+            "Label" .Labels.List.Columns.Skipped
+            "Color" "amber"
+        )}}
+        {{template "stat-card" (dict
+            "Icon"  "icon-x-circle"
+            "Value" (printf "%d" .Run.ErroredCount)
+            "Label" .Labels.List.Columns.Errored
+            "Color" "terracotta"
+        )}}
+    </div>
+
+    {{template "pyeza-info-sections" (dict
+        "TestID"   "expense-run-summary-info"
+        "Sections" (list
+            (dict "Title" ""
+                  "Rows" (list
+                      (dict "Label" .Labels.Detail.Summary.Status
+                            "Value" (printf "%s" .Run.Status))
+                      (dict "Label" .Labels.Detail.Summary.Scope
+                            "Value" (printf "%s" .Run.ScopeLabel))
+                      (dict "Label" .Labels.Detail.Summary.AsOfDate
+                            "Value" (printf "%s" .Run.AsOfDate))
+                      (dict "Label" .Labels.Detail.Summary.Initiator
+                            "Value" (printf "%s" .Run.InitiatorName))
+                      (dict "Label" .Labels.Detail.Summary.InitiatedAt
+                            "Value" (printf "%s" .Run.InitiatedAt))
+                      (dict "Label" .Labels.Detail.Summary.CompletedAt
+                            "Value" (printf "%s" .Run.CompletedAt))
+                  )
+            )
+        )
+    )}}
+
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    SELECTIONS TAB
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "expense-recognition-run-selections-tab"}}
+<div class="tab-scroll" data-testid="expense-run-detail-tab-selections">
+    {{if .SelectionsTable}}
+        {{template "table-card" .SelectionsTable}}
+    {{else}}
+        {{template "empty-state" (dict
+            "Icon"  "icon-list"
+            "Title" .Labels.Detail.Selections.EmptyTitle
+            "Desc"  .Labels.Detail.Selections.EmptyMessage
+        )}}
+    {{end}}
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    RESULTS TAB
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "expense-recognition-run-results-tab"}}
+<div class="tab-scroll" data-testid="expense-run-detail-tab-results">
+    {{if .ResultsTable}}
+        {{template "table-card" .ResultsTable}}
+    {{else}}
+        {{template "empty-state" (dict
+            "Icon"  "icon-check-circle"
+            "Title" .Labels.Detail.Results.EmptyTitle
+            "Desc"  .Labels.Detail.Results.EmptyMessage
+        )}}
+    {{end}}
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    BILLS TAB — Draft Expenditures created by the run.
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "expense-recognition-run-bills-tab"}}
+<div class="tab-scroll" data-testid="expense-run-detail-tab-bills">
+    {{if .Labels.Detail.Bills.Hint}}
+    {{template "alert" (dict
+        "State"   "info"
+        "Message" .Labels.Detail.Bills.Hint
+    )}}
+    {{end}}
+    {{if .BillsTable}}
+        {{template "table-card" .BillsTable}}
+    {{else}}
+        {{template "empty-state" (dict
+            "Icon"  "icon-receipt"
+            "Title" .Labels.Detail.Bills.EmptyTitle
+            "Desc"  .Labels.Detail.Bills.EmptyMessage
+        )}}
+    {{end}}
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    RECOGNITIONS TAB — ExpenseRecognitions created by the run.
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "expense-recognition-run-recognitions-tab"}}
+<div class="tab-scroll" data-testid="expense-run-detail-tab-recognitions">
+    {{if .Labels.Detail.Recognitions.Hint}}
+    {{template "alert" (dict
+        "State"   "info"
+        "Message" .Labels.Detail.Recognitions.Hint
+    )}}
+    {{end}}
+    {{if .RecognitionsTable}}
+        {{template "table-card" .RecognitionsTable}}
+    {{else}}
+        {{template "empty-state" (dict
+            "Icon"  "icon-trending-down"
+            "Title" .Labels.Detail.Recognitions.EmptyTitle
+            "Desc"  .Labels.Detail.Recognitions.EmptyMessage
+        )}}
+    {{end}}
+</div>
+{{end}}
+
+{{/* ─────────────────────────────────────────────────────────────────────────
+    AUDIT HISTORY TAB — deferred (coming soon)
+───────────────────────────────────────────────────────────────────────── */}}
+{{define "expense-recognition-run-audit-history-tab"}}
+<div class="tab-scroll" data-testid="expense-run-detail-tab-audit-history">
+    {{template "alert" (dict
+        "State"   "info"
+        "Message" .Labels.Detail.AuditHistoryComingSoon
+    )}}
+</div>
+{{end}}

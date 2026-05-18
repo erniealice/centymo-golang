@@ -1,0 +1,88 @@
+{{/*
+Advances Dashboard — 20260517-advance-cash-events Plan B Phase 4.
+
+Workspace-level summary of all advance Collections (deferred / liability) and
+all advance Disbursements (prepaid / asset). Two side-by-side cards each with
+a table-card; per-row utilization bars use the pyeza-progress component.
+*/}}
+
+{{define "advances-dashboard"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial for HTMX swaps */}}
+{{define "advances-dashboard-content"}}
+<div class="page-content"
+     data-testid="advances-dashboard-page"
+     data-page-title="{{.Labels.Title}}">
+    <div class="page-header">
+        <div class="page-header-row">
+            <h2 class="page-title" data-testid="advances-dashboard-title">{{.Labels.Title}}</h2>
+            <div class="page-header-meta" data-testid="advances-dashboard-as-of">
+                <span class="page-header-meta-label">{{.Labels.AsOfLabel}}</span>
+                <span class="page-header-meta-value mono">{{if .AsOfDate}}{{.AsOfDate}}{{else}}—{{end}}</span>
+            </div>
+        </div>
+    </div>
+
+    {{/* --- Stat cards ------------------------------------------------- */}}
+    <div class="stats-row" data-testid="advances-dashboard-stats">
+        {{template "stat-card" (dict
+            "Label" .Labels.TotalOutflow
+            "Value" (printf "%s %d" .Position.Currency .Position.OutflowTotalRemaining)
+            "Icon"  "icon-trending-down"
+            "TestID" "advances-dashboard-stat-outflow"
+        )}}
+        {{template "stat-card" (dict
+            "Label" .Labels.TotalInflow
+            "Value" (printf "%s %d" .Position.Currency .Position.InflowTotalRemaining)
+            "Icon"  "icon-trending-up"
+            "TestID" "advances-dashboard-stat-inflow"
+        )}}
+        {{template "stat-card" (dict
+            "Label" .Labels.ActiveCount
+            "Value" (printf "%d" (add .Position.OutflowActiveCount .Position.InflowActiveCount))
+            "Icon"  "icon-check-circle"
+            "TestID" "advances-dashboard-stat-active"
+        )}}
+        {{template "stat-card" (dict
+            "Label" .Labels.FullyRecognizedCount
+            "Value" (printf "%d" (add .Position.OutflowFullyRecognized .Position.InflowFullyRecognized))
+            "Icon"  "icon-clock"
+            "TestID" "advances-dashboard-stat-fully"
+        )}}
+    </div>
+
+    {{/* --- Section: outflows (prepaid / asset) ------------------------- */}}
+    <section class="advances-section"
+             data-testid="advances-dashboard-outflows-section"
+             aria-labelledby="advances-outflows-heading">
+        <h2 id="advances-outflows-heading" class="advances-section-title">{{.OutflowSectionTitle}}</h2>
+        {{if .OutflowTable}}
+            {{template "table-card" .OutflowTable}}
+        {{else}}
+            {{template "empty-state" (dict
+                "Icon"  "icon-trending-down"
+                "Title" .Labels.Outflow.EmptyTitle
+                "Desc"  .Labels.Outflow.EmptyMessage
+            )}}
+        {{end}}
+    </section>
+
+    {{/* --- Section: inflows (deferred / liability) --------------------- */}}
+    <section class="advances-section"
+             data-testid="advances-dashboard-inflows-section"
+             aria-labelledby="advances-inflows-heading">
+        <h2 id="advances-inflows-heading" class="advances-section-title">{{.InflowSectionTitle}}</h2>
+        {{if .InflowTable}}
+            {{template "table-card" .InflowTable}}
+        {{else}}
+            {{template "empty-state" (dict
+                "Icon"  "icon-trending-up"
+                "Title" .Labels.Inflow.EmptyTitle
+                "Desc"  .Labels.Inflow.EmptyMessage
+            )}}
+        {{end}}
+    </section>
+</div>
+{{end}}

@@ -40,22 +40,25 @@ func NewRevenueRunAction(deps *Deps) view.View {
 			out := make([]revenuerundeps.RevenueRunCandidate, 0, len(outerCandidates))
 			for _, c := range outerCandidates {
 				out = append(out, revenuerundeps.RevenueRunCandidate{
-					SubscriptionID:    c.SubscriptionID,
-					SubscriptionName:  c.SubscriptionName,
-					ClientID:          c.ClientID,
-					ClientName:        c.ClientName,
-					PlanName:          c.PlanName,
-					BillingCycleLabel: c.BillingCycleLabel,
-					Currency:          c.Currency,
-					PeriodStart:       c.PeriodStart,
-					PeriodEnd:         c.PeriodEnd,
-					PeriodLabel:       c.PeriodLabel,
-					PeriodMarker:      c.PeriodMarker,
-					Amount:            c.Amount,
-					AmountDisplay:     c.AmountDisplay,
-					LineItemCount:     c.LineItemCount,
-					Eligible:          c.Eligible,
-					BlockerReason:     c.BlockerReason,
+					SubscriptionID:                 c.SubscriptionID,
+					SubscriptionName:               c.SubscriptionName,
+					ClientID:                       c.ClientID,
+					ClientName:                     c.ClientName,
+					PlanName:                       c.PlanName,
+					BillingCycleLabel:              c.BillingCycleLabel,
+					Currency:                       c.Currency,
+					PeriodStart:                    c.PeriodStart,
+					PeriodEnd:                      c.PeriodEnd,
+					PeriodLabel:                    c.PeriodLabel,
+					PeriodMarker:                   c.PeriodMarker,
+					Amount:                         c.Amount,
+					AmountDisplay:                  c.AmountDisplay,
+					LineItemCount:                  c.LineItemCount,
+					Eligible:                       c.Eligible,
+					BlockerReason:                  c.BlockerReason,
+					SourceKind:                     c.SourceKind,
+					AdvanceCollectionID:            c.AdvanceCollectionID,
+					SuppressingAdvanceCollectionID: c.SuppressingAdvanceCollectionID,
 				})
 			}
 			return out, nextCursor, nil
@@ -71,10 +74,12 @@ func NewRevenueRunAction(deps *Deps) view.View {
 			}
 			for _, s := range sels.ExplicitList {
 				outerSels.ExplicitList = append(outerSels.ExplicitList, SelectedRevenueRunCandidateAction{
-					SubscriptionID: s.SubscriptionID,
-					PeriodStart:    s.PeriodStart,
-					PeriodEnd:      s.PeriodEnd,
-					PeriodMarker:   s.PeriodMarker,
+					SubscriptionID:      s.SubscriptionID,
+					PeriodStart:         s.PeriodStart,
+					PeriodEnd:           s.PeriodEnd,
+					PeriodMarker:        s.PeriodMarker,
+					SourceKind:          s.SourceKind,
+					AdvanceCollectionID: s.AdvanceCollectionID,
 				})
 			}
 			result, err := outerGenerate(ctx, RevenueRunScopeAction{

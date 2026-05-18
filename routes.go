@@ -142,6 +142,12 @@ const (
 	MilestoneMarkReadyURL = "/action/subscription/{id}/billing-event/{eventId}/mark-ready"
 	MilestoneWaiveURL     = "/action/subscription/{id}/billing-event/{eventId}/waive"
 
+	// 20260517-advance-cash-events Plan B Phase 7 — Recognize handler for a
+	// BillingEvent row when it is linked to a MILESTONE advance Collection via
+	// the treasury_collection_billing_event junction. POSTs through the
+	// espyna RecognizeMilestoneAdvanceCollection use case.
+	MilestoneRecognizeURL = "/action/subscription/{id}/billing-event/{eventId}/recognize"
+
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — retroactive
 	// spawn drawer endpoint (GET = drawer, POST = spawn) and HTMX-driven
 	// partial that re-renders the Spawn Jobs section in the create drawer
@@ -196,6 +202,48 @@ const (
 	DisbursementTabActionURL        = "/action/disbursement/detail/{id}/tab/{tab}"
 	DisbursementAttachmentUploadURL = "/action/disbursement/detail/{id}/attachments/upload"
 	DisbursementAttachmentDeleteURL = "/action/disbursement/detail/{id}/attachments/delete"
+
+	// ---------------------------------------------------------------------------
+	// 20260517-advance-cash-events Plan B Phase 3 — Advance Cash Events routes.
+	// "Advances" is a Cash-app section that surfaces TreasuryCollection /
+	// TreasuryDisbursement rows whose advance_kind != NONE plus a workspace
+	// dashboard. These are first-class operator actions (Settle / Refund /
+	// Cancel) anchored on the existing TreasuryCollection / TreasuryDisbursement
+	// detail pages — there is no separate "advance" entity.
+	// ---------------------------------------------------------------------------
+
+	// Advances Dashboard — workspace-level summary (both sides).
+	AdvancesDashboardURL = "/app/cash/advances/dashboard"
+
+	// Filtered list URLs (advance_kind != NONE) — point at the existing
+	// Collection / Disbursement list pages with the chip pre-applied via a
+	// query string the list page interprets. These are sidebar Href targets,
+	// NOT ServeMux patterns — the list pages are registered at the underlying
+	// pattern (CollectionListURL / DisbursementListURL) and read advance_kind
+	// from the request query string.
+	AdvanceCollectionListURL   = "/app/collections/list/pending?advance_kind=any"
+	AdvanceDisbursementListURL = "/app/disbursements/list/pending?advance_kind=any"
+
+	// TreasuryCollection / TreasuryDisbursement Advance Schedule tab partials
+	// (loaded via HTMX, sit beside info / attachments / audit / advance-schedule
+	// values in the detail page's tab switch).
+	TreasuryCollectionAdvanceScheduleTabURL   = "/action/collection/detail/{id}/tab/advance-schedule"
+	TreasuryDisbursementAdvanceScheduleTabURL = "/action/disbursement/detail/{id}/tab/advance-schedule"
+
+	// UNSCHEDULED workflow drawers — Settle / Refund / Cancel on both sides.
+	// Verb-first to avoid Go ServeMux ambiguity with the existing edit/{id}
+	// patterns at the same depth (same rationale as SubscriptionRecognizeURL).
+	TreasuryCollectionSettleURL   = "/action/collection/settle/{id}"
+	TreasuryCollectionRefundURL   = "/action/collection/refund/{id}"
+	TreasuryCollectionCancelURL   = "/action/collection/cancel/{id}"
+	TreasuryDisbursementSettleURL = "/action/disbursement/settle/{id}"
+	TreasuryDisbursementRefundURL = "/action/disbursement/refund/{id}"
+	TreasuryDisbursementCancelURL = "/action/disbursement/cancel/{id}"
+
+	// SupplierBillingEvent (buying-side MILESTONE anchor).
+	SupplierBillingEventListURL      = "/app/supplier-billing-events/list/{status}"
+	SupplierBillingEventDetailURL    = "/app/supplier-billing-events/detail/{id}"
+	SupplierBillingEventRecognizeURL = "/action/supplier-billing-event/recognize/{id}"
 
 	ProductListURL   = "/app/products/list/{status}"
 	ProductTableURL  = "/action/product/table/{status}"
@@ -397,6 +445,19 @@ const (
 	RevenueRunAttachmentUploadURL = "/action/revenue-run/detail/{id}/attachments/upload"
 	RevenueRunAttachmentDeleteURL = "/action/revenue-run/detail/{id}/attachments/delete"
 	RevenueRunSubmitBatchURL      = "/action/revenue-run/submit-batch"
+
+	// Expense Recognition Run (buying-side) routes — Plan A 20260517-expense-run.
+	ExpenseRecognitionRunQueueURL                   = "/app/expense-recognition-run/queue"
+	ExpenseRecognitionRunQueueTableURL              = "/action/expense-recognition-run/queue/table"
+	ExpenseRecognitionRunListURL                    = "/app/expense-recognition-run/list/{status}"
+	ExpenseRecognitionRunListTableURL               = "/action/expense-recognition-run/table/{status}"
+	ExpenseRecognitionRunDetailURL                  = "/app/expense-recognition-run/detail/{id}"
+	ExpenseRecognitionRunDetailTabActionURL         = "/action/expense-recognition-run/detail/{id}/tab/{tab}"
+	ExpenseRecognitionRunNewURL                     = "/app/expense-recognition-run/new"
+	ExpenseRecognitionRunGenerateURL                = "/action/expense-recognition-run/generate"
+	ExpenseRecognitionRunSubmitBatchURL             = "/action/expense-recognition-run/submit-batch"
+	ExpenseRecognitionRunPerSupplierDrawerURL       = "/action/supplier/expense-recognition-run/{id}"
+	ExpenseRecognitionRunPerSubscriptionDrawerURL   = "/action/supplier-subscription/expense-recognition-run/{id}"
 
 	// Expenditure (purchase + expense) routes
 	ExpenditurePurchaseListURL      = "/app/purchases/list/{status}"

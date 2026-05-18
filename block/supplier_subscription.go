@@ -38,7 +38,11 @@ type supplierSubscriptionWiring struct {
 	supplierProductCostPlanLabels centymo.SupplierProductCostPlanLabels
 	supplierSubscriptionRoutes    centymo.SupplierSubscriptionRoutes
 	supplierSubscriptionLabels    centymo.SupplierSubscriptionLabels
-	centymoTableLabels            types.TableLabels
+	// expenseRecognitionRunLabels supplies the "Run Recognitions" CTA label
+	// for the supplier_subscription detail page's Linked Recognitions tab.
+	// Plan A 20260517-expense-run Surface C.
+	expenseRecognitionRunLabels centymo.ExpenseRecognitionRunLabels
+	centymoTableLabels          types.TableLabels
 }
 
 // wireSupplierSubscriptionModules lifts the bodies of the six P3 procurement
@@ -264,10 +268,11 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// =====================================================================
 	if cfg.wantSupplierSubscription() {
 		ssDeps := &suppliersubscriptionmod.ModuleDeps{
-			Routes:       w.supplierSubscriptionRoutes,
-			Labels:       w.supplierSubscriptionLabels,
-			CommonLabels: ctx.Common,
-			TableLabels:  w.centymoTableLabels,
+			Routes:                      w.supplierSubscriptionRoutes,
+			Labels:                      w.supplierSubscriptionLabels,
+			ExpenseRecognitionRunLabels: w.expenseRecognitionRunLabels,
+			CommonLabels:                ctx.Common,
+			TableLabels:                 w.centymoTableLabels,
 			SetSupplierSubscriptionActive: func(fctx context.Context, id string, active bool) error {
 				_, err := w.db.Update(fctx, "supplier_subscription", id, map[string]any{"active": active})
 				return err
@@ -291,6 +296,10 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 		}
 		if ss.GetSupplierSubscriptionItemPageData != nil {
 			ssDeps.GetSupplierSubscriptionItemPageData = ss.GetSupplierSubscriptionItemPageData
+		}
+		// Plan A Surface C — ReadCostPlan for the CTA helper.
+		if cp := useCases.Procurement.CostPlan; cp.ReadCostPlan != nil {
+			ssDeps.ReadCostPlan = cp.ReadCostPlan
 		}
 		suppliersubscriptionmod.NewModule(ssDeps).RegisterRoutes(ctx.Routes)
 	}

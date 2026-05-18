@@ -21,11 +21,13 @@ import (
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	workspacepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
+	supplierbillingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_billing_event"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	expenserecognitionlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_line"
+	expenserecognitionrunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_run"
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
@@ -77,6 +79,7 @@ import (
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 
+	centymo "github.com/erniealice/centymo-golang"
 	collectiondashboard "github.com/erniealice/centymo-golang/views/collection/dashboard"
 	expenseboard "github.com/erniealice/centymo-golang/views/expenditure/expense_dashboard"
 	purchaseboard "github.com/erniealice/centymo-golang/views/expenditure/purchase_dashboard"
@@ -119,6 +122,27 @@ type UseCases struct {
 	RevenueRun       RevenueRunUseCases
 	Subscription     SubscriptionUseCases
 	SupplierContract SupplierContractUseCases
+
+	// 20260517-advance-cash-events Plan B Phase 3 — workspace advances dashboard.
+	TreasuryAdvances TreasuryAdvancesUseCases
+
+	// 20260517-expense-run Plan A Phase 4 — buying-side Expense Recognition Run.
+	ExpenseRecognitionRun ExpenseRecognitionRunUseCases
+}
+
+// ExpenseRecognitionRunUseCases groups everything the centymo
+// expense_recognition_run view module needs from outside.
+//
+// Mirror of RevenueRunUseCases. List/Read/ListAttempts are repo-direct
+// pass-through calls; ListExpenseRunCandidates + GenerateExpenseRun are the
+// application-layer use cases.
+// Plan A 20260517-expense-run Phase 4.
+type ExpenseRecognitionRunUseCases struct {
+	ListExpenseRecognitionRuns        func(context.Context, *expenserecognitionrunpb.ListExpenseRecognitionRunsRequest) (*expenserecognitionrunpb.ListExpenseRecognitionRunsResponse, error)
+	ReadExpenseRecognitionRun         func(context.Context, *expenserecognitionrunpb.ReadExpenseRecognitionRunRequest) (*expenserecognitionrunpb.ReadExpenseRecognitionRunResponse, error)
+	ListExpenseRecognitionRunAttempts func(context.Context, *expenserecognitionrunpb.ListExpenseRecognitionRunAttemptsRequest) (*expenserecognitionrunpb.ListExpenseRecognitionRunAttemptsResponse, error)
+	ListExpenseRunCandidates          func(context.Context, *expenserecognitionrunpb.ListExpenseRunCandidatesRequest) (*expenserecognitionrunpb.ListExpenseRunCandidatesResponse, error)
+	GenerateExpenseRun                func(context.Context, *expenserecognitionrunpb.GenerateExpenseRunRequest) (*expenserecognitionrunpb.GenerateExpenseRunResponse, error)
 }
 
 // -- Common ------------------------------------------------------------------
@@ -362,6 +386,15 @@ type CollectionUseCases struct {
 	// Dashboard — centymo view-layer types (espyna internals are unreachable).
 	// Nil-safe: cash dashboard renders empty state when unset.
 	GetCashDashboard func(context.Context, *collectiondashboard.Request) (*collectiondashboard.Response, error)
+
+	// 20260517-advance-cash-events Plan B Phase 3 — UNSCHEDULED workflow
+	// closures. Service-admin wires these from espyna's
+	// SettleUnscheduledAdvance / RefundUnscheduledAdvance / CancelAdvance use
+	// cases on the treasury_collection side. Nil-safe — the views surface
+	// disabled buttons + helpful tooltips when unwired.
+	SettleUnscheduledAdvance func(ctx context.Context, in AdvanceSettleInput) (*AdvanceSettleOutput, error)
+	RefundUnscheduledAdvance func(ctx context.Context, in AdvanceRefundInput) (*AdvanceRefundOutput, error)
+	CancelAdvance            func(ctx context.Context, in AdvanceCancelInput) (*AdvanceCancelOutput, error)
 }
 
 // -- Disbursement (treasury) -------------------------------------------------
@@ -372,6 +405,113 @@ type DisbursementUseCases struct {
 	CreateDisbursement func(context.Context, *disbursementpb.CreateDisbursementRequest) (*disbursementpb.CreateDisbursementResponse, error)
 	UpdateDisbursement func(context.Context, *disbursementpb.UpdateDisbursementRequest) (*disbursementpb.UpdateDisbursementResponse, error)
 	DeleteDisbursement func(context.Context, *disbursementpb.DeleteDisbursementRequest) (*disbursementpb.DeleteDisbursementResponse, error)
+
+	// 20260517-advance-cash-events Plan B Phase 3 — UNSCHEDULED workflow
+	// closures, buying-side mirror of CollectionUseCases. Nil-safe.
+	SettleUnscheduledAdvance func(ctx context.Context, in AdvanceSettleInput) (*AdvanceSettleOutput, error)
+	RefundUnscheduledAdvance func(ctx context.Context, in AdvanceRefundInput) (*AdvanceRefundOutput, error)
+	CancelAdvance            func(ctx context.Context, in AdvanceCancelInput) (*AdvanceCancelOutput, error)
+}
+
+// ---------------------------------------------------------------------------
+// 20260517-advance-cash-events Plan B Phase 3 — view-typed input/output shapes
+// for the UNSCHEDULED workflow drawers. Mirrored between treasury_collection
+// and treasury_disbursement: the only side-specific value is the underlying
+// use case the service-admin adapter binds the closure to.
+// ---------------------------------------------------------------------------
+
+// AdvanceSettleInput captures the operator-supplied fields the Settle drawer
+// posts to the workflow closure.
+type AdvanceSettleInput struct {
+	AdvanceID       string
+	Amount          int64  // centavos
+	TargetAccountID string // optional fund / GL account
+	Reason          string
+}
+
+// AdvanceSettleOutput is the response shape the view renders into a toast.
+type AdvanceSettleOutput struct {
+	NewRemainingAmount  int64
+	NewRecognizedAmount int64
+	NewStatus           string // ACTIVE | PARTIALLY_SETTLED | SETTLED
+}
+
+// AdvanceRefundInput captures the Refund drawer fields.
+type AdvanceRefundInput struct {
+	AdvanceID         string
+	Amount            int64
+	RefundMethod      string
+	DestinationAccount string
+	Reason            string
+}
+
+// AdvanceRefundOutput is the response shape the view renders into a toast.
+type AdvanceRefundOutput struct {
+	NewRemainingAmount int64
+	NewStatus          string // ACTIVE | PARTIALLY_SETTLED | REFUNDED
+}
+
+// AdvanceCancelInput captures the Cancel drawer fields.
+type AdvanceCancelInput struct {
+	AdvanceID string
+	Reason    string
+}
+
+// AdvanceCancelOutput is the response shape the view renders into a toast.
+type AdvanceCancelOutput struct {
+	NewStatus string // CANCELLED
+}
+
+// -- Treasury Advances (workspace dashboard) ---------------------------------
+
+// TreasuryAdvancesUseCases groups the workspace-level dashboard callback.
+// Lives in a struct (not flat on UseCases) so the AdvancesDashboard module
+// can be selectively enabled via WithTreasuryAdvances() without coupling to
+// the existing Collection/Disbursement modules.
+type TreasuryAdvancesUseCases struct {
+	// GetAdvancesDashboard returns the workspace-level summary. Nil-safe —
+	// the dashboard view renders empty state when unset.
+	GetAdvancesDashboard func(ctx context.Context, asOfDate string) (*AdvancesDashboardData, error)
+
+	// 20260517-advance-cash-events Plan B Phase 7 — MILESTONE recognize
+	// closures. Service-admin wires these from espyna's
+	// RecognizeMilestoneAdvanceCollection / RecognizeMilestoneAdvanceDisbursement
+	// use cases. Nil-safe — the view-layer button surfaces a disabled state
+	// + helpful tooltip when unwired. The view-typed input/output shapes
+	// live at the centymo package root (see advance_actions.go) so the
+	// per-package view modules can import them without circling through
+	// block/.
+	RecognizeMilestoneAdvanceCollection   func(ctx context.Context, in centymo.AdvanceRecognizeMilestoneInput) (*centymo.AdvanceRecognizeMilestoneOutput, error)
+	RecognizeMilestoneAdvanceDisbursement func(ctx context.Context, in centymo.AdvanceRecognizeMilestoneInput) (*centymo.AdvanceRecognizeMilestoneOutput, error)
+}
+
+// AdvancesDashboardData is the view-typed return shape for the workspace
+// summary callback. Service-admin's block-level shim converts proto
+// TreasuryCollection / TreasuryDisbursement rows into these view-friendly
+// rows.
+type AdvancesDashboardData struct {
+	Outflows                []AdvancesDashboardRow
+	Inflows                 []AdvancesDashboardRow
+	OutflowTotalRemaining   int64
+	InflowTotalRemaining    int64
+	OutflowActiveCount      int
+	InflowActiveCount       int
+	OutflowFullyRecognized  int
+	InflowFullyRecognized   int
+	Currency                string
+}
+
+// AdvancesDashboardRow is the per-row shape the dashboard renders.
+type AdvancesDashboardRow struct {
+	ID                string
+	ReferenceNumber   string
+	CounterpartyName  string
+	Kind              string // raw enum string (e.g. "TIME_BASED")
+	Status            string // raw enum string (e.g. "ACTIVE")
+	Currency          string
+	TotalAmount       int64
+	RemainingAmount   int64
+	RecognizedAmount  int64
 }
 
 // -- Expenditure -------------------------------------------------------------
@@ -425,6 +565,12 @@ type ExpenditureUseCases struct {
 	// Dashboards — centymo view-layer types.
 	GetPurchaseDashboard func(context.Context, *purchaseboard.Request) (*purchaseboard.Response, error)
 	GetExpenseDashboard  func(context.Context, *expenseboard.Request) (*expenseboard.Response, error)
+
+	// 20260517-advance-cash-events Plan B Phase 7 — SupplierBillingEvent
+	// list + detail reads (buying-side MILESTONE anchor). Nil-safe — the
+	// view module degrades to empty state when unwired.
+	ListSupplierBillingEvents func(context.Context, *supplierbillingeventpb.ListSupplierBillingEventsRequest) (*supplierbillingeventpb.ListSupplierBillingEventsResponse, error)
+	ReadSupplierBillingEvent  func(context.Context, *supplierbillingeventpb.ReadSupplierBillingEventRequest) (*supplierbillingeventpb.ReadSupplierBillingEventResponse, error)
 }
 
 // -- Supplier Contract -------------------------------------------------------

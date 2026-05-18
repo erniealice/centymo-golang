@@ -69,7 +69,7 @@ Data: .ReferenceNumber, .Payee, .Amount, .Currency, .Method, .Date, .ApprovedBy,
             <div class="form-group">
                 <label for="expenditure_id" class="form-label">{{.Labels.LinkToBill}}</label>
                 <select name="expenditure_id" id="expenditure_id" class="form-select">
-                    <option value="">— No Bill —</option>
+                    <option value="">{{.Labels.NoBillOption}}</option>
                     {{range .Expenditures}}
                     <option value="{{.Id}}" {{if eq .Id $.ExpenditureID}}selected{{end}}>{{.Name}}{{if .Amount}} — {{.Amount}}{{end}}</option>
                     {{end}}

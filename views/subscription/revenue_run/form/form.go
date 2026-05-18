@@ -36,6 +36,9 @@ type Data struct {
 	// Periods is the flat list of candidate billing periods.
 	// Per-sub scope means there is no group layer (single subscription).
 	Periods []Period
+	// AdvanceCollectionRows holds advance-Collection tranche rows for this
+	// client (Plan B Phase 5b). Rendered as a separate source-kind section.
+	AdvanceCollectionRows []AdvanceRow
 	// CurrencyMismatch is true when the subscription currency differs from the
 	// client's billing currency; triggers the mismatch alert.
 	CurrencyMismatch bool
@@ -45,6 +48,23 @@ type Data struct {
 	Labels centymo.SubscriptionRevenueRunLabels
 	// CommonLabels carries shared UI strings (Save / Cancel / etc.).
 	CommonLabels pyeza.CommonLabels
+}
+
+// AdvanceRow is one advance-Collection tranche row rendered in the per-sub
+// drawer's "Advance Collections" section. Plan B Phase 5b.
+type AdvanceRow struct {
+	AdvanceCollectionID string
+	Currency            string
+	PeriodStart         string
+	PeriodEnd           string
+	PeriodMarker        string
+	PeriodLabel         string
+	Amount              int64
+	AmountDisplay       string
+	Eligible            bool
+	BlockerReason       string
+	// SelectionValue encoding: "{AdvanceID}|{start}|{end}|{marker}|ADVANCE_COLLECTION"
+	SelectionValue string
 }
 
 // Period is one candidate billing period row in the drawer's period table.
@@ -72,4 +92,9 @@ type Period struct {
 	// SelectionValue is the composite checkbox value encoding:
 	// "{SubscriptionID}|{PeriodStart}|{PeriodEnd}|{PeriodMarker}"
 	SelectionValue string
+	// SuppressingAdvanceCollectionID is set when this cycle is overlapped by
+	// an active TIME_BASED advance Collection (Decision A; Plan B Phase 5b).
+	// The drawer renders the row as a greyed info-only block with a
+	// "View advance" link.
+	SuppressingAdvanceCollectionID string
 }

@@ -182,11 +182,14 @@ func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *Use
 	// ListRevenueRunCandidates — direct proto call (ex-consumer helper).
 	if useCases.Revenue.ListRevenueRunCandidates != nil {
 		rrDeps.ListRevenueRunCandidates = func(fctx context.Context, clientID, asOfDate string) ([]revenuerunmod.QueueCandidateInput, error) {
+			// Plan B Phase 5c — opt-in to advance Collection candidates by default.
+			includeAdv := true
 			resp, err := useCases.Revenue.ListRevenueRunCandidates(fctx, &revenuerunpb.ListRevenueRunCandidatesRequest{
 				Scope: &revenuerunpb.RevenueRunScope{
 					ClientId: &clientID,
 					AsOfDate: &asOfDate,
 				},
+				IncludeAdvanceCollections: &includeAdv,
 			})
 			if err != nil {
 				return nil, err

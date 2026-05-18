@@ -1,0 +1,174 @@
+{{/* Surface A (per-supplier) + Surface C (per-supplier-subscription) drawer.
+     The same template renders both surfaces; the .Scope discriminator and
+     .AdvanceCandidates list determine which sections are visible.
+     Plan A 20260517-expense-run Phase 4. */}}
+{{define "expense-recognition-run-drawer"}}
+<div class="sheet" data-testid="expense-run-drawer">
+    <form method="POST" action="{{.FormAction}}"
+          hx-post="{{.FormAction}}"
+          hx-target="#sheetContent"
+          hx-swap="innerHTML">
+
+        {{/* Hidden scope FKs */}}
+        {{if eq .Scope "supplier"}}
+        <input type="hidden" name="supplier_id" value="{{.ScopeID}}">
+        {{else}}
+        <input type="hidden" name="supplier_subscription_id" value="{{.ScopeID}}">
+        {{end}}
+
+        <header class="sheet-header">
+            <h2 id="sheetTitle" class="sheet-title">
+                {{if eq .Scope "supplier"}}{{.Labels.Drawer.Supplier.Title}}{{else}}{{.Labels.Drawer.Subscription.Title}}{{end}}
+            </h2>
+        </header>
+
+        <div class="sheet-body">
+            {{/* As-of-date picker — HTMX inner-swap on change rebuilds the
+                 candidate list without losing scope. */}}
+            <section class="form-section">
+                {{template "form-group" (dict
+                    "Type"  "date"
+                    "Name"  "as_of_date"
+                    "Label" .Labels.Drawer.Supplier.AsOfDateLabel
+                    "Value" .AsOfDate
+                    "Max"   .AsOfDateMax
+                    "HxGet"   .FragmentURL
+                    "HxTarget" "#sheetContent"
+                    "HxSwap"   "innerHTML"
+                )}}
+            </section>
+
+            {{/* Suppressed-by-advance notice (Surface C empty state). */}}
+            {{if and (eq .Scope "subscription") .SuppressedCandidates (not .SubscriptionCandidates) (not .AdvanceCandidates)}}
+            <div data-testid="advance-suppression-notice" class="alert alert-info" role="status" aria-live="polite">
+                <strong>{{.Labels.Drawer.Subscription.SuppressedByAdvanceTitle}}</strong>
+                <p>{{.Labels.Drawer.Subscription.SuppressedByAdvanceExplainer}}</p>
+                {{/* Plan B Phase 4 (codex v3 Fix 4) — link to the suppressing
+                     advance disbursement. The first suppressed row carries the
+                     ID; the notice fires only when all cycles are blocked by
+                     the same advance, so a single link is sufficient. */}}
+                {{with (index .SuppressedCandidates 0)}}
+                {{if .SuppressingAdvanceID}}
+                <p>
+                    <a
+                        class="expense-run-period-link"
+                        href="/app/disbursements/detail/{{.SuppressingAdvanceID}}"
+                        data-testid="view-advance-link"
+                    >{{$.Labels.LinkedAdvanceSuppression.ViewAdvanceLink}}</a>
+                </p>
+                {{end}}
+                {{end}}
+            </div>
+            {{end}}
+
+            {{/* Subscription candidates */}}
+            {{if .SubscriptionCandidates}}
+            <details class="pyeza-accordion" open>
+                <summary>{{.Labels.Drawer.Supplier.GroupSubscriptionCycle}} ({{len .SubscriptionCandidates}})</summary>
+                <table class="data-table data-table--compact">
+                    <thead>
+                        <tr>
+                            <th>{{.Labels.Drawer.Supplier.ColumnSource}}</th>
+                            <th>{{.Labels.Drawer.Supplier.ColumnPeriod}}</th>
+                            <th class="cell-right">{{.Labels.Drawer.Supplier.ColumnAmount}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .SubscriptionCandidates}}
+                        <tr data-testid="candidate-row-subscription-{{.SupplierSubscriptionID}}-{{.PeriodStart}}">
+                            <td><span class="badge badge--info">{{$.Labels.SourceKind.SubscriptionCycle}}</span> {{.SourceLabel}}</td>
+                            <td>{{.PeriodLabel}}</td>
+                            <td class="cell-right mono">{{.Amount}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </details>
+            {{end}}
+
+            {{/* Advance Disbursement candidates (Surface A only) */}}
+            {{if .AdvanceCandidates}}
+            <details class="pyeza-accordion" open>
+                <summary>{{.Labels.Drawer.Supplier.GroupAdvanceDisbursementTranche}} ({{len .AdvanceCandidates}})</summary>
+                <table class="data-table data-table--compact">
+                    <thead>
+                        <tr>
+                            <th>{{.Labels.Drawer.Supplier.ColumnSource}}</th>
+                            <th>{{.Labels.Drawer.Supplier.ColumnPeriod}}</th>
+                            <th class="cell-right">{{.Labels.Drawer.Supplier.ColumnAmount}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .AdvanceCandidates}}
+                        <tr data-testid="candidate-row-advance_disbursement-{{.AdvanceDisbursementID}}-{{.PeriodStart}}">
+                            <td><span class="badge badge--info">{{$.Labels.SourceKind.AdvanceDisbursement}}</span> {{.SourceLabel}}</td>
+                            <td>{{.PeriodLabel}}</td>
+                            <td class="cell-right mono">{{.Amount}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </details>
+            {{end}}
+
+            {{/* Suppressed (info-only blockers, Surface A) */}}
+            {{if and (eq .Scope "supplier") .SuppressedCandidates}}
+            <details class="pyeza-accordion">
+                <summary>{{.Labels.LinkedAdvanceSuppression.BannerTitle}} ({{len .SuppressedCandidates}})</summary>
+                <table class="data-table data-table--compact data-table--muted">
+                    <thead>
+                        <tr>
+                            <th>{{.Labels.Drawer.Supplier.ColumnSource}}</th>
+                            <th>{{.Labels.Drawer.Supplier.ColumnPeriod}}</th>
+                            <th>{{.Labels.LinkedAdvanceSuppression.RowExplainer}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .SuppressedCandidates}}
+                        <tr data-testid="suppressed-row-{{.SupplierSubscriptionID}}-{{.PeriodStart}}">
+                            <td>{{.SourceLabel}}</td>
+                            <td>{{.PeriodLabel}}</td>
+                            <td>
+                                <span class="badge badge--warning">{{$.Labels.LinkedAdvanceSuppression.RowChip}}</span>
+                                {{/* Plan B Phase 4 (codex v3 Fix 4) — every
+                                     suppressed row gets a link to the advance
+                                     disbursement that blocked it. Mirrors the
+                                     selling-side `View advance` link. */}}
+                                {{if .SuppressingAdvanceID}}
+                                <a
+                                    class="expense-run-period-link"
+                                    href="/app/disbursements/detail/{{.SuppressingAdvanceID}}"
+                                    data-testid="view-advance-link"
+                                >{{$.Labels.LinkedAdvanceSuppression.ViewAdvanceLink}}</a>
+                                {{end}}
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </details>
+            {{end}}
+
+            {{/* Empty state when no candidates exist in any bucket */}}
+            {{if and (not .SubscriptionCandidates) (not .AdvanceCandidates) (not .SuppressedCandidates)}}
+            {{template "empty-state" (dict
+                "Icon"  "icon-info"
+                "Title" .Labels.Drawer.Supplier.EmptyTitle
+                "Desc"  .Labels.Drawer.Supplier.EmptyMessage
+            )}}
+            {{end}}
+        </div>
+
+        <footer class="sheet-footer">
+            <button type="button" class="btn btn-ghost" onclick="lf.Sheet.close()">
+                {{.Labels.Drawer.Supplier.CancelButton}}
+            </button>
+            {{if or .SubscriptionCandidates .AdvanceCandidates}}
+            <button type="submit" class="btn btn-primary" data-testid="expense-run-generate-button">
+                {{.Labels.Drawer.Supplier.GenerateButton}}
+            </button>
+            {{end}}
+        </footer>
+    </form>
+</div>
+{{end}}

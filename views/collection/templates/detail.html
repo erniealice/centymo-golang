@@ -15,6 +15,8 @@
     <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
         {{template "collection-tab-info" .}}
+        {{else if eq .ActiveTab "advance-schedule"}}
+        {{template "collection-tab-advance-schedule" .}}
         {{else if eq .ActiveTab "audit"}}
         {{template "collection-tab-audit" .}}
         {{else if eq .ActiveTab "attachments"}}

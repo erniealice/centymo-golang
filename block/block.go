@@ -115,7 +115,8 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		cfg.accruedExpense || cfg.accruedExpenseSettlement ||
 		cfg.revenueRun ||
 		cfg.costSchedule || cfg.supplierPlan || cfg.costPlan ||
-		cfg.supplierProductPlan || cfg.supplierProductCostPlan || cfg.supplierSubscription
+		cfg.supplierProductPlan || cfg.supplierProductCostPlan || cfg.supplierSubscription ||
+		cfg.treasuryAdvances
 	cfg.enableAll = !moduleSelected
 
 	return func(ctx *pyeza.AppContext) error {
@@ -353,6 +354,24 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "revenue_run", &revenueRunRoutes)
 		revenueRunLabels := centymo.DefaultRevenueRunLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "revenue.json", "revenueRun", &revenueRunLabels)
+
+		// 20260517-expense-run Plan A Phase 4 — Expense Recognition Run (Surfaces B + D).
+		expenseRecognitionRunRoutes := centymo.DefaultExpenseRecognitionRunRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "expense_recognition_run", &expenseRecognitionRunRoutes)
+		expenseRecognitionRunLabels := centymo.DefaultExpenseRecognitionRunLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expense_recognition_run.json", "expenseRecognitionRun", &expenseRecognitionRunLabels)
+
+		// 20260517-advance-cash-events Plan B Phase 3 — Advances Dashboard.
+		// Routes flow from the new TreasuryAdvancesRoutes block; labels load
+		// from advances_dashboard.json + advance_kind.json (the latter is
+		// shared with the per-tab AdvanceKind/AdvanceStatus badge rendering
+		// done in the existing collection/disbursement detail pages).
+		advancesDashboardRoutes := centymo.DefaultTreasuryAdvancesRoutes()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "treasury_advances", &advancesDashboardRoutes)
+		advancesDashboardLabels := centymo.DefaultAdvancesDashboardLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advances_dashboard.json", "advancesDashboard", &advancesDashboardLabels)
+		advanceEnumLabels := centymo.DefaultAdvanceEnumLabels()
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advance_kind.json", "advanceKind.labels", &advanceEnumLabels)
 
 		// P3 (20260506-supplier-subscriptions) — Routes + Labels for the six new procurement modules.
 		costScheduleRoutes := centymo.DefaultCostScheduleRoutes()
@@ -621,6 +640,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantCollection() {
+			// 20260517-advance-cash-events Plan B Phase 4 — Advance Schedule
+			// labels + the UNSCHEDULED workflow closures. Loaded from lyngua
+			// once per Block() invocation and reused here + on the disbursement
+			// side below.
+			collectionAdvanceLabels := centymo.DefaultTreasuryCollectionAdvanceLabels()
+			_ = translations.LoadPathIfExists("en", ctx.BusinessType, "treasury_collection.json", "advance", &collectionAdvanceLabels)
+
 			collDeps := &collectionmod.ModuleDeps{
 				Routes:           collectionRoutes,
 				Labels:           collectionLabels,
@@ -637,6 +663,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				CreateAttachment: createAttachment,
 				DeleteAttachment: deleteAttachment,
 				NewID:            newAttachmentID,
+				// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow.
+				AdvanceLabels:     collectionAdvanceLabels,
+				AdvanceEnumLabels: advanceEnumLabels,
+				SettleUnscheduledAdvance: bridgeSettleAdvance(useCases.Collection.SettleUnscheduledAdvance),
+				RefundUnscheduledAdvance: bridgeRefundAdvance(useCases.Collection.RefundUnscheduledAdvance),
+				CancelAdvance:            bridgeCancelAdvance(useCases.Collection.CancelAdvance),
 			}
 			wireCashDashboard(collDeps, useCases)
 			collDeps.GetFunctionalCurrency = func(fctx context.Context) string {
@@ -650,6 +682,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantDisbursement() {
+			// 20260517-advance-cash-events Plan B Phase 4.
+			disbursementAdvanceLabels := centymo.DefaultTreasuryDisbursementAdvanceLabels()
+			_ = translations.LoadPathIfExists("en", ctx.BusinessType, "treasury_disbursement.json", "advance", &disbursementAdvanceLabels)
+
 			disbursementmod.NewModule(&disbursementmod.ModuleDeps{
 				Routes:             disbursementRoutes,
 				Labels:             disbursementLabels,
@@ -666,6 +702,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				CreateAttachment: createAttachment,
 				DeleteAttachment: deleteAttachment,
 				NewID:            newAttachmentID,
+				// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow.
+				AdvanceLabels:            disbursementAdvanceLabels,
+				AdvanceEnumLabels:        advanceEnumLabels,
+				SettleUnscheduledAdvance: bridgeSettleAdvance(useCases.Disbursement.SettleUnscheduledAdvance),
+				RefundUnscheduledAdvance: bridgeRefundAdvance(useCases.Disbursement.RefundUnscheduledAdvance),
+				CancelAdvance:            bridgeCancelAdvance(useCases.Disbursement.CancelAdvance),
 			}).RegisterRoutes(ctx.Routes)
 		}
 
@@ -863,6 +905,49 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			})
 		}
 
+		// =====================================================================
+		// 20260517-expense-run Plan A Phase 4 — Expense Recognition Run.
+		// Surfaces B (queue) + D (list/detail). See expense_recognition_run.go
+		// for wireExpenseRecognitionRunModule + proto-shim helpers.
+		// =====================================================================
+
+		if cfg.wantExpenseRecognitionRun() {
+			wireExpenseRecognitionRunModule(ctx, cfg, useCases, expenseRecognitionRunWiring{
+				routes:                                 expenseRecognitionRunRoutes,
+				labels:                                 expenseRecognitionRunLabels,
+				expenditureRoutes:                      expenditureRoutes,
+				centymoTableLabels:                     centymoTableLabels,
+				supplierDetailURL:                      cfg.supplierDetailURL,
+				supplierExpenseRecognitionRunDrawerURL: cfg.supplierExpenseRecognitionRunDrawerURL,
+			})
+		}
+
+		// =====================================================================
+		// 20260517-advance-cash-events Plan B Phase 3 — Advances Dashboard.
+		// See advances_dashboard.go for wireAdvancesDashboardModule.
+		// =====================================================================
+
+		if cfg.wantTreasuryAdvances() {
+			wireAdvancesDashboardModule(ctx, cfg, useCases, advancesDashboardWiring{
+				routes:             advancesDashboardRoutes,
+				labels:             advancesDashboardLabels,
+				enumLabels:         advanceEnumLabels,
+				collectionRoutes:   collectionRoutes,
+				disbursementRoutes: disbursementRoutes,
+				centymoTableLabels: centymoTableLabels,
+				functionalCurrency: func(fctx context.Context) string {
+					return getFunctionalCurrency(fctx, useCases)
+				},
+			})
+
+			// 20260517-advance-cash-events Plan B Phase 7 — buying-side
+			// SupplierBillingEvent surfaces (list, detail, Recognize).
+			// See supplier_billing_event.go for wireSupplierBillingEventModule.
+			wireSupplierBillingEventModule(ctx, useCases, supplierBillingEventWiring{
+				routes: advancesDashboardRoutes,
+			})
+		}
+
 		// See supplier_subscription.go for wireSupplierSubscriptionModules.
 		wireSupplierSubscriptionModules(ctx, cfg, useCases, supplierSubscriptionWiring{
 			db:                            db,
@@ -877,6 +962,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			supplierProductCostPlanLabels: supplierProductCostPlanLabels,
 			supplierSubscriptionRoutes:    supplierSubscriptionRoutes,
 			supplierSubscriptionLabels:    supplierSubscriptionLabels,
+			expenseRecognitionRunLabels:   expenseRecognitionRunLabels,
 			centymoTableLabels:            centymoTableLabels,
 		})
 

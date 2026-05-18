@@ -13,6 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
+	costplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/cost_plan"
 	suppliersubscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/supplier_subscription"
 )
 
@@ -22,6 +23,15 @@ type ModuleDeps struct {
 	Labels       centymo.SupplierSubscriptionLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+
+	// ExpenseRecognitionRunLabels supplies the "Run Recognitions" label for the
+	// Linked Recognitions tab CTA when CostPlan.billing_kind is
+	// RECURRING / CONTRACT-with-cycle. Plan A Surface C 20260517-expense-run.
+	ExpenseRecognitionRunLabels centymo.ExpenseRecognitionRunLabels
+
+	// ReadCostPlan resolves the supplier subscription's CostPlan so the detail
+	// page can branch the Recognitions CTA on billing_kind. Nil-safe.
+	ReadCostPlan func(ctx context.Context, req *costplanpb.ReadCostPlanRequest) (*costplanpb.ReadCostPlanResponse, error)
 
 	CreateSupplierSubscription          func(ctx context.Context, req *suppliersubscriptionpb.CreateSupplierSubscriptionRequest) (*suppliersubscriptionpb.CreateSupplierSubscriptionResponse, error)
 	ReadSupplierSubscription            func(ctx context.Context, req *suppliersubscriptionpb.ReadSupplierSubscriptionRequest) (*suppliersubscriptionpb.ReadSupplierSubscriptionResponse, error)
@@ -94,10 +104,12 @@ func NewModule(deps *ModuleDeps) *Module {
 	detailDeps := &suppliersubscriptiondetail.DetailViewDeps{
 		Routes:                              deps.Routes,
 		Labels:                              deps.Labels,
+		ExpenseRecognitionRunLabels:         deps.ExpenseRecognitionRunLabels,
 		CommonLabels:                        deps.CommonLabels,
 		TableLabels:                         deps.TableLabels,
 		ReadSupplierSubscription:            deps.ReadSupplierSubscription,
 		GetSupplierSubscriptionItemPageData: deps.GetSupplierSubscriptionItemPageData,
+		ReadCostPlan:                        deps.ReadCostPlan,
 		ListExpenseRecognitions:             deps.ListExpenseRecognitions,
 		ExpenseRecognitionDetailURL:         deps.ExpenseRecognitionDetailURL,
 	}

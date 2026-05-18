@@ -53,6 +53,19 @@ type blockConfig struct {
 	supplierProductPlan     bool
 	supplierProductCostPlan bool
 	supplierSubscription    bool
+	// 20260517-advance-cash-events Plan B Phase 3 — Advances Dashboard module.
+	treasuryAdvances bool
+	// 20260517-expense-run Plan A Phase 4 — buying-side Expense Recognition Run.
+	expenseRecognitionRun bool
+	// supplierDetailURL is the absolute path template (e.g.
+	// "/app/suppliers/detail/{id}") used by the expense-recognition-run queue
+	// page (Surface B) to deep-link to a supplier. Optional.
+	supplierDetailURL string
+	// supplierExpenseRecognitionRunDrawerURL is the path template for the
+	// Surface-A per-supplier drawer (e.g.
+	// "/action/supplier/expense-recognition-run/{id}"). Surface B drills into
+	// this from the queue page.
+	supplierExpenseRecognitionRunDrawerURL string
 	// clientDetailURL is the absolute path template (e.g.
 	// "/app/clients/detail/{id}") used for the subscription detail's
 	// page-header breadcrumb when accessed via the under-client nested route.
@@ -128,6 +141,37 @@ func WithAccruedExpenseSettlement() BlockOption {
 // WithRevenueRun enables the revenue-run history list + detail pages (Surface D).
 // Phase 4 of the 20260506-subscription-invoice-run plan.
 func WithRevenueRun() BlockOption { return func(c *blockConfig) { c.revenueRun = true } }
+
+// WithExpenseRecognitionRun enables the expense-recognition-run views:
+// Surface B (workspace queue) + Surface D (run history list + detail).
+// Plan A 20260517-expense-run Phase 4.
+func WithExpenseRecognitionRun() BlockOption {
+	return func(c *blockConfig) { c.expenseRecognitionRun = true }
+}
+
+// WithSupplierDetailURL supplies the entydad supplier-detail path template
+// (e.g. "/app/suppliers/detail/{id}") so the expense-recognition-run queue
+// page (Surface B) can render a supplier-name link per row. Optional —
+// when unset, the supplier name renders without a link.
+func WithSupplierDetailURL(url string) BlockOption {
+	return func(c *blockConfig) { c.supplierDetailURL = url }
+}
+
+// WithSupplierExpenseRecognitionRunDrawerURL supplies the entydad supplier
+// expense-recognition-run drawer path template (e.g.
+// "/action/supplier/expense-recognition-run/{id}") so the queue page
+// (Surface B) can render a per-row [Run] action that opens the Surface-A drawer.
+// Optional — the per-row action is omitted when unset.
+// Plan A 20260517-expense-run Phase 4.
+func WithSupplierExpenseRecognitionRunDrawerURL(url string) BlockOption {
+	return func(c *blockConfig) { c.supplierExpenseRecognitionRunDrawerURL = url }
+}
+
+// WithTreasuryAdvances enables the cash-app Advances Dashboard module.
+// 20260517-advance-cash-events Plan B Phase 3.
+func WithTreasuryAdvances() BlockOption {
+	return func(c *blockConfig) { c.treasuryAdvances = true }
+}
 
 // P3 (20260506-supplier-subscriptions) — six new procurement module toggles.
 func WithCostSchedule() BlockOption {
@@ -221,6 +265,14 @@ func (c *blockConfig) wantAccruedExpenseSettlement() bool {
 
 // Phase 4 (20260506-subscription-invoice-run).
 func (c *blockConfig) wantRevenueRun() bool { return c.enableAll || c.revenueRun }
+
+// Phase 4 (20260517-expense-run Plan A).
+func (c *blockConfig) wantExpenseRecognitionRun() bool {
+	return c.enableAll || c.expenseRecognitionRun
+}
+
+// 20260517-advance-cash-events Plan B Phase 3.
+func (c *blockConfig) wantTreasuryAdvances() bool { return c.enableAll || c.treasuryAdvances }
 
 // P3 (20260506-supplier-subscriptions) — six new procurement module want() helpers.
 func (c *blockConfig) wantCostSchedule() bool {

@@ -45,18 +45,36 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "pending"
 		}
 
+		// 20260517-advance-cash-events Plan B Phase 4 — advance_kind chip.
+		// Empty = no chip; "any" = advance_kind != NONE; specific values match.
+		advanceKindFilter := viewCtx.QueryParams["advance_kind"]
+
 		resp, err := deps.ListDisbursements(ctx, &disbursementpb.ListDisbursementsRequest{})
 		if err != nil {
 			log.Printf("Failed to list disbursements: %v", err)
 			return view.Error(fmt.Errorf("failed to load disbursements: %w", err))
 		}
 
-		// Filter by status
+		// Filter by status and advance_kind chip.
 		var filtered []*disbursementpb.Disbursement
 		for _, d := range resp.GetData() {
-			if d.GetStatus() == status {
-				filtered = append(filtered, d)
+			if d.GetStatus() != status {
+				continue
 			}
+			if advanceKindFilter != "" {
+				k := d.GetAdvanceKind().String()
+				switch advanceKindFilter {
+				case "any":
+					if k == "" || k == "NONE" || k == "ADVANCE_KIND_NONE" || k == "ADVANCE_KIND_UNSPECIFIED" {
+						continue
+					}
+				default:
+					if k != advanceKindFilter {
+						continue
+					}
+				}
+			}
+			filtered = append(filtered, d)
 		}
 
 		l := deps.Labels

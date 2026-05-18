@@ -1,0 +1,11 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "expense-recognition-run-list"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "expense-recognition-run-list-content"}}
+<div class="page-content page-content--table" data-testid="expense-run-list-page">
+    {{template "table-card" .Table}}
+</div>
+{{end}}

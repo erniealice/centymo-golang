@@ -101,6 +101,51 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
             )}}
         </div>
 
+        {{/* --- Advance Kind + Proration policy ----------------------- */}}
+        {{/* 20260517-advance-cash-events Plan B Phase 4 — conditional proration
+             policy renders only when advance_kind == TIME_BASED. Toggle is
+             driven by hx-trigger on the advance_kind select. BURN_DOWN value
+             is intentionally omitted from the option list — declared but
+             disabled in v1 per Decision 3.
+
+             Option values stay as the proto-enum string literals (form posts
+             them straight back to the orchestrator); only the visible label
+             flows through lyngua via .EnumLabels (advance_kind.json). */}}
+        {{template "form-section" (dict "Title" .Labels.AdvanceMetadata)}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "advance_kind"
+                "Label" .Labels.AdvanceKind
+                "Value" .AdvanceKind
+                "Options" (list
+                    (dict "Value" "NONE" "Label" .EnumLabels.Kind.None)
+                    (dict "Value" "TIME_BASED" "Label" .EnumLabels.Kind.TimeBased)
+                    (dict "Value" "MILESTONE" "Label" .EnumLabels.Kind.Milestone)
+                    (dict "Value" "UNSCHEDULED" "Label" .EnumLabels.Kind.Unscheduled)
+                )
+                "TestID" "advance-kind-select"
+            )}}
+        </div>
+
+        {{if eq .AdvanceKind "TIME_BASED"}}
+        <div class="form-row single" data-testid="advance-proration-policy-row">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "advance_proration_policy"
+                "Label" .Labels.AdvanceProrationPolicy
+                "Value" .AdvanceProrationPolicy
+                "Options" (list
+                    (dict "Value" "FULL_TRANCHE" "Label" .EnumLabels.ProrationPolicy.FullTranche)
+                    (dict "Value" "DAY_PRORATED" "Label" .EnumLabels.ProrationPolicy.DayProrated)
+                    (dict "Value" "NEXT_PERIOD_START" "Label" .EnumLabels.ProrationPolicy.NextPeriodStart)
+                )
+                "TestID" "advance-proration-policy-select"
+            )}}
+        </div>
+        {{end}}
+
         {{/* --- Notes --- */}}
         {{template "form-section" (dict "Title" .Labels.Notes)}}
 

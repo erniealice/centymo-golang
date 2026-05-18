@@ -386,9 +386,17 @@
         </thead>
         <tbody>
           {{range .Milestones}}
-          <tr data-testid="milestone-row" data-event-id="{{.EventID}}">
+          <tr data-testid="milestone-row" data-event-id="{{.EventID}}"{{if .LinkedAdvance}} data-linked-advance="true" data-advance-id="{{.AdvanceID}}"{{end}}>
             <td>{{.SequenceLabel}}</td>
-            <td>{{.SequenceLabel}}</td>
+            <td>
+              {{.SequenceLabel}}
+              {{if .LinkedAdvance}}
+              <span class="badge badge--info"
+                    data-testid="milestone-linked-advance-badge">
+                {{$.Labels.Milestone.LinkedAdvanceBadge}}
+              </span>
+              {{end}}
+            </td>
             <td>
               <span class="badge badge--{{.StatusKey}}"
                     data-testid="milestone-status-{{.StatusKey}}">
@@ -413,6 +421,16 @@
                       hx-post="{{.WaiveURL}}"
                       hx-swap="none">
                 {{$.Labels.Milestone.Waive}}
+              </button>
+              {{end}}
+              {{if .ShowRecognize}}
+              <button type="button"
+                      class="btn btn--primary btn--sm"
+                      data-testid="milestone-recognize"
+                      hx-post="{{.RecognizeURL}}"
+                      hx-vals='{"advance_id": "{{.AdvanceID}}"}'
+                      hx-swap="none">
+                {{$.Labels.Milestone.Recognize}}
               </button>
               {{end}}
               {{if .ShowRevenueLink}}

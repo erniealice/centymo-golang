@@ -28,6 +28,8 @@ import (
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
+	// 20260517-advance-cash-events Plan B Phase 7 — MILESTONE junctions.
+	junctionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/treasury_collection_billing_event"
 )
 
 // DetailViewDeps holds view dependencies.
@@ -81,6 +83,12 @@ type DetailViewDeps struct {
 	Labels       centymo.SubscriptionLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+
+	// 20260517-advance-cash-events Plan B Phase 7 — list the
+	// treasury_collection_billing_event junction rows tied to a given
+	// BillingEvent. Nil-safe — when unwired, the milestone rows do not show
+	// the Recognize button + linked-advance badge.
+	ListTreasuryCollectionBillingEvents func(ctx context.Context, req *junctionpb.ListTreasuryCollectionBillingEventsRequest) (*junctionpb.ListTreasuryCollectionBillingEventsResponse, error)
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -297,6 +305,15 @@ type MilestoneRow struct {
 	ShowMarkReady   bool
 	ShowWaive       bool
 	ShowRevenueLink bool
+
+	// 20260517-advance-cash-events Plan B Phase 7 — MILESTONE advance link
+	// surface. Populated when a treasury_collection_billing_event junction row
+	// references this BillingEvent. AdvanceID is the linked TreasuryCollection;
+	// LinkedAdvance toggles the "Linked advance" badge.
+	LinkedAdvance bool
+	AdvanceID     string
+	RecognizeURL  string
+	ShowRecognize bool
 }
 
 // subscriptionToMap converts a Subscription protobuf to a map[string]any for template use.
@@ -794,6 +811,64 @@ func loadMilestoneRows(ctx context.Context, deps *DetailViewDeps, subscriptionID
 		row.MarkReadyURL = resolveBillingEventURL(deps.Routes.MilestoneMarkReadyURL, subscriptionID, ev.GetId())
 		row.WaiveURL = resolveBillingEventURL(deps.Routes.MilestoneWaiveURL, subscriptionID, ev.GetId())
 		rows = append(rows, row)
+	}
+
+	// 20260517-advance-cash-events Plan B Phase 7 — annotate each row with
+	// any treasury_collection_billing_event junction (linked advance + the
+	// "Recognize" button URL). One round-trip per BILLED row; List by
+	// billing_event_id is indexed in postgres.
+	if deps.ListTreasuryCollectionBillingEvents != nil {
+		recognizeTemplate := deps.Routes.MilestoneRecognizeURL
+		for i := range rows {
+			if rows[i].StatusKey != "billed" {
+				continue
+			}
+			eventID := rows[i].EventID
+			junctionResp, err := deps.ListTreasuryCollectionBillingEvents(ctx, &junctionpb.ListTreasuryCollectionBillingEventsRequest{
+				Filters: &commonpb.FilterRequest{
+					Filters: []*commonpb.TypedFilter{
+						{
+							Field: "billing_event_id",
+							FilterType: &commonpb.TypedFilter_StringFilter{
+								StringFilter: &commonpb.StringFilter{
+									Value:    eventID,
+									Operator: commonpb.StringOperator_STRING_EQUALS,
+								},
+							},
+						},
+					},
+				},
+			})
+			if err != nil {
+				log.Printf("failed to list junctions for billing event %s: %v", eventID, err)
+				continue
+			}
+			if junctionResp == nil || len(junctionResp.GetData()) == 0 {
+				continue
+			}
+			// Pick the first junction whose revenue_id is unset — that's the
+			// recognize candidate. If all are consumed, surface the linked
+			// badge only.
+			var open *junctionpb.TreasuryCollectionBillingEvent
+			var any *junctionpb.TreasuryCollectionBillingEvent
+			for _, j := range junctionResp.GetData() {
+				any = j
+				if strings.TrimSpace(j.GetRevenueId()) == "" {
+					open = j
+					break
+				}
+			}
+			if any == nil {
+				continue
+			}
+			rows[i].LinkedAdvance = true
+			rows[i].AdvanceID = any.GetTreasuryCollectionId()
+			if open != nil {
+				rows[i].ShowRecognize = true
+				rows[i].RecognizeURL = resolveBillingEventURL(recognizeTemplate, subscriptionID, eventID)
+				rows[i].AdvanceID = open.GetTreasuryCollectionId()
+			}
+		}
 	}
 	return rows, totalInvoiced, currency
 }

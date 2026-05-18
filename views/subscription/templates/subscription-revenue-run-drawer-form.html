@@ -185,7 +185,7 @@ checkbox-per-row inside a drawer body).
     id="sub-revenue-run-candidates"
     data-testid="sub-revenue-run-candidates-container"
 >
-    {{if not .Periods}}
+    {{if and (not .Periods) (not .AdvanceCollectionRows)}}
         {{template "empty-state" (dict
             "Icon"  "icon-file-text"
             "Title" .Labels.EmptyTitle
@@ -201,48 +201,119 @@ checkbox-per-row inside a drawer body).
         </div>
         {{end}}
 
-        <table
-            class="data-table data-table--compact sub-revenue-run-periods-table"
-            data-testid="sub-revenue-run-periods-table"
+        {{if .Periods}}
+        <section
+            class="sub-revenue-run-section sub-revenue-run-section--cycles"
+            data-testid="sub-revenue-run-section-subscription-cycle"
+            data-source-kind="SUBSCRIPTION_CYCLE"
         >
-            <thead>
-                <tr>
-                    <th class="col-checkbox" aria-hidden="true"></th>
-                    <th>{{.Labels.ColumnPeriod}}</th>
-                    <th class="cell-right">{{.Labels.ColumnAmount}}</th>
-                    <th class="cell-right">{{.Labels.ColumnLines}}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .Periods}}
-                <tr
-                    class="sub-revenue-run-period-row{{if not .Eligible}} sub-revenue-run-period-row--blocked{{end}}"
-                    data-testid="sub-revenue-run-period-row"
-                    {{if .BlockerReason}}title="{{.BlockerReason}}"{{end}}
-                >
-                    <td class="col-checkbox">
-                        <input
-                            type="checkbox"
-                            name="selection"
-                            value="{{.SelectionValue}}"
-                            {{if not .Eligible}}disabled{{end}}
-                            {{if .Eligible}}checked{{end}}
-                            data-testid="sub-revenue-run-period-checkbox"
-                            aria-label="{{.PeriodLabel}}"
-                        >
-                    </td>
-                    <td data-testid="sub-revenue-run-period-label">{{.PeriodLabel}}</td>
-                    <td class="cell-right" data-testid="sub-revenue-run-period-amount">
-                        <span class="money-cell">
-                            {{if $.Currency}}<span class="money-currency">{{$.Currency}}</span>{{end}}
-                            <span class="money-amount">{{.AmountDisplay}}</span>
-                        </span>
-                    </td>
-                    <td class="cell-right">{{.LineItemCount}}</td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
+            <table
+                class="data-table data-table--compact sub-revenue-run-periods-table"
+                data-testid="sub-revenue-run-periods-table"
+            >
+                <thead>
+                    <tr>
+                        <th class="col-checkbox" aria-hidden="true"></th>
+                        <th>{{.Labels.ColumnPeriod}}</th>
+                        <th class="cell-right">{{.Labels.ColumnAmount}}</th>
+                        <th class="cell-right">{{.Labels.ColumnLines}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Periods}}
+                    <tr
+                        class="sub-revenue-run-period-row{{if not .Eligible}} sub-revenue-run-period-row--blocked{{end}}{{if .SuppressingAdvanceCollectionID}} sub-revenue-run-period-row--suppressed{{end}}"
+                        data-testid="sub-revenue-run-period-row"
+                        {{if .SuppressingAdvanceCollectionID}}data-suppressing-advance="{{.SuppressingAdvanceCollectionID}}"{{end}}
+                        {{if .BlockerReason}}title="{{.BlockerReason}}"{{end}}
+                    >
+                        <td class="col-checkbox">
+                            <input
+                                type="checkbox"
+                                name="selection"
+                                value="{{.SelectionValue}}"
+                                {{if not .Eligible}}disabled{{end}}
+                                {{if .Eligible}}checked{{end}}
+                                data-testid="sub-revenue-run-period-checkbox"
+                                aria-label="{{.PeriodLabel}}"
+                            >
+                        </td>
+                        <td data-testid="sub-revenue-run-period-label">
+                            {{.PeriodLabel}}
+                            {{if .SuppressingAdvanceCollectionID}}
+                            <a
+                                class="sub-revenue-run-period-link"
+                                href="/app/cash/collections/detail/{{.SuppressingAdvanceCollectionID}}"
+                                data-testid="sub-revenue-run-period-view-advance"
+                            >View advance</a>
+                            {{end}}
+                        </td>
+                        <td class="cell-right" data-testid="sub-revenue-run-period-amount">
+                            <span class="money-cell">
+                                {{if $.Currency}}<span class="money-currency">{{$.Currency}}</span>{{end}}
+                                <span class="money-amount">{{.AmountDisplay}}</span>
+                            </span>
+                        </td>
+                        <td class="cell-right">{{.LineItemCount}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </section>
+        {{end}}
+
+        {{if .AdvanceCollectionRows}}
+        <section
+            class="sub-revenue-run-section sub-revenue-run-section--advances"
+            data-testid="sub-revenue-run-section-advance-collection"
+            data-source-kind="ADVANCE_COLLECTION"
+        >
+            <h4 class="sub-revenue-run-section-title">Advance Collections</h4>
+            <table
+                class="data-table data-table--compact sub-revenue-run-advances-table"
+                data-testid="sub-revenue-run-advances-table"
+            >
+                <thead>
+                    <tr>
+                        <th class="col-checkbox" aria-hidden="true"></th>
+                        <th>{{.Labels.ColumnPeriod}}</th>
+                        <th class="cell-right">{{.Labels.ColumnAmount}}</th>
+                        <th class="cell-right">{{.Labels.ColumnLines}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .AdvanceCollectionRows}}
+                    <tr
+                        class="sub-revenue-run-advance-row{{if not .Eligible}} sub-revenue-run-advance-row--blocked{{end}}"
+                        data-testid="sub-revenue-run-advance-row"
+                        data-advance-collection-id="{{.AdvanceCollectionID}}"
+                        {{if .BlockerReason}}title="{{.BlockerReason}}"{{end}}
+                    >
+                        <td class="col-checkbox">
+                            <input
+                                type="checkbox"
+                                name="selection"
+                                value="{{.SelectionValue}}"
+                                {{if not .Eligible}}disabled{{end}}
+                                {{if .Eligible}}checked{{end}}
+                                data-testid="sub-revenue-run-advance-checkbox"
+                                aria-label="{{.PeriodLabel}}"
+                            >
+                        </td>
+                        <td data-testid="sub-revenue-run-advance-label">{{.PeriodLabel}}</td>
+                        <td class="cell-right" data-testid="sub-revenue-run-advance-amount">
+                            <span class="money-cell">
+                                {{if .Currency}}<span class="money-currency">{{.Currency}}</span>{{end}}
+                                <span class="money-amount">{{.AmountDisplay}}</span>
+                            </span>
+                        </td>
+                        <td class="cell-right">1</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </section>
+        {{end}}
     {{end}}
 </div>
 {{end}}

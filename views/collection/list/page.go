@@ -49,6 +49,12 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "pending"
 		}
 
+		// 20260517-advance-cash-events Plan B Phase 4 — `advance_kind` filter chip.
+		// Read from the query string; "any" matches NONE-OR-NOT (advance rows).
+		// Empty matches everything (no chip selected). Allowed values:
+		// NONE, TIME_BASED, MILESTONE, UNSCHEDULED, any.
+		advanceKindFilter := viewCtx.QueryParams["advance_kind"]
+
 		columns := collectionColumns(deps.Labels)
 		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "date_created", "desc")
 		if err != nil {
@@ -70,6 +76,21 @@ func NewView(deps *ListViewDeps) view.View {
 				},
 			},
 		})
+
+		// 20260517-advance-cash-events Plan B Phase 4 — push the advance_kind
+		// filter into the listCollections request when set. The adapter handles
+		// the "any" special-case (advance_kind != NONE) downstream.
+		if advanceKindFilter != "" {
+			listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+				Field: "advance_kind",
+				FilterType: &commonpb.TypedFilter_StringFilter{
+					StringFilter: &commonpb.StringFilter{
+						Value:    advanceKindFilter,
+						Operator: commonpb.StringOperator_STRING_EQUALS,
+					},
+				},
+			})
+		}
 
 		resp, err := deps.ListCollections(ctx, &collectionpb.ListCollectionsRequest{
 			Search:     listParams.Search,

@@ -1,0 +1,55 @@
+{{/*
+20260517-advance-cash-events Plan B Phase 7 — supplier_billing_event detail.
+
+Minimal info card + Recognize CTA (visible when status == BILLED and the
+expense_recognition_id is unset, i.e. there is an unconsumed junction row).
+*/}}
+
+{{define "supplier-billing-event-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{define "supplier-billing-event-detail-content"}}
+<div class="content-card" data-testid="supplier-billing-event-detail-card">
+    <h3 class="detail-section-title">{{.Labels.Detail.InfoHeading}}</h3>
+    <div class="detail-info-grid">
+        <div class="detail-info-item"><span class="detail-info-label">{{.Labels.Columns.ID}}</span>
+            <span class="detail-info-value mono" data-testid="supplier-billing-event-id">{{index .Event "id"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.Labels.Columns.SupplierSubscription}}</span>
+            <span class="detail-info-value mono">{{index .Event "supplier_subscription"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.Labels.Columns.SupplierContract}}</span>
+            <span class="detail-info-value mono">{{index .Event "supplier_contract"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.Labels.Columns.BillableAmount}}</span>
+            <span class="detail-info-value">{{index .Event "billable_display"}} {{index .Event "currency"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span class="detail-info-value">
+                <span class="badge badge--{{index .Event "status_key"}}" data-testid="supplier-billing-event-status-{{index .Event "status_key"}}">
+                    {{index .Event "status_label"}}
+                </span>
+            </span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.Labels.Columns.Trigger}}</span>
+            <span class="detail-info-value">{{index .Event "trigger_label"}}</span>
+        </div>
+        <div class="detail-info-item"><span class="detail-info-label">{{.Labels.Columns.ExpenseRecognition}}</span>
+            <span class="detail-info-value mono" data-testid="supplier-billing-event-expense-recognition-id">{{index .Event "expense_recognition_id"}}</span>
+        </div>
+    </div>
+
+    {{if index .Event "show_recognize"}}
+    <div class="form-row" data-testid="supplier-billing-event-actions">
+        <button type="button"
+                class="btn btn--primary"
+                data-testid="supplier-billing-event-recognize-btn"
+                hx-post="{{index .Event "recognize_url"}}"
+                hx-swap="none">
+            {{.Labels.Actions.Recognize}}
+        </button>
+    </div>
+    {{end}}
+</div>
+{{end}}
