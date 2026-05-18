@@ -29,7 +29,7 @@ import (
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	// 20260517-advance-cash-events Plan B Phase 7 — MILESTONE junctions.
-	junctionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/treasury_collection_billing_event"
+	junctionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_billing_event"
 )
 
 // DetailViewDeps holds view dependencies.

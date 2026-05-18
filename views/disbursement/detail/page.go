@@ -20,7 +20,7 @@ import (
 	supplierbillingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_billing_event"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 	// 20260517-advance-cash-events Plan B Phase 7 — junction reads.
-	junctionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/treasury_disbursement_supplier_billing_event"
+	junctionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement_supplier_billing_event"
 )
 
 // DetailViewDeps holds view dependencies.

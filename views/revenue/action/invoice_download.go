@@ -177,8 +177,8 @@ func buildInvoiceData(revenue *revenuepb.Revenue, lineItems []*revenuelineitempb
 		items = append(items, map[string]any{
 			"description": item.GetDescription(),
 			"quantity":    fmt.Sprintf("%.0f", item.GetQuantity()),
-			"unit_price":  fmt.Sprintf("%.2f", item.GetUnitPrice()),
-			"total":       fmt.Sprintf("%.2f", item.GetTotalPrice()),
+			"unit_price":  formatCentavos(item.GetUnitPrice()),
+			"total":       formatCentavos(item.GetTotalPrice()),
 		})
 	}
 
@@ -188,14 +188,14 @@ func buildInvoiceData(revenue *revenuepb.Revenue, lineItems []*revenuelineitempb
 			"date":             revenue.GetRevenueDate(),
 			"status":           revenue.GetStatus(),
 			"currency":         revenue.GetCurrency(),
-			"total_amount":     fmt.Sprintf("%.2f", revenue.GetTotalAmount()),
+			"total_amount":     formatCentavos(revenue.GetTotalAmount()),
 			"notes":            revenue.GetNotes(),
 		},
 		"customer": map[string]any{
 			"name": revenue.GetName(),
 		},
 		"items":    items,
-		"total":    fmt.Sprintf("%.2f", revenue.GetTotalAmount()),
+		"total":    formatCentavos(revenue.GetTotalAmount()),
 		"currency": revenue.GetCurrency(),
 	}
 }

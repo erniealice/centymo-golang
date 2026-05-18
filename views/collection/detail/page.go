@@ -20,7 +20,7 @@ import (
 	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 	// 20260517-advance-cash-events Plan B Phase 7 — junction reads.
-	junctionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/treasury_collection_billing_event"
+	junctionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_billing_event"
 )
 
 // DetailViewDeps holds view dependencies.

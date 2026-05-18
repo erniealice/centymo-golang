@@ -54,8 +54,8 @@ func mockDeps() CheckoutDeps {
 					ProductId:   &pid,
 					Description: "Widget",
 					Quantity:    2,
-					UnitPrice:   100.00,
-					TotalPrice:  200.00,
+					UnitPrice:   10000, // centavos (100.00)
+					TotalPrice:  20000, // centavos (200.00)
 				}},
 			}, nil
 		},
@@ -817,8 +817,8 @@ func TestGetOrder(t *testing.T) {
 					ProductId:   &pid,
 					Description: "Gadget",
 					Quantity:    3,
-					UnitPrice:   100.50, // unit form
-					TotalPrice:  301.50, // unit form
+					UnitPrice:   10050, // centavos (100.50)
+					TotalPrice:  30150, // centavos (301.50)
 				}},
 			}, nil
 		}
