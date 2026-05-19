@@ -42,7 +42,7 @@ type DetailViewDeps struct {
 	// When advance_kind == MILESTONE, the Advance Schedule tab lists the
 	// linked SupplierBillingEvent rows + per-event Recognize button.
 	// Both deps are nil-safe.
-	ListTreasuryDisbursementSupplierBillingEvents func(ctx context.Context, req *junctionpb.ListTreasuryDisbursementSupplierBillingEventsRequest) (*junctionpb.ListTreasuryDisbursementSupplierBillingEventsResponse, error)
+	ListDisbursementSupplierBillingEvents func(ctx context.Context, req *junctionpb.ListDisbursementSupplierBillingEventsRequest) (*junctionpb.ListDisbursementSupplierBillingEventsResponse, error)
 	ReadSupplierBillingEvent                      func(ctx context.Context, req *supplierbillingeventpb.ReadSupplierBillingEventRequest) (*supplierbillingeventpb.ReadSupplierBillingEventResponse, error)
 	// SupplierBillingEventRecognizeURL is the route template for the
 	// per-event Recognize POST (`/action/supplier-billing-event/recognize/{id}`).
@@ -514,7 +514,7 @@ func statusVariant(status string) string {
 }
 
 // loadMilestoneLinks fetches the
-// treasury_disbursement_supplier_billing_event junction rows for this advance
+// disbursement_supplier_billing_event junction rows for this advance
 // Disbursement, hydrates each row's SupplierBillingEvent state + per-event
 // Recognize URL, and returns the per-row view shape rendered in the Advance
 // Schedule tab.
@@ -523,10 +523,10 @@ func statusVariant(status string) string {
 //
 // 20260517-advance-cash-events Plan B Phase 7.
 func loadMilestoneLinks(ctx context.Context, deps *DetailViewDeps, disbursementID string) []MilestoneLinkRow {
-	if deps.ListTreasuryDisbursementSupplierBillingEvents == nil {
+	if deps.ListDisbursementSupplierBillingEvents == nil {
 		return nil
 	}
-	resp, err := deps.ListTreasuryDisbursementSupplierBillingEvents(ctx, &junctionpb.ListTreasuryDisbursementSupplierBillingEventsRequest{
+	resp, err := deps.ListDisbursementSupplierBillingEvents(ctx, &junctionpb.ListDisbursementSupplierBillingEventsRequest{
 		Filters: &commonpb.FilterRequest{
 			Filters: []*commonpb.TypedFilter{
 				{

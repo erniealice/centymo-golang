@@ -4919,7 +4919,7 @@ type SubscriptionMilestoneLabels struct {
 
 	// 20260517-advance-cash-events Plan B Phase 7 — Recognize CTA + the
 	// "linked to advance" badge that flags milestones tied to an advance
-	// Collection (via the treasury_collection_billing_event junction).
+	// Collection (via the collection_billing_event junction).
 	Recognize          string `json:"recognize"`
 	LinkedAdvanceBadge string `json:"linkedAdvanceBadge"`
 }

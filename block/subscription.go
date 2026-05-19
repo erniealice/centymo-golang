@@ -405,7 +405,7 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 		}
 		// 20260517-advance-cash-events Plan B Phase 7 — Recognize handler for
 		// a BillingEvent row when it is linked to a MILESTONE advance Collection
-		// (via the treasury_collection_billing_event junction). Mounted under
+		// (via the collection_billing_event junction). Mounted under
 		// the same /action/subscription/.../billing-event/... prefix as the
 		// mark-ready + waive handlers so the URL grouping stays cohesive. Only
 		// registered when service-admin wired the

@@ -44,7 +44,7 @@ type DetailViewDeps struct {
 	// When advance_kind == MILESTONE, the Advance Schedule tab lists the
 	// linked BillingEvent rows + per-event Recognize button. Both deps are
 	// nil-safe — when unset, the milestone-link section is omitted.
-	ListTreasuryCollectionBillingEvents func(ctx context.Context, req *junctionpb.ListTreasuryCollectionBillingEventsRequest) (*junctionpb.ListTreasuryCollectionBillingEventsResponse, error)
+	ListCollectionBillingEvents func(ctx context.Context, req *junctionpb.ListCollectionBillingEventsRequest) (*junctionpb.ListCollectionBillingEventsResponse, error)
 	ReadBillingEvent                    func(ctx context.Context, req *billingeventpb.ReadBillingEventRequest) (*billingeventpb.ReadBillingEventResponse, error)
 	// MilestoneRecognizeURL is the route template
 	// (`/action/subscription/{id}/billing-event/{eventId}/recognize`)
@@ -483,7 +483,7 @@ func buildAuditTable(l centymo.CollectionLabels, tableLabels types.TableLabels) 
 	return cfg
 }
 
-// loadMilestoneLinks fetches the treasury_collection_billing_event junction
+// loadMilestoneLinks fetches the collection_billing_event junction
 // rows for this advance Collection, hydrates each row's BillingEvent state +
 // per-event Recognize URL, and returns the per-row view shape rendered in
 // the Advance Schedule tab.
@@ -492,10 +492,10 @@ func buildAuditTable(l centymo.CollectionLabels, tableLabels types.TableLabels) 
 //
 // 20260517-advance-cash-events Plan B Phase 7.
 func loadMilestoneLinks(ctx context.Context, deps *DetailViewDeps, collectionID string) []MilestoneLinkRow {
-	if deps.ListTreasuryCollectionBillingEvents == nil {
+	if deps.ListCollectionBillingEvents == nil {
 		return nil
 	}
-	resp, err := deps.ListTreasuryCollectionBillingEvents(ctx, &junctionpb.ListTreasuryCollectionBillingEventsRequest{
+	resp, err := deps.ListCollectionBillingEvents(ctx, &junctionpb.ListCollectionBillingEventsRequest{
 		Filters: &commonpb.FilterRequest{
 			Filters: []*commonpb.TypedFilter{
 				{

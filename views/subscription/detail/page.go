@@ -85,10 +85,10 @@ type DetailViewDeps struct {
 	TableLabels  types.TableLabels
 
 	// 20260517-advance-cash-events Plan B Phase 7 — list the
-	// treasury_collection_billing_event junction rows tied to a given
+	// collection_billing_event junction rows tied to a given
 	// BillingEvent. Nil-safe — when unwired, the milestone rows do not show
 	// the Recognize button + linked-advance badge.
-	ListTreasuryCollectionBillingEvents func(ctx context.Context, req *junctionpb.ListTreasuryCollectionBillingEventsRequest) (*junctionpb.ListTreasuryCollectionBillingEventsResponse, error)
+	ListCollectionBillingEvents func(ctx context.Context, req *junctionpb.ListCollectionBillingEventsRequest) (*junctionpb.ListCollectionBillingEventsResponse, error)
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -307,7 +307,7 @@ type MilestoneRow struct {
 	ShowRevenueLink bool
 
 	// 20260517-advance-cash-events Plan B Phase 7 — MILESTONE advance link
-	// surface. Populated when a treasury_collection_billing_event junction row
+	// surface. Populated when a collection_billing_event junction row
 	// references this BillingEvent. AdvanceID is the linked TreasuryCollection;
 	// LinkedAdvance toggles the "Linked advance" badge.
 	LinkedAdvance bool
@@ -814,17 +814,17 @@ func loadMilestoneRows(ctx context.Context, deps *DetailViewDeps, subscriptionID
 	}
 
 	// 20260517-advance-cash-events Plan B Phase 7 — annotate each row with
-	// any treasury_collection_billing_event junction (linked advance + the
+	// any collection_billing_event junction (linked advance + the
 	// "Recognize" button URL). One round-trip per BILLED row; List by
 	// billing_event_id is indexed in postgres.
-	if deps.ListTreasuryCollectionBillingEvents != nil {
+	if deps.ListCollectionBillingEvents != nil {
 		recognizeTemplate := deps.Routes.MilestoneRecognizeURL
 		for i := range rows {
 			if rows[i].StatusKey != "billed" {
 				continue
 			}
 			eventID := rows[i].EventID
-			junctionResp, err := deps.ListTreasuryCollectionBillingEvents(ctx, &junctionpb.ListTreasuryCollectionBillingEventsRequest{
+			junctionResp, err := deps.ListCollectionBillingEvents(ctx, &junctionpb.ListCollectionBillingEventsRequest{
 				Filters: &commonpb.FilterRequest{
 					Filters: []*commonpb.TypedFilter{
 						{
@@ -849,8 +849,8 @@ func loadMilestoneRows(ctx context.Context, deps *DetailViewDeps, subscriptionID
 			// Pick the first junction whose revenue_id is unset — that's the
 			// recognize candidate. If all are consumed, surface the linked
 			// badge only.
-			var open *junctionpb.TreasuryCollectionBillingEvent
-			var any *junctionpb.TreasuryCollectionBillingEvent
+			var open *junctionpb.CollectionBillingEvent
+			var any *junctionpb.CollectionBillingEvent
 			for _, j := range junctionResp.GetData() {
 				any = j
 				if strings.TrimSpace(j.GetRevenueId()) == "" {

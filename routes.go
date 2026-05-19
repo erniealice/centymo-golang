@@ -144,7 +144,7 @@ const (
 
 	// 20260517-advance-cash-events Plan B Phase 7 — Recognize handler for a
 	// BillingEvent row when it is linked to a MILESTONE advance Collection via
-	// the treasury_collection_billing_event junction. POSTs through the
+	// the collection_billing_event junction. POSTs through the
 	// espyna RecognizeMilestoneAdvanceCollection use case.
 	MilestoneRecognizeURL = "/action/subscription/{id}/billing-event/{eventId}/recognize"
 
