@@ -273,12 +273,16 @@ Each domain has a typed route struct with JSON tags for unmarshalling overrides,
 
 Usage example:
 ```go
-routes := centymo.DefaultSalesRoutes()
+routes := centymo.DefaultRevenueRoutes()
 // Override specific fields for service-admin
 routes.ListURL = "/app/bookings/list/{status}"
 // Get all routes as a map for templates
-routeMap := routes.RouteMap() // {"sales.list": "/app/bookings/list/{status}", ...}
+routeMap := routes.RouteMap() // {"revenue.list": "/app/bookings/list/{status}", ...}
 ```
+
+Route-map keys always mirror the proto/domain name (`revenue`, `expenditure`, `collection`,
+`disbursement`, `product`, etc.). The URL pattern can be skinned per vertical via lyngua,
+but the **key never changes** — templates always look up by domain name.
 
 ## View Sub-Packages
 
