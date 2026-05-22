@@ -52,7 +52,7 @@
                 <p>
                     <a
                         class="expense-run-period-link"
-                        href="/app/disbursements/detail/{{.SuppressingAdvanceID}}"
+                        href='{{routeWith "disbursement.detail" "id" .SuppressingAdvanceID}}'
                         data-testid="view-advance-link"
                     >{{$.Labels.LinkedAdvanceSuppression.ViewAdvanceLink}}</a>
                 </p>
@@ -137,7 +137,7 @@
                                 {{if .SuppressingAdvanceID}}
                                 <a
                                     class="expense-run-period-link"
-                                    href="/app/disbursements/detail/{{.SuppressingAdvanceID}}"
+                                    href='{{routeWith "disbursement.detail" "id" .SuppressingAdvanceID}}'
                                     data-testid="view-advance-link"
                                 >{{$.Labels.LinkedAdvanceSuppression.ViewAdvanceLink}}</a>
                                 {{end}}
