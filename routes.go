@@ -3,8 +3,8 @@ package centymo
 // Default route constants for centymo views.
 // Consumer apps can use these or define their own.
 const (
-	PlanListURL             = "/app/plans/list/{status}"
-	PlanDetailURL           = "/app/plans/detail/{id}"
+	PlanListURL             = "/plans/list/{status}"
+	PlanDetailURL           = "/plans/detail/{id}"
 	PlanAddURL              = "/action/plan/add"
 	PlanEditURL             = "/action/plan/edit/{id}"
 	PlanDeleteURL           = "/action/plan/delete"
@@ -25,7 +25,7 @@ const (
 	// keeps users in the Package (Plan) URL namespace so ActiveNav stays
 	// anchored to the Services accordion's Packages section.
 	// {id}=plan id, {ppid}=price_plan id.
-	PlanPricePlanDetailURL             = "/app/plans/detail/{id}/price/{ppid}"
+	PlanPricePlanDetailURL             = "/plans/detail/{id}/price/{ppid}"
 	PlanPricePlanTabActionURL          = "/action/plan/{id}/price/{ppid}/tab/{tab}"
 	PlanPricePlanEditURL               = "/action/plan/{id}/price/{ppid}/edit"
 	PlanPricePlanDeleteURL             = "/action/plan/{id}/price/{ppid}/delete"
@@ -40,10 +40,10 @@ const (
 	PlanProductPlanPickerURL = "/action/plan/{id}/products/picker"
 
 	// PricePlan standalone routes (rate cards as independent entity)
-	PricePlanDashboardURL        = "/app/price-plans/dashboard"
-	PricePlanListURL             = "/app/price-plans/list/{status}"
+	PricePlanDashboardURL        = "/price-plans/dashboard"
+	PricePlanListURL             = "/price-plans/list/{status}"
 	PricePlanTableURL            = "/action/price-plan/table/{status}"
-	PricePlanDetailURL           = "/app/price-plans/detail/{id}"
+	PricePlanDetailURL           = "/price-plans/detail/{id}"
 	PricePlanStandaloneAddURL    = "/action/price-plan/add"
 	PricePlanStandaloneEditURL   = "/action/price-plan/edit/{id}"
 	PricePlanStandaloneDeleteURL = "/action/price-plan/delete"
@@ -60,10 +60,10 @@ const (
 	PricePlanProductPriceDeleteURL = "/action/price-plan/{id}/product-prices/delete"
 
 	// PriceSchedule routes (date-bounded pricing container for plans)
-	PriceScheduleDashboardURL        = "/app/price-schedules/dashboard"
-	PriceScheduleListURL             = "/app/price-schedules/list/{status}"
+	PriceScheduleDashboardURL        = "/price-schedules/dashboard"
+	PriceScheduleListURL             = "/price-schedules/list/{status}"
 	PriceScheduleTableURL            = "/action/price-schedule/table/{status}"
-	PriceScheduleDetailURL           = "/app/price-schedules/detail/{id}"
+	PriceScheduleDetailURL           = "/price-schedules/detail/{id}"
 	PriceScheduleAddURL              = "/action/price-schedule/add"
 	PriceScheduleEditURL             = "/action/price-schedule/edit/{id}"
 	PriceScheduleDeleteURL           = "/action/price-schedule/delete"
@@ -77,7 +77,7 @@ const (
 	// Schedule-scoped price_plan detail. Mirrors /app/price-plans/detail/{id} but nests
 	// under the schedule so sidebar context stays on price-schedules (price_plan is no
 	// longer a top-level sidebar entry).
-	PriceSchedulePlanDetailURL             = "/app/price-schedules/detail/{id}/plan/{ppid}"
+	PriceSchedulePlanDetailURL             = "/price-schedules/detail/{id}/plan/{ppid}"
 	PriceSchedulePlanTabActionURL          = "/action/price-schedule/{id}/plan/{ppid}/tab/{tab}"
 	PriceSchedulePlanEditURL               = "/action/price-schedule/{id}/plan/{ppid}/edit"
 	PriceSchedulePlanDeleteURL             = "/action/price-schedule/{id}/plan/{ppid}/delete"
@@ -93,16 +93,16 @@ const (
 	// price_plan detail page. Same handler as SubscriptionDetailURL; the
 	// nested URL alone activates the rate-card → plan → subscription breadcrumb.
 	// See docs/plan/20260504-price-plan-engagements-tab/.
-	PriceSchedulePlanSubscriptionDetailURL = "/app/price-schedules/detail/{id}/plan/{ppid}/subscription/{eid}"
+	PriceSchedulePlanSubscriptionDetailURL = "/price-schedules/detail/{id}/plan/{ppid}/subscription/{eid}"
 
-	SubscriptionListURL = "/app/subscriptions/list/{status}"
+	SubscriptionListURL = "/subscriptions/list/{status}"
 	// SubscriptionTableURL returns ONLY the table-card partial — used as the
 	// data-refresh-url so HTMX swaps the table without re-rendering the whole page.
 	SubscriptionTableURL  = "/action/subscription/table/{status}"
-	SubscriptionDetailURL = "/app/subscriptions/detail/{id}"
+	SubscriptionDetailURL = "/subscriptions/detail/{id}"
 	// SubscriptionUnderClientDetailURL is the nested subscription-detail path
 	// rendered with a client breadcrumb. Same view as SubscriptionDetailURL.
-	SubscriptionUnderClientDetailURL  = "/app/clients/detail/{client_id}/subscriptions/{id}"
+	SubscriptionUnderClientDetailURL  = "/clients/detail/{client_id}/subscriptions/{id}"
 	SubscriptionAddURL                = "/action/subscription/add"
 	SubscriptionEditURL               = "/action/subscription/edit/{id}"
 	SubscriptionDeleteURL             = "/action/subscription/delete"
@@ -176,9 +176,9 @@ const (
 	SubscriptionRequestUsageURL = "/action/subscription/request-usage/{subscriptionId}"
 
 	// Collection (money IN) routes
-	CollectionListURL             = "/app/collections/list/{status}"
-	CollectionDetailURL           = "/app/collections/detail/{id}"
-	CollectionDashboardURL        = "/app/collections/dashboard"
+	CollectionListURL             = "/collections/list/{status}"
+	CollectionDetailURL           = "/collections/detail/{id}"
+	CollectionDashboardURL        = "/collections/dashboard"
 	CollectionAddURL              = "/action/collection/add"
 	CollectionEditURL             = "/action/collection/edit/{id}"
 	CollectionDeleteURL           = "/action/collection/delete"
@@ -190,9 +190,9 @@ const (
 	CollectionAttachmentDeleteURL = "/action/collection/detail/{id}/attachments/delete"
 
 	// Disbursement (money OUT) routes
-	DisbursementListURL             = "/app/disbursements/list/{status}"
-	DisbursementDetailURL           = "/app/disbursements/detail/{id}"
-	DisbursementDashboardURL        = "/app/disbursements/dashboard"
+	DisbursementListURL             = "/disbursements/list/{status}"
+	DisbursementDetailURL           = "/disbursements/detail/{id}"
+	DisbursementDashboardURL        = "/disbursements/dashboard"
 	DisbursementAddURL              = "/action/disbursement/add"
 	DisbursementEditURL             = "/action/disbursement/edit/{id}"
 	DisbursementDeleteURL           = "/action/disbursement/delete"
@@ -213,7 +213,7 @@ const (
 	// ---------------------------------------------------------------------------
 
 	// Advances Dashboard — workspace-level summary (both sides).
-	AdvancesDashboardURL = "/app/cash/advances/dashboard"
+	AdvancesDashboardURL = "/cash/advances/dashboard"
 
 	// Filtered list URLs (advance_kind != NONE) — point at the existing
 	// Collection / Disbursement list pages with the chip pre-applied via a
@@ -221,8 +221,8 @@ const (
 	// NOT ServeMux patterns — the list pages are registered at the underlying
 	// pattern (CollectionListURL / DisbursementListURL) and read advance_kind
 	// from the request query string.
-	AdvanceCollectionListURL   = "/app/collections/list/pending?advance_kind=any"
-	AdvanceDisbursementListURL = "/app/disbursements/list/pending?advance_kind=any"
+	AdvanceCollectionListURL   = "/collections/list/pending?advance_kind=any"
+	AdvanceDisbursementListURL = "/disbursements/list/pending?advance_kind=any"
 
 	// TreasuryCollection / TreasuryDisbursement Advance Schedule tab partials
 	// (loaded via HTMX, sit beside info / attachments / audit / advance-schedule
@@ -241,26 +241,26 @@ const (
 	TreasuryDisbursementCancelURL = "/action/disbursement/cancel/{id}"
 
 	// SupplierBillingEvent (buying-side MILESTONE anchor).
-	SupplierBillingEventListURL      = "/app/supplier-billing-events/list/{status}"
-	SupplierBillingEventDetailURL    = "/app/supplier-billing-events/detail/{id}"
+	SupplierBillingEventListURL      = "/supplier-billing-events/list/{status}"
+	SupplierBillingEventDetailURL    = "/supplier-billing-events/detail/{id}"
 	SupplierBillingEventRecognizeURL = "/action/supplier-billing-event/recognize/{id}"
 
-	ProductListURL   = "/app/products/list/{status}"
+	ProductListURL   = "/products/list/{status}"
 	ProductTableURL  = "/action/product/table/{status}"
-	ProductDetailURL = "/app/products/detail/{id}"
+	ProductDetailURL = "/products/detail/{id}"
 
 	// Service dashboard — services are products filtered to product_kind="service".
 	// The dashboard sits ABOVE the service-mount product list at this URL.
-	ServiceDashboardURL = "/app/services/dashboard"
+	ServiceDashboardURL = "/services/dashboard"
 
 	// Inventory routes — list is per-location
-	InventoryDashboardURL  = "/app/inventory/dashboard"
-	InventoryListURL       = "/app/inventory/list/{location}"
+	InventoryDashboardURL  = "/inventory/dashboard"
+	InventoryListURL       = "/inventory/list/{location}"
 	InventoryAddURL        = "/action/inventory/add"
 	InventoryEditURL       = "/action/inventory/edit/{id}"
 	InventoryDeleteURL     = "/action/inventory/delete"
 	InventoryBulkDeleteURL = "/action/inventory/bulk-delete"
-	InventoryDetailURL     = "/app/inventory/detail/{id}"
+	InventoryDetailURL     = "/inventory/detail/{id}"
 
 	// Product action routes
 	ProductAddURL        = "/action/product/add"
@@ -296,10 +296,10 @@ const (
 	ProductOptionDeleteURL = "/action/product/detail/{id}/options/delete"
 
 	// Product option detail page (option values management)
-	ProductOptionDetailURL = "/app/products/detail/{id}/option/{oid}"
+	ProductOptionDetailURL = "/products/detail/{id}/option/{oid}"
 
 	// Product variant detail page (variant info, pricing, stock, audit, images)
-	ProductVariantDetailURL    = "/app/products/detail/{id}/variant/{vid}"
+	ProductVariantDetailURL    = "/products/detail/{id}/variant/{vid}"
 	ProductVariantTabActionURL = "/action/product/detail/{id}/variant/{vid}/tab/{tab}"
 
 	// Product variant image routes (upload/delete within variant detail)
@@ -311,7 +311,7 @@ const (
 	ProductVariantAttachmentDeleteURL = "/action/product/detail/{id}/variant/{vid}/attachments/delete"
 
 	// Product variant stock detail (inventory item within variant context)
-	ProductVariantStockDetailURL    = "/app/products/detail/{id}/variant/{vid}/stock/{iid}"
+	ProductVariantStockDetailURL    = "/products/detail/{id}/variant/{vid}/stock/{iid}"
 	ProductVariantStockTabActionURL = "/action/product/detail/{id}/variant/{vid}/stock/{iid}/tab/{tab}"
 
 	// Product variant stock attachment routes
@@ -319,7 +319,7 @@ const (
 	ProductVariantStockAttachmentDeleteURL = "/action/product/detail/{id}/variant/{vid}/stock/{iid}/attachments/delete"
 
 	// Inventory serial detail (individual serial within inventory item)
-	ProductVariantSerialDetailURL = "/app/products/detail/{id}/variant/{vid}/stock/{iid}/serial/{sid}"
+	ProductVariantSerialDetailURL = "/products/detail/{id}/variant/{vid}/stock/{iid}/serial/{sid}"
 
 	// Product option value routes (within product option)
 	ProductOptionValueTableURL  = "/action/product/detail/{id}/options/{oid}/values/table"
@@ -328,10 +328,10 @@ const (
 	ProductOptionValueDeleteURL = "/action/product/detail/{id}/options/{oid}/values/delete"
 
 	// Product line routes
-	ProductLineDashboardURL        = "/app/product-lines/dashboard"
-	ProductLineListURL             = "/app/product-lines/list/{status}"
+	ProductLineDashboardURL        = "/product-lines/dashboard"
+	ProductLineListURL             = "/product-lines/list/{status}"
 	ProductLineTableURL            = "/action/product-line/table/{status}"
-	ProductLineDetailURL           = "/app/product-lines/detail/{id}"
+	ProductLineDetailURL           = "/product-lines/detail/{id}"
 	ProductLineAddURL              = "/action/product-line/add"
 	ProductLineEditURL             = "/action/product-line/edit/{id}"
 	ProductLineDeleteURL           = "/action/product-line/delete"
@@ -352,7 +352,7 @@ const (
 	InventoryAttachmentDeleteURL = "/action/inventory/detail/{id}/attachments/delete"
 
 	// Inventory movements (global transaction history)
-	InventoryMovementsURL       = "/app/inventory/movements"
+	InventoryMovementsURL       = "/inventory/movements"
 	InventoryMovementsTableURL  = "/action/inventory/movements/table"
 	InventoryMovementsExportURL = "/action/inventory/movements/export"
 
@@ -380,17 +380,17 @@ const (
 	InventoryDashboardAlertsURL    = "/action/inventory/dashboard/alerts"
 
 	// Inventory product-context detail routes
-	InventoryProductDetailURL    = "/app/products/detail/{pid}/inventory/detail/{iid}"
+	InventoryProductDetailURL    = "/products/detail/{pid}/inventory/detail/{iid}"
 	InventoryProductTabActionURL = "/action/product/{pid}/inventory/{iid}/tab/{tab}"
 
 	// Inventory table refresh (per-location)
 	InventoryTableURL = "/action/inventory/table/{location}"
 
 	// Revenue routes
-	RevenueDashboardURL     = "/app/sales/dashboard"
-	RevenueListURL          = "/app/sales/list/{status}"
+	RevenueDashboardURL     = "/sales/dashboard"
+	RevenueListURL          = "/sales/list/{status}"
 	RevenueTableURL         = "/action/revenue/table/{status}"
-	RevenueDetailURL        = "/app/sales/detail/{id}"
+	RevenueDetailURL        = "/sales/detail/{id}"
 	RevenueAddURL           = "/action/revenue/add"
 	RevenueEditURL          = "/action/revenue/edit/{id}"
 	RevenueDeleteURL        = "/action/revenue/delete"
@@ -417,14 +417,14 @@ const (
 	RevenuePaymentRemoveURL = "/action/revenue/detail/{id}/payment/remove"
 
 	// Revenue report routes
-	RevenueSummaryURL = "/app/sales/reports/sales-summary"
+	RevenueSummaryURL = "/sales/reports/sales-summary"
 
 	// Revenue invoice document routes
 	RevenueInvoiceDownloadURL = "/action/revenue/detail/{id}/invoice/download"
 	RevenueEmailURL           = "/action/revenue/detail/{id}/invoice/send-email"
 
 	// Revenue settings routes (template management)
-	RevenueSettingsTemplatesURL       = "/app/sales/settings/templates"
+	RevenueSettingsTemplatesURL       = "/sales/settings/templates"
 	RevenueSettingsTemplateUploadURL  = "/action/revenue/settings/templates/upload"
 	RevenueSettingsTemplateDeleteURL  = "/action/revenue/settings/templates/delete"
 	RevenueSettingsTemplateDefaultURL = "/action/revenue/settings/templates/set-default/{id}"
@@ -436,41 +436,41 @@ const (
 	RevenueRecomputeTaxesURL          = "/action/revenue/detail/{id}/taxes/recompute"
 
 	// Revenue Run (invoice-run) routes
-	RevenueRunQueueURL            = "/app/revenue-run/queue"
+	RevenueRunQueueURL            = "/revenue-run/queue"
 	RevenueRunQueueTableURL       = "/action/revenue-run/queue/table"
-	RevenueRunListURL             = "/app/revenue-run/list/{status}"
+	RevenueRunListURL             = "/revenue-run/list/{status}"
 	RevenueRunListTableURL        = "/action/revenue-run/table/{status}"
-	RevenueRunDetailURL           = "/app/revenue-run/detail/{id}"
+	RevenueRunDetailURL           = "/revenue-run/detail/{id}"
 	RevenueRunDetailTabActionURL  = "/action/revenue-run/detail/{id}/tab/{tab}"
 	RevenueRunAttachmentUploadURL = "/action/revenue-run/detail/{id}/attachments/upload"
 	RevenueRunAttachmentDeleteURL = "/action/revenue-run/detail/{id}/attachments/delete"
 	RevenueRunSubmitBatchURL      = "/action/revenue-run/submit-batch"
 
 	// Expense Recognition Run (buying-side) routes — Plan A 20260517-expense-run.
-	ExpenseRecognitionRunQueueURL                   = "/app/expense-recognition-run/queue"
+	ExpenseRecognitionRunQueueURL                   = "/expense-recognition-run/queue"
 	ExpenseRecognitionRunQueueTableURL              = "/action/expense-recognition-run/queue/table"
-	ExpenseRecognitionRunListURL                    = "/app/expense-recognition-run/list/{status}"
+	ExpenseRecognitionRunListURL                    = "/expense-recognition-run/list/{status}"
 	ExpenseRecognitionRunListTableURL               = "/action/expense-recognition-run/table/{status}"
-	ExpenseRecognitionRunDetailURL                  = "/app/expense-recognition-run/detail/{id}"
+	ExpenseRecognitionRunDetailURL                  = "/expense-recognition-run/detail/{id}"
 	ExpenseRecognitionRunDetailTabActionURL         = "/action/expense-recognition-run/detail/{id}/tab/{tab}"
-	ExpenseRecognitionRunNewURL                     = "/app/expense-recognition-run/new"
+	ExpenseRecognitionRunNewURL                     = "/expense-recognition-run/new"
 	ExpenseRecognitionRunGenerateURL                = "/action/expense-recognition-run/generate"
 	ExpenseRecognitionRunSubmitBatchURL             = "/action/expense-recognition-run/submit-batch"
 	ExpenseRecognitionRunPerSupplierDrawerURL       = "/action/supplier/expense-recognition-run/{id}"
 	ExpenseRecognitionRunPerSubscriptionDrawerURL   = "/action/supplier-subscription/expense-recognition-run/{id}"
 
 	// Expenditure (purchase + expense) routes
-	ExpenditurePurchaseListURL      = "/app/purchases/list/{status}"
-	ExpenditurePurchaseDashboardURL = "/app/purchases/dashboard"
-	ExpenditureExpenseListURL       = "/app/expenses/list/{status}"
-	ExpenditureExpenseDashboardURL  = "/app/expenses/dashboard"
+	ExpenditurePurchaseListURL      = "/purchases/list/{status}"
+	ExpenditurePurchaseDashboardURL = "/purchases/dashboard"
+	ExpenditureExpenseListURL       = "/expenses/list/{status}"
+	ExpenditureExpenseDashboardURL  = "/expenses/dashboard"
 
 	// Expenditure expense CRUD action routes
 	ExpenditureExpenseAddURL       = "/action/expense/add"
 	ExpenditureExpenseEditURL      = "/action/expense/edit/{id}"
 	ExpenditureExpenseDeleteURL    = "/action/expense/delete"
 	ExpenditureExpenseSetStatusURL = "/action/expense/set-status"
-	ExpenditureExpenseDetailURL    = "/app/expenses/detail/{id}"
+	ExpenditureExpenseDetailURL    = "/expenses/detail/{id}"
 	ExpenditureExpenseTableURL     = "/action/expense/table/{status}"
 	ExpenditureExpenseTabActionURL = "/action/expense/detail/{id}/tab/{tab}"
 	ExpenditureAttachmentUploadURL = "/action/expense/detail/{id}/attachments/upload"
@@ -486,18 +486,18 @@ const (
 	ExpenditureExpensePayURL = "/action/expense/detail/{id}/pay"
 
 	// Expenditure report routes
-	PurchasesSummaryURL = "/app/purchases/reports/purchases-summary"
-	ExpensesSummaryURL  = "/app/expenses/reports/expenses-summary"
+	PurchasesSummaryURL = "/purchases/reports/purchases-summary"
+	ExpensesSummaryURL  = "/expenses/reports/expenses-summary"
 
 	// Expenditure settings (template management) routes
-	ExpenditureSettingsTemplatesURL       = "/app/purchases/settings/templates"
+	ExpenditureSettingsTemplatesURL       = "/purchases/settings/templates"
 	ExpenditureSettingsTemplateUploadURL  = "/action/purchase/settings/templates/upload"
 	ExpenditureSettingsTemplateDeleteURL  = "/action/purchase/settings/templates/delete"
 	ExpenditureSettingsTemplateDefaultURL = "/action/purchase/settings/templates/set-default/{id}"
 
 	// Purchase Order routes
-	PurchaseOrderListURL             = "/app/purchase-orders/list/{status}"
-	PurchaseOrderDetailURL           = "/app/purchase-orders/detail/{id}"
+	PurchaseOrderListURL             = "/purchase-orders/list/{status}"
+	PurchaseOrderDetailURL           = "/purchase-orders/detail/{id}"
 	PurchaseOrderAddURL              = "/action/purchase-order/add"
 	PurchaseOrderEditURL             = "/action/purchase-order/edit/{id}"
 	PurchaseOrderDeleteURL           = "/action/purchase-order/delete"
@@ -517,16 +517,16 @@ const (
 	PurchaseOrderConfirmReceiptURL = "/action/purchase-order/{id}/confirm-receipt"
 
 	// Expense category settings routes
-	ExpenditureExpenseCategoryListURL   = "/app/expenses/categories/list"
+	ExpenditureExpenseCategoryListURL   = "/expenses/categories/list"
 	ExpenditureExpenseCategoryAddURL    = "/action/expense/categories/add"
 	ExpenditureExpenseCategoryEditURL   = "/action/expense/categories/edit/{id}"
 	ExpenditureExpenseCategoryDeleteURL = "/action/expense/categories/delete"
 	ExpenditureExpenseCategoryTableURL  = "/action/expense/categories/table"
 
 	// Resource routes (person or equipment linked to a Product for billing)
-	ResourceListURL          = "/app/resources/list/{status}"
+	ResourceListURL          = "/resources/list/{status}"
 	ResourceTableURL         = "/action/resource/table/{status}"
-	ResourceDetailURL        = "/app/resources/detail/{id}"
+	ResourceDetailURL        = "/resources/detail/{id}"
 	ResourceAddURL           = "/action/resource/add"
 	ResourceEditURL          = "/action/resource/edit/{id}"
 	ResourceDeleteURL        = "/action/resource/delete"
@@ -535,9 +535,9 @@ const (
 	ResourceBulkSetStatusURL = "/action/resource/bulk-set-status"
 
 	// Price List routes — canonical home is the inventory accordion (/app/inventory/price-lists/*)
-	PriceListListURL       = "/app/inventory/price-lists/list/{status}"
+	PriceListListURL       = "/inventory/price-lists/list/{status}"
 	PriceListTableURL      = "/action/inventory-price-list/table/{status}"
-	PriceListDetailURL     = "/app/inventory/price-lists/detail/{id}"
+	PriceListDetailURL     = "/inventory/price-lists/detail/{id}"
 	PriceListAddURL        = "/action/inventory-price-list/add"
 	PriceListEditURL       = "/action/inventory-price-list/edit/{id}"
 	PriceListDeleteURL     = "/action/inventory-price-list/delete"
@@ -556,8 +556,8 @@ const (
 	// ---------------------------------------------------------------------------
 
 	// SupplierContract master routes
-	SupplierContractListURL             = "/app/supplier-contracts/list/{status}"
-	SupplierContractDetailURL           = "/app/supplier-contracts/detail/{id}"
+	SupplierContractListURL             = "/supplier-contracts/list/{status}"
+	SupplierContractDetailURL           = "/supplier-contracts/detail/{id}"
 	SupplierContractAddURL              = "/action/supplier-contract/add"
 	SupplierContractEditURL             = "/action/supplier-contract/edit/{id}"
 	SupplierContractDeleteURL           = "/action/supplier-contract/delete"
@@ -579,8 +579,8 @@ const (
 	// ---------------------------------------------------------------------------
 
 	// ProcurementRequest routes
-	ProcurementRequestListURL             = "/app/procurement-requests/list/{status}"
-	ProcurementRequestDetailURL           = "/app/procurement-requests/detail/{id}"
+	ProcurementRequestListURL             = "/procurement-requests/list/{status}"
+	ProcurementRequestDetailURL           = "/procurement-requests/detail/{id}"
 	ProcurementRequestAddURL              = "/action/procurement-request/add"
 	ProcurementRequestEditURL             = "/action/procurement-request/edit/{id}"
 	ProcurementRequestDeleteURL           = "/action/procurement-request/delete"
@@ -612,19 +612,19 @@ const (
 	// ---------------------------------------------------------------------------
 
 	// Procurement Operations app — all GET, read-only views
-	ProcurementDashboardURL        = "/app/procurement/dashboard"
-	ProcurementRenewalCalendarURL  = "/app/procurement/renewals"
-	ProcurementVarianceURL         = "/app/procurement/variance"
-	ProcurementUtilizationURL      = "/app/procurement/utilization"
-	ProcurementRecurrenceDraftsURL = "/app/procurement/recurrence-drafts/list/{status}"
+	ProcurementDashboardURL        = "/procurement/dashboard"
+	ProcurementRenewalCalendarURL  = "/procurement/renewals"
+	ProcurementVarianceURL         = "/procurement/variance"
+	ProcurementUtilizationURL      = "/procurement/utilization"
+	ProcurementRecurrenceDraftsURL = "/procurement/recurrence-drafts/list/{status}"
 
 	// ---------------------------------------------------------------------------
 	// SPS P7 — SupplierContractPriceSchedule + SupplierContractPriceScheduleLine
 	// ---------------------------------------------------------------------------
 
 	// SupplierContractPriceSchedule master routes
-	SupplierContractPriceScheduleListURL             = "/app/supplier-contract-price-schedules/list/{status}"
-	SupplierContractPriceScheduleDetailURL           = "/app/supplier-contract-price-schedules/detail/{id}"
+	SupplierContractPriceScheduleListURL             = "/supplier-contract-price-schedules/list/{status}"
+	SupplierContractPriceScheduleDetailURL           = "/supplier-contract-price-schedules/detail/{id}"
 	SupplierContractPriceScheduleAddURL              = "/action/supplier-contract-price-schedule/add"
 	SupplierContractPriceScheduleEditURL             = "/action/supplier-contract-price-schedule/edit/{id}"
 	SupplierContractPriceScheduleDeleteURL           = "/action/supplier-contract-price-schedule/delete"
@@ -646,8 +646,8 @@ const (
 	// ---------------------------------------------------------------------------
 
 	// ExpenseRecognition master routes (no add/edit drawer — created BY use case)
-	ExpenseRecognitionListURL                     = "/app/expense-recognitions/list/{status}"
-	ExpenseRecognitionDetailURL                   = "/app/expense-recognitions/detail/{id}"
+	ExpenseRecognitionListURL                     = "/expense-recognitions/list/{status}"
+	ExpenseRecognitionDetailURL                   = "/expense-recognitions/detail/{id}"
 	ExpenseRecognitionDeleteURL                   = "/action/expense-recognition/delete"
 	ExpenseRecognitionTabActionURL                = "/action/expense-recognition/detail/{id}/tab/{tab}"
 	ExpenseRecognitionAttachmentUploadURL         = "/action/expense-recognition/detail/{id}/attachments/upload"
@@ -666,8 +666,8 @@ const (
 	// ---------------------------------------------------------------------------
 
 	// AccruedExpense master routes (manual create drawer is secondary — primary path is AccrueFromContract use case)
-	AccruedExpenseListURL               = "/app/accrued-expenses/list/{status}"
-	AccruedExpenseDetailURL             = "/app/accrued-expenses/detail/{id}"
+	AccruedExpenseListURL               = "/accrued-expenses/list/{status}"
+	AccruedExpenseDetailURL             = "/accrued-expenses/detail/{id}"
 	AccruedExpenseAddURL                = "/action/accrued-expense/add"
 	AccruedExpenseEditURL               = "/action/accrued-expense/edit/{id}"
 	AccruedExpenseDeleteURL             = "/action/accrued-expense/delete"
@@ -689,9 +689,9 @@ const (
 	// P3 — SupplierSubscription route constants (20260506-supplier-subscriptions)
 	// ---------------------------------------------------------------------------
 
-	SupplierSubscriptionListURL             = "/app/supplier-subscriptions/list/{status}"
+	SupplierSubscriptionListURL             = "/supplier-subscriptions/list/{status}"
 	SupplierSubscriptionTableURL            = "/action/supplier-subscription/table/{status}"
-	SupplierSubscriptionDetailURL           = "/app/supplier-subscriptions/detail/{id}"
+	SupplierSubscriptionDetailURL           = "/supplier-subscriptions/detail/{id}"
 	SupplierSubscriptionAddURL              = "/action/supplier-subscription/add"
 	SupplierSubscriptionEditURL             = "/action/supplier-subscription/edit/{id}"
 	SupplierSubscriptionDeleteURL           = "/action/supplier-subscription/delete"
@@ -707,9 +707,9 @@ const (
 	// P3 — CostSchedule route constants
 	// ---------------------------------------------------------------------------
 
-	CostScheduleListURL          = "/app/cost-schedules/list/{status}"
+	CostScheduleListURL          = "/cost-schedules/list/{status}"
 	CostScheduleTableURL         = "/action/cost-schedule/table/{status}"
-	CostScheduleDetailURL        = "/app/cost-schedules/detail/{id}"
+	CostScheduleDetailURL        = "/cost-schedules/detail/{id}"
 	CostScheduleAddURL           = "/action/cost-schedule/add"
 	CostScheduleEditURL          = "/action/cost-schedule/edit/{id}"
 	CostScheduleDeleteURL        = "/action/cost-schedule/delete"
@@ -722,9 +722,9 @@ const (
 	// P3 — SupplierPlan route constants
 	// ---------------------------------------------------------------------------
 
-	SupplierPlanListURL          = "/app/supplier-plans/list/{status}"
+	SupplierPlanListURL          = "/supplier-plans/list/{status}"
 	SupplierPlanTableURL         = "/action/supplier-plan/table/{status}"
-	SupplierPlanDetailURL        = "/app/supplier-plans/detail/{id}"
+	SupplierPlanDetailURL        = "/supplier-plans/detail/{id}"
 	SupplierPlanAddURL           = "/action/supplier-plan/add"
 	SupplierPlanEditURL          = "/action/supplier-plan/edit/{id}"
 	SupplierPlanDeleteURL        = "/action/supplier-plan/delete"
@@ -737,9 +737,9 @@ const (
 	// P3 — CostPlan route constants
 	// ---------------------------------------------------------------------------
 
-	CostPlanListURL          = "/app/cost-plans/list/{status}"
+	CostPlanListURL          = "/cost-plans/list/{status}"
 	CostPlanTableURL         = "/action/cost-plan/table/{status}"
-	CostPlanDetailURL        = "/app/cost-plans/detail/{id}"
+	CostPlanDetailURL        = "/cost-plans/detail/{id}"
 	CostPlanAddURL           = "/action/cost-plan/add"
 	CostPlanEditURL          = "/action/cost-plan/edit/{id}"
 	CostPlanDeleteURL        = "/action/cost-plan/delete"
@@ -757,9 +757,9 @@ const (
 	// P3 — SupplierProductPlan route constants
 	// ---------------------------------------------------------------------------
 
-	SupplierProductPlanListURL          = "/app/supplier-product-plans/list/{status}"
+	SupplierProductPlanListURL          = "/supplier-product-plans/list/{status}"
 	SupplierProductPlanTableURL         = "/action/supplier-product-plan/table/{status}"
-	SupplierProductPlanDetailURL        = "/app/supplier-product-plans/detail/{id}"
+	SupplierProductPlanDetailURL        = "/supplier-product-plans/detail/{id}"
 	SupplierProductPlanAddURL           = "/action/supplier-product-plan/add"
 	SupplierProductPlanEditURL          = "/action/supplier-product-plan/edit/{id}"
 	SupplierProductPlanDeleteURL        = "/action/supplier-product-plan/delete"
