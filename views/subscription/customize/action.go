@@ -43,6 +43,11 @@ type Deps struct {
 	// appended to a client's name when constructing the custom PriceSchedule name.
 	CustomClientPriceScheduleLabelSuffix string
 
+	// ClientDetailURLTemplate is the URL template for the client detail page
+	// (e.g. "/app/clients/detail/{id}"). Used to build the HX-Push-Url redirect
+	// after customizing a package. Defaults to "/app/clients/detail/" when empty.
+	ClientDetailURLTemplate string
+
 	CustomizePlanForClient      func(ctx context.Context, req *Request) (*Response, error)
 	GetSubscriptionItemPageData func(ctx context.Context, req *subscriptionpb.GetSubscriptionItemPageDataRequest) (*subscriptionpb.GetSubscriptionItemPageDataResponse, error)
 	ReadSubscription            func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
@@ -124,7 +129,14 @@ func NewAction(deps *Deps) view.View {
 			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
-		newURL := "/app/clients/detail/" + clientID + "/subscriptions/" + subscriptionID + "/package/" + resp.NewPricePlanID
+		clientDetailBase := deps.ClientDetailURLTemplate
+		if clientDetailBase == "" {
+			clientDetailBase = "/app/clients/detail/"
+		} else {
+			// Strip trailing path params from template (e.g. "{id}") to get base prefix.
+			clientDetailBase = strings.Split(clientDetailBase, "{id}")[0]
+		}
+		newURL := clientDetailBase + clientID + "/subscriptions/" + subscriptionID + "/package/" + resp.NewPricePlanID
 		return view.ViewResult{
 			StatusCode: http.StatusOK,
 			Headers: map[string]string{

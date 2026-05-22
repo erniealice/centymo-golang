@@ -28,6 +28,14 @@ type DetailViewDeps struct {
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
+	// SpawnedArtifactURLs provides deep-link URL templates for the entities that
+	// can be spawned from a procurement request line (PO, supplier contract,
+	// expenditure). Each template should contain "{id}" as the ID placeholder.
+	// Falls back to the package-level URL constants when empty.
+	PurchaseOrderDetailURLTemplate    string // e.g. "/app/purchase-orders/detail/{id}"
+	SupplierContractDetailURLTemplate string // e.g. "/app/supplier-contracts/detail/{id}"
+	ExpenditureDetailURLTemplate      string // e.g. "/app/expenses/detail/{id}"
+
 	ReadProcurementRequest      func(ctx context.Context, req *procurementrequestpb.ReadProcurementRequestRequest) (*procurementrequestpb.ReadProcurementRequestResponse, error)
 	ListProcurementRequestLines func(ctx context.Context, req *procurementrequestlinepb.ListProcurementRequestLinesRequest) (*procurementrequestlinepb.ListProcurementRequestLinesResponse, error)
 
@@ -572,7 +580,7 @@ func buildLineTable(ctx context.Context, deps *DetailViewDeps, requestID string,
 		spawnStr := line.GetSpawnStatus().String()
 		spawnLabel, spawnVariant := spawnStatusDisplay(l, spawnStr)
 
-		spawnedHTML := buildSpawnedCellHTML(line, l, requestID, deps.Routes)
+		spawnedHTML := buildSpawnedCellHTML(line, l, requestID, deps.Routes, deps.PurchaseOrderDetailURLTemplate, deps.SupplierContractDetailURLTemplate, deps.ExpenditureDetailURLTemplate)
 
 		modeCell := types.TableCell{
 			Type:  "html",
@@ -626,7 +634,21 @@ func buildLineTable(ctx context.Context, deps *DetailViewDeps, requestID string,
 //   - FAILED: render `spawn_error` + a Retry button that POSTs to the
 //     placeholder retry route (handler is a stub for SPS Wave 3).
 //   - PENDING / SPAWNING / UNSPECIFIED: small em-dash placeholder.
-func buildSpawnedCellHTML(line *procurementrequestlinepb.ProcurementRequestLine, l centymo.ProcurementRequestLabels, requestID string, routes centymo.ProcurementRequestRoutes) types.TableCell {
+func buildSpawnedCellHTML(line *procurementrequestlinepb.ProcurementRequestLine, l centymo.ProcurementRequestLabels, requestID string, routes centymo.ProcurementRequestRoutes, poDetailURLTmpl, contractDetailURLTmpl, expenditureDetailURLTmpl string) types.TableCell {
+	// Default URL templates when callers have not yet migrated to RouteResult injection.
+	if poDetailURLTmpl == "" {
+		poDetailURLTmpl = centymo.PurchaseOrderDetailURL
+	}
+	if contractDetailURLTmpl == "" {
+		contractDetailURLTmpl = centymo.SupplierContractDetailURL
+	}
+	if expenditureDetailURLTmpl == "" {
+		expenditureDetailURLTmpl = centymo.ExpenditureExpenseDetailURL
+	}
+	poDetailBase := strings.Split(poDetailURLTmpl, "{id}")[0]
+	contractDetailBase := strings.Split(contractDetailURLTmpl, "{id}")[0]
+	expenditureDetailBase := strings.Split(expenditureDetailURLTmpl, "{id}")[0]
+
 	spawnStatus := line.GetSpawnStatus().String()
 
 	switch spawnStatus {
@@ -635,13 +657,13 @@ func buildSpawnedCellHTML(line *procurementrequestlinepb.ProcurementRequestLine,
 			href, label string
 		)
 		if v := line.GetSpawnedPurchaseOrderLineItemId(); v != "" {
-			href = "/app/purchase-orders/detail/" + v
+			href = poDetailBase + v
 			label = l.Spawn.LinkPO
 		} else if v := line.GetSpawnedSupplierContractId(); v != "" {
-			href = "/app/supplier-contracts/detail/" + v
+			href = contractDetailBase + v
 			label = l.Spawn.LinkContract
 		} else if v := line.GetSpawnedExpenditureId(); v != "" {
-			href = "/app/expenditures/detail/" + v
+			href = expenditureDetailBase + v
 			label = l.Spawn.LinkExpenditure
 		}
 		if href == "" {
