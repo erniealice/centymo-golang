@@ -185,8 +185,18 @@ func DefaultProductInventoryRoutes() ProductRoutes {
 	r.ActiveSubNav = "masterlist"
 	// Inventory mount has its own dashboard module — clear the service one.
 	r.DashboardURL = ""
+	// shift matches both pre-P4 (`/app/products/*`) and post-P4
+	// (`/products/*`) constant shapes. P4 (2026-05-22) stripped the
+	// `/app/` prefix from the URL constants in routes.go but did not
+	// update this shift fn, which produced a duplicate ServeMux
+	// registration for URLs the shift no longer matched (e.g.
+	// OptionDetailURL `/products/detail/{id}/option/{oid}`). Adding the
+	// post-P4 patterns alongside the pre-P4 ones keeps the function
+	// idempotent across the parallel-mux window and survives the P12
+	// hard cutover.
 	shift := func(s string) string {
 		s = strings.Replace(s, "/app/products/", "/app/inventory/products/", 1)
+		s = strings.Replace(s, "/products/", "/inventory/products/", 1)
 		s = strings.Replace(s, "/action/product/", "/action/inventory-product/", 1)
 		return s
 	}
@@ -251,8 +261,12 @@ func DefaultProductSuppliesRoutes() ProductRoutes {
 	r.ActiveSubNav = "supplies"
 	// Supplies mount has no dashboard.
 	r.DashboardURL = ""
+	// shift matches both pre-P4 (`/app/products/*`) and post-P4
+	// (`/products/*`) constant shapes — see DefaultProductInventoryRoutes
+	// shift comment for the P4 regression context.
 	shift := func(s string) string {
 		s = strings.Replace(s, "/app/products/", "/app/inventory/supplies/", 1)
+		s = strings.Replace(s, "/products/", "/inventory/supplies/", 1)
 		s = strings.Replace(s, "/action/product/", "/action/inventory-supplies/", 1)
 		return s
 	}
@@ -420,8 +434,12 @@ func DefaultProductLineInventoryRoutes() ProductLineRoutes {
 	r := DefaultProductLineRoutes()
 	r.ActiveNav = "inventory"
 	r.ActiveSubNav = "product-lines-active"
+	// shift matches both pre-P4 (`/app/product-lines/*`) and post-P4
+	// (`/product-lines/*`) constant shapes — see DefaultProductInventoryRoutes
+	// shift comment for the P4 regression context.
 	shift := func(s string) string {
 		s = strings.Replace(s, "/app/product-lines/", "/app/inventory/product-lines/", 1)
+		s = strings.Replace(s, "/product-lines/", "/inventory/product-lines/", 1)
 		s = strings.Replace(s, "/action/product-line/", "/action/inventory-product-line/", 1)
 		return s
 	}
@@ -1098,8 +1116,12 @@ func DefaultPlanBundleRoutes() PlanRoutes {
 	r := DefaultPlanRoutes()
 	r.ActiveNav = "inventory"
 	r.ActiveSubNav = "bundles-active"
+	// shift matches both pre-P4 (`/app/plans/*`) and post-P4 (`/plans/*`)
+	// constant shapes — see DefaultProductInventoryRoutes shift comment
+	// for the P4 regression context.
 	shift := func(s string) string {
 		s = strings.Replace(s, "/app/plans/", "/app/inventory/bundles/", 1)
+		s = strings.Replace(s, "/plans/", "/inventory/bundles/", 1)
 		s = strings.Replace(s, "/action/plan/", "/action/inventory-bundle/", 1)
 		return s
 	}
@@ -1318,8 +1340,12 @@ func DefaultPriceScheduleInventoryRoutes() PriceScheduleRoutes {
 	r := DefaultPriceScheduleRoutes()
 	r.ActiveNav = "inventory"
 	r.ActiveSubNav = "inventory-price-schedules-active"
+	// shift matches both pre-P4 (`/app/price-schedules/*`) and post-P4
+	// (`/price-schedules/*`) constant shapes — see DefaultProductInventoryRoutes
+	// shift comment for the P4 regression context.
 	shift := func(s string) string {
 		s = strings.Replace(s, "/app/price-schedules/", "/app/inventory/price-schedules/", 1)
+		s = strings.Replace(s, "/price-schedules/", "/inventory/price-schedules/", 1)
 		s = strings.Replace(s, "/action/price-schedule/", "/action/inventory-price-schedule/", 1)
 		return s
 	}
