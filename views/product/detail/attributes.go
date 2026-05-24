@@ -32,6 +32,7 @@ type AttributeFormLabels struct {
 // AttributeFormData is the template data for the attribute drawer form.
 type AttributeFormData struct {
 	FormAction          string
+	WorkspaceID          string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	ProductID           string
 	Labels              AttributeFormLabels
 	CommonLabels        any

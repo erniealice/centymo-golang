@@ -12,6 +12,7 @@ import (
 // The values default to empty (no chip selected = NONE).
 type Data struct {
 	FormAction             string
+	WorkspaceID             string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit                 bool
 	ID                     string
 	Customer               string

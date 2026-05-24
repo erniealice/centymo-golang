@@ -26,6 +26,7 @@ to a single CTA in v1).
   hx-on::after-request="lf.Sheet.handleResponse(event)"
   data-default-tz="{{.DefaultTZ}}"
 >
+    {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
 
     <div class="sheet-body">

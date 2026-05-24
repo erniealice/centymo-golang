@@ -97,14 +97,16 @@
          the view layer detected missing cycles. */}}
     <div class="subscription-operations-cyclic__actions">
         {{if .SpawnCycleJobsURL}}
-        <button type="button"
-                class="btn btn--primary"
-                data-testid="subscription-cycle-spawn-now-cta"
-                hx-post="{{.SpawnCycleJobsURL}}"
-                hx-swap="none"
-                hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Operations.CycleSpawnNow}}
-        </button>
+        <form hx-post="{{.SpawnCycleJobsURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .SpawnCycleJobsURL .WorkspaceID}}
+          <button type="submit"
+                  class="btn btn--primary"
+                  data-testid="subscription-cycle-spawn-now-cta">
+              {{.Labels.Operations.CycleSpawnNow}}
+          </button>
+        </form>
         {{end}}
         {{if .BackfillCycleJobsDrawerURL}}
         <button type="button"
@@ -215,24 +217,28 @@
          — block.go gates the route on the adapter being wired). */}}
     <div class="subscription-operations-ad-hoc__actions">
         {{if .RequestUsageURL}}
-        <button type="button"
-                class="btn btn--primary"
-                data-testid="subscription-request-usage-cta"
-                hx-post="{{.RequestUsageURL}}"
-                hx-swap="none"
-                hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Operations.RequestUsageCta}}
-        </button>
+        <form hx-post="{{.RequestUsageURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .RequestUsageURL .WorkspaceID}}
+          <button type="submit"
+                  class="btn btn--primary"
+                  data-testid="subscription-request-usage-cta">
+              {{.Labels.Operations.RequestUsageCta}}
+          </button>
+        </form>
         {{end}}
         {{if and .PoolRecognizeURL (eq .AdHocBasis "AMOUNT_BASIS_TOTAL_PACKAGE")}}
-        <button type="button"
-                class="btn btn--secondary"
-                data-testid="subscription-pool-generate-invoice-cta"
-                hx-post="{{.PoolRecognizeURL}}"
-                hx-swap="none"
-                hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Operations.PoolGenerateInvoiceCta}}
-        </button>
+        <form hx-post="{{.PoolRecognizeURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .PoolRecognizeURL .WorkspaceID}}
+          <button type="submit"
+                  class="btn btn--secondary"
+                  data-testid="subscription-pool-generate-invoice-cta">
+              {{.Labels.Operations.PoolGenerateInvoiceCta}}
+          </button>
+        </form>
         {{end}}
     </div>
 
@@ -349,16 +355,18 @@
 
     {{if .PackageCustomizeShown}}
     <div class="detail-actions" style="margin-top: 1rem;">
-        <button type="button"
-                class="btn btn--primary"
-                data-testid="customize-package-cta"
-                hx-post="{{.PackageCustomizeURL}}"
-                hx-swap="none"
-                hx-on::after-request="lf.Sheet.handleResponse(event)"
-                {{if .PackageCustomizeDisabled}}disabled{{end}}>
-            {{template "icon-edit"}}
-            {{.PackageCustomizeLabel}}
-        </button>
+        <form hx-post="{{.PackageCustomizeURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .PackageCustomizeURL .WorkspaceID}}
+          <button type="submit"
+                  class="btn btn--primary"
+                  data-testid="customize-package-cta"
+                  {{if .PackageCustomizeDisabled}}disabled{{end}}>
+              {{template "icon-edit"}}
+              {{.PackageCustomizeLabel}}
+          </button>
+        </form>
     </div>
     {{end}}
 
@@ -406,32 +414,34 @@
             <td class="cell-right">{{.BillableDisplay}} {{.Currency}}</td>
             <td>
               {{if .ShowMarkReady}}
-              <button type="button"
-                      class="btn btn--secondary btn--sm"
-                      data-testid="milestone-mark-ready"
-                      hx-post="{{.MarkReadyURL}}"
-                      hx-swap="none">
-                {{$.Labels.Milestone.MarkReady}}
-              </button>
+              <form hx-post="{{.MarkReadyURL}}" hx-swap="none" style="display:inline">
+                {{actionForm .MarkReadyURL $.WorkspaceID}}
+                <button type="submit"
+                        class="btn btn--secondary btn--sm"
+                        data-testid="milestone-mark-ready">
+                  {{$.Labels.Milestone.MarkReady}}
+                </button>
+              </form>
               {{end}}
               {{if .ShowWaive}}
-              <button type="button"
-                      class="btn btn--ghost btn--sm"
-                      data-testid="milestone-waive"
-                      hx-post="{{.WaiveURL}}"
-                      hx-swap="none">
-                {{$.Labels.Milestone.Waive}}
-              </button>
+              <form hx-post="{{.WaiveURL}}" hx-swap="none" style="display:inline">
+                {{actionForm .WaiveURL $.WorkspaceID}}
+                <button type="submit"
+                        class="btn btn--ghost btn--sm"
+                        data-testid="milestone-waive">
+                  {{$.Labels.Milestone.Waive}}
+                </button>
+              </form>
               {{end}}
               {{if .ShowRecognize}}
-              <button type="button"
-                      class="btn btn--primary btn--sm"
-                      data-testid="milestone-recognize"
-                      hx-post="{{.RecognizeURL}}"
-                      hx-vals='{"advance_id": "{{.AdvanceID}}"}'
-                      hx-swap="none">
-                {{$.Labels.Milestone.Recognize}}
-              </button>
+              <form hx-post="{{.RecognizeURL}}" hx-vals='{"advance_id": "{{.AdvanceID}}"}' hx-swap="none" style="display:inline">
+                {{actionForm .RecognizeURL $.WorkspaceID}}
+                <button type="submit"
+                        class="btn btn--primary btn--sm"
+                        data-testid="milestone-recognize">
+                  {{$.Labels.Milestone.Recognize}}
+                </button>
+              </form>
               {{end}}
               {{if .ShowRevenueLink}}
               <a href="{{.RevenueURL}}"

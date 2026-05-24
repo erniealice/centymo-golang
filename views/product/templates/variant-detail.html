@@ -144,13 +144,16 @@
 <div class="image-gallery">
     {{if .Images}}
     <div class="image-gallery__toolbar">
-        <button class="btn btn-danger btn-sm" id="bulk-delete-btn" disabled
-                aria-label="Delete selected images"
-                hx-post="{{routeWith "product.variant.image.delete" "id" .ProductID "vid" .VariantID}}"
-                hx-target="#image-gallery" hx-swap="innerHTML"
-                hx-include=".image-gallery__checkbox:checked">
-            {{.Labels.Detail.DeleteSelected}}
-        </button>
+        <form hx-post="{{routeWith "product.variant.image.delete" "id" .ProductID "vid" .VariantID}}"
+              hx-target="#image-gallery" hx-swap="innerHTML"
+              hx-include=".image-gallery__checkbox:checked"
+              style="display:inline">
+          {{actionForm (routeWith "product.variant.image.delete" "id" .ProductID "vid" .VariantID) .WorkspaceID}}
+          <button type="submit" class="btn btn-danger btn-sm" id="bulk-delete-btn" disabled
+                  aria-label="Delete selected images">
+              {{.Labels.Detail.DeleteSelected}}
+          </button>
+        </form>
         <span class="image-gallery__count">{{len .Images}} image{{if gt (len .Images) 1}}s{{end}}</span>
     </div>
     <div class="image-gallery__grid">

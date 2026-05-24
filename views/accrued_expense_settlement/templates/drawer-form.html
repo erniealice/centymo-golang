@@ -7,6 +7,7 @@ The settle drawer also reuses this template via the parent's
 */}}
 {{define "accrued-expense-settlement-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="accrued_expense_id" value="{{.AccruedExpenseID}}">
 

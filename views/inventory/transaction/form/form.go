@@ -22,6 +22,7 @@ type Labels struct {
 // Data is the template data for the transaction drawer form.
 type Data struct {
 	FormAction   string
+	WorkspaceID   string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	Labels       Labels
 	TypeOptions  []pyeza.SelectOption
 	Today        string

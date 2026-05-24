@@ -5,6 +5,7 @@ Data: .Label, .Value, .SortOrder, .ColorHex, .Active, .ID, .ProductID, .OptionID
 */}}
 {{define "option-value-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="product_option_id" value="{{.OptionID}}">
 

@@ -56,6 +56,7 @@ type DrawerData struct {
 	AsOfDate      string
 	AsOfDateMax   string
 	FormAction    string // POST URL to Generate
+	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	FragmentURL   string // HTMX inner-swap URL for AsOfDate change
 	SubscriptionCandidates []CandidateRow
 	AdvanceCandidates      []CandidateRow

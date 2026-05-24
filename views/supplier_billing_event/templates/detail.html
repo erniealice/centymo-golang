@@ -42,13 +42,14 @@ expense_recognition_id is unset, i.e. there is an unconsumed junction row).
 
     {{if index .Event "show_recognize"}}
     <div class="form-row" data-testid="supplier-billing-event-actions">
-        <button type="button"
-                class="btn btn--primary"
-                data-testid="supplier-billing-event-recognize-btn"
-                hx-post="{{index .Event "recognize_url"}}"
-                hx-swap="none">
-            {{.Labels.Actions.Recognize}}
-        </button>
+        <form hx-post="{{index .Event "recognize_url"}}" hx-swap="none" style="display:inline">
+          {{actionForm (index .Event "recognize_url") .WorkspaceID}}
+          <button type="submit"
+                  class="btn btn--primary"
+                  data-testid="supplier-billing-event-recognize-btn">
+              {{.Labels.Actions.Recognize}}
+          </button>
+        </form>
     </div>
     {{end}}
 </div>

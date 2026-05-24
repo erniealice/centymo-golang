@@ -13,6 +13,7 @@ Data: SubscriptionID, SubscriptionLabel, FormAction,
       hx-post="{{.FormAction}}"
       hx-swap="none"
       hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
 
     <div class="sheet-body">

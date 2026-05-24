@@ -40,6 +40,7 @@ type AdvanceActionDeps struct {
 // drawer-form partials.
 type AdvanceDrawerData struct {
 	FormAction        string
+	WorkspaceID        string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	AdvanceID         string
 	Action            string // "settle" | "refund" | "cancel"
 	Labels            centymo.TreasuryAdvanceLabels

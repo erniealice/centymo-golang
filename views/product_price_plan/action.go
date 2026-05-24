@@ -353,6 +353,7 @@ func NewDeleteAction(deps *Deps) view.View {
 // their own package; the template only receives it via interface{} / any.
 type productPriceFormData struct {
 	FormAction    string
+	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit        bool
 	ID            string
 	ScheduleID    string

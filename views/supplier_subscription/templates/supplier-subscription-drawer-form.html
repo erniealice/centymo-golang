@@ -1,5 +1,6 @@
 {{define "supplier-subscription-drawer-form"}}
 <form method="POST" action="{{.FormAction}}">
+    {{actionForm .FormAction .WorkspaceID}}
   {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
   <!-- Section 1: Identification -->

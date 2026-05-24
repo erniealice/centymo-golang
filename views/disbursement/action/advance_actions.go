@@ -30,6 +30,7 @@ type AdvanceActionDeps struct {
 // AdvanceDrawerData is the per-template data carrier (mirrors collection-side).
 type AdvanceDrawerData struct {
 	FormAction        string
+	WorkspaceID        string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	AdvanceID         string
 	Action            string
 	Labels            centymo.TreasuryAdvanceLabels

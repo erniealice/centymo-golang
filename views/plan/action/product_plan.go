@@ -51,6 +51,7 @@ type KindOption struct {
 // ProductPlanFormData is the template data for the product plan drawer form.
 type ProductPlanFormData struct {
 	FormAction           string
+	WorkspaceID           string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	PickerURL            string
 	VariantPickerURL     string
 	IsEdit               bool

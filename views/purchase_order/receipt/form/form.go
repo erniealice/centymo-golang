@@ -18,6 +18,7 @@ type LineRow struct {
 // Data is the template data for the PO receipt form.
 type Data struct {
 	FormAction      string
+	WorkspaceID      string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	PurchaseOrderID string
 	Lines           []LineRow
 	Today           string

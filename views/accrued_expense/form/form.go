@@ -12,6 +12,7 @@ import (
 // for one-off accruals (e.g., a utility estimate where no contract exists).
 type Data struct {
 	FormAction string
+	WorkspaceID string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit     bool
 	ID         string
 

@@ -30,6 +30,7 @@ const (
 // other; in Standalone mode both are auto-completes.
 type Data struct {
 	FormAction string
+	WorkspaceID string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit     bool
 	Context    Context
 	ID         string // PricePlan.ID — present on edit, empty on add

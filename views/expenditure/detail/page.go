@@ -87,6 +87,7 @@ type LineItemDeps struct {
 // LineItemFormData is the template data for the line item drawer form.
 type LineItemFormData struct {
 	FormAction    string
+	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit        bool
 	ID            string
 	ExpenditureID string

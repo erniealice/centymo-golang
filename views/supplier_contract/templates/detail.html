@@ -8,22 +8,28 @@
 <div class="page-content detail-layout" data-page-title="{{.Title}}">
     <div class="detail-header-actions">
         {{if .ApproveURL}}
-        <button type="button" class="btn btn-primary"
-            aria-haspopup="dialog"
-            data-testid="supplier-contract-approve-btn"
-            hx-post="{{.ApproveURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Form.Approve}}
-        </button>
+        <form hx-post="{{.ApproveURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .ApproveURL .WorkspaceID}}
+          <button type="submit" class="btn btn-primary"
+              aria-haspopup="dialog"
+              data-testid="supplier-contract-approve-btn">
+              {{.Labels.Form.Approve}}
+          </button>
+        </form>
         {{end}}
         {{if .TerminateURL}}
-        <button type="button" class="btn btn-danger"
-            aria-haspopup="dialog"
-            data-testid="supplier-contract-terminate-btn"
-            hx-post="{{.TerminateURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Form.Terminate}}
-        </button>
+        <form hx-post="{{.TerminateURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .TerminateURL .WorkspaceID}}
+          <button type="submit" class="btn btn-danger"
+              aria-haspopup="dialog"
+              data-testid="supplier-contract-terminate-btn">
+              {{.Labels.Form.Terminate}}
+          </button>
+        </form>
         {{end}}
         {{if .EditURL}}
         <button type="button" class="btn btn-secondary"

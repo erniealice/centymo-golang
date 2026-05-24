@@ -2,7 +2,7 @@
 //
 // Phase 5 (2026-05-02): real aggregates wired via the GetPageData callback,
 // which the orchestrator backs with the espyna
-// internal/application/usecases/treasury/collection/dashboard use case. To
+// internal/application/usecases/domain/treasury/collection/dashboard use case. To
 // keep this package free of espyna internal imports, the contract is
 // expressed by locally-defined Stats/Response types — orchestrator adapts.
 //

@@ -24,6 +24,7 @@ type ProductOption struct {
 // PriceProductFormData is the template data for the price product add drawer.
 type PriceProductFormData struct {
 	FormAction   string
+	WorkspaceID   string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	PriceListID  string
 	Products     []ProductOption
 	CommonLabels any

@@ -1,5 +1,6 @@
 {{define "supplier-product-cost-plan-drawer-form"}}
 <form method="POST" action="{{.FormAction}}">
+    {{actionForm .FormAction .WorkspaceID}}
   {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
   <input type="hidden" name="cost_plan_id" value="{{.CostPlanID}}">
   <div class="form-section">

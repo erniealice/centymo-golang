@@ -11,6 +11,7 @@ Data: .FormAction, .IsEdit, .ID, .PurchaseOrderID, .LineType, .Description,
     hx-target="#sheetContent"
     hx-swap="innerHTML"
     class="drawer-form">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .IsEdit}}
     <input type="hidden" name="id" value="{{.ID}}">
     {{end}}

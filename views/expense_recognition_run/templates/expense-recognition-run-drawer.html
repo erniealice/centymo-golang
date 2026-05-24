@@ -8,6 +8,7 @@
           hx-post="{{.FormAction}}"
           hx-target="#sheetContent"
           hx-swap="innerHTML">
+        {{actionForm .FormAction .WorkspaceID}}
 
         {{/* Hidden scope FKs */}}
         {{if eq .Scope "supplier"}}

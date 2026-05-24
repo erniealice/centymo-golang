@@ -27,6 +27,7 @@ type Labels struct {
 // 2026-04-29 auto-spawn-jobs-from-subscription plan §5.3.
 type Data struct {
 	FormAction        string
+	WorkspaceID        string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	SubscriptionID    string
 	SubscriptionLabel string
 	// Detected templates (root + active children). RootName highlights which

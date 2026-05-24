@@ -9,6 +9,7 @@ Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .Locatio
     hx-target="#sheetContent"
     hx-swap="innerHTML"
     class="drawer-form">
+    {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="purchase_order_id" value="{{.PurchaseOrderID}}">
 
     <div class="form-group">

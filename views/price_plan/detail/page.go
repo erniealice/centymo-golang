@@ -173,6 +173,7 @@ type PricePlanBillingSummaryWarning struct {
 // surface the resolved product + variant context above the price input.
 type ProductPricePlanFormData struct {
 	FormAction    string
+	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit        bool
 	ID            string
 	PricePlanID   string

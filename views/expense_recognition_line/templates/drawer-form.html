@@ -4,6 +4,7 @@ Used by both Add and Edit actions.
 */}}
 {{define "expense-recognition-line-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="expense_recognition_id" value="{{.ExpenseRecognitionID}}">
 

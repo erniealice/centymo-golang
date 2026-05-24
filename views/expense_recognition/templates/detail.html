@@ -8,13 +8,16 @@
 <div class="page-content detail-layout" data-page-title="{{.Title}}">
     <div class="detail-header-actions">
         {{if .ReverseURL}}
-        <button type="button" class="btn btn-danger"
-            aria-haspopup="dialog"
-            data-testid="expense-recognition-reverse-btn"
-            hx-post="{{.ReverseURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Buttons.Reverse}}
-        </button>
+        <form hx-post="{{.ReverseURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .ReverseURL .WorkspaceID}}
+          <button type="submit" class="btn btn-danger"
+              aria-haspopup="dialog"
+              data-testid="expense-recognition-reverse-btn">
+              {{.Labels.Buttons.Reverse}}
+          </button>
+        </form>
         {{end}}
     </div>
     <div class="detail-tabs">

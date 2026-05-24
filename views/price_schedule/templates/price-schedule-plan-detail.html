@@ -106,6 +106,7 @@
      Pricing locks when the parent PricePlan has an active subscription. */}}
 {{define "price-schedule-plan-product-price-drawer"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <div class="sheet-body">
         <div class="form-row single">

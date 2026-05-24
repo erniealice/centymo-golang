@@ -8,6 +8,7 @@ import centymo "github.com/erniealice/centymo-golang"
 // Data is the template data for the pay drawer form.
 type Data struct {
 	FormAction       string
+	WorkspaceID       string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	ExpenditureID    string
 	Name             string
 	Amount           string

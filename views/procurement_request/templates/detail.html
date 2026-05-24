@@ -8,40 +8,52 @@
 <div class="page-content detail-layout" data-page-title="{{.Title}}">
     <div class="detail-header-actions">
         {{if .SubmitURL}}
-        <button type="button" class="btn btn-secondary"
-            aria-haspopup="dialog"
-            data-testid="procurement-request-submit-btn"
-            hx-post="{{.SubmitURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Form.Submit}}
-        </button>
+        <form hx-post="{{.SubmitURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .SubmitURL .WorkspaceID}}
+          <button type="submit" class="btn btn-secondary"
+              aria-haspopup="dialog"
+              data-testid="procurement-request-submit-btn">
+              {{.Labels.Form.Submit}}
+          </button>
+        </form>
         {{end}}
         {{if .ApproveURL}}
-        <button type="button" class="btn btn-primary"
-            aria-haspopup="dialog"
-            data-testid="procurement-request-approve-btn"
-            hx-post="{{.ApproveURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Form.Approve}}
-        </button>
+        <form hx-post="{{.ApproveURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .ApproveURL .WorkspaceID}}
+          <button type="submit" class="btn btn-primary"
+              aria-haspopup="dialog"
+              data-testid="procurement-request-approve-btn">
+              {{.Labels.Form.Approve}}
+          </button>
+        </form>
         {{end}}
         {{if .RejectURL}}
-        <button type="button" class="btn btn-danger"
-            aria-haspopup="dialog"
-            data-testid="procurement-request-reject-btn"
-            hx-post="{{.RejectURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Form.Reject}}
-        </button>
+        <form hx-post="{{.RejectURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .RejectURL .WorkspaceID}}
+          <button type="submit" class="btn btn-danger"
+              aria-haspopup="dialog"
+              data-testid="procurement-request-reject-btn">
+              {{.Labels.Form.Reject}}
+          </button>
+        </form>
         {{end}}
         {{if .SpawnPOURL}}
-        <button type="button" class="btn btn-secondary"
-            aria-haspopup="dialog"
-            data-testid="procurement-request-spawn-po-btn"
-            hx-post="{{.SpawnPOURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Form.SpawnPO}}
-        </button>
+        <form hx-post="{{.SpawnPOURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .SpawnPOURL .WorkspaceID}}
+          <button type="submit" class="btn btn-secondary"
+              aria-haspopup="dialog"
+              data-testid="procurement-request-spawn-po-btn">
+              {{.Labels.Form.SpawnPO}}
+          </button>
+        </form>
         {{end}}
         {{if .EditURL}}
         <button type="button" class="btn btn-secondary"

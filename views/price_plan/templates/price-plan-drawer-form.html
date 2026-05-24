@@ -11,6 +11,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
 */}}
 {{define "price-plan-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     {{/* Hidden context-locked IDs — only emitted when the field is NOT shown as an auto-complete */}}

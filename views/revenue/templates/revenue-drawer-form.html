@@ -4,6 +4,7 @@ Used by both Add and Edit actions.
 */}}
 {{define "revenue-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="status" value="{{if .Status}}{{.Status}}{{else}}draft{{end}}">
 

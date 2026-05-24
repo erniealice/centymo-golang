@@ -18,6 +18,7 @@ import (
 // OptionFormData is the template data for the option drawer form.
 type OptionFormData struct {
 	FormAction      string
+	WorkspaceID      string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit          bool
 	ID              string
 	ProductID       string

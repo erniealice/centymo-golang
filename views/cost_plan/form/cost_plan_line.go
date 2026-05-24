@@ -27,6 +27,7 @@ type CostPlanLineLabels struct {
 // inline drawer form.
 type CostPlanLineData struct {
 	FormAction string
+	WorkspaceID string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit     bool
 	ID         string
 

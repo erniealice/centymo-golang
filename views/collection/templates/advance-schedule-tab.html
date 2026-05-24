@@ -114,14 +114,14 @@ treasury_collection.json `advance.*`); no hardcoded English remains.
                     <td class="mono">{{.RevenueID}}</td>
                     <td>
                         {{if .ShowRecognize}}
-                        <button type="button"
-                                class="btn btn-primary btn-sm"
-                                data-testid="advance-milestone-recognize"
-                                hx-post="{{.RecognizeURL}}"
-                                hx-vals='{"advance_id": "{{index $.Collection "id"}}"}'
-                                hx-swap="none">
-                            {{$.AdvanceLabels.RecognizeButton}}
-                        </button>
+                        <form hx-post="{{.RecognizeURL}}" hx-vals='{"advance_id": "{{index $.Collection "id"}}"}' hx-swap="none" style="display:inline">
+                          {{actionForm .RecognizeURL $.WorkspaceID}}
+                          <button type="submit"
+                                  class="btn btn-primary btn-sm"
+                                  data-testid="advance-milestone-recognize">
+                              {{$.AdvanceLabels.RecognizeButton}}
+                          </button>
+                        </form>
                         {{end}}
                     </td>
                 </tr>

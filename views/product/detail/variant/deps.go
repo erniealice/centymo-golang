@@ -90,6 +90,7 @@ type OptionSelection struct {
 // VariantFormData is the template data for the variant drawer form.
 type VariantFormData struct {
 	FormAction       string
+	WorkspaceID       string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit           bool
 	ID               string
 	ProductID        string

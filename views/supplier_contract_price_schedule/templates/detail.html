@@ -8,22 +8,28 @@
 <div class="page-content detail-layout" data-page-title="{{.Title}}">
     <div class="detail-header-actions">
         {{if .ActivateURL}}
-        <button type="button" class="btn btn-primary"
-            aria-haspopup="dialog"
-            data-testid="schedule-activate-btn"
-            hx-post="{{.ActivateURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Buttons.Activate}}
-        </button>
+        <form hx-post="{{.ActivateURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .ActivateURL .WorkspaceID}}
+          <button type="submit" class="btn btn-primary"
+              aria-haspopup="dialog"
+              data-testid="schedule-activate-btn">
+              {{.Labels.Buttons.Activate}}
+          </button>
+        </form>
         {{end}}
         {{if .SupersedeURL}}
-        <button type="button" class="btn btn-secondary"
-            aria-haspopup="dialog"
-            data-testid="schedule-supersede-btn"
-            hx-post="{{.SupersedeURL}}" hx-swap="none"
-            hx-on::after-request="lf.Sheet.handleResponse(event)">
-            {{.Labels.Buttons.Supersede}}
-        </button>
+        <form hx-post="{{.SupersedeURL}}" hx-swap="none"
+              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              style="display:inline">
+          {{actionForm .SupersedeURL .WorkspaceID}}
+          <button type="submit" class="btn btn-secondary"
+              aria-haspopup="dialog"
+              data-testid="schedule-supersede-btn">
+              {{.Labels.Buttons.Supersede}}
+          </button>
+        </form>
         {{end}}
         {{if .EditURL}}
         <button type="button" class="btn btn-secondary"

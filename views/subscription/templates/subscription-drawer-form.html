@@ -10,6 +10,7 @@ Data: .Code, .ClientID, .PricePlanID,
 */}}
 {{define "subscription-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="if (event.detail && event.detail.elt === event.currentTarget) lf.Sheet.handleResponse(event)" data-default-tz="{{.DefaultTZ}}">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
     {{/* 2026-05-03 — Edit-locked: warning banner above the body, then a

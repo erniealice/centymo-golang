@@ -24,6 +24,7 @@ import (
 // EditFormData is the drawer form for editing a price_plan under a schedule.
 type EditFormData struct {
 	FormAction    string
+	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	ScheduleID    string
 	ScheduleName  string
 	ID            string

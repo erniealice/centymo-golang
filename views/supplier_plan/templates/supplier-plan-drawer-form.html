@@ -1,5 +1,6 @@
 {{define "supplier-plan-drawer-form"}}
 <form method="POST" action="{{.FormAction}}">
+    {{actionForm .FormAction .WorkspaceID}}
   {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
   <div class="sheet-body">
     <div class="form-section">

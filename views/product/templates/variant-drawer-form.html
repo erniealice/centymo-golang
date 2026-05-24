@@ -5,6 +5,7 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
 */}}
 {{define "variant-drawer-form"}}
 <form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+    {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="product_id" value="{{.ProductID}}">
 
