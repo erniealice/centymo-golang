@@ -1,0 +1,113 @@
+{{/* Grants tab content — pages.md §B-5 tab 3, entities.md §E-4.
+     Rendered when activeTab == "grants" either via full-page load or the
+     HTMX tab-swap action.
+     Template name must match the view.OK() call in grants_tab.go. */}}
+
+{{define "collection-method-grants-tab"}}
+<div class="tab-scroll" data-testid="tc-method-detail-tab-grants">
+    <div class="tab-header-actions">
+        {{if .BulkGrantURL}}
+        <button type="button" class="btn btn-primary btn-sm"
+            aria-haspopup="dialog"
+            data-testid="tc-grant-bulk-grant-btn"
+            hx-get="{{.BulkGrantURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Form.BulkGrantTitle}}')">
+            + {{.Labels.Form.BulkGrantTitle}}
+        </button>
+        {{end}}
+    </div>
+
+    {{if .Grants}}
+    <div class="table-wrapper" id="{{`grants-table`}}">
+        <table class="data-table" data-testid="tc-grant-list-table">
+            <thead>
+                <tr>
+                    <th>{{.Labels.Columns.Subject}}</th>
+                    <th>{{.Labels.Columns.ClientID}}</th>
+                    <th>{{.Labels.Columns.Status}}</th>
+                    <th>{{.Labels.Columns.GrantedBy}}</th>
+                    <th class="actions-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Grants}}
+                <tr data-testid="tc-grant-row" data-grant-id="{{.ID}}">
+                    <td>{{.Subject}}</td>
+                    <td class="mono">{{.ClientID}}</td>
+                    <td>
+                        <span class="badge {{if eq .Status "ACTIVE"}}badge-success{{else if eq .Status "REVOKED"}}badge-danger{{else}}badge-default{{end}}">
+                            {{.Status}}
+                        </span>
+                    </td>
+                    <td class="mono text-sm">{{.GrantedBy}}</td>
+                    <td class="row-actions">
+                        {{if eq .Status "ACTIVE"}}
+                        {{if .RevokeURL}}
+                        <button type="button" class="btn btn-sm btn-danger"
+                            aria-label="Revoke"
+                            data-testid="tc-grant-revoke-btn"
+                            hx-post="{{.RevokeURL}}"
+                            hx-vals='{"id": "{{.ID}}"}'
+                            hx-target="#grants-table"
+                            hx-swap="outerHTML"
+                            hx-confirm="{{$.Labels.Revoke.Confirm}}">
+                            {{$.Labels.Revoke.Button}}
+                        </button>
+                        {{end}}
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <div class="empty-state" id="grants-table" data-testid="tc-grant-empty">
+        <p class="empty-state-title">{{.Labels.Empty.Title}}</p>
+        <p class="empty-state-message">{{.Labels.Empty.Message}}</p>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Bulk-grant drawer-form — create many grants at once.
+     Rendered inside the sheet panel (#sheetContent) via hx-get. */}}
+{{define "collection-method-grant-bulk-drawer-form"}}
+<form method="POST"
+    action="{{.FormAction}}"
+    hx-post="{{.FormAction}}"
+    hx-target="#grants-table"
+    hx-swap="outerHTML"
+    data-testid="tc-grant-bulk-drawer-form"
+    autocomplete="off">
+
+    <input type="hidden" name="method_id" value="{{.MethodID}}">
+
+    {{/* ── Client IDs ── */}}
+    <div class="form-group">
+        <label class="form-label" for="grant-client-ids">
+            {{.Labels.Form.ClientIDs}}
+            {{template "field-info" .Labels.Form.ClientIDsInfo}}
+        </label>
+        <textarea id="grant-client-ids" name="client_ids"
+            class="form-control mono"
+            rows="6"
+            placeholder="{{.Labels.Form.ClientIDsPlaceholder}}"
+            required
+            data-testid="tc-grant-client-ids-textarea">{{.ClientIDs}}</textarea>
+    </div>
+
+    {{/* ── Footer ── */}}
+    <div class="drawer-footer">
+        <button type="button" class="btn btn-secondary"
+            data-testid="tc-grant-cancel-btn"
+            onclick="lf.Sheet.close()">
+            {{.CommonLabels.Actions.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary"
+            data-testid="tc-grant-submit-btn">
+            {{.Labels.Form.GrantButton}}
+        </button>
+    </div>
+</form>
+{{end}}

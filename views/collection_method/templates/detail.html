@@ -40,6 +40,12 @@
      directly into this region. On full-page loads the detail view delegates
      to the eligibility tab handler and this template dispatches to it. */}}
 {{template "collection-method-eligibility-rules-tab" .EligibilityTab}}
+{{else if eq .ActiveTab "grants"}}
+{{/* Grants tab — Stage 3. The HTMX tab-swap action fetches
+     /action/collection-method/detail/{id}/tab/grants which is handled by
+     NewGrantTabView and renders "collection-method-grants-tab" directly into
+     this region. On full-page loads the detail view delegates here. */}}
+{{template "collection-method-grants-tab" .GrantTab}}
 {{else if eq .ActiveTab "versions"}}
 {{template "collection-method-tab-versions" .}}
 {{else if eq .ActiveTab "activity"}}

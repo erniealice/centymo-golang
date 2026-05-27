@@ -10,6 +10,7 @@ import (
 
 	cmpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method"
 	eligrulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method_eligibility_rule"
+	grantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method_grant"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -40,6 +41,13 @@ type ModuleDeps struct {
 	CreateCollectionMethodEligibilityRule func(ctx context.Context, req *eligrulepb.CreateCollectionMethodEligibilityRuleRequest) (*eligrulepb.CreateCollectionMethodEligibilityRuleResponse, error)
 	UpdateCollectionMethodEligibilityRule func(ctx context.Context, req *eligrulepb.UpdateCollectionMethodEligibilityRuleRequest) (*eligrulepb.UpdateCollectionMethodEligibilityRuleResponse, error)
 	DeleteCollectionMethodEligibilityRule func(ctx context.Context, req *eligrulepb.DeleteCollectionMethodEligibilityRuleRequest) (*eligrulepb.DeleteCollectionMethodEligibilityRuleResponse, error)
+
+	// Stage 3 — collection_method_grant (pages.md §B-5 tab 3).
+	// No Update closure: grants are create/revoke only (Q6 LOCKED — no mutation).
+	ListCollectionMethodGrants      func(ctx context.Context, req *grantpb.ListCollectionMethodGrantsRequest) (*grantpb.ListCollectionMethodGrantsResponse, error)
+	CreateCollectionMethodGrant     func(ctx context.Context, req *grantpb.CreateCollectionMethodGrantRequest) (*grantpb.CreateCollectionMethodGrantResponse, error)
+	RevokeCollectionMethodGrant     func(ctx context.Context, req *grantpb.RevokeCollectionMethodGrantRequest) (*grantpb.RevokeCollectionMethodGrantResponse, error)
+	BulkGrantCollectionMethodGrants func(ctx context.Context, req *grantpb.BulkGrantCollectionMethodGrantsRequest) (*grantpb.BulkGrantCollectionMethodGrantsResponse, error)
 }
 
 // Module holds all constructed collection_method views.
@@ -56,6 +64,9 @@ type Module struct {
 	EligibilityRuleAdd    view.View
 	EligibilityRuleEdit   view.View
 	EligibilityRuleDelete view.View
+	// Stage 3 — Grants tab (no Edit view: grants are create/revoke only)
+	GrantBulkGrant view.View
+	GrantRevoke    view.View
 }
 
 // NewModule creates the collection_method module with all views wired.
@@ -81,6 +92,17 @@ func NewModule(deps *ModuleDeps) *Module {
 		UpdateCollectionMethodEligibilityRule: deps.UpdateCollectionMethodEligibilityRule,
 		DeleteCollectionMethodEligibilityRule: deps.DeleteCollectionMethodEligibilityRule,
 	}
+	// Stage 3 — grant tab deps (nil closures degrade gracefully).
+	grantDeps := &cmdetail.GrantTabDeps{
+		Routes:                          deps.Routes,
+		Labels:                          deps.Labels,
+		CommonLabels:                    deps.CommonLabels,
+		TableLabels:                     deps.TableLabels,
+		ListCollectionMethodGrants:      deps.ListCollectionMethodGrants,
+		CreateCollectionMethodGrant:     deps.CreateCollectionMethodGrant,
+		RevokeCollectionMethodGrant:     deps.RevokeCollectionMethodGrant,
+		BulkGrantCollectionMethodGrants: deps.BulkGrantCollectionMethodGrants,
+	}
 	detailDeps := &cmdetail.DetailViewDeps{
 		Routes:               deps.Routes,
 		Labels:               deps.Labels,
@@ -88,6 +110,7 @@ func NewModule(deps *ModuleDeps) *Module {
 		TableLabels:          deps.TableLabels,
 		ReadCollectionMethod: deps.ReadCollectionMethod,
 		EligibilityRuleDeps:  eligRuleDeps,
+		GrantDeps:            grantDeps,
 	}
 	listDeps := &cmlist.ListViewDeps{
 		Routes:                deps.Routes,
@@ -109,6 +132,9 @@ func NewModule(deps *ModuleDeps) *Module {
 		EligibilityRuleAdd:    cmdetail.NewEligibilityRuleAddAction(eligRuleDeps),
 		EligibilityRuleEdit:   cmdetail.NewEligibilityRuleEditAction(eligRuleDeps),
 		EligibilityRuleDelete: cmdetail.NewEligibilityRuleDeleteAction(eligRuleDeps),
+		// Stage 3 — Grants tab (no Edit view: grants are create/revoke only).
+		GrantBulkGrant: cmdetail.NewGrantBulkGrantAction(grantDeps),
+		GrantRevoke:    cmdetail.NewGrantRevokeAction(grantDeps),
 	}
 }
 
@@ -136,5 +162,14 @@ func (m *Module) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.routes.EligibilityRuleDeleteURL != "" {
 		r.POST(m.routes.EligibilityRuleDeleteURL, m.EligibilityRuleDelete)
+	}
+
+	// Stage 3 — Grants tab routes (no edit: create/revoke only).
+	if m.routes.GrantBulkGrantURL != "" {
+		r.GET(m.routes.GrantBulkGrantURL, m.GrantBulkGrant)
+		r.POST(m.routes.GrantBulkGrantURL, m.GrantBulkGrant)
+	}
+	if m.routes.GrantRevokeURL != "" {
+		r.POST(m.routes.GrantRevokeURL, m.GrantRevoke)
 	}
 }

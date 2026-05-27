@@ -23,6 +23,7 @@ type CollectionMethodLabels struct {
 	Fragment        CollectionMethodFragmentLabels        `json:"fragment"`
 	Empty           CollectionMethodEmptyLabels           `json:"empty"`
 	EligibilityRule CollectionMethodEligibilityRuleLabels `json:"eligibilityRule"`
+	Grant           CollectionMethodGrantLabels           `json:"grant"`
 }
 
 type CollectionMethodPageLabels struct {
@@ -258,6 +259,85 @@ func DefaultCollectionMethodLabels() CollectionMethodLabels {
 			Message: "Create a method template to start collecting from clients.",
 		},
 		EligibilityRule: DefaultCollectionMethodEligibilityRuleLabels(),
+		Grant:           DefaultCollectionMethodGrantLabels(),
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CollectionMethodGrantLabels (Stage 3 — Grants tab)
+// ---------------------------------------------------------------------------
+
+// CollectionMethodGrantLabels holds translatable strings for the grant CRUD
+// sub-module (pages.md §B-5 tab #3 + entities.md §E-4).
+// JSON tags match collection_method_grant.json (root key "collectionMethodGrant").
+type CollectionMethodGrantLabels struct {
+	Tab     CollectionMethodGrantTabLabels    `json:"tab"`
+	Columns CollectionMethodGrantColumnLabels `json:"columns"`
+	Form    CollectionMethodGrantFormLabels   `json:"form"`
+	Empty   CollectionMethodGrantEmptyLabels  `json:"empty"`
+	Revoke  CollectionMethodGrantRevokeLabels `json:"revoke"`
+}
+
+type CollectionMethodGrantTabLabels struct {
+	Title string `json:"title"`
+}
+
+type CollectionMethodGrantColumnLabels struct {
+	Subject      string `json:"subject"`
+	ClientID     string `json:"clientId"`
+	Status       string `json:"status"`
+	GrantedBy    string `json:"grantedBy"`
+	RevokedBy    string `json:"revokedBy"`
+	RevokeReason string `json:"revokeReason"`
+}
+
+type CollectionMethodGrantFormLabels struct {
+	BulkGrantTitle       string `json:"bulkGrantTitle"`
+	ClientIDs            string `json:"clientIds"`
+	ClientIDsInfo        string `json:"clientIdsInfo"`
+	ClientIDsPlaceholder string `json:"clientIdsPlaceholder"`
+	GrantButton          string `json:"grantButton"`
+}
+
+type CollectionMethodGrantEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type CollectionMethodGrantRevokeLabels struct {
+	Confirm string `json:"confirm"`
+	Button  string `json:"button"`
+}
+
+// DefaultCollectionMethodGrantLabels returns English fallback labels.
+func DefaultCollectionMethodGrantLabels() CollectionMethodGrantLabels {
+	return CollectionMethodGrantLabels{
+		Tab: CollectionMethodGrantTabLabels{
+			Title: "Grants",
+		},
+		Columns: CollectionMethodGrantColumnLabels{
+			Subject:      "Subject",
+			ClientID:     "Client",
+			Status:       "Status",
+			GrantedBy:    "Granted By",
+			RevokedBy:    "Revoked By",
+			RevokeReason: "Revoke Reason",
+		},
+		Form: CollectionMethodGrantFormLabels{
+			BulkGrantTitle:       "Bulk Grant Access",
+			ClientIDs:            "Client IDs",
+			ClientIDsInfo:        "Paste or type one client ID per line. Each client will be granted access to this collection method.",
+			ClientIDsPlaceholder: "client-id-1\nclient-id-2\nclient-id-3",
+			GrantButton:          "Grant Access",
+		},
+		Empty: CollectionMethodGrantEmptyLabels{
+			Title:   "No grants yet",
+			Message: "Grant access to specific clients to restrict who can use this collection method.",
+		},
+		Revoke: CollectionMethodGrantRevokeLabels{
+			Confirm: "Are you sure you want to revoke this grant? The client will lose access immediately.",
+			Button:  "Revoke",
+		},
 	}
 }
 

@@ -47,6 +47,11 @@ type CollectionMethodRoutes struct {
 	EligibilityRuleAddURL    string `json:"eligibility_rule_add_url"`
 	EligibilityRuleEditURL   string `json:"eligibility_rule_edit_url"`
 	EligibilityRuleDeleteURL string `json:"eligibility_rule_delete_url"`
+
+	// Stage 3 — Grants tab actions (pages.md §B-5 tab 3).
+	// No edit URL: grants are create/revoke only.
+	GrantBulkGrantURL string `json:"grant_bulk_grant_url"`
+	GrantRevokeURL    string `json:"grant_revoke_url"`
 }
 
 // DefaultCollectionMethodRoutes returns the canonical `/treasury_collection/methods/*`
@@ -70,6 +75,9 @@ func DefaultCollectionMethodRoutes() CollectionMethodRoutes {
 		EligibilityRuleAddURL:    "/action/collection-method/{method_id}/eligibility-rule/add",
 		EligibilityRuleEditURL:   "/action/collection-method/{method_id}/eligibility-rule/edit/{rule_id}",
 		EligibilityRuleDeleteURL: "/action/collection-method/{method_id}/eligibility-rule/delete",
+		// Stage 3 — Grants tab actions (no edit: grants are create/revoke only).
+		GrantBulkGrantURL: "/action/collection-method/{method_id}/grant/bulk-grant",
+		GrantRevokeURL:    "/action/collection-method/{method_id}/grant/revoke",
 	}
 }
 
@@ -90,6 +98,8 @@ func (r CollectionMethodRoutes) RouteMap() map[string]string {
 		"collection_method.eligibility_rule.add":    r.EligibilityRuleAddURL,
 		"collection_method.eligibility_rule.edit":   r.EligibilityRuleEditURL,
 		"collection_method.eligibility_rule.delete": r.EligibilityRuleDeleteURL,
+		"collection_method.grant.bulk_grant":        r.GrantBulkGrantURL,
+		"collection_method.grant.revoke":            r.GrantRevokeURL,
 	}
 }
 

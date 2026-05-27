@@ -29,6 +29,9 @@ type DetailViewDeps struct {
 
 	// Stage 2 — Eligibility Rules tab closures (nil-safe).
 	EligibilityRuleDeps *EligibilityRuleTabDeps
+
+	// Stage 3 — Grants tab closures (nil-safe).
+	GrantDeps *GrantTabDeps
 }
 
 // PageData holds the template data for the collection method detail page.
@@ -52,6 +55,10 @@ type PageData struct {
 	// EligibilityTab carries the pre-loaded tab data when ActiveTab == "eligibility".
 	// Nil for all other tabs (the template dispatches via eq .ActiveTab).
 	EligibilityTab *EligibilityRuleTabData
+
+	// GrantTab carries the pre-loaded tab data when ActiveTab == "grants".
+	// Nil for all other tabs.
+	GrantTab *GrantTabData
 }
 
 // KindRow is a single label/value pair in the kind-specific Overview pane.
@@ -130,6 +137,11 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		// so it can load rules independently without needing ReadCollectionMethod.
 		if tab == tabEligibility && deps.EligibilityRuleDeps != nil {
 			return NewEligibilityRuleTabView(deps.EligibilityRuleDeps).Handle(ctx, viewCtx)
+		}
+
+		// Stage 3: the Grants tab is self-contained; delegate to its own view.
+		if tab == tabGrants && deps.GrantDeps != nil {
+			return NewGrantTabView(deps.GrantDeps).Handle(ctx, viewCtx)
 		}
 
 		if deps.ReadCollectionMethod == nil {
@@ -223,6 +235,28 @@ func buildPageDataWithContext(ctx context.Context, deps *DetailViewDeps, m *cmpb
 			MethodID:     id,
 			Rules:        rules,
 			AddURL:       addURL,
+		}
+	}
+
+	// Stage 3: populate GrantTab when the active tab is "grants".
+	// Grants are loaded inline here so the full-page (non-HTMX) detail load works.
+	if activeTab == tabGrants && deps.GrantDeps != nil {
+		perms := view.GetUserPermissions(ctx)
+		grants, err := loadGrants(ctx, deps.GrantDeps, id)
+		if err != nil {
+			log.Printf("GrantTab loadGrants method=%s: %v", id, err)
+		}
+		bulkGrantURL := ""
+		if perms.Can("collection_method_grant", "bulk_grant") {
+			bulkGrantURL = route.ResolveURL(deps.Routes.GrantBulkGrantURL, "method_id", id)
+		}
+		pd.GrantTab = &GrantTabData{
+			Labels:       l.Grant,
+			CommonLabels: deps.CommonLabels,
+			TableLabels:  deps.TableLabels,
+			MethodID:     id,
+			Grants:       grants,
+			BulkGrantURL: bulkGrantURL,
 		}
 	}
 
