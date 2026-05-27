@@ -1,0 +1,83 @@
+{{/*
+Disbursement Method kind-specific fragment — pages.md §A-2 (buying side:
+bank-account / check / advance-program). Rendered into #kind-specific-slot.
+
+NOTE (Stage 1): the proto template_details oneof currently has only
+bank_account + advance_program (no dedicated CHECK variant). STANDARD maps to
+the bank-account fragment; the check fragment is shown only when a CHECK
+category lands in a later proto extension. See action.go category-options note.
+*/}}
+{{define "disbursement-method-kind-fragment"}}
+<div data-testid="td-method-fragment" data-category="{{.Category}}">
+{{if eq .Category "DISBURSEMENT_METHOD_CATEGORY_ADVANCE"}}
+    <p class="form-fragment-intro text-muted">{{.FragLabels.AdvanceIntro}}</p>
+    <div class="form-row">
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "default_balance_account_id"
+            "Label" .FragLabels.DefaultBalanceAcct
+            "Value" .DefaultBalanceAcct
+        )}}
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "default_target_account_id"
+            "Label" .FragLabels.DefaultTargetAcct
+            "Value" .DefaultTargetAcct
+        )}}
+    </div>
+    <div class="form-row">
+        {{template "form-group" (dict
+            "Type" "number"
+            "Name" "default_period_count"
+            "Label" .FragLabels.DefaultPeriodCount
+            "Value" .DefaultPeriodCount
+            "Placeholder" "12"
+        )}}
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "default_period_unit"
+            "Label" .FragLabels.DefaultPeriodUnit
+            "Value" .DefaultPeriodUnit
+            "Placeholder" "month"
+        )}}
+    </div>
+
+{{else if eq .Category "DISBURSEMENT_METHOD_CATEGORY_CHECK"}}
+    {{/* Check series + signing policy. No proto template_details variant yet —
+         persisted only once a CHECK oneof variant lands (later wave). */}}
+    <p class="form-fragment-intro text-muted">{{.FragLabels.CheckIntro}}</p>
+    <div class="form-row">
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "check_series"
+            "Label" .FragLabels.CheckSeries
+            "Value" .CheckSeries
+        )}}
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "signing_policy"
+            "Label" .FragLabels.SigningPolicy
+            "Value" .SigningPolicy
+        )}}
+    </div>
+
+{{else}}
+    {{/* STANDARD → bank-account fragment. */}}
+    <p class="form-fragment-intro text-muted">{{.FragLabels.BankIntro}}</p>
+    <div class="form-row">
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "bank_name"
+            "Label" .FragLabels.BankName
+            "Value" .BankName
+        )}}
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "account_format"
+            "Label" .FragLabels.AccountFormat
+            "Value" .AccountFormat
+        )}}
+    </div>
+{{end}}
+</div>
+{{end}}

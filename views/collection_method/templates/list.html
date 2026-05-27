@@ -1,0 +1,11 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "collection-method-list"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "collection-method-list-content"}}
+<div class="page-content page-content--table" data-testid="tc-method-list">
+    {{template "table-card" .Table}}
+</div>
+{{end}}

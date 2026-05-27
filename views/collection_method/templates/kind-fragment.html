@@ -1,0 +1,75 @@
+{{/*
+Collection Method kind-specific fragment — pages.md §A-2.
+Rendered into #kind-specific-slot, both inline (initial drawer render) and
+standalone (HTMX swap when the Category select changes).
+
+Data is form.FragmentData (.Category + .FragLabels + kind fields). Each kind
+leads with a plain-language intro block (§A-2 intro convention).
+
+Per D-4.26 the CARD fragment carries NO brand / no template fields (brand is a
+free per-instance attribute on CardInstance). CASH has no template fields.
+*/}}
+{{define "collection-method-kind-fragment"}}
+<div data-testid="tc-method-fragment" data-category="{{.Category}}">
+{{if eq .Category "COLLECTION_METHOD_CATEGORY_VOUCHER"}}
+    <p class="form-fragment-intro text-muted">{{.FragLabels.VoucherIntro}}</p>
+    <div class="form-row">
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "default_face_value"
+            "Label" .FragLabels.DefaultFaceValue
+            "Value" .DefaultFaceValue
+            "Placeholder" "0.00"
+        )}}
+        {{template "form-group" (dict
+            "Type" "number"
+            "Name" "default_expiry_days"
+            "Label" .FragLabels.DefaultExpiryDays
+            "Value" .DefaultExpiryDays
+            "Placeholder" "365"
+        )}}
+    </div>
+
+{{else if eq .Category "COLLECTION_METHOD_CATEGORY_ADVANCE"}}
+    <p class="form-fragment-intro text-muted">{{.FragLabels.AdvanceIntro}}</p>
+    <div class="form-row">
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "default_balance_account_id"
+            "Label" .FragLabels.DefaultBalanceAcct
+            "Value" .DefaultBalanceAcct
+        )}}
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "default_target_account_id"
+            "Label" .FragLabels.DefaultTargetAcct
+            "Value" .DefaultTargetAcct
+        )}}
+    </div>
+    <div class="form-row">
+        {{template "form-group" (dict
+            "Type" "number"
+            "Name" "default_period_count"
+            "Label" .FragLabels.DefaultPeriodCount
+            "Value" .DefaultPeriodCount
+            "Placeholder" "12"
+        )}}
+        {{template "form-group" (dict
+            "Type" "text"
+            "Name" "default_period_unit"
+            "Label" .FragLabels.DefaultPeriodUnit
+            "Value" .DefaultPeriodUnit
+            "Placeholder" "month"
+        )}}
+    </div>
+
+{{else if eq .Category "COLLECTION_METHOD_CATEGORY_CARD"}}
+    {{/* D-4.26: NO brand field, no template fields — card method carries no brand. */}}
+    <p class="form-fragment-intro text-muted">{{.FragLabels.CardIntro}}</p>
+
+{{else}}
+    {{/* STANDARD / CASH — plain cash flow; no kind-specific template fields. */}}
+    <p class="form-fragment-intro text-muted">{{.FragLabels.CashIntro}}</p>
+{{end}}
+</div>
+{{end}}

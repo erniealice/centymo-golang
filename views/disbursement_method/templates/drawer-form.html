@@ -1,0 +1,163 @@
+{{/*
+Disbursement (Payment) Method drawer-form — pages.md §A-1 + §C-5.
+Buying-side mirror of the collection drawer minus audience_mode (D-4.9).
+The Category select drives the HTMX-swapped kind slot (§A).
+*/}}
+{{define "disbursement-method-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)"
+      data-testid="td-method-drawer-form">
+    {{actionForm .FormAction .WorkspaceID}}
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+
+        {{/* ── Common fields ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionCommon}}</h3>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "name"
+                    "Label" .Labels.Name
+                    "Value" .Name
+                    "Required" true
+                    "Placeholder" .Labels.NamePlaceholder
+                    "Info" .Labels.NameInfo
+                )}}
+            </div>
+
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "category"
+                    "Label" .Labels.Category
+                    "Value" .Category
+                    "Required" true
+                    "Options" .CategoryOptions
+                    "Info" .Labels.CategoryInfo
+                    "Attrs" (dict
+                        "data-testid" "td-method-drawer-category-select"
+                        "hx-get" .FragmentURL
+                        "hx-trigger" "change"
+                        "hx-target" "#kind-specific-slot"
+                        "hx-swap" "innerHTML"
+                        "name" "cat"
+                    )
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "posting_kind"
+                    "Label" .Labels.PostingKind
+                    "Value" .PostingKind
+                    "Required" true
+                    "Options" .PostingKindOptions
+                    "Info" .Labels.PostingKindInfo
+                )}}
+            </div>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "tax_effect_kind"
+                    "Label" .Labels.TaxEffectKind
+                    "Value" .TaxEffectKind
+                    "Required" true
+                    "Options" .TaxEffectOptions
+                    "Info" .Labels.TaxEffectInfo
+                )}}
+            </div>
+        </div>
+
+        {{/* ── GL defaults ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionGL}}</h3>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "balance_account_id"
+                    "Label" .Labels.BalanceAccount
+                    "Value" .BalanceAccount
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "target_account_id"
+                    "Label" .Labels.TargetAccount
+                    "Value" .TargetAccount
+                )}}
+            </div>
+        </div>
+
+        {{/* ── Versioning ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionVersion}}</h3>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "template_code"
+                    "Label" .Labels.TemplateCode
+                    "Value" .TemplateCode
+                    "Info" .Labels.TemplateCodeInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "number"
+                    "Name" "revision"
+                    "Label" .Labels.Revision
+                    "Value" .Revision
+                    "Placeholder" "1"
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "lifecycle"
+                    "Label" .Labels.Lifecycle
+                    "Value" .Lifecycle
+                    "Options" .LifecycleOptions
+                    "Info" .Labels.LifecycleInfo
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "source"
+                    "Label" .Labels.Source
+                    "Value" .Source
+                    "Options" .SourceOptions
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "version_status"
+                    "Label" .Labels.VersionStatus
+                    "Value" .VersionStatus
+                    "Options" .VersionStatusOptions
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "supersedes_disbursement_method_id"
+                    "Label" .Labels.Supersedes
+                    "Value" .Supersedes
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §A KIND-SPECIFIC SLOT — HTMX target ── */}}
+        <div class="form-section">
+            <h3 class="form-section-title">{{.Labels.SectionKind}}</h3>
+            <div id="kind-specific-slot" data-testid="td-method-drawer-slot">
+                {{template "disbursement-method-kind-fragment" .Fragment}}
+            </div>
+        </div>
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
+            {{.CommonLabels.Buttons.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary" data-testid="td-method-save-btn">
+            {{.CommonLabels.Buttons.Save}}
+        </button>
+    </div>
+</form>
+{{end}}

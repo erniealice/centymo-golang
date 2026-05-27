@@ -1,0 +1,151 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "collection-method-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "collection-method-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Title}}" data-testid="tc-method-detail">
+    <div class="detail-header-actions">
+        {{if .EditURL}}
+        <button type="button" class="btn btn-secondary"
+            aria-haspopup="dialog"
+            data-testid="tc-method-detail-edit-btn"
+            hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Form.EditTitle}}')">
+            {{.Labels.Form.EditTitle}}
+        </button>
+        {{end}}
+        {{/* TODO(stage6): Publish / Close / Archive / Revise header actions are
+             permission-gated and route through the approval-gate flow. Wired
+             when the espyna Publish/Close/Archive/Revise use cases land. */}}
+    </div>
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "tc-method-tabs")}}
+    </div>
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{template "collection-method-tab-content" .}}
+    </div>
+</div>
+{{end}}
+
+{{/* Tab content partial for HTMX tab switches */}}
+{{define "collection-method-tab-content"}}
+{{if eq .ActiveTab "info"}}
+{{template "collection-method-tab-info" .}}
+{{else if eq .ActiveTab "versions"}}
+{{template "collection-method-tab-versions" .}}
+{{else if eq .ActiveTab "activity"}}
+{{template "collection-method-tab-activity" .}}
+{{else}}
+{{template "collection-method-tab-stage-pending" .}}
+{{end}}
+{{end}}
+
+{{/* Info tab — Stage 1: template Overview (§B-5 tab 1) */}}
+{{define "collection-method-tab-info"}}
+<div class="tab-scroll" data-testid="tc-method-detail-tab-info">
+    <h3 class="detail-section-title">{{.Labels.Detail.OverviewSection}}</h3>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Name}}</span>
+            <span class="detail-info-value">{{index .Method "name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.TemplateCode}}</span>
+            <span class="detail-info-value mono">{{index .Method "template_code"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Category}}</span>
+            <span class="detail-info-value">{{index .Method "category"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Lifecycle}}</span>
+            <span class="detail-info-value">
+                {{template "status-badge" (dict "Status" (index .Method "lifecycle") "Variant" .StatusVariant)}}
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.PostingKind}}</span>
+            <span class="detail-info-value">{{index .Method "posting_kind"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.AudienceMode}}</span>
+            <span class="detail-info-value">{{index .Method "audience_mode"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.TaxEffectKind}}</span>
+            <span class="detail-info-value">{{index .Method "tax_effect_kind"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Source}}</span>
+            <span class="detail-info-value">{{index .Method "source"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Revision}}</span>
+            <span class="detail-info-value mono">{{index .Method "revision"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.VersionStatus}}</span>
+            <span class="detail-info-value">{{index .Method "version_status"}}</span>
+        </div>
+        {{if index .Method "balance_account"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.BalanceAccount}}</span>
+            <span class="detail-info-value mono">{{index .Method "balance_account"}}</span>
+        </div>
+        {{end}}
+        {{if index .Method "target_account"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.TargetAccount}}</span>
+            <span class="detail-info-value mono">{{index .Method "target_account"}}</span>
+        </div>
+        {{end}}
+        {{if index .Method "eligibility_rule"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.EligibilityRule}}</span>
+            <span class="detail-info-value mono">{{index .Method "eligibility_rule"}}</span>
+        </div>
+        {{end}}
+    </div>
+
+    {{if .KindRows}}
+    <h3 class="detail-section-title">{{.Labels.Detail.KindSummary}}</h3>
+    <div class="detail-info-grid">
+        {{range .KindRows}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Label}}</span>
+            <span class="detail-info-value">{{.Value}}</span>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Versions tab — Stage 1 (§B-5 tab 9). Version-chain rows land with the
+     espyna ListCollectionMethodVersions use case (Stage 1 follow-up). */}}
+{{define "collection-method-tab-versions"}}
+<div class="tab-scroll" data-testid="tc-method-detail-tab-versions">
+    <p class="text-muted">{{.Labels.Tabs.StagePending}}</p>
+</div>
+{{end}}
+
+{{/* Activity tab — Stage 1 (§B-5 tab 10). Audit projection lands with
+     GetCollectionMethodActivity (Stage 1 follow-up). */}}
+{{define "collection-method-tab-activity"}}
+<div class="tab-scroll" data-testid="tc-method-detail-tab-activity">
+    <p class="text-muted">{{.Labels.Tabs.StagePending}}</p>
+</div>
+{{end}}
+
+{{/* Stage-pending pane — shared by the tabs whose content lands in later
+     stages: Eligibility (Stage 2), Grants (Stage 3), Sub-status Tags (Stage 6),
+     Approval Rules (Stage 6), Instances (Stage 4), Collection Profiles (Stage 4),
+     Transition Requests (Stage 6). See pages.md §B-5 tab table. */}}
+{{define "collection-method-tab-stage-pending"}}
+<div class="tab-scroll" data-testid="tc-method-detail-tab-pending">
+    {{/* TODO(stage2/3/4/6): replace with the per-tab CRUD content per pages.md §B-5.1 */}}
+    <p class="text-muted">{{.Labels.Tabs.StagePending}}</p>
+</div>
+{{end}}

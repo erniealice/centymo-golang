@@ -1,0 +1,137 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "disbursement-method-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "disbursement-method-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Title}}" data-testid="td-method-detail">
+    <div class="detail-header-actions">
+        {{if .EditURL}}
+        <button type="button" class="btn btn-secondary"
+            aria-haspopup="dialog"
+            data-testid="td-method-detail-edit-btn"
+            hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Form.EditTitle}}')">
+            {{.Labels.Form.EditTitle}}
+        </button>
+        {{end}}
+        {{/* TODO(stage6): Publish / Close / Archive / Revise header actions —
+             wired when espyna DisbursementMethod lifecycle use cases land. */}}
+    </div>
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "td-method-tabs")}}
+    </div>
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{template "disbursement-method-tab-content" .}}
+    </div>
+</div>
+{{end}}
+
+{{/* Tab content partial for HTMX tab switches */}}
+{{define "disbursement-method-tab-content"}}
+{{if eq .ActiveTab "info"}}
+{{template "disbursement-method-tab-info" .}}
+{{else if eq .ActiveTab "versions"}}
+{{template "disbursement-method-tab-versions" .}}
+{{else if eq .ActiveTab "activity"}}
+{{template "disbursement-method-tab-activity" .}}
+{{else}}
+{{template "disbursement-method-tab-stage-pending" .}}
+{{end}}
+{{end}}
+
+{{/* Info tab — Stage 1: template Overview (§C-5 tab 1) */}}
+{{define "disbursement-method-tab-info"}}
+<div class="tab-scroll" data-testid="td-method-detail-tab-info">
+    <h3 class="detail-section-title">{{.Labels.Detail.OverviewSection}}</h3>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Name}}</span>
+            <span class="detail-info-value">{{index .Method "name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.TemplateCode}}</span>
+            <span class="detail-info-value mono">{{index .Method "template_code"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Category}}</span>
+            <span class="detail-info-value">{{index .Method "category"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Lifecycle}}</span>
+            <span class="detail-info-value">
+                {{template "status-badge" (dict "Status" (index .Method "lifecycle") "Variant" .StatusVariant)}}
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.PostingKind}}</span>
+            <span class="detail-info-value">{{index .Method "posting_kind"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.TaxEffectKind}}</span>
+            <span class="detail-info-value">{{index .Method "tax_effect_kind"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Source}}</span>
+            <span class="detail-info-value">{{index .Method "source"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Revision}}</span>
+            <span class="detail-info-value mono">{{index .Method "revision"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.VersionStatus}}</span>
+            <span class="detail-info-value">{{index .Method "version_status"}}</span>
+        </div>
+        {{if index .Method "balance_account"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.BalanceAccount}}</span>
+            <span class="detail-info-value mono">{{index .Method "balance_account"}}</span>
+        </div>
+        {{end}}
+        {{if index .Method "target_account"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.TargetAccount}}</span>
+            <span class="detail-info-value mono">{{index .Method "target_account"}}</span>
+        </div>
+        {{end}}
+    </div>
+
+    {{if .KindRows}}
+    <h3 class="detail-section-title">{{.Labels.Detail.KindSummary}}</h3>
+    <div class="detail-info-grid">
+        {{range .KindRows}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Label}}</span>
+            <span class="detail-info-value">{{.Value}}</span>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Versions tab — Stage 1 (§C-5 tab 6) */}}
+{{define "disbursement-method-tab-versions"}}
+<div class="tab-scroll" data-testid="td-method-detail-tab-versions">
+    <p class="text-muted">{{.Labels.Tabs.StagePending}}</p>
+</div>
+{{end}}
+
+{{/* Activity tab — Stage 1 (§C-5 tab 7) */}}
+{{define "disbursement-method-tab-activity"}}
+<div class="tab-scroll" data-testid="td-method-detail-tab-activity">
+    <p class="text-muted">{{.Labels.Tabs.StagePending}}</p>
+</div>
+{{end}}
+
+{{/* Stage-pending pane — Approval Rules (Stage 6), Instances (Stage 4),
+     Disbursement Profiles (Stage 4), Transition Requests (Stage 6).
+     See pages.md §C-5. */}}
+{{define "disbursement-method-tab-stage-pending"}}
+<div class="tab-scroll" data-testid="td-method-detail-tab-pending">
+    {{/* TODO(stage4/6): replace with per-tab content per pages.md §C-5 */}}
+    <p class="text-muted">{{.Labels.Tabs.StagePending}}</p>
+</div>
+{{end}}
