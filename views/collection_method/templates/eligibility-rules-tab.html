@@ -1,0 +1,283 @@
+{{/* Eligibility Rules tab content — pages.md §B-5 tab 2, entities.md §E-3.
+     Rendered when activeTab == "eligibility" either via full-page load or
+     the HTMX tab-swap action.
+     Template name must match the view.OK() call in eligibility_rules_tab.go. */}}
+
+{{define "collection-method-eligibility-rules-tab"}}
+<div class="tab-scroll" data-testid="tc-method-detail-tab-eligibility">
+    <div class="tab-header-actions">
+        {{if .AddURL}}
+        <button type="button" class="btn btn-primary btn-sm"
+            aria-haspopup="dialog"
+            data-testid="tc-eligibility-rule-add-btn"
+            hx-get="{{.AddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            onclick="lf.Sheet.open('{{.Labels.Form.AddTitle}}')">
+            + {{.Labels.Form.AddTitle}}
+        </button>
+        {{end}}
+    </div>
+
+    {{if .Rules}}
+    <div class="table-wrapper" id="{{`eligibility-rules-table`}}">
+        <table class="data-table" data-testid="tc-eligibility-rule-list-table">
+            <thead>
+                <tr>
+                    <th>{{.Labels.Columns.Name}}</th>
+                    <th>{{.Labels.Columns.BearerMode}}</th>
+                    <th>{{.Labels.Columns.ValidFrom}}</th>
+                    <th>{{.Labels.Columns.ValidUntil}}</th>
+                    <th>{{.Labels.Columns.StackingPolicy}}</th>
+                    <th>{{.Labels.Columns.JurisdictionCode}}</th>
+                    <th>{{.Labels.Columns.MaxPerInstance}}</th>
+                    <th>{{.Labels.Columns.MaxPerClient}}</th>
+                    <th class="actions-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Rules}}
+                <tr data-testid="tc-eligibility-rule-row" data-rule-id="{{.ID}}">
+                    <td class="font-medium">{{.Name}}</td>
+                    <td>{{.BearerMode}}</td>
+                    <td>{{.ValidFromDate}}</td>
+                    <td>{{.ValidUntilDate}}</td>
+                    <td>{{.StackingPolicy}}</td>
+                    <td class="mono">{{.JurisdictionCode}}</td>
+                    <td>{{.MaxPerInstance}}</td>
+                    <td>{{.MaxPerClient}}</td>
+                    <td class="row-actions">
+                        {{if .EditURL}}
+                        <button type="button" class="btn-icon"
+                            aria-label="Edit"
+                            data-testid="tc-eligibility-rule-edit-btn"
+                            hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+                            onclick="lf.Sheet.open('Edit Eligibility Rule')">
+                            {{template "icon-pencil" .}}
+                        </button>
+                        {{end}}
+                        {{if .DeleteURL}}
+                        <button type="button" class="btn-icon btn-danger"
+                            aria-label="Delete"
+                            data-testid="tc-eligibility-rule-delete-btn"
+                            hx-post="{{.DeleteURL}}"
+                            hx-vals='{"id": "{{.ID}}"}'
+                            hx-target="#eligibility-rules-table"
+                            hx-swap="outerHTML"
+                            hx-confirm="Are you sure you want to delete this eligibility rule?">
+                            {{template "icon-trash-2" .}}
+                        </button>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <div class="empty-state" id="eligibility-rules-table" data-testid="tc-eligibility-rule-empty">
+        <p class="empty-state-title">{{.Labels.Empty.Title}}</p>
+        <p class="empty-state-message">{{.Labels.Empty.Message}}</p>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* Eligibility Rule drawer-form — create + edit.
+     Rendered inside the sheet panel (#sheetContent) via hx-get. */}}
+{{define "collection-method-eligibility-rule-drawer-form"}}
+<form method="POST"
+    action="{{.FormAction}}"
+    hx-post="{{.FormAction}}"
+    hx-target="#eligibility-rules-table"
+    hx-swap="outerHTML"
+    data-testid="tc-eligibility-rule-drawer-form"
+    autocomplete="off">
+
+    {{if .IsEdit}}
+    <input type="hidden" name="id" value="{{.ID}}">
+    {{end}}
+    <input type="hidden" name="method_id" value="{{.MethodID}}">
+
+    {{/* ── Name ── */}}
+    <div class="form-group">
+        <label class="form-label" for="er-name">
+            {{.Labels.Form.Name}}
+            {{template "field-info" .Labels.Form.NameInfo}}
+        </label>
+        <input id="er-name" type="text" name="name"
+            class="form-control"
+            placeholder="{{.Labels.Form.NamePlaceholder}}"
+            value="{{.Name}}"
+            required
+            data-testid="tc-eligibility-rule-name-input">
+    </div>
+
+    {{/* ── Bearer Mode ── */}}
+    <div class="form-group">
+        <label class="form-label" for="er-bearer-mode">
+            {{.Labels.Form.BearerMode}}
+            {{template "field-info" .Labels.Form.BearerModeInfo}}
+        </label>
+        <select id="er-bearer-mode" name="bearer_mode" class="form-select"
+            data-testid="tc-eligibility-rule-bearer-mode-select">
+            <option value="">—</option>
+            {{range .BearerModeOptions}}
+            <option value="{{.Value}}" {{if eq $.BearerMode .Value}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+        </select>
+    </div>
+
+    {{/* ── Stacking Policy ── */}}
+    <div class="form-group">
+        <label class="form-label" for="er-stacking">
+            {{.Labels.Form.StackingPolicy}}
+            {{template "field-info" .Labels.Form.StackingPolicyInfo}}
+        </label>
+        <select id="er-stacking" name="stacking_policy" class="form-select"
+            data-testid="tc-eligibility-rule-stacking-select">
+            <option value="">—</option>
+            {{range .StackingOptions}}
+            <option value="{{.Value}}" {{if eq $.StackingPolicy .Value}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+        </select>
+    </div>
+
+    {{/* ── Temporal scope ── */}}
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label" for="er-valid-from">
+                {{.Labels.Form.ValidFromDate}}
+                {{template "field-info" .Labels.Form.ValidFromDateInfo}}
+            </label>
+            <input id="er-valid-from" type="date" name="valid_from_date"
+                class="form-control"
+                value="{{.ValidFromDate}}"
+                data-testid="tc-eligibility-rule-valid-from-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="er-valid-until">
+                {{.Labels.Form.ValidUntilDate}}
+                {{template "field-info" .Labels.Form.ValidUntilDateInfo}}
+            </label>
+            <input id="er-valid-until" type="date" name="valid_until_date"
+                class="form-control"
+                value="{{.ValidUntilDate}}"
+                data-testid="tc-eligibility-rule-valid-until-input">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="er-expiry-days">
+            {{.Labels.Form.ExpiryDaysAfterIssuance}}
+            {{template "field-info" .Labels.Form.ExpiryDaysInfo}}
+        </label>
+        <input id="er-expiry-days" type="number" name="expiry_days_after_issuance"
+            class="form-control"
+            min="1"
+            value="{{.ExpiryDaysAfterIssuance}}"
+            data-testid="tc-eligibility-rule-expiry-days-input">
+    </div>
+
+    {{/* ── Amount scope ── */}}
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label" for="er-min-amount">
+                {{.Labels.Form.MinAmountCentavos}}
+                {{template "field-info" .Labels.Form.MinAmountInfo}}
+            </label>
+            <input id="er-min-amount" type="number" name="min_amount_centavos"
+                class="form-control"
+                min="0" step="0.01"
+                value="{{.MinAmountCentavos}}"
+                data-testid="tc-eligibility-rule-min-amount-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="er-max-amount">
+                {{.Labels.Form.MaxAmountCentavos}}
+                {{template "field-info" .Labels.Form.MaxAmountInfo}}
+            </label>
+            <input id="er-max-amount" type="number" name="max_amount_centavos"
+                class="form-control"
+                min="0" step="0.01"
+                value="{{.MaxAmountCentavos}}"
+                data-testid="tc-eligibility-rule-max-amount-input">
+        </div>
+    </div>
+
+    {{/* ── Redemption limits ── */}}
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label" for="er-max-per-instance">
+                {{.Labels.Form.MaxRedemptionsPerInstance}}
+                {{template "field-info" .Labels.Form.MaxRedemptionsPerInstanceInfo}}
+            </label>
+            <input id="er-max-per-instance" type="number" name="max_redemptions_per_instance"
+                class="form-control"
+                min="1"
+                value="{{.MaxRedemptionsPerInstance}}"
+                data-testid="tc-eligibility-rule-max-per-instance-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="er-max-per-client">
+                {{.Labels.Form.MaxRedemptionsPerClient}}
+                {{template "field-info" .Labels.Form.MaxRedemptionsPerClientInfo}}
+            </label>
+            <input id="er-max-per-client" type="number" name="max_redemptions_per_client"
+                class="form-control"
+                min="1"
+                value="{{.MaxRedemptionsPerClient}}"
+                data-testid="tc-eligibility-rule-max-per-client-input">
+        </div>
+    </div>
+
+    {{/* ── Jurisdiction ── */}}
+    <div class="form-group">
+        <label class="form-label" for="er-jurisdiction">
+            {{.Labels.Form.JurisdictionCode}}
+            {{template "field-info" .Labels.Form.JurisdictionInfo}}
+        </label>
+        <input id="er-jurisdiction" type="text" name="jurisdiction_code"
+            class="form-control mono"
+            placeholder="e.g. PH, US-CA"
+            value="{{.JurisdictionCode}}"
+            maxlength="10"
+            data-testid="tc-eligibility-rule-jurisdiction-input">
+    </div>
+
+    {{/* ── Terms ── */}}
+    <div class="form-group">
+        <label class="form-label" for="er-terms-url">
+            {{.Labels.Form.TermsURL}}
+            {{template "field-info" .Labels.Form.TermsURLInfo}}
+        </label>
+        <input id="er-terms-url" type="url" name="terms_url"
+            class="form-control"
+            placeholder="https://"
+            value="{{.TermsURL}}"
+            data-testid="tc-eligibility-rule-terms-url-input">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="er-terms-summary">
+            {{.Labels.Form.TermsSummary}}
+            {{template "field-info" .Labels.Form.TermsSummaryInfo}}
+        </label>
+        <textarea id="er-terms-summary" name="terms_summary"
+            class="form-control"
+            rows="3"
+            data-testid="tc-eligibility-rule-terms-summary-textarea">{{.TermsSummary}}</textarea>
+    </div>
+
+    {{/* ── Footer ── */}}
+    <div class="drawer-footer">
+        <button type="button" class="btn btn-secondary"
+            data-testid="tc-eligibility-rule-cancel-btn"
+            onclick="lf.Sheet.close()">
+            {{.CommonLabels.Actions.Cancel}}
+        </button>
+        <button type="submit" class="btn btn-primary"
+            data-testid="tc-eligibility-rule-submit-btn">
+            {{if .IsEdit}}{{.CommonLabels.Actions.Save}}{{else}}{{.CommonLabels.Actions.Create}}{{end}}
+        </button>
+    </div>
+</form>
+{{end}}

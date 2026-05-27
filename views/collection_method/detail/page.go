@@ -26,6 +26,9 @@ type DetailViewDeps struct {
 	// ReadCollectionMethod is nil until the espyna use cases land. When nil,
 	// the detail view redirects to the list (graceful degradation).
 	ReadCollectionMethod func(ctx context.Context, req *cmpb.ReadCollectionMethodRequest) (*cmpb.ReadCollectionMethodResponse, error)
+
+	// Stage 2 — Eligibility Rules tab closures (nil-safe).
+	EligibilityRuleDeps *EligibilityRuleTabDeps
 }
 
 // PageData holds the template data for the collection method detail page.
@@ -45,6 +48,10 @@ type PageData struct {
 	CloseURL   string
 	ArchiveURL string
 	ReviseURL  string
+
+	// EligibilityTab carries the pre-loaded tab data when ActiveTab == "eligibility".
+	// Nil for all other tabs (the template dispatches via eq .ActiveTab).
+	EligibilityTab *EligibilityRuleTabData
 }
 
 // KindRow is a single label/value pair in the kind-specific Overview pane.
@@ -101,7 +108,7 @@ func NewView(deps *DetailViewDeps) view.View {
 			activeTab = tabInfo
 		}
 
-		pd := buildPageData(deps, m, activeTab, viewCtx)
+		pd := buildPageDataWithContext(ctx, deps, m, activeTab, viewCtx)
 		return view.OK("collection-method-detail", pd)
 	})
 }
@@ -115,7 +122,17 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		}
 		id := viewCtx.Request.PathValue("id")
 		tab := viewCtx.Request.PathValue("tab")
-		if id == "" || tab == "" || deps.ReadCollectionMethod == nil {
+		if id == "" || tab == "" {
+			return view.Error(fmt.Errorf("missing id or tab"))
+		}
+
+		// Stage 2: the Eligibility tab is self-contained; delegate to its own view
+		// so it can load rules independently without needing ReadCollectionMethod.
+		if tab == tabEligibility && deps.EligibilityRuleDeps != nil {
+			return NewEligibilityRuleTabView(deps.EligibilityRuleDeps).Handle(ctx, viewCtx)
+		}
+
+		if deps.ReadCollectionMethod == nil {
 			return view.Error(fmt.Errorf("missing id or tab"))
 		}
 		resp, err := deps.ReadCollectionMethod(ctx, &cmpb.ReadCollectionMethodRequest{
@@ -128,12 +145,12 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		if len(data) == 0 {
 			return view.Error(fmt.Errorf("collection method not found"))
 		}
-		pd := buildPageData(deps, data[0], tab, viewCtx)
+		pd := buildPageDataWithContext(ctx, deps, data[0], tab, viewCtx)
 		return view.OK("collection-method-tab-content", pd)
 	})
 }
 
-func buildPageData(deps *DetailViewDeps, m *cmpb.CollectionMethod, activeTab string, viewCtx *view.ViewContext) *PageData {
+func buildPageDataWithContext(ctx context.Context, deps *DetailViewDeps, m *cmpb.CollectionMethod, activeTab string, viewCtx *view.ViewContext) *PageData {
 	l := deps.Labels
 	id := m.GetId()
 
@@ -167,7 +184,7 @@ func buildPageData(deps *DetailViewDeps, m *cmpb.CollectionMethod, activeTab str
 		{Key: tabActivity, Label: l.Tabs.Activity},
 	}
 
-	return &PageData{
+	pd := &PageData{
 		PageData: types.PageData{
 			CacheVersion:   viewCtx.CacheVersion,
 			Title:          m.GetName(),
@@ -190,6 +207,26 @@ func buildPageData(deps *DetailViewDeps, m *cmpb.CollectionMethod, activeTab str
 		ArchiveURL:      resolveID(deps.Routes.ArchiveURL, id),
 		ReviseURL:       resolveID(deps.Routes.ReviseURL, id),
 	}
+
+	// Stage 2: populate EligibilityTab when the active tab is "eligibility".
+	// Rules are loaded inline here so the full-page (non-HTMX) detail load works.
+	if activeTab == tabEligibility && deps.EligibilityRuleDeps != nil {
+		addURL := route.ResolveURL(deps.Routes.EligibilityRuleAddURL, "method_id", id)
+		rules, err := loadEligibilityRules(ctx, deps.EligibilityRuleDeps, id)
+		if err != nil {
+			log.Printf("EligibilityTab loadRules method=%s: %v", id, err)
+		}
+		pd.EligibilityTab = &EligibilityRuleTabData{
+			Labels:       l.EligibilityRule,
+			CommonLabels: deps.CommonLabels,
+			TableLabels:  deps.TableLabels,
+			MethodID:     id,
+			Rules:        rules,
+			AddURL:       addURL,
+		}
+	}
+
+	return pd
 }
 
 // buildKindRows renders the kind-specific Overview from the template_details oneof.

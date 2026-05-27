@@ -42,6 +42,11 @@ type CollectionMethodRoutes struct {
 	CloseURL   string `json:"close_url"`
 	ArchiveURL string `json:"archive_url"`
 	ReviseURL  string `json:"revise_url"`
+
+	// Stage 2 — Eligibility Rules tab CRUD actions (pages.md §B-5 tab 2).
+	EligibilityRuleAddURL    string `json:"eligibility_rule_add_url"`
+	EligibilityRuleEditURL   string `json:"eligibility_rule_edit_url"`
+	EligibilityRuleDeleteURL string `json:"eligibility_rule_delete_url"`
 }
 
 // DefaultCollectionMethodRoutes returns the canonical `/treasury_collection/methods/*`
@@ -61,23 +66,30 @@ func DefaultCollectionMethodRoutes() CollectionMethodRoutes {
 		CloseURL:     "/action/collection-method/close/{id}",
 		ArchiveURL:   "/action/collection-method/archive/{id}",
 		ReviseURL:    "/action/collection-method/revise/{id}",
+		// Stage 2 — Eligibility Rules tab CRUD actions.
+		EligibilityRuleAddURL:    "/action/collection-method/{method_id}/eligibility-rule/add",
+		EligibilityRuleEditURL:   "/action/collection-method/{method_id}/eligibility-rule/edit/{rule_id}",
+		EligibilityRuleDeleteURL: "/action/collection-method/{method_id}/eligibility-rule/delete",
 	}
 }
 
 // RouteMap returns dot-notation keys → paths for route resolution.
 func (r CollectionMethodRoutes) RouteMap() map[string]string {
 	return map[string]string{
-		"collection_method.list":     r.ListURL,
-		"collection_method.detail":   r.DetailURL,
-		"collection_method.add":      r.AddURL,
-		"collection_method.edit":     r.EditURL,
-		"collection_method.delete":   r.DeleteURL,
-		"collection_method.fragment": r.FragmentURL,
-		"collection_method.tab":      r.TabActionURL,
-		"collection_method.publish":  r.PublishURL,
-		"collection_method.close":    r.CloseURL,
-		"collection_method.archive":  r.ArchiveURL,
-		"collection_method.revise":   r.ReviseURL,
+		"collection_method.list":                    r.ListURL,
+		"collection_method.detail":                  r.DetailURL,
+		"collection_method.add":                     r.AddURL,
+		"collection_method.edit":                    r.EditURL,
+		"collection_method.delete":                  r.DeleteURL,
+		"collection_method.fragment":                r.FragmentURL,
+		"collection_method.tab":                     r.TabActionURL,
+		"collection_method.publish":                 r.PublishURL,
+		"collection_method.close":                   r.CloseURL,
+		"collection_method.archive":                 r.ArchiveURL,
+		"collection_method.revise":                  r.ReviseURL,
+		"collection_method.eligibility_rule.add":    r.EligibilityRuleAddURL,
+		"collection_method.eligibility_rule.edit":   r.EligibilityRuleEditURL,
+		"collection_method.eligibility_rule.delete": r.EligibilityRuleDeleteURL,
 	}
 }
 

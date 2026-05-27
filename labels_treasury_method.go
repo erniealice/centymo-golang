@@ -15,13 +15,14 @@ package centymo
 
 // CollectionMethodLabels holds all translatable strings for the collection_method module.
 type CollectionMethodLabels struct {
-	Page     CollectionMethodPageLabels     `json:"page"`
-	Columns  CollectionMethodColumnLabels   `json:"columns"`
-	Tabs     CollectionMethodTabLabels      `json:"tabs"`
-	Detail   CollectionMethodDetailLabels   `json:"detail"`
-	Form     CollectionMethodFormLabels     `json:"form"`
-	Fragment CollectionMethodFragmentLabels `json:"fragment"`
-	Empty    CollectionMethodEmptyLabels    `json:"empty"`
+	Page            CollectionMethodPageLabels            `json:"page"`
+	Columns         CollectionMethodColumnLabels          `json:"columns"`
+	Tabs            CollectionMethodTabLabels             `json:"tabs"`
+	Detail          CollectionMethodDetailLabels          `json:"detail"`
+	Form            CollectionMethodFormLabels            `json:"form"`
+	Fragment        CollectionMethodFragmentLabels        `json:"fragment"`
+	Empty           CollectionMethodEmptyLabels           `json:"empty"`
+	EligibilityRule CollectionMethodEligibilityRuleLabels `json:"eligibilityRule"`
 }
 
 type CollectionMethodPageLabels struct {
@@ -255,6 +256,149 @@ func DefaultCollectionMethodLabels() CollectionMethodLabels {
 		Empty: CollectionMethodEmptyLabels{
 			Title:   "No collection methods yet",
 			Message: "Create a method template to start collecting from clients.",
+		},
+		EligibilityRule: DefaultCollectionMethodEligibilityRuleLabels(),
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CollectionMethodEligibilityRuleLabels (Stage 2 — Eligibility Rules tab)
+// ---------------------------------------------------------------------------
+
+// CollectionMethodEligibilityRuleLabels holds translatable strings for the
+// eligibility-rule CRUD sub-module (pages.md §B-5 tab #2 + drawer-form fields
+// per entities.md §E-3). JSON tags match collection_method_eligibility_rule.json.
+type CollectionMethodEligibilityRuleLabels struct {
+	Tab     CollectionMethodEligibilityRuleTabLabels    `json:"tab"`
+	Columns CollectionMethodEligibilityRuleColumnLabels `json:"columns"`
+	Form    CollectionMethodEligibilityRuleFormLabels   `json:"form"`
+	Empty   CollectionMethodEligibilityRuleEmptyLabels  `json:"empty"`
+	Delete  CollectionMethodEligibilityRuleDeleteLabels `json:"delete"`
+}
+
+type CollectionMethodEligibilityRuleTabLabels struct {
+	Title string `json:"title"`
+}
+
+type CollectionMethodEligibilityRuleColumnLabels struct {
+	Name             string `json:"name"`
+	BearerMode       string `json:"bearerMode"`
+	ValidFrom        string `json:"validFrom"`
+	ValidUntil       string `json:"validUntil"`
+	StackingPolicy   string `json:"stackingPolicy"`
+	JurisdictionCode string `json:"jurisdictionCode"`
+	MaxPerInstance   string `json:"maxPerInstance"`
+	MaxPerClient     string `json:"maxPerClient"`
+}
+
+type CollectionMethodEligibilityRuleFormLabels struct {
+	AddTitle  string `json:"addTitle"`
+	EditTitle string `json:"editTitle"`
+
+	Name                          string `json:"name"`
+	NamePlaceholder               string `json:"namePlaceholder"`
+	NameInfo                      string `json:"nameInfo"`
+	BearerMode                    string `json:"bearerMode"`
+	BearerModeInfo                string `json:"bearerModeInfo"`
+	BearerModeHolderBound         string `json:"bearerModeHolderBound"`
+	BearerModeTransferable        string `json:"bearerModeTransferable"`
+	ValidFromDate                 string `json:"validFromDate"`
+	ValidFromDateInfo             string `json:"validFromDateInfo"`
+	ValidUntilDate                string `json:"validUntilDate"`
+	ValidUntilDateInfo            string `json:"validUntilDateInfo"`
+	ExpiryDaysAfterIssuance       string `json:"expiryDaysAfterIssuance"`
+	ExpiryDaysInfo                string `json:"expiryDaysInfo"`
+	MinAmountCentavos             string `json:"minAmountCentavos"`
+	MinAmountInfo                 string `json:"minAmountInfo"`
+	MaxAmountCentavos             string `json:"maxAmountCentavos"`
+	MaxAmountInfo                 string `json:"maxAmountInfo"`
+	StackingPolicy                string `json:"stackingPolicy"`
+	StackingPolicyInfo            string `json:"stackingPolicyInfo"`
+	StackingExclusive             string `json:"stackingExclusive"`
+	StackingStackable             string `json:"stackingStackable"`
+	StackingFirstOnly             string `json:"stackingFirstOnly"`
+	JurisdictionCode              string `json:"jurisdictionCode"`
+	JurisdictionInfo              string `json:"jurisdictionInfo"`
+	MaxRedemptionsPerInstance     string `json:"maxRedemptionsPerInstance"`
+	MaxRedemptionsPerInstanceInfo string `json:"maxRedemptionsPerInstanceInfo"`
+	MaxRedemptionsPerClient       string `json:"maxRedemptionsPerClient"`
+	MaxRedemptionsPerClientInfo   string `json:"maxRedemptionsPerClientInfo"`
+	TermsURL                      string `json:"termsUrl"`
+	TermsURLInfo                  string `json:"termsUrlInfo"`
+	TermsSummary                  string `json:"termsSummary"`
+	TermsSummaryInfo              string `json:"termsSummaryInfo"`
+}
+
+type CollectionMethodEligibilityRuleEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type CollectionMethodEligibilityRuleDeleteLabels struct {
+	Confirm string `json:"confirm"`
+	Button  string `json:"button"`
+}
+
+// DefaultCollectionMethodEligibilityRuleLabels returns English fallback labels.
+func DefaultCollectionMethodEligibilityRuleLabels() CollectionMethodEligibilityRuleLabels {
+	return CollectionMethodEligibilityRuleLabels{
+		Tab: CollectionMethodEligibilityRuleTabLabels{
+			Title: "Eligibility Rules",
+		},
+		Columns: CollectionMethodEligibilityRuleColumnLabels{
+			Name:             "Name",
+			BearerMode:       "Bearer Mode",
+			ValidFrom:        "Valid From",
+			ValidUntil:       "Valid Until",
+			StackingPolicy:   "Stacking",
+			JurisdictionCode: "Jurisdiction",
+			MaxPerInstance:   "Max / Instance",
+			MaxPerClient:     "Max / Client",
+		},
+		Form: CollectionMethodEligibilityRuleFormLabels{
+			AddTitle:  "New Eligibility Rule",
+			EditTitle: "Edit Eligibility Rule",
+
+			Name:                          "Name",
+			NamePlaceholder:               "e.g. Gift Card Standard Terms",
+			NameInfo:                      "A short internal name for this rule. Operators see it; customers do not.",
+			BearerMode:                    "Bearer Mode",
+			BearerModeInfo:                "Whether the issued instrument is tied to one customer or can be transferred to another.",
+			BearerModeHolderBound:         "Holder bound (non-transferable)",
+			BearerModeTransferable:        "Holder transferable",
+			ValidFromDate:                 "Valid From",
+			ValidFromDateInfo:             "Optional. The earliest date an instrument under this rule can be used.",
+			ValidUntilDate:                "Valid Until",
+			ValidUntilDateInfo:            "Optional. The last date an instrument under this rule can be used. Leave blank for no hard cutoff.",
+			ExpiryDaysAfterIssuance:       "Expires After (days)",
+			ExpiryDaysInfo:                "Optional. Number of days after issuance before the instrument expires. Overrides Valid Until when both are set.",
+			MinAmountCentavos:             "Minimum Amount",
+			MinAmountInfo:                 "Optional. The smallest face value allowed when issuing under this rule.",
+			MaxAmountCentavos:             "Maximum Amount",
+			MaxAmountInfo:                 "Optional. The largest face value allowed when issuing under this rule.",
+			StackingPolicy:                "Stacking Policy",
+			StackingPolicyInfo:            "How this instrument interacts with other discounts or instruments at the point of redemption.",
+			StackingExclusive:             "Exclusive — cannot be combined with others",
+			StackingStackable:             "Stackable — can be combined freely",
+			StackingFirstOnly:             "First only — only applied if no other discount is active",
+			JurisdictionCode:              "Jurisdiction",
+			JurisdictionInfo:              "Optional ISO 3166-2 code (e.g. PH, US-CA) if this rule applies to a specific region.",
+			MaxRedemptionsPerInstance:     "Max Uses per Instrument",
+			MaxRedemptionsPerInstanceInfo: "Optional. How many times a single issued instrument can be redeemed. Leave blank for unlimited.",
+			MaxRedemptionsPerClient:       "Max Uses per Customer",
+			MaxRedemptionsPerClientInfo:   "Optional. How many times any one customer can use instruments under this rule. Leave blank for unlimited.",
+			TermsURL:                      "Terms URL",
+			TermsURLInfo:                  "Optional link to the full terms and conditions for this rule.",
+			TermsSummary:                  "Terms Summary",
+			TermsSummaryInfo:              "Optional plain-language summary of the key conditions.",
+		},
+		Empty: CollectionMethodEligibilityRuleEmptyLabels{
+			Title:   "No eligibility rules yet",
+			Message: "Create an eligibility rule to control how instruments issued under this method can be used.",
+		},
+		Delete: CollectionMethodEligibilityRuleDeleteLabels{
+			Confirm: "Are you sure you want to delete this eligibility rule? This cannot be undone.",
+			Button:  "Delete Rule",
 		},
 	}
 }

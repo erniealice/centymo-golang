@@ -33,6 +33,13 @@
 {{define "collection-method-tab-content"}}
 {{if eq .ActiveTab "info"}}
 {{template "collection-method-tab-info" .}}
+{{else if eq .ActiveTab "eligibility"}}
+{{/* Eligibility Rules tab — Stage 2. The HTMX tab-swap action fetches
+     /action/collection-method/detail/{id}/tab/eligibility which is handled
+     by NewEligibilityRuleTabView and renders "collection-method-eligibility-rules-tab"
+     directly into this region. On full-page loads the detail view delegates
+     to the eligibility tab handler and this template dispatches to it. */}}
+{{template "collection-method-eligibility-rules-tab" .EligibilityTab}}
 {{else if eq .ActiveTab "versions"}}
 {{template "collection-method-tab-versions" .}}
 {{else if eq .ActiveTab "activity"}}
