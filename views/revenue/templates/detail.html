@@ -52,7 +52,17 @@ lf.define('centymo.revenue.downloadInvoice', function(btn, url) {
         .catch(function(err) { console.error('Invoice download failed:', err); })
         .finally(function() { btn.classList.remove('btn-loading'); });
 });
+// Delegated trigger (CSP-prep: replaces inline onclick=). Binds once per session;
+// lf.on() survives HTMX swaps, so the guard prevents duplicate document listeners.
+if (!lf.centymo.revenue.__downloadDelegated && typeof lf.on === 'function') {
+    lf.centymo.revenue.__downloadDelegated = true;
+    lf.on('click', '[data-lf-download-invoice]', function () {
+        var url = this.getAttribute('data-lf-download-url');
+        if (url) { lf.centymo.revenue.downloadInvoice(this, url); }
+    });
+}
 </script>
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* Basic Information Tab */}}
@@ -61,7 +71,7 @@ lf.define('centymo.revenue.downloadInvoice', function(btn, url) {
     {{if .InvoiceDownloadURL}}
     <div class="transaction-info-toolbar">
         <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-info-download"
-            onclick="lf.centymo.revenue.downloadInvoice(this, '{{.InvoiceDownloadURL}}')">
+            data-lf-download-invoice data-lf-download-url="{{.InvoiceDownloadURL}}">
             {{template "icon-download" .}} {{.Labels.Actions.DownloadInvoice}}
         </button>
     </div>
@@ -130,13 +140,13 @@ lf.define('centymo.revenue.downloadInvoice', function(btn, url) {
         <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-line-discount-btn"
             aria-haspopup="dialog"
             hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.ui.Sheet.open('{{.Labels.Detail.AddDiscount}}')">
+            data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Detail.AddDiscount}}">
             {{.Labels.Detail.AddDiscount}}
         </button>
         <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="revenue-line-add-btn"
             aria-haspopup="dialog"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.ui.Sheet.open('{{.Labels.Detail.AddItem}}')">
+            data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Detail.AddItem}}">
             {{.Labels.Detail.AddItem}}
         </button>
     </div>
@@ -173,7 +183,7 @@ lf.define('centymo.revenue.downloadInvoice', function(btn, url) {
         <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="revenue-record-payment-btn"
             aria-haspopup="dialog"
             hx-get="{{.PaymentAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.ui.Sheet.open('{{.Labels.Detail.RecordPayment}}')">
+            data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Detail.RecordPayment}}">
             {{.Labels.Detail.RecordPayment}}
         </button>
     </div>

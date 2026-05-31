@@ -257,7 +257,7 @@ Data: .Code, .ClientID, .PricePlanID,
     {{/* 2026-05-03 — Hide the Update/Save button when locked; show only Close. */}}
     {{if .InUse}}
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">{{.CommonLabels.Buttons.Close}}</button>
+        <button type="button" class="btn btn-secondary" data-lf-sheet="close">{{.CommonLabels.Buttons.Close}}</button>
     </div>
     {{else}}
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
@@ -426,4 +426,5 @@ Data: .Code, .ClientID, .PricePlanID,
     if (tzLabel) { tzLabel.textContent = '{{.Labels.Timezone}}: ' + defaultTZ; }
 }());
 </script>
+{{template "centymo-lf-delegation" .}}
 {{end}}

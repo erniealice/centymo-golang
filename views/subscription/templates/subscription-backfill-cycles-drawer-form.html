@@ -62,7 +62,7 @@ Data: BackfillDrawerData
         <button type="button"
                 class="btn btn--ghost"
                 data-action="cancel"
-                onclick="lf.ui.Sheet.close()">
+                data-lf-sheet="close">
             {{.Labels.Cancel}}
         </button>
         <button type="submit"
@@ -72,4 +72,5 @@ Data: BackfillDrawerData
         </button>
     </div>
 </form>
+{{template "centymo-lf-delegation" .}}
 {{end}}

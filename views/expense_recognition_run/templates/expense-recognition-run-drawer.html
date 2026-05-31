@@ -161,7 +161,7 @@
         </div>
 
         <footer class="sheet-footer">
-            <button type="button" class="btn btn-ghost" onclick="lf.ui.Sheet.close()">
+            <button type="button" class="btn btn-ghost" data-lf-sheet="close">
                 {{.Labels.Drawer.Supplier.CancelButton}}
             </button>
             {{if or .SubscriptionCandidates .AdvanceCandidates}}
@@ -172,4 +172,5 @@
         </footer>
     </form>
 </div>
+{{template "centymo-lf-delegation" .}}
 {{end}}

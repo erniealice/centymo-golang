@@ -267,7 +267,7 @@ Used by both Add and Edit actions.
     </div>{{/* /sheet-body */}}
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">
+        <button type="button" class="btn btn-secondary" data-lf-sheet="close">
             {{.CommonLabels.Buttons.Cancel}}
         </button>
         <button type="submit" class="btn btn-primary" data-testid="supplier-contract-save-btn">
@@ -275,4 +275,5 @@ Used by both Add and Edit actions.
         </button>
     </div>
 </form>
+{{template "centymo-lf-delegation" .}}
 {{end}}

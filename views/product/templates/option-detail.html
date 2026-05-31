@@ -25,6 +25,7 @@
 {{else}}
     {{template "option-tab-info" .}}
 {{end}}
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* HTMX tab-action response — swaps tab body and OOB-swaps the tab bar */}}
@@ -69,7 +70,7 @@
            hx-get="{{.EditOptionURL}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
-           onclick="if(window.lf && lf.ui.Sheet) lf.ui.Sheet.open('{{.Labels.Options.Actions.EditProductOption}}')">
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Options.Actions.EditProductOption}}">
             {{.Labels.Options.Actions.EditProductOption}}
         </a>
     </div>

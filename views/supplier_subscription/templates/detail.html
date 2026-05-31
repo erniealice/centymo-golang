@@ -48,6 +48,7 @@
         {{end}}
     </div>
 </div>
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{define "supplier-subscription-detail-tab-info"}}
@@ -108,7 +109,7 @@
         <tbody>
             {{range .Recognitions}}
             <tr data-testid="expense-recognition-row-{{.ID}}"
-                {{if .DetailURL}}class="row--clickable" onclick="location.href='{{.DetailURL}}'"{{end}}>
+                {{if .DetailURL}}class="row--clickable" data-lf-nav-href="{{.DetailURL}}"{{end}}>
                 <td>{{.Name}}</td>
                 <td><span class="badge badge--{{.StatusVariant}}">{{.Status}}</span></td>
                 <td>{{.RecognitionDate}}</td>

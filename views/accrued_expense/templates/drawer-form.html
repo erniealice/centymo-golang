@@ -215,8 +215,9 @@ are written ONLY through the SettleAccrual / ReverseAccrual use cases
     </div>
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-lf-sheet="close">Cancel</button>
         <button type="submit" class="btn btn-primary">{{if .IsEdit}}Save{{else}}{{.Labels.Edit}}{{end}}</button>
     </div>
 </form>
+{{template "centymo-lf-delegation" .}}
 {{end}}

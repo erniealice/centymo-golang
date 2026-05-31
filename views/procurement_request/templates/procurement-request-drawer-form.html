@@ -162,7 +162,7 @@ Adapted 5-section layout for procurement requests:
     </div>{{/* /sheet-body */}}
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">
+        <button type="button" class="btn btn-secondary" data-lf-sheet="close">
             {{.CommonLabels.Buttons.Cancel}}
         </button>
         <button type="submit" class="btn btn-primary" data-testid="procurement-request-save-btn">
@@ -170,4 +170,5 @@ Adapted 5-section layout for procurement requests:
         </button>
     </div>
 </form>
+{{template "centymo-lf-delegation" .}}
 {{end}}

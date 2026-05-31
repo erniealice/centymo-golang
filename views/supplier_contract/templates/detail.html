@@ -36,7 +36,7 @@
             aria-haspopup="dialog"
             data-testid="supplier-contract-edit-btn"
             hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.ui.Sheet.open('{{.Labels.Form.EditTitle}}')">
+            data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Form.EditTitle}}">
             {{.Labels.Form.Edit}}
         </button>
         {{end}}
@@ -62,6 +62,7 @@
         {{end}}
     </div>
 </div>
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* Tab content partial for HTMX tab switches */}}
@@ -155,7 +156,7 @@
             aria-haspopup="dialog"
             data-testid="supplier-contract-add-line-btn"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.ui.Sheet.open('{{.Labels.Lines.AddLine}}')">
+            data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Lines.AddLine}}">
             {{.Labels.Lines.AddLine}}
         </button>
     </div>
@@ -203,7 +204,7 @@
             aria-haspopup="dialog"
             data-testid="contract-add-price-schedule-btn"
             hx-get="{{.PriceScheduleAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.ui.Sheet.open('{{.Labels.Tabs.PriceSchedules}}')">
+            data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Tabs.PriceSchedules}}">
             {{.Labels.Tabs.PriceSchedules}}
         </button>
     </div>

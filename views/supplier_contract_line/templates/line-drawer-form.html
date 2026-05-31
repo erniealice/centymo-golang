@@ -125,7 +125,7 @@ unit_price, treatment select, expense_account_id, start_date, end_date.
     </div>{{/* /sheet-body */}}
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">
+        <button type="button" class="btn btn-secondary" data-lf-sheet="close">
             {{.CommonLabels.Buttons.Cancel}}
         </button>
         <button type="submit" class="btn btn-primary" data-testid="contract-line-save-btn">
@@ -133,4 +133,5 @@ unit_price, treatment select, expense_account_id, start_date, end_date.
         </button>
     </div>
 </form>
+{{template "centymo-lf-delegation" .}}
 {{end}}

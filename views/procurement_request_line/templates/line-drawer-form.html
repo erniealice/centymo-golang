@@ -182,7 +182,7 @@ SPS Wave 3 additions:
     </div>{{/* /sheet-body */}}
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">
+        <button type="button" class="btn btn-secondary" data-lf-sheet="close">
             {{.CommonLabels.Buttons.Cancel}}
         </button>
         <button type="submit" class="btn btn-primary" data-testid="pr-line-save-btn">
@@ -190,6 +190,7 @@ SPS Wave 3 additions:
         </button>
     </div>
 </form>
+{{template "centymo-lf-delegation" .}}
 
 {{/* SPS Wave 3 — client-side toggle for F1 RECURRING / PETTY conditional fields.
      Native form-radio inputs fire change events; we simply show/hide the two

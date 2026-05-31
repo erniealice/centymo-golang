@@ -168,7 +168,7 @@ Used by both Add and Edit actions. Five sections per drawer parity convention:
     </div>{{/* /sheet-body */}}
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">
+        <button type="button" class="btn btn-secondary" data-lf-sheet="close">
             {{.CommonLabels.Buttons.Cancel}}
         </button>
         <button type="submit" class="btn btn-primary" data-testid="schedule-save-btn">
@@ -176,4 +176,5 @@ Used by both Add and Edit actions. Five sections per drawer parity convention:
         </button>
     </div>
 </form>
+{{template "centymo-lf-delegation" .}}
 {{end}}

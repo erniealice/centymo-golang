@@ -73,7 +73,7 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
                        href="{{.ViewValuesURL}}"
                        target="_blank"
                        rel="noopener"
-                       onclick="event.stopPropagation();">{{$.Labels.ViewValues}} →</a>
+                       data-lf-stop-propagation>{{$.Labels.ViewValues}} →</a>
                     {{end}}
                 {{end}}
             </div>
@@ -91,4 +91,5 @@ Data: .SKU, .PriceOverride, .Active, .ID, .ProductID, .FormAction, .IsEdit, .Com
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
+{{template "centymo-lf-delegation" .}}
 {{end}}

@@ -13,7 +13,7 @@
             aria-haspopup="dialog"
             data-testid="confirm-receipt-btn"
             hx-get="{{.ConfirmReceiptURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.ui.Sheet.open('{{.Labels.PurchaseOrder.Receipt.Title}}')">
+            data-lf-sheet="open" data-lf-sheet-title="{{.Labels.PurchaseOrder.Receipt.Title}}">
             {{.Labels.PurchaseOrder.Actions.ConfirmReceipt}}
         </button>
     </div>
@@ -31,6 +31,7 @@
         {{end}}
     </div>
 </div>
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* Info tab */}}
@@ -87,7 +88,7 @@
             aria-haspopup="dialog"
             data-testid="po-add-line-item-btn"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.ui.Sheet.open('{{.Labels.PurchaseOrder.LineItems.AddLineItem}}')">
+            data-lf-sheet="open" data-lf-sheet-title="{{.Labels.PurchaseOrder.LineItems.AddLineItem}}">
             {{.Labels.PurchaseOrder.LineItems.AddLineItem}}
         </button>
     </div>

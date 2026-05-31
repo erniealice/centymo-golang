@@ -28,6 +28,7 @@
         {{end}}
     </div>
 </div>
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* =============================================
@@ -70,7 +71,7 @@
            hx-target="#sheetContent"
            hx-swap="innerHTML"
            hx-push-url="false"
-           onclick="lf.ui.Sheet.open('{{.Labels.Variant.Edit}}')">
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Variant.Edit}}">
             {{.Labels.Variant.Edit}}
         </button>
     </div>

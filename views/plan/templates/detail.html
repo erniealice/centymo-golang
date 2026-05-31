@@ -26,6 +26,7 @@
         {{end}}
     </div>
 </div>
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* =============================================
@@ -97,7 +98,7 @@
            hx-get="{{routeWith "plan.edit" "id" .ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
-           onclick="if(window.lf && lf.ui.Sheet) lf.ui.Sheet.open('{{.Labels.Actions.Edit}}')">
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Actions.Edit}}">
             {{.Labels.Actions.Edit}}
         </a>
     </div>

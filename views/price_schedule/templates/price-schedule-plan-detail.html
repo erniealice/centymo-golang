@@ -22,6 +22,7 @@
         {{end}}
     </div>
 </div>
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* TAB: Info */}}
@@ -66,7 +67,7 @@
            hx-get="{{.EditURL}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
-           onclick="if(window.lf && lf.ui.Sheet) lf.ui.Sheet.open('{{.Labels.Detail.EditTitle}}')">
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Detail.EditTitle}}">
             {{.Labels.Detail.Edit}}
         </a>
     </div>

@@ -35,6 +35,7 @@
 {{else if eq .ActiveTab "audit-history"}}
     {{template "audit-history-tab" .}}
 {{end}}
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* HTMX tab-action response — swaps the clicked tab's body into #tabContent
@@ -96,7 +97,7 @@
            hx-get="{{routeWith "product.edit" "id" .ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
-           onclick="if(window.lf && lf.ui.Sheet) lf.ui.Sheet.open('{{.Labels.Actions.Edit}}')">
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Actions.Edit}}">
             {{.Labels.Actions.Edit}}
         </a>
     </div>

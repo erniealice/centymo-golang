@@ -53,7 +53,7 @@ Data: SubscriptionID, SubscriptionLabel, FormAction,
         <button type="button"
                 class="btn btn--ghost"
                 data-action="cancel"
-                onclick="lf.ui.Sheet.close()">
+                data-lf-sheet="close">
             {{.Labels.Cancel}}
         </button>
         <button type="submit"
@@ -64,6 +64,7 @@ Data: SubscriptionID, SubscriptionLabel, FormAction,
         </button>
     </div>
 </form>
+{{template "centymo-lf-delegation" .}}
 {{end}}
 
 {{/* Standalone partial used by /action/subscription/_partial/spawn-jobs-section.
