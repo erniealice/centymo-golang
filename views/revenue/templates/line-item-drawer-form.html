@@ -108,7 +108,7 @@ Data: .Description, .Quantity, .UnitPrice, .CostPrice, .Discount, .Notes, .Inven
 </form>
 
 {{if .SearchProductURL}}
-<script>
+<script nonce="{{$.Nonce}}">
 (function() {
     var productAC = document.getElementById('product-search');
     if (!productAC) return;

@@ -439,7 +439,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
 
-<script>
+<script nonce="{{$.Nonce}}">
 (function() {
     var kindSel = document.querySelector('select[name="billing_kind"]');
     var basisSel = document.querySelector('select[name="amount_basis"]');

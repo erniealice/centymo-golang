@@ -99,7 +99,7 @@ Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
 
-<script>
+<script nonce="{{$.Nonce}}">
 (function() {
     // When the product select changes, re-fetch the picker partial with the
     // new product_id so the variant sub-picker can appear or disappear based

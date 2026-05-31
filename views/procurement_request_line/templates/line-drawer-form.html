@@ -195,7 +195,7 @@ SPS Wave 3 additions:
 {{/* SPS Wave 3 — client-side toggle for F1 RECURRING / PETTY conditional fields.
      Native form-radio inputs fire change events; we simply show/hide the two
      conditional sections. No HTMX round-trip — purely visual reveal. */}}
-<script>
+<script nonce="{{$.Nonce}}">
 (function () {
     var form = document.querySelector('[data-prl-form]');
     if (!form) return;

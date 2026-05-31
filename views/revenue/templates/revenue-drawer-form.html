@@ -115,7 +115,7 @@ Used by both Add and Edit actions.
                 "Info" .Labels.SubscriptionInfo
             )}}
         </div>
-        <script>
+        <script nonce="{{$.Nonce}}">
         (function() {
             var subContainer = document.getElementById('subscription-search');
             if (!subContainer) return;
@@ -180,7 +180,7 @@ Used by both Add and Edit actions.
             )}}
         </div>
 
-        <script>
+        <script nonce="{{$.Nonce}}">
         (function() {
             var radios = document.querySelectorAll('[name="revenue_type"]');
             var locationRow = document.getElementById('location-row');
@@ -249,7 +249,7 @@ Used by both Add and Edit actions.
                 </div>
             </div>
         </div>
-        <script>
+        <script nonce="{{$.Nonce}}">
         (function() {
             var termSel = document.getElementById('revenue-payment-term');
             var dateSel = document.querySelector('[name="revenue_date_string"]');

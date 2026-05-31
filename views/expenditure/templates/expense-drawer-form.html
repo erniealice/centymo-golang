@@ -154,7 +154,7 @@ Data: .Name, .ExpenditureType, .ExpenditureCategoryID, .SupplierID, .Suppliers,
                 <div id="expense-due-date-preview" class="form-hint"></div>
             </div>
         </div>
-        <script>
+        <script nonce="{{$.Nonce}}">
         (function() {
             var termSel = document.getElementById('expense-payment-term');
             var dateSel = document.querySelector('[name="expenditure_date_string"]');

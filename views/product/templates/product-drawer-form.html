@@ -259,7 +259,7 @@ Data: .Name, .Description, .Price, .Currency, .Active, .Unit, .VariantMode,
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
 
-<script>
+<script nonce="{{$.Nonce}}">
 (function() {
     var toggle = document.getElementById('variant_mode_toggle');
     var priceRow = document.getElementById('product-price-row');

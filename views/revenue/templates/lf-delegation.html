@@ -21,79 +21,21 @@ Hooks (each replaces a former onclick=):
 
 Include with {{template "centymo-lf-delegation" .}} at the tail of any converted
 template. Safe to include more than once on a page (idempotent).
+
+STAGE-2 NONCE WAVE: the handler body moved to an external file
+(assets/js/centymo-lf-delegation.js, copied to /assets/js/centymo/ at startup by
+centymo.CopyStaticAssets). This partial is a tail include used by ~34 templates
+whose template dot varies — detail pages embedding types.PageData (which has a
+Nonce field) vs. flat form.Data drawer structs. A single inline
+<script nonce="{{.Nonce}}"> could not resolve uniformly across those dots (the
+field is absent on many includers and would panic the render), so the inline body
+was externalized. Under strict script-src 'self' an external <script src> needs no
+nonce and is allowed for every includer regardless of its dot. The script is
+re-inserted (and re-executes) on each HTMX partial swap, but the in-file
+lf.centymo.__delegationInstalled flag makes re-execution a no-op. No CacheVersion
+query param: that field is also absent on many includer dots — the file is
+functionally idempotent and rarely changes, so a stable URL is acceptable.
 */}}
 {{define "centymo-lf-delegation"}}
-<script>
-(function () {
-    window.lf = window.lf || {};
-    if (typeof lf.ns !== 'function' || typeof lf.on !== 'function') { return; }
-    lf.ns('centymo');
-    // Idempotent: bind the document-level delegated handlers exactly once.
-    if (lf.centymo.__delegationInstalled) { return; }
-    lf.centymo.__delegationInstalled = true;
-
-    // --- Sheet open / close ------------------------------------------------
-    // NOTE: do NOT preventDefault — the original onclick= did not, and these
-    // elements also carry hx-get/hx-post that must fire natively. Sheet.open()
-    // only sets the drawer title; HTMX performs the content fetch/swap.
-    lf.on('click', '[data-lf-sheet="open"]', function () {
-        if (!lf.ui || !lf.ui.Sheet) { return; }
-        var title = this.getAttribute('data-lf-sheet-title');
-        // Title present -> open by title string; absent -> open by trigger element
-        // (preserves the former lf.ui.Sheet.open(this) call shape).
-        lf.ui.Sheet.open(title !== null ? title : this);
-    });
-    lf.on('click', '[data-lf-sheet="close"]', function () {
-        if (lf.ui && lf.ui.Sheet) { lf.ui.Sheet.close(); }
-    });
-
-    // --- Row navigation (former onclick="location.href='...'") -------------
-    lf.on('click', '[data-lf-nav-href]', function () {
-        var href = this.getAttribute('data-lf-nav-href');
-        if (href) { window.location.href = href; }
-    });
-
-    // --- Stop propagation (former onclick="event.stopPropagation();") ------
-    // Registered in the CAPTURE phase (4th arg true): the document handler then
-    // runs BEFORE any ancestor's bubble-phase handler, so stopPropagation() still
-    // prevents the click from reaching ancestor listeners — matching the original
-    // inline-onclick semantics. The target element (the link) still acts (default
-    // navigation is unaffected by stopPropagation).
-    lf.on('click', '[data-lf-stop-propagation]', function (e) {
-        e.stopPropagation();
-    }, true);
-
-    // --- Inventory movements: clear filters --------------------------------
-    lf.on('click', '[data-lf-mv-clear]', function () {
-        ['filter-date-from', 'filter-date-to', 'filter-location', 'filter-type', 'filter-search']
-            .forEach(function (id) {
-                var el = document.getElementById(id);
-                if (el) { el.value = ''; }
-            });
-        var apply = document.getElementById('apply-filters-btn');
-        if (apply && window.htmx) { window.htmx.trigger(apply, 'click'); }
-    });
-
-    // --- Inventory movements: export CSV with current filters --------------
-    lf.on('click', '[data-lf-mv-export]', function () {
-        var base = this.getAttribute('data-lf-export-url');
-        if (!base) { return; }
-        var params = new URLSearchParams();
-        var map = {
-            date_from: 'filter-date-from',
-            date_to: 'filter-date-to',
-            location: 'filter-location',
-            type: 'filter-type',
-            search: 'filter-search'
-        };
-        Object.keys(map).forEach(function (param) {
-            var el = document.getElementById(map[param]);
-            var v = el ? el.value : '';
-            if (v) { params.set(param, v); }
-        });
-        var qs = params.toString();
-        window.location.href = base + (qs ? '?' + qs : '');
-    });
-})();
-</script>
+<script src="/assets/js/centymo/centymo-lf-delegation.js"></script>
 {{end}}

@@ -11,7 +11,7 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
         <div class="form-row single">
             <div class="form-group">
                 <label class="form-label" for="product_id">{{.Labels.Form.Product}} <span class="form-required">*</span></label>
-                <select class="form-select" name="product_id" id="product_id" required onchange="lf.centymo.pricelist.PriceProductForm.onProductChange(this)">
+                <select class="form-select" name="product_id" id="product_id" required data-lf-pricelist-product>
                     <option value="">{{.Labels.Form.SelectProduct}}</option>
                     {{range .Products}}
                     <option value="{{.ID}}">{{.Name}}</option>
@@ -46,7 +46,7 @@ Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
 </form>
-<script>
+<script nonce="{{$.Nonce}}">
 window.lf = window.lf || {};
 lf.ns('centymo.pricelist');
 lf.define('centymo.pricelist.PriceProductForm', {
@@ -58,4 +58,9 @@ lf.define('centymo.pricelist.PriceProductForm', {
     }
 });
 </script>
+{{/* Loads centymo-lf-delegation.js, which registers the delegated change
+     handler on [data-lf-pricelist-product] (replacing the former inline
+     onchange=). Idempotent — installs the document-level handler once per
+     session. */}}
+{{template "centymo-lf-delegation" .}}
 {{end}}

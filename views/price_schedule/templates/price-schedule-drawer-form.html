@@ -163,7 +163,7 @@
      auto-complete component init + the Client picker's HTMX suggest-name
      wiring below) keep firing. The radio's change handler simply flips
      display:none on the matching wrap. */}}
-<script>
+<script nonce="{{$.Nonce}}">
 (function () {
     var form = document.currentScript.previousElementSibling;
     while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
@@ -196,7 +196,7 @@
      additionally guard the fetch behind the radio's current value so a
      stale value in the hidden input doesn't trigger a swap when scope is
      "location". */}}
-<script>
+<script nonce="{{$.Nonce}}">
 (function () {
     var form = document.currentScript.previousElementSibling;
     while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }

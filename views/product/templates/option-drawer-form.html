@@ -150,7 +150,7 @@ Data: .Name, .Code, .DataType, .SortOrder, .MinValue, .MaxValue, .Active, .ID, .
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
 </form>
 
-<script>
+<script nonce="{{$.Nonce}}">
 (function() {
     // Data types that carry a numeric bounds pair (min/max).
     // Only free_number — number_list stores discrete values in

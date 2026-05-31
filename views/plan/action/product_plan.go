@@ -52,6 +52,7 @@ type KindOption struct {
 type ProductPlanFormData struct {
 	FormAction           string
 	WorkspaceID           string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	Nonce                string // CSP nonce; populated by ViewAdapter.injectPageData (NonceFromContext) for inline <script nonce>
 	PickerURL            string
 	VariantPickerURL     string
 	IsEdit               bool
