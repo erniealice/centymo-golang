@@ -17,7 +17,7 @@ import (
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	consumer "github.com/erniealice/espyna-golang/consumer"
+	appcontext "github.com/erniealice/espyna-golang/appcontext"
 
 	centymo "github.com/erniealice/centymo-golang"
 	revenuerunform "github.com/erniealice/centymo-golang/views/subscription/revenue_run/form"
@@ -172,7 +172,7 @@ func renderDrawer(
 	}
 
 	scope := RevenueRunScope{
-		WorkspaceID:    consumer.GetWorkspaceIDFromContext(ctx),
+		WorkspaceID:    appcontext.GetWorkspaceIDFromContext(ctx),
 		SubscriptionID: subscriptionID,
 		AsOfDate:       asOfDate,
 	}
@@ -254,7 +254,7 @@ func submitDrawer(
 	}
 
 	scope := RevenueRunScope{
-		WorkspaceID:    consumer.GetWorkspaceIDFromContext(ctx),
+		WorkspaceID:    appcontext.GetWorkspaceIDFromContext(ctx),
 		SubscriptionID: subscriptionID,
 		AsOfDate:       asOfDate,
 	}
