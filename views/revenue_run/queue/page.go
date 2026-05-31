@@ -368,7 +368,7 @@ func buildTableRows(
 				HxGet:           r.DrawerURL,
 				HxTarget:        "#sheetContent",
 				HxSwap:          "innerHTML",
-				OnClick:         "lf.Sheet.open()",
+				OnClick:         "lf.ui.Sheet.open()",
 				Disabled:        !perms.Can("revenue", "create"),
 				DisabledTooltip: l.Errors.PermissionDenied,
 			})

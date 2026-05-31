@@ -98,7 +98,7 @@
     <div class="subscription-operations-cyclic__actions">
         {{if .SpawnCycleJobsURL}}
         <form hx-post="{{.SpawnCycleJobsURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .SpawnCycleJobsURL .WorkspaceID}}
           <button type="submit"
@@ -218,7 +218,7 @@
     <div class="subscription-operations-ad-hoc__actions">
         {{if .RequestUsageURL}}
         <form hx-post="{{.RequestUsageURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .RequestUsageURL .WorkspaceID}}
           <button type="submit"
@@ -230,7 +230,7 @@
         {{end}}
         {{if and .PoolRecognizeURL (eq .AdHocBasis "AMOUNT_BASIS_TOTAL_PACKAGE")}}
         <form hx-post="{{.PoolRecognizeURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .PoolRecognizeURL .WorkspaceID}}
           <button type="submit"
@@ -356,7 +356,7 @@
     {{if .PackageCustomizeShown}}
     <div class="detail-actions" style="margin-top: 1rem;">
         <form hx-post="{{.PackageCustomizeURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .PackageCustomizeURL .WorkspaceID}}
           <button type="submit"

@@ -3,7 +3,7 @@ Revenue drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
 */}}
 {{define "revenue-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="status" value="{{if .Status}}{{.Status}}{{else}}draft{{end}}">
@@ -366,7 +366,7 @@ Used by both Add and Edit actions.
             {{if and .CanRecompute .RecomputeURL}}
             <button type="button" class="btn btn-secondary" data-testid="revenue-recompute-taxes"
                     hx-post="{{.RecomputeURL}}" hx-swap="none"
-                    hx-on::after-request="lf.Sheet.handleResponse(event)">
+                    hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
                 {{.Labels.Recompute}}
             </button>
             {{end}}

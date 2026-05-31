@@ -12,13 +12,13 @@
             aria-haspopup="dialog"
             data-testid="accrued-expense-settle-btn"
             hx-get="{{.SettleURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Actions.Settle}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Actions.Settle}}')">
             {{.Labels.Buttons.Settle}}
         </button>
         {{end}}
         {{if .ReverseURL}}
         <form hx-post="{{.ReverseURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .ReverseURL .WorkspaceID}}
           <button type="submit" class="btn btn-danger"
@@ -33,7 +33,7 @@
             aria-haspopup="dialog"
             data-testid="accrued-expense-edit-btn"
             hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Form.EditTitle}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Form.EditTitle}}')">
             {{.Labels.Form.Edit}}
         </button>
         {{end}}
@@ -143,7 +143,7 @@
             aria-haspopup="dialog"
             data-testid="accrued-expense-add-settlement-btn"
             hx-get="{{.SettlementAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Settlements.AddSettlement}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Settlements.AddSettlement}}')">
             {{.Labels.Settlements.AddSettlement}}
         </button>
     </div>

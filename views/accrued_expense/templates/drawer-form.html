@@ -7,7 +7,7 @@ are written ONLY through the SettleAccrual / ReverseAccrual use cases
 (single-write boundary, plan §6.4a HIGH-3).
 */}}
 {{define "accrued-expense-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
@@ -215,7 +215,7 @@ are written ONLY through the SettleAccrual / ReverseAccrual use cases
     </div>
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">Cancel</button>
         <button type="submit" class="btn btn-primary">{{if .IsEdit}}Save{{else}}{{.Labels.Edit}}{{end}}</button>
     </div>
 </form>

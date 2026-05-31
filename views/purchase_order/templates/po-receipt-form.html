@@ -69,7 +69,7 @@ Data: .FormAction, .PurchaseOrderID, .Lines ([]ReceiptLineRow), .Today, .Locatio
 
     <div class="drawer-form-actions">
         <button type="submit" class="btn btn-primary" data-testid="receipt-submit-btn">{{.Labels.PurchaseOrder.Receipt.ConfirmButton}}</button>
-        <button type="button" class="btn btn-ghost" data-testid="po-receipt-cancel-btn" onclick="lf.Sheet.close()">{{.Labels.PurchaseOrder.Receipt.Cancel}}</button>
+        <button type="button" class="btn btn-ghost" data-testid="po-receipt-cancel-btn" onclick="lf.ui.Sheet.close()">{{.Labels.PurchaseOrder.Receipt.Cancel}}</button>
     </div>
 </form>
 {{end}}

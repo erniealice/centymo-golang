@@ -9,7 +9,7 @@
     <div class="detail-header-actions">
         {{if .ActivateURL}}
         <form hx-post="{{.ActivateURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .ActivateURL .WorkspaceID}}
           <button type="submit" class="btn btn-primary"
@@ -21,7 +21,7 @@
         {{end}}
         {{if .SupersedeURL}}
         <form hx-post="{{.SupersedeURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .SupersedeURL .WorkspaceID}}
           <button type="submit" class="btn btn-secondary"
@@ -36,7 +36,7 @@
             aria-haspopup="dialog"
             data-testid="schedule-edit-btn"
             hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Detail.Title}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Detail.Title}}')">
             {{.CommonLabels.Actions.Edit}}
         </button>
         {{end}}
@@ -135,7 +135,7 @@
             aria-haspopup="dialog"
             data-testid="schedule-add-line-btn"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Lines.AddLine}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Lines.AddLine}}')">
             {{.Labels.Lines.AddLine}}
         </button>
     </div>

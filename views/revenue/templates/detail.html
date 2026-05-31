@@ -29,7 +29,8 @@
 </div>
 <script>
 window.lf = window.lf || {};
-lf.downloadInvoice = function(btn, url) {
+lf.ns('centymo.revenue');
+lf.define('centymo.revenue.downloadInvoice', function(btn, url) {
     btn.classList.add('btn-loading');
     fetch(url)
         .then(function(res) {
@@ -50,7 +51,7 @@ lf.downloadInvoice = function(btn, url) {
         })
         .catch(function(err) { console.error('Invoice download failed:', err); })
         .finally(function() { btn.classList.remove('btn-loading'); });
-};
+});
 </script>
 {{end}}
 
@@ -60,7 +61,7 @@ lf.downloadInvoice = function(btn, url) {
     {{if .InvoiceDownloadURL}}
     <div class="transaction-info-toolbar">
         <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-info-download"
-            onclick="lf.downloadInvoice(this, '{{.InvoiceDownloadURL}}')">
+            onclick="lf.centymo.revenue.downloadInvoice(this, '{{.InvoiceDownloadURL}}')">
             {{template "icon-download" .}} {{.Labels.Actions.DownloadInvoice}}
         </button>
     </div>
@@ -129,13 +130,13 @@ lf.downloadInvoice = function(btn, url) {
         <button type="button" class="btn btn-ghost btn-sm" data-testid="revenue-line-discount-btn"
             aria-haspopup="dialog"
             hx-get="{{.LineItemDiscountURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Detail.AddDiscount}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Detail.AddDiscount}}')">
             {{.Labels.Detail.AddDiscount}}
         </button>
         <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="revenue-line-add-btn"
             aria-haspopup="dialog"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Detail.AddItem}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Detail.AddItem}}')">
             {{.Labels.Detail.AddItem}}
         </button>
     </div>
@@ -172,7 +173,7 @@ lf.downloadInvoice = function(btn, url) {
         <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="revenue-record-payment-btn"
             aria-haspopup="dialog"
             hx-get="{{.PaymentAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Detail.RecordPayment}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Detail.RecordPayment}}')">
             {{.Labels.Detail.RecordPayment}}
         </button>
     </div>

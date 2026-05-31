@@ -9,7 +9,7 @@
     <div class="detail-header-actions">
         {{if .ApproveURL}}
         <form hx-post="{{.ApproveURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .ApproveURL .WorkspaceID}}
           <button type="submit" class="btn btn-primary"
@@ -21,7 +21,7 @@
         {{end}}
         {{if .TerminateURL}}
         <form hx-post="{{.TerminateURL}}" hx-swap="none"
-              hx-on::after-request="lf.Sheet.handleResponse(event)"
+              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
               style="display:inline">
           {{actionForm .TerminateURL .WorkspaceID}}
           <button type="submit" class="btn btn-danger"
@@ -36,7 +36,7 @@
             aria-haspopup="dialog"
             data-testid="supplier-contract-edit-btn"
             hx-get="{{.EditURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Form.EditTitle}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Form.EditTitle}}')">
             {{.Labels.Form.Edit}}
         </button>
         {{end}}
@@ -155,7 +155,7 @@
             aria-haspopup="dialog"
             data-testid="supplier-contract-add-line-btn"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Lines.AddLine}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Lines.AddLine}}')">
             {{.Labels.Lines.AddLine}}
         </button>
     </div>
@@ -203,7 +203,7 @@
             aria-haspopup="dialog"
             data-testid="contract-add-price-schedule-btn"
             hx-get="{{.PriceScheduleAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
-            onclick="lf.Sheet.open('{{.Labels.Tabs.PriceSchedules}}')">
+            onclick="lf.ui.Sheet.open('{{.Labels.Tabs.PriceSchedules}}')">
             {{.Labels.Tabs.PriceSchedules}}
         </button>
     </div>

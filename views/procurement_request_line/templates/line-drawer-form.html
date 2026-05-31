@@ -9,7 +9,7 @@ SPS Wave 3 additions:
   - PETTY hint paragraph shown when mode = petty.
 */}}
 {{define "procurement-request-line-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)" data-prl-form>
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)" data-prl-form>
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="procurement_request_id" value="{{.ProcurementRequestID}}">
@@ -182,7 +182,7 @@ SPS Wave 3 additions:
     </div>{{/* /sheet-body */}}
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">
+        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">
             {{.CommonLabels.Buttons.Cancel}}
         </button>
         <button type="submit" class="btn btn-primary" data-testid="pr-line-save-btn">

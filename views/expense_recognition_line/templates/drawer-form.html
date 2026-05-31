@@ -3,7 +3,7 @@ ExpenseRecognitionLine drawer form — loaded into #sheetContent via HTMX.
 Used by both Add and Edit actions.
 */}}
 {{define "expense-recognition-line-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="expense_recognition_id" value="{{.ExpenseRecognitionID}}">
@@ -50,7 +50,7 @@ Used by both Add and Edit actions.
     </div>
 
     <div class="sheet-footer">
-        <button type="button" class="btn btn-secondary" onclick="lf.Sheet.close()">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="lf.ui.Sheet.close()">Cancel</button>
         <button type="submit" class="btn btn-primary">{{if .IsEdit}}Save{{else}}Add{{end}}</button>
     </div>
 </form>

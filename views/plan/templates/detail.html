@@ -97,7 +97,7 @@
            hx-get="{{routeWith "plan.edit" "id" .ID}}"
            hx-target="#sheetContent"
            hx-swap="innerHTML"
-           onclick="if(window.lf && lf.Sheet) lf.Sheet.open('{{.Labels.Actions.Edit}}')">
+           onclick="if(window.lf && lf.ui.Sheet) lf.ui.Sheet.open('{{.Labels.Actions.Edit}}')">
             {{.Labels.Actions.Edit}}
         </a>
     </div>

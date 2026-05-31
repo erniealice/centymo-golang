@@ -69,7 +69,7 @@ Data: .FormAction, .IsEdit, .ID, .PurchaseOrderID, .LineType, .Description,
 
     <div class="drawer-form-actions">
         <button type="submit" class="btn btn-primary" data-testid="po-line-item-save-btn">{{.Labels.PurchaseOrder.LineItems.Save}}</button>
-        <button type="button" class="btn btn-ghost" data-testid="po-line-item-cancel-btn" onclick="lf.Sheet.close()">{{.Labels.PurchaseOrder.LineItems.Cancel}}</button>
+        <button type="button" class="btn btn-ghost" data-testid="po-line-item-cancel-btn" onclick="lf.ui.Sheet.close()">{{.Labels.PurchaseOrder.LineItems.Cancel}}</button>
     </div>
 </form>
 {{end}}

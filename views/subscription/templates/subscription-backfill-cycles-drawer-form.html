@@ -19,7 +19,7 @@ Data: BackfillDrawerData
 <form data-testid="subscription-backfill-drawer"
       hx-post="{{.FormAction}}"
       hx-swap="none"
-      hx-on::after-request="lf.Sheet.handleResponse(event)">
+      hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
     {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
 
@@ -62,7 +62,7 @@ Data: BackfillDrawerData
         <button type="button"
                 class="btn btn--ghost"
                 data-action="cancel"
-                onclick="lf.Sheet.close()">
+                onclick="lf.ui.Sheet.close()">
             {{.Labels.Cancel}}
         </button>
         <button type="submit"
