@@ -106,7 +106,7 @@
      only Price + Currency are editable. Rows are auto-seeded on PricePlan create.
      Pricing locks when the parent PricePlan has an active subscription. */}}
 {{define "price-schedule-plan-product-price-drawer"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <div class="sheet-body">

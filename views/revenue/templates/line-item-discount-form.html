@@ -4,7 +4,7 @@ For adding discount line items to a sale.
 Data: .Description, .Amount, .RevenueID, .FormAction, .CommonLabels, .Labels
 */}}
 {{define "revenue-line-item-discount-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
     {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="revenue_id" value="{{.RevenueID}}">
 

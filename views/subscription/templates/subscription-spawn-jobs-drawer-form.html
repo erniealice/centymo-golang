@@ -12,7 +12,7 @@ Data: SubscriptionID, SubscriptionLabel, FormAction,
 <form data-testid="spawn-jobs-drawer"
       hx-post="{{.FormAction}}"
       hx-swap="none"
-      hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
+      data-hx-on="sheet-response">
     {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
 

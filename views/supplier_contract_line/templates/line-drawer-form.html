@@ -4,7 +4,7 @@ Single-section line form: description, line_type, product_id, quantity,
 unit_price, treatment select, expense_account_id, start_date, end_date.
 */}}
 {{define "supplier-contract-line-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="supplier_contract_id" value="{{.SupplierContractID}}">

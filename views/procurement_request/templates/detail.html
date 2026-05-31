@@ -9,7 +9,7 @@
     <div class="detail-header-actions">
         {{if .SubmitURL}}
         <form hx-post="{{.SubmitURL}}" hx-swap="none"
-              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+              data-hx-on="sheet-response"
               style="display:inline">
           {{actionForm .SubmitURL .WorkspaceID}}
           <button type="submit" class="btn btn-secondary"
@@ -21,7 +21,7 @@
         {{end}}
         {{if .ApproveURL}}
         <form hx-post="{{.ApproveURL}}" hx-swap="none"
-              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+              data-hx-on="sheet-response"
               style="display:inline">
           {{actionForm .ApproveURL .WorkspaceID}}
           <button type="submit" class="btn btn-primary"
@@ -33,7 +33,7 @@
         {{end}}
         {{if .RejectURL}}
         <form hx-post="{{.RejectURL}}" hx-swap="none"
-              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+              data-hx-on="sheet-response"
               style="display:inline">
           {{actionForm .RejectURL .WorkspaceID}}
           <button type="submit" class="btn btn-danger"
@@ -45,7 +45,7 @@
         {{end}}
         {{if .SpawnPOURL}}
         <form hx-post="{{.SpawnPOURL}}" hx-swap="none"
-              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+              data-hx-on="sheet-response"
               style="display:inline">
           {{actionForm .SpawnPOURL .WorkspaceID}}
           <button type="submit" class="btn btn-secondary"

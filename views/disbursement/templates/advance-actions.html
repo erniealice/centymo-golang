@@ -18,7 +18,7 @@ Data shape (from action/advance_actions.go::AdvanceDrawerData):
 {{define "advance-settle-drawer-form"}}
 <form hx-post="{{.FormAction}}"
       hx-swap="none"
-      hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+      data-hx-on="sheet-response"
       data-testid="advance-settle-form">
     {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="advance_id" value="{{.AdvanceID}}">
@@ -67,7 +67,7 @@ Data shape (from action/advance_actions.go::AdvanceDrawerData):
 {{define "advance-refund-drawer-form"}}
 <form hx-post="{{.FormAction}}"
       hx-swap="none"
-      hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+      data-hx-on="sheet-response"
       data-testid="advance-refund-form">
     {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="advance_id" value="{{.AdvanceID}}">
@@ -121,7 +121,7 @@ Data shape (from action/advance_actions.go::AdvanceDrawerData):
 {{define "advance-cancel-drawer-form"}}
 <form hx-post="{{.FormAction}}"
       hx-swap="none"
-      hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+      data-hx-on="sheet-response"
       data-testid="advance-cancel-form">
     {{actionForm .FormAction .WorkspaceID}}
     <input type="hidden" name="advance_id" value="{{.AdvanceID}}">

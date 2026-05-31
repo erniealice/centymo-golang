@@ -4,7 +4,7 @@ Data: .ProductID, .LineID, .SortOrder, .Active, .LineOptions, .ID, .FormAction,
       .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "product-line-association-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="plid" value="{{.ID}}">{{end}}
 

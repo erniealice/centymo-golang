@@ -9,7 +9,7 @@
     <div class="detail-header-actions">
         {{if .ApproveURL}}
         <form hx-post="{{.ApproveURL}}" hx-swap="none"
-              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+              data-hx-on="sheet-response"
               style="display:inline">
           {{actionForm .ApproveURL .WorkspaceID}}
           <button type="submit" class="btn btn-primary"
@@ -21,7 +21,7 @@
         {{end}}
         {{if .TerminateURL}}
         <form hx-post="{{.TerminateURL}}" hx-swap="none"
-              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+              data-hx-on="sheet-response"
               style="display:inline">
           {{actionForm .TerminateURL .WorkspaceID}}
           <button type="submit" class="btn btn-danger"

@@ -4,7 +4,7 @@ Used by the Add Price Product action on the price list detail prices tab.
 Data: .FormAction, .PriceListID, .Products, .CommonLabels, .Labels
 */}}
 {{define "price-product-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="lf.ui.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
     {{actionForm .FormAction .WorkspaceID}}
 
     <div class="sheet-body">

@@ -23,7 +23,7 @@ to a single CTA in v1).
 <form
   hx-post="{{.FormAction}}"
   hx-swap="none"
-  hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+  data-hx-on="sheet-response"
   data-default-tz="{{.DefaultTZ}}"
 >
     {{actionForm .FormAction .WorkspaceID}}

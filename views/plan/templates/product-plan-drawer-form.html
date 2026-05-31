@@ -8,7 +8,7 @@ Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
       .VariantOptions, .CommonLabels, .Labels
 */}}
 {{define "product-plan-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" hx-on::after-request="if (event.detail.elt === this) lf.ui.Sheet.handleResponse(event)">
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
     <input type="hidden" name="plan_id" value="{{.PlanID}}">

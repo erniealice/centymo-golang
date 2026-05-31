@@ -18,7 +18,7 @@
         {{end}}
         {{if .ReverseURL}}
         <form hx-post="{{.ReverseURL}}" hx-swap="none"
-              hx-on::after-request="lf.ui.Sheet.handleResponse(event)"
+              data-hx-on="sheet-response"
               style="display:inline">
           {{actionForm .ReverseURL .WorkspaceID}}
           <button type="submit" class="btn btn-danger"
