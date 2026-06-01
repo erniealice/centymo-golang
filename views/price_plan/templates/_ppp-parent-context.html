@@ -16,6 +16,8 @@ Expected dict shape:
     BillingCycleDisplay   string  — formatted, e.g. "every 1 month"
     TermDisplay           string  — formatted, e.g. "12 months"
     ParentCurrencyDisplay string  — e.g. "PHP" / "USD"
+    Labels                centymo.ProductPricePlanFormLabels — supplies the
+                          localized row labels via .Labels.ParentContext.*
 */}}
 {{define "ppp-parent-context"}}
 {{if or .RateCardName .BillingKindDisplay .AmountBasisDisplay .BillingCycleDisplay .TermDisplay .ParentCurrencyDisplay}}
@@ -25,41 +27,41 @@ on the package detail page or arrived from a row labelled by package, so it
 would be redundant context.
 */}}
 <details class="form-section ppp-parent-context-details" data-testid="ppp-parent-context">
-    <summary class="form-section-title ppp-parent-context-summary" style="cursor: pointer; user-select: none;">More details</summary>
+    <summary class="form-section-title ppp-parent-context-summary" style="cursor: pointer; user-select: none;">{{.Labels.ParentContext.MoreDetails}}</summary>
     <div class="detail-info-grid" style="margin-top: var(--spacing-md);">
     {{if .RateCardName}}
     <div class="detail-info-item">
-        <span class="detail-info-label">Rate card</span>
+        <span class="detail-info-label">{{.Labels.ParentContext.RateCard}}</span>
         <span class="detail-info-value">{{.RateCardName}}</span>
     </div>
     {{end}}
     {{if .BillingKindDisplay}}
     <div class="detail-info-item">
-        <span class="detail-info-label">Billing model</span>
+        <span class="detail-info-label">{{.Labels.ParentContext.BillingModel}}</span>
         <span class="detail-info-value">{{.BillingKindDisplay}}</span>
     </div>
     {{end}}
     {{if .AmountBasisDisplay}}
     <div class="detail-info-item">
-        <span class="detail-info-label">Amount basis</span>
+        <span class="detail-info-label">{{.Labels.ParentContext.AmountBasis}}</span>
         <span class="detail-info-value">{{.AmountBasisDisplay}}</span>
     </div>
     {{end}}
     {{if .BillingCycleDisplay}}
     <div class="detail-info-item">
-        <span class="detail-info-label">Billing cycle</span>
+        <span class="detail-info-label">{{.Labels.ParentContext.BillingCycle}}</span>
         <span class="detail-info-value">{{.BillingCycleDisplay}}</span>
     </div>
     {{end}}
     {{if .TermDisplay}}
     <div class="detail-info-item">
-        <span class="detail-info-label">Term</span>
+        <span class="detail-info-label">{{.Labels.ParentContext.Term}}</span>
         <span class="detail-info-value">{{.TermDisplay}}</span>
     </div>
     {{end}}
     {{if .ParentCurrencyDisplay}}
     <div class="detail-info-item">
-        <span class="detail-info-label">Currency</span>
+        <span class="detail-info-label">{{.Labels.ParentContext.Currency}}</span>
         <span class="detail-info-value">{{.ParentCurrencyDisplay}}</span>
     </div>
     {{end}}

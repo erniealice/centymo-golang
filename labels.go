@@ -4279,6 +4279,25 @@ type ProductPricePlanFormLabels struct {
 	WithholdingClassLabel       string `json:"withholdingClassLabel"`
 	WithholdingClassPlaceholder string `json:"withholdingClassPlaceholder"`
 	WithholdingClassInfo        string `json:"withholdingClassInfo"`
+
+	// Read-only parent-PricePlan context block rendered above the editable
+	// fields (ppp-parent-context.html). Shared across the PPP drawer and the
+	// price-schedule-scoped product-price drawer.
+	ParentContext PricePlanParentContextLabels `json:"parentContext"`
+}
+
+// PricePlanParentContextLabels labels the read-only "parent context" rows on
+// the ppp-parent-context partial. RateCard uses the proto-generic
+// "Price Schedule" by default; the professional/education tiers override it to
+// "Rate Card" via lyngua.
+type PricePlanParentContextLabels struct {
+	MoreDetails  string `json:"moreDetails"`
+	RateCard     string `json:"rateCard"`
+	BillingModel string `json:"billingModel"`
+	AmountBasis  string `json:"amountBasis"`
+	BillingCycle string `json:"billingCycle"`
+	Term         string `json:"term"`
+	Currency     string `json:"currency"`
 }
 
 // DefaultProductPricePlanLabels returns ProductPricePlanLabels with sensible English defaults.
@@ -4315,6 +4334,17 @@ func DefaultProductPricePlanLabels() ProductPricePlanLabels {
 			MilestonePhaseLabel:       "Milestone phase",
 			MilestonePhaseFallthrough: "Falls through to first event",
 			MilestonePhaseBillable:    "billable",
+			// Parent-context block — proto-generic defaults; tiers override
+			// RateCard to "Rate Card" via lyngua professional/education.
+			ParentContext: PricePlanParentContextLabels{
+				MoreDetails:  "More details",
+				RateCard:     "Price Schedule",
+				BillingModel: "Billing model",
+				AmountBasis:  "Amount basis",
+				BillingCycle: "Billing cycle",
+				Term:         "Term",
+				Currency:     "Currency",
+			},
 		},
 	}
 }
@@ -8229,6 +8259,14 @@ type ExpenseRecognitionDetailLabels struct {
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
 	AuditEmptyMessage    string `json:"auditEmptyMessage"`
 	TabAttachments       string `json:"tabAttachments"`
+
+	// Info-tab + source-tab field labels (4.4)
+	Notes               string `json:"notes"`
+	SourceContract      string `json:"sourceContract"`
+	SourceBill          string `json:"sourceBill"`
+	DeferredExpense     string `json:"deferredExpense"`
+	SourceAccrual       string `json:"sourceAccrual"`
+	ReversalOf          string `json:"reversalOf"`
 }
 
 type ExpenseRecognitionLineLabels struct {
@@ -8503,6 +8541,13 @@ type AccruedExpenseDetailLabels struct {
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
 	AuditEmptyMessage    string `json:"auditEmptyMessage"`
 	TabAttachments       string `json:"tabAttachments"`
+
+	// Info-tab + source-tab field labels (4.4)
+	Notes          string `json:"notes"`
+	SourceContract string `json:"sourceContract"`
+	Supplier       string `json:"supplier"`
+	ExpenseAccount string `json:"expenseAccount"`
+	AccrualAccount string `json:"accrualAccount"`
 }
 
 type AccruedExpenseSettlementLabels struct {
@@ -8916,6 +8961,7 @@ type SupplierSubscriptionDetailLabels struct {
 	Supplier    string `json:"supplier"`
 	CostPlan    string `json:"costPlan"`
 	Code        string `json:"code"`
+	Status      string `json:"status"`
 	StartDate   string `json:"startDate"`
 	EndDate     string `json:"endDate"`
 	Active      string `json:"active"`
@@ -8923,6 +8969,20 @@ type SupplierSubscriptionDetailLabels struct {
 	AutoRenew   string `json:"autoRenew"`
 	Location    string `json:"location"`
 	Notes       string `json:"notes"`
+
+	// Linked-recognitions tab (4.4)
+	Recognitions SupplierSubscriptionRecognitionsLabels `json:"recognitions"`
+}
+
+// SupplierSubscriptionRecognitionsLabels labels the linked-recognitions tab
+// table headers and empty state on the supplier_subscription detail page.
+type SupplierSubscriptionRecognitionsLabels struct {
+	Name            string `json:"name"`
+	Status          string `json:"status"`
+	RecognitionDate string `json:"recognitionDate"`
+	Amount          string `json:"amount"`
+	EmptyTitle      string `json:"emptyTitle"`
+	EmptyMessage    string `json:"emptyMessage"`
 }
 
 type SupplierSubscriptionFormLabels struct {

@@ -128,7 +128,7 @@
     </div>
     {{if index .Accrual "notes"}}
     <div class="transaction-section-spacer">
-        <h3 class="detail-section-title">Notes</h3>
+        <h3 class="detail-section-title">{{.Labels.Detail.Notes}}</h3>
         <p>{{index .Accrual "notes"}}</p>
     </div>
     {{end}}
@@ -168,25 +168,25 @@
     <div class="detail-info-grid">
         {{if index .Accrual "supplier_contract_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Source Contract</span>
+            <span class="detail-info-label">{{.Labels.Detail.SourceContract}}</span>
             <span class="detail-info-value mono">{{index .Accrual "supplier_contract_id"}}</span>
         </div>
         {{end}}
         {{if index .Accrual "supplier_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Supplier</span>
+            <span class="detail-info-label">{{.Labels.Detail.Supplier}}</span>
             <span class="detail-info-value mono">{{index .Accrual "supplier_id"}}</span>
         </div>
         {{end}}
         {{if index .Accrual "expense_account_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Expense Account</span>
+            <span class="detail-info-label">{{.Labels.Detail.ExpenseAccount}}</span>
             <span class="detail-info-value mono">{{index .Accrual "expense_account_id"}}</span>
         </div>
         {{end}}
         {{if index .Accrual "accrual_account_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Accrual Account</span>
+            <span class="detail-info-label">{{.Labels.Detail.AccrualAccount}}</span>
             <span class="detail-info-value mono">{{index .Accrual "accrual_account_id"}}</span>
         </div>
         {{end}}

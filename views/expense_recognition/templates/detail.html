@@ -100,7 +100,7 @@
         </div>
         {{if index .Recognition "notes"}}
         <div class="detail-info-item detail-info-item--full">
-            <span class="detail-info-label">Notes</span>
+            <span class="detail-info-label">{{.Labels.Detail.Notes}}</span>
             <span class="detail-info-value">{{index .Recognition "notes"}}</span>
         </div>
         {{end}}
@@ -141,31 +141,31 @@
     <div class="detail-info-grid">
         {{if index .Recognition "supplier_contract_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Source Contract</span>
+            <span class="detail-info-label">{{.Labels.Detail.SourceContract}}</span>
             <span class="detail-info-value mono">{{index .Recognition "supplier_contract_id"}}</span>
         </div>
         {{end}}
         {{if index .Recognition "expenditure_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Source Bill</span>
+            <span class="detail-info-label">{{.Labels.Detail.SourceBill}}</span>
             <span class="detail-info-value mono">{{index .Recognition "expenditure_id"}}</span>
         </div>
         {{end}}
         {{if index .Recognition "deferred_expense_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Deferred Expense</span>
+            <span class="detail-info-label">{{.Labels.Detail.DeferredExpense}}</span>
             <span class="detail-info-value mono">{{index .Recognition "deferred_expense_id"}}</span>
         </div>
         {{end}}
         {{if index .Recognition "accrued_expense_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Source Accrual</span>
+            <span class="detail-info-label">{{.Labels.Detail.SourceAccrual}}</span>
             <span class="detail-info-value mono">{{index .Recognition "accrued_expense_id"}}</span>
         </div>
         {{end}}
         {{if index .Recognition "reversal_of_recognition_id"}}
         <div class="detail-info-item">
-            <span class="detail-info-label">Reversal Of</span>
+            <span class="detail-info-label">{{.Labels.Detail.ReversalOf}}</span>
             <span class="detail-info-value mono">{{index .Recognition "reversal_of_recognition_id"}}</span>
         </div>
         {{end}}

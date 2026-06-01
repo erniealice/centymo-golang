@@ -60,13 +60,13 @@
   <h3 class="detail-section-title">{{.Record.GetName}}</h3>
   <div class="detail-info-grid">
     <div class="detail-info-item">
-      <span class="detail-info-label">Code</span>
+      <span class="detail-info-label">{{.Labels.Detail.Code}}</span>
       <span class="detail-info-value mono">{{.Record.GetCode}}</span>
     </div>
     <div class="detail-info-item">
-      <span class="detail-info-label">Status</span>
+      <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
       <span class="detail-info-value">
-        {{if .Record.GetActive}}<span class="badge badge--success">Active</span>{{else}}<span class="badge badge--default">Inactive</span>{{end}}
+        {{if .Record.GetActive}}<span class="badge badge--success">{{.Labels.Detail.Active}}</span>{{else}}<span class="badge badge--default">{{.Labels.Detail.Inactive}}</span>{{end}}
       </span>
     </div>
   </div>
@@ -100,10 +100,10 @@
     <table id="supplier-subscription-recognitions-table" class="data-table data-table--compact">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Recognition Date</th>
-                <th class="cell-right">Amount</th>
+                <th>{{$.Labels.Detail.Recognitions.Name}}</th>
+                <th>{{$.Labels.Detail.Recognitions.Status}}</th>
+                <th>{{$.Labels.Detail.Recognitions.RecognitionDate}}</th>
+                <th class="cell-right">{{$.Labels.Detail.Recognitions.Amount}}</th>
             </tr>
         </thead>
         <tbody>
@@ -120,8 +120,8 @@
     </table>
     {{else}}
     <div class="empty-state">
-        <h4 class="empty-state-title">No recognitions yet</h4>
-        <p class="empty-state-message">Expense recognitions linked to this subscription will appear here.</p>
+        <h4 class="empty-state-title">{{.Labels.Detail.Recognitions.EmptyTitle}}</h4>
+        <p class="empty-state-message">{{.Labels.Detail.Recognitions.EmptyMessage}}</p>
     </div>
     {{end}}
 </div>
