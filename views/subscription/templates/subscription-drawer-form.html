@@ -15,7 +15,8 @@ Data: .Code, .ClientID, .PricePlanID,
 
     {{/* 2026-05-03 — Edit-locked: warning banner above the body, then a
          disabled fieldset wrapping all inputs below so they render read-only
-         in one swoop. Inline style strips the default fieldset chrome. The
+         in one swoop. class="fieldset-reset" removes the default fieldset chrome
+         (border/padding/margin/min-width) via centymo-tax-preview.css. The
          footer further hides the Update button (see end of form). */}}
     {{if .InUse}}
     <div class="sheet-banner">
@@ -27,7 +28,7 @@ Data: .Code, .ClientID, .PricePlanID,
     </div>
     {{end}}
 
-    <fieldset {{if .InUse}}disabled{{end}} style="border:0;padding:0;margin:0;min-width:0;">
+    <fieldset {{if .InUse}}disabled{{end}} class="fieldset-reset">
     <div class="sheet-body">
 
         {{/* --- Customer --- */}}

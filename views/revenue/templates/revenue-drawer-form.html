@@ -307,37 +307,37 @@ Used by both Add and Edit actions.
         {{/* Tax rows table — gated on TaxLines being non-empty */}}
         {{if .TaxLines}}
         <div data-testid="revenue-taxes" class="form-summary" style="margin-bottom: 1rem;">
-            <table id="revenue-tax-lines-table" style="width:100%; border-collapse: collapse; font-size: var(--text-sm);">
+            <table id="revenue-tax-lines-table" class="tax-preview-table">
                 <thead>
                     <tr>
-                        <th style="text-align:left; padding: 4px 8px;">{{.Labels.TaxKind}}</th>
-                        <th style="text-align:right; padding: 4px 8px;">{{.Labels.TaxRate}}</th>
-                        <th style="text-align:right; padding: 4px 8px;">{{.Labels.TaxAmount}}</th>
+                        <th>{{.Labels.TaxKind}}</th>
+                        <th>{{.Labels.TaxRate}}</th>
+                        <th>{{.Labels.TaxAmount}}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{range .TaxLines}}
                     <tr data-testid="revenue-tax-row-{{.Direction}}-{{.TaxKindSnapshot}}">
-                        <td style="padding: 4px 8px;">
+                        <td>
                             {{if .KindLabel}}{{.KindLabel}}{{else}}{{.DirectionLabel}}{{end}}
                             {{if .RegulatoryCode}}<span class="form-hint">({{.RegulatoryCode}})</span>{{end}}
                         </td>
-                        <td style="text-align:right; padding: 4px 8px;">{{.RateDisplay}}</td>
-                        <td style="text-align:right; padding: 4px 8px;">
+                        <td>{{.RateDisplay}}</td>
+                        <td>
                             {{if eq .Direction "WITHHOLDING"}}({{.TaxAmountDisplay}}){{else}}+{{.TaxAmountDisplay}}{{end}}
                         </td>
                     </tr>
                     {{end}}
                 </tbody>
                 <tfoot>
-                    <tr style="font-weight: 600; border-top: 1px solid var(--border);">
-                        <td colspan="2" style="padding: 4px 8px;">{{.Labels.NetReceivable}}</td>
-                        <td style="text-align:right; padding: 4px 8px;">{{.GrandTotalDisplay}}</td>
+                    <tr>
+                        <td colspan="2">{{.Labels.NetReceivable}}</td>
+                        <td>{{.GrandTotalDisplay}}</td>
                     </tr>
                     {{if .WhtAmountDisplay}}
-                    <tr>
-                        <td colspan="2" style="padding: 4px 8px; color: var(--text-subtle);">{{.Labels.WHTAmount}}</td>
-                        <td style="text-align:right; padding: 4px 8px; color: var(--text-subtle);">{{.WhtAmountDisplay}}</td>
+                    <tr class="tax-preview-table__muted">
+                        <td colspan="2">{{.Labels.WHTAmount}}</td>
+                        <td>{{.WhtAmountDisplay}}</td>
                     </tr>
                     {{end}}
                 </tfoot>
@@ -350,7 +350,7 @@ Used by both Add and Edit actions.
         <div class="form-row single">
             <div class="form-group">
                 <label class="form-label">{{.Labels.SettlementStatus}}</label>
-                <div class="form-input" style="background: var(--bg-subtle); cursor: default;">{{.SettlementStatus}}</div>
+                <div class="form-input form-input--readonly">{{.SettlementStatus}}</div>
             </div>
         </div>
         {{end}}

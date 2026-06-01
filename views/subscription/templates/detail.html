@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "subscription-detail-content"}}
-<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.PageTitle}}">
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.PageTitle}}" data-page-css="/assets/css/centymo/centymo-tax-preview.css?v={{.CacheVersion}}">
     {{/* --- Tabs --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "subscription-tabs")}}
@@ -64,7 +64,7 @@
     <p class="empty-state-message">{{.OperationsEmptyText}}</p>
     {{if .OperationsSpawnURL}}
     <button type="button"
-            class="btn btn--primary"
+            class="btn btn-primary"
             data-testid="operations-spawn-jobs-cta"
             hx-get="{{.OperationsSpawnURL}}"
             hx-target="#sheetContent"
@@ -102,7 +102,7 @@
               style="display:inline">
           {{actionForm .SpawnCycleJobsURL .WorkspaceID}}
           <button type="submit"
-                  class="btn btn--primary"
+                  class="btn btn-primary"
                   data-testid="subscription-cycle-spawn-now-cta">
               {{.Labels.Operations.CycleSpawnNow}}
           </button>
@@ -110,7 +110,7 @@
         {{end}}
         {{if .BackfillCycleJobsDrawerURL}}
         <button type="button"
-                class="btn btn--secondary"
+                class="btn btn-secondary"
                 data-testid="subscription-backfill-cycles-cta"
                 hx-get="{{.BackfillCycleJobsDrawerURL}}"
                 hx-target="#sheetContent"
@@ -222,7 +222,7 @@
               style="display:inline">
           {{actionForm .RequestUsageURL .WorkspaceID}}
           <button type="submit"
-                  class="btn btn--primary"
+                  class="btn btn-primary"
                   data-testid="subscription-request-usage-cta">
               {{.Labels.Operations.RequestUsageCta}}
           </button>
@@ -234,7 +234,7 @@
               style="display:inline">
           {{actionForm .PoolRecognizeURL .WorkspaceID}}
           <button type="submit"
-                  class="btn btn--secondary"
+                  class="btn btn-secondary"
                   data-testid="subscription-pool-generate-invoice-cta">
               {{.Labels.Operations.PoolGenerateInvoiceCta}}
           </button>
@@ -312,7 +312,7 @@
         {{end}}
         {{if .Row.JobDetailURL}}
         <a href="{{.Row.JobDetailURL}}"
-           class="btn btn--link btn--sm"
+           class="btn btn-link btn-sm"
            data-testid="operations-view-job-link">
             {{.Labels.Operations.ViewJobLink}}
         </a>
@@ -360,7 +360,7 @@
               style="display:inline">
           {{actionForm .PackageCustomizeURL .WorkspaceID}}
           <button type="submit"
-                  class="btn btn--primary"
+                  class="btn btn-primary"
                   data-testid="customize-package-cta"
                   {{if .PackageCustomizeDisabled}}disabled{{end}}>
               {{template "icon-edit"}}
@@ -417,7 +417,7 @@
               <form hx-post="{{.MarkReadyURL}}" hx-swap="none" style="display:inline">
                 {{actionForm .MarkReadyURL $.WorkspaceID}}
                 <button type="submit"
-                        class="btn btn--secondary btn--sm"
+                        class="btn btn-secondary btn-sm"
                         data-testid="milestone-mark-ready">
                   {{$.Labels.Milestone.MarkReady}}
                 </button>
@@ -427,7 +427,7 @@
               <form hx-post="{{.WaiveURL}}" hx-swap="none" style="display:inline">
                 {{actionForm .WaiveURL $.WorkspaceID}}
                 <button type="submit"
-                        class="btn btn--ghost btn--sm"
+                        class="btn btn-ghost btn-sm"
                         data-testid="milestone-waive">
                   {{$.Labels.Milestone.Waive}}
                 </button>
@@ -437,7 +437,7 @@
               <form hx-post="{{.RecognizeURL}}" hx-vals='{"advance_id": "{{.AdvanceID}}"}' hx-swap="none" style="display:inline">
                 {{actionForm .RecognizeURL $.WorkspaceID}}
                 <button type="submit"
-                        class="btn btn--primary btn--sm"
+                        class="btn btn-primary btn-sm"
                         data-testid="milestone-recognize">
                   {{$.Labels.Milestone.Recognize}}
                 </button>
@@ -446,7 +446,7 @@
               {{if .ShowRevenueLink}}
               <a href="{{.RevenueURL}}"
                  data-testid="milestone-revenue-link"
-                 class="btn btn--link btn--sm">
+                 class="btn btn-link btn-sm">
                 {{$.Labels.Milestone.ViewInvoice}}
               </a>
               {{end}}

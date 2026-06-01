@@ -288,23 +288,23 @@ to a single CTA in v1).
         {{/* --- Tax preview (Phase 5) — from ComputeTaxes dry-run output --- */}}
         {{if .TaxPreviewLines}}
         <div class="form-row single" data-testid="recognize-tax-preview">
-            <table style="width:100%; border-collapse: collapse; font-size: var(--text-sm); margin-top: 0.5rem;">
+            <table class="tax-preview-table tax-preview-table--compact" style="margin-top: 0.5rem;">
                 <thead>
                     <tr>
-                        <th style="text-align:left; padding: 4px 0;">{{.Labels.TaxPreviewSection}}</th>
-                        <th style="text-align:right; padding: 4px 0;"></th>
-                        <th style="text-align:right; padding: 4px 0;"></th>
+                        <th>{{.Labels.TaxPreviewSection}}</th>
+                        <th></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {{range .TaxPreviewLines}}
                     <tr>
-                        <td style="padding: 2px 0;">
+                        <td>
                             {{.DirectionLabel}}
-                            {{if .RegulatoryCode}}<span style="color:var(--text-subtle)">({{.RegulatoryCode}})</span>{{end}}
+                            {{if .RegulatoryCode}}<span class="tax-preview-table__muted">({{.RegulatoryCode}})</span>{{end}}
                         </td>
-                        <td style="text-align:right; padding: 2px 0;">{{.RateDisplay}}</td>
-                        <td style="text-align:right; padding: 2px 0;">
+                        <td>{{.RateDisplay}}</td>
+                        <td>
                             {{if eq .Direction "WITHHOLDING"}}({{.TaxAmountDisplay}}){{else}}+{{.TaxAmountDisplay}}{{end}}
                         </td>
                     </tr>
@@ -312,9 +312,9 @@ to a single CTA in v1).
                 </tbody>
                 {{if .GrandTotalDisplay}}
                 <tfoot>
-                    <tr style="font-weight: 600; border-top: 1px solid var(--border);">
-                        <td colspan="2" style="padding: 4px 0;">{{.Labels.NetReceivable}}</td>
-                        <td style="text-align:right; padding: 4px 0;">{{.GrandTotalDisplay}}</td>
+                    <tr>
+                        <td colspan="2">{{.Labels.NetReceivable}}</td>
+                        <td>{{.GrandTotalDisplay}}</td>
                     </tr>
                 </tfoot>
                 {{end}}
@@ -351,7 +351,7 @@ to a single CTA in v1).
     <div class="sheet-footer">
       <button
         type="button"
-        class="btn btn--secondary"
+        class="btn btn-secondary"
         data-sheet-cancel
         data-testid="recognize-cancel"
       >
@@ -365,7 +365,7 @@ to a single CTA in v1).
       {{end}}
       <button
         type="submit"
-        class="btn btn--primary"
+        class="btn btn-primary"
         data-testid="recognize-generate"
         {{if or .CurrencyMismatch .IdempotencyConflict .NoLinesToInvoice .OverBillingError $noReady}}disabled aria-disabled="true"{{end}}
       >

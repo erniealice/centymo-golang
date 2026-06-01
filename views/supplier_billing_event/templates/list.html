@@ -45,7 +45,7 @@ to a junction.expense_recognition_id == NULL row on the buying side).
                     <form hx-post="{{.RecognizeURL}}" hx-swap="none" style="display:inline">
                       {{actionForm .RecognizeURL $.WorkspaceID}}
                       <button type="submit"
-                              class="btn btn--primary btn--sm"
+                              class="btn btn-primary btn-sm"
                               data-testid="supplier-billing-event-recognize">
                           {{$.Labels.Actions.Recognize}}
                       </button>

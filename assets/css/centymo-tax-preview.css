@@ -1,0 +1,86 @@
+/* centymo-tax-preview.css — Tax preview table and related form utilities.
+ * Extracted from revenue-drawer-form.html and subscription-recognize-drawer-form.html
+ * per Wave 5 audit-remediation (5.3 inline-style → class extraction).
+ */
+
+/* ─── Tax preview table ─── */
+
+/* Wraps the tax lines <table> inside a form-summary container.
+ * Used in: revenue-drawer-form, subscription-recognize-drawer-form */
+.tax-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+}
+
+.tax-preview-table th,
+.tax-preview-table td {
+    padding: 4px 8px;
+}
+
+.tax-preview-table thead th {
+    text-align: left;
+}
+
+.tax-preview-table thead th:not(:first-child) {
+    text-align: right;
+}
+
+.tax-preview-table tbody td:not(:first-child) {
+    text-align: right;
+}
+
+/* tfoot totals row */
+.tax-preview-table tfoot tr {
+    font-weight: var(--font-weight-semibold);
+    border-top: var(--border-width) solid var(--border);
+}
+
+.tax-preview-table tfoot td:last-child {
+    text-align: right;
+}
+
+/* Muted sub-row (WHT amount / secondary totals) */
+.tax-preview-table__muted {
+    color: var(--text-subtle);
+}
+
+/* ─── Recognize-form variant (tighter padding, no horizontal cell padding) ─── */
+/* Used in subscription-recognize-drawer-form where the table sits inside a
+ * form-row single div (narrower context than the revenue drawer).
+ * Original inline style values: thead th = 4px 0, tbody td = 2px 0, tfoot td = 4px 0. */
+.tax-preview-table--compact th,
+.tax-preview-table--compact td {
+    padding: 2px 0;
+}
+
+.tax-preview-table--compact thead th {
+    padding: 4px 0;
+}
+
+.tax-preview-table--compact tfoot td {
+    padding: 4px 0;
+}
+
+/* ─── Read-only form input ─── */
+
+/* Replaces inline style="background: var(--bg-subtle); cursor: default;"
+ * on display-only <div class="form-input"> elements.
+ * Used in: revenue-drawer-form settlement status */
+.form-input--readonly {
+    background: var(--bg-subtle);
+    cursor: default;
+}
+
+/* ─── Fieldset reset ─── */
+
+/* Replaces inline style="border:0;padding:0;margin:0;min-width:0;" on
+ * the subscription-drawer-form fieldset (used for the edit-locked disabled
+ * wrapper that wraps all inputs in read-only mode).
+ * Only centymo-internal — class is not promoted to pyeza. */
+.fieldset-reset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
