@@ -306,7 +306,7 @@ Used by both Add and Edit actions.
 
         {{/* Tax rows table — gated on TaxLines being non-empty */}}
         {{if .TaxLines}}
-        <div data-testid="revenue-taxes" class="form-summary" style="margin-bottom: 1rem;">
+        <div data-testid="revenue-taxes" class="form-summary tax-lines-summary">
             <table id="revenue-tax-lines-table" class="tax-preview-table">
                 <thead>
                     <tr>
@@ -356,7 +356,7 @@ Used by both Add and Edit actions.
         {{end}}
 
         {{/* Action CTAs — independent of TaxLines */}}
-        <div class="form-row" style="gap: 0.5rem; margin-top: 0.5rem;">
+        <div class="form-row tax-actions-row">
             {{if .AddWHTCertURL}}
             <a href="{{.AddWHTCertURL}}" class="btn btn-secondary" data-testid="revenue-add-wht-certificate"
                hx-get="{{.AddWHTCertURL}}" hx-target="#sheetContent" hx-swap="innerHTML">

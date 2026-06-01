@@ -72,6 +72,21 @@
     cursor: default;
 }
 
+/* ─── Tax section spacing utilities ─── */
+
+/* Replaces inline style="margin-bottom: 1rem;" on the tax-lines
+ * form-summary wrapper in revenue-drawer-form (the {{if .TaxLines}} block). */
+.tax-lines-summary {
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Replaces inline style="gap: 0.5rem; margin-top: 0.5rem;" on the
+ * tax-section action-CTA form-row in revenue-drawer-form. */
+.tax-actions-row {
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
 /* ─── Fieldset reset ─── */
 
 /* Replaces inline style="border:0;padding:0;margin:0;min-width:0;" on
