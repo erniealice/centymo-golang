@@ -244,6 +244,17 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		// --- Load labels ---
 		var inventoryLabels centymo.InventoryLabels
+		// Wave 4.2 — wire the standalone inventory child JSONs into the
+		// InventoryLabels sub-fields. These files live ONLY in the general/
+		// tier (there is no general/inventory.json), so they supply the
+		// baseline serial / transaction / depreciation labels for the general
+		// tier and the 6 fallback verticals. They are loaded FIRST so the
+		// subsequent inventory.json overlay (professional / retail / service,
+		// which embed their own serial/transaction/depreciation subtrees) wins
+		// where present, while the general tier keeps these baseline values.
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "inventory_serial.json", "inventory_serial", &inventoryLabels.Serial)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "inventory_transaction.json", "inventory_transaction", &inventoryLabels.Transaction)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "inventory_depreciation.json", "inventory_depreciation", &inventoryLabels.Depreciation)
 		if err := translations.LoadPath("en", ctx.BusinessType, "inventory.json", "inventory", &inventoryLabels); err != nil {
 			log.Printf("centymo.Block: warning loading inventory labels: %v", err)
 		}
@@ -295,6 +306,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if err := translations.LoadPath("en", ctx.BusinessType, "expenditure.json", "expenditure", &expenditureLabels); err != nil {
 			log.Printf("centymo.Block: warning loading expenditure labels: %v", err)
 		}
+		// Wave 4.2 — wire the standalone expenditure_category.json into
+		// ExpenditureLabels.Category. expenditure.json carries no `category`
+		// subtree, so the expense-category list/form/action views
+		// (deps.Labels.Category) render blank without this overlay.
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expenditure_category.json", "expenditure_category", &expenditureLabels.Category)
 
 		collectionLabels := centymo.DefaultCollectionLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "collection.json", "collection", &collectionLabels)

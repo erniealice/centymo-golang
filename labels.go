@@ -4058,7 +4058,6 @@ type PlanLabels struct {
 	Tabs            PlanTabLabels         `json:"tabs"`
 	Confirm         PlanConfirmLabels     `json:"confirm"`
 	Errors          PlanErrorLabels       `json:"errors"`
-	PricePlanForm   PricePlanFormLabels   `json:"pricePlanForm"`
 	ProductPlanForm ProductPlanFormLabels `json:"productPlanForm"`
 	Filters         PlanFilterLabels      `json:"filters"`
 }
@@ -5186,24 +5185,6 @@ func DefaultPlanLabels() PlanLabels {
 			NoPermission:      "No permission",
 			CannotDelete:      "This plan cannot be deleted because it has products or rate cards assigned",
 			ClientScopeLocked: "Cannot change this plan's client while it has active subscriptions.",
-		},
-		PricePlanForm: PricePlanFormLabels{
-			Name:                "Price Plan Name",
-			NamePlaceholder:     "Enter price plan name",
-			Description:         "Description",
-			DescPlaceholder:     "Enter description...",
-			Amount:              "Amount",
-			AmountPlaceholder:   "0.00",
-			Currency:            "Currency",
-			CurrencyPlaceholder: "e.g. PHP",
-			DurationValue:       "Duration",
-			DurationUnit:        "Unit",
-			Schedule:            "Price Schedule",
-			SchedulePlaceholder: "Select a schedule...",
-			Location:            "Location",
-			LocationPlaceholder: "Select a location...",
-			SelectLocation:      "— No location (all locations) —",
-			Active:              "Active",
 		},
 		ProductPlanForm: ProductPlanFormLabels{
 			Product:            "Product",
