@@ -1,42 +1,69 @@
 {{define "supplier-product-cost-plan-drawer-form"}}
 <form method="POST" action="{{.FormAction}}">
     {{actionForm .FormAction .WorkspaceID}}
-  {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
-  <input type="hidden" name="cost_plan_id" value="{{.CostPlanID}}">
-  <div class="form-section">
-    <div class="form-group">
-      <label>{{.Labels.SupplierProductPlan}}</label>
-      <input type="hidden" name="supplier_product_plan_id" value="{{.SupplierProductPlanID}}">
-      <input type="text" placeholder="{{.Labels.SupplierProductPlanPlaceholder}}" value="{{.SupplierProductPlanLabel}}"
-             data-autocomplete-url="{{.SearchSupplierProductPlanURL}}"
-             data-autocomplete-target="supplier_product_plan_id">
+    {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+    <input type="hidden" name="cost_plan_id" value="{{.CostPlanID}}">
+
+    <div class="sheet-body">
+
+        {{/* ── §1 Supplier Product Plan ── */}}
+        <div class="form-section">
+            <div class="form-row single">
+                <div class="form-group">
+                    <label class="form-label" for="supplier-product-cost-plan-spp-input">{{.Labels.SupplierProductPlan}}</label>
+                    <input type="hidden" name="supplier_product_plan_id" value="{{.SupplierProductPlanID}}">
+                    <input type="text"
+                           id="supplier-product-cost-plan-spp-input"
+                           class="form-input"
+                           placeholder="{{.Labels.SupplierProductPlanPlaceholder}}"
+                           value="{{.SupplierProductPlanLabel}}"
+                           data-autocomplete-url="{{.SearchSupplierProductPlanURL}}"
+                           data-autocomplete-target="supplier_product_plan_id">
+                </div>
+            </div>
+        </div>
+
+        {{/* ── §2 Billing ── */}}
+        <div class="form-section">
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "billing_treatment"
+                    "Label" .Labels.BillingTreatment
+                    "Value" .BillingTreatment
+                    "Options" (list
+                        (dict "Value" "SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_RECURRING"           "Label" .Labels.TreatmentRecurring)
+                        (dict "Value" "SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_ONE_TIME_INITIAL"    "Label" .Labels.TreatmentOneTimeInitial)
+                        (dict "Value" "SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_USAGE_BASED"         "Label" .Labels.TreatmentUsageBased)
+                        (dict "Value" "SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_MINIMUM_COMMITMENT"  "Label" .Labels.TreatmentMinimumCommitment)
+                    )
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "amount"
+                    "Label" .Labels.Amount
+                    "Value" .Amount
+                    "Placeholder" .Labels.AmountPlaceholder
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §3 Lifecycle (edit only) ── */}}
+        {{if .IsEdit}}
+        <div class="form-section">
+            <label>
+                <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+                {{.Labels.Active}}
+            </label>
+        </div>
+        {{end}}
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="form-actions">
+        <button type="submit">{{.CommonLabels.Buttons.Save}}</button>
     </div>
-  </div>
-  <div class="form-section">
-    <div class="form-group">
-      <label>{{.Labels.BillingTreatment}}</label>
-      <select name="billing_treatment">
-        <option value="SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_RECURRING" {{if eq .BillingTreatment "SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_RECURRING"}}selected{{end}}>{{.Labels.TreatmentRecurring}}</option>
-        <option value="SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_ONE_TIME_INITIAL" {{if eq .BillingTreatment "SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_ONE_TIME_INITIAL"}}selected{{end}}>{{.Labels.TreatmentOneTimeInitial}}</option>
-        <option value="SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_USAGE_BASED" {{if eq .BillingTreatment "SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_USAGE_BASED"}}selected{{end}}>{{.Labels.TreatmentUsageBased}}</option>
-        <option value="SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_MINIMUM_COMMITMENT" {{if eq .BillingTreatment "SUPPLIER_PRODUCT_COST_PLAN_BILLING_TREATMENT_MINIMUM_COMMITMENT"}}selected{{end}}>{{.Labels.TreatmentMinimumCommitment}}</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>{{.Labels.Amount}}</label>
-      <input type="text" name="amount" value="{{.Amount}}" placeholder="{{.Labels.AmountPlaceholder}}">
-    </div>
-  </div>
-  {{if .IsEdit}}
-  <div class="form-section">
-    <label>
-      <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
-      {{.Labels.Active}}
-    </label>
-  </div>
-  {{end}}
-  <div class="form-actions">
-    <button type="submit">{{.CommonLabels.Buttons.Save}}</button>
-  </div>
 </form>
 {{end}}

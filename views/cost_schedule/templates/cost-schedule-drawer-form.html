@@ -1,37 +1,64 @@
 {{define "cost-schedule-drawer-form"}}
 <form method="POST" action="{{.FormAction}}">
     {{actionForm .FormAction .WorkspaceID}}
-  {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
-  <div class="form-section">
-    <div class="form-group">
-      <label>{{.Labels.Name}}</label>
-      <input type="text" name="name" value="{{.Name}}" placeholder="{{.Labels.NamePlaceholder}}">
+    {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+
+        {{/* ── §1 Identity ── */}}
+        <div class="form-section">
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "name"
+                    "Label" .Labels.Name
+                    "Value" .Name
+                    "Placeholder" .Labels.NamePlaceholder
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "description"
+                    "Label" .Labels.Description
+                    "Value" .Description
+                    "Placeholder" .Labels.DescPlaceholder
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §2 Validity ── */}}
+        <div class="form-section">
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "start_date"
+                    "Label" .Labels.StartDate
+                    "Value" .StartDate
+                )}}
+                {{template "form-group" (dict
+                    "Type" "date"
+                    "Name" "end_date"
+                    "Label" .Labels.EndDate
+                    "Value" .EndDate
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §3 Lifecycle (edit only) ── */}}
+        {{if .IsEdit}}
+        <div class="form-section">
+            <label>
+                <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+                {{.Labels.Active}}
+            </label>
+        </div>
+        {{end}}
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="form-actions">
+        <button type="submit">{{.CommonLabels.Buttons.Save}}</button>
     </div>
-    <div class="form-group">
-      <label>{{.Labels.Description}}</label>
-      <textarea name="description" placeholder="{{.Labels.DescPlaceholder}}">{{.Description}}</textarea>
-    </div>
-  </div>
-  <div class="form-section">
-    <div class="form-group">
-      <label>{{.Labels.StartDate}}</label>
-      <input type="date" name="start_date" value="{{.StartDate}}">
-    </div>
-    <div class="form-group">
-      <label>{{.Labels.EndDate}}</label>
-      <input type="date" name="end_date" value="{{.EndDate}}">
-    </div>
-  </div>
-  <div class="form-section">
-    {{if .IsEdit}}
-    <label>
-      <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
-      {{.Labels.Active}}
-    </label>
-    {{end}}
-  </div>
-  <div class="form-actions">
-    <button type="submit">{{.CommonLabels.Buttons.Save}}</button>
-  </div>
 </form>
 {{end}}

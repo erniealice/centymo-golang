@@ -1,41 +1,70 @@
 {{define "supplier-product-plan-drawer-form"}}
 <form method="POST" action="{{.FormAction}}">
     {{actionForm .FormAction .WorkspaceID}}
-  {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
-  <div class="form-section">
-    <div class="form-group">
-      <label>{{.Labels.SupplierPlan}}</label>
-      <input type="hidden" name="supplier_plan_id" value="{{.SupplierPlanID}}">
-      <input type="text" placeholder="{{.Labels.SupplierPlanPlaceholder}}" value="{{.SupplierPlanLabel}}"
-             data-autocomplete-url="{{.SearchSupplierPlanURL}}"
-             data-autocomplete-target="supplier_plan_id">
+    {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+
+        {{/* ── §1 Relationships + SKU/Unit ── */}}
+        <div class="form-section">
+            <div class="form-row single">
+                <div class="form-group">
+                    <label class="form-label" for="supplier-product-plan-supplier-plan-input">{{.Labels.SupplierPlan}}</label>
+                    <input type="hidden" name="supplier_plan_id" value="{{.SupplierPlanID}}">
+                    <input type="text"
+                           id="supplier-product-plan-supplier-plan-input"
+                           class="form-input"
+                           placeholder="{{.Labels.SupplierPlanPlaceholder}}"
+                           value="{{.SupplierPlanLabel}}"
+                           data-autocomplete-url="{{.SearchSupplierPlanURL}}"
+                           data-autocomplete-target="supplier_plan_id">
+                </div>
+            </div>
+            <div class="form-row single">
+                <div class="form-group">
+                    <label class="form-label" for="supplier-product-plan-product-input">{{.Labels.Product}}</label>
+                    <input type="hidden" name="product_id" value="{{.ProductID}}">
+                    <input type="text"
+                           id="supplier-product-plan-product-input"
+                           class="form-input"
+                           placeholder="{{.Labels.ProductPlaceholder}}"
+                           value="{{.ProductLabel}}"
+                           data-autocomplete-url="{{.SearchProductURL}}"
+                           data-autocomplete-target="product_id">
+                </div>
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "supplier_sku"
+                    "Label" .Labels.SupplierSKU
+                    "Value" .SupplierSKU
+                    "Placeholder" .Labels.SupplierSKUPlaceholder
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "supplier_unit"
+                    "Label" .Labels.SupplierUnit
+                    "Value" .SupplierUnit
+                    "Placeholder" .Labels.SupplierUnitPlaceholder
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §2 Lifecycle (edit only) ── */}}
+        {{if .IsEdit}}
+        <div class="form-section">
+            <label>
+                <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+                {{.Labels.Active}}
+            </label>
+        </div>
+        {{end}}
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="form-actions">
+        <button type="submit">{{.CommonLabels.Buttons.Save}}</button>
     </div>
-    <div class="form-group">
-      <label>{{.Labels.Product}}</label>
-      <input type="hidden" name="product_id" value="{{.ProductID}}">
-      <input type="text" placeholder="{{.Labels.ProductPlaceholder}}" value="{{.ProductLabel}}"
-             data-autocomplete-url="{{.SearchProductURL}}"
-             data-autocomplete-target="product_id">
-    </div>
-    <div class="form-group">
-      <label>{{.Labels.SupplierSKU}}</label>
-      <input type="text" name="supplier_sku" value="{{.SupplierSKU}}" placeholder="{{.Labels.SupplierSKUPlaceholder}}">
-    </div>
-    <div class="form-group">
-      <label>{{.Labels.SupplierUnit}}</label>
-      <input type="text" name="supplier_unit" value="{{.SupplierUnit}}" placeholder="{{.Labels.SupplierUnitPlaceholder}}">
-    </div>
-  </div>
-  {{if .IsEdit}}
-  <div class="form-section">
-    <label>
-      <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
-      {{.Labels.Active}}
-    </label>
-  </div>
-  {{end}}
-  <div class="form-actions">
-    <button type="submit">{{.CommonLabels.Buttons.Save}}</button>
-  </div>
 </form>
 {{end}}

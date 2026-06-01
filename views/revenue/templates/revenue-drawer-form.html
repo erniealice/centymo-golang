@@ -307,7 +307,7 @@ Used by both Add and Edit actions.
         {{/* Tax rows table — gated on TaxLines being non-empty */}}
         {{if .TaxLines}}
         <div data-testid="revenue-taxes" class="form-summary" style="margin-bottom: 1rem;">
-            <table style="width:100%; border-collapse: collapse; font-size: var(--text-sm);">
+            <table id="revenue-tax-lines-table" style="width:100%; border-collapse: collapse; font-size: var(--text-sm);">
                 <thead>
                     <tr>
                         <th style="text-align:left; padding: 4px 8px;">{{.Labels.TaxKind}}</th>

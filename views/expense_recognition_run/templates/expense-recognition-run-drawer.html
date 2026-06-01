@@ -66,7 +66,7 @@
             {{if .SubscriptionCandidates}}
             <details class="pyeza-accordion" open>
                 <summary>{{.Labels.Drawer.Supplier.GroupSubscriptionCycle}} ({{len .SubscriptionCandidates}})</summary>
-                <table class="data-table data-table--compact">
+                <table id="expense-recognition-run-subscription-candidates-table" class="data-table data-table--compact">
                     <thead>
                         <tr>
                             <th>{{.Labels.Drawer.Supplier.ColumnSource}}</th>
@@ -91,7 +91,7 @@
             {{if .AdvanceCandidates}}
             <details class="pyeza-accordion" open>
                 <summary>{{.Labels.Drawer.Supplier.GroupAdvanceDisbursementTranche}} ({{len .AdvanceCandidates}})</summary>
-                <table class="data-table data-table--compact">
+                <table id="expense-recognition-run-advance-candidates-table" class="data-table data-table--compact">
                     <thead>
                         <tr>
                             <th>{{.Labels.Drawer.Supplier.ColumnSource}}</th>
@@ -116,7 +116,7 @@
             {{if and (eq .Scope "supplier") .SuppressedCandidates}}
             <details class="pyeza-accordion">
                 <summary>{{.Labels.LinkedAdvanceSuppression.BannerTitle}} ({{len .SuppressedCandidates}})</summary>
-                <table class="data-table data-table--compact data-table--muted">
+                <table id="expense-recognition-run-suppressed-candidates-table" class="data-table data-table--compact data-table--muted">
                     <thead>
                         <tr>
                             <th>{{.Labels.Drawer.Supplier.ColumnSource}}</th>

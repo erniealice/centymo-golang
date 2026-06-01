@@ -1,72 +1,123 @@
 {{define "cost-plan-drawer-form"}}
 <form method="POST" action="{{.FormAction}}">
     {{actionForm .FormAction .WorkspaceID}}
-  {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
-  <div class="form-section">
-    <div class="form-group">
-      <label>{{.Labels.Name}}</label>
-      <input type="text" name="name" value="{{.Name}}" placeholder="{{.Labels.NamePlaceholder}}">
+    {{if .IsEdit}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+
+        {{/* ── §1 Identity ── */}}
+        <div class="form-section">
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "name"
+                    "Label" .Labels.Name
+                    "Value" .Name
+                    "Placeholder" .Labels.NamePlaceholder
+                )}}
+            </div>
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "textarea"
+                    "Name" "description"
+                    "Label" .Labels.Description
+                    "Value" .Description
+                    "Placeholder" .Labels.DescPlaceholder
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §2 Relationships ── */}}
+        <div class="form-section">
+            <div class="form-row single">
+                <div class="form-group">
+                    <label class="form-label" for="cost-plan-supplier-plan-input">{{.Labels.SupplierPlan}}</label>
+                    <input type="hidden" name="supplier_plan_id" value="{{.SupplierPlanID}}">
+                    <input type="text"
+                           id="cost-plan-supplier-plan-input"
+                           class="form-input"
+                           placeholder="{{.Labels.SupplierPlanPlaceholder}}"
+                           value="{{.SupplierPlanLabel}}"
+                           data-autocomplete-url="{{.SearchSupplierPlanURL}}"
+                           data-autocomplete-target="supplier_plan_id">
+                </div>
+            </div>
+            <div class="form-row single">
+                <div class="form-group">
+                    <label class="form-label" for="cost-plan-cost-schedule-input">{{.Labels.CostSchedule}}</label>
+                    <input type="hidden" name="cost_schedule_id" value="{{.CostScheduleID}}">
+                    <input type="text"
+                           id="cost-plan-cost-schedule-input"
+                           class="form-input"
+                           placeholder="{{.Labels.CostSchedulePlaceholder}}"
+                           value="{{.CostScheduleLabel}}"
+                           data-autocomplete-url="{{.SearchCostScheduleURL}}"
+                           data-autocomplete-target="cost_schedule_id">
+                </div>
+            </div>
+        </div>
+
+        {{/* ── §3 Billing ── */}}
+        <div class="form-section">
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "billing_kind"
+                    "Label" .Labels.BillingKind
+                    "Value" .BillingKind
+                    "Options" (list
+                        (dict "Value" "COST_PLAN_BILLING_KIND_ONE_TIME"    "Label" .Labels.BillingKindOneTime)
+                        (dict "Value" "COST_PLAN_BILLING_KIND_RECURRING"   "Label" .Labels.BillingKindRecurring)
+                        (dict "Value" "COST_PLAN_BILLING_KIND_CONTRACT"    "Label" .Labels.BillingKindContract)
+                        (dict "Value" "COST_PLAN_BILLING_KIND_USAGE_BASED" "Label" .Labels.BillingKindUsageBased)
+                        (dict "Value" "COST_PLAN_BILLING_KIND_AD_HOC"      "Label" .Labels.BillingKindAdHoc)
+                    )
+                )}}
+                {{template "form-group" (dict
+                    "Type" "select"
+                    "Name" "amount_basis"
+                    "Label" .Labels.AmountBasis
+                    "Value" .AmountBasis
+                    "Options" (list
+                        (dict "Value" "COST_PLAN_AMOUNT_BASIS_PER_CYCLE"            "Label" .Labels.AmountBasisPerCycle)
+                        (dict "Value" "COST_PLAN_AMOUNT_BASIS_TOTAL_PACKAGE"        "Label" .Labels.AmountBasisTotalPackage)
+                        (dict "Value" "COST_PLAN_AMOUNT_BASIS_DERIVED_FROM_LINES"   "Label" .Labels.AmountBasisDerivedFromLines)
+                        (dict "Value" "COST_PLAN_AMOUNT_BASIS_PER_OCCURRENCE"       "Label" .Labels.AmountBasisPerOccurrence)
+                    )
+                )}}
+            </div>
+            <div class="form-row">
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "amount"
+                    "Label" .Labels.Amount
+                    "Value" .Amount
+                    "Placeholder" .Labels.AmountPlaceholder
+                )}}
+                {{template "form-group" (dict
+                    "Type" "text"
+                    "Name" "currency"
+                    "Label" .Labels.Currency
+                    "Value" .Currency
+                    "Placeholder" .Labels.CurrencyPlaceholder
+                )}}
+            </div>
+        </div>
+
+        {{/* ── §4 Lifecycle (edit only) ── */}}
+        {{if .IsEdit}}
+        <div class="form-section">
+            <label>
+                <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+                {{.Labels.Active}}
+            </label>
+        </div>
+        {{end}}
+
+    </div>{{/* /sheet-body */}}
+
+    <div class="form-actions">
+        <button type="submit">{{.CommonLabels.Buttons.Save}}</button>
     </div>
-    <div class="form-group">
-      <label>{{.Labels.Description}}</label>
-      <textarea name="description" placeholder="{{.Labels.DescPlaceholder}}">{{.Description}}</textarea>
-    </div>
-  </div>
-  <div class="form-section">
-    <div class="form-group">
-      <label>{{.Labels.SupplierPlan}}</label>
-      <input type="hidden" name="supplier_plan_id" value="{{.SupplierPlanID}}">
-      <input type="text" placeholder="{{.Labels.SupplierPlanPlaceholder}}" value="{{.SupplierPlanLabel}}"
-             data-autocomplete-url="{{.SearchSupplierPlanURL}}"
-             data-autocomplete-target="supplier_plan_id">
-    </div>
-    <div class="form-group">
-      <label>{{.Labels.CostSchedule}}</label>
-      <input type="hidden" name="cost_schedule_id" value="{{.CostScheduleID}}">
-      <input type="text" placeholder="{{.Labels.CostSchedulePlaceholder}}" value="{{.CostScheduleLabel}}"
-             data-autocomplete-url="{{.SearchCostScheduleURL}}"
-             data-autocomplete-target="cost_schedule_id">
-    </div>
-  </div>
-  <div class="form-section">
-    <div class="form-group">
-      <label>{{.Labels.BillingKind}}</label>
-      <select name="billing_kind">
-        <option value="COST_PLAN_BILLING_KIND_ONE_TIME" {{if eq .BillingKind "COST_PLAN_BILLING_KIND_ONE_TIME"}}selected{{end}}>{{.Labels.BillingKindOneTime}}</option>
-        <option value="COST_PLAN_BILLING_KIND_RECURRING" {{if eq .BillingKind "COST_PLAN_BILLING_KIND_RECURRING"}}selected{{end}}>{{.Labels.BillingKindRecurring}}</option>
-        <option value="COST_PLAN_BILLING_KIND_CONTRACT" {{if eq .BillingKind "COST_PLAN_BILLING_KIND_CONTRACT"}}selected{{end}}>{{.Labels.BillingKindContract}}</option>
-        <option value="COST_PLAN_BILLING_KIND_USAGE_BASED" {{if eq .BillingKind "COST_PLAN_BILLING_KIND_USAGE_BASED"}}selected{{end}}>{{.Labels.BillingKindUsageBased}}</option>
-        <option value="COST_PLAN_BILLING_KIND_AD_HOC" {{if eq .BillingKind "COST_PLAN_BILLING_KIND_AD_HOC"}}selected{{end}}>{{.Labels.BillingKindAdHoc}}</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>{{.Labels.AmountBasis}}</label>
-      <select name="amount_basis">
-        <option value="COST_PLAN_AMOUNT_BASIS_PER_CYCLE" {{if eq .AmountBasis "COST_PLAN_AMOUNT_BASIS_PER_CYCLE"}}selected{{end}}>{{.Labels.AmountBasisPerCycle}}</option>
-        <option value="COST_PLAN_AMOUNT_BASIS_TOTAL_PACKAGE" {{if eq .AmountBasis "COST_PLAN_AMOUNT_BASIS_TOTAL_PACKAGE"}}selected{{end}}>{{.Labels.AmountBasisTotalPackage}}</option>
-        <option value="COST_PLAN_AMOUNT_BASIS_DERIVED_FROM_LINES" {{if eq .AmountBasis "COST_PLAN_AMOUNT_BASIS_DERIVED_FROM_LINES"}}selected{{end}}>{{.Labels.AmountBasisDerivedFromLines}}</option>
-        <option value="COST_PLAN_AMOUNT_BASIS_PER_OCCURRENCE" {{if eq .AmountBasis "COST_PLAN_AMOUNT_BASIS_PER_OCCURRENCE"}}selected{{end}}>{{.Labels.AmountBasisPerOccurrence}}</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>{{.Labels.Amount}}</label>
-      <input type="text" name="amount" value="{{.Amount}}" placeholder="{{.Labels.AmountPlaceholder}}">
-    </div>
-    <div class="form-group">
-      <label>{{.Labels.Currency}}</label>
-      <input type="text" name="currency" value="{{.Currency}}" placeholder="{{.Labels.CurrencyPlaceholder}}">
-    </div>
-  </div>
-  {{if .IsEdit}}
-  <div class="form-section">
-    <label>
-      <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
-      {{.Labels.Active}}
-    </label>
-  </div>
-  {{end}}
-  <div class="form-actions">
-    <button type="submit">{{.CommonLabels.Buttons.Save}}</button>
-  </div>
 </form>
 {{end}}
