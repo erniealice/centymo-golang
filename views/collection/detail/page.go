@@ -347,7 +347,7 @@ func buildTabItemsWithAdvance(l centymo.CollectionLabels, id string, routes cent
 	items = append(items,
 		pyeza.TabItem{Key: "attachments", Label: l.Detail.TabAttachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		pyeza.TabItem{Key: "audit", Label: l.Detail.TabAuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
-		pyeza.TabItem{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+		pyeza.TabItem{Key: "audit-history", Label: l.Detail.TabAuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	)
 	return items
 }

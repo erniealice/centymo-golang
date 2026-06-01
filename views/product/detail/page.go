@@ -425,9 +425,9 @@ func buildTabItems(id string, l centymo.ProductLabels, variantCount, optionCount
 		)
 	}
 	items = append(items,
-		pyeza.TabItem{Key: "lines", Label: "Lines", Href: base + "?tab=lines", HxGet: action + "lines", Icon: "icon-layers", Count: lineCount, Disabled: false},
+		pyeza.TabItem{Key: "lines", Label: l.Tabs.Lines, Href: base + "?tab=lines", HxGet: action + "lines", Icon: "icon-layers", Count: lineCount, Disabled: false},
 		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
-		pyeza.TabItem{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+		pyeza.TabItem{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	)
 	return items
 }

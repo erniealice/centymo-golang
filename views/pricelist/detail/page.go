@@ -266,7 +266,7 @@ func buildTabItems(id string, labels centymo.PriceListLabels, routes centymo.Pri
 		{Key: "basic", Label: labels.Detail.BasicInfo, Href: base + "?tab=basic", HxGet: action + "basic"},
 		{Key: "prices", Label: labels.Detail.Prices, Href: base + "?tab=prices", HxGet: action + "prices"},
 		{Key: "attachments", Label: labels.Detail.TabAttachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
-		{Key: "audit-history", Label: "History", Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+		{Key: "audit-history", Label: labels.Detail.TabAuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	}
 }
 

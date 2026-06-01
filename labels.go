@@ -175,6 +175,7 @@ type InventoryTabLabels struct {
 	Depreciation string `json:"depreciation"`
 	Audit        string `json:"audit"`
 	Attachments  string `json:"attachments"`
+	AuditHistory string `json:"auditHistory"`
 }
 
 type TrackingModeLabels struct {
@@ -490,11 +491,12 @@ type RevenueDetailLabels struct {
 	GrandTotal  string `json:"grandTotal"`
 
 	// Tab labels
-	TabBasicInfo   string `json:"tabBasicInfo"`
-	TabLineItems   string `json:"tabLineItems"`
-	TabPayment     string `json:"tabPayment"`
-	TabAttachments string `json:"tabAttachments"`
-	TabAuditTrail  string `json:"tabAuditTrail"`
+	TabBasicInfo    string `json:"tabBasicInfo"`
+	TabLineItems    string `json:"tabLineItems"`
+	TabPayment      string `json:"tabPayment"`
+	TabAttachments  string `json:"tabAttachments"`
+	TabAuditTrail   string `json:"tabAuditTrail"`
+	TabAuditHistory string `json:"tabAuditHistory"`
 
 	// Basic info fields
 	Customer     string `json:"customer"`
@@ -1895,15 +1897,17 @@ type ProductBulkLabels struct {
 }
 
 type ProductTabLabels struct {
-	Info        string `json:"info"`
-	Variants    string `json:"variants"`
-	Attributes  string `json:"attributes"`
-	Pricing     string `json:"pricing"`
-	Options     string `json:"options"`
-	Images      string `json:"images"`
-	Stock       string `json:"stock"`
-	Attachments string `json:"attachments"`
-	AuditTrail  string `json:"auditTrail"`
+	Info         string `json:"info"`
+	Variants     string `json:"variants"`
+	Attributes   string `json:"attributes"`
+	Pricing      string `json:"pricing"`
+	Options      string `json:"options"`
+	Images       string `json:"images"`
+	Stock        string `json:"stock"`
+	Lines        string `json:"lines"`
+	Attachments  string `json:"attachments"`
+	AuditTrail   string `json:"auditTrail"`
+	AuditHistory string `json:"auditHistory"`
 	// Inventory item sub-tabs
 	Serials        string `json:"serials"`
 	PricingHistory string `json:"pricingHistory"`
@@ -2255,6 +2259,7 @@ type PriceListDetailLabels struct {
 	BasicInfo          string `json:"basicInfo"`
 	Prices             string `json:"prices"`
 	TabAttachments     string `json:"tabAttachments"`
+	TabAuditHistory    string `json:"tabAuditHistory"`
 	ProductName        string `json:"productName"`
 	Amount             string `json:"amount"`
 	Currency           string `json:"currency"`
@@ -2433,6 +2438,7 @@ type ProductLineDetailLabels struct {
 	TabBasicInfo         string `json:"tabBasicInfo"`
 	TabAttachments       string `json:"tabAttachments"`
 	TabAuditTrail        string `json:"tabAuditTrail"`
+	TabAuditHistory      string `json:"tabAuditHistory"`
 	AuditAction          string `json:"auditAction"`
 	AuditUser            string `json:"auditUser"`
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
@@ -2582,6 +2588,7 @@ func DefaultProductLineLabels() ProductLineLabels {
 			TabBasicInfo:         "Info",
 			TabAttachments:       "Attachments",
 			TabAuditTrail:        "Audit Trail",
+			TabAuditHistory:      "History",
 			AuditAction:          "Action",
 			AuditUser:            "User",
 			AuditEmptyTitle:      "No audit entries",
@@ -3474,6 +3481,7 @@ type CollectionDetailLabels struct {
 	TabBasicInfo         string `json:"tabBasicInfo"`
 	TabAttachments       string `json:"tabAttachments"`
 	TabAuditTrail        string `json:"tabAuditTrail"`
+	TabAuditHistory      string `json:"tabAuditHistory"`
 	AuditAction          string `json:"auditAction"`
 	AuditUser            string `json:"auditUser"`
 	AuditEmptyTitle      string `json:"auditEmptyTitle"`
@@ -3609,6 +3617,7 @@ func DefaultCollectionLabels() CollectionLabels {
 			TabBasicInfo:         "Basic Info",
 			TabAttachments:       "Attachments",
 			TabAuditTrail:        "Audit Trail",
+			TabAuditHistory:      "History",
 			AuditAction:          "Action",
 			AuditUser:            "User",
 			AuditEmptyTitle:      "No audit records",
@@ -3810,6 +3819,7 @@ type DisbursementDetailLabels struct {
 	TabBasicInfo      string `json:"tabBasicInfo"`
 	TabAttachments    string `json:"tabAttachments"`
 	TabAuditTrail     string `json:"tabAuditTrail"`
+	TabAuditHistory   string `json:"tabAuditHistory"`
 	AuditAction       string `json:"auditAction"`
 	AuditUser         string `json:"auditUser"`
 	AuditEmptyTitle   string `json:"auditEmptyTitle"`
@@ -3981,6 +3991,7 @@ func DefaultDisbursementLabels() DisbursementLabels {
 			TabBasicInfo:      "Basic Info",
 			TabAttachments:    "Attachments",
 			TabAuditTrail:     "Audit Trail",
+			TabAuditHistory:   "History",
 			AuditAction:       "Action",
 			AuditUser:         "User",
 			AuditEmptyTitle:   "No audit records",
@@ -4509,6 +4520,7 @@ type PlanTabLabels struct {
 	PricePlanSlug string `json:"pricePlanSlug"`
 	Attachments   string `json:"attachments"`
 	AuditTrail    string `json:"auditTrail"`
+	AuditHistory  string `json:"auditHistory"`
 }
 
 // ResolveTabSlug returns the URL slug for a canonical tab key. The "products"
@@ -5190,6 +5202,7 @@ func DefaultPlanLabels() PlanLabels {
 			PricePlanSlug: "",
 			Attachments:   "Attachments",
 			AuditTrail:    "Audit Trail",
+			AuditHistory:  "History",
 		},
 		Confirm: PlanConfirmLabels{
 			Delete:                "Delete Plan",
