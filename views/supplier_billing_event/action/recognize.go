@@ -48,26 +48,26 @@ func NewRecognizeAction(
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if perms != nil && !perms.Can("supplier_billing_event", "recognize") && !perms.Can("expense_recognition", "create") {
-			return centymo.HTMXError(errLabels.PermissionDenied)
+			return view.HTMXError(errLabels.PermissionDenied)
 		}
 		if viewCtx.Request.Method != http.MethodPost {
-			return centymo.HTMXError(errLabels.InvalidTransition)
+			return view.HTMXError(errLabels.InvalidTransition)
 		}
 		if recognize == nil {
-			return centymo.HTMXError(errLabels.InvalidTransition)
+			return view.HTMXError(errLabels.InvalidTransition)
 		}
 		eventID := viewCtx.Request.PathValue("id")
 		if eventID == "" {
-			return centymo.HTMXError(errLabels.NotFound)
+			return view.HTMXError(errLabels.NotFound)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(errLabels.InvalidTransition)
+			return view.HTMXError(errLabels.InvalidTransition)
 		}
 		advanceID := strings.TrimSpace(viewCtx.Request.FormValue("advance_id"))
 		if advanceID == "" {
 			// v1: surface a clear validation message rather than silently
 			// looking up junctions — the caller must pass advance_id.
-			return centymo.HTMXError(errLabels.NotFound)
+			return view.HTMXError(errLabels.NotFound)
 		}
 		out, err := recognize(ctx, centymo.AdvanceRecognizeMilestoneInput{
 			AdvanceID: advanceID,
@@ -75,7 +75,7 @@ func NewRecognizeAction(
 		})
 		if err != nil {
 			log.Printf("Recognize supplier milestone failed (advance=%s event=%s): %v", advanceID, eventID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 		_ = out
 		return view.ViewResult{

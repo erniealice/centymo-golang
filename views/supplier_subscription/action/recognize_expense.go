@@ -44,22 +44,22 @@ func NewRecognizeExpenseAction(deps *RecognizeExpenseDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("expense_recognition", "create") {
-			return centymo.HTMXError("Missing permission: expense_recognition:create")
+			return view.HTMXError("Missing permission: expense_recognition:create")
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}
 		if deps == nil || deps.RecognizeFromExpenditure == nil {
-			return centymo.HTMXError("recognize-expense handler not wired")
+			return view.HTMXError("recognize-expense handler not wired")
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("invalid form data")
+			return view.HTMXError("invalid form data")
 		}
 
 		expenditureID := viewCtx.Request.FormValue("expenditure_id")
 		if expenditureID == "" {
-			return centymo.HTMXError("expenditure_id is required")
+			return view.HTMXError("expenditure_id is required")
 		}
 
 		req := &expenserecognitionpb.RecognizeFromExpenditureRequest{
@@ -75,9 +75,9 @@ func NewRecognizeExpenseAction(deps *RecognizeExpenseDeps) view.View {
 		if _, err := deps.RecognizeFromExpenditure(ctx, req); err != nil {
 			log.Printf("RecognizeExpense (supplier_subscription %s, expenditure %s): %v",
 				viewCtx.Request.PathValue("id"), expenditureID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("expense-recognitions-table")
+		return view.HTMXSuccess("expense-recognitions-table")
 	})
 }

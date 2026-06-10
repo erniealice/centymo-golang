@@ -33,7 +33,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("resource", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -46,7 +46,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST — create resource
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -69,10 +69,10 @@ func NewAddAction(deps *Deps) view.View {
 
 		if _, err := deps.CreateResource(ctx, req); err != nil {
 			log.Printf("Failed to create resource: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("resources-table")
+		return view.HTMXSuccess("resources-table")
 	})
 }
 
@@ -81,7 +81,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("resource", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -92,7 +92,7 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil || len(readResp.GetData()) == 0 {
 				log.Printf("Failed to read resource %s: %v", id, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := readResp.GetData()[0]
 
@@ -111,7 +111,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST — update resource
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -134,10 +134,10 @@ func NewEditAction(deps *Deps) view.View {
 
 		if _, err := deps.UpdateResource(ctx, req); err != nil {
 			log.Printf("Failed to update resource %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("resources-table")
+		return view.HTMXSuccess("resources-table")
 	})
 }
 
@@ -146,7 +146,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("resource", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -155,17 +155,17 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		if _, err := deps.DeleteResource(ctx, &resourcepb.DeleteResourceRequest{
 			Data: &resourcepb.Resource{Id: id},
 		}); err != nil {
 			log.Printf("Failed to delete resource %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("resources-table")
+		return view.HTMXSuccess("resources-table")
 	})
 }
 
@@ -174,7 +174,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("resource", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -186,14 +186,14 @@ func NewSetStatusAction(deps *Deps) view.View {
 			targetStatus = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		readResp, err := deps.ReadResource(ctx, &resourcepb.ReadResourceRequest{
 			Data: &resourcepb.Resource{Id: id},
 		})
 		if err != nil || len(readResp.GetData()) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		record := readResp.GetData()[0]
 
@@ -208,10 +208,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 			},
 		})
 		if err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("resources-table")
+		return view.HTMXSuccess("resources-table")
 	})
 }
 
@@ -220,7 +220,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("resource", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -250,7 +250,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			})
 		}
 
-		return centymo.HTMXSuccess("resources-table")
+		return view.HTMXSuccess("resources-table")
 	})
 }
 
@@ -259,11 +259,11 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("resource", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		for _, id := range viewCtx.Request.Form["id"] {
@@ -274,6 +274,6 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("resources-table")
+		return view.HTMXSuccess("resources-table")
 	})
 }

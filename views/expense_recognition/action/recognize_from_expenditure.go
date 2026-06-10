@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/pyeza-golang/view"
 
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
@@ -30,20 +29,20 @@ func NewRecognizeFromExpenditureAction(fn RecognizeFromExpenditureFunc) view.Vie
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("expense_recognition", "create") {
-			return centymo.HTMXError("Missing permission: expense_recognition:create")
+			return view.HTMXError("Missing permission: expense_recognition:create")
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
 		}
 		if fn == nil {
-			return centymo.HTMXError("recognize-from-expenditure handler not wired")
+			return view.HTMXError("recognize-from-expenditure handler not wired")
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("invalid form data")
+			return view.HTMXError("invalid form data")
 		}
 		expenditureID := viewCtx.Request.FormValue("expenditure_id")
 		if expenditureID == "" {
-			return centymo.HTMXError("expenditure_id is required")
+			return view.HTMXError("expenditure_id is required")
 		}
 		req := &expenserecognitionpb.RecognizeFromExpenditureRequest{
 			ExpenditureId: expenditureID,
@@ -56,8 +55,8 @@ func NewRecognizeFromExpenditureAction(fn RecognizeFromExpenditureFunc) view.Vie
 		}
 		if _, err := fn(ctx, req); err != nil {
 			log.Printf("RecognizeFromExpenditure %s: %v", expenditureID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("expense-recognitions-table")
+		return view.HTMXSuccess("expense-recognitions-table")
 	})
 }

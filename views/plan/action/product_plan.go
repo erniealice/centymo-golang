@@ -51,7 +51,7 @@ type KindOption struct {
 // ProductPlanFormData is the template data for the product plan drawer form.
 type ProductPlanFormData struct {
 	FormAction           string
-	WorkspaceID           string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	WorkspaceID          string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	Nonce                string // CSP nonce; populated by ViewAdapter.injectPageData (NonceFromContext) for inline <script nonce>
 	PickerURL            string
 	VariantPickerURL     string
@@ -404,7 +404,7 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		planID := viewCtx.Request.PathValue("id")
@@ -439,7 +439,7 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 
 		// POST — create product plan
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -461,7 +461,7 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 		// require variant_id iff the parent product is variant-configurable.
 		variantMode := lookupProductVariantMode(ctx, deps, productID)
 		if variantMode == "configurable" && variantID == "" {
-			return centymo.HTMXError("Please select a variant for this product.")
+			return view.HTMXError("Please select a variant for this product.")
 		}
 		if variantMode != "configurable" && variantID != "" {
 			// Simple products never carry a variant.
@@ -483,10 +483,10 @@ func NewProductPlanAddAction(deps *ProductPlanDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create product plan for plan %s: %v", planID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("plan-products-table")
+		return view.HTMXSuccess("plan-products-table")
 	})
 }
 
@@ -496,7 +496,7 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		planID := viewCtx.Request.PathValue("id")
@@ -508,11 +508,11 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read product plan %s: %v", ppID, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			data := resp.GetData()
 			if len(data) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			pp := data[0]
 
@@ -562,7 +562,7 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 
 		// POST — update product plan
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -581,7 +581,7 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 
 		variantMode := lookupProductVariantMode(ctx, deps, productID)
 		if variantMode == "configurable" && variantID == "" {
-			return centymo.HTMXError("Please select a variant for this product.")
+			return view.HTMXError("Please select a variant for this product.")
 		}
 		if variantMode != "configurable" && variantID != "" {
 			variantID = ""
@@ -603,10 +603,10 @@ func NewProductPlanEditAction(deps *ProductPlanDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update product plan %s: %v", ppID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("plan-products-table")
+		return view.HTMXSuccess("plan-products-table")
 	})
 }
 
@@ -639,7 +639,7 @@ func NewProductPlanPickerAction(deps *ProductPlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_plan", "create") && !perms.Can("product_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		planID := viewCtx.Request.PathValue("id")
@@ -685,7 +685,7 @@ func NewProductPlanDeleteAction(deps *ProductPlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		ppID := viewCtx.Request.URL.Query().Get("id")
@@ -694,7 +694,7 @@ func NewProductPlanDeleteAction(deps *ProductPlanDeps) view.View {
 			ppID = viewCtx.Request.FormValue("id")
 		}
 		if ppID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeleteProductPlan(ctx, &productplanpb.DeleteProductPlanRequest{
@@ -702,9 +702,9 @@ func NewProductPlanDeleteAction(deps *ProductPlanDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete product plan %s: %v", ppID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("plan-products-table")
+		return view.HTMXSuccess("plan-products-table")
 	})
 }

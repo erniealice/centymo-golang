@@ -29,9 +29,9 @@ type MaterializeInstanceJobsRequest struct {
 
 // MaterializeInstanceJobsResponse mirrors the espyna consumer-surface response.
 type MaterializeInstanceJobsResponse struct {
-	SpawnedCycleCount         int
-	SpawnedJobCount           int
-	OnceAtStartJobCount       int
+	SpawnedCycleCount       int
+	SpawnedJobCount         int
+	OnceAtStartJobCount     int
 	ShellJobWasNewlyCreated bool
 	SkippedReason           string
 	BackfillCappedAt        int32
@@ -61,14 +61,14 @@ func NewSpawnCycleJobsAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if perms != nil && !perms.Can("subscription", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		subscriptionID := viewCtx.Request.PathValue("subscriptionId")
 		if subscriptionID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 		if deps.MaterializeInstanceJobsForSubscription == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseForm()
@@ -81,9 +81,9 @@ func NewSpawnCycleJobsAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to spawn cycle jobs for subscription %s: %v", subscriptionID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("subscription-operations-tab")
+		return view.HTMXSuccess("subscription-operations-tab")
 	})
 }
 
@@ -94,11 +94,11 @@ func NewBackfillCyclesAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if perms != nil && !perms.Can("subscription", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		subscriptionID := viewCtx.Request.PathValue("subscriptionId")
 		if subscriptionID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		formAction := strings.ReplaceAll(deps.Routes.BackfillCycleJobsURL, "{subscriptionId}", subscriptionID)
@@ -129,7 +129,7 @@ func NewBackfillCyclesAction(deps *Deps) view.View {
 
 		// POST — invoke the adapter.
 		if deps.MaterializeInstanceJobsForSubscription == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		_ = viewCtx.Request.ParseForm()
 		countStr := strings.TrimSpace(viewCtx.Request.FormValue("count"))
@@ -138,7 +138,7 @@ func NewBackfillCyclesAction(deps *Deps) view.View {
 		}
 		count, err := strconv.Atoi(countStr)
 		if err != nil || count < 1 {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		if count > 24 {
 			count = 24
@@ -151,8 +151,8 @@ func NewBackfillCyclesAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to backfill cycle jobs for subscription %s: %v", subscriptionID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("subscription-operations-tab")
+		return view.HTMXSuccess("subscription-operations-tab")
 	})
 }

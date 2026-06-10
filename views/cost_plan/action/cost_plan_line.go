@@ -71,7 +71,7 @@ func NewCostPlanLineAddAction(deps *CostPlanLineDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_product_cost_plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		costPlanID := viewCtx.Request.PathValue("id")
 		addURL := route.ResolveURL(deps.CostPlanRoutes.ProductCostAddURL, "id", costPlanID)
@@ -86,7 +86,7 @@ func NewCostPlanLineAddAction(deps *CostPlanLineDeps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		supplierProductPlanID := r.FormValue("supplier_product_plan_id")
@@ -108,9 +108,9 @@ func NewCostPlanLineAddAction(deps *CostPlanLineDeps) view.View {
 
 		if _, err := deps.CreateSupplierProductCostPlan(ctx, &supplierproductcostplanpb.CreateSupplierProductCostPlanRequest{Data: spcp}); err != nil {
 			log.Printf("Failed to create supplier product cost plan: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("cost-plan-lines-table")
+		return view.HTMXSuccess("cost-plan-lines-table")
 	})
 }
 
@@ -120,7 +120,7 @@ func NewCostPlanLineEditAction(deps *CostPlanLineDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_product_cost_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		costPlanID := viewCtx.Request.PathValue("id")
 		pcid := viewCtx.Request.PathValue("pcid")
@@ -135,7 +135,7 @@ func NewCostPlanLineEditAction(deps *CostPlanLineDeps) view.View {
 					SupplierProductCostPlanId: pcid,
 				})
 				if err != nil || resp == nil || resp.GetSupplierProductCostPlan() == nil {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetSupplierProductCostPlan()
 			} else {
@@ -143,7 +143,7 @@ func NewCostPlanLineEditAction(deps *CostPlanLineDeps) view.View {
 					Data: &supplierproductcostplanpb.SupplierProductCostPlan{Id: pcid},
 				})
 				if err != nil || len(resp.GetData()) == 0 {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetData()[0]
 			}
@@ -169,7 +169,7 @@ func NewCostPlanLineEditAction(deps *CostPlanLineDeps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		supplierProductPlanID := r.FormValue("supplier_product_plan_id")
@@ -192,9 +192,9 @@ func NewCostPlanLineEditAction(deps *CostPlanLineDeps) view.View {
 
 		if _, err := deps.UpdateSupplierProductCostPlan(ctx, &supplierproductcostplanpb.UpdateSupplierProductCostPlanRequest{Data: spcp}); err != nil {
 			log.Printf("Failed to update supplier product cost plan %s: %v", pcid, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("cost-plan-lines-table")
+		return view.HTMXSuccess("cost-plan-lines-table")
 	})
 }
 
@@ -204,7 +204,7 @@ func NewCostPlanLineDeleteAction(deps *CostPlanLineDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_product_cost_plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.URL.Query().Get("id")
 		if id == "" {
@@ -212,13 +212,13 @@ func NewCostPlanLineDeleteAction(deps *CostPlanLineDeps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		if _, err := deps.DeleteSupplierProductCostPlan(ctx, &supplierproductcostplanpb.DeleteSupplierProductCostPlanRequest{
 			Data: &supplierproductcostplanpb.SupplierProductCostPlan{Id: id},
 		}); err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("cost-plan-lines-table")
+		return view.HTMXSuccess("cost-plan-lines-table")
 	})
 }

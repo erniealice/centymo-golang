@@ -30,7 +30,7 @@ type AdvanceActionDeps struct {
 // AdvanceDrawerData is the per-template data carrier (mirrors collection-side).
 type AdvanceDrawerData struct {
 	FormAction        string
-	WorkspaceID        string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	WorkspaceID       string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	AdvanceID         string
 	Action            string
 	Labels            centymo.TreasuryAdvanceLabels
@@ -48,7 +48,7 @@ func NewSettleAction(deps *AdvanceActionDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("treasury_disbursement", "settle") && !perms.Can("disbursement", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 
@@ -68,10 +68,10 @@ func NewSettleAction(deps *AdvanceActionDeps) view.View {
 		}
 
 		if deps.SettleUnscheduled == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		if _, err := deps.SettleUnscheduled(ctx, centymo.AdvanceSettleViewInput{
@@ -81,9 +81,9 @@ func NewSettleAction(deps *AdvanceActionDeps) view.View {
 			Reason:          r.FormValue("reason"),
 		}); err != nil {
 			log.Printf("Failed to settle advance disbursement %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("disbursements-table")
+		return view.HTMXSuccess("disbursements-table")
 	})
 }
 
@@ -92,7 +92,7 @@ func NewRefundAction(deps *AdvanceActionDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("treasury_disbursement", "refund") && !perms.Can("disbursement", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 
@@ -112,10 +112,10 @@ func NewRefundAction(deps *AdvanceActionDeps) view.View {
 		}
 
 		if deps.RefundUnscheduled == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		if _, err := deps.RefundUnscheduled(ctx, centymo.AdvanceRefundViewInput{
@@ -126,9 +126,9 @@ func NewRefundAction(deps *AdvanceActionDeps) view.View {
 			Reason:             r.FormValue("reason"),
 		}); err != nil {
 			log.Printf("Failed to refund advance disbursement %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("disbursements-table")
+		return view.HTMXSuccess("disbursements-table")
 	})
 }
 
@@ -137,7 +137,7 @@ func NewCancelAction(deps *AdvanceActionDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("treasury_disbursement", "cancel") && !perms.Can("disbursement", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 
@@ -155,19 +155,19 @@ func NewCancelAction(deps *AdvanceActionDeps) view.View {
 		}
 
 		if deps.Cancel == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		if _, err := deps.Cancel(ctx, centymo.AdvanceCancelViewInput{
 			AdvanceID: id,
 			Reason:    viewCtx.Request.FormValue("reason"),
 		}); err != nil {
 			log.Printf("Failed to cancel advance disbursement %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("disbursements-table")
+		return view.HTMXSuccess("disbursements-table")
 	})
 }
 

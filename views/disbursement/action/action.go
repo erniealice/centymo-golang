@@ -76,7 +76,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("disbursement", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -92,7 +92,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST — create disbursement
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -112,7 +112,7 @@ func NewAddAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create disbursement: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		newID := ""
@@ -129,7 +129,7 @@ func NewAddAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("disbursements-table")
+		return view.HTMXSuccess("disbursements-table")
 	})
 }
 
@@ -138,7 +138,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("disbursement", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -149,11 +149,11 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read disbursement %s: %v", id, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			readData := readResp.GetData()
 			if len(readData) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := readData[0]
 
@@ -181,7 +181,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST — update disbursement
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -202,7 +202,7 @@ func NewEditAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update disbursement %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		return view.ViewResult{
@@ -220,7 +220,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("disbursement", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -229,7 +229,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeleteDisbursement(ctx, &disbursementpb.DeleteDisbursementRequest{
@@ -237,10 +237,10 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete disbursement %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("disbursements-table")
+		return view.HTMXSuccess("disbursements-table")
 	})
 }
 
@@ -249,14 +249,14 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("disbursement", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 
 		ids := viewCtx.Request.Form["id"]
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		for _, id := range ids {
@@ -268,7 +268,7 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("disbursements-table")
+		return view.HTMXSuccess("disbursements-table")
 	})
 }
 
@@ -283,7 +283,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("disbursement", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -295,11 +295,11 @@ func NewSetStatusAction(deps *Deps) view.View {
 			targetStatus = viewCtx.Request.FormValue("target_status")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		if !isValidStatus(targetStatus) {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		// Read current record to validate transition
@@ -308,26 +308,26 @@ func NewSetStatusAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to read disbursement %s: %v", id, err)
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		readData := readResp.GetData()
 		if len(readData) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 
 		currentStatus := readData[0].GetStatus()
 		if !isValidTransition(currentStatus, targetStatus) {
-			return centymo.HTMXError(fmt.Sprintf(deps.Labels.Errors.InvalidTransition, currentStatus, targetStatus))
+			return view.HTMXError(fmt.Sprintf(deps.Labels.Errors.InvalidTransition, currentStatus, targetStatus))
 		}
 
 		if _, err := deps.UpdateDisbursement(ctx, &disbursementpb.UpdateDisbursementRequest{
 			Data: &disbursementpb.Disbursement{Id: id, Status: targetStatus},
 		}); err != nil {
 			log.Printf("Failed to update disbursement status %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("disbursements-table")
+		return view.HTMXSuccess("disbursements-table")
 	})
 }
 
@@ -336,7 +336,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("disbursement", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -345,11 +345,11 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		targetStatus := viewCtx.Request.FormValue("target_status")
 
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		if !isValidStatus(targetStatus) {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		for _, id := range ids {
@@ -379,7 +379,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("disbursements-table")
+		return view.HTMXSuccess("disbursements-table")
 	})
 }
 

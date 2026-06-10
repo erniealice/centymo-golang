@@ -45,11 +45,11 @@ func NewAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if perms != nil && !perms.Can("subscription", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		subscriptionID := viewCtx.Request.PathValue("subscriptionId")
 		if subscriptionID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		formAction := strings.ReplaceAll(deps.Routes.SpawnJobsURL, "{subscriptionId}", subscriptionID)
@@ -79,14 +79,14 @@ func NewAction(deps *Deps) view.View {
 
 		// POST — invoke the use case.
 		if deps.MaterializeJobsForSubscription == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		_, _, err := deps.MaterializeJobsForSubscription(ctx, subscriptionID, true)
 		if err != nil {
 			log.Printf("Failed to spawn jobs for subscription %s: %v", subscriptionID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("subscription-operations-tab")
+		return view.HTMXSuccess("subscription-operations-tab")
 	})
 }
 

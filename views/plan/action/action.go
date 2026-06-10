@@ -220,7 +220,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -250,7 +250,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST — create plan
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -280,7 +280,7 @@ func NewAddAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create plan: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		newID := ""
@@ -294,7 +294,7 @@ func NewAddAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("plans-table")
+		return view.HTMXSuccess("plans-table")
 	})
 }
 
@@ -313,7 +313,7 @@ func NewEditAction(deps *Deps) view.View {
 			requiredAction = "create"
 		}
 		if !perms.Can("plan", requiredAction) {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -322,11 +322,11 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read plan %s: %v", id, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			readData := readResp.GetData()
 			if len(readData) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := readData[0]
 
@@ -388,7 +388,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST — update plan
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -429,7 +429,7 @@ func NewEditAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update plan %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		// Proto3 omits active=false; sync the active state via raw update so the
@@ -440,7 +440,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("plans-table")
+		return view.HTMXSuccess("plans-table")
 	})
 }
 
@@ -450,7 +450,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -459,7 +459,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeletePlan(ctx, &planpb.DeletePlanRequest{
@@ -467,10 +467,10 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete plan %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("plans-table")
+		return view.HTMXSuccess("plans-table")
 	})
 }
 
@@ -480,14 +480,14 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 
 		ids := viewCtx.Request.Form["id"]
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		for _, id := range ids {
@@ -498,7 +498,7 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("plans-table")
+		return view.HTMXSuccess("plans-table")
 	})
 }
 
@@ -512,7 +512,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -524,18 +524,18 @@ func NewSetStatusAction(deps *Deps) view.View {
 			targetStatus = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		if err := deps.SetPlanActive(ctx, id, targetStatus == "active"); err != nil {
 			log.Printf("Failed to update plan status %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("plans-table")
+		return view.HTMXSuccess("plans-table")
 	})
 }
 
@@ -545,7 +545,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -554,10 +554,10 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		targetStatus := viewCtx.Request.FormValue("target_status")
 
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		active := targetStatus == "active"
@@ -568,7 +568,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("plans-table")
+		return view.HTMXSuccess("plans-table")
 	})
 }
 

@@ -46,19 +46,19 @@ func NewAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("revenue", "create") || !perms.Can("subscription", "read") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		subscriptionID := viewCtx.Request.PathValue("id")
 		if subscriptionID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		// Resolve subscription for the read-only context block + currency
 		// determination. Done once per call (GET preview + POST submit both need it).
 		sub, client, pricePlan := loadContext(ctx, deps, subscriptionID)
 		if sub == nil {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 
 		tz := pyezatypes.LocationFromContext(ctx)
@@ -69,7 +69,7 @@ func NewAction(deps *Deps) view.View {
 		case http.MethodPost:
 			return submitDrawer(ctx, deps, viewCtx, subscriptionID, sub, client, pricePlan, tz)
 		default:
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 	})
 }
@@ -241,7 +241,7 @@ func submitDrawer(
 	tz *time.Location,
 ) view.ViewResult {
 	if err := viewCtx.Request.ParseForm(); err != nil {
-		return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+		return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 	}
 	r := viewCtx.Request
 	periodStart := readISODateTime(r.FormValue("period_start_iso"),
@@ -261,7 +261,7 @@ func submitDrawer(
 		pricePlan.GetBillingKind() == priceplanpb.BillingKind_BILLING_KIND_MILESTONE
 
 	if deps.RecognizeRevenueFromSubscription == nil {
-		return centymo.HTMXError("recognize-revenue use case not configured")
+		return view.HTMXError("recognize-revenue use case not configured")
 	}
 
 	var req *revenuepb.CreateRevenueWithLineItemsRequest

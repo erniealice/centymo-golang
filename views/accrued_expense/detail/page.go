@@ -234,7 +234,7 @@ func NewSettleAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense", "settle") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:settle"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:settle"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -244,7 +244,7 @@ func NewSettleAction(deps *DetailViewDeps) view.View {
 			return view.Error(fmt.Errorf("missing id"))
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("invalid form data")
+			return view.HTMXError("invalid form data")
 		}
 		r := viewCtx.Request
 
@@ -271,7 +271,7 @@ func NewSettleAction(deps *DetailViewDeps) view.View {
 		if deps.SettleAccrual != nil {
 			if err := deps.SettleAccrual(ctx, req); err != nil {
 				log.Printf("SettleAccrual %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := route.ResolveURL(deps.Routes.DetailURL, "id", id)
@@ -289,7 +289,7 @@ func NewReverseAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense", "reverse") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:reverse"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:reverse"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -305,7 +305,7 @@ func NewReverseAction(deps *DetailViewDeps) view.View {
 		if deps.ReverseAccrual != nil {
 			if err := deps.ReverseAccrual(ctx, id, reason); err != nil {
 				log.Printf("ReverseAccrual %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := route.ResolveURL(deps.Routes.DetailURL, "id", id)

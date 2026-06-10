@@ -38,7 +38,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:create"))
 		}
 		l := deps.Labels
 		if viewCtx.Request.Method == http.MethodGet {
@@ -92,7 +92,7 @@ func NewAddAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to create supplier contract: %w", err))
 		}
 
-		return centymo.HTMXSuccess("supplier-contracts-table")
+		return view.HTMXSuccess("supplier-contracts-table")
 	})
 }
 
@@ -101,7 +101,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
 		}
 		l := deps.Labels
 		id := viewCtx.Request.PathValue("id")
@@ -191,7 +191,7 @@ func NewEditAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to update supplier contract: %w", err))
 		}
 
-		return centymo.HTMXSuccess("supplier-contracts-table")
+		return view.HTMXSuccess("supplier-contracts-table")
 	})
 }
 
@@ -200,7 +200,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -216,7 +216,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			log.Printf("DeleteSupplierContract %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to delete supplier contract: %w", err))
 		}
-		return centymo.HTMXSuccess("supplier-contracts-table")
+		return view.HTMXSuccess("supplier-contracts-table")
 	})
 }
 
@@ -225,7 +225,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -240,7 +240,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				return view.Error(fmt.Errorf("failed to set status: %w", err))
 			}
 		}
-		return centymo.HTMXSuccess("supplier-contracts-table")
+		return view.HTMXSuccess("supplier-contracts-table")
 	})
 }
 
@@ -249,7 +249,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:update"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -269,7 +269,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				}
 			}
 		}
-		return centymo.HTMXSuccess("supplier-contracts-table")
+		return view.HTMXSuccess("supplier-contracts-table")
 	})
 }
 

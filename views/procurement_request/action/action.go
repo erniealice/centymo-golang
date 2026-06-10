@@ -38,7 +38,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:create"))
 		}
 		l := deps.Labels
 		if viewCtx.Request.Method == http.MethodGet {
@@ -79,7 +79,7 @@ func NewAddAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to create procurement request: %w", err))
 		}
 
-		return centymo.HTMXSuccess("procurement-requests-table")
+		return view.HTMXSuccess("procurement-requests-table")
 	})
 }
 
@@ -88,7 +88,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:update"))
 		}
 		l := deps.Labels
 		id := viewCtx.Request.PathValue("id")
@@ -158,7 +158,7 @@ func NewEditAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to update procurement request: %w", err))
 		}
 
-		return centymo.HTMXSuccess("procurement-requests-table")
+		return view.HTMXSuccess("procurement-requests-table")
 	})
 }
 
@@ -167,7 +167,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -183,7 +183,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			log.Printf("DeleteProcurementRequest %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to delete procurement request: %w", err))
 		}
-		return centymo.HTMXSuccess("procurement-requests-table")
+		return view.HTMXSuccess("procurement-requests-table")
 	})
 }
 
@@ -192,7 +192,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:update"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -207,7 +207,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				return view.Error(fmt.Errorf("failed to set status: %w", err))
 			}
 		}
-		return centymo.HTMXSuccess("procurement-requests-table")
+		return view.HTMXSuccess("procurement-requests-table")
 	})
 }
 
@@ -216,7 +216,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:update"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -236,7 +236,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				}
 			}
 		}
-		return centymo.HTMXSuccess("procurement-requests-table")
+		return view.HTMXSuccess("procurement-requests-table")
 	})
 }
 

@@ -49,24 +49,24 @@ func NewMilestoneRecognizeAction(
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if perms != nil && !perms.Can("milestone", "recognize") && !perms.Can("revenue", "create") {
-			return centymo.HTMXError(errLabels.PermissionDenied)
+			return view.HTMXError(errLabels.PermissionDenied)
 		}
 		if viewCtx.Request.Method != http.MethodPost {
-			return centymo.HTMXError(errLabels.InvalidStatus)
+			return view.HTMXError(errLabels.InvalidStatus)
 		}
 		if recognize == nil {
-			return centymo.HTMXError(errLabels.InvalidFormData)
+			return view.HTMXError(errLabels.InvalidFormData)
 		}
 		eventID := viewCtx.Request.PathValue("eventId")
 		if eventID == "" {
-			return centymo.HTMXError(errLabels.IDRequired)
+			return view.HTMXError(errLabels.IDRequired)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(errLabels.InvalidFormData)
+			return view.HTMXError(errLabels.InvalidFormData)
 		}
 		advanceID := strings.TrimSpace(viewCtx.Request.FormValue("advance_id"))
 		if advanceID == "" {
-			return centymo.HTMXError(errLabels.IDRequired)
+			return view.HTMXError(errLabels.IDRequired)
 		}
 
 		out, err := recognize(ctx, centymo.AdvanceRecognizeMilestoneInput{
@@ -75,7 +75,7 @@ func NewMilestoneRecognizeAction(
 		})
 		if err != nil {
 			log.Printf("Recognize milestone failed (advance=%s event=%s): %v", advanceID, eventID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 		// SKIPPED is a benign outcome — the operator double-clicked or the
 		// junction was already consumed. Surface as success so the UI

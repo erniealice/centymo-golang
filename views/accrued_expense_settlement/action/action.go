@@ -52,11 +52,11 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense_settlement", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:create"))
 		}
 		accrualID := viewCtx.Request.PathValue("id")
 		if accrualID == "" {
-			return centymo.HTMXError("missing accrual id")
+			return view.HTMXError("missing accrual id")
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -69,7 +69,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("invalid form data")
+			return view.HTMXError("invalid form data")
 		}
 		r := viewCtx.Request
 
@@ -93,9 +93,9 @@ func NewAddAction(deps *Deps) view.View {
 		_, err := deps.CreateAccruedExpenseSettlement(ctx, &accruedexpensepb.CreateAccruedExpenseSettlementRequest{Data: data})
 		if err != nil {
 			log.Printf("CreateAccruedExpenseSettlement: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("accrued-expense-settlements-table")
+		return view.HTMXSuccess("accrued-expense-settlements-table")
 	})
 }
 
@@ -104,12 +104,12 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense_settlement", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:update"))
 		}
 		accrualID := viewCtx.Request.PathValue("id")
 		settlementID := viewCtx.Request.PathValue("sid")
 		if accrualID == "" || settlementID == "" {
-			return centymo.HTMXError("missing id or sid")
+			return view.HTMXError("missing id or sid")
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -117,7 +117,7 @@ func NewEditAction(deps *Deps) view.View {
 				Data: &accruedexpensepb.AccruedExpenseSettlement{Id: settlementID},
 			})
 			if err != nil || len(readResp.GetData()) == 0 {
-				return centymo.HTMXError("settlement not found")
+				return view.HTMXError("settlement not found")
 			}
 			s := readResp.GetData()[0]
 
@@ -137,7 +137,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("invalid form data")
+			return view.HTMXError("invalid form data")
 		}
 		r := viewCtx.Request
 		amountF, _ := strconv.ParseFloat(r.FormValue("amount_settled"), 64)
@@ -158,9 +158,9 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateAccruedExpenseSettlement(ctx, &accruedexpensepb.UpdateAccruedExpenseSettlementRequest{Data: data})
 		if err != nil {
 			log.Printf("UpdateAccruedExpenseSettlement %s: %v", settlementID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("accrued-expense-settlements-table")
+		return view.HTMXSuccess("accrued-expense-settlements-table")
 	})
 }
 
@@ -169,10 +169,10 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense_settlement", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense_settlement:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
-			return centymo.HTMXError("method not allowed")
+			return view.HTMXError("method not allowed")
 		}
 		settlementID := viewCtx.Request.URL.Query().Get("sid")
 		if settlementID == "" {
@@ -183,16 +183,16 @@ func NewDeleteAction(deps *Deps) view.View {
 			}
 		}
 		if settlementID == "" {
-			return centymo.HTMXError("missing settlement id")
+			return view.HTMXError("missing settlement id")
 		}
 		_, err := deps.DeleteAccruedExpenseSettlement(ctx, &accruedexpensepb.DeleteAccruedExpenseSettlementRequest{
 			Data: &accruedexpensepb.AccruedExpenseSettlement{Id: settlementID},
 		})
 		if err != nil {
 			log.Printf("DeleteAccruedExpenseSettlement %s: %v", settlementID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("accrued-expense-settlements-table")
+		return view.HTMXSuccess("accrued-expense-settlements-table")
 	})
 }
 

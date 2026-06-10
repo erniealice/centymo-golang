@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/supplier_plan/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -18,7 +17,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 		if viewCtx.Request.Method == http.MethodGet {
@@ -28,7 +27,7 @@ func NewEditAction(deps *Deps) view.View {
 					SupplierPlanId: id,
 				})
 				if err != nil || resp == nil || resp.GetSupplierPlan() == nil {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetSupplierPlan()
 			} else {
@@ -36,7 +35,7 @@ func NewEditAction(deps *Deps) view.View {
 					Data: &supplierplanpb.SupplierPlan{Id: id},
 				})
 				if err != nil || len(resp.GetData()) == 0 {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetData()[0]
 			}
@@ -54,7 +53,7 @@ func NewEditAction(deps *Deps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		name := r.FormValue("name")
@@ -70,8 +69,8 @@ func NewEditAction(deps *Deps) view.View {
 		}
 		if _, err := deps.UpdateSupplierPlan(ctx, req); err != nil {
 			log.Printf("Failed to update supplier plan %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("supplier-plans-table")
+		return view.HTMXSuccess("supplier-plans-table")
 	})
 }

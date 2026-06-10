@@ -36,7 +36,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request_line", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:create"))
 		}
 		requestID := viewCtx.Request.PathValue("id")
 		if requestID == "" {
@@ -64,7 +64,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		mode := r.FormValue("fulfillment_mode")
 		if mode == "" {
-			return centymo.HTMXError(deps.Labels.Lines.FormFulfillmentMode + " is required")
+			return view.HTMXError(deps.Labels.Lines.FormFulfillmentMode + " is required")
 		}
 		modeEnumValue := form.ParseFulfillmentMode(mode)
 		modeEnum := &modeEnumValue
@@ -89,7 +89,7 @@ func NewAddAction(deps *Deps) view.View {
 		if mode == "recurring" {
 			cycleValue, termValue, err := parseRecurringFields(r)
 			if err != nil {
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 			cycleUnit := r.FormValue("recurring_cycle_unit")
 			termUnit := r.FormValue("recurring_term_unit")
@@ -105,7 +105,7 @@ func NewAddAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to create request line: %w", err))
 		}
 
-		return centymo.HTMXSuccess("pr-lines-table")
+		return view.HTMXSuccess("pr-lines-table")
 	})
 }
 
@@ -114,7 +114,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request_line", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:update"))
 		}
 		lineID := viewCtx.Request.PathValue("lid")
 		requestID := viewCtx.Request.PathValue("id")
@@ -175,7 +175,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		mode := r.FormValue("fulfillment_mode")
 		if mode == "" {
-			return centymo.HTMXError(deps.Labels.Lines.FormFulfillmentMode + " is required")
+			return view.HTMXError(deps.Labels.Lines.FormFulfillmentMode + " is required")
 		}
 		modeEnumValue := form.ParseFulfillmentMode(mode)
 		modeEnum := &modeEnumValue
@@ -201,7 +201,7 @@ func NewEditAction(deps *Deps) view.View {
 		if mode == "recurring" {
 			cycleValue, termValue, err := parseRecurringFields(r)
 			if err != nil {
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 			cycleUnit := r.FormValue("recurring_cycle_unit")
 			termUnit := r.FormValue("recurring_term_unit")
@@ -217,7 +217,7 @@ func NewEditAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to update request line: %w", err))
 		}
 
-		return centymo.HTMXSuccess("pr-lines-table")
+		return view.HTMXSuccess("pr-lines-table")
 	})
 }
 
@@ -226,7 +226,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request_line", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request_line:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -242,7 +242,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			log.Printf("DeleteProcurementRequestLine %s: %v", lineID, err)
 			return view.Error(fmt.Errorf("failed to delete request line: %w", err))
 		}
-		return centymo.HTMXSuccess("pr-lines-table")
+		return view.HTMXSuccess("pr-lines-table")
 	})
 }
 
@@ -254,7 +254,7 @@ func NewRetrySpawnAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("purchase_order", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "purchase_order:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "purchase_order:create"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -265,7 +265,7 @@ func NewRetrySpawnAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("missing id or lid"))
 		}
 		log.Printf("RetrySpawn placeholder: pr=%s line=%s — actual retry use case is out of SPS Wave 3 scope", requestID, lineID)
-		return centymo.HTMXSuccess("pr-lines-table")
+		return view.HTMXSuccess("pr-lines-table")
 	})
 }
 

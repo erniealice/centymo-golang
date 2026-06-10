@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/supplier_product_plan/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -18,7 +17,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_product_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 		if viewCtx.Request.Method == http.MethodGet {
@@ -28,7 +27,7 @@ func NewEditAction(deps *Deps) view.View {
 					SupplierProductPlanId: id,
 				})
 				if err != nil || resp == nil || resp.GetSupplierProductPlan() == nil {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetSupplierProductPlan()
 			} else {
@@ -36,7 +35,7 @@ func NewEditAction(deps *Deps) view.View {
 					Data: &supplierproductplanpb.SupplierProductPlan{Id: id},
 				})
 				if err != nil || len(resp.GetData()) == 0 {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetData()[0]
 			}
@@ -64,7 +63,7 @@ func NewEditAction(deps *Deps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		supplierPlanID := r.FormValue("supplier_plan_id")
@@ -88,8 +87,8 @@ func NewEditAction(deps *Deps) view.View {
 
 		if _, err := deps.UpdateSupplierProductPlan(ctx, &supplierproductplanpb.UpdateSupplierProductPlanRequest{Data: spp}); err != nil {
 			log.Printf("Failed to update supplier product plan %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("supplier-product-plans-table")
+		return view.HTMXSuccess("supplier-product-plans-table")
 	})
 }

@@ -52,12 +52,12 @@ type Deps struct {
 	TableLabels            types.TableLabels
 
 	// Use-case functions.
-	ReadPricePlan         func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
-	ReadPriceSchedule     func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
-	ListPlans             func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
-	ListProducts          func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
-	ListProductPlans      func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
-	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
+	ReadPricePlan          func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+	ReadPriceSchedule      func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
+	ListPlans              func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
+	ListProducts           func(ctx context.Context, req *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
+	ListProductPlans       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListProductPricePlans  func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 	CreateProductPricePlan func(ctx context.Context, req *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan func(ctx context.Context, req *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
 	DeleteProductPricePlan func(ctx context.Context, req *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
@@ -74,10 +74,10 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_price_plan", "create") {
-			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
+			return view.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		if deps.CreateProductPricePlan == nil {
-			return centymo.HTMXError(deps.PlanLabels.Messages.CreateNotAvailable)
+			return view.HTMXError(deps.PlanLabels.Messages.CreateNotAvailable)
 		}
 		sid := viewCtx.Request.PathValue("id")
 		ppid := viewCtx.Request.PathValue("ppid")
@@ -115,7 +115,7 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
+			return view.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		productPlanID := viewCtx.Request.FormValue("product_plan_id")
 		if productPlanID == "" {
@@ -126,11 +126,11 @@ func NewAddAction(deps *Deps) view.View {
 			}
 		}
 		if productPlanID == "" {
-			return centymo.HTMXError(deps.PlanLabels.Messages.ProductRequired)
+			return view.HTMXError(deps.PlanLabels.Messages.ProductRequired)
 		}
 		priceCentavos, ok := parsePriceCentavos(viewCtx.Request.FormValue("price"))
 		if !ok {
-			return centymo.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
+			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
 		}
 		currency := viewCtx.Request.FormValue("currency")
 		if currency == "" {
@@ -142,7 +142,7 @@ func NewAddAction(deps *Deps) view.View {
 		parent, _ := loadParentContext(ctx, deps, ppid)
 		// Currency must match parent PricePlan.billing_currency (proto invariant).
 		if parent.Currency != "" && currency != parent.Currency {
-			return centymo.HTMXError(deps.PlanLabels.Messages.CurrencyMismatch)
+			return view.HTMXError(deps.PlanLabels.Messages.CurrencyMismatch)
 		}
 		// billing_treatment is meaningless when parent has no cycles. Drop the
 		// posted value so we never persist a stale treatment on a ONE_TIME plan.
@@ -169,9 +169,9 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{Data: record}); err != nil {
 			log.Printf("Failed to create product price plan for plan %s (parent %s): %v", ppid, sid, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess(deps.RefreshTableID)
+		return view.HTMXSuccess(deps.RefreshTableID)
 	})
 }
 
@@ -182,10 +182,10 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_price_plan", "update") {
-			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
+			return view.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		if deps.UpdateProductPricePlan == nil {
-			return centymo.HTMXError(deps.PlanLabels.Messages.UpdateNotAvailable)
+			return view.HTMXError(deps.PlanLabels.Messages.UpdateNotAvailable)
 		}
 		sid := viewCtx.Request.PathValue("id")
 		ppid := viewCtx.Request.PathValue("ppid")
@@ -193,7 +193,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		existing, err := findProductPricePlan(ctx, deps, pppid)
 		if err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		pplLabels := deps.ProductPricePlanLabels.Form
@@ -258,21 +258,21 @@ func NewEditAction(deps *Deps) view.View {
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
+			return view.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		// Server-side lock enforcement: if the parent PricePlan is in use by an
 		// active subscription, reject price/currency changes (client may have
 		// bypassed the disabled inputs).
 		if deps.GetPricePlanInUseIDs != nil {
 			if inUse, _ := deps.GetPricePlanInUseIDs(ctx, []string{ppid}); inUse[ppid] {
-				return centymo.HTMXError(deps.PlanLabels.Messages.InUseCannotModify)
+				return view.HTMXError(deps.PlanLabels.Messages.InUseCannotModify)
 			}
 		}
 		// The catalog-line assignment is display-only in the drawer — preserve
 		// the existing product_plan_id.
 		priceCentavos, ok := parsePriceCentavos(viewCtx.Request.FormValue("price"))
 		if !ok {
-			return centymo.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
+			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
 		}
 		currency := viewCtx.Request.FormValue("currency")
 		if currency == "" {
@@ -283,7 +283,7 @@ func NewEditAction(deps *Deps) view.View {
 		billingTreatment := viewCtx.Request.FormValue("billing_treatment")
 		parent, _ := loadParentContext(ctx, deps, ppid)
 		if parent.Currency != "" && currency != parent.Currency {
-			return centymo.HTMXError(deps.PlanLabels.Messages.CurrencyMismatch)
+			return view.HTMXError(deps.PlanLabels.Messages.CurrencyMismatch)
 		}
 		if parent.BillingKind == "BILLING_KIND_ONE_TIME" {
 			billingTreatment = ""
@@ -309,9 +309,9 @@ func NewEditAction(deps *Deps) view.View {
 		}
 		if _, err := deps.UpdateProductPricePlan(ctx, &productpriceplanpb.UpdateProductPricePlanRequest{Data: updated}); err != nil {
 			log.Printf("Failed to update product price plan %s: %v", pppid, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess(deps.RefreshTableID)
+		return view.HTMXSuccess(deps.RefreshTableID)
 	})
 }
 
@@ -320,10 +320,10 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_price_plan", "delete") {
-			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
+			return view.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		if deps.DeleteProductPricePlan == nil {
-			return centymo.HTMXError(deps.PlanLabels.Messages.DeleteNotAvailable)
+			return view.HTMXError(deps.PlanLabels.Messages.DeleteNotAvailable)
 		}
 		_ = viewCtx.Request.ParseForm()
 		pppid := viewCtx.Request.FormValue("id")
@@ -331,15 +331,15 @@ func NewDeleteAction(deps *Deps) view.View {
 			pppid = viewCtx.Request.URL.Query().Get("id")
 		}
 		if pppid == "" {
-			return centymo.HTMXError(deps.PlanLabels.Messages.IDRequired)
+			return view.HTMXError(deps.PlanLabels.Messages.IDRequired)
 		}
 		if _, err := deps.DeleteProductPricePlan(ctx, &productpriceplanpb.DeleteProductPricePlanRequest{
 			Data: &productpriceplanpb.ProductPricePlan{Id: pppid},
 		}); err != nil {
 			log.Printf("Failed to delete product price plan %s: %v", pppid, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess(deps.RefreshTableID)
+		return view.HTMXSuccess(deps.RefreshTableID)
 	})
 }
 
@@ -353,7 +353,7 @@ func NewDeleteAction(deps *Deps) view.View {
 // their own package; the template only receives it via interface{} / any.
 type productPriceFormData struct {
 	FormAction    string
-	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	WorkspaceID   string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit        bool
 	ID            string
 	ScheduleID    string

@@ -24,11 +24,11 @@ import (
 // closures aren't proto-shaped and the existing CRUD Deps would otherwise
 // grow unrelated fields.
 type AdvanceActionDeps struct {
-	Routes           centymo.CollectionRoutes
-	Labels           centymo.CollectionLabels
-	AdvanceLabels    centymo.TreasuryAdvanceLabels
-	EnumLabels       centymo.AdvanceEnumLabels
-	CommonLabels     any
+	Routes        centymo.CollectionRoutes
+	Labels        centymo.CollectionLabels
+	AdvanceLabels centymo.TreasuryAdvanceLabels
+	EnumLabels    centymo.AdvanceEnumLabels
+	CommonLabels  any
 
 	// Workflow closures (nil-safe). Bound by service-admin's adapter.
 	SettleUnscheduled func(ctx context.Context, in centymo.AdvanceSettleViewInput) (*centymo.AdvanceSettleViewOutput, error)
@@ -40,7 +40,7 @@ type AdvanceActionDeps struct {
 // drawer-form partials.
 type AdvanceDrawerData struct {
 	FormAction        string
-	WorkspaceID        string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	WorkspaceID       string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	AdvanceID         string
 	Action            string // "settle" | "refund" | "cancel"
 	Labels            centymo.TreasuryAdvanceLabels
@@ -58,7 +58,7 @@ func NewSettleAction(deps *AdvanceActionDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("treasury_collection", "settle") && !perms.Can("collection", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 
@@ -78,10 +78,10 @@ func NewSettleAction(deps *AdvanceActionDeps) view.View {
 		}
 
 		if deps.SettleUnscheduled == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		input := centymo.AdvanceSettleViewInput{
@@ -92,9 +92,9 @@ func NewSettleAction(deps *AdvanceActionDeps) view.View {
 		}
 		if _, err := deps.SettleUnscheduled(ctx, input); err != nil {
 			log.Printf("Failed to settle advance %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("collections-table")
+		return view.HTMXSuccess("collections-table")
 	})
 }
 
@@ -103,7 +103,7 @@ func NewRefundAction(deps *AdvanceActionDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("treasury_collection", "refund") && !perms.Can("collection", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 
@@ -123,10 +123,10 @@ func NewRefundAction(deps *AdvanceActionDeps) view.View {
 		}
 
 		if deps.RefundUnscheduled == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		input := centymo.AdvanceRefundViewInput{
@@ -138,9 +138,9 @@ func NewRefundAction(deps *AdvanceActionDeps) view.View {
 		}
 		if _, err := deps.RefundUnscheduled(ctx, input); err != nil {
 			log.Printf("Failed to refund advance %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("collections-table")
+		return view.HTMXSuccess("collections-table")
 	})
 }
 
@@ -149,7 +149,7 @@ func NewCancelAction(deps *AdvanceActionDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("treasury_collection", "cancel") && !perms.Can("collection", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 
@@ -167,10 +167,10 @@ func NewCancelAction(deps *AdvanceActionDeps) view.View {
 		}
 
 		if deps.Cancel == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		input := centymo.AdvanceCancelViewInput{
 			AdvanceID: id,
@@ -178,9 +178,9 @@ func NewCancelAction(deps *AdvanceActionDeps) view.View {
 		}
 		if _, err := deps.Cancel(ctx, input); err != nil {
 			log.Printf("Failed to cancel advance %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("collections-table")
+		return view.HTMXSuccess("collections-table")
 	})
 }
 

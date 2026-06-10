@@ -89,7 +89,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		record, err := loadRecord(ctx, deps, id)
 		if err != nil || record == nil {
 			log.Printf("Failed to load cost plan detail %s: %v", id, err)
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		l := deps.Labels
 		pageData := &PageData{
@@ -129,7 +129,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		}
 		record, err := loadRecord(ctx, deps, id)
 		if err != nil || record == nil {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		pageData := &PageData{
 			ActiveTab: tab,

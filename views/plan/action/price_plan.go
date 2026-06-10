@@ -375,7 +375,7 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		planID := viewCtx.Request.PathValue("id")
@@ -427,7 +427,7 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 
 		// POST — create price plan
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -480,7 +480,7 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create price plan for plan %s: %v", planID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		// Auto-seed ProductPricePlan rows for the new PricePlan — mirrors the
@@ -489,7 +489,7 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 			autoSeedProductPricePlans(ctx, deps, createResp.GetData()[0].GetId(), planID, currency)
 		}
 
-		return centymo.HTMXSuccess("plan-price-plans-table")
+		return view.HTMXSuccess("plan-price-plans-table")
 	})
 }
 
@@ -499,7 +499,7 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		planID := viewCtx.Request.PathValue("id")
@@ -511,11 +511,11 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read price plan %s: %v", ppID, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			data := resp.GetData()
 			if len(data) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			pp := data[0]
 
@@ -618,7 +618,7 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 
 		// POST — update price plan
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -667,9 +667,9 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 
 		if _, err := deps.UpdatePricePlan(ctx, &priceplanpb.UpdatePricePlanRequest{Data: pp}); err != nil {
 			log.Printf("Failed to update price plan %s: %v", ppID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("plan-price-plans-table")
+		return view.HTMXSuccess("plan-price-plans-table")
 	})
 }
 
@@ -679,7 +679,7 @@ func NewPricePlanDeleteAction(deps *PricePlanDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		ppID := viewCtx.Request.URL.Query().Get("id")
@@ -688,7 +688,7 @@ func NewPricePlanDeleteAction(deps *PricePlanDeps) view.View {
 			ppID = viewCtx.Request.FormValue("id")
 		}
 		if ppID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeletePricePlan(ctx, &priceplanpb.DeletePricePlanRequest{
@@ -696,10 +696,10 @@ func NewPricePlanDeleteAction(deps *PricePlanDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete price plan %s: %v", ppID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("plan-price-plans-table")
+		return view.HTMXSuccess("plan-price-plans-table")
 	})
 }
 

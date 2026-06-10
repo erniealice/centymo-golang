@@ -37,7 +37,7 @@ type ScheduleOption struct {
 
 type FormData struct {
 	FormAction            string
-	WorkspaceID            string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	WorkspaceID           string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit                bool
 	ID                    string
 	Name                  string
@@ -201,7 +201,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if viewCtx.Request.Method == http.MethodGet {
 			plans := loadPlans(ctx, deps)
@@ -221,7 +221,7 @@ func NewAddAction(deps *Deps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.CreateFailed)
+			return view.HTMXError(deps.Labels.Errors.CreateFailed)
 		}
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
@@ -301,9 +301,9 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if _, err := deps.CreatePricePlan(ctx, req); err != nil {
 			log.Printf("Failed to create price plan: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-plans-table")
+		return view.HTMXSuccess("price-plans-table")
 	})
 }
 
@@ -311,13 +311,13 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		id := viewCtx.Request.PathValue("id")
 		if viewCtx.Request.Method == http.MethodGet {
 			resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{Data: &priceplanpb.PricePlan{Id: id}})
 			if err != nil || len(resp.GetData()) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := resp.GetData()[0]
 			plans := loadPlans(ctx, deps)
@@ -380,7 +380,7 @@ func NewEditAction(deps *Deps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.UpdateFailed)
+			return view.HTMXError(deps.Labels.Errors.UpdateFailed)
 		}
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
@@ -456,9 +456,9 @@ func NewEditAction(deps *Deps) view.View {
 			req.Data.DefaultTermUnit = &dtu
 		}
 		if _, err := deps.UpdatePricePlan(ctx, req); err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-plans-table")
+		return view.HTMXSuccess("price-plans-table")
 	})
 }
 
@@ -466,7 +466,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		id := viewCtx.Request.URL.Query().Get("id")
 		if id == "" {
@@ -474,17 +474,17 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		if deps.GetPricePlanInUseIDs != nil {
 			if inUse, _ := deps.GetPricePlanInUseIDs(ctx, []string{id}); inUse[id] {
-				return centymo.HTMXError(deps.Labels.Errors.InUse)
+				return view.HTMXError(deps.Labels.Errors.InUse)
 			}
 		}
 		if _, err := deps.DeletePricePlan(ctx, &priceplanpb.DeletePricePlanRequest{Data: &priceplanpb.PricePlan{Id: id}}); err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-plans-table")
+		return view.HTMXSuccess("price-plans-table")
 	})
 }
 
@@ -492,17 +492,17 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.DeleteFailed)
+			return view.HTMXError(deps.Labels.Errors.DeleteFailed)
 		}
 		for _, id := range viewCtx.Request.Form["id"] {
 			if id != "" {
 				_, _ = deps.DeletePricePlan(ctx, &priceplanpb.DeletePricePlanRequest{Data: &priceplanpb.PricePlan{Id: id}})
 			}
 		}
-		return centymo.HTMXSuccess("price-plans-table")
+		return view.HTMXSuccess("price-plans-table")
 	})
 }
 
@@ -510,7 +510,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		id := viewCtx.Request.URL.Query().Get("id")
 		status := viewCtx.Request.URL.Query().Get("status")
@@ -521,7 +521,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 		}
 		readResp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{Data: &priceplanpb.PricePlan{Id: id}})
 		if err != nil || len(readResp.GetData()) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		record := readResp.GetData()[0]
 		statusName := record.GetName()
@@ -536,9 +536,9 @@ func NewSetStatusAction(deps *Deps) view.View {
 			},
 		})
 		if err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-plans-table")
+		return view.HTMXSuccess("price-plans-table")
 	})
 }
 
@@ -546,7 +546,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 		ids := viewCtx.Request.Form["id"]
@@ -572,7 +572,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				},
 			})
 		}
-		return centymo.HTMXSuccess("price-plans-table")
+		return view.HTMXSuccess("price-plans-table")
 	})
 }
 

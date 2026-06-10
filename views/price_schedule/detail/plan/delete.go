@@ -3,7 +3,6 @@ package plan
 import (
 	"context"
 
-	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/pyeza-golang/view"
 
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
@@ -15,7 +14,7 @@ func NewDeleteAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "delete") {
-			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
+			return view.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		ppid := viewCtx.Request.PathValue("ppid")
 		if ppid == "" {
@@ -23,11 +22,11 @@ func NewDeleteAction(deps *DetailViewDeps) view.View {
 			ppid = viewCtx.Request.FormValue("id")
 		}
 		if ppid == "" {
-			return centymo.HTMXError(deps.PlanLabels.Errors.NotFound)
+			return view.HTMXError(deps.PlanLabels.Errors.NotFound)
 		}
 		if _, err := deps.DeletePricePlan(ctx, &priceplanpb.DeletePricePlanRequest{Data: &priceplanpb.PricePlan{Id: ppid}}); err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-schedule-plans-table")
+		return view.HTMXSuccess("price-schedule-plans-table")
 	})
 }

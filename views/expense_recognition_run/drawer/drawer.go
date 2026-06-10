@@ -51,13 +51,13 @@ type CandidateRow struct {
 // DrawerData is the page-data passed to the drawer template.
 type DrawerData struct {
 	types.PageData
-	Scope         string // "supplier" | "subscription"
-	ScopeID       string
-	AsOfDate      string
-	AsOfDateMax   string
-	FormAction    string // POST URL to Generate
-	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
-	FragmentURL   string // HTMX inner-swap URL for AsOfDate change
+	Scope                  string // "supplier" | "subscription"
+	ScopeID                string
+	AsOfDate               string
+	AsOfDateMax            string
+	FormAction             string // POST URL to Generate
+	WorkspaceID            string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	FragmentURL            string // HTMX inner-swap URL for AsOfDate change
 	SubscriptionCandidates []CandidateRow
 	AdvanceCandidates      []CandidateRow
 	SuppressedCandidates   []CandidateRow
@@ -118,13 +118,13 @@ func NewGenerateAction(deps *Deps) view.View {
 		}
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("expense_recognition_run", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
 			return view.Error(err)
 		}
 		if deps.GenerateExpenseRun == nil {
-			return centymo.HTMXError(deps.Labels.Errors.UseCaseUnavailable)
+			return view.HTMXError(deps.Labels.Errors.UseCaseUnavailable)
 		}
 
 		in := GenerateInput{
@@ -135,7 +135,7 @@ func NewGenerateAction(deps *Deps) view.View {
 		out, err := deps.GenerateExpenseRun(ctx, in)
 		if err != nil {
 			log.Printf("expense-recognition-run drawer: GenerateExpenseRun error: %v", err)
-			return centymo.HTMXError(deps.Labels.Errors.GenerationFailed)
+			return view.HTMXError(deps.Labels.Errors.GenerationFailed)
 		}
 
 		trigger := buildToastTrigger(deps, out)
@@ -156,7 +156,7 @@ func newDrawerView(deps *Deps, scope Scope) view.View {
 		}
 		id := viewCtx.Request.PathValue("id")
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidSelection)
+			return view.HTMXError(deps.Labels.Errors.InvalidSelection)
 		}
 
 		asOfDate := viewCtx.Request.URL.Query().Get("as_of_date")

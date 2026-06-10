@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/supplier_product_plan/form"
 	"github.com/erniealice/pyeza-golang/view"
 
@@ -17,7 +16,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_product_plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("supplier-product-plan-drawer-form", &form.Data{
@@ -30,7 +29,7 @@ func NewAddAction(deps *Deps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		supplierPlanID := r.FormValue("supplier_plan_id")
@@ -56,8 +55,8 @@ func NewAddAction(deps *Deps) view.View {
 
 		if _, err := deps.CreateSupplierProductPlan(ctx, &supplierproductplanpb.CreateSupplierProductPlanRequest{Data: spp}); err != nil {
 			log.Printf("Failed to create supplier product plan: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("supplier-product-plans-table")
+		return view.HTMXSuccess("supplier-product-plans-table")
 	})
 }

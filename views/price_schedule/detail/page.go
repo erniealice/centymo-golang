@@ -141,14 +141,14 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 			return view.Forbidden("price_schedule:read")
 		}
 		if !perms.Can("price_plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if deps.CreatePricePlan == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PricePlanCreateUnavailable)
+			return view.HTMXError(deps.Labels.Errors.PricePlanCreateUnavailable)
 		}
 		scheduleID := viewCtx.Request.PathValue("id")
 		if scheduleID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -179,12 +179,12 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.CreateFailed)
+			return view.HTMXError(deps.Labels.Errors.CreateFailed)
 		}
 		r := viewCtx.Request
 		planID := r.FormValue("plan_id")
 		if planID == "" {
-			return centymo.HTMXError(deps.Labels.Detail.PlanRequired)
+			return view.HTMXError(deps.Labels.Detail.PlanRequired)
 		}
 		amount := int64(0)
 		if v, err := strconv.ParseFloat(r.FormValue("amount"), 64); err == nil {
@@ -221,7 +221,7 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		createResp, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{Data: pp})
 		if err != nil {
 			log.Printf("Failed to create price plan from schedule %s: %v", scheduleID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		// Auto-seed product_price_plan rows: one per product_plan linked to this plan_id,
@@ -229,7 +229,7 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 		// the main PricePlan create already succeeded.
 		autoSeedProductPricePlans(ctx, deps, createResp, planID)
 
-		return centymo.HTMXSuccess("price-schedule-plans-table")
+		return view.HTMXSuccess("price-schedule-plans-table")
 	})
 }
 

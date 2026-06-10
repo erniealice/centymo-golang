@@ -10,7 +10,6 @@ import (
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/subscription/form"
 
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
@@ -21,7 +20,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("subscription", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -37,7 +36,7 @@ func NewEditAction(deps *Deps) view.View {
 				})
 				if err != nil || resp == nil || resp.GetSubscription() == nil {
 					log.Printf("Failed to read subscription %s: %v", id, err)
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetSubscription()
 			} else {
@@ -46,11 +45,11 @@ func NewEditAction(deps *Deps) view.View {
 				})
 				if err != nil {
 					log.Printf("Failed to read subscription %s: %v", id, err)
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				readData := readResp.GetData()
 				if len(readData) == 0 {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = readData[0]
 			}
@@ -148,12 +147,12 @@ func NewEditAction(deps *Deps) view.View {
 				if msg == "" {
 					msg = deps.Labels.Errors.InvalidFormData
 				}
-				return centymo.HTMXError(msg)
+				return view.HTMXError(msg)
 			}
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -205,9 +204,9 @@ func NewEditAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update subscription %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("subscriptions-table")
+		return view.HTMXSuccess("subscriptions-table")
 	})
 }

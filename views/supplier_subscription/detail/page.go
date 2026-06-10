@@ -244,7 +244,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		record, err := loadRecord(ctx, deps, id)
 		if err != nil || record == nil {
 			log.Printf("Failed to load supplier subscription detail %s: %v", id, err)
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 
 		l := deps.Labels
@@ -319,7 +319,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 
 		record, err := loadRecord(ctx, deps, id)
 		if err != nil || record == nil {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 
 		l := deps.Labels

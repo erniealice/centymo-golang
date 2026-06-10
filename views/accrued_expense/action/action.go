@@ -45,7 +45,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:create"))
 		}
 		l := deps.Labels
 		if viewCtx.Request.Method == http.MethodGet {
@@ -88,10 +88,10 @@ func NewAddAction(deps *Deps) view.View {
 		_, err := deps.CreateAccruedExpense(ctx, req)
 		if err != nil {
 			log.Printf("CreateAccruedExpense: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("accrued-expenses-table")
+		return view.HTMXSuccess("accrued-expenses-table")
 	})
 }
 
@@ -100,7 +100,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:update"))
 		}
 		l := deps.Labels
 		id := viewCtx.Request.PathValue("id")
@@ -177,10 +177,10 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateAccruedExpense(ctx, req)
 		if err != nil {
 			log.Printf("UpdateAccruedExpense %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("accrued-expenses-table")
+		return view.HTMXSuccess("accrued-expenses-table")
 	})
 }
 
@@ -189,7 +189,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -203,9 +203,9 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("DeleteAccruedExpense %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("accrued-expenses-table")
+		return view.HTMXSuccess("accrued-expenses-table")
 	})
 }
 
@@ -214,7 +214,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:update"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -226,10 +226,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 		}
 		if deps.SetAccruedExpenseStatus != nil {
 			if err := deps.SetAccruedExpenseStatus(ctx, id, status); err != nil {
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
-		return centymo.HTMXSuccess("accrued-expenses-table")
+		return view.HTMXSuccess("accrued-expenses-table")
 	})
 }
 
@@ -238,7 +238,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("accrued_expense", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "accrued_expense:update"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -258,7 +258,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				}
 			}
 		}
-		return centymo.HTMXSuccess("accrued-expenses-table")
+		return view.HTMXSuccess("accrued-expenses-table")
 	})
 }
 

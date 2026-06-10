@@ -38,11 +38,11 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("expense_recognition_line", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:create"))
 		}
 		recognitionID := viewCtx.Request.PathValue("id")
 		if recognitionID == "" {
-			return centymo.HTMXError("missing recognition id")
+			return view.HTMXError("missing recognition id")
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -57,7 +57,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("invalid form data")
+			return view.HTMXError("invalid form data")
 		}
 		r := viewCtx.Request
 
@@ -80,10 +80,10 @@ func NewAddAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("CreateExpenseRecognitionLine: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("expense-recognition-lines-table")
+		return view.HTMXSuccess("expense-recognition-lines-table")
 	})
 }
 
@@ -92,12 +92,12 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("expense_recognition_line", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:update"))
 		}
 		recognitionID := viewCtx.Request.PathValue("id")
 		lineID := viewCtx.Request.PathValue("lid")
 		if recognitionID == "" || lineID == "" {
-			return centymo.HTMXError("missing id or lid")
+			return view.HTMXError("missing id or lid")
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -105,7 +105,7 @@ func NewEditAction(deps *Deps) view.View {
 				Data: &expenserecognitionlinepb.ExpenseRecognitionLine{Id: lineID},
 			})
 			if err != nil || len(readResp.GetData()) == 0 {
-				return centymo.HTMXError("recognition line not found")
+				return view.HTMXError("recognition line not found")
 			}
 			line := readResp.GetData()[0]
 			return view.OK("expense-recognition-line-drawer-form", &form.Data{
@@ -125,7 +125,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError("invalid form data")
+			return view.HTMXError("invalid form data")
 		}
 		r := viewCtx.Request
 
@@ -148,10 +148,10 @@ func NewEditAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("UpdateExpenseRecognitionLine %s: %v", lineID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("expense-recognition-lines-table")
+		return view.HTMXSuccess("expense-recognition-lines-table")
 	})
 }
 
@@ -160,10 +160,10 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("expense_recognition_line", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "expense_recognition_line:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
-			return centymo.HTMXError("method not allowed")
+			return view.HTMXError("method not allowed")
 		}
 		lineID := viewCtx.Request.URL.Query().Get("lid")
 		if lineID == "" {
@@ -174,7 +174,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			}
 		}
 		if lineID == "" {
-			return centymo.HTMXError("missing line id")
+			return view.HTMXError("missing line id")
 		}
 
 		_, err := deps.DeleteExpenseRecognitionLine(ctx, &expenserecognitionlinepb.DeleteExpenseRecognitionLineRequest{
@@ -182,8 +182,8 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("DeleteExpenseRecognitionLine %s: %v", lineID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("expense-recognition-lines-table")
+		return view.HTMXSuccess("expense-recognition-lines-table")
 	})
 }

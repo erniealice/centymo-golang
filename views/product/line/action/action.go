@@ -28,7 +28,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("line", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -41,7 +41,7 @@ func NewAddAction(deps *Deps) view.View {
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -56,10 +56,10 @@ func NewAddAction(deps *Deps) view.View {
 
 		if _, err := deps.CreateLine(ctx, req); err != nil {
 			log.Printf("Failed to create line: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("product-lines-table")
+		return view.HTMXSuccess("product-lines-table")
 	})
 }
 
@@ -68,7 +68,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("line", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -77,11 +77,11 @@ func NewEditAction(deps *Deps) view.View {
 			resp, err := deps.ReadLine(ctx, &linepb.ReadLineRequest{Data: &linepb.Line{Id: id}})
 			if err != nil {
 				log.Printf("Failed to read line %s: %v", id, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			data := resp.GetData()
 			if len(data) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := data[0]
 
@@ -98,7 +98,7 @@ func NewEditAction(deps *Deps) view.View {
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -114,10 +114,10 @@ func NewEditAction(deps *Deps) view.View {
 
 		if _, err := deps.UpdateLine(ctx, req); err != nil {
 			log.Printf("Failed to update line %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("product-lines-table")
+		return view.HTMXSuccess("product-lines-table")
 	})
 }
 
@@ -126,7 +126,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("line", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -135,15 +135,15 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		if _, err := deps.DeleteLine(ctx, &linepb.DeleteLineRequest{Data: &linepb.Line{Id: id}}); err != nil {
 			log.Printf("Failed to delete line %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("product-lines-table")
+		return view.HTMXSuccess("product-lines-table")
 	})
 }
 
@@ -152,16 +152,16 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("line", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		ids := viewCtx.Request.Form["id"]
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		for _, id := range ids {
@@ -173,7 +173,7 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("product-lines-table")
+		return view.HTMXSuccess("product-lines-table")
 	})
 }
 
@@ -182,7 +182,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("line", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -193,15 +193,15 @@ func NewSetStatusAction(deps *Deps) view.View {
 			status = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 		if status != "active" && status != "inactive" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		readResp, err := deps.ReadLine(ctx, &linepb.ReadLineRequest{Data: &linepb.Line{Id: id}})
 		if err != nil || len(readResp.GetData()) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		record := readResp.GetData()[0]
 		if _, err := deps.UpdateLine(ctx, &linepb.UpdateLineRequest{
@@ -213,10 +213,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 			},
 		}); err != nil {
 			log.Printf("Failed to update line status %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("product-lines-table")
+		return view.HTMXSuccess("product-lines-table")
 	})
 }
 
@@ -225,17 +225,17 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("line", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 		ids := viewCtx.Request.Form["id"]
 		status := viewCtx.Request.FormValue("target_status")
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 		if status != "active" && status != "inactive" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		for _, id := range ids {
@@ -259,6 +259,6 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("product-lines-table")
+		return view.HTMXSuccess("product-lines-table")
 	})
 }

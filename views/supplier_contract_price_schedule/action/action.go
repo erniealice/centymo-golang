@@ -49,7 +49,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:create"))
 		}
 		l := deps.Labels
 		if viewCtx.Request.Method == http.MethodGet {
@@ -99,9 +99,9 @@ func NewAddAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("CreateSupplierContractPriceSchedule: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("supplier-contract-price-schedules-table")
+		return view.HTMXSuccess("supplier-contract-price-schedules-table")
 	})
 }
 
@@ -110,7 +110,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:update"))
 		}
 		l := deps.Labels
 		id := viewCtx.Request.PathValue("id")
@@ -185,9 +185,9 @@ func NewEditAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("UpdateSupplierContractPriceSchedule %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("supplier-contract-price-schedules-table")
+		return view.HTMXSuccess("supplier-contract-price-schedules-table")
 	})
 }
 
@@ -196,7 +196,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -210,9 +210,9 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("DeleteSupplierContractPriceSchedule %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("supplier-contract-price-schedules-table")
+		return view.HTMXSuccess("supplier-contract-price-schedules-table")
 	})
 }
 
@@ -221,7 +221,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:update"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -233,10 +233,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 		}
 		if deps.SetSupplierContractPriceScheduleStatus != nil {
 			if err := deps.SetSupplierContractPriceScheduleStatus(ctx, id, status); err != nil {
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
-		return centymo.HTMXSuccess("supplier-contract-price-schedules-table")
+		return view.HTMXSuccess("supplier-contract-price-schedules-table")
 	})
 }
 
@@ -245,7 +245,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:update"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -265,7 +265,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				}
 			}
 		}
-		return centymo.HTMXSuccess("supplier-contract-price-schedules-table")
+		return view.HTMXSuccess("supplier-contract-price-schedules-table")
 	})
 }
 
@@ -313,7 +313,7 @@ func NewActivateAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule", "activate") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:activate"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:activate"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -325,7 +325,7 @@ func NewActivateAction(deps *Deps) view.View {
 		if deps.ActivateSupplierContractPriceSchedule != nil {
 			if err := deps.ActivateSupplierContractPriceSchedule(ctx, id); err != nil {
 				log.Printf("ActivateSupplierContractPriceSchedule %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := route.ResolveURL(deps.Routes.DetailURL, "id", id)
@@ -343,7 +343,7 @@ func NewSupersedeAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule", "supersede") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:supersede"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule:supersede"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -359,7 +359,7 @@ func NewSupersedeAction(deps *Deps) view.View {
 		if deps.SupersedeSupplierContractPriceSchedule != nil {
 			if err := deps.SupersedeSupplierContractPriceSchedule(ctx, id, reason); err != nil {
 				log.Printf("SupersedeSupplierContractPriceSchedule %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := route.ResolveURL(deps.Routes.DetailURL, "id", id)

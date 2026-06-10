@@ -67,31 +67,31 @@ func NewAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("revenue", "create") && !perms.Can("plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method != http.MethodPost {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		if deps.CustomizePlanForClient == nil {
-			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
+			return view.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
 		subscriptionID := viewCtx.Request.PathValue("id")
 		if subscriptionID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		sub, err := loadSubscription(ctx, deps, subscriptionID)
 		if err != nil {
 			log.Printf("Customize: failed to load subscription %s: %v", subscriptionID, err)
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		clientID := sub.GetClientId()
 		pricePlanID := sub.GetPricePlanId()
 		if clientID == "" || pricePlanID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
+			return view.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
 		sourcePlanID := ""
@@ -106,7 +106,7 @@ func NewAction(deps *Deps) view.View {
 			}
 		}
 		if sourcePlanID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
+			return view.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
 		clientName := resolveClientName(ctx, deps, sub, clientID)
@@ -123,10 +123,10 @@ func NewAction(deps *Deps) view.View {
 		resp, err := deps.CustomizePlanForClient(ctx, req)
 		if err != nil {
 			log.Printf("Customize: espyna use case failed for sub %s: %v", subscriptionID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 		if resp == nil || resp.NewPricePlanID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.CustomizeFailed)
+			return view.HTMXError(deps.Labels.Errors.CustomizeFailed)
 		}
 
 		clientDetailBase := deps.ClientDetailURLTemplate

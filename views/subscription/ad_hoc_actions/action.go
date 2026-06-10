@@ -22,9 +22,9 @@ type MaterializeInstanceJobsRequest struct {
 
 // MaterializeInstanceJobsResponse mirrors the centymo block's response shape.
 type MaterializeInstanceJobsResponse struct {
-	SpawnedCycleCount         int
-	SpawnedJobCount           int
-	OnceAtStartJobCount       int
+	SpawnedCycleCount       int
+	SpawnedJobCount         int
+	OnceAtStartJobCount     int
 	ShellJobWasNewlyCreated bool
 	SkippedReason           string
 	BackfillCappedAt        int32
@@ -49,14 +49,14 @@ func NewRequestUsageAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if perms != nil && !perms.Can("subscription", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		subscriptionID := viewCtx.Request.PathValue("subscriptionId")
 		if subscriptionID == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 		if deps.MaterializeInstanceJobsForSubscription == nil {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseForm()
@@ -69,8 +69,8 @@ func NewRequestUsageAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to spawn usage job for subscription %s: %v", subscriptionID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("subscription-operations-tab")
+		return view.HTMXSuccess("subscription-operations-tab")
 	})
 }

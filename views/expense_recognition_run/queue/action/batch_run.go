@@ -49,7 +49,7 @@ func NewBatchRunAction(deps *BatchRunDeps) view.View {
 
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("expense_recognition_run", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		selectionMode := viewCtx.Request.FormValue("selection_mode")
@@ -58,13 +58,13 @@ func NewBatchRunAction(deps *BatchRunDeps) view.View {
 		switch selectionMode {
 		case "all_matching":
 			// FilterToken path — deferred. Stub-reject with label string.
-			return centymo.HTMXError(deps.Labels.Errors.RunAllMatchingNotImplemented)
+			return view.HTMXError(deps.Labels.Errors.RunAllMatchingNotImplemented)
 
 		case "selected":
 			return handleRunSelected(ctx, viewCtx, deps, asOfDate)
 
 		default:
-			return centymo.HTMXError(deps.Labels.Errors.InvalidSelection)
+			return view.HTMXError(deps.Labels.Errors.InvalidSelection)
 		}
 	})
 }
@@ -82,14 +82,14 @@ func handleRunSelected(
 	supplierIDs := viewCtx.Request.Form["id"]
 	supplierIDs = deduplicateStrings(supplierIDs)
 	if len(supplierIDs) == 0 {
-		return centymo.HTMXError(l.Errors.InvalidSelection)
+		return view.HTMXError(l.Errors.InvalidSelection)
 	}
 	if len(supplierIDs) > 50 {
-		return centymo.HTMXError(l.Errors.CapExceeded)
+		return view.HTMXError(l.Errors.CapExceeded)
 	}
 
 	if deps.GenerateExpenseRun == nil {
-		return centymo.HTMXError(l.Errors.UseCaseUnavailable)
+		return view.HTMXError(l.Errors.UseCaseUnavailable)
 	}
 
 	var result BatchRunResult

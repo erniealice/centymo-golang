@@ -173,7 +173,7 @@ type PricePlanBillingSummaryWarning struct {
 // surface the resolved product + variant context above the price input.
 type ProductPricePlanFormData struct {
 	FormAction    string
-	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	WorkspaceID   string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit        bool
 	ID            string
 	PricePlanID   string
@@ -296,10 +296,10 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 			return view.Forbidden("price_plan:read")
 		}
 		if !perms.Can("product_price_plan", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if deps.CreateProductPricePlan == nil {
-			return centymo.HTMXError("Product price plan create is not available")
+			return view.HTMXError("Product price plan create is not available")
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -349,12 +349,12 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 
 		productPlanID := viewCtx.Request.FormValue("product_plan_id")
 		if productPlanID == "" {
-			return centymo.HTMXError("Catalog line is required")
+			return view.HTMXError("Catalog line is required")
 		}
 		priceStr := viewCtx.Request.FormValue("price")
 		currency := viewCtx.Request.FormValue("currency")
@@ -364,7 +364,7 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 
 		priceFloat, err := strconv.ParseFloat(priceStr, 64)
 		if err != nil || priceFloat < 0 {
-			return centymo.HTMXError("Invalid price value")
+			return view.HTMXError("Invalid price value")
 		}
 		priceCentavos := int64(priceFloat * 100)
 
@@ -376,7 +376,7 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		// match parent (proto invariant); treatment is meaningless on ONE_TIME.
 		parent, _ := loadPricePlanContext(ctx, deps, id)
 		if parent.currency != "" && currency != parent.currency {
-			return centymo.HTMXError("Currency must match the rate card currency")
+			return view.HTMXError("Currency must match the rate card currency")
 		}
 		if parent.pricePlan != nil && parent.pricePlan.GetBillingKind().String() == "BILLING_KIND_ONE_TIME" {
 			billingTreatment = ""
@@ -413,10 +413,10 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{Data: record}); err != nil {
 			log.Printf("Failed to create product price plan for price plan %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("price-plan-product-prices-table")
+		return view.HTMXSuccess("price-plan-product-prices-table")
 	})
 }
 
@@ -428,15 +428,15 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_price_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if deps.UpdateProductPricePlan == nil {
-			return centymo.HTMXError("Product price plan update is not available")
+			return view.HTMXError("Product price plan update is not available")
 		}
 
 		existing, err := findProductPricePlan(ctx, deps, ppid)
 		if err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		pplLabels := deps.ProductPricePlanLabels.Form
@@ -506,7 +506,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 
 		// On edit, the catalog line is pinned (the drawer disables the picker);
@@ -516,7 +516,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			productPlanID = existing.GetProductPlanId()
 		}
 		if productPlanID == "" {
-			return centymo.HTMXError("Catalog line is required")
+			return view.HTMXError("Catalog line is required")
 		}
 		priceStr := viewCtx.Request.FormValue("price")
 		currency := viewCtx.Request.FormValue("currency")
@@ -526,7 +526,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 
 		priceFloat, err := strconv.ParseFloat(priceStr, 64)
 		if err != nil || priceFloat < 0 {
-			return centymo.HTMXError("Invalid price value")
+			return view.HTMXError("Invalid price value")
 		}
 		priceCentavos := int64(priceFloat * 100)
 
@@ -536,7 +536,7 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		jobTemplatePhaseID := strings.TrimSpace(viewCtx.Request.FormValue("job_template_phase_id"))
 		parent, _ := loadPricePlanContext(ctx, deps, id)
 		if parent.currency != "" && currency != parent.currency {
-			return centymo.HTMXError("Currency must match the rate card currency")
+			return view.HTMXError("Currency must match the rate card currency")
 		}
 		if parent.pricePlan != nil && parent.pricePlan.GetBillingKind().String() == "BILLING_KIND_ONE_TIME" {
 			billingTreatment = ""
@@ -574,10 +574,10 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 
 		if _, err := deps.UpdateProductPricePlan(ctx, &productpriceplanpb.UpdateProductPricePlanRequest{Data: updated}); err != nil {
 			log.Printf("Failed to update product price plan %s: %v", ppid, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("price-plan-product-prices-table")
+		return view.HTMXSuccess("price-plan-product-prices-table")
 	})
 }
 
@@ -588,10 +588,10 @@ func NewProductPriceDeleteAction(deps *DetailViewDeps) view.View {
 
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("product_price_plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if deps.DeleteProductPricePlan == nil {
-			return centymo.HTMXError("Product price plan delete is not available")
+			return view.HTMXError("Product price plan delete is not available")
 		}
 
 		_ = viewCtx.Request.ParseForm()
@@ -600,17 +600,17 @@ func NewProductPriceDeleteAction(deps *DetailViewDeps) view.View {
 			ppid = viewCtx.Request.URL.Query().Get("id")
 		}
 		if ppid == "" {
-			return centymo.HTMXError("ID is required")
+			return view.HTMXError("ID is required")
 		}
 
 		if _, err := deps.DeleteProductPricePlan(ctx, &productpriceplanpb.DeleteProductPricePlanRequest{
 			Data: &productpriceplanpb.ProductPricePlan{Id: ppid},
 		}); err != nil {
 			log.Printf("Failed to delete product price plan %s for price plan %s: %v", ppid, id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("price-plan-product-prices-table")
+		return view.HTMXSuccess("price-plan-product-prices-table")
 	})
 }
 

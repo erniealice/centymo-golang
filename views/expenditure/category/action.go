@@ -77,7 +77,7 @@ func NewAddAction(deps *ActionDeps) view.View {
 		perms := view.GetUserPermissions(ctx)
 		errs := errLabels(deps.Labels)
 		if !perms.Can("expenditure_category", "create") {
-			return centymo.HTMXError(errs.PermissionDenied)
+			return view.HTMXError(errs.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -90,7 +90,7 @@ func NewAddAction(deps *ActionDeps) view.View {
 
 		// POST — create category
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(errs.InvalidFormData)
+			return view.HTMXError(errs.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -106,11 +106,11 @@ func NewAddAction(deps *ActionDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create expenditure category: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 		_ = resp
 
-		return centymo.HTMXSuccess("expenditure-categories-table")
+		return view.HTMXSuccess("expenditure-categories-table")
 	})
 }
 
@@ -120,7 +120,7 @@ func NewEditAction(deps *ActionDeps) view.View {
 		perms := view.GetUserPermissions(ctx)
 		errs := errLabels(deps.Labels)
 		if !perms.Can("expenditure_category", "update") {
-			return centymo.HTMXError(errs.PermissionDenied)
+			return view.HTMXError(errs.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -134,11 +134,11 @@ func NewEditAction(deps *ActionDeps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read expenditure category %s: %v", id, err)
-				return centymo.HTMXError(errs.NotFound)
+				return view.HTMXError(errs.NotFound)
 			}
 			data := readResp.GetData()
 			if len(data) == 0 {
-				return centymo.HTMXError(errs.NotFound)
+				return view.HTMXError(errs.NotFound)
 			}
 			rec := data[0]
 
@@ -156,7 +156,7 @@ func NewEditAction(deps *ActionDeps) view.View {
 
 		// POST — update category
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(errs.InvalidFormData)
+			return view.HTMXError(errs.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -171,7 +171,7 @@ func NewEditAction(deps *ActionDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update expenditure category %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		return view.ViewResult{
@@ -190,7 +190,7 @@ func NewDeleteAction(deps *ActionDeps) view.View {
 		perms := view.GetUserPermissions(ctx)
 		errs := errLabels(deps.Labels)
 		if !perms.Can("expenditure_category", "delete") {
-			return centymo.HTMXError(errs.PermissionDenied)
+			return view.HTMXError(errs.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -199,7 +199,7 @@ func NewDeleteAction(deps *ActionDeps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(errs.IDRequired)
+			return view.HTMXError(errs.IDRequired)
 		}
 
 		_, err := deps.DeleteExpenditureCategory(ctx, &expenditurecategorypb.DeleteExpenditureCategoryRequest{
@@ -207,10 +207,10 @@ func NewDeleteAction(deps *ActionDeps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete expenditure category %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("expenditure-categories-table")
+		return view.HTMXSuccess("expenditure-categories-table")
 	})
 }
 

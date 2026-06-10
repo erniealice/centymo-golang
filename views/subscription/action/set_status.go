@@ -5,8 +5,6 @@ import (
 	"log"
 
 	"github.com/erniealice/pyeza-golang/view"
-
-	centymo "github.com/erniealice/centymo-golang"
 )
 
 // NewSetStatusAction creates the subscription activate/deactivate action (POST only).
@@ -19,7 +17,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("subscription", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -31,22 +29,22 @@ func NewSetStatusAction(deps *Deps) view.View {
 			targetStatus = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		if deps.SetSubscriptionActive == nil {
-			return centymo.HTMXError("set-status not configured")
+			return view.HTMXError("set-status not configured")
 		}
 
 		if err := deps.SetSubscriptionActive(ctx, id, targetStatus == "active"); err != nil {
 			log.Printf("Failed to update subscription status %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("subscriptions-table")
+		return view.HTMXSuccess("subscriptions-table")
 	})
 }
 
@@ -56,7 +54,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("subscription", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -65,14 +63,14 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		targetStatus := viewCtx.Request.FormValue("target_status")
 
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		if deps.SetSubscriptionActive == nil {
-			return centymo.HTMXError("set-status not configured")
+			return view.HTMXError("set-status not configured")
 		}
 
 		active := targetStatus == "active"
@@ -83,6 +81,6 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("subscriptions-table")
+		return view.HTMXSuccess("subscriptions-table")
 	})
 }

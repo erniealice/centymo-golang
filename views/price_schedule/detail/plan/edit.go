@@ -24,7 +24,7 @@ import (
 // EditFormData is the drawer form for editing a price_plan under a schedule.
 type EditFormData struct {
 	FormAction    string
-	WorkspaceID    string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	WorkspaceID   string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	ScheduleID    string
 	ScheduleName  string
 	ID            string
@@ -65,7 +65,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_plan", "update") {
-			return centymo.HTMXError(deps.PlanLabels.Errors.Unauthorized)
+			return view.HTMXError(deps.PlanLabels.Errors.Unauthorized)
 		}
 		sid := viewCtx.Request.PathValue("id")
 		ppid := viewCtx.Request.PathValue("ppid")
@@ -73,7 +73,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 		if viewCtx.Request.Method == http.MethodGet {
 			resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{Data: &priceplanpb.PricePlan{Id: ppid}})
 			if err != nil || len(resp.GetData()) == 0 {
-				return centymo.HTMXError(deps.PlanLabels.Errors.NotFound)
+				return view.HTMXError(deps.PlanLabels.Errors.NotFound)
 			}
 			pp := resp.GetData()[0]
 
@@ -139,7 +139,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.PlanLabels.Errors.UpdateFailed)
+			return view.HTMXError(deps.PlanLabels.Errors.UpdateFailed)
 		}
 		r := viewCtx.Request
 		amount := int64(0)
@@ -245,9 +245,9 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 		}
 		if _, err := deps.UpdatePricePlan(ctx, req); err != nil {
 			log.Printf("Failed to update price plan %s under schedule %s: %v", ppid, sid, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-schedule-plans-table")
+		return view.HTMXSuccess("price-schedule-plans-table")
 	})
 }
 

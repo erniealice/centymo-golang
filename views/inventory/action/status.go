@@ -14,7 +14,7 @@ func NewSetStatusAction(setActive func(ctx context.Context, id string, active bo
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
-			return centymo.HTMXError(labels.Errors.PermissionDenied)
+			return view.HTMXError(labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -26,18 +26,18 @@ func NewSetStatusAction(setActive func(ctx context.Context, id string, active bo
 			targetStatus = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError(labels.Errors.IDRequired)
+			return view.HTMXError(labels.Errors.IDRequired)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError(labels.Errors.InvalidStatus)
+			return view.HTMXError(labels.Errors.InvalidStatus)
 		}
 
 		if err := setActive(ctx, id, targetStatus == "active"); err != nil {
 			log.Printf("Failed to update inventory status %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("inventory-table")
+		return view.HTMXSuccess("inventory-table")
 	})
 }
 
@@ -46,7 +46,7 @@ func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, activ
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
-			return centymo.HTMXError(labels.Errors.PermissionDenied)
+			return view.HTMXError(labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -55,10 +55,10 @@ func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, activ
 		targetStatus := viewCtx.Request.FormValue("target_status")
 
 		if len(ids) == 0 {
-			return centymo.HTMXError(labels.Errors.NoIDsProvided)
+			return view.HTMXError(labels.Errors.NoIDsProvided)
 		}
 		if targetStatus != "active" && targetStatus != "inactive" {
-			return centymo.HTMXError(labels.Errors.InvalidStatus)
+			return view.HTMXError(labels.Errors.InvalidStatus)
 		}
 
 		active := targetStatus == "active"
@@ -69,6 +69,6 @@ func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, activ
 			}
 		}
 
-		return centymo.HTMXSuccess("inventory-table")
+		return view.HTMXSuccess("inventory-table")
 	})
 }

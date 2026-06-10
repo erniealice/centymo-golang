@@ -59,7 +59,7 @@ func NewAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		inventoryItemID := viewCtx.Request.PathValue("id")
@@ -76,7 +76,7 @@ func NewAssignAction(deps *Deps) view.View {
 
 		// POST - create depreciation record
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -96,7 +96,7 @@ func NewAssignAction(deps *Deps) view.View {
 		_, err := deps.CreateInventoryDepreciation(ctx, &inventorydepreciationpb.CreateInventoryDepreciationRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create depreciation: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		// Redirect back to depreciation tab to show the new config
@@ -115,7 +115,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		inventoryItemID := viewCtx.Request.PathValue("id")
@@ -127,11 +127,11 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read depreciation %s: %v", depreciationID, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			records := resp.GetData()
 			if len(records) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := records[0]
 
@@ -152,7 +152,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST - update depreciation record
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -172,7 +172,7 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateInventoryDepreciation(ctx, &inventorydepreciationpb.UpdateInventoryDepreciationRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to update depreciation %s: %v", depreciationID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		return view.ViewResult{

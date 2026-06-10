@@ -29,7 +29,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("expense_recognition", "delete") {
-			return centymo.HTMXError("Missing permission: expense_recognition:delete")
+			return view.HTMXError("Missing permission: expense_recognition:delete")
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -39,7 +39,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("missing id"))
 		}
 		if deps.DeleteExpenseRecognition == nil {
-			return centymo.HTMXError("delete handler not wired")
+			return view.HTMXError("delete handler not wired")
 		}
 		_, err := deps.DeleteExpenseRecognition(ctx, &expenserecognitionpb.DeleteExpenseRecognitionRequest{
 			Data: &expenserecognitionpb.ExpenseRecognition{Id: id},
@@ -48,6 +48,6 @@ func NewDeleteAction(deps *Deps) view.View {
 			log.Printf("DeleteExpenseRecognition %s: %v", id, err)
 			return view.Error(fmt.Errorf("failed to delete recognition: %w", err))
 		}
-		return centymo.HTMXSuccess("expense-recognitions-table")
+		return view.HTMXSuccess("expense-recognitions-table")
 	})
 }

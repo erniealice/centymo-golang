@@ -40,7 +40,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule_line", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:create"))
 		}
 		scheduleID := viewCtx.Request.PathValue("id")
 		if scheduleID == "" {
@@ -109,9 +109,9 @@ func NewAddAction(deps *Deps) view.View {
 		_, err := deps.CreateSupplierContractPriceScheduleLine(ctx, req)
 		if err != nil {
 			log.Printf("CreateSupplierContractPriceScheduleLine: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("schedule-lines-table")
+		return view.HTMXSuccess("schedule-lines-table")
 	})
 }
 
@@ -121,7 +121,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule_line", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:update"))
 		}
 		lineID := viewCtx.Request.PathValue("lid")
 		scheduleID := viewCtx.Request.PathValue("id")
@@ -221,9 +221,9 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateSupplierContractPriceScheduleLine(ctx, req)
 		if err != nil {
 			log.Printf("UpdateSupplierContractPriceScheduleLine %s: %v", lineID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("schedule-lines-table")
+		return view.HTMXSuccess("schedule-lines-table")
 	})
 }
 
@@ -232,7 +232,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_price_schedule_line", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_price_schedule_line:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -246,9 +246,9 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("DeleteSupplierContractPriceScheduleLine %s: %v", lineID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("schedule-lines-table")
+		return view.HTMXSuccess("schedule-lines-table")
 	})
 }
 

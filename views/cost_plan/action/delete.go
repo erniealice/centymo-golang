@@ -3,7 +3,6 @@ package action
 import (
 	"context"
 
-	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/pyeza-golang/view"
 
 	costplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/cost_plan"
@@ -14,7 +13,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("cost_plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.URL.Query().Get("id")
 		if id == "" {
@@ -22,14 +21,14 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		if _, err := deps.DeleteCostPlan(ctx, &costplanpb.DeleteCostPlanRequest{
 			Data: &costplanpb.CostPlan{Id: id},
 		}); err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("cost-plans-table")
+		return view.HTMXSuccess("cost-plans-table")
 	})
 }
 
@@ -38,10 +37,10 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("cost_plan", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		for _, id := range viewCtx.Request.Form["id"] {
 			if id != "" {
@@ -50,7 +49,7 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 				})
 			}
 		}
-		return centymo.HTMXSuccess("cost-plans-table")
+		return view.HTMXSuccess("cost-plans-table")
 	})
 }
 
@@ -59,7 +58,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("cost_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.URL.Query().Get("id")
 		status := viewCtx.Request.URL.Query().Get("status")
@@ -69,14 +68,14 @@ func NewSetStatusAction(deps *Deps) view.View {
 			status = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		if deps.SetCostPlanActive != nil {
 			if err := deps.SetCostPlanActive(ctx, id, status == "active"); err != nil {
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
-		return centymo.HTMXSuccess("cost-plans-table")
+		return view.HTMXSuccess("cost-plans-table")
 	})
 }
 
@@ -85,7 +84,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("cost_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 		ids := viewCtx.Request.Form["id"]
@@ -97,6 +96,6 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				}
 			}
 		}
-		return centymo.HTMXSuccess("cost-plans-table")
+		return view.HTMXSuccess("cost-plans-table")
 	})
 }

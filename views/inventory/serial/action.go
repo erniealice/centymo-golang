@@ -70,7 +70,7 @@ func NewAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		inventoryItemID := viewCtx.Request.PathValue("id")
@@ -87,7 +87,7 @@ func NewAssignAction(deps *Deps) view.View {
 
 		// POST - create serial
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -104,10 +104,10 @@ func NewAssignAction(deps *Deps) view.View {
 		_, err := deps.CreateInventorySerial(ctx, &inventoryserialpb.CreateInventorySerialRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create serial: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("serial-table")
+		return view.HTMXSuccess("serial-table")
 	})
 }
 
@@ -116,7 +116,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		inventoryItemID := viewCtx.Request.PathValue("id")
@@ -128,11 +128,11 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read serial %s: %v", serialID, err)
-				return centymo.HTMXError(deps.Labels.Errors.SerialNotFound)
+				return view.HTMXError(deps.Labels.Errors.SerialNotFound)
 			}
 			records := resp.GetData()
 			if len(records) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.SerialNotFound)
+				return view.HTMXError(deps.Labels.Errors.SerialNotFound)
 			}
 			record := records[0]
 
@@ -154,7 +154,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST - update serial
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -171,10 +171,10 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.UpdateInventorySerial(ctx, &inventoryserialpb.UpdateInventorySerialRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to update serial %s: %v", serialID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("serial-table")
+		return view.HTMXSuccess("serial-table")
 	})
 }
 
@@ -183,7 +183,7 @@ func NewRemoveAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -192,7 +192,7 @@ func NewRemoveAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.SerialIDRequired)
+			return view.HTMXError(deps.Labels.Errors.SerialIDRequired)
 		}
 
 		_, err := deps.DeleteInventorySerial(ctx, &inventoryserialpb.DeleteInventorySerialRequest{
@@ -200,16 +200,16 @@ func NewRemoveAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete serial %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("serial-table")
+		return view.HTMXSuccess("serial-table")
 	})
 }
 
 // NewTableAction returns the serial table partial for HTMX refresh.
 func NewTableAction(_ *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		return centymo.HTMXSuccess("serial-table")
+		return view.HTMXSuccess("serial-table")
 	})
 }

@@ -34,17 +34,17 @@ func NewMilestoneMarkReadyAction(setStatus SetBillingEventStatusFn, errLabels ce
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if perms != nil && !perms.Can("milestone", "set_status") {
-			return centymo.HTMXError(errLabels.PermissionDenied)
+			return view.HTMXError(errLabels.PermissionDenied)
 		}
 		if viewCtx.Request.Method != http.MethodPost {
-			return centymo.HTMXError(errLabels.InvalidStatus)
+			return view.HTMXError(errLabels.InvalidStatus)
 		}
 		if setStatus == nil {
-			return centymo.HTMXError(errLabels.InvalidFormData)
+			return view.HTMXError(errLabels.InvalidFormData)
 		}
 		eventID := viewCtx.Request.PathValue("eventId")
 		if eventID == "" {
-			return centymo.HTMXError(errLabels.IDRequired)
+			return view.HTMXError(errLabels.IDRequired)
 		}
 		_ = viewCtx.Request.ParseForm()
 		reason := strings.TrimSpace(viewCtx.Request.FormValue("reason"))
@@ -58,7 +58,7 @@ func NewMilestoneMarkReadyAction(setStatus SetBillingEventStatusFn, errLabels ce
 		}
 		if _, err := setStatus(ctx, req); err != nil {
 			log.Printf("Mark milestone ready failed for event %s: %v", eventID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 		return view.ViewResult{
 			StatusCode: http.StatusOK,
@@ -76,17 +76,17 @@ func NewMilestoneWaiveAction(setStatus SetBillingEventStatusFn, errLabels centym
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if perms != nil && !perms.Can("milestone", "set_status") {
-			return centymo.HTMXError(errLabels.PermissionDenied)
+			return view.HTMXError(errLabels.PermissionDenied)
 		}
 		if viewCtx.Request.Method != http.MethodPost {
-			return centymo.HTMXError(errLabels.InvalidStatus)
+			return view.HTMXError(errLabels.InvalidStatus)
 		}
 		if setStatus == nil {
-			return centymo.HTMXError(errLabels.InvalidFormData)
+			return view.HTMXError(errLabels.InvalidFormData)
 		}
 		eventID := viewCtx.Request.PathValue("eventId")
 		if eventID == "" {
-			return centymo.HTMXError(errLabels.IDRequired)
+			return view.HTMXError(errLabels.IDRequired)
 		}
 		_ = viewCtx.Request.ParseForm()
 		reason := strings.TrimSpace(viewCtx.Request.FormValue("reason"))
@@ -101,7 +101,7 @@ func NewMilestoneWaiveAction(setStatus SetBillingEventStatusFn, errLabels centym
 		}
 		if _, err := setStatus(ctx, req); err != nil {
 			log.Printf("Waive milestone failed for event %s: %v", eventID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 		return view.ViewResult{
 			StatusCode: http.StatusOK,

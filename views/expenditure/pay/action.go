@@ -62,7 +62,7 @@ func NewPayAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("disbursement", "create") {
-			return centymo.HTMXError(deps.DisbursementLabels.Errors.PermissionDenied)
+			return view.HTMXError(deps.DisbursementLabels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -73,11 +73,11 @@ func NewPayAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("PayAction: failed to read expenditure %s: %v", id, err)
-			return centymo.HTMXError("Expense not found")
+			return view.HTMXError("Expense not found")
 		}
 		data := resp.GetData()
 		if len(data) == 0 {
-			return centymo.HTMXError("Expense not found")
+			return view.HTMXError("Expense not found")
 		}
 		exp := data[0]
 
@@ -103,7 +103,7 @@ func NewPayAction(deps *Deps) view.View {
 
 		// POST — create the disbursement pre-linked to this expenditure.
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.DisbursementLabels.Errors.InvalidFormData)
+			return view.HTMXError(deps.DisbursementLabels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -123,7 +123,7 @@ func NewPayAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("PayAction: failed to create disbursement for expenditure %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		newID := ""
@@ -140,6 +140,6 @@ func NewPayAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("")
+		return view.HTMXSuccess("")
 	})
 }

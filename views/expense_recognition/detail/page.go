@@ -235,7 +235,7 @@ func NewReverseAction(deps *DetailViewDeps) view.View {
 		if deps.ReverseExpenseRecognition != nil {
 			if err := deps.ReverseExpenseRecognition(ctx, id, reason); err != nil {
 				log.Printf("ReverseExpenseRecognition %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := route.ResolveURL(deps.Routes.DetailURL, "id", id)

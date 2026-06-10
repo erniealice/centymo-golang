@@ -337,7 +337,7 @@ func NewApproveAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract", "approve") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:approve"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:approve"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -349,7 +349,7 @@ func NewApproveAction(deps *DetailViewDeps) view.View {
 		if deps.ApproveSupplierContract != nil {
 			if err := deps.ApproveSupplierContract(ctx, id); err != nil {
 				log.Printf("ApproveSupplierContract %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := buildDetailURL(deps.Routes.DetailURL, id)
@@ -369,7 +369,7 @@ func NewTerminateAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract", "terminate") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:terminate"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract:terminate"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -388,7 +388,7 @@ func NewTerminateAction(deps *DetailViewDeps) view.View {
 		if deps.TerminateSupplierContract != nil {
 			if err := deps.TerminateSupplierContract(ctx, id, reason); err != nil {
 				log.Printf("TerminateSupplierContract %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := buildDetailURL(deps.Routes.DetailURL, id)

@@ -161,7 +161,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_schedule", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if viewCtx.Request.Method == http.MethodGet {
 			// 2026-04-27 plan-client-scope plan §4.4.1 — when the request
@@ -219,7 +219,7 @@ func NewAddAction(deps *Deps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.CreateFailed)
+			return view.HTMXError(deps.Labels.Errors.CreateFailed)
 		}
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
@@ -259,9 +259,9 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if _, err := deps.CreatePriceSchedule(ctx, req); err != nil {
 			log.Printf("Failed to create price schedule: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-schedules-table")
+		return view.HTMXSuccess("price-schedules-table")
 	})
 }
 
@@ -300,13 +300,13 @@ func NewEditAction(deps *Deps) view.View {
 			requiredAction = "create"
 		}
 		if !perms.Can("price_schedule", requiredAction) {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
 			resp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}})
 			if err != nil || len(resp.GetData()) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := resp.GetData()[0]
 			locations := loadLocations(ctx, deps)
@@ -357,7 +357,7 @@ func NewEditAction(deps *Deps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.UpdateFailed)
+			return view.HTMXError(deps.Labels.Errors.UpdateFailed)
 		}
 		r := viewCtx.Request
 		active := r.FormValue("active") == "true"
@@ -393,9 +393,9 @@ func NewEditAction(deps *Deps) view.View {
 		req.Data.LocationId = &locationID
 		req.Data.ClientId = &clientID
 		if _, err := deps.UpdatePriceSchedule(ctx, req); err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-schedules-table")
+		return view.HTMXSuccess("price-schedules-table")
 	})
 }
 
@@ -403,7 +403,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_schedule", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		id := viewCtx.Request.URL.Query().Get("id")
 		if id == "" {
@@ -411,17 +411,17 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		if deps.GetPriceScheduleInUseIDs != nil {
 			if inUse, _ := deps.GetPriceScheduleInUseIDs(ctx, []string{id}); inUse[id] {
-				return centymo.HTMXError(deps.Labels.Errors.InUse)
+				return view.HTMXError(deps.Labels.Errors.InUse)
 			}
 		}
 		if _, err := deps.DeletePriceSchedule(ctx, &priceschedulepb.DeletePriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}}); err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-schedules-table")
+		return view.HTMXSuccess("price-schedules-table")
 	})
 }
 
@@ -429,10 +429,10 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_schedule", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.DeleteFailed)
+			return view.HTMXError(deps.Labels.Errors.DeleteFailed)
 		}
 		ids := viewCtx.Request.Form["id"]
 		// Strip blanks once so the eligibility math is unambiguous.
@@ -443,7 +443,7 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			}
 		}
 		if len(attempted) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		var inUse map[string]bool
 		if deps.GetPriceScheduleInUseIDs != nil {
@@ -471,13 +471,13 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			// All-fail case: surface the single-delete-style error so the
 			// operator sees a real toast instead of silent table refresh.
 			if blocked > 0 && failed == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.InUse)
+				return view.HTMXError(deps.Labels.Errors.InUse)
 			}
-			return centymo.HTMXError(deps.Labels.Errors.DeleteFailed)
+			return view.HTMXError(deps.Labels.Errors.DeleteFailed)
 		}
 		// Partial success — at least one deleted; the table refresh
 		// surfaces the result. The skipped rows stay visible.
-		return centymo.HTMXSuccess("price-schedules-table")
+		return view.HTMXSuccess("price-schedules-table")
 	})
 }
 
@@ -485,7 +485,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_schedule", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		id := viewCtx.Request.URL.Query().Get("id")
 		status := viewCtx.Request.URL.Query().Get("status")
@@ -496,7 +496,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 		}
 		readResp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{Data: &priceschedulepb.PriceSchedule{Id: id}})
 		if err != nil || len(readResp.GetData()) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NotFound)
+			return view.HTMXError(deps.Labels.Errors.NotFound)
 		}
 		record := readResp.GetData()[0]
 		_, err = deps.UpdatePriceSchedule(ctx, &priceschedulepb.UpdatePriceScheduleRequest{
@@ -511,9 +511,9 @@ func NewSetStatusAction(deps *Deps) view.View {
 			},
 		})
 		if err != nil {
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("price-schedules-table")
+		return view.HTMXSuccess("price-schedules-table")
 	})
 }
 
@@ -521,7 +521,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("price_schedule", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.Unauthorized)
+			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 		ids := viewCtx.Request.Form["id"]
@@ -547,6 +547,6 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				},
 			})
 		}
-		return centymo.HTMXSuccess("price-schedules-table")
+		return view.HTMXSuccess("price-schedules-table")
 	})
 }

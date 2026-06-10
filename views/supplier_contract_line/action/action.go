@@ -36,7 +36,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_line", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:create"))
 		}
 		contractID := viewCtx.Request.PathValue("id")
 		if contractID == "" {
@@ -83,7 +83,7 @@ func NewAddAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to create contract line: %w", err))
 		}
 
-		return centymo.HTMXSuccess("supplier-contracts-table")
+		return view.HTMXSuccess("supplier-contracts-table")
 	})
 }
 
@@ -92,7 +92,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_line", "update") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:update"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:update"))
 		}
 		lineID := viewCtx.Request.PathValue("lid")
 		contractID := viewCtx.Request.PathValue("id")
@@ -164,7 +164,7 @@ func NewEditAction(deps *Deps) view.View {
 			return view.Error(fmt.Errorf("failed to update contract line: %w", err))
 		}
 
-		return centymo.HTMXSuccess("supplier-contracts-table")
+		return view.HTMXSuccess("supplier-contracts-table")
 	})
 }
 
@@ -173,7 +173,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("supplier_contract_line", "delete") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:delete"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "supplier_contract_line:delete"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -189,7 +189,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			log.Printf("DeleteSupplierContractLine %s: %v", lineID, err)
 			return view.Error(fmt.Errorf("failed to delete contract line: %w", err))
 		}
-		return centymo.HTMXSuccess("supplier-contracts-table")
+		return view.HTMXSuccess("supplier-contracts-table")
 	})
 }
 

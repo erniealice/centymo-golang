@@ -320,7 +320,7 @@ func NewSubmitAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request", "submit") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:submit"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:submit"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -332,7 +332,7 @@ func NewSubmitAction(deps *DetailViewDeps) view.View {
 		if deps.SubmitProcurementRequest != nil {
 			if err := deps.SubmitProcurementRequest(ctx, id); err != nil {
 				log.Printf("SubmitProcurementRequest %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := buildURL(deps.Routes.DetailURL, id)
@@ -352,7 +352,7 @@ func NewApproveAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request", "approve") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:approve"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:approve"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -364,7 +364,7 @@ func NewApproveAction(deps *DetailViewDeps) view.View {
 		if deps.ApproveProcurementRequest != nil {
 			if err := deps.ApproveProcurementRequest(ctx, id); err != nil {
 				log.Printf("ApproveProcurementRequest %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := buildURL(deps.Routes.DetailURL, id)
@@ -385,7 +385,7 @@ func NewRejectAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("procurement_request", "reject") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:reject"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "procurement_request:reject"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -401,7 +401,7 @@ func NewRejectAction(deps *DetailViewDeps) view.View {
 		if deps.RejectProcurementRequest != nil {
 			if err := deps.RejectProcurementRequest(ctx, id, reason); err != nil {
 				log.Printf("RejectProcurementRequest %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := buildURL(deps.Routes.DetailURL, id)
@@ -423,7 +423,7 @@ func NewSpawnPOAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("purchase_order", "create") {
-			return centymo.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "purchase_order:create"))
+			return view.HTMXError(fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "purchase_order:create"))
 		}
 		if viewCtx.Request.Method != http.MethodPost {
 			return view.Error(fmt.Errorf("method not allowed"))
@@ -435,7 +435,7 @@ func NewSpawnPOAction(deps *DetailViewDeps) view.View {
 		if deps.SpawnPurchaseOrder != nil {
 			if _, err := deps.SpawnPurchaseOrder(ctx, id); err != nil {
 				log.Printf("SpawnPurchaseOrder %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 		}
 		detailURL := buildURL(deps.Routes.DetailURL, id) + "?tab=spawned-pos"

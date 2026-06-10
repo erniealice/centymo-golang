@@ -67,7 +67,7 @@ func NewAssignAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		inventoryItemID := viewCtx.Request.PathValue("id")
@@ -84,7 +84,7 @@ func NewAssignAction(deps *Deps) view.View {
 
 		// POST - create transaction + update quantities
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -105,7 +105,7 @@ func NewAssignAction(deps *Deps) view.View {
 		_, err := deps.CreateInventoryTransaction(ctx, &inventorytransactionpb.CreateInventoryTransactionRequest{Data: data})
 		if err != nil {
 			log.Printf("Failed to create transaction: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		// Update inventory quantities based on transaction type
@@ -132,13 +132,13 @@ func NewAssignAction(deps *Deps) view.View {
 			})
 		}
 
-		return centymo.HTMXSuccess("transaction-table")
+		return view.HTMXSuccess("transaction-table")
 	})
 }
 
 // NewTableAction returns the transaction table partial for HTMX refresh.
 func NewTableAction(_ *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		return centymo.HTMXSuccess("transaction-table")
+		return view.HTMXSuccess("transaction-table")
 	})
 }

@@ -111,7 +111,7 @@ type ProductLineFormLabels struct {
 
 type ProductLineFormData struct {
 	FormAction   string
-	WorkspaceID   string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	WorkspaceID  string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
 	IsEdit       bool
 	ID           string
 	ProductID    string
@@ -540,10 +540,10 @@ func buildLinesTable(ctx context.Context, deps *DetailViewDeps, productID string
 func handleProductLineAssociationAdd(ctx context.Context, deps *DetailViewDeps, viewCtx *view.ViewContext, productID string) view.ViewResult {
 	perms := view.GetUserPermissions(ctx)
 	if !perms.Can("product_line", "create") {
-		return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+		return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 	}
 	if deps.CreateProductLine == nil {
-		return centymo.HTMXError("Product line create is not available")
+		return view.HTMXError("Product line create is not available")
 	}
 
 	if viewCtx.Request.Method == http.MethodGet {
@@ -559,12 +559,12 @@ func handleProductLineAssociationAdd(ctx context.Context, deps *DetailViewDeps, 
 	}
 
 	if err := viewCtx.Request.ParseForm(); err != nil {
-		return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+		return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 	}
 
 	lineID := viewCtx.Request.FormValue("line_id")
 	if lineID == "" {
-		return centymo.HTMXError("Line is required")
+		return view.HTMXError("Line is required")
 	}
 
 	productLine := &productlinepb.ProductLine{
@@ -580,19 +580,19 @@ func handleProductLineAssociationAdd(ctx context.Context, deps *DetailViewDeps, 
 
 	if _, err := deps.CreateProductLine(ctx, &productlinepb.CreateProductLineRequest{Data: productLine}); err != nil {
 		log.Printf("Failed to create product line association for product %s: %v", productID, err)
-		return centymo.HTMXError(err.Error())
+		return view.HTMXError(err.Error())
 	}
 
-	return centymo.HTMXSuccess("product-lines-table")
+	return view.HTMXSuccess("product-lines-table")
 }
 
 func handleProductLineAssociationEdit(ctx context.Context, deps *DetailViewDeps, viewCtx *view.ViewContext, productID string) view.ViewResult {
 	perms := view.GetUserPermissions(ctx)
 	if !perms.Can("product_line", "update") {
-		return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+		return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 	}
 	if deps.UpdateProductLine == nil {
-		return centymo.HTMXError("Product line update is not available")
+		return view.HTMXError("Product line update is not available")
 	}
 
 	assocID := viewCtx.Request.URL.Query().Get("plid")
@@ -600,12 +600,12 @@ func handleProductLineAssociationEdit(ctx context.Context, deps *DetailViewDeps,
 		assocID = viewCtx.Request.FormValue("plid")
 	}
 	if assocID == "" {
-		return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+		return view.HTMXError(deps.Labels.Errors.IDRequired)
 	}
 
 	assoc, err := findProductLineAssociation(ctx, deps, assocID)
 	if err != nil {
-		return centymo.HTMXError(err.Error())
+		return view.HTMXError(err.Error())
 	}
 
 	if viewCtx.Request.Method == http.MethodGet {
@@ -624,12 +624,12 @@ func handleProductLineAssociationEdit(ctx context.Context, deps *DetailViewDeps,
 	}
 
 	if err := viewCtx.Request.ParseForm(); err != nil {
-		return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+		return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 	}
 
 	lineID := viewCtx.Request.FormValue("line_id")
 	if lineID == "" {
-		return centymo.HTMXError("Line is required")
+		return view.HTMXError("Line is required")
 	}
 
 	updated := &productlinepb.ProductLine{
@@ -646,19 +646,19 @@ func handleProductLineAssociationEdit(ctx context.Context, deps *DetailViewDeps,
 
 	if _, err := deps.UpdateProductLine(ctx, &productlinepb.UpdateProductLineRequest{Data: updated}); err != nil {
 		log.Printf("Failed to update product line association %s: %v", assocID, err)
-		return centymo.HTMXError(err.Error())
+		return view.HTMXError(err.Error())
 	}
 
-	return centymo.HTMXSuccess("product-lines-table")
+	return view.HTMXSuccess("product-lines-table")
 }
 
 func handleProductLineAssociationDelete(ctx context.Context, deps *DetailViewDeps, viewCtx *view.ViewContext, productID string) view.ViewResult {
 	perms := view.GetUserPermissions(ctx)
 	if !perms.Can("product_line", "delete") {
-		return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+		return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 	}
 	if deps.DeleteProductLine == nil {
-		return centymo.HTMXError("Product line delete is not available")
+		return view.HTMXError("Product line delete is not available")
 	}
 
 	assocID := viewCtx.Request.URL.Query().Get("plid")
@@ -667,15 +667,15 @@ func handleProductLineAssociationDelete(ctx context.Context, deps *DetailViewDep
 		assocID = viewCtx.Request.FormValue("plid")
 	}
 	if assocID == "" {
-		return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+		return view.HTMXError(deps.Labels.Errors.IDRequired)
 	}
 
 	if _, err := deps.DeleteProductLine(ctx, &productlinepb.DeleteProductLineRequest{Data: &productlinepb.ProductLine{Id: assocID}}); err != nil {
 		log.Printf("Failed to delete product line association %s for product %s: %v", assocID, productID, err)
-		return centymo.HTMXError(err.Error())
+		return view.HTMXError(err.Error())
 	}
 
-	return centymo.HTMXSuccess("product-lines-table")
+	return view.HTMXSuccess("product-lines-table")
 }
 
 func findProductLineAssociation(ctx context.Context, deps *DetailViewDeps, assocID string) (*productlinepb.ProductLine, error) {

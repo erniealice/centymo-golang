@@ -127,16 +127,16 @@ func NewAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("revenue", "create") || !perms.Can("subscription", "read") {
-			return centymo.HTMXError(deps.Labels.RevenueRun.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.RevenueRun.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.RevenueRun.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.RevenueRun.Errors.IDRequired)
 		}
 
 		if deps.ListRevenueRunCandidates == nil || deps.GenerateRevenueRun == nil {
-			return centymo.HTMXError(deps.Labels.RevenueRun.Errors.UseCaseUnavailable)
+			return view.HTMXError(deps.Labels.RevenueRun.Errors.UseCaseUnavailable)
 		}
 
 		switch viewCtx.Request.Method {
@@ -145,7 +145,7 @@ func NewAction(deps *Deps) view.View {
 		case http.MethodPost:
 			return submitDrawer(ctx, viewCtx, deps, id)
 		default:
-			return centymo.HTMXError(deps.Labels.RevenueRun.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.RevenueRun.Errors.InvalidFormData)
 		}
 	})
 }
@@ -180,7 +180,7 @@ func renderDrawer(
 	candidates, _, err := deps.ListRevenueRunCandidates(ctx, scope)
 	if err != nil {
 		log.Printf("revenue_run.renderDrawer: ListRevenueRunCandidates for sub %s failed: %v", subscriptionID, err)
-		return centymo.HTMXError(l.Errors.UseCaseUnavailable)
+		return view.HTMXError(l.Errors.UseCaseUnavailable)
 	}
 
 	formAction := route.ResolveURL(deps.Routes.RevenueRunURL, "id", subscriptionID)
@@ -211,7 +211,7 @@ func submitDrawer(
 	l := deps.Labels.RevenueRun
 
 	if err := viewCtx.Request.ParseForm(); err != nil {
-		return centymo.HTMXError(l.Errors.InvalidFormData)
+		return view.HTMXError(l.Errors.InvalidFormData)
 	}
 
 	asOfDate := viewCtx.Request.FormValue("as_of_date")
@@ -223,7 +223,7 @@ func submitDrawer(
 	// Parse "selection" form values: each is "{sub_id}|{start}|{end}|{marker}".
 	rawSelections := viewCtx.Request.Form["selection"]
 	if len(rawSelections) == 0 {
-		return centymo.HTMXError(l.Errors.SelectOne)
+		return view.HTMXError(l.Errors.SelectOne)
 	}
 
 	var sels RevenueRunSelections
@@ -250,7 +250,7 @@ func submitDrawer(
 		sels.ExplicitList = append(sels.ExplicitList, sel)
 	}
 	if len(sels.ExplicitList) == 0 {
-		return centymo.HTMXError(l.Errors.SelectOne)
+		return view.HTMXError(l.Errors.SelectOne)
 	}
 
 	scope := RevenueRunScope{
@@ -262,10 +262,10 @@ func submitDrawer(
 	result, err := deps.GenerateRevenueRun(ctx, scope, sels)
 	if err != nil {
 		log.Printf("revenue_run.submitDrawer: GenerateRevenueRun for sub %s failed: %v", subscriptionID, err)
-		return centymo.HTMXError(l.Errors.UseCaseUnavailable)
+		return view.HTMXError(l.Errors.UseCaseUnavailable)
 	}
 	if result == nil {
-		return centymo.HTMXError(l.Errors.UseCaseUnavailable)
+		return view.HTMXError(l.Errors.UseCaseUnavailable)
 	}
 
 	// Resolve the lyngua-translated toast text. Substitute Go-template

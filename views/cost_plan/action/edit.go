@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	centymo "github.com/erniealice/centymo-golang"
 	"github.com/erniealice/centymo-golang/views/cost_plan/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -19,7 +18,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("cost_plan", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 		id := viewCtx.Request.PathValue("id")
 		if viewCtx.Request.Method == http.MethodGet {
@@ -29,7 +28,7 @@ func NewEditAction(deps *Deps) view.View {
 					CostPlanId: id,
 				})
 				if err != nil || resp == nil || resp.GetCostPlan() == nil {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetCostPlan()
 			} else {
@@ -37,7 +36,7 @@ func NewEditAction(deps *Deps) view.View {
 					Data: &costplanpb.CostPlan{Id: id},
 				})
 				if err != nil || len(resp.GetData()) == 0 {
-					return centymo.HTMXError(deps.Labels.Errors.NotFound)
+					return view.HTMXError(deps.Labels.Errors.NotFound)
 				}
 				record = resp.GetData()[0]
 			}
@@ -82,7 +81,7 @@ func NewEditAction(deps *Deps) view.View {
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 		r := viewCtx.Request
 		name := r.FormValue("name")
@@ -142,8 +141,8 @@ func NewEditAction(deps *Deps) view.View {
 
 		if _, err := deps.UpdateCostPlan(ctx, &costplanpb.UpdateCostPlanRequest{Data: cp}); err != nil {
 			log.Printf("Failed to update cost plan %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
-		return centymo.HTMXSuccess("cost-plans-table")
+		return view.HTMXSuccess("cost-plans-table")
 	})
 }

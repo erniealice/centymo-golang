@@ -107,26 +107,26 @@ type Deps struct {
 // The formLabels function was a verbatim mapper — inlined here per Decision 2.
 func buildFormLabels(t func(string) string) form.Labels {
 	return form.Labels{
-		Customer:                  t("revenue.form.customer"),
-		Date:                      t("revenue.form.date"),
-		Currency:                  t("revenue.form.currency"),
-		Reference:                 t("revenue.form.reference"),
-		ReferencePlaceholder:      t("revenue.form.referencePlaceholder"),
-		Status:                    t("revenue.form.status"),
-		Notes:                     t("revenue.form.notes"),
-		NotesPlaceholder:          t("revenue.form.notesPlaceholder"),
-		Location:                  t("revenue.form.location"),
-		PaymentTerms:              t("revenue.form.paymentTerms"),
-		SelectPaymentTerm:         t("revenue.form.selectPaymentTerm"),
-		DueDate:                   t("revenue.form.dueDate"),
-		Subscription:              t("revenue.form.subscription"),
-		SubscriptionNoResults:     t("revenue.form.subscriptionNoResults"),
-		RevenueType:               t("revenue.form.revenueType"),
-		RevenueTypeOneTime:        t("revenue.form.revenueTypeOneTime"),
+		Customer:                    t("revenue.form.customer"),
+		Date:                        t("revenue.form.date"),
+		Currency:                    t("revenue.form.currency"),
+		Reference:                   t("revenue.form.reference"),
+		ReferencePlaceholder:        t("revenue.form.referencePlaceholder"),
+		Status:                      t("revenue.form.status"),
+		Notes:                       t("revenue.form.notes"),
+		NotesPlaceholder:            t("revenue.form.notesPlaceholder"),
+		Location:                    t("revenue.form.location"),
+		PaymentTerms:                t("revenue.form.paymentTerms"),
+		SelectPaymentTerm:           t("revenue.form.selectPaymentTerm"),
+		DueDate:                     t("revenue.form.dueDate"),
+		Subscription:                t("revenue.form.subscription"),
+		SubscriptionNoResults:       t("revenue.form.subscriptionNoResults"),
+		RevenueType:                 t("revenue.form.revenueType"),
+		RevenueTypeOneTime:          t("revenue.form.revenueTypeOneTime"),
 		RevenueTypeFromSubscription: t("revenue.form.revenueTypeFromSubscription"),
-		RevenueTypeFromActivities: t("revenue.form.revenueTypeFromActivities"),
-		ActivityIDs:               t("revenue.form.activityIDs"),
-		ActivityIDsPlaceholder:    t("revenue.form.activityIDsPlaceholder"),
+		RevenueTypeFromActivities:   t("revenue.form.revenueTypeFromActivities"),
+		ActivityIDs:                 t("revenue.form.activityIDs"),
+		ActivityIDsPlaceholder:      t("revenue.form.activityIDsPlaceholder"),
 		Form: form.Inner{
 			SectionInfo:               t("revenue.form.sectionInfo"),
 			CurrencyPlaceholder:       t("revenue.form.currencyPlaceholder"),
@@ -266,7 +266,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "create") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		if viewCtx.Request.Method == http.MethodGet {
@@ -286,7 +286,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST — create sale
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -331,7 +331,7 @@ func NewAddAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to create sale: %v", err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		// Redirect to new sale detail with Items tab
@@ -363,7 +363,7 @@ func NewAddAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("revenue-table")
+		return view.HTMXSuccess("revenue-table")
 	})
 }
 
@@ -569,7 +569,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.PathValue("id")
@@ -580,11 +580,11 @@ func NewEditAction(deps *Deps) view.View {
 			})
 			if err != nil {
 				log.Printf("Failed to read sale %s: %v", id, err)
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			readData := readResp.GetData()
 			if len(readData) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NotFound)
+				return view.HTMXError(deps.Labels.Errors.NotFound)
 			}
 			record := readData[0]
 
@@ -691,7 +691,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST — update sale
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -726,7 +726,7 @@ func NewEditAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update sale %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
 		// Redirect to detail page (preserves current tab)
@@ -746,7 +746,7 @@ func NewDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -755,7 +755,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		_, err := deps.DeleteRevenue(ctx, &revenuepb.DeleteRevenueRequest{
@@ -763,10 +763,10 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete sale %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("revenue-table")
+		return view.HTMXSuccess("revenue-table")
 	})
 }
 
@@ -776,14 +776,14 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "delete") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
 
 		ids := viewCtx.Request.Form["id"]
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 
 		for _, id := range ids {
@@ -795,7 +795,7 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("revenue-table")
+		return view.HTMXSuccess("revenue-table")
 	})
 }
 
@@ -811,7 +811,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -823,10 +823,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 			targetStatus = viewCtx.Request.FormValue("status")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 		if targetStatus != "draft" && targetStatus != "complete" && targetStatus != "cancelled" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidStatus)
 		}
 
 		// D20: Block completion with zero items
@@ -834,10 +834,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 			lineItems, err := getLineItemsForRevenueTyped(ctx, deps.ListRevenueLineItems, id)
 			if err != nil {
 				log.Printf("Failed to list line items for sale %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 			if len(lineItems) == 0 {
-				return centymo.HTMXError(deps.Labels.Errors.NoItemsCannotComplete)
+				return view.HTMXError(deps.Labels.Errors.NoItemsCannotComplete)
 			}
 
 			// Update status
@@ -845,13 +845,13 @@ func NewSetStatusAction(deps *Deps) view.View {
 				Data: &revenuepb.Revenue{Id: id, Status: targetStatus},
 			}); err != nil {
 				log.Printf("Failed to update sale status %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 
 			// D5: Deduct stock on completion
 			deductStockForLineItems(ctx, deps, id, lineItems)
 
-			return centymo.HTMXSuccess("revenue-table")
+			return view.HTMXSuccess("revenue-table")
 		}
 
 		// D21: Block cancellation if payments exist
@@ -859,10 +859,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 			payments, err := getPaymentsForRevenue(ctx, deps.DB, id)
 			if err != nil {
 				log.Printf("Failed to list payments for sale %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 			if len(payments) > 0 {
-				return centymo.HTMXError(deps.Labels.Errors.HasPaymentsCannotCancel)
+				return view.HTMXError(deps.Labels.Errors.HasPaymentsCannotCancel)
 			}
 
 			// Update status
@@ -870,7 +870,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				Data: &revenuepb.Revenue{Id: id, Status: targetStatus},
 			}); err != nil {
 				log.Printf("Failed to update sale status %s: %v", id, err)
-				return centymo.HTMXError(err.Error())
+				return view.HTMXError(err.Error())
 			}
 
 			// D6: Release serials on cancellation
@@ -881,7 +881,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				releaseSerialsForLineItems(ctx, deps, id, lineItems)
 			}
 
-			return centymo.HTMXSuccess("revenue-table")
+			return view.HTMXSuccess("revenue-table")
 		}
 
 		// Default: draft — just update status
@@ -889,10 +889,10 @@ func NewSetStatusAction(deps *Deps) view.View {
 			Data: &revenuepb.Revenue{Id: id, Status: targetStatus},
 		}); err != nil {
 			log.Printf("Failed to update sale status %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("revenue-table")
+		return view.HTMXSuccess("revenue-table")
 	})
 }
 
@@ -908,7 +908,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		_ = viewCtx.Request.ParseMultipartForm(32 << 20)
@@ -917,10 +917,10 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		targetStatus := viewCtx.Request.FormValue("target_status")
 
 		if len(ids) == 0 {
-			return centymo.HTMXError(deps.Labels.Errors.NoIDsProvided)
+			return view.HTMXError(deps.Labels.Errors.NoIDsProvided)
 		}
 		if targetStatus != "draft" && targetStatus != "complete" && targetStatus != "cancelled" {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidTargetStatus)
+			return view.HTMXError(deps.Labels.Errors.InvalidTargetStatus)
 		}
 
 		// D21: Block bulk cancellation if any sale has payments
@@ -937,7 +937,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				}
 			}
 			if withPayments > 0 {
-				return centymo.HTMXError(fmt.Sprintf(
+				return view.HTMXError(fmt.Sprintf(
 					deps.Labels.Errors.BulkHasPayments,
 					withPayments, len(ids),
 				))
@@ -958,7 +958,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 				}
 			}
 			if emptyCount > 0 {
-				return centymo.HTMXError(fmt.Sprintf(
+				return view.HTMXError(fmt.Sprintf(
 					deps.Labels.Errors.BulkNoItems,
 					emptyCount, len(ids),
 				))
@@ -995,7 +995,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 			}
 		}
 
-		return centymo.HTMXSuccess("revenue-table")
+		return view.HTMXSuccess("revenue-table")
 	})
 }
 

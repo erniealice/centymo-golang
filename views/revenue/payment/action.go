@@ -51,7 +51,7 @@ func NewAddAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		revenueID := viewCtx.Request.PathValue("id")
@@ -70,7 +70,7 @@ func NewAddAction(deps *Deps) view.View {
 
 		// POST — create payment
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -104,10 +104,10 @@ func NewAddAction(deps *Deps) view.View {
 		_, err := deps.DB.Create(ctx, "revenue_payment", data)
 		if err != nil {
 			log.Printf("Failed to create payment for revenue %s: %v", revenueID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("payment-table")
+		return view.HTMXSuccess("payment-table")
 	})
 }
 
@@ -116,7 +116,7 @@ func NewEditAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		revenueID := viewCtx.Request.PathValue("id")
@@ -126,7 +126,7 @@ func NewEditAction(deps *Deps) view.View {
 			record, err := deps.DB.Read(ctx, "revenue_payment", paymentID)
 			if err != nil {
 				log.Printf("Failed to read payment %s: %v", paymentID, err)
-				return centymo.HTMXError(deps.Labels.Errors.PaymentNotFound)
+				return view.HTMXError(deps.Labels.Errors.PaymentNotFound)
 			}
 
 			collectionMethodID, _ := record["collection_method_id"].(string)
@@ -158,7 +158,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		// POST — update payment
 		if err := viewCtx.Request.ParseForm(); err != nil {
-			return centymo.HTMXError(deps.Labels.Errors.InvalidFormData)
+			return view.HTMXError(deps.Labels.Errors.InvalidFormData)
 		}
 
 		r := viewCtx.Request
@@ -189,10 +189,10 @@ func NewEditAction(deps *Deps) view.View {
 		_, err := deps.DB.Update(ctx, "revenue_payment", paymentID, data)
 		if err != nil {
 			log.Printf("Failed to update payment %s: %v", paymentID, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("payment-table")
+		return view.HTMXSuccess("payment-table")
 	})
 }
 
@@ -201,7 +201,7 @@ func NewRemoveAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("invoice", "update") {
-			return centymo.HTMXError(deps.Labels.Errors.PermissionDenied)
+			return view.HTMXError(deps.Labels.Errors.PermissionDenied)
 		}
 
 		id := viewCtx.Request.URL.Query().Get("id")
@@ -210,22 +210,22 @@ func NewRemoveAction(deps *Deps) view.View {
 			id = viewCtx.Request.FormValue("id")
 		}
 		if id == "" {
-			return centymo.HTMXError(deps.Labels.Errors.IDRequired)
+			return view.HTMXError(deps.Labels.Errors.IDRequired)
 		}
 
 		err := deps.DB.Delete(ctx, "revenue_payment", id)
 		if err != nil {
 			log.Printf("Failed to delete payment %s: %v", id, err)
-			return centymo.HTMXError(err.Error())
+			return view.HTMXError(err.Error())
 		}
 
-		return centymo.HTMXSuccess("payment-table")
+		return view.HTMXSuccess("payment-table")
 	})
 }
 
 // NewTableAction returns a payment table refresh trigger for HTMX.
 func NewTableAction(deps *Deps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
-		return centymo.HTMXSuccess("payment-table")
+		return view.HTMXSuccess("payment-table")
 	})
 }
