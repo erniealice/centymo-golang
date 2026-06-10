@@ -254,7 +254,7 @@ func buildTableConfig(
 	sp.BuildDisplay()
 
 	// 6. Bulk actions.
-	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = []types.BulkAction{
 		{
 			Key:             "run-selected",

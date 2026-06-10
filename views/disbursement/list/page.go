@@ -82,7 +82,7 @@ func NewView(deps *ListViewDeps) view.View {
 		rows := buildTableRows(filtered, l, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
-		bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+		bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
 		bulkCfg.Actions = buildBulkActions(l, status, deps.Routes)
 
 		tableConfig := &types.TableConfig{

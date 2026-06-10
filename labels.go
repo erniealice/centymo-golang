@@ -2,9 +2,6 @@ package centymo
 
 import (
 	"strings"
-
-	pyeza "github.com/erniealice/pyeza-golang"
-	"github.com/erniealice/pyeza-golang/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -1012,27 +1009,27 @@ func DefaultRevenueRunLabels() RevenueRunLabels {
 // / expense-recognition-run everywhere except the user-visible VALUE
 // "Expense Run" (supplied by lyngua).
 type ExpenseRecognitionRunLabels struct {
-	AppLabel                 string                                    `json:"appLabel"`
-	Labels                   ExpenseRecognitionRunEntityLabels         `json:"labels"`
-	Page                     ExpenseRecognitionRunPageLabels           `json:"page"`
-	Buttons                  ExpenseRecognitionRunButtonLabels         `json:"buttons"`
-	Search                   ExpenseRecognitionRunSearchLabels         `json:"search"`
-	Filters                  ExpenseRecognitionRunFilterLabels         `json:"filters"`
-	Columns                  ExpenseRecognitionRunColumnLabels         `json:"columns"`
-	Queue                    ExpenseRecognitionRunQueueLabels          `json:"queue"`
-	List                     ExpenseRecognitionRunListLabels           `json:"list"`
-	Detail                   ExpenseRecognitionRunDetailLabels         `json:"detail"`
-	Drawer                   ExpenseRecognitionRunDrawerLabels         `json:"drawer"`
-	StatusBadges             ExpenseRecognitionRunStatusBadgeLabels    `json:"statusBadges"`
-	Actions                  ExpenseRecognitionRunActionLabels         `json:"actions"`
-	ScopeKind                ExpenseRecognitionRunScopeKindLabels      `json:"scopeKind"`
-	SourceKind               ExpenseRecognitionRunSourceKindLabels     `json:"sourceKind"`
-	AttemptOutcome           ExpenseRecognitionRunOutcomeLabels        `json:"attemptOutcome"`
-	Outcome                  ExpenseRecognitionRunOutcomeLabels        `json:"outcome"`
-	LinkedAdvanceSuppression ExpenseRecognitionRunSuppressionLabels    `json:"linkedAdvanceSuppression"`
-	Empty                    ExpenseRecognitionRunEmptyLabels          `json:"empty"`
-	Toast                    ExpenseRecognitionRunToastLabels          `json:"toast"`
-	Errors                   ExpenseRecognitionRunErrorLabels          `json:"errors"`
+	AppLabel                 string                                 `json:"appLabel"`
+	Labels                   ExpenseRecognitionRunEntityLabels      `json:"labels"`
+	Page                     ExpenseRecognitionRunPageLabels        `json:"page"`
+	Buttons                  ExpenseRecognitionRunButtonLabels      `json:"buttons"`
+	Search                   ExpenseRecognitionRunSearchLabels      `json:"search"`
+	Filters                  ExpenseRecognitionRunFilterLabels      `json:"filters"`
+	Columns                  ExpenseRecognitionRunColumnLabels      `json:"columns"`
+	Queue                    ExpenseRecognitionRunQueueLabels       `json:"queue"`
+	List                     ExpenseRecognitionRunListLabels        `json:"list"`
+	Detail                   ExpenseRecognitionRunDetailLabels      `json:"detail"`
+	Drawer                   ExpenseRecognitionRunDrawerLabels      `json:"drawer"`
+	StatusBadges             ExpenseRecognitionRunStatusBadgeLabels `json:"statusBadges"`
+	Actions                  ExpenseRecognitionRunActionLabels      `json:"actions"`
+	ScopeKind                ExpenseRecognitionRunScopeKindLabels   `json:"scopeKind"`
+	SourceKind               ExpenseRecognitionRunSourceKindLabels  `json:"sourceKind"`
+	AttemptOutcome           ExpenseRecognitionRunOutcomeLabels     `json:"attemptOutcome"`
+	Outcome                  ExpenseRecognitionRunOutcomeLabels     `json:"outcome"`
+	LinkedAdvanceSuppression ExpenseRecognitionRunSuppressionLabels `json:"linkedAdvanceSuppression"`
+	Empty                    ExpenseRecognitionRunEmptyLabels       `json:"empty"`
+	Toast                    ExpenseRecognitionRunToastLabels       `json:"toast"`
+	Errors                   ExpenseRecognitionRunErrorLabels       `json:"errors"`
 }
 
 // ExpenseRecognitionRunEntityLabels holds entity-level labels.
@@ -1098,12 +1095,12 @@ type ExpenseRecognitionRunColumnLabels struct {
 // ExpenseRecognitionRunQueueLabels holds copy for the workspace-queue page
 // (Surface B).
 type ExpenseRecognitionRunQueueLabels struct {
-	Title         string                                  `json:"title"`
-	Subtitle      string                                  `json:"subtitle"`
-	AsOfDateLabel string                                  `json:"asOfDateLabel"`
-	Columns       ExpenseRecognitionRunQueueColumnLabels  `json:"columns"`
-	Empty         ExpenseRecognitionRunQueueEmptyLabels   `json:"empty"`
-	Bulk          ExpenseRecognitionRunQueueBulkLabels    `json:"bulk"`
+	Title         string                                 `json:"title"`
+	Subtitle      string                                 `json:"subtitle"`
+	AsOfDateLabel string                                 `json:"asOfDateLabel"`
+	Columns       ExpenseRecognitionRunQueueColumnLabels `json:"columns"`
+	Empty         ExpenseRecognitionRunQueueEmptyLabels  `json:"empty"`
+	Bulk          ExpenseRecognitionRunQueueBulkLabels   `json:"bulk"`
 }
 
 type ExpenseRecognitionRunQueueColumnLabels struct {
@@ -1131,11 +1128,11 @@ type ExpenseRecognitionRunQueueBulkLabels struct {
 // ExpenseRecognitionRunListLabels holds copy for the run history list page
 // (Surface D).
 type ExpenseRecognitionRunListLabels struct {
-	Title    string                                 `json:"title"`
-	Subtitle string                                 `json:"subtitle"`
-	Columns  ExpenseRecognitionRunListColumnLabels  `json:"columns"`
-	Empty    ExpenseRecognitionRunListEmptyLabels   `json:"empty"`
-	Filters  ExpenseRecognitionRunListFilterLabels  `json:"filterLabels"`
+	Title    string                                `json:"title"`
+	Subtitle string                                `json:"subtitle"`
+	Columns  ExpenseRecognitionRunListColumnLabels `json:"columns"`
+	Empty    ExpenseRecognitionRunListEmptyLabels  `json:"empty"`
+	Filters  ExpenseRecognitionRunListFilterLabels `json:"filterLabels"`
 }
 
 type ExpenseRecognitionRunListColumnLabels struct {
@@ -1170,15 +1167,15 @@ type ExpenseRecognitionRunListFilterLabels struct {
 
 // ExpenseRecognitionRunDetailLabels holds copy for the run detail page (Surface D).
 type ExpenseRecognitionRunDetailLabels struct {
-	Title                  string                                       `json:"title"`
-	Tabs                   ExpenseRecognitionRunDetailTabLabels         `json:"tabs"`
-	TabHints               ExpenseRecognitionRunDetailTabHintLabels     `json:"tabHints"`
-	Summary                ExpenseRecognitionRunSummaryLabels           `json:"summary"`
-	Selections             ExpenseRecognitionRunSelectionsTabLabels     `json:"selections"`
-	Results                ExpenseRecognitionRunResultsTabLabels        `json:"results"`
-	Bills                  ExpenseRecognitionRunBillsTabLabels          `json:"bills"`
-	Recognitions           ExpenseRecognitionRunRecognitionsTabLabels   `json:"recognitions"`
-	AuditHistoryComingSoon string                                       `json:"auditHistoryComingSoon"`
+	Title                  string                                     `json:"title"`
+	Tabs                   ExpenseRecognitionRunDetailTabLabels       `json:"tabs"`
+	TabHints               ExpenseRecognitionRunDetailTabHintLabels   `json:"tabHints"`
+	Summary                ExpenseRecognitionRunSummaryLabels         `json:"summary"`
+	Selections             ExpenseRecognitionRunSelectionsTabLabels   `json:"selections"`
+	Results                ExpenseRecognitionRunResultsTabLabels      `json:"results"`
+	Bills                  ExpenseRecognitionRunBillsTabLabels        `json:"bills"`
+	Recognitions           ExpenseRecognitionRunRecognitionsTabLabels `json:"recognitions"`
+	AuditHistoryComingSoon string                                     `json:"auditHistoryComingSoon"`
 }
 
 type ExpenseRecognitionRunDetailTabLabels struct {
@@ -4889,8 +4886,8 @@ type SubscriptionRevenueRunLabels struct {
 	Subtitle string `json:"subtitle"`
 
 	// Read-only context row labels (subscription name + plan name)
-	SubscriptionLabel  string `json:"subscriptionLabel"`
-	PlanLabel          string `json:"planLabel"`
+	SubscriptionLabel string `json:"subscriptionLabel"`
+	PlanLabel         string `json:"planLabel"`
 	// ClientHintTemplate is shown as a hint beneath the subscription field.
 	// Use {client} as the substitution token. E.g. "Client: {client}".
 	ClientHintTemplate string `json:"clientHintTemplate"`
@@ -5710,16 +5707,16 @@ func DefaultPricePlanLabels() PricePlanLabels {
 			EditAmountMultipleSubscriptions: "This price plan is attached to {{.Count}} active subscriptions for {{.ClientName}}. Changing the amount or cycle will affect all of them on the next bill cycle. Continue?",
 		},
 		Errors: PricePlanErrorLabels{
-			NotFound:                       "Rate card not found.",
-			LoadFailed:                     "Failed to load rate cards.",
-			Unauthorized:                   "You do not have permission to access this resource.",
-			CreateFailed:                   "Failed to create rate card.",
-			UpdateFailed:                   "Failed to update rate card.",
-			DeleteFailed:                   "Failed to delete rate card.",
-			InUse:                          "This price plan is in use by active subscriptions and cannot be deleted.",
-			ClientScopeMismatch:            "Price plan client must match its parent plan's client.",
-			ScheduleClientMismatch:         "Selected schedule belongs to a different client and cannot be attached to this price plan.",
-			ScheduleRequiredForClientScope: "This package is scoped to a client. Pick or create a rate card for that client before adding a price plan.",
+			NotFound:                         "Rate card not found.",
+			LoadFailed:                       "Failed to load rate cards.",
+			Unauthorized:                     "You do not have permission to access this resource.",
+			CreateFailed:                     "Failed to create rate card.",
+			UpdateFailed:                     "Failed to update rate card.",
+			DeleteFailed:                     "Failed to delete rate card.",
+			InUse:                            "This price plan is in use by active subscriptions and cannot be deleted.",
+			ClientScopeMismatch:              "Price plan client must match its parent plan's client.",
+			ScheduleClientMismatch:           "Selected schedule belongs to a different client and cannot be attached to this price plan.",
+			ScheduleRequiredForClientScope:   "This package is scoped to a client. Pick or create a rate card for that client before adding a price plan.",
 			MultiSubscriptionConfirmRequired: "Confirmation required — multiple attached subscriptions and monetary fields changing.",
 		},
 		ProductPrice: PricePlanProductPriceLabels{
@@ -6277,8 +6274,8 @@ type ClientPackagesLabels struct {
 	AddAction string `json:"addAction"`
 
 	// Column headers for the table on the tab.
-	ColumnName        string `json:"columnName"`
-	ColumnSchedule    string `json:"columnSchedule"`
+	ColumnName          string `json:"columnName"`
+	ColumnSchedule      string `json:"columnSchedule"`
 	ColumnSubscriptions string `json:"columnSubscriptions"`
 }
 
@@ -6290,11 +6287,11 @@ type ClientPackagesLabels struct {
 // 2026-04-27 plan-client-scope plan §7.
 func DefaultClientPackagesLabels() ClientPackagesLabels {
 	return ClientPackagesLabels{
-		TabTitle:          "Packages",
-		Empty:             "No custom packages yet — every engagement uses a general package.",
-		AddAction:         "Add custom package",
-		ColumnName:        "Name",
-		ColumnSchedule:    "Rate card",
+		TabTitle:            "Packages",
+		Empty:               "No custom packages yet — every engagement uses a general package.",
+		AddAction:           "Add custom package",
+		ColumnName:          "Name",
+		ColumnSchedule:      "Rate card",
 		ColumnSubscriptions: "Engagements",
 	}
 }
@@ -6435,30 +6432,30 @@ func DefaultSubscriptionLabels() SubscriptionLabels {
 			},
 		},
 		RevenueRun: SubscriptionRevenueRunLabels{
-			Title:                 "Invoice Run",
-			Subtitle:              "Run invoices for {{.Name}}",
-			SubscriptionLabel:     "Engagement",
-			PlanLabel:             "Plan",
-			ClientHintTemplate:    "Client: {client}",
-			AsOfDateLabel:         "As of date",
-			AsOfDateHint:          "Only periods ending on or before this date will be included.",
-			BillThroughTodayLabel: "Bill through today",
-			ColumnPeriod:          "Period",
-			ColumnAmount:          "Amount",
-			ColumnLines:           "Lines",
-			GroupNoPending:        "No pending periods",
-			GroupCurrencyMismatch: "Currency mismatch — cannot run",
-			EmptyTitle:            "Nothing to invoice",
-			EmptyMessage:          "This subscription has no pending billing periods as of the selected date.",
+			Title:                   "Invoice Run",
+			Subtitle:                "Run invoices for {{.Name}}",
+			SubscriptionLabel:       "Engagement",
+			PlanLabel:               "Plan",
+			ClientHintTemplate:      "Client: {client}",
+			AsOfDateLabel:           "As of date",
+			AsOfDateHint:            "Only periods ending on or before this date will be included.",
+			BillThroughTodayLabel:   "Bill through today",
+			ColumnPeriod:            "Period",
+			ColumnAmount:            "Amount",
+			ColumnLines:             "Lines",
+			GroupNoPending:          "No pending periods",
+			GroupCurrencyMismatch:   "Currency mismatch — cannot run",
+			EmptyTitle:              "Nothing to invoice",
+			EmptyMessage:            "This subscription has no pending billing periods as of the selected date.",
 			IntroMessage:            "Generate invoices for the eligible billing periods of this engagement. Select the periods you want to bill below — each will produce a separate invoice.",
 			GenerateButton:          "Generate",
 			GenerateButtonCountOne:  "Generate {count} Invoice",
 			GenerateButtonCountMany: "Generate {count} Invoices",
 			CancelButton:            "Cancel",
-			ToastSuccess:          "Invoice run complete — {{.Created}} invoice(s) created.",
-			ToastSkipped:          "Invoice run complete — all periods skipped.",
-			ToastErrored:          "Invoice run completed with errors — {{.Errored}} period(s) failed.",
-			ViewRunLink:           "View run",
+			ToastSuccess:            "Invoice run complete — {{.Created}} invoice(s) created.",
+			ToastSkipped:            "Invoice run complete — all periods skipped.",
+			ToastErrored:            "Invoice run completed with errors — {{.Errored}} period(s) failed.",
+			ViewRunLink:             "View run",
 			Errors: SubscriptionRevenueRunErrorLabels{
 				PermissionDenied:   "You do not have permission to run invoices.",
 				IDRequired:         "Subscription ID is required.",
@@ -6801,83 +6798,6 @@ func DefaultResourceLabels() ResourceLabels {
 			NoPermission:     "No permission",
 			CannotDelete:     "This resource cannot be deleted because it is in use",
 		},
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Mapping helpers
-// ---------------------------------------------------------------------------
-
-// MapTableLabels maps common labels into the flat types.TableLabels structure.
-func MapTableLabels(common pyeza.CommonLabels) types.TableLabels {
-	return types.TableLabels{
-		Search:                   common.Table.Search,
-		SearchPlaceholder:        common.Table.SearchPlaceholder,
-		Filters:                  common.Table.Filters,
-		FilterConditions:         common.Table.FilterConditions,
-		ClearAll:                 common.Table.ClearAll,
-		AddCondition:             common.Table.AddCondition,
-		Clear:                    common.Table.Clear,
-		ApplyFilters:             common.Table.ApplyFilters,
-		Sort:                     common.Table.Sort,
-		Columns:                  common.Table.Columns,
-		Export:                   common.Table.Export,
-		DensityLabel:             common.Table.Density.Title,
-		DensityDense:             common.Table.Density.Dense,
-		DensityDefault:           common.Table.Density.Default,
-		DensityComfortable:       common.Table.Density.Comfortable,
-		DensityCompact:           common.Table.Density.Compact,
-		EntriesPerPage:           common.Table.EntriesLabel,
-		Show:                     common.Table.Show,
-		Entries:                  common.Table.Entries,
-		Showing:                  common.Table.Showing,
-		To:                       common.Table.To,
-		Of:                       common.Table.Of,
-		EntriesLabel:             common.Table.EntriesLabel,
-		SelectAll:                common.Table.SelectAll,
-		BulkSelectAllPage:        common.Table.BulkSelectAllPage,
-		BulkSelectAllAcrossPages: common.Table.BulkSelectAllAcrossPages,
-		BulkClearSelection:       common.Table.BulkClearSelection,
-		ColumnSortLockedHint:     common.Table.ColumnSortLockedHint,
-		SortAscText:              common.Table.SortAscText,
-		SortDescText:             common.Table.SortDescText,
-		SortAscNumber:            common.Table.SortAscNumber,
-		SortDescNumber:           common.Table.SortDescNumber,
-		SortAscDate:              common.Table.SortAscDate,
-		SortDescDate:             common.Table.SortDescDate,
-		SortAscEnum:              common.Table.SortAscEnum,
-		SortDescEnum:             common.Table.SortDescEnum,
-		FilterOpContains:         common.Table.FilterOpContains,
-		FilterOpEquals:           common.Table.FilterOpEquals,
-		FilterOpStartsWith:       common.Table.FilterOpStartsWith,
-		FilterOpEndsWith:         common.Table.FilterOpEndsWith,
-		FilterOpNotEquals:        common.Table.FilterOpNotEquals,
-		FilterOpBetween:          common.Table.FilterOpBetween,
-		FilterOpEq:               common.Table.FilterOpEq,
-		FilterOpNeq:              common.Table.FilterOpNeq,
-		FilterOpGt:               common.Table.FilterOpGt,
-		FilterOpGte:              common.Table.FilterOpGte,
-		FilterOpLt:               common.Table.FilterOpLt,
-		FilterOpLte:              common.Table.FilterOpLte,
-		FilterOpOn:               common.Table.FilterOpOn,
-		FilterOpBefore:           common.Table.FilterOpBefore,
-		FilterOpAfter:            common.Table.FilterOpAfter,
-		FilterOpIn:               common.Table.FilterOpIn,
-		FilterOpNotIn:            common.Table.FilterOpNotIn,
-		FilterPresetToday:        common.Table.FilterPresetToday,
-		FilterPreset7d:           common.Table.FilterPreset7d,
-		FilterPreset30d:          common.Table.FilterPreset30d,
-		FilterPresetMonth:        common.Table.FilterPresetMonth,
-		FilterPresetCustom:       common.Table.FilterPresetCustom,
-		FilterAny:                common.Table.FilterAny,
-		FilterYes:                common.Table.FilterYes,
-		FilterNo:                 common.Table.FilterNo,
-		FilterSearchPlaceholder:  common.Table.FilterSearchPlaceholder,
-		FilterMinPlaceholder:     common.Table.FilterMinPlaceholder,
-		FilterMaxPlaceholder:     common.Table.FilterMaxPlaceholder,
-		Actions:                  common.Table.Actions,
-		Prev:                     common.Pagination.Prev,
-		Next:                     common.Pagination.Next,
 	}
 }
 
@@ -7758,16 +7678,6 @@ func DefaultProcurementRequestLabels() ProcurementRequestLabels {
 	}
 }
 
-// MapBulkConfig returns a BulkActionsConfig with labels from common bulk labels.
-func MapBulkConfig(common pyeza.CommonLabels) types.BulkActionsConfig {
-	return types.BulkActionsConfig{
-		Enabled:        true,
-		SelectAllLabel: common.Bulk.SelectAll,
-		SelectedLabel:  common.Bulk.Selected,
-		CancelLabel:    common.Bulk.ClearSelection,
-	}
-}
-
 // LocationMap maps location slugs to display names.
 var LocationMap = map[string]string{
 	"ayala-central-bloc": "Ayala Central Bloc",
@@ -8274,12 +8184,12 @@ type ExpenseRecognitionDetailLabels struct {
 	TabAttachments       string `json:"tabAttachments"`
 
 	// Info-tab + source-tab field labels (4.4)
-	Notes               string `json:"notes"`
-	SourceContract      string `json:"sourceContract"`
-	SourceBill          string `json:"sourceBill"`
-	DeferredExpense     string `json:"deferredExpense"`
-	SourceAccrual       string `json:"sourceAccrual"`
-	ReversalOf          string `json:"reversalOf"`
+	Notes           string `json:"notes"`
+	SourceContract  string `json:"sourceContract"`
+	SourceBill      string `json:"sourceBill"`
+	DeferredExpense string `json:"deferredExpense"`
+	SourceAccrual   string `json:"sourceAccrual"`
+	ReversalOf      string `json:"reversalOf"`
 }
 
 type ExpenseRecognitionLineLabels struct {

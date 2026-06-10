@@ -167,7 +167,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		deleteDocTemplate, _ := ctx.DeleteDocTemplate.(func(context.Context, *documenttemplatepb.DeleteDocumentTemplateRequest) (*documenttemplatepb.DeleteDocumentTemplateResponse, error))
 
 		// --- Shared table labels ---
-		centymoTableLabels := centymo.MapTableLabels(ctx.Common)
+		centymoTableLabels := pyeza.MapTableLabels(ctx.Common)
 
 		// --- Load routes (defaults + optional lyngua overrides) ---
 		inventoryRoutes := centymo.DefaultInventoryRoutes()
@@ -680,8 +680,8 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				DeleteAttachment: deleteAttachment,
 				NewID:            newAttachmentID,
 				// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow.
-				AdvanceLabels:     collectionAdvanceLabels,
-				AdvanceEnumLabels: advanceEnumLabels,
+				AdvanceLabels:            collectionAdvanceLabels,
+				AdvanceEnumLabels:        advanceEnumLabels,
 				SettleUnscheduledAdvance: bridgeSettleAdvance(useCases.Collection.SettleUnscheduledAdvance),
 				RefundUnscheduledAdvance: bridgeRefundAdvance(useCases.Collection.RefundUnscheduledAdvance),
 				CancelAdvance:            bridgeCancelAdvance(useCases.Collection.CancelAdvance),

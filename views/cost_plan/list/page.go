@@ -150,7 +150,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 	sp.BuildDisplay()
 
-	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
 	updateDisabled := !perms.Can("cost_plan", "update")
 	updateTip := fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "cost_plan:update")
 	deleteDisabled := !perms.Can("cost_plan", "delete")

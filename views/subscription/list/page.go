@@ -133,7 +133,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, p 
 	}
 	sp.BuildDisplay()
 
-	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = []types.BulkAction{
 		{
 			Key:              "activate",

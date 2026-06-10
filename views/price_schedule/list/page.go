@@ -162,7 +162,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 	rows := buildTableRows(ctx, items, status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, locationNames, clientNames)
 	types.ApplyColumnStyles(columns, rows)
 
-	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = buildBulkActions(l, deps.CommonLabels, status, deps.Routes)
 
 	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)

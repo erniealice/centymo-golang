@@ -165,7 +165,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, planNames, scheduleNames, deps.CommonLabels.DurationUnit)
 	types.ApplyColumnStyles(columns, rows)
 
-	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = []types.BulkAction{
 		{
 			Key:              "delete",

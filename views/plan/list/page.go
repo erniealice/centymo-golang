@@ -174,7 +174,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 	rows := buildTableRows(items, status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, clientNames, templateNames)
 	types.ApplyColumnStyles(columns, rows)
 
-	bulkCfg := centymo.MapBulkConfig(deps.CommonLabels)
+	bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
 	bulkCfg.Actions = []types.BulkAction{
 		{
 			Key:              "activate",
