@@ -46,12 +46,11 @@ var crossCutting = false // true ONLY for a cross-cutting pkg (hybra)
 // entries; a non-empty set is remaining debt (printed by -v). Matched on a path's
 // FIRST segment OR its basename. W9 empties this and the gate goes strict.
 var legacyAllow = map[string]string{
-	"labels.go":             "W1-W7: dissolve per-domain into domain/<d>/labels.go (10199 LoC, 434 *Labels structs across 33 sections)",
-	"routes_config.go":      "W1-W7: dissolve per-domain into domain/<d>/routes.go (2730 LoC, 32 Default*Routes funcs)",
-	"routes.go":             "W1-W7: dissolve per-domain into domain/<d>/routes.go (770 LoC URL consts)",
-	"routes_config_test.go": "W1-W7: moves/splits alongside routes_config.go (153 LoC)",
-	"advance_labels.go":     "W6: -> domain/expenditure/supplier_billing_event_labels.go (SupplierBillingEvent* labels remain at root; the treasury half — Advance enums/TreasuryAdvance/AdvancesDashboard + Default* — landed in domain/treasury/advance.go in W5)",
-	"views":                 "W1-W7: regroup 35 entity-flat dirs under domain/<d>/views/<entity>/",
+	"labels.go":             "W7: residual after W1-W6 — holds the procurement-domain label sections (SupplierSubscription/CostSchedule/SupplierPlan/CostPlan/SupplierProductPlan/SupplierProductCostPlan + ProcurementLabels) + LocationMap/LocationDisplayName (entydad-bound WL deferral); dissolves in W7",
+	"routes_config.go":      "W7: residual after W1-W6 — holds the procurement-domain Routes structs + Default*Routes; dissolves in W7",
+	"routes.go":             "W7: residual after W1-W6 — holds the procurement-domain URL consts; dissolves in W7",
+	"routes_config_test.go": "W7: moves/splits alongside routes_config.go",
+	"views":                 "W7: regroup the remaining procurement-domain entity-flat dirs under domain/procurement/views/<entity>/",
 	"services":              "W8 (DEFERRED): -> espyna (checkout) + keep serial.go/service.go/types.go pending; out of scope for W1-W7",
 	"datasource.go":         "DEFERRAL (D2/TD): DataSource legacy view-data port — keep at root, do not touch in W1-W7",
 	"assets.go":             "DEFERRAL: AssetsFS //go:embed (post-Wave-P) — keep at root strict-root caveat, do not touch in W1-W7",

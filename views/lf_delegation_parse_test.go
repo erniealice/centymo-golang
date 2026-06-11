@@ -25,25 +25,25 @@ import (
 
 	pyeza "github.com/erniealice/pyeza-golang"
 
-	accrued_expense "github.com/erniealice/centymo-golang/views/accrued_expense"
-	accrued_expense_settlement "github.com/erniealice/centymo-golang/views/accrued_expense_settlement"
-	expenditure "github.com/erniealice/centymo-golang/views/expenditure"
-	expense_recognition "github.com/erniealice/centymo-golang/views/expense_recognition"
-	expense_recognition_line "github.com/erniealice/centymo-golang/views/expense_recognition_line"
+	accrued_expense "github.com/erniealice/centymo-golang/domain/expenditure/views/accrued_expense"
+	accrued_expense_settlement "github.com/erniealice/centymo-golang/domain/expenditure/views/accrued_expense_settlement"
+	expenditure "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure"
+	expense_recognition "github.com/erniealice/centymo-golang/domain/expenditure/views/expense_recognition"
+	expense_recognition_line "github.com/erniealice/centymo-golang/domain/expenditure/views/expense_recognition_line"
+	procurement_request "github.com/erniealice/centymo-golang/domain/expenditure/views/procurement_request"
+	procurement_request_line "github.com/erniealice/centymo-golang/domain/expenditure/views/procurement_request_line"
+	purchase_order "github.com/erniealice/centymo-golang/domain/expenditure/views/purchase_order"
+	supplier_contract "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract"
+	supplier_contract_line "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_line"
+	supplier_contract_price_schedule "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_price_schedule"
+	supplier_contract_price_schedule_line "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_price_schedule_line"
 	inventory "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
+	product "github.com/erniealice/centymo-golang/domain/product/views/product"
+	revenue "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
 	plan "github.com/erniealice/centymo-golang/domain/subscription/views/plan"
 	price_plan "github.com/erniealice/centymo-golang/domain/subscription/views/price_plan"
 	price_schedule "github.com/erniealice/centymo-golang/domain/subscription/views/price_schedule"
-	procurement_request "github.com/erniealice/centymo-golang/views/procurement_request"
-	procurement_request_line "github.com/erniealice/centymo-golang/views/procurement_request_line"
-	product "github.com/erniealice/centymo-golang/domain/product/views/product"
-	purchase_order "github.com/erniealice/centymo-golang/views/purchase_order"
-	revenue "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
 	subscription "github.com/erniealice/centymo-golang/domain/subscription/views/subscription"
-	supplier_contract "github.com/erniealice/centymo-golang/views/supplier_contract"
-	supplier_contract_line "github.com/erniealice/centymo-golang/views/supplier_contract_line"
-	supplier_contract_price_schedule "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule"
-	supplier_contract_price_schedule_line "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule_line"
 )
 
 func TestLfDelegationSweepParsesAndDefineResolves(t *testing.T) {
@@ -93,14 +93,14 @@ func TestLfDelegationSweepParsesAndDefineResolves(t *testing.T) {
 	// Spot-check a representative converted top-level template per hook category
 	// is present (Sheet open/close, nav, download, movements, stop-propagation).
 	for _, name := range []string{
-		"accrued-expense-detail-content",          // Sheet.open by title
-		"accrued-expense-drawer-form",             // Sheet.close
-		"inventory-detail-content",                // Sheet.open(this) trigger form
-		"inventory-movements-content",             // movements clear + export hooks
-		"revenue-detail-content",                  // downloadInvoice delegated trigger
-		"product-detail-tab-body",                 // guarded-open -> data hook
-		"supplier-contract-detail-content",        // multiple Sheet.open
-		"variant-drawer-form",                     // stop-propagation
+		"accrued-expense-detail-content",   // Sheet.open by title
+		"accrued-expense-drawer-form",      // Sheet.close
+		"inventory-detail-content",         // Sheet.open(this) trigger form
+		"inventory-movements-content",      // movements clear + export hooks
+		"revenue-detail-content",           // downloadInvoice delegated trigger
+		"product-detail-tab-body",          // guarded-open -> data hook
+		"supplier-contract-detail-content", // multiple Sheet.open
+		"variant-drawer-form",              // stop-propagation
 	} {
 		if tmpls.Lookup(name) == nil {
 			t.Errorf("expected converted template %q to be defined in the parsed set", name)

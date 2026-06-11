@@ -14,14 +14,14 @@ import (
 	"context"
 	"time"
 
+	expenseboard "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure/expense_dashboard"
+	purchaseboard "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure/purchase_dashboard"
 	productdashboard "github.com/erniealice/centymo-golang/domain/product/views/product/dashboard"
 	collectiondashboard "github.com/erniealice/centymo-golang/domain/treasury/views/collection/dashboard"
-	expenseboard "github.com/erniealice/centymo-golang/views/expenditure/expense_dashboard"
-	purchaseboard "github.com/erniealice/centymo-golang/views/expenditure/purchase_dashboard"
 
+	expendituremod "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure"
 	productmod "github.com/erniealice/centymo-golang/domain/product/views/product"
 	collectionmod "github.com/erniealice/centymo-golang/domain/treasury/views/collection"
-	expendituremod "github.com/erniealice/centymo-golang/views/expenditure"
 )
 
 // ---------------------------------------------------------------------------

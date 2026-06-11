@@ -10,9 +10,9 @@ package block
 import (
 	pyeza "github.com/erniealice/pyeza-golang"
 
-	centymo "github.com/erniealice/centymo-golang"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
+	supplierbillingeventmod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_billing_event"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
-	supplierbillingeventmod "github.com/erniealice/centymo-golang/views/supplier_billing_event"
 )
 
 // supplierBillingEventWiring holds everything wireSupplierBillingEventModule
@@ -30,7 +30,7 @@ type supplierBillingEventWiring struct {
 func wireSupplierBillingEventModule(ctx *pyeza.AppContext, useCases *UseCases, w supplierBillingEventWiring) {
 	deps := supplierbillingeventmod.ModuleDeps{
 		Routes:       w.routes,
-		Labels:       centymo.DefaultSupplierBillingEventLabels(),
+		Labels:       expendituredomain.DefaultSupplierBillingEventLabels(),
 		CommonLabels: ctx.Common,
 		// SupplierBillingEvent table reads live on UseCases.Expenditure (the
 		// repo lives in the expenditure domain). The block adapter wires

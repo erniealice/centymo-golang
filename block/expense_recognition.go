@@ -16,17 +16,17 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
-	expenserecognitionmod "github.com/erniealice/centymo-golang/views/expense_recognition"
-	expenserecognitionlinemod "github.com/erniealice/centymo-golang/views/expense_recognition_line"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
+	expenserecognitionmod "github.com/erniealice/centymo-golang/domain/expenditure/views/expense_recognition"
+	expenserecognitionlinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/expense_recognition_line"
 )
 
 // expenseRecognitionWiring holds everything wireExpenseRecognitionModules
 // needs from the surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type expenseRecognitionWiring struct {
-	expenseRecognitionRoutes centymo.ExpenseRecognitionRoutes
-	expenseRecognitionLabels centymo.ExpenseRecognitionLabels
+	expenseRecognitionRoutes expendituredomain.ExpenseRecognitionRoutes
+	expenseRecognitionLabels expendituredomain.ExpenseRecognitionLabels
 	centymoTableLabels       types.TableLabels
 	uploadFile               func(context.Context, string, string, []byte, string) error
 	listAttachments          func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)

@@ -46,23 +46,14 @@ func centymoRouteContractCases() []routeContractCase {
 		{name: "ProductLineRoutes", routes: productdom.DefaultProductLineRoutes(), routeMap: productdom.DefaultProductLineRoutes().RouteMap()},
 		// InventoryRoutes moved to domain/inventory — tested in domain/inventory package
 		// RevenueRoutes moved to domain/revenue — tested in domain/revenue package
-		{
-			name:     "ExpenditureRoutes",
-			routes:   DefaultExpenditureRoutes(),
-			routeMap: DefaultExpenditureRoutes().RouteMap(),
-			unmappedURLs: map[string]bool{
-				// Expenditure route map currently excludes line item and tab-action URLs.
-				"TabActionURL":      true,
-				"LineItemAddURL":    true,
-				"LineItemEditURL":   true,
-				"LineItemRemoveURL": true,
-				"LineItemTableURL":  true,
-			},
-		},
 		// PlanRoutes / SubscriptionRoutes / PricePlanRoutes / PriceScheduleRoutes
 		// moved to domain/subscription (centymo W4) — tested in that package.
 		// CollectionRoutes / DisbursementRoutes / TreasuryAdvancesRoutes moved to
 		// domain/treasury (centymo W5) — tested in that package.
+		// ExpenditureRoutes / SupplierContractRoutes / ProcurementRequestRoutes /
+		// SupplierContractPriceScheduleRoutes / ExpenseRecognitionRoutes /
+		// AccruedExpenseRoutes / ExpenseRecognitionRunRoutes moved to
+		// domain/expenditure (centymo W6) — tested in that package.
 		{name: "PriceListRoutes", routes: productdom.DefaultPriceListRoutes(), routeMap: productdom.DefaultPriceListRoutes().RouteMap()},
 	}
 }

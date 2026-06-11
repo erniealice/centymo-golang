@@ -14,6 +14,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	centymo "github.com/erniealice/centymo-golang"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
 	costplanmod "github.com/erniealice/centymo-golang/views/cost_plan"
 	costplanaction "github.com/erniealice/centymo-golang/views/cost_plan/action"
 	costschedulemod "github.com/erniealice/centymo-golang/views/cost_schedule"
@@ -41,7 +42,7 @@ type supplierSubscriptionWiring struct {
 	// expenseRecognitionRunLabels supplies the "Run Recognitions" CTA label
 	// for the supplier_subscription detail page's Linked Recognitions tab.
 	// Plan A 20260517-expense-run Surface C.
-	expenseRecognitionRunLabels centymo.ExpenseRecognitionRunLabels
+	expenseRecognitionRunLabels expendituredomain.ExpenseRecognitionRunLabels
 	centymoTableLabels          types.TableLabels
 }
 

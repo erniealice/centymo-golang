@@ -16,27 +16,27 @@ import (
 	"time"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	expenserecognitionrunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_run"
-	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
-	expenserunmod "github.com/erniealice/centymo-golang/views/expense_recognition_run"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
+	expenserunmod "github.com/erniealice/centymo-golang/domain/expenditure/views/expense_recognition_run"
 )
 
 // expenseRecognitionRunWiring holds everything wireExpenseRecognitionRunModule
 // needs from the surrounding Block() scope.
 type expenseRecognitionRunWiring struct {
-	routes                                centymo.ExpenseRecognitionRunRoutes
-	labels                                centymo.ExpenseRecognitionRunLabels
-	expenditureRoutes                     centymo.ExpenditureRoutes
-	centymoTableLabels                    types.TableLabels
-	supplierDetailURL                     string
+	routes                                 expendituredomain.ExpenseRecognitionRunRoutes
+	labels                                 expendituredomain.ExpenseRecognitionRunLabels
+	expenditureRoutes                      expendituredomain.ExpenditureRoutes
+	centymoTableLabels                     types.TableLabels
+	supplierDetailURL                      string
 	supplierExpenseRecognitionRunDrawerURL string
 }
 

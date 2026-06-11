@@ -16,17 +16,17 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
-	suppliercontractpriceschedulemod "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule"
-	suppliercontractpricescheduleinemod "github.com/erniealice/centymo-golang/views/supplier_contract_price_schedule_line"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
+	suppliercontractpriceschedulemod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_price_schedule"
+	suppliercontractpricescheduleinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_price_schedule_line"
 )
 
 // supplierContractPriceScheduleWiring holds everything wireSupplierContractPriceScheduleModules
 // needs from the surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type supplierContractPriceScheduleWiring struct {
-	supplierContractPriceScheduleRoutes centymo.SupplierContractPriceScheduleRoutes
-	supplierContractPriceScheduleLabels centymo.SupplierContractPriceScheduleLabels
+	supplierContractPriceScheduleRoutes expendituredomain.SupplierContractPriceScheduleRoutes
+	supplierContractPriceScheduleLabels expendituredomain.SupplierContractPriceScheduleLabels
 	centymoTableLabels                  types.TableLabels
 	uploadFile                          func(context.Context, string, string, []byte, string) error
 	listAttachments                     func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)

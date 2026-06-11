@@ -5,6 +5,7 @@ import (
 	"log"
 
 	centymo "github.com/erniealice/centymo-golang"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -35,7 +36,7 @@ type RecognitionsPrimaryAction struct {
 // recognitionsActionLabels is the minimal label bundle the helper needs.
 // Avoids tying the helper to a single labels struct so callers can populate
 // it from either centymo.SupplierSubscriptionLabels (Buttons.RecognizeExpense)
-// or centymo.ExpenseRecognitionRunLabels (Actions.RunRecognitions).
+// or expendituredomain.ExpenseRecognitionRunLabels (Actions.RunRecognitions).
 type recognitionsActionLabels struct {
 	RunRecognitions string // e.g. "Run Recognitions"
 	Recognize       string // e.g. "Recognize Expense"
@@ -115,7 +116,7 @@ type DetailViewDeps struct {
 	// ExpenseRecognitionRunLabels provides the "Run Recognitions" CTA label for
 	// the Linked Recognitions tab toolbar when CostPlan.billing_kind is
 	// RECURRING or CONTRACT-with-cycle. Plan A Surface C.
-	ExpenseRecognitionRunLabels centymo.ExpenseRecognitionRunLabels
+	ExpenseRecognitionRunLabels expendituredomain.ExpenseRecognitionRunLabels
 
 	ReadSupplierSubscription            func(ctx context.Context, req *suppliersubscriptionpb.ReadSupplierSubscriptionRequest) (*suppliersubscriptionpb.ReadSupplierSubscriptionResponse, error)
 	GetSupplierSubscriptionItemPageData func(ctx context.Context, req *suppliersubscriptionpb.GetSupplierSubscriptionItemPageDataRequest) (*suppliersubscriptionpb.GetSupplierSubscriptionItemPageDataResponse, error)

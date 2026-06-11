@@ -52,6 +52,8 @@ import (
 	templateview "github.com/erniealice/hybra-golang/views/template"
 
 	centymo "github.com/erniealice/centymo-golang"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
+	expendituremod "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure"
 	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
 	inventorymod "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
@@ -62,7 +64,6 @@ import (
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 	collectionmod "github.com/erniealice/centymo-golang/domain/treasury/views/collection"
 	disbursementmod "github.com/erniealice/centymo-golang/domain/treasury/views/disbursement"
-	expendituremod "github.com/erniealice/centymo-golang/views/expenditure"
 )
 
 // ---------------------------------------------------------------------------
@@ -244,7 +245,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		disbursementRoutes := treasurydomain.DefaultDisbursementRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "treasury_disbursement", &disbursementRoutes)
 
-		expenditureRoutes := centymo.DefaultExpenditureRoutes()
+		expenditureRoutes := expendituredomain.DefaultExpenditureRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "expenditure", &expenditureRoutes)
 
 		// --- Load labels ---
@@ -307,7 +308,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			log.Printf("centymo.Block: warning loading pricelist labels: %v", err)
 		}
 
-		var expenditureLabels centymo.ExpenditureLabels
+		var expenditureLabels expendituredomain.ExpenditureLabels
 		if err := translations.LoadPath("en", ctx.BusinessType, "expenditure.json", "expenditure", &expenditureLabels); err != nil {
 			log.Printf("centymo.Block: warning loading expenditure labels: %v", err)
 		}
@@ -336,14 +337,14 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "resource.json", "resource", &resourceLabels)
 
 		// 20260427-supplier-commitments — load routes + labels for the five new view modules.
-		supplierContractRoutes := centymo.DefaultSupplierContractRoutes()
+		supplierContractRoutes := expendituredomain.DefaultSupplierContractRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_contract", &supplierContractRoutes)
-		supplierContractLabels := centymo.DefaultSupplierContractLabels()
+		supplierContractLabels := expendituredomain.DefaultSupplierContractLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_contract.json", "supplierContract", &supplierContractLabels)
 
-		procurementRequestRoutes := centymo.DefaultProcurementRequestRoutes()
+		procurementRequestRoutes := expendituredomain.DefaultProcurementRequestRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "procurement_request", &procurementRequestRoutes)
-		procurementRequestLabels := centymo.DefaultProcurementRequestLabels()
+		procurementRequestLabels := expendituredomain.DefaultProcurementRequestLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "procurement_request.json", "procurementRequest", &procurementRequestLabels)
 
 		procurementRoutes := centymo.DefaultProcurementRoutes()
@@ -355,19 +356,19 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "procurement.json", "procurement", &procurementLabels)
 
 		// SPS Wave 4 — Routes + Labels for the six new view modules.
-		supplierContractPriceScheduleRoutes := centymo.DefaultSupplierContractPriceScheduleRoutes()
+		supplierContractPriceScheduleRoutes := expendituredomain.DefaultSupplierContractPriceScheduleRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_contract_price_schedule", &supplierContractPriceScheduleRoutes)
-		supplierContractPriceScheduleLabels := centymo.DefaultSupplierContractPriceScheduleLabels()
+		supplierContractPriceScheduleLabels := expendituredomain.DefaultSupplierContractPriceScheduleLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_contract_price_schedule.json", "supplierContractPriceSchedule", &supplierContractPriceScheduleLabels)
 
-		expenseRecognitionRoutes := centymo.DefaultExpenseRecognitionRoutes()
+		expenseRecognitionRoutes := expendituredomain.DefaultExpenseRecognitionRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "expense_recognition", &expenseRecognitionRoutes)
-		expenseRecognitionLabels := centymo.DefaultExpenseRecognitionLabels()
+		expenseRecognitionLabels := expendituredomain.DefaultExpenseRecognitionLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expense_recognition.json", "expenseRecognition", &expenseRecognitionLabels)
 
-		accruedExpenseRoutes := centymo.DefaultAccruedExpenseRoutes()
+		accruedExpenseRoutes := expendituredomain.DefaultAccruedExpenseRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "accrued_expense", &accruedExpenseRoutes)
-		accruedExpenseLabels := centymo.DefaultAccruedExpenseLabels()
+		accruedExpenseLabels := expendituredomain.DefaultAccruedExpenseLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "accrued_expense.json", "accruedExpense", &accruedExpenseLabels)
 
 		// Phase 4 — revenue-run (Surface D).
@@ -377,9 +378,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "revenue.json", "revenueRun", &revenueRunLabels)
 
 		// 20260517-expense-run Plan A Phase 4 — Expense Recognition Run (Surfaces B + D).
-		expenseRecognitionRunRoutes := centymo.DefaultExpenseRecognitionRunRoutes()
+		expenseRecognitionRunRoutes := expendituredomain.DefaultExpenseRecognitionRunRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "expense_recognition_run", &expenseRecognitionRunRoutes)
-		expenseRecognitionRunLabels := centymo.DefaultExpenseRecognitionRunLabels()
+		expenseRecognitionRunLabels := expendituredomain.DefaultExpenseRecognitionRunLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expense_recognition_run.json", "expenseRecognitionRun", &expenseRecognitionRunLabels)
 
 		// 20260517-advance-cash-events Plan B Phase 3 — Advances Dashboard.

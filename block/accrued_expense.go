@@ -16,17 +16,17 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
-	accruedexpensemod "github.com/erniealice/centymo-golang/views/accrued_expense"
-	accruedexpensesettlementmod "github.com/erniealice/centymo-golang/views/accrued_expense_settlement"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
+	accruedexpensemod "github.com/erniealice/centymo-golang/domain/expenditure/views/accrued_expense"
+	accruedexpensesettlementmod "github.com/erniealice/centymo-golang/domain/expenditure/views/accrued_expense_settlement"
 )
 
 // accruedExpenseWiring holds everything wireAccruedExpenseModules
 // needs from the surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type accruedExpenseWiring struct {
-	accruedExpenseRoutes centymo.AccruedExpenseRoutes
-	accruedExpenseLabels centymo.AccruedExpenseLabels
+	accruedExpenseRoutes expendituredomain.AccruedExpenseRoutes
+	accruedExpenseLabels expendituredomain.AccruedExpenseLabels
 	centymoTableLabels   types.TableLabels
 	uploadFile           func(context.Context, string, string, []byte, string) error
 	listAttachments      func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)

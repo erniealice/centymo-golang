@@ -22,22 +22,23 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	centymo "github.com/erniealice/centymo-golang"
+	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
+	procurementrequestmod "github.com/erniealice/centymo-golang/domain/expenditure/views/procurement_request"
+	procurementrequestlinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/procurement_request_line"
+	suppliercontractmod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract"
+	suppliercontractlinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_line"
 	procurementmod "github.com/erniealice/centymo-golang/views/procurement"
-	procurementrequestmod "github.com/erniealice/centymo-golang/views/procurement_request"
-	procurementrequestlinemod "github.com/erniealice/centymo-golang/views/procurement_request_line"
-	suppliercontractmod "github.com/erniealice/centymo-golang/views/supplier_contract"
-	suppliercontractlinemod "github.com/erniealice/centymo-golang/views/supplier_contract_line"
 )
 
 // supplierCommitmentWiring holds everything wireSupplierCommitmentModules
 // needs from the surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type supplierCommitmentWiring struct {
-	supplierContractRoutes              centymo.SupplierContractRoutes
-	supplierContractLabels              centymo.SupplierContractLabels
-	supplierContractPriceScheduleRoutes centymo.SupplierContractPriceScheduleRoutes
-	procurementRequestRoutes            centymo.ProcurementRequestRoutes
-	procurementRequestLabels            centymo.ProcurementRequestLabels
+	supplierContractRoutes              expendituredomain.SupplierContractRoutes
+	supplierContractLabels              expendituredomain.SupplierContractLabels
+	supplierContractPriceScheduleRoutes expendituredomain.SupplierContractPriceScheduleRoutes
+	procurementRequestRoutes            expendituredomain.ProcurementRequestRoutes
+	procurementRequestLabels            expendituredomain.ProcurementRequestLabels
 	procurementRoutes                   centymo.ProcurementRoutes
 	procurementLabels                   centymo.ProcurementLabels
 	centymoTableLabels                  types.TableLabels

@@ -79,11 +79,11 @@ import (
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 
+	expenseboard "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure/expense_dashboard"
+	purchaseboard "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure/purchase_dashboard"
 	productdashboard "github.com/erniealice/centymo-golang/domain/product/views/product/dashboard"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 	collectiondashboard "github.com/erniealice/centymo-golang/domain/treasury/views/collection/dashboard"
-	expenseboard "github.com/erniealice/centymo-golang/views/expenditure/expense_dashboard"
-	purchaseboard "github.com/erniealice/centymo-golang/views/expenditure/purchase_dashboard"
 )
 
 // UseCases declares everything centymo's Block() needs from outside.
