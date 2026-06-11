@@ -1,4 +1,4 @@
-package advancesdashboard
+package treasuryadvancesdashboard
 
 // routes.go — advances-dashboard route constants + Routes config struct (centymo W5).
 //

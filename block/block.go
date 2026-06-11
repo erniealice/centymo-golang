@@ -137,7 +137,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if cfg.useCases == nil {
 			return fmt.Errorf("centymo.Block: WithUseCases(...) was not supplied")
 		}
-		if err := cfg.useCases.RequireFor(cfg); err != nil {
+		// FAIL-CLOSED completeness gate (mirrors AUTHZ_ENFORCE boot-guard): a
+		// missing REQUIRED closure PANICS in dev/test and refuses boot in prod,
+		// never silently registers an empty feature.
+		if err := cfg.useCases.MustValidate(cfg); err != nil {
 			return err
 		}
 		useCases := cfg.useCases

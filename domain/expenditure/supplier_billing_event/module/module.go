@@ -10,7 +10,7 @@ import (
 	supplierbillingeventaction "github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event/action"
 	supplierbillingeventdetail "github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event/detail"
 	supplierbillingeventlist "github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event/list"
-	sib_treasury_advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/advancesdashboard"
+	sib_treasury_advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"

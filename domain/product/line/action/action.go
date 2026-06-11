@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	product "github.com/erniealice/centymo-golang/domain/product/product"
-	lineform "github.com/erniealice/centymo-golang/domain/product/product/line/form"
+	lineform "github.com/erniealice/centymo-golang/domain/product/line/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 

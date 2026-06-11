@@ -3,4 +3,4 @@
 //
 // The Module / ModuleDeps types are defined in page.go because the dashboard
 // is a single-page module with no list / detail / form split.
-package advancesdashboard
+package treasuryadvancesdashboard

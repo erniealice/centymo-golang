@@ -1,4 +1,4 @@
-package advancesdashboard
+package treasuryadvancesdashboard
 
 import "embed"
 

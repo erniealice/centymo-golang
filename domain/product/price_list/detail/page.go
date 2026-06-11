@@ -16,7 +16,7 @@ import (
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 
-	pricelist "github.com/erniealice/centymo-golang/domain/product/pricelist"
+	pricelist "github.com/erniealice/centymo-golang/domain/product/price_list"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
 

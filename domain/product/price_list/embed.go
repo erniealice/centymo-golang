@@ -1,4 +1,4 @@
-package pricelist
+package price_list
 
 import "embed"
 

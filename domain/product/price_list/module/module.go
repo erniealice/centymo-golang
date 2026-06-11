@@ -1,4 +1,4 @@
-package pricelistmodule
+package price_listmodule
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	epkg "github.com/erniealice/centymo-golang/domain/product/pricelist"
-	pricelistaction "github.com/erniealice/centymo-golang/domain/product/pricelist/action"
-	pricelistdetail "github.com/erniealice/centymo-golang/domain/product/pricelist/detail"
-	pricelistlist "github.com/erniealice/centymo-golang/domain/product/pricelist/list"
+	epkg "github.com/erniealice/centymo-golang/domain/product/price_list"
+	pricelistaction "github.com/erniealice/centymo-golang/domain/product/price_list/action"
+	pricelistdetail "github.com/erniealice/centymo-golang/domain/product/price_list/detail"
+	pricelistlist "github.com/erniealice/centymo-golang/domain/product/price_list/list"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"

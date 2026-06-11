@@ -9,7 +9,7 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
-	pricelist "github.com/erniealice/centymo-golang/domain/product/pricelist"
+	pricelist "github.com/erniealice/centymo-golang/domain/product/price_list"
 
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"

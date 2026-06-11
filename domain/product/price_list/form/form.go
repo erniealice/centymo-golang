@@ -1,7 +1,7 @@
 package form
 
 import (
-	pricelist "github.com/erniealice/centymo-golang/domain/product/pricelist"
+	pricelist "github.com/erniealice/centymo-golang/domain/product/price_list"
 )
 
 // Labels holds i18n labels for the price list drawer form template.

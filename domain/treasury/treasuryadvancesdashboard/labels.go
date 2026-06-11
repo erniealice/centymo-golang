@@ -1,4 +1,4 @@
-package advancesdashboard
+package treasuryadvancesdashboard
 
 // labels.go — advances-dashboard label structs (centymo W5).
 //

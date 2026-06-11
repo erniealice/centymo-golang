@@ -3,7 +3,7 @@ package centymo
 import (
 	pricesched "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	subscriptionentity "github.com/erniealice/centymo-golang/domain/subscription/subscription"
-	advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/advancesdashboard"
+	advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 	disbursement "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
 	shared "github.com/erniealice/centymo-golang/domain/treasury/shared"
 )

@@ -13,7 +13,7 @@
 package product
 
 import (
-	pricelistpkg "github.com/erniealice/centymo-golang/domain/product/pricelist"
+	pricelistpkg "github.com/erniealice/centymo-golang/domain/product/price_list"
 	productpkg "github.com/erniealice/centymo-golang/domain/product/product"
 	resourcepkg "github.com/erniealice/centymo-golang/domain/product/resource"
 )

@@ -13,7 +13,7 @@ import (
 
 	"github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event"
 
-	sib_treasury_advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/advancesdashboard"
+	sib_treasury_advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"

@@ -13,7 +13,7 @@
 package treasury
 
 import (
-	advancesdashboardpkg "github.com/erniealice/centymo-golang/domain/treasury/advancesdashboard"
+	advancesdashboardpkg "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 	collectionpkg "github.com/erniealice/centymo-golang/domain/treasury/collection"
 	disbursementpkg "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
 	sharedpkg "github.com/erniealice/centymo-golang/domain/treasury/shared"

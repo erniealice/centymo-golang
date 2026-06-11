@@ -8,11 +8,11 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
-	pricelist "github.com/erniealice/centymo-golang/domain/product/pricelist"
+	pricelist "github.com/erniealice/centymo-golang/domain/product/price_list"
 
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 
-	"github.com/erniealice/centymo-golang/domain/product/pricelist/form"
+	"github.com/erniealice/centymo-golang/domain/product/price_list/form"
 )
 
 // Deps holds dependencies for price list action handlers.

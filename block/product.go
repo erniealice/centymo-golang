@@ -20,7 +20,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
-	productlinemod "github.com/erniealice/centymo-golang/domain/product/product/line"
+	productlinemod "github.com/erniealice/centymo-golang/domain/product/line"
 )
 
 // productWiring holds everything wireProductModules needs from the surrounding

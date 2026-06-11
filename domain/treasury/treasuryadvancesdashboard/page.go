@@ -6,7 +6,7 @@
 // This is the v1 surface for the 20260517-advance-cash-events plan; the page
 // is fed by view-typed callbacks the block layer constructs from the espyna
 // consumer surface so this package never imports espyna internals.
-package advancesdashboard
+package treasuryadvancesdashboard
 
 import (
 	"context"

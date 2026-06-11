@@ -4,9 +4,9 @@ import (
 	"context"
 
 	product "github.com/erniealice/centymo-golang/domain/product/product"
-	lineaction "github.com/erniealice/centymo-golang/domain/product/product/line/action"
-	linedetail "github.com/erniealice/centymo-golang/domain/product/product/line/detail"
-	linelist "github.com/erniealice/centymo-golang/domain/product/product/line/list"
+	lineaction "github.com/erniealice/centymo-golang/domain/product/line/action"
+	linedetail "github.com/erniealice/centymo-golang/domain/product/line/detail"
+	linelist "github.com/erniealice/centymo-golang/domain/product/line/list"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"

@@ -8,7 +8,7 @@ package block
 
 import (
 	"context"
-	pricelistmodmodule "github.com/erniealice/centymo-golang/domain/product/pricelist/module"
+	pricelistmodmodule "github.com/erniealice/centymo-golang/domain/product/price_list/module"
 	priceplanmodmodule "github.com/erniealice/centymo-golang/domain/subscription/price_plan/module"
 	priceschedulemodmodule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule/module"
 
