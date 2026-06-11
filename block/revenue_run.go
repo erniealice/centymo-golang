@@ -24,17 +24,17 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
-	revenuerunmod "github.com/erniealice/centymo-golang/views/revenue_run"
+	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
+	revenuerunmod "github.com/erniealice/centymo-golang/domain/revenue/views/revenue_run"
 )
 
 // revenueRunWiring holds everything wireRevenueRunModule needs from the
 // surrounding Block() scope. More than 6 fields → use a struct per convention.
 // Kept private; never re-exported.
 type revenueRunWiring struct {
-	revenueRunRoutes   centymo.RevenueRunRoutes
-	revenueRunLabels   centymo.RevenueRunLabels
-	revenueRoutes      centymo.RevenueRoutes
+	revenueRunRoutes   revenuedomain.RevenueRunRoutes
+	revenueRunLabels   revenuedomain.RevenueRunLabels
+	revenueRoutes      revenuedomain.RevenueRoutes
 	centymoTableLabels types.TableLabels
 	uploadFile         func(context.Context, string, string, []byte, string) error
 	listAttachments    func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)

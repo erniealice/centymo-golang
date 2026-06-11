@@ -9,6 +9,7 @@ import (
 	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
+	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
@@ -529,7 +530,7 @@ func NewView(deps *DetailViewDeps) view.View {
 			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
 				sub.GetPricePlan(), deps.Routes, l, id)
 			pageData.Invoices = buildInvoicesTable(
-				revenues, l, deps.TableLabels, centymo.RevenueDetailURL,
+				revenues, l, deps.TableLabels, revenuedomain.RevenueDetailURL,
 				invoicesPrimaryAction,
 				canRecognize, subscriptionActive,
 				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
@@ -803,7 +804,7 @@ func loadMilestoneRows(ctx context.Context, deps *DetailViewDeps, subscriptionID
 			row.ShowRevenueLink = true
 			row.RevenueID = ev.GetRevenueId()
 			if row.RevenueID != "" {
-				row.RevenueURL = strings.ReplaceAll(centymo.RevenueDetailURL, "{id}", row.RevenueID)
+				row.RevenueURL = strings.ReplaceAll(revenuedomain.RevenueDetailURL, "{id}", row.RevenueID)
 			}
 			totalInvoiced += ev.GetBillableAmount()
 		}
@@ -1090,8 +1091,8 @@ func buildInvoicesTable(
 		// 2026-05-11 run-invoices-polish Phase 3 — per-row actions.
 		// View is always present (mirrors row-click navigation).
 		// SendEmail is wired to the existing revenue/action/send_email route
-		// (centymo.RevenueEmailURL — registered on RevenueRoutes.SendEmailURL).
-		// Edit is gated to draft status and uses centymo.RevenueEditURL.
+		// (revenuedomain.RevenueEmailURL — registered on RevenueRoutes.SendEmailURL).
+		// Edit is gated to draft status and uses revenuedomain.RevenueEditURL.
 		// Print is intentionally omitted — no dedicated print route exists today.
 		actions := []types.TableAction{
 			{
@@ -1104,7 +1105,7 @@ func buildInvoicesTable(
 				Type:           "mail",
 				Label:          l.Invoices.RowActions.SendEmail,
 				Action:         "send-email",
-				URL:            route.ResolveURL(centymo.RevenueEmailURL, "id", id),
+				URL:            route.ResolveURL(revenuedomain.RevenueEmailURL, "id", id),
 				ItemName:       refNumber,
 				ConfirmTitle:   l.Invoices.RowActions.SendEmail,
 				ConfirmMessage: refNumber,
@@ -1115,7 +1116,7 @@ func buildInvoicesTable(
 				Type:        "edit",
 				Label:       l.Invoices.RowActions.Edit,
 				Action:      "edit",
-				URL:         route.ResolveURL(centymo.RevenueEditURL, "id", id),
+				URL:         route.ResolveURL(revenuedomain.RevenueEditURL, "id", id),
 				DrawerTitle: l.Invoices.RowActions.Edit,
 			})
 		}
@@ -1251,7 +1252,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
 				sub.GetPricePlan(), deps.Routes, l, id)
 			pageData.Invoices = buildInvoicesTable(
-				revenues, l, deps.TableLabels, centymo.RevenueDetailURL,
+				revenues, l, deps.TableLabels, revenuedomain.RevenueDetailURL,
 				invoicesPrimaryAction,
 				canRecognize, subscriptionActive,
 				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),

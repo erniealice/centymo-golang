@@ -57,8 +57,9 @@ import (
 	expendituremod "github.com/erniealice/centymo-golang/views/expenditure"
 	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
 	inventorymod "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
+	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
+	revenuemod "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
 	resourcemod "github.com/erniealice/centymo-golang/views/resource"
-	revenuemod "github.com/erniealice/centymo-golang/views/revenue"
 )
 
 // ---------------------------------------------------------------------------
@@ -174,7 +175,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		inventoryRoutes := inventorydomain.DefaultInventoryRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "inventory", &inventoryRoutes)
 
-		revenueRoutes := centymo.DefaultRevenueRoutes()
+		revenueRoutes := revenuedomain.DefaultRevenueRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "revenue", &revenueRoutes)
 
 		productRoutes := centymo.DefaultProductRoutes()
@@ -260,7 +261,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			log.Printf("centymo.Block: warning loading inventory labels: %v", err)
 		}
 
-		var revenueLabels centymo.RevenueLabels
+		var revenueLabels revenuedomain.RevenueLabels
 		if err := translations.LoadPath("en", ctx.BusinessType, "revenue.json", "revenue", &revenueLabels); err != nil {
 			log.Printf("centymo.Block: warning loading revenue labels: %v", err)
 		}
@@ -367,9 +368,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "accrued_expense.json", "accruedExpense", &accruedExpenseLabels)
 
 		// Phase 4 — revenue-run (Surface D).
-		revenueRunRoutes := centymo.DefaultRevenueRunRoutes()
+		revenueRunRoutes := revenuedomain.DefaultRevenueRunRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "revenue_run", &revenueRunRoutes)
-		revenueRunLabels := centymo.DefaultRevenueRunLabels()
+		revenueRunLabels := revenuedomain.DefaultRevenueRunLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "revenue.json", "revenueRun", &revenueRunLabels)
 
 		// 20260517-expense-run Plan A Phase 4 — Expense Recognition Run (Surfaces B + D).

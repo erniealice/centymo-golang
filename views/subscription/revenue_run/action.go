@@ -20,6 +20,7 @@ import (
 	appcontext "github.com/erniealice/espyna-golang/appcontext"
 
 	centymo "github.com/erniealice/centymo-golang"
+	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
 	revenuerunform "github.com/erniealice/centymo-golang/views/subscription/revenue_run/form"
 )
 
@@ -282,7 +283,7 @@ func submitDrawer(
 	}
 	if result.RunID != "" && l.ViewRunLink != "" {
 		toastPayload["link"] = map[string]any{
-			"url":   route.ResolveURL(centymo.RevenueRunDetailURL, "id", result.RunID),
+			"url":   route.ResolveURL(revenuedomain.RevenueRunDetailURL, "id", result.RunID),
 			"label": l.ViewRunLink,
 		}
 	}

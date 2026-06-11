@@ -333,66 +333,6 @@ const (
 	ProductLineAttachmentUploadURL = "/action/product-line/{id}/attachments/upload"
 	ProductLineAttachmentDeleteURL = "/action/product-line/{id}/attachments/delete"
 
-	// Revenue routes
-	RevenueDashboardURL     = "/sales/dashboard"
-	RevenueListURL          = "/sales/list/{status}"
-	RevenueTableURL         = "/action/revenue/table/{status}"
-	RevenueDetailURL        = "/sales/detail/{id}"
-	RevenueAddURL           = "/action/revenue/add"
-	RevenueEditURL          = "/action/revenue/edit/{id}"
-	RevenueDeleteURL        = "/action/revenue/delete"
-	RevenueBulkDeleteURL    = "/action/revenue/bulk-delete"
-	RevenueSetStatusURL     = "/action/revenue/set-status"
-	RevenueBulkSetStatusURL = "/action/revenue/bulk-set-status"
-
-	// Revenue tab action route
-	RevenueTabActionURL        = "/action/revenue/detail/{id}/tab/{tab}"
-	RevenueAttachmentUploadURL = "/action/revenue/detail/{id}/attachments/upload"
-	RevenueAttachmentDeleteURL = "/action/revenue/detail/{id}/attachments/delete"
-
-	// Revenue line item routes (within revenue detail)
-	RevenueLineItemTableURL    = "/action/revenue/detail/{id}/items/table"
-	RevenueLineItemAddURL      = "/action/revenue/detail/{id}/items/add"
-	RevenueLineItemEditURL     = "/action/revenue/detail/{id}/items/edit/{itemId}"
-	RevenueLineItemRemoveURL   = "/action/revenue/detail/{id}/items/remove"
-	RevenueLineItemDiscountURL = "/action/revenue/detail/{id}/items/add-discount"
-
-	// Revenue payment routes (within revenue detail)
-	RevenuePaymentTableURL  = "/action/revenue/detail/{id}/payment/table"
-	RevenuePaymentAddURL    = "/action/revenue/detail/{id}/payment/add"
-	RevenuePaymentEditURL   = "/action/revenue/detail/{id}/payment/edit/{pid}"
-	RevenuePaymentRemoveURL = "/action/revenue/detail/{id}/payment/remove"
-
-	// Revenue report routes
-	RevenueSummaryURL = "/sales/reports/sales-summary"
-
-	// Revenue invoice document routes
-	RevenueInvoiceDownloadURL = "/action/revenue/detail/{id}/invoice/download"
-	RevenueEmailURL           = "/action/revenue/detail/{id}/invoice/send-email"
-
-	// Revenue settings routes (template management)
-	RevenueSettingsTemplatesURL       = "/sales/settings/templates"
-	RevenueSettingsTemplateUploadURL  = "/action/revenue/settings/templates/upload"
-	RevenueSettingsTemplateDeleteURL  = "/action/revenue/settings/templates/delete"
-	RevenueSettingsTemplateDefaultURL = "/action/revenue/settings/templates/set-default/{id}"
-	RevenueSearchClientURL            = "/action/revenue/search/clients"
-	RevenueSearchSubscriptionURL      = "/action/revenue/search/subscriptions"
-	RevenueSearchLocationURL          = "/action/revenue/search/locations"
-	RevenueSearchProductURL           = "/action/revenue/search/products"
-	RevenuePriceLookupURL             = "/action/revenue/price-lookup"
-	RevenueRecomputeTaxesURL          = "/action/revenue/detail/{id}/taxes/recompute"
-
-	// Revenue Run (invoice-run) routes
-	RevenueRunQueueURL            = "/revenue-run/queue"
-	RevenueRunQueueTableURL       = "/action/revenue-run/queue/table"
-	RevenueRunListURL             = "/revenue-run/list/{status}"
-	RevenueRunListTableURL        = "/action/revenue-run/table/{status}"
-	RevenueRunDetailURL           = "/revenue-run/detail/{id}"
-	RevenueRunDetailTabActionURL  = "/action/revenue-run/detail/{id}/tab/{tab}"
-	RevenueRunAttachmentUploadURL = "/action/revenue-run/detail/{id}/attachments/upload"
-	RevenueRunAttachmentDeleteURL = "/action/revenue-run/detail/{id}/attachments/delete"
-	RevenueRunSubmitBatchURL      = "/action/revenue-run/submit-batch"
-
 	// Expense Recognition Run (buying-side) routes — Plan A 20260517-expense-run.
 	ExpenseRecognitionRunQueueURL                   = "/expense-recognition-run/queue"
 	ExpenseRecognitionRunQueueTableURL              = "/action/expense-recognition-run/queue/table"
