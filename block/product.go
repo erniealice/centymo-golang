@@ -18,8 +18,9 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	centymo "github.com/erniealice/centymo-golang"
-	productmod "github.com/erniealice/centymo-golang/views/product"
-	productlinemod "github.com/erniealice/centymo-golang/views/product/line"
+	productdom "github.com/erniealice/centymo-golang/domain/product"
+	productmod "github.com/erniealice/centymo-golang/domain/product/views/product"
+	productlinemod "github.com/erniealice/centymo-golang/domain/product/views/product/line"
 )
 
 // productWiring holds everything wireProductModules needs from the surrounding
@@ -37,16 +38,16 @@ type productWiring struct {
 	deleteAttachment func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	newAttachmentID  func() string
 	// Routes
-	productRoutes              centymo.ProductRoutes
-	productInventoryRoutes     centymo.ProductRoutes
-	productSuppliesRoutes      centymo.ProductRoutes
-	productLineRoutes          centymo.ProductLineRoutes
-	productLineInventoryRoutes centymo.ProductLineRoutes
+	productRoutes              productdom.ProductRoutes
+	productInventoryRoutes     productdom.ProductRoutes
+	productSuppliesRoutes      productdom.ProductRoutes
+	productLineRoutes          productdom.ProductLineRoutes
+	productLineInventoryRoutes productdom.ProductLineRoutes
 	// Labels
-	productLabels          centymo.ProductLabels
-	productInventoryLabels centymo.ProductLabels
-	productSuppliesLabels  centymo.ProductLabels
-	productLineLabels      centymo.ProductLineLabels
+	productLabels          productdom.ProductLabels
+	productInventoryLabels productdom.ProductLabels
+	productSuppliesLabels  productdom.ProductLabels
+	productLineLabels      productdom.ProductLineLabels
 	centymoTableLabels     types.TableLabels
 }
 

@@ -52,6 +52,7 @@ import (
 	templateview "github.com/erniealice/hybra-golang/views/template"
 
 	centymo "github.com/erniealice/centymo-golang"
+	productdom "github.com/erniealice/centymo-golang/domain/product"
 	collectionmod "github.com/erniealice/centymo-golang/views/collection"
 	disbursementmod "github.com/erniealice/centymo-golang/views/disbursement"
 	expendituremod "github.com/erniealice/centymo-golang/views/expenditure"
@@ -59,7 +60,7 @@ import (
 	inventorymod "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
 	revenuemod "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
-	resourcemod "github.com/erniealice/centymo-golang/views/resource"
+	resourcemod "github.com/erniealice/centymo-golang/domain/product/views/resource"
 )
 
 // ---------------------------------------------------------------------------
@@ -178,7 +179,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		revenueRoutes := revenuedomain.DefaultRevenueRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "revenue", &revenueRoutes)
 
-		productRoutes := centymo.DefaultProductRoutes()
+		productRoutes := productdom.DefaultProductRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product", &productRoutes)
 
 		// Inventory-flavoured product list route overrides. Starts from the
@@ -188,7 +189,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// same ServeMux without duplicate route registrations. Lyngua
 		// product_inventory block layers on top as tweaks; the dual-mount is
 		// activated purely by the presence of that block.
-		productInventoryRoutes := centymo.DefaultProductInventoryRoutes()
+		productInventoryRoutes := productdom.DefaultProductInventoryRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_inventory", &productInventoryRoutes)
 
 		// Supplies mount — third Product module registration scoped to
@@ -197,10 +198,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// (resold goods) under the Inventory accordion. Lyngua
 		// `product_supplies` can override individual URLs on top of the
 		// /app/inventory/supplies/* namespace.
-		productSuppliesRoutes := centymo.DefaultProductSuppliesRoutes()
+		productSuppliesRoutes := productdom.DefaultProductSuppliesRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_supplies", &productSuppliesRoutes)
 
-		productLineRoutes := centymo.DefaultProductLineRoutes()
+		productLineRoutes := productdom.DefaultProductLineRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_line", &productLineRoutes)
 
 		pricePlanRoutes := centymo.DefaultPricePlanRoutes()
@@ -216,7 +217,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		priceScheduleInventoryRoutes := centymo.DefaultPriceScheduleInventoryRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_schedule_inventory", &priceScheduleInventoryRoutes)
 
-		priceListRoutes := centymo.DefaultPriceListRoutes()
+		priceListRoutes := productdom.DefaultPriceListRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_list", &priceListRoutes)
 
 		planRoutes := centymo.DefaultPlanRoutes()
@@ -229,7 +230,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		// Inventory-mount ProductLine routes — namespace-shifted onto /app/inventory/product-lines/*.
 		// Lyngua product_line_inventory block can layer additional tweaks on top.
-		productLineInventoryRoutes := centymo.DefaultProductLineInventoryRoutes()
+		productLineInventoryRoutes := productdom.DefaultProductLineInventoryRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_line_inventory", &productLineInventoryRoutes)
 
 		subscriptionRoutes := centymo.DefaultSubscriptionRoutes()
@@ -266,13 +267,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			log.Printf("centymo.Block: warning loading revenue labels: %v", err)
 		}
 
-		var productLabels centymo.ProductLabels
+		var productLabels productdom.ProductLabels
 		if err := translations.LoadPath("en", ctx.BusinessType, "product.json", "product", &productLabels); err != nil {
 			log.Printf("centymo.Block: warning loading product labels: %v", err)
 		}
 
 		// Inventory-flavoured product labels. Starts from the already-loaded
-		// service product labels (centymo.ProductLabels has no exported
+		// service product labels (productdom.ProductLabels has no exported
 		// DefaultProductLabels() factory — the service product.json is the
 		// de-facto baseline) and sparse-overlays product_inventory.json so the
 		// inventory mount can use distinct headings/buttons (e.g. "Add Product")
@@ -287,7 +288,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		productSuppliesLabels := productLabels
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_supplies.json", "product_supplies", &productSuppliesLabels)
 
-		productLineLabels := centymo.DefaultProductLineLabels()
+		productLineLabels := productdom.DefaultProductLineLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_line.json", "product_line", &productLineLabels)
 
 		pricePlanLabels := centymo.DefaultPricePlanLabels()
@@ -299,7 +300,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		priceScheduleLabels := centymo.DefaultPriceScheduleLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_schedule.json", "priceSchedule", &priceScheduleLabels)
 
-		var priceListLabels centymo.PriceListLabels
+		var priceListLabels productdom.PriceListLabels
 		if err := translations.LoadPath("en", ctx.BusinessType, "pricelist.json", "pricelist", &priceListLabels); err != nil {
 			log.Printf("centymo.Block: warning loading pricelist labels: %v", err)
 		}
@@ -326,10 +327,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		subscriptionLabels := centymo.DefaultSubscriptionLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "subscription.json", "subscription", &subscriptionLabels)
 
-		resourceRoutes := centymo.DefaultResourceRoutes()
+		resourceRoutes := productdom.DefaultResourceRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "resource", &resourceRoutes)
 
-		resourceLabels := centymo.DefaultResourceLabels()
+		resourceLabels := productdom.DefaultResourceLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "resource.json", "resource", &resourceLabels)
 
 		// 20260427-supplier-commitments — load routes + labels for the five new view modules.

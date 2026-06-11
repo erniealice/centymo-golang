@@ -12,6 +12,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	centymo "github.com/erniealice/centymo-golang"
+	productdom "github.com/erniealice/centymo-golang/domain/product"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -301,7 +302,7 @@ func loadVariantOptions(ctx context.Context, deps *ProductPlanDeps, productID, s
 		}
 		label := sku
 		if parts := variantOptionLabels[v.GetId()]; len(parts) > 0 {
-			label = sku + " — " + strings.Join(parts, centymo.OptionValueSeparator)
+			label = sku + " — " + strings.Join(parts, productdom.OptionValueSeparator)
 		}
 		options = append(options, types.SelectOption{
 			Value:    v.GetId(),

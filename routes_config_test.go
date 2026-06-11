@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	productdom "github.com/erniealice/centymo-golang/domain/product"
 )
 
 type routeContractCase struct {
@@ -40,8 +42,8 @@ func TestRouteMap_ValuesBelongToStructAndCoverRouteFields(t *testing.T) {
 
 func centymoRouteContractCases() []routeContractCase {
 	return []routeContractCase{
-		{name: "ProductRoutes", routes: DefaultProductRoutes(), routeMap: DefaultProductRoutes().RouteMap()},
-		{name: "ProductLineRoutes", routes: DefaultProductLineRoutes(), routeMap: DefaultProductLineRoutes().RouteMap()},
+		{name: "ProductRoutes", routes: productdom.DefaultProductRoutes(), routeMap: productdom.DefaultProductRoutes().RouteMap()},
+		{name: "ProductLineRoutes", routes: productdom.DefaultProductLineRoutes(), routeMap: productdom.DefaultProductLineRoutes().RouteMap()},
 		// InventoryRoutes moved to domain/inventory — tested in domain/inventory package
 		// RevenueRoutes moved to domain/revenue — tested in domain/revenue package
 		{
@@ -61,7 +63,7 @@ func centymoRouteContractCases() []routeContractCase {
 		{name: "SubscriptionRoutes", routes: DefaultSubscriptionRoutes(), routeMap: DefaultSubscriptionRoutes().RouteMap()},
 		{name: "CollectionRoutes", routes: DefaultCollectionRoutes(), routeMap: DefaultCollectionRoutes().RouteMap()},
 		{name: "DisbursementRoutes", routes: DefaultDisbursementRoutes(), routeMap: DefaultDisbursementRoutes().RouteMap()},
-		{name: "PriceListRoutes", routes: DefaultPriceListRoutes(), routeMap: DefaultPriceListRoutes().RouteMap()},
+		{name: "PriceListRoutes", routes: productdom.DefaultPriceListRoutes(), routeMap: productdom.DefaultPriceListRoutes().RouteMap()},
 	}
 }
 

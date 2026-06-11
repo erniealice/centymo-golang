@@ -1,6 +1,8 @@
 package inventory
 
-import centymo "github.com/erniealice/centymo-golang"
+import (
+	productdom "github.com/erniealice/centymo-golang/domain/product"
+)
 
 // ---------------------------------------------------------------------------
 // Inventory labels
@@ -17,7 +19,7 @@ type InventoryLabels struct {
 	Bulk         InventoryBulkLabels         `json:"bulkActions"`
 	Detail       InventoryDetailLabels       `json:"detail"`
 	Tabs         InventoryTabLabels          `json:"tabs"`
-	TrackingMode centymo.TrackingModeLabels  `json:"trackingMode"`
+	TrackingMode productdom.TrackingModeLabels  `json:"trackingMode"`
 	Status       InventoryStatusLabels       `json:"status"`
 	Serial       InventorySerialLabels       `json:"serial"`
 	Transaction  InventoryTransactionLabels  `json:"transaction"`

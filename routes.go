@@ -245,94 +245,6 @@ const (
 	SupplierBillingEventDetailURL    = "/supplier-billing-events/detail/{id}"
 	SupplierBillingEventRecognizeURL = "/action/supplier-billing-event/recognize/{id}"
 
-	ProductListURL   = "/products/list/{status}"
-	ProductTableURL  = "/action/product/table/{status}"
-	ProductDetailURL = "/products/detail/{id}"
-
-	// Service dashboard — services are products filtered to product_kind="service".
-	// The dashboard sits ABOVE the service-mount product list at this URL.
-	ServiceDashboardURL = "/services/dashboard"
-
-	// Product action routes
-	ProductAddURL        = "/action/product/add"
-	ProductEditURL       = "/action/product/edit/{id}"
-	ProductDeleteURL     = "/action/product/delete"
-	ProductBulkDeleteURL = "/action/product/bulk-delete"
-
-	// Product status routes
-	ProductSetStatusURL     = "/action/product/set-status"
-	ProductBulkSetStatusURL = "/action/product/bulk-set-status"
-
-	// Product detail tab action route
-	ProductTabActionURL        = "/action/product/detail/{id}/tab/{tab}"
-	ProductAttachmentUploadURL   = "/action/product/detail/{id}/attachments/upload"
-	ProductAttachmentDeleteURL   = "/action/product/detail/{id}/attachments/delete"
-	ProductAttachmentDownloadURL = "/action/product/detail/{id}/attachments/download"
-
-	// Product variant routes (within product detail)
-	ProductVariantTableURL  = "/action/product/detail/{id}/variants/table"
-	ProductVariantAssignURL = "/action/product/detail/{id}/variants/assign"
-	ProductVariantEditURL   = "/action/product/detail/{id}/variants/edit/{vid}"
-	ProductVariantRemoveURL = "/action/product/detail/{id}/variants/remove"
-
-	// Product attribute routes (within product detail)
-	ProductAttributeTableURL  = "/action/product/detail/{id}/attributes/table"
-	ProductAttributeAssignURL = "/action/product/detail/{id}/attributes/assign"
-	ProductAttributeRemoveURL = "/action/product/detail/{id}/attributes/remove"
-
-	// Product option routes (within product detail)
-	ProductOptionTableURL  = "/action/product/detail/{id}/options/table"
-	ProductOptionAddURL    = "/action/product/detail/{id}/options/add"
-	ProductOptionEditURL   = "/action/product/detail/{id}/options/edit/{oid}"
-	ProductOptionDeleteURL = "/action/product/detail/{id}/options/delete"
-
-	// Product option detail page (option values management)
-	ProductOptionDetailURL = "/products/detail/{id}/option/{oid}"
-
-	// Product variant detail page (variant info, pricing, stock, audit, images)
-	ProductVariantDetailURL    = "/products/detail/{id}/variant/{vid}"
-	ProductVariantTabActionURL = "/action/product/detail/{id}/variant/{vid}/tab/{tab}"
-
-	// Product variant image routes (upload/delete within variant detail)
-	ProductVariantImageUploadURL = "/action/product/detail/{id}/variant/{vid}/images/upload"
-	ProductVariantImageDeleteURL = "/action/product/detail/{id}/variant/{vid}/images/delete"
-
-	// Product variant attachment routes
-	ProductVariantAttachmentUploadURL = "/action/product/detail/{id}/variant/{vid}/attachments/upload"
-	ProductVariantAttachmentDeleteURL = "/action/product/detail/{id}/variant/{vid}/attachments/delete"
-
-	// Product variant stock detail (inventory item within variant context)
-	ProductVariantStockDetailURL    = "/products/detail/{id}/variant/{vid}/stock/{iid}"
-	ProductVariantStockTabActionURL = "/action/product/detail/{id}/variant/{vid}/stock/{iid}/tab/{tab}"
-
-	// Product variant stock attachment routes
-	ProductVariantStockAttachmentUploadURL = "/action/product/detail/{id}/variant/{vid}/stock/{iid}/attachments/upload"
-	ProductVariantStockAttachmentDeleteURL = "/action/product/detail/{id}/variant/{vid}/stock/{iid}/attachments/delete"
-
-	// Inventory serial detail (individual serial within inventory item)
-	ProductVariantSerialDetailURL = "/products/detail/{id}/variant/{vid}/stock/{iid}/serial/{sid}"
-
-	// Product option value routes (within product option)
-	ProductOptionValueTableURL  = "/action/product/detail/{id}/options/{oid}/values/table"
-	ProductOptionValueAddURL    = "/action/product/detail/{id}/options/{oid}/values/add"
-	ProductOptionValueEditURL   = "/action/product/detail/{id}/options/{oid}/values/edit/{vid}"
-	ProductOptionValueDeleteURL = "/action/product/detail/{id}/options/{oid}/values/delete"
-
-	// Product line routes
-	ProductLineDashboardURL        = "/product-lines/dashboard"
-	ProductLineListURL             = "/product-lines/list/{status}"
-	ProductLineTableURL            = "/action/product-line/table/{status}"
-	ProductLineDetailURL           = "/product-lines/detail/{id}"
-	ProductLineAddURL              = "/action/product-line/add"
-	ProductLineEditURL             = "/action/product-line/edit/{id}"
-	ProductLineDeleteURL           = "/action/product-line/delete"
-	ProductLineBulkDeleteURL       = "/action/product-line/bulk-delete"
-	ProductLineSetStatusURL        = "/action/product-line/set-status"
-	ProductLineBulkSetStatusURL    = "/action/product-line/bulk-set-status"
-	ProductLineTabActionURL        = "/action/product-line/{id}/tab/{tab}"
-	ProductLineAttachmentUploadURL = "/action/product-line/{id}/attachments/upload"
-	ProductLineAttachmentDeleteURL = "/action/product-line/{id}/attachments/delete"
-
 	// Expense Recognition Run (buying-side) routes — Plan A 20260517-expense-run.
 	ExpenseRecognitionRunQueueURL                   = "/expense-recognition-run/queue"
 	ExpenseRecognitionRunQueueTableURL              = "/action/expense-recognition-run/queue/table"
@@ -409,34 +321,6 @@ const (
 	ExpenditureExpenseCategoryEditURL   = "/action/expense/categories/edit/{id}"
 	ExpenditureExpenseCategoryDeleteURL = "/action/expense/categories/delete"
 	ExpenditureExpenseCategoryTableURL  = "/action/expense/categories/table"
-
-	// Resource routes (person or equipment linked to a Product for billing)
-	ResourceListURL          = "/resources/list/{status}"
-	ResourceTableURL         = "/action/resource/table/{status}"
-	ResourceDetailURL        = "/resources/detail/{id}"
-	ResourceAddURL           = "/action/resource/add"
-	ResourceEditURL          = "/action/resource/edit/{id}"
-	ResourceDeleteURL        = "/action/resource/delete"
-	ResourceBulkDeleteURL    = "/action/resource/bulk-delete"
-	ResourceSetStatusURL     = "/action/resource/set-status"
-	ResourceBulkSetStatusURL = "/action/resource/bulk-set-status"
-
-	// Price List routes — canonical home is the inventory accordion (/app/inventory/price-lists/*)
-	PriceListListURL       = "/inventory/price-lists/list/{status}"
-	PriceListTableURL      = "/action/inventory-price-list/table/{status}"
-	PriceListDetailURL     = "/inventory/price-lists/detail/{id}"
-	PriceListAddURL        = "/action/inventory-price-list/add"
-	PriceListEditURL       = "/action/inventory-price-list/edit/{id}"
-	PriceListDeleteURL     = "/action/inventory-price-list/delete"
-	PriceListBulkDeleteURL = "/action/inventory-price-list/bulk-delete"
-
-	PriceListTabActionURL        = "/action/inventory-price-list/{id}/tab/{tab}"
-	PriceListAttachmentUploadURL = "/action/inventory-price-list/{id}/attachments/upload"
-	PriceListAttachmentDeleteURL = "/action/inventory-price-list/{id}/attachments/delete"
-
-	// Price Product routes (within price list detail)
-	PriceProductAddURL    = "/action/inventory-price-list/{id}/products/add"
-	PriceProductDeleteURL = "/action/inventory-price-list/{id}/products/delete"
 
 	// ---------------------------------------------------------------------------
 	// P3a — SupplierContract + SupplierContractLine route constants

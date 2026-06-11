@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	centymo "github.com/erniealice/centymo-golang"
+	productdom "github.com/erniealice/centymo-golang/domain/product"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -1347,7 +1348,7 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, p
 			}
 			label = fmt.Sprintf("%s — %s", productName, sku)
 			if values := variantOptionLabels[vid]; len(values) > 0 {
-				label = fmt.Sprintf("%s — %s", label, strings.Join(values, centymo.OptionValueSeparator))
+				label = fmt.Sprintf("%s — %s", label, strings.Join(values, productdom.OptionValueSeparator))
 			}
 		}
 

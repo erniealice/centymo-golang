@@ -22,13 +22,14 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	centymo "github.com/erniealice/centymo-golang"
+	productdom "github.com/erniealice/centymo-golang/domain/product"
 	planaction "github.com/erniealice/centymo-golang/views/plan/action"
 	plandetail "github.com/erniealice/centymo-golang/views/plan/detail"
 	planlist "github.com/erniealice/centymo-golang/views/plan/list"
 	priceplanmod "github.com/erniealice/centymo-golang/views/price_plan"
 	priceschedulemod "github.com/erniealice/centymo-golang/views/price_schedule"
 	priceschedulepricepldetail "github.com/erniealice/centymo-golang/views/price_schedule/detail/plan"
-	pricelistmod "github.com/erniealice/centymo-golang/views/pricelist"
+	pricelistmod "github.com/erniealice/centymo-golang/domain/product/views/pricelist"
 )
 
 // planWiring holds everything wirePlanModules needs from the surrounding Block()
@@ -48,7 +49,7 @@ type planWiring struct {
 	pricePlanRoutes              centymo.PricePlanRoutes
 	priceScheduleRoutes          centymo.PriceScheduleRoutes
 	priceScheduleInventoryRoutes centymo.PriceScheduleRoutes
-	priceListRoutes              centymo.PriceListRoutes
+	priceListRoutes              productdom.PriceListRoutes
 	planRoutes                   centymo.PlanRoutes
 	planBundleRoutes             centymo.PlanRoutes
 	subscriptionRoutes           centymo.SubscriptionRoutes
@@ -56,7 +57,7 @@ type planWiring struct {
 	pricePlanLabels        centymo.PricePlanLabels
 	productPricePlanLabels centymo.ProductPricePlanLabels
 	priceScheduleLabels    centymo.PriceScheduleLabels
-	priceListLabels        centymo.PriceListLabels
+	priceListLabels        productdom.PriceListLabels
 	planLabels             centymo.PlanLabels
 	centymoTableLabels     types.TableLabels
 }

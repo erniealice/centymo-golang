@@ -36,7 +36,7 @@ import (
 	price_schedule "github.com/erniealice/centymo-golang/views/price_schedule"
 	procurement_request "github.com/erniealice/centymo-golang/views/procurement_request"
 	procurement_request_line "github.com/erniealice/centymo-golang/views/procurement_request_line"
-	product "github.com/erniealice/centymo-golang/views/product"
+	product "github.com/erniealice/centymo-golang/domain/product/views/product"
 	purchase_order "github.com/erniealice/centymo-golang/views/purchase_order"
 	revenue "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
 	subscription "github.com/erniealice/centymo-golang/views/subscription"

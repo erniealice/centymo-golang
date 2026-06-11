@@ -83,7 +83,7 @@ import (
 	collectiondashboard "github.com/erniealice/centymo-golang/views/collection/dashboard"
 	expenseboard "github.com/erniealice/centymo-golang/views/expenditure/expense_dashboard"
 	purchaseboard "github.com/erniealice/centymo-golang/views/expenditure/purchase_dashboard"
-	productdashboard "github.com/erniealice/centymo-golang/views/product/dashboard"
+	productdashboard "github.com/erniealice/centymo-golang/domain/product/views/product/dashboard"
 )
 
 // UseCases declares everything centymo's Block() needs from outside.

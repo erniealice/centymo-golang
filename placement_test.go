@@ -52,7 +52,6 @@ var legacyAllow = map[string]string{
 	"routes_config_test.go": "W1-W7: moves/splits alongside routes_config.go (153 LoC)",
 	"advance_actions.go":    "W5: -> domain/treasury/advance.go (86 LoC, 8 Advance*ViewInput/Output structs)",
 	"advance_labels.go":     "W5+W6: SPLIT -> treasury/advance.go (L1-181 Advance/AdvancesDashboard) + expenditure/supplier_billing_event_labels.go (L182-498 SupplierBillingEvent*) per esqyma domainOf",
-	"options.go":            "W3: -> domain/product/ (only OptionValueSeparator const remains after Wave P moved currency to pyeza)",
 	"views":                 "W1-W7: regroup 35 entity-flat dirs under domain/<d>/views/<entity>/",
 	"services":              "W8 (DEFERRED): -> espyna (checkout) + keep serial.go/service.go/types.go pending; out of scope for W1-W7",
 	"datasource.go":         "DEFERRAL (D2/TD): DataSource legacy view-data port — keep at root, do not touch in W1-W7",

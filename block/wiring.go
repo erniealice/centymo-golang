@@ -17,11 +17,11 @@ import (
 	collectiondashboard "github.com/erniealice/centymo-golang/views/collection/dashboard"
 	expenseboard "github.com/erniealice/centymo-golang/views/expenditure/expense_dashboard"
 	purchaseboard "github.com/erniealice/centymo-golang/views/expenditure/purchase_dashboard"
-	productdashboard "github.com/erniealice/centymo-golang/views/product/dashboard"
+	productdashboard "github.com/erniealice/centymo-golang/domain/product/views/product/dashboard"
 
 	collectionmod "github.com/erniealice/centymo-golang/views/collection"
 	expendituremod "github.com/erniealice/centymo-golang/views/expenditure"
-	productmod "github.com/erniealice/centymo-golang/views/product"
+	productmod "github.com/erniealice/centymo-golang/domain/product/views/product"
 )
 
 // ---------------------------------------------------------------------------
