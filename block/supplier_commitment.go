@@ -21,13 +21,13 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
 	procurementrequestmod "github.com/erniealice/centymo-golang/domain/expenditure/views/procurement_request"
 	procurementrequestlinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/procurement_request_line"
 	suppliercontractmod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract"
 	suppliercontractlinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_line"
-	procurementmod "github.com/erniealice/centymo-golang/views/procurement"
+	procurementdomain "github.com/erniealice/centymo-golang/domain/procurement"
+	procurementmod "github.com/erniealice/centymo-golang/domain/procurement/views/procurement"
 )
 
 // supplierCommitmentWiring holds everything wireSupplierCommitmentModules
@@ -39,8 +39,8 @@ type supplierCommitmentWiring struct {
 	supplierContractPriceScheduleRoutes expendituredomain.SupplierContractPriceScheduleRoutes
 	procurementRequestRoutes            expendituredomain.ProcurementRequestRoutes
 	procurementRequestLabels            expendituredomain.ProcurementRequestLabels
-	procurementRoutes                   centymo.ProcurementRoutes
-	procurementLabels                   centymo.ProcurementLabels
+	procurementRoutes                   procurementdomain.ProcurementRoutes
+	procurementLabels                   procurementdomain.ProcurementLabels
 	centymoTableLabels                  types.TableLabels
 	uploadFile                          func(context.Context, string, string, []byte, string) error
 	listAttachments                     func(context.Context, string, string) (*attachmentpb.ListAttachmentsResponse, error)

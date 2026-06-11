@@ -56,6 +56,7 @@ import (
 	expendituremod "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure"
 	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
 	inventorymod "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
+	procurementdomain "github.com/erniealice/centymo-golang/domain/procurement"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
 	resourcemod "github.com/erniealice/centymo-golang/domain/product/views/resource"
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
@@ -347,12 +348,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		procurementRequestLabels := expendituredomain.DefaultProcurementRequestLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "procurement_request.json", "procurementRequest", &procurementRequestLabels)
 
-		procurementRoutes := centymo.DefaultProcurementRoutes()
+		procurementRoutes := procurementdomain.DefaultProcurementRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "procurement", &procurementRoutes)
 		// Procurement Operations composition app — no Default*Labels factory
 		// yet (P4 lyngua wiring deferred); zero-value struct is fine until
 		// translations land. LoadPathIfExists is a no-op if the file is absent.
-		var procurementLabels centymo.ProcurementLabels
+		var procurementLabels procurementdomain.ProcurementLabels
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "procurement.json", "procurement", &procurementLabels)
 
 		// SPS Wave 4 — Routes + Labels for the six new view modules.
@@ -396,32 +397,32 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advance_kind.json", "advanceKind.labels", &advanceEnumLabels)
 
 		// P3 (20260506-supplier-subscriptions) — Routes + Labels for the six new procurement modules.
-		costScheduleRoutes := centymo.DefaultCostScheduleRoutes()
+		costScheduleRoutes := procurementdomain.DefaultCostScheduleRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "cost_schedule", &costScheduleRoutes)
-		costScheduleLabels := centymo.DefaultCostScheduleLabels()
+		costScheduleLabels := procurementdomain.DefaultCostScheduleLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "cost_schedule.json", "costSchedule", &costScheduleLabels)
 
-		supplierPlanRoutes := centymo.DefaultSupplierPlanRoutes()
+		supplierPlanRoutes := procurementdomain.DefaultSupplierPlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_plan", &supplierPlanRoutes)
-		supplierPlanLabels := centymo.DefaultSupplierPlanLabels()
+		supplierPlanLabels := procurementdomain.DefaultSupplierPlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_plan.json", "supplierPlan", &supplierPlanLabels)
 
-		costPlanRoutes := centymo.DefaultCostPlanRoutes()
+		costPlanRoutes := procurementdomain.DefaultCostPlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "cost_plan", &costPlanRoutes)
-		costPlanLabels := centymo.DefaultCostPlanLabels()
+		costPlanLabels := procurementdomain.DefaultCostPlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "cost_plan.json", "costPlan", &costPlanLabels)
 
-		supplierProductPlanRoutes := centymo.DefaultSupplierProductPlanRoutes()
+		supplierProductPlanRoutes := procurementdomain.DefaultSupplierProductPlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_product_plan", &supplierProductPlanRoutes)
-		supplierProductPlanLabels := centymo.DefaultSupplierProductPlanLabels()
+		supplierProductPlanLabels := procurementdomain.DefaultSupplierProductPlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_product_plan.json", "supplierProductPlan", &supplierProductPlanLabels)
 
-		supplierProductCostPlanLabels := centymo.DefaultSupplierProductCostPlanLabels()
+		supplierProductCostPlanLabels := procurementdomain.DefaultSupplierProductCostPlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_product_cost_plan.json", "supplierProductCostPlan", &supplierProductCostPlanLabels)
 
-		supplierSubscriptionRoutes := centymo.DefaultSupplierSubscriptionRoutes()
+		supplierSubscriptionRoutes := procurementdomain.DefaultSupplierSubscriptionRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_subscription", &supplierSubscriptionRoutes)
-		supplierSubscriptionLabels := centymo.DefaultSupplierSubscriptionLabels()
+		supplierSubscriptionLabels := procurementdomain.DefaultSupplierSubscriptionLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_subscription.json", "supplierSubscription", &supplierSubscriptionLabels)
 
 		// =====================================================================

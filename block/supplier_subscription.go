@@ -15,12 +15,13 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
-	costplanmod "github.com/erniealice/centymo-golang/views/cost_plan"
-	costplanaction "github.com/erniealice/centymo-golang/views/cost_plan/action"
-	costschedulemod "github.com/erniealice/centymo-golang/views/cost_schedule"
-	supplierplanmod "github.com/erniealice/centymo-golang/views/supplier_plan"
-	supplierproductplanmod "github.com/erniealice/centymo-golang/views/supplier_product_plan"
-	suppliersubscriptionmod "github.com/erniealice/centymo-golang/views/supplier_subscription"
+	procurement "github.com/erniealice/centymo-golang/domain/procurement"
+	costplanmod "github.com/erniealice/centymo-golang/domain/procurement/views/cost_plan"
+	costplanaction "github.com/erniealice/centymo-golang/domain/procurement/views/cost_plan/action"
+	costschedulemod "github.com/erniealice/centymo-golang/domain/procurement/views/cost_schedule"
+	supplierplanmod "github.com/erniealice/centymo-golang/domain/procurement/views/supplier_plan"
+	supplierproductplanmod "github.com/erniealice/centymo-golang/domain/procurement/views/supplier_product_plan"
+	suppliersubscriptionmod "github.com/erniealice/centymo-golang/domain/procurement/views/supplier_subscription"
 )
 
 // supplierSubscriptionWiring holds everything wireSupplierSubscriptionModules
@@ -28,17 +29,17 @@ import (
 // Kept private; never re-exported.
 type supplierSubscriptionWiring struct {
 	db                            centymo.DataSource
-	costScheduleRoutes            centymo.CostScheduleRoutes
-	costScheduleLabels            centymo.CostScheduleLabels
-	supplierPlanRoutes            centymo.SupplierPlanRoutes
-	supplierPlanLabels            centymo.SupplierPlanLabels
-	costPlanRoutes                centymo.CostPlanRoutes
-	costPlanLabels                centymo.CostPlanLabels
-	supplierProductPlanRoutes     centymo.SupplierProductPlanRoutes
-	supplierProductPlanLabels     centymo.SupplierProductPlanLabels
-	supplierProductCostPlanLabels centymo.SupplierProductCostPlanLabels
-	supplierSubscriptionRoutes    centymo.SupplierSubscriptionRoutes
-	supplierSubscriptionLabels    centymo.SupplierSubscriptionLabels
+	costScheduleRoutes            procurement.CostScheduleRoutes
+	costScheduleLabels            procurement.CostScheduleLabels
+	supplierPlanRoutes            procurement.SupplierPlanRoutes
+	supplierPlanLabels            procurement.SupplierPlanLabels
+	costPlanRoutes                procurement.CostPlanRoutes
+	costPlanLabels                procurement.CostPlanLabels
+	supplierProductPlanRoutes     procurement.SupplierProductPlanRoutes
+	supplierProductPlanLabels     procurement.SupplierProductPlanLabels
+	supplierProductCostPlanLabels procurement.SupplierProductCostPlanLabels
+	supplierSubscriptionRoutes    procurement.SupplierSubscriptionRoutes
+	supplierSubscriptionLabels    procurement.SupplierSubscriptionLabels
 	// expenseRecognitionRunLabels supplies the "Run Recognitions" CTA label
 	// for the supplier_subscription detail page's Linked Recognitions tab.
 	// Plan A 20260517-expense-run Surface C.
