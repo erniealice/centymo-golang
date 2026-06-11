@@ -23,13 +23,14 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
-	planaction "github.com/erniealice/centymo-golang/views/plan/action"
-	plandetail "github.com/erniealice/centymo-golang/views/plan/detail"
-	planlist "github.com/erniealice/centymo-golang/views/plan/list"
-	priceplanmod "github.com/erniealice/centymo-golang/views/price_plan"
-	priceschedulemod "github.com/erniealice/centymo-golang/views/price_schedule"
-	priceschedulepricepldetail "github.com/erniealice/centymo-golang/views/price_schedule/detail/plan"
 	pricelistmod "github.com/erniealice/centymo-golang/domain/product/views/pricelist"
+	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
+	planaction "github.com/erniealice/centymo-golang/domain/subscription/views/plan/action"
+	plandetail "github.com/erniealice/centymo-golang/domain/subscription/views/plan/detail"
+	planlist "github.com/erniealice/centymo-golang/domain/subscription/views/plan/list"
+	priceplanmod "github.com/erniealice/centymo-golang/domain/subscription/views/price_plan"
+	priceschedulemod "github.com/erniealice/centymo-golang/domain/subscription/views/price_schedule"
+	priceschedulepricepldetail "github.com/erniealice/centymo-golang/domain/subscription/views/price_schedule/detail/plan"
 )
 
 // planWiring holds everything wirePlanModules needs from the surrounding Block()
@@ -46,19 +47,19 @@ type planWiring struct {
 	deleteAttachment func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	newAttachmentID  func() string
 	// Routes
-	pricePlanRoutes              centymo.PricePlanRoutes
-	priceScheduleRoutes          centymo.PriceScheduleRoutes
-	priceScheduleInventoryRoutes centymo.PriceScheduleRoutes
+	pricePlanRoutes              subscriptiondom.PricePlanRoutes
+	priceScheduleRoutes          subscriptiondom.PriceScheduleRoutes
+	priceScheduleInventoryRoutes subscriptiondom.PriceScheduleRoutes
 	priceListRoutes              productdom.PriceListRoutes
-	planRoutes                   centymo.PlanRoutes
-	planBundleRoutes             centymo.PlanRoutes
-	subscriptionRoutes           centymo.SubscriptionRoutes
+	planRoutes                   subscriptiondom.PlanRoutes
+	planBundleRoutes             subscriptiondom.PlanRoutes
+	subscriptionRoutes           subscriptiondom.SubscriptionRoutes
 	// Labels
-	pricePlanLabels        centymo.PricePlanLabels
-	productPricePlanLabels centymo.ProductPricePlanLabels
-	priceScheduleLabels    centymo.PriceScheduleLabels
+	pricePlanLabels        subscriptiondom.PricePlanLabels
+	productPricePlanLabels subscriptiondom.ProductPricePlanLabels
+	priceScheduleLabels    subscriptiondom.PriceScheduleLabels
 	priceListLabels        productdom.PriceListLabels
-	planLabels             centymo.PlanLabels
+	planLabels             subscriptiondom.PlanLabels
 	centymoTableLabels     types.TableLabels
 }
 
@@ -810,7 +811,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 				// Bundle-mount sibling of services-mount `productPlanActionDeps` (~line 1111).
 				// Keep these two registrations field-for-field identical (only Routes
 				// differs). Unlike PricePlanDeps, ProductPlanDeps has a single Labels
-				// field — all form-label data is nested under centymo.PlanLabels
+				// field — all form-label data is nested under subscriptiondom.PlanLabels
 				// (`Labels.ProductPlanForm`), so threading `Labels: planLabels` is
 				// sufficient. If a future change adds a separate label struct (e.g.
 				// ProductPlanLabels), thread it into BOTH registrations.

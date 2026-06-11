@@ -1,0 +1,1916 @@
+package detail
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"sort"
+	"strings"
+	"time"
+
+	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
+	subscription "github.com/erniealice/centymo-golang/domain/subscription"
+
+	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
+	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/route"
+	"github.com/erniealice/pyeza-golang/types"
+	"github.com/erniealice/pyeza-golang/view"
+
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	enums "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/enums"
+	jobpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job"
+	jobphasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_phase"
+	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
+	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
+	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
+	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
+
+	// 20260517-advance-cash-events Plan B Phase 7 — MILESTONE junctions.
+	junctionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_billing_event"
+)
+
+// DetailViewDeps holds view dependencies.
+type DetailViewDeps struct {
+	Routes           subscription.SubscriptionRoutes
+	ReadSubscription func(ctx context.Context, req *subscriptionpb.ReadSubscriptionRequest) (*subscriptionpb.ReadSubscriptionResponse, error)
+
+	// 2026-04-29 milestone-billing — list events for the Package tab. nil-safe.
+	ListBillingEventsBySubscription func(ctx context.Context, req *billingeventpb.ListBillingEventsBySubscriptionRequest) (*billingeventpb.ListBillingEventsBySubscriptionResponse, error)
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription Phase D — Operations tab
+	// data ops. nil-safe; tab degrades to empty state.
+	GetJobsByOrigin    func(ctx context.Context, req *jobpb.GetJobsByOriginRequest) (*jobpb.GetJobsByOriginResponse, error)
+	ListJobPhasesByJob func(ctx context.Context, req *jobphasepb.ListJobPhasesByJobRequest) (*jobphasepb.ListJobPhasesByJobResponse, error)
+	// JobDetailURL is the absolute URL pattern (e.g. /app/jobs/detail/{id})
+	// used to deep-link to fayna's Job detail page from the Operations tab.
+	// Empty means no link.
+	JobDetailURL string
+	// SpawnJobsURL is the centymo retroactive spawn drawer entry. Used by the
+	// Operations tab empty-state CTA. Empty disables the CTA.
+	SpawnJobsURL string
+	// GetSubscriptionItemPageData returns the subscription with its joined
+	// Client (+ User) and PricePlan (+ Plan) populated. Preferred over
+	// ReadSubscription for the detail view so customer + package fields render
+	// without extra round-trips.
+	GetSubscriptionItemPageData func(ctx context.Context, req *subscriptionpb.GetSubscriptionItemPageDataRequest) (*subscriptionpb.GetSubscriptionItemPageDataResponse, error)
+	// ReadClient is used by the nested-route variant ("under client") to look
+	// up the client name for the page-header breadcrumb. Optional — when nil
+	// the embedded client from GetSubscriptionItemPageData is used as the
+	// fallback label, and the URL falls back to the flat subscription list.
+	ReadClient func(ctx context.Context, req *clientpb.ReadClientRequest) (*clientpb.ReadClientResponse, error)
+	// GetRevenueListPageData fetches revenue records (invoices) for the
+	// invoices tab. Filtered by subscription_id. Optional — tab renders empty
+	// state when nil.
+	GetRevenueListPageData func(ctx context.Context, req *revenuepb.GetRevenueListPageDataRequest) (*revenuepb.GetRevenueListPageDataResponse, error)
+	// ClientDetailURL is the absolute path template for the client detail page
+	// (e.g. "/app/clients/detail/{id}"); used to build the breadcrumb link.
+	// Empty string disables the breadcrumb link (label still renders).
+	ClientDetailURL string
+
+	// 2026-05-04 — when the subscription detail page is mounted at the nested
+	// rate-card → plan → engagement URL, these absolute path templates power
+	// a 2-segment breadcrumb (PriceSchedule → PricePlan). All three deps are
+	// optional and nil-safe; absence produces a degraded breadcrumb (id-only).
+	// See docs/plan/20260504-price-plan-engagements-tab/.
+	PriceScheduleDetailURL string
+	PricePlanDetailURL     string
+	ReadPriceSchedule      func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
+	ReadPricePlan          func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
+
+	Labels       subscription.SubscriptionLabels
+	CommonLabels pyeza.CommonLabels
+	TableLabels  types.TableLabels
+
+	// 20260517-advance-cash-events Plan B Phase 7 — list the
+	// collection_billing_event junction rows tied to a given
+	// BillingEvent. Nil-safe — when unwired, the milestone rows do not show
+	// the Recognize button + linked-advance badge.
+	ListCollectionBillingEvents func(ctx context.Context, req *junctionpb.ListCollectionBillingEventsRequest) (*junctionpb.ListCollectionBillingEventsResponse, error)
+
+	attachment.AttachmentOps
+	auditlog.AuditOps
+}
+
+// loadSubscriptionWithRelations fetches the subscription joined with client
+// and price plan. Falls back to plain ReadSubscription when the page-data
+// dep is unwired.
+func loadSubscriptionWithRelations(ctx context.Context, deps *DetailViewDeps, id string) (*subscriptionpb.Subscription, error) {
+	if deps.GetSubscriptionItemPageData != nil {
+		resp, err := deps.GetSubscriptionItemPageData(ctx, &subscriptionpb.GetSubscriptionItemPageDataRequest{
+			SubscriptionId: id,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if resp == nil || resp.GetSubscription() == nil {
+			return nil, fmt.Errorf("subscription not found")
+		}
+		return resp.GetSubscription(), nil
+	}
+	resp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
+		Data: &subscriptionpb.Subscription{Id: id},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.GetData()) == 0 {
+		return nil, fmt.Errorf("subscription not found")
+	}
+	return resp.GetData()[0], nil
+}
+
+// PageData holds the data for the subscription detail page.
+type PageData struct {
+	types.PageData
+	ContentTemplate string
+	Subscription    map[string]any
+	Labels          subscription.SubscriptionLabels
+	ActiveTab       string
+	TabItems        []pyeza.TabItem
+	// Invoices tab
+	Invoices        *types.TableConfig
+	AttachmentTable *types.TableConfig
+	// Audit history tab
+	AuditEntries    []auditlog.AuditEntryView
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
+
+	// 2026-04-27 plan-client-scope plan §6.5 — Package tab.
+	// CTA shown on the package tab when pricePlan.client_id IS NULL.
+	PackageCustomizeURL      string // POST endpoint for the customize CTA
+	PackageCustomizeLabel    string // pre-resolved label with {{.ClientName}}
+	PackageCustomizeShown    bool   // false hides the CTA (already client-scoped)
+	PackageCustomizeDisabled bool   // true grays the CTA (no permission, etc.)
+	PackageClientName        string
+	PackagePricePlan         map[string]any // {id, name, currency, amount, plan_id, client_id}
+
+	// 2026-04-29 milestone-billing plan §5 / Phase D — Milestones section
+	// inside Package tab. Rendered only when pricePlan.billing_kind = MILESTONE.
+	MilestonesShown      bool
+	Milestones           []MilestoneRow
+	TotalInvoicedDisplay string // formatted "₱430,000.00"
+	MilestoneCurrency    string
+
+	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 / Phase D —
+	// Operations tab data. OperationsHasJobs flips the empty-state CTA;
+	// SpawnJobsURL drives the retroactive-spawn drawer.
+	OperationsHasJobs   bool
+	OperationsRootJobs  []OperationsJobRow
+	OperationsEmptyText string // pre-resolved {{.SpawnAction}} substitution
+	OperationsSpawnURL  string
+
+	// 2026-04-30 cyclic-subscription-jobs plan §7 / Phase D — branch the
+	// Operations tab when the subscription's PricePlan is cyclic
+	// (RECURRING or CONTRACT-with-cycle). When IsCyclic is true the tab
+	// renders the cycle accordion + spawn / backfill CTAs; the legacy flat
+	// rendering above stays for non-cyclic engagements (regression guard
+	// per progress.md "key gotchas").
+	IsCyclic                   bool
+	OperationsCyclic           *SubscriptionCyclesData
+	SpawnCycleJobsURL          string // POST endpoint for "Spawn this cycle now"
+	BackfillCycleJobsDrawerURL string // GET endpoint for the backfill drawer
+
+	// 2026-05-01 ad-hoc-subscription-billing plan §5.1 — Mode branching for
+	// AD_HOC subscriptions. IsAdHoc is mutually exclusive with IsCyclic.
+	// When IsAdHoc is true the Operations tab renders the usage list (one
+	// row per usage Job under the engagement) instead of the cycle accordion;
+	// for AD_HOC × TOTAL_PACKAGE the entitlement counter banner shows
+	// `EntitlementUsed / EntitlementTotal` with a Pool-Generate-Invoice CTA
+	// when no pool Revenue exists yet.
+	IsAdHoc                bool
+	AdHocBasis             string // "AMOUNT_BASIS_TOTAL_PACKAGE" | "AMOUNT_BASIS_PER_OCCURRENCE"
+	EntitlementUsed        int32
+	EntitlementTotal       int32
+	EntitlementBannerText  string // pre-resolved counter copy ("3 of 5 used")
+	EntitlementHeadingText string // pre-resolved heading copy ("Pool — 3 of 5 ...")
+	// 2026-05-01 ad-hoc-subscription-billing v1.5 — operator CTAs.
+	// RequestUsageURL: POST endpoint that spawns one usage Job. Empty when
+	// the route isn't wired (defensive — Operations tab template hides the
+	// button on empty URL).
+	// PoolRecognizeURL: POST endpoint for AD_HOC × TOTAL_PACKAGE pool
+	// invoice generation. Reuses the existing recognize-revenue endpoint;
+	// espyna's executeAdHoc dispatches based on PricePlan kind.
+	RequestUsageURL  string
+	PoolRecognizeURL string
+
+	// 2026-04-30 cyclic-subscription-jobs plan §21 / Phase D — flat Jobs
+	// tab. Hidden when no Jobs exist (Jobs.HasJobs == false).
+	Jobs *SubscriptionJobsTabData
+}
+
+// SubscriptionCyclesData carries the cycle-accordion view rows for a cyclic
+// subscription's Operations tab. Built by buildSubscriptionCyclesData per
+// cyclic-subscription-jobs plan §7.1.
+type SubscriptionCyclesData struct {
+	// SubscriptionShellJob is the parent shell Job (parent_job_id == NULL for cyclic
+	// subscriptions). Empty struct when the shell hasn't been spawned
+	// yet (legacy subscriptions created pre-this-plan).
+	SubscriptionShellJobID string
+	SubscriptionShellName  string
+	SubscriptionHeading    string // pre-resolved {{.Started}} / {{.Name}}
+
+	// OnceAtStartJobs are children of the engagement with cycle_index=NULL
+	// (e.g. onboarding fired by JOB_TEMPLATE_RELATION_TYPE_ONCE_AT_ENGAGEMENT_START).
+	OnceAtStartJobs []OperationsJobRow
+
+	// Cycles holds one entry per cycle (sorted descending by CycleIndex so
+	// the most-recent cycle is on top). Empty when no cycle Jobs exist yet.
+	Cycles []SubscriptionCycleView
+
+	// CycleEmpty is the lyngua-resolved "No cycles yet" string surfaced when
+	// Cycles is empty.
+	CycleEmpty string
+
+	// MissingCycleCount is the number of cycle windows from sub.date_time_start
+	// → today that have no Jobs yet. > 0 surfaces the backfill banner.
+	MissingCycleCount  int
+	BackfillBannerText string // pre-resolved {{.Count}} substitution
+}
+
+// SubscriptionCycleView is one cycle accordion row. View-side only — no
+// proto changes (cycle metadata read from Job.cycle_* nullable fields).
+type SubscriptionCycleView struct {
+	CycleIndex    int32
+	PeriodStart   string // ISO 8601 (YYYY-MM-DD)
+	PeriodEnd     string
+	PeriodLabel   string             // human-readable, "May 2026"
+	HeadingText   string             // pre-resolved cycleHeading template
+	StatusKey     string             // pending | inProgress | completed | overdue
+	StatusLabel   string             // lyngua-resolved
+	StatusVariant string             // pyeza badge variant (success / warning / etc.)
+	Jobs          []OperationsJobRow // cycle Jobs (1 or N for multi-visit)
+	InvoiceID     string             // matched Revenue.id (empty if not yet recognized)
+	InvoiceLabel  string             // pre-resolved cycleInvoiceLinked OR cycleNoInvoice
+	IsPlaceholder bool               // true for the next-un-spawned cycle (operator click → spawn)
+	OpenByDefault bool               // current cycle expanded; past cycles collapsed
+}
+
+// SubscriptionJobsTabData backs the new flat Jobs tab (plan §21.5).
+type SubscriptionJobsTabData struct {
+	Rows         []SubscriptionJobRow
+	HasJobs      bool           // tab hidden when false
+	StatusCounts map[string]int // for filter pill counts (by status key)
+	TypeCounts   map[string]int // for filter pill counts (by type key)
+}
+
+// SubscriptionJobRow is one row in the flat Jobs tab table.
+type SubscriptionJobRow struct {
+	JobID         string
+	JobName       string
+	JobType       string // shell | cycle | onboarding | visit (derived from parent_job_id + cycle_index)
+	JobTypeLabel  string // lyngua-resolved
+	Status        string
+	StatusLabel   string
+	StatusVariant string
+	PeriodLabel   string // empty for engagement / onboarding
+	CycleIndex    int32  // 0 for engagement / onboarding
+	DetailURL     string // deep link to Job detail in fayna
+}
+
+// OperationsJobRow is one Job row rendered on the subscription detail's
+// Operations tab. Children are rendered inline via the Children slice.
+// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2.
+type OperationsJobRow struct {
+	JobID            string
+	JobName          string
+	IsRoot           bool
+	StatusKey        string // lowercase status, e.g. "planned"
+	StatusVariant    string // pyeza badge variant (success / warning / etc.)
+	BillingRuleKey   string // lowercase billing rule type for the badge
+	PhaseSummaryText string // resolved "{Complete} / {Total} phases complete"
+	JobDetailURL     string // empty when JobDetailURL dep is unwired
+	Children         []OperationsJobRow
+}
+
+// MilestoneRow is a single BillingEvent row rendered inside the Package tab's
+// Milestones section. flow.md §10 selectors:
+//   - [data-testid="milestone-row"][data-event-id="ev-XXX"]
+//   - [data-testid="milestone-status-{pending|ready|billed|...}"]
+type MilestoneRow struct {
+	EventID         string
+	StatusKey       string // "pending" | "ready" | "billed" | "waived" | "deferred" | "cancelled"
+	StatusLabel     string
+	SequenceLabel   string
+	BillableAmount  int64
+	BillableDisplay string
+	Currency        string
+	RevenueID       string
+	RevenueURL      string
+	MarkReadyURL    string
+	WaiveURL        string
+	ShowMarkReady   bool
+	ShowWaive       bool
+	ShowRevenueLink bool
+
+	// 20260517-advance-cash-events Plan B Phase 7 — MILESTONE advance link
+	// surface. Populated when a collection_billing_event junction row
+	// references this BillingEvent. AdvanceID is the linked TreasuryCollection;
+	// LinkedAdvance toggles the "Linked advance" badge.
+	LinkedAdvance bool
+	AdvanceID     string
+	RecognizeURL  string
+	ShowRecognize bool
+}
+
+// subscriptionToMap converts a Subscription protobuf to a map[string]any for template use.
+// Expects the subscription to have its joined Client (+ User) and PricePlan
+// (+ Plan) populated — see loadSubscriptionWithRelations.
+func subscriptionToMap(ctx context.Context, s *subscriptionpb.Subscription) map[string]any {
+	// Customer = company name, falling back to representative full name.
+	// Empty when the join is missing — never use the subscription's own name
+	// here (it's a plan-derived label, not a customer label).
+	customer := ""
+	if c := s.GetClient(); c != nil {
+		if companyName := c.GetName(); companyName != "" {
+			customer = companyName
+		} else if u := c.GetUser(); u != nil {
+			first := u.GetFirstName()
+			last := u.GetLastName()
+			if first != "" || last != "" {
+				customer = first + " " + last
+			}
+		}
+	}
+
+	// Get plan name from nested price_plan → plan
+	planName := ""
+	if pp := s.GetPricePlan(); pp != nil {
+		if p := pp.GetPlan(); p != nil {
+			planName = p.GetName()
+		}
+		if planName == "" {
+			planName = pp.GetName()
+		}
+	}
+
+	status := "active"
+	if !s.GetActive() {
+		status = "inactive"
+	}
+
+	tz := types.LocationFromContext(ctx)
+
+	return map[string]any{
+		"id":                   s.GetId(),
+		"name":                 s.GetName(),
+		"customer":             customer,
+		"plan":                 planName,
+		"price_plan_id":        s.GetPricePlanId(),
+		"client_id":            s.GetClientId(),
+		"date_start_string":    types.FormatTimestampInTZ(s.GetDateTimeStart(), tz, types.DateTimeReadable),
+		"date_end_string":      types.FormatTimestampInTZ(s.GetDateTimeEnd(), tz, types.DateTimeReadable),
+		"status":               status,
+		"active":               s.GetActive(),
+		"date_created_string":  s.GetDateCreatedString(),
+		"date_modified_string": s.GetDateModifiedString(),
+		"quantity":             s.GetQuantity(),
+		"assigned_count":       s.GetAssignedCount(),
+		"available_count":      s.GetAvailableCount(),
+	}
+}
+
+// NewView creates the subscription detail view. Handles both the flat
+// /app/subscriptions/detail/{id} URL and the nested
+// /app/clients/detail/{client_id}/subscriptions/{id} URL — when the latter
+// path param is set, the page-header renders a "client name → subscription"
+// breadcrumb.
+func NewView(deps *DetailViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("subscription", "read") {
+			return view.Forbidden("subscription:read")
+		}
+		_ = perms
+		// 2026-05-04 — three URL mounts share this view:
+		//   /app/subscriptions/detail/{id}                                  (flat)
+		//   /app/clients/detail/{client_id}/subscriptions/{id}              (under client)
+		//   /app/services/rate-cards/detail/{id}/plan/{ppid}/engagement/{eid}  (under price plan)
+		// The third mount uses {eid} for the subscription id (since {id} is
+		// already taken by the price_schedule_id) — fall back through {id}
+		// for the flat / under-client mounts so a single PathValue("id")
+		// still works for them.
+		id := viewCtx.Request.PathValue("eid")
+		if id == "" {
+			id = viewCtx.Request.PathValue("id")
+		}
+		clientIDFromPath := viewCtx.Request.PathValue("client_id")
+		// When mounted under the price plan path, {id} is the price_schedule
+		// id and {ppid} is the price_plan id. We only use these for the
+		// breadcrumb resolver — they're absent on the flat/under-client mounts.
+		priceScheduleIDFromPath := ""
+		pricePlanIDFromPath := viewCtx.Request.PathValue("ppid")
+		if pricePlanIDFromPath != "" {
+			priceScheduleIDFromPath = viewCtx.Request.PathValue("id")
+		}
+
+		sub, err := loadSubscriptionWithRelations(ctx, deps, id)
+		if err != nil {
+			log.Printf("Failed to read subscription %s: %v", id, err)
+			return view.Error(fmt.Errorf("failed to load subscription: %w", err))
+		}
+		subscription := subscriptionToMap(ctx, sub)
+		breadcrumbLabel, breadcrumbURL := resolveClientBreadcrumb(ctx, deps, clientIDFromPath, sub)
+		// Price-plan breadcrumb wins when the path values are present —
+		// rate-card → plan → engagement context overrides the client breadcrumb.
+		if pricePlanIDFromPath != "" {
+			if pl, pu := resolvePricePlanBreadcrumb(ctx, deps, priceScheduleIDFromPath, pricePlanIDFromPath); pl != "" {
+				breadcrumbLabel = pl
+				breadcrumbURL = pu
+			}
+		}
+
+		subName, _ := subscription["name"].(string)
+		customer, _ := subscription["customer"].(string)
+		dateStartStr, _ := subscription["date_start_string"].(string)
+		dateEndStr, _ := subscription["date_end_string"].(string)
+
+		// Header: title = subscription name; subtitle = customer · start[ — end].
+		headerTitle := subName
+		var subtitleParts []string
+		if customer != "" {
+			subtitleParts = append(subtitleParts, customer)
+		}
+		switch {
+		case dateStartStr != "" && dateEndStr != "":
+			subtitleParts = append(subtitleParts, dateStartStr+" — "+dateEndStr)
+		case dateStartStr != "":
+			subtitleParts = append(subtitleParts, dateStartStr)
+		case dateEndStr != "":
+			subtitleParts = append(subtitleParts, "until "+dateEndStr)
+		}
+
+		l := deps.Labels
+		headerSubtitle := strings.Join(subtitleParts, " · ")
+		if headerSubtitle == "" {
+			headerSubtitle = l.Detail.PageTitle
+		}
+
+		activeTab := viewCtx.QueryParams["tab"]
+		if activeTab == "" {
+			activeTab = "info"
+		}
+
+		// 2026-04-30 cyclic-subscription-jobs plan §7 — branch the Operations
+		// tab on the subscription's PricePlan billing kind. IsCyclic mirrors
+		// espyna's eligibleForInstanceSpawn predicate (RECURRING OR
+		// CONTRACT-with-cycle).
+		isCyclic := computeIsCyclic(sub)
+
+		// 2026-04-30 cyclic-subscription-jobs plan §21.3 — Jobs tab visibility
+		// gate: shown only when at least one Job exists for this subscription.
+		// One-shot upfront load so the gate matches what the tab itself will
+		// render (no flicker when the operator navigates from Operations →
+		// Jobs).
+		allJobs := loadSubscriptionJobs(ctx, deps, id)
+		jobsTabVisible := len(allJobs) > 0
+		tabItems := buildTabItems(l, id, deps.Routes, jobsTabVisible)
+
+		pageData := &PageData{
+			PageData: types.PageData{
+				CacheVersion:        viewCtx.CacheVersion,
+				Title:               headerTitle,
+				CurrentPath:         viewCtx.CurrentPath,
+				ActiveNav:           deps.Routes.ActiveNav,
+				ActiveSubNav:        deps.Routes.ActiveSubNav,
+				HeaderTitle:         headerTitle,
+				HeaderSubtitle:      headerSubtitle,
+				HeaderIcon:          "icon-refresh-cw",
+				HeaderBreadcrumb:    breadcrumbLabel,
+				HeaderBreadcrumbURL: breadcrumbURL,
+				CommonLabels:        deps.CommonLabels,
+			},
+			ContentTemplate: "subscription-detail-content",
+			Subscription:    subscription,
+			Labels:          l,
+			ActiveTab:       activeTab,
+			TabItems:        tabItems,
+			IsCyclic:        isCyclic,
+			SpawnCycleJobsURL: strings.ReplaceAll(
+				deps.Routes.SpawnCycleJobsURL, "{subscriptionId}", id),
+			BackfillCycleJobsDrawerURL: strings.ReplaceAll(
+				deps.Routes.BackfillCycleJobsURL, "{subscriptionId}", id),
+			RequestUsageURL: strings.ReplaceAll(
+				deps.Routes.RequestUsageURL, "{subscriptionId}", id),
+			PoolRecognizeURL: strings.ReplaceAll(
+				deps.Routes.RecognizeURL, "{id}", id),
+		}
+
+		// Inject the tab-content URL into the subscription map so the invoices
+		// tab can refresh inline (HX-Trigger refresh-invoices listens here).
+		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
+
+		// perms already resolved at top of handler
+		canRecognize := perms == nil || perms.Can("revenue", "create")
+		subscriptionActive, _ := subscription["active"].(bool)
+
+		switch activeTab {
+		case "package":
+			canCustomize := perms != nil && (perms.Can("revenue", "create") || perms.Can("plan", "create"))
+			customizeURL := route.ResolveURL(deps.Routes.CustomizePackageURL, "id", id)
+			shown, disabled, label, clientName, ppData := buildPackageTabData(sub, customizeURL, l.Actions.CustomizePackage, canCustomize)
+			pageData.PackageCustomizeURL = customizeURL
+			pageData.PackageCustomizeShown = shown && subscriptionActive
+			pageData.PackageCustomizeDisabled = disabled
+			pageData.PackageCustomizeLabel = label
+			pageData.PackageClientName = clientName
+			pageData.PackagePricePlan = ppData
+			// 2026-04-29 milestone-billing — milestones list (only on MILESTONE plans).
+			applyMilestoneTabData(ctx, deps, sub, pageData, id)
+		case "operations":
+			applyOperationsTabData(ctx, deps, pageData, id, sub, allJobs, isCyclic)
+		case "jobs":
+			applyJobsTabData(ctx, deps, pageData, allJobs)
+		case "invoices":
+			revenues := loadSubscriptionInvoices(ctx, deps, id)
+			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
+				sub.GetPricePlan(), deps.Routes, l, id)
+			pageData.Invoices = buildInvoicesTable(
+				revenues, l, deps.TableLabels, revenuedomain.RevenueDetailURL,
+				invoicesPrimaryAction,
+				canRecognize, subscriptionActive,
+				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
+			)
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+				}
+				var items []*attachmentpb.Attachment
+				if resp != nil {
+					items = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
+			}
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.QueryParams["cursor"]
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "subscription",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
+		}
+
+		return view.OK("subscription-detail", pageData)
+	})
+}
+
+// resolveRecognizeDisabledTooltip returns a sensible tooltip explaining why
+// the recognize action is disabled. Empty string when the action is enabled.
+//
+// We re-use existing label keys (PermissionDenied, InvalidStatus) so this
+// stays lyngua-driven without inventing a new key just for the disabled
+// hover state.
+func resolveRecognizeDisabledTooltip(canRecognize, active bool, l subscription.SubscriptionLabels) string {
+	switch {
+	case !canRecognize:
+		return l.Errors.PermissionDenied
+	case !active:
+		return l.Errors.InvalidStatus
+	default:
+		return ""
+	}
+}
+
+// resolveClientBreadcrumb returns the (label, href) pair for the page-header
+// breadcrumb when the subscription is being viewed under a client context.
+// Resolution order:
+//  1. clientIDFromPath set and ReadClient available → live lookup (most reliable
+//     because the joined client may be missing or stale).
+//  2. clientIDFromPath set, no ReadClient → use the joined client's name if any.
+//  3. clientIDFromPath empty → no breadcrumb (returns empty strings).
+//
+// The href points at the client's engagements tab so "back" lands where the
+// operator clicked through from.
+func resolveClientBreadcrumb(ctx context.Context, deps *DetailViewDeps, clientIDFromPath string, sub *subscriptionpb.Subscription) (string, string) {
+	if clientIDFromPath == "" {
+		return "", ""
+	}
+	label := ""
+	if deps.ReadClient != nil {
+		if resp, err := deps.ReadClient(ctx, &clientpb.ReadClientRequest{
+			Data: &clientpb.Client{Id: clientIDFromPath},
+		}); err == nil && len(resp.GetData()) > 0 {
+			c := resp.GetData()[0]
+			if name := c.GetName(); name != "" {
+				label = name
+			} else if u := c.GetUser(); u != nil {
+				label = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			}
+		}
+	}
+	if label == "" {
+		if c := sub.GetClient(); c != nil {
+			if name := c.GetName(); name != "" {
+				label = name
+			} else if u := c.GetUser(); u != nil {
+				label = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			}
+		}
+	}
+	if label == "" {
+		label = clientIDFromPath
+	}
+	href := ""
+	if deps.ClientDetailURL != "" {
+		href = route.ResolveURL(deps.ClientDetailURL, "id", clientIDFromPath) + "?tab=engagements"
+	}
+	return label, href
+}
+
+// resolvePricePlanBreadcrumb returns the (label, href) pair for the page-header
+// breadcrumb when the subscription is being viewed under a rate-card → plan
+// context — i.e. the URL is
+// /app/services/rate-cards/detail/{ps}/plan/{pp}/engagement/{eid}. The label
+// is "<schedule name> › <plan name>"; the href points back at the price-plan
+// detail page so "back" lands the operator on the engagements tab they came
+// from. Returns ("", "") when neither dep is wired or both lookups fail —
+// caller should fall back to the client breadcrumb.
+//
+// 2026-05-04 — see docs/plan/20260504-price-plan-engagements-tab/.
+func resolvePricePlanBreadcrumb(ctx context.Context, deps *DetailViewDeps, priceScheduleID, pricePlanID string) (string, string) {
+	if pricePlanID == "" {
+		return "", ""
+	}
+	scheduleName := ""
+	if priceScheduleID != "" && deps.ReadPriceSchedule != nil {
+		if resp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{
+			Data: &priceschedulepb.PriceSchedule{Id: priceScheduleID},
+		}); err == nil && len(resp.GetData()) > 0 {
+			scheduleName = resp.GetData()[0].GetName()
+		}
+	}
+	planName := ""
+	if deps.ReadPricePlan != nil {
+		if resp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
+			Data: &priceplanpb.PricePlan{Id: pricePlanID},
+		}); err == nil && len(resp.GetData()) > 0 {
+			planName = resp.GetData()[0].GetName()
+		}
+	}
+	parts := []string{}
+	if scheduleName != "" {
+		parts = append(parts, scheduleName)
+	}
+	if planName != "" {
+		parts = append(parts, planName)
+	}
+	if len(parts) == 0 {
+		return "", ""
+	}
+	label := strings.Join(parts, " › ")
+	href := ""
+	if deps.PricePlanDetailURL != "" && priceScheduleID != "" {
+		href = route.ResolveURL(deps.PricePlanDetailURL, "id", priceScheduleID, "ppid", pricePlanID) + "?tab=subscriptions"
+	}
+	return label, href
+}
+
+func buildTabItems(l subscription.SubscriptionLabels, id string, routes subscription.SubscriptionRoutes, jobsTabVisible bool) []pyeza.TabItem {
+	base := route.ResolveURL(routes.DetailURL, "id", id)
+	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
+	items := []pyeza.TabItem{
+		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		// 2026-04-27 plan-client-scope plan §6.5 — Package tab.
+		{Key: "package", Label: l.Detail.Plan, Href: base + "?tab=package", HxGet: action + "package", Icon: "icon-package"},
+		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 — Operations tab.
+		{Key: "operations", Label: l.Tabs.Operations, Href: base + "?tab=operations", HxGet: action + "operations", Icon: "icon-briefcase"},
+	}
+	// 2026-04-30 cyclic-subscription-jobs plan §21.3 — flat Jobs tab; hidden
+	// when COUNT(jobs) == 0 (SaaS / advisory subscriptions).
+	if jobsTabVisible {
+		items = append(items, pyeza.TabItem{
+			Key: "jobs", Label: l.Tabs.Jobs, Href: base + "?tab=jobs", HxGet: action + "jobs", Icon: "icon-list",
+		})
+	}
+	items = append(items,
+		pyeza.TabItem{Key: "invoices", Label: l.Tabs.Invoices, Href: base + "?tab=invoices", HxGet: action + "invoices", Icon: "icon-file-text"},
+		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
+		pyeza.TabItem{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
+		pyeza.TabItem{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+	)
+	return items
+}
+
+// buildPackageTabData populates the per-tab fields used by the Package tab
+// per plan §6.5. The CTA is shown when pricePlan.client_id == "" (master);
+// hidden when the PricePlan is already client-scoped. Caller passes the
+// pre-resolved customize URL (subscription.SubscriptionCustomizePackageURL with
+// the {id} substituted) — keeps this helper free of route knowledge.
+func buildPackageTabData(sub *subscriptionpb.Subscription, customizeURL, customizeLabelTemplate string, canCustomize bool) (shown, disabled bool, label, clientName string, pp map[string]any) {
+	if sub == nil {
+		return false, false, "", "", nil
+	}
+	if c := sub.GetClient(); c != nil {
+		clientName = c.GetName()
+		if clientName == "" {
+			if u := c.GetUser(); u != nil {
+				clientName = strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName())
+			}
+		}
+	}
+	if pricePlan := sub.GetPricePlan(); pricePlan != nil {
+		pp = map[string]any{
+			"id":        pricePlan.GetId(),
+			"name":      pricePlan.GetName(),
+			"plan_id":   pricePlan.GetPlanId(),
+			"client_id": pricePlan.GetClientId(),
+			"amount":    pricePlan.GetBillingAmount(),
+			"currency":  pricePlan.GetBillingCurrency(),
+		}
+		// CTA gating per plan §6.5 / decision #6:
+		//   - master (client_id == "") → show.
+		//   - already client-scoped → hide (offer Edit instead).
+		shown = pricePlan.GetClientId() == ""
+	}
+	if shown {
+		label = strings.ReplaceAll(customizeLabelTemplate, "{{.ClientName}}", clientName)
+		disabled = !canCustomize
+	}
+	_ = customizeURL // template reads this from PageData.PackageCustomizeURL
+	return shown, disabled, label, clientName, pp
+}
+
+// loadMilestoneRows fetches BillingEvent rows for a subscription and converts
+// them into the per-row template shape per flow.md §10. Returns the rendered
+// rows, the running total invoiced (centavos), and the inferred currency.
+//
+// 2026-04-29 milestone-billing plan §5 / Phase D.
+func loadMilestoneRows(ctx context.Context, deps *DetailViewDeps, subscriptionID string) ([]MilestoneRow, int64, string) {
+	if deps.ListBillingEventsBySubscription == nil {
+		return nil, 0, ""
+	}
+	resp, err := deps.ListBillingEventsBySubscription(ctx, &billingeventpb.ListBillingEventsBySubscriptionRequest{
+		SubscriptionId: subscriptionID,
+	})
+	if err != nil || resp == nil {
+		return nil, 0, ""
+	}
+	events := resp.GetBillingEvents()
+	mLabels := deps.Labels.Milestone
+	currency := ""
+	var totalInvoiced int64
+	rows := make([]MilestoneRow, 0, len(events))
+	for _, ev := range events {
+		if currency == "" {
+			currency = ev.GetBillingCurrency()
+		}
+		status := ev.GetStatus()
+		statusKey := statusKeyForBillingEventDetail(status)
+		statusLabel := statusLabelForBillingEventDetail(status, mLabels)
+		seq := strings.TrimSpace(ev.GetSequenceLabel())
+		if seq == "" {
+			id := ev.GetId()
+			if len(id) > 8 {
+				seq = "Event " + id[len(id)-6:]
+			} else {
+				seq = "Event " + id
+			}
+		}
+		row := MilestoneRow{
+			EventID:         ev.GetId(),
+			StatusKey:       statusKey,
+			StatusLabel:     statusLabel,
+			SequenceLabel:   seq,
+			BillableAmount:  ev.GetBillableAmount(),
+			BillableDisplay: formatCentavoDisplay(ev.GetBillableAmount()),
+			Currency:        ev.GetBillingCurrency(),
+		}
+		// Mark-ready when status = UNSPECIFIED (pending) or DEFERRED.
+		row.ShowMarkReady = status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_UNSPECIFIED ||
+			status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_DEFERRED
+		// Waive when UNSPECIFIED or READY.
+		row.ShowWaive = status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_UNSPECIFIED ||
+			status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_READY
+		if status == billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_BILLED {
+			row.ShowRevenueLink = true
+			row.RevenueID = ev.GetRevenueId()
+			if row.RevenueID != "" {
+				row.RevenueURL = strings.ReplaceAll(revenuedomain.RevenueDetailURL, "{id}", row.RevenueID)
+			}
+			totalInvoiced += ev.GetBillableAmount()
+		}
+		// Resolve URLs for the action buttons.
+		row.MarkReadyURL = resolveBillingEventURL(deps.Routes.MilestoneMarkReadyURL, subscriptionID, ev.GetId())
+		row.WaiveURL = resolveBillingEventURL(deps.Routes.MilestoneWaiveURL, subscriptionID, ev.GetId())
+		rows = append(rows, row)
+	}
+
+	// 20260517-advance-cash-events Plan B Phase 7 — annotate each row with
+	// any collection_billing_event junction (linked advance + the
+	// "Recognize" button URL). One round-trip per BILLED row; List by
+	// billing_event_id is indexed in postgres.
+	if deps.ListCollectionBillingEvents != nil {
+		recognizeTemplate := deps.Routes.MilestoneRecognizeURL
+		for i := range rows {
+			if rows[i].StatusKey != "billed" {
+				continue
+			}
+			eventID := rows[i].EventID
+			junctionResp, err := deps.ListCollectionBillingEvents(ctx, &junctionpb.ListCollectionBillingEventsRequest{
+				Filters: &commonpb.FilterRequest{
+					Filters: []*commonpb.TypedFilter{
+						{
+							Field: "billing_event_id",
+							FilterType: &commonpb.TypedFilter_StringFilter{
+								StringFilter: &commonpb.StringFilter{
+									Value:    eventID,
+									Operator: commonpb.StringOperator_STRING_EQUALS,
+								},
+							},
+						},
+					},
+				},
+			})
+			if err != nil {
+				log.Printf("failed to list junctions for billing event %s: %v", eventID, err)
+				continue
+			}
+			if junctionResp == nil || len(junctionResp.GetData()) == 0 {
+				continue
+			}
+			// Pick the first junction whose revenue_id is unset — that's the
+			// recognize candidate. If all are consumed, surface the linked
+			// badge only.
+			var open *junctionpb.CollectionBillingEvent
+			var any *junctionpb.CollectionBillingEvent
+			for _, j := range junctionResp.GetData() {
+				any = j
+				if strings.TrimSpace(j.GetRevenueId()) == "" {
+					open = j
+					break
+				}
+			}
+			if any == nil {
+				continue
+			}
+			rows[i].LinkedAdvance = true
+			rows[i].AdvanceID = any.GetTreasuryCollectionId()
+			if open != nil {
+				rows[i].ShowRecognize = true
+				rows[i].RecognizeURL = resolveBillingEventURL(recognizeTemplate, subscriptionID, eventID)
+				rows[i].AdvanceID = open.GetTreasuryCollectionId()
+			}
+		}
+	}
+	return rows, totalInvoiced, currency
+}
+
+func resolveBillingEventURL(template, subscriptionID, eventID string) string {
+	if template == "" {
+		return ""
+	}
+	r := strings.ReplaceAll(template, "{id}", subscriptionID)
+	r = strings.ReplaceAll(r, "{eventId}", eventID)
+	return r
+}
+
+func statusKeyForBillingEventDetail(s billingeventpb.BillingEventStatus) string {
+	switch s {
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_READY:
+		return "ready"
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_BILLED:
+		return "billed"
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_WAIVED:
+		return "waived"
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_DEFERRED:
+		return "deferred"
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_CANCELLED:
+		return "cancelled"
+	default:
+		return "pending"
+	}
+}
+
+func statusLabelForBillingEventDetail(s billingeventpb.BillingEventStatus, l subscription.SubscriptionMilestoneLabels) string {
+	switch s {
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_READY:
+		return l.StatusReady
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_BILLED:
+		return l.StatusBilled
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_WAIVED:
+		return l.StatusWaived
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_DEFERRED:
+		return l.StatusDeferred
+	case billingeventpb.BillingEventStatus_BILLING_EVENT_STATUS_CANCELLED:
+		return l.StatusCancelled
+	default:
+		return l.StatusPending
+	}
+}
+
+func formatCentavoDisplay(c int64) string {
+	whole := c / 100
+	frac := c % 100
+	if frac < 0 {
+		frac = -frac
+	}
+	return fmt.Sprintf("%d.%02d", whole, frac)
+}
+
+// applyMilestoneTabData populates the package-tab milestone fields when the
+// subscription's PricePlan is MILESTONE. No-op for other billing kinds.
+func applyMilestoneTabData(ctx context.Context, deps *DetailViewDeps, sub *subscriptionpb.Subscription, pageData *PageData, subscriptionID string) {
+	if sub == nil {
+		return
+	}
+	pp := sub.GetPricePlan()
+	if pp == nil || pp.GetBillingKind() != priceplanpb.BillingKind_BILLING_KIND_MILESTONE {
+		return
+	}
+	rows, total, currency := loadMilestoneRows(ctx, deps, subscriptionID)
+	pageData.MilestonesShown = true
+	pageData.Milestones = rows
+	pageData.TotalInvoicedDisplay = formatCentavoDisplay(total)
+	pageData.MilestoneCurrency = currency
+}
+
+// loadSubscriptionInvoices fetches revenue records filtered by subscription_id.
+// Returns an empty slice on error or when the dep is nil.
+func loadSubscriptionInvoices(ctx context.Context, deps *DetailViewDeps, subscriptionID string) []*revenuepb.Revenue {
+	if deps.GetRevenueListPageData == nil {
+		return nil
+	}
+	resp, err := deps.GetRevenueListPageData(ctx, &revenuepb.GetRevenueListPageDataRequest{
+		Filters: &commonpb.FilterRequest{
+			Filters: []*commonpb.TypedFilter{
+				{
+					Field: "rv.subscription_id",
+					FilterType: &commonpb.TypedFilter_StringFilter{
+						StringFilter: &commonpb.StringFilter{
+							Value:         subscriptionID,
+							Operator:      commonpb.StringOperator_STRING_EQUALS,
+							CaseSensitive: true,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("Failed to load invoices for subscription %s: %v", subscriptionID, err)
+		return nil
+	}
+	return resp.GetRevenueList()
+}
+
+// InvoicesPrimaryAction carries the URL, label, and icon for the invoices-tab
+// toolbar CTA. The billing_kind of the subscription's price plan determines
+// which action is surfaced. Resolved by resolveInvoicesPrimaryAction.
+type InvoicesPrimaryAction struct {
+	// URL is the resolved route path with the subscription ID substituted in.
+	URL string
+	// Label is the user-facing button text (flows through SubscriptionLabels).
+	Label string
+	// Icon is the pyeza icon token (e.g. "icon-file-plus", "icon-zap").
+	Icon string
+}
+
+// resolveInvoicesPrimaryAction returns the appropriate InvoicesPrimaryAction
+// for the subscription's price plan billing kind.
+//
+// Mapping:
+//   - RECURRING / CONTRACT-with-cycle (cyclic) → RevenueRunURL (Invoice Run drawer)
+//   - AD_HOC → RequestUsageURL (Request Usage action)
+//   - MILESTONE / default (nil plan, ONE_TIME, CONTRACT-no-cycle, UNSPECIFIED) → RecognizeURL
+//
+// Note: the proto has a single BILLING_KIND_AD_HOC constant; the plan's
+// AD_HOC_POOL / AD_HOC_PER_CALL distinction is not yet represented in proto.
+// AD_HOC is routed to RequestUsageURL which handles both pool and per-call
+// dispatch via espyna's executeAdHoc. Gap filed for a future proto extension.
+func resolveInvoicesPrimaryAction(
+	plan *priceplanpb.PricePlan,
+	routes subscription.SubscriptionRoutes,
+	l subscription.SubscriptionLabels,
+	subscriptionID string,
+) InvoicesPrimaryAction {
+	if plan != nil {
+		switch plan.GetBillingKind() {
+		case priceplanpb.BillingKind_BILLING_KIND_RECURRING:
+			return InvoicesPrimaryAction{
+				URL:   route.ResolveURL(routes.RevenueRunURL, "id", subscriptionID),
+				Label: l.Invoices.RunInvoicesAction,
+				Icon:  "icon-zap",
+			}
+		case priceplanpb.BillingKind_BILLING_KIND_CONTRACT:
+			if plan.GetBillingCycleValue() > 0 {
+				return InvoicesPrimaryAction{
+					URL:   route.ResolveURL(routes.RevenueRunURL, "id", subscriptionID),
+					Label: l.Invoices.RunInvoicesAction,
+					Icon:  "icon-zap",
+				}
+			}
+			// CONTRACT without a billing cycle → treat as milestone/default.
+			return InvoicesPrimaryAction{
+				URL:   route.ResolveURL(routes.RecognizeURL, "id", subscriptionID),
+				Label: l.Invoices.RecognizeAction,
+				Icon:  "icon-file-plus",
+			}
+		case priceplanpb.BillingKind_BILLING_KIND_AD_HOC:
+			return InvoicesPrimaryAction{
+				URL:   strings.ReplaceAll(routes.RequestUsageURL, "{subscriptionId}", subscriptionID),
+				Label: l.Invoices.RequestUsageAction,
+				Icon:  "icon-file-plus",
+			}
+		}
+	}
+	// nil plan, MILESTONE, ONE_TIME, UNSPECIFIED → recognize drawer.
+	return InvoicesPrimaryAction{
+		URL:   route.ResolveURL(routes.RecognizeURL, "id", subscriptionID),
+		Label: l.Invoices.RecognizeAction,
+		Icon:  "icon-file-plus",
+	}
+}
+
+// buildInvoicesTable builds a TableConfig for the invoices tab.
+// Columns: reference number (code), date, amount, status.
+//
+// Surfaces a billing-kind-appropriate PrimaryAction on the toolbar AND on the
+// empty-state when the operator has revenue:create AND the subscription is
+// active. Disabled state degrades to a tooltip explaining the gate.
+//
+// Note: NO page-header CTA — per plan §11.2 / §4.2, cause and effect stay
+// adjacent on the invoices tab.
+func buildInvoicesTable(
+	revenues []*revenuepb.Revenue,
+	l subscription.SubscriptionLabels,
+	tableLabels types.TableLabels,
+	detailURLTemplate string,
+	primaryAction InvoicesPrimaryAction,
+	canRecognize bool,
+	subscriptionActive bool,
+	disabledTooltip string,
+) *types.TableConfig {
+	columns := []types.TableColumn{
+		{Key: "reference_number", Label: l.Invoices.ColumnCode},
+		{Key: "revenue_date_string", Label: l.Invoices.ColumnDate, WidthClass: "col-3xl"},
+		{Key: "total_amount", Label: l.Invoices.ColumnAmount, WidthClass: "col-3xl", Align: "right"},
+		{Key: "status", Label: l.Invoices.ColumnStatus, WidthClass: "col-2xl"},
+	}
+
+	var rows []types.TableRow
+	for _, r := range revenues {
+		id := r.GetId()
+		refNumber := r.GetReferenceNumber()
+		currency := r.GetCurrency()
+		status := r.GetStatus()
+
+		statusVariant := "default"
+		switch status {
+		case "draft":
+			statusVariant = "warning"
+		case "complete":
+			statusVariant = "success"
+		case "cancelled":
+			statusVariant = "danger"
+		}
+
+		var detailHref string
+		if detailURLTemplate != "" {
+			detailHref = route.ResolveURL(detailURLTemplate, "id", id)
+		}
+
+		// 2026-05-11 run-invoices-polish Phase 3 — per-row actions.
+		// View is always present (mirrors row-click navigation).
+		// SendEmail is wired to the existing revenue/action/send_email route
+		// (revenuedomain.RevenueEmailURL — registered on RevenueRoutes.SendEmailURL).
+		// Edit is gated to draft status and uses revenuedomain.RevenueEditURL.
+		// Print is intentionally omitted — no dedicated print route exists today.
+		actions := []types.TableAction{
+			{
+				Type:   "view",
+				Label:  l.Invoices.RowActions.View,
+				Action: "view",
+				Href:   detailHref,
+			},
+			{
+				Type:           "mail",
+				Label:          l.Invoices.RowActions.SendEmail,
+				Action:         "send-email",
+				URL:            route.ResolveURL(revenuedomain.RevenueEmailURL, "id", id),
+				ItemName:       refNumber,
+				ConfirmTitle:   l.Invoices.RowActions.SendEmail,
+				ConfirmMessage: refNumber,
+			},
+		}
+		if status == "draft" {
+			actions = append(actions, types.TableAction{
+				Type:        "edit",
+				Label:       l.Invoices.RowActions.Edit,
+				Action:      "edit",
+				URL:         route.ResolveURL(revenuedomain.RevenueEditURL, "id", id),
+				DrawerTitle: l.Invoices.RowActions.Edit,
+			})
+		}
+
+		rows = append(rows, types.TableRow{
+			ID:   id,
+			Href: detailHref,
+			Cells: []types.TableCell{
+				{Type: "text", Value: refNumber},
+				types.DateTimeCell(r.GetRevenueDate(), types.DateReadable),
+				types.MoneyCell(float64(r.GetTotalAmount()), currency, true),
+				{Type: "badge", Value: status, Variant: statusVariant},
+			},
+			Actions: actions,
+		})
+	}
+
+	types.ApplyColumnStyles(columns, rows)
+
+	tc := &types.TableConfig{
+		ID:                   "subscription-invoices-table",
+		Columns:              columns,
+		Rows:                 rows,
+		Labels:               tableLabels,
+		ShowSearch:           false,
+		ShowActions:          true,
+		ShowSort:             true,
+		ShowColumns:          true,
+		ShowDensity:          true,
+		ShowEntries:          true,
+		DefaultSortColumn:    "revenue_date_string",
+		DefaultSortDirection: "desc",
+		EmptyState: types.TableEmptyState{
+			Title:   l.Invoices.Title,
+			Message: l.Invoices.Empty,
+		},
+	}
+
+	// PrimaryAction: tab toolbar CTA + same action surfaced on the empty state
+	// (the table-card template renders the primary action in both places).
+	// The URL, label, and icon are resolved by resolveInvoicesPrimaryAction
+	// based on the subscription's billing_kind.
+	if primaryAction.URL != "" {
+		disabled := !canRecognize || !subscriptionActive
+		tc.PrimaryAction = &types.PrimaryAction{
+			Label:           primaryAction.Label,
+			ActionURL:       primaryAction.URL,
+			Icon:            primaryAction.Icon,
+			Disabled:        disabled,
+			DisabledTooltip: disabledTooltip,
+		}
+	}
+
+	types.ApplyTableSettings(tc)
+	return tc
+}
+
+// NewTabAction creates the tab action view (partial — returns only the tab content).
+func NewTabAction(deps *DetailViewDeps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("subscription", "read") {
+			return view.Forbidden("subscription:read")
+		}
+		_ = perms
+		id := viewCtx.Request.PathValue("id")
+		tab := viewCtx.Request.PathValue("tab")
+		if tab == "" {
+			tab = "info"
+		}
+
+		sub, err := loadSubscriptionWithRelations(ctx, deps, id)
+		if err != nil {
+			log.Printf("Failed to read subscription %s: %v", id, err)
+			return view.Error(fmt.Errorf("failed to load subscription: %w", err))
+		}
+		subscription := subscriptionToMap(ctx, sub)
+
+		l := deps.Labels
+
+		// 2026-04-30 cyclic-subscription-jobs plan — pre-load the Job set so
+		// the tab handler shares the same fan-out as the full-page handler.
+		isCyclic := computeIsCyclic(sub)
+		allJobs := loadSubscriptionJobs(ctx, deps, id)
+		jobsTabVisible := len(allJobs) > 0
+
+		pageData := &PageData{
+			PageData: types.PageData{
+				CacheVersion: viewCtx.CacheVersion,
+				CommonLabels: deps.CommonLabels,
+			},
+			Subscription: subscription,
+			Labels:       l,
+			ActiveTab:    tab,
+			TabItems:     buildTabItems(l, id, deps.Routes, jobsTabVisible),
+			IsCyclic:     isCyclic,
+			SpawnCycleJobsURL: strings.ReplaceAll(
+				deps.Routes.SpawnCycleJobsURL, "{subscriptionId}", id),
+			BackfillCycleJobsDrawerURL: strings.ReplaceAll(
+				deps.Routes.BackfillCycleJobsURL, "{subscriptionId}", id),
+			RequestUsageURL: strings.ReplaceAll(
+				deps.Routes.RequestUsageURL, "{subscriptionId}", id),
+			PoolRecognizeURL: strings.ReplaceAll(
+				deps.Routes.RecognizeURL, "{id}", id),
+		}
+
+		// Same tab_invoices_url + perms gating as the full-page handler so a
+		// tab-only refresh sees a consistent PrimaryAction state.
+		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
+		// perms already resolved at top of handler
+		canRecognize := perms == nil || perms.Can("revenue", "create")
+		subscriptionActive, _ := subscription["active"].(bool)
+
+		switch tab {
+		case "package":
+			canCustomize := perms != nil && (perms.Can("revenue", "create") || perms.Can("plan", "create"))
+			customizeURL := route.ResolveURL(deps.Routes.CustomizePackageURL, "id", id)
+			shown, disabled, label, clientName, ppData := buildPackageTabData(sub, customizeURL, l.Actions.CustomizePackage, canCustomize)
+			pageData.PackageCustomizeURL = customizeURL
+			pageData.PackageCustomizeShown = shown && subscriptionActive
+			pageData.PackageCustomizeDisabled = disabled
+			pageData.PackageCustomizeLabel = label
+			pageData.PackageClientName = clientName
+			pageData.PackagePricePlan = ppData
+			// 2026-04-29 milestone-billing — milestones list (only on MILESTONE plans).
+			applyMilestoneTabData(ctx, deps, sub, pageData, id)
+		case "operations":
+			applyOperationsTabData(ctx, deps, pageData, id, sub, allJobs, isCyclic)
+		case "jobs":
+			applyJobsTabData(ctx, deps, pageData, allJobs)
+		case "invoices":
+			revenues := loadSubscriptionInvoices(ctx, deps, id)
+			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
+				sub.GetPricePlan(), deps.Routes, l, id)
+			pageData.Invoices = buildInvoicesTable(
+				revenues, l, deps.TableLabels, revenuedomain.RevenueDetailURL,
+				invoicesPrimaryAction,
+				canRecognize, subscriptionActive,
+				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
+			)
+		case "attachments":
+			if deps.ListAttachments != nil {
+				cfg := attachmentConfig(deps)
+				resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+				if err != nil {
+					log.Printf("Failed to list attachments: %v", err)
+				}
+				var items []*attachmentpb.Attachment
+				if resp != nil {
+					items = resp.GetData()
+				}
+				pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
+			}
+		case "audit-history":
+			if deps.ListAuditHistory != nil {
+				cursor := viewCtx.QueryParams["cursor"]
+				auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+					EntityType:  "subscription",
+					EntityID:    id,
+					Limit:       20,
+					CursorToken: cursor,
+				})
+				if err != nil {
+					log.Printf("Failed to load audit history: %v", err)
+				}
+				if auditResp != nil {
+					pageData.AuditEntries = auditResp.Entries
+					pageData.AuditHasNext = auditResp.HasNext
+					pageData.AuditNextCursor = auditResp.NextCursor
+				}
+			}
+			pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit-history"
+		}
+
+		templateName := "subscription-tab-" + tab
+		if tab == "invoices" {
+			templateName = "subscription-tab-invoices"
+		}
+		if tab == "package" {
+			templateName = "subscription-tab-package"
+		}
+		if tab == "operations" {
+			templateName = "subscription-tab-operations"
+		}
+		if tab == "attachments" {
+			templateName = "attachment-tab"
+		}
+		if tab == "audit-history" {
+			templateName = "audit-history-tab"
+		}
+		return view.OK(templateName, pageData)
+	})
+}
+
+// applyOperationsTabData populates the Operations tab fields on PageData.
+// Reads spawned Jobs via GetJobsByOrigin (origin_type = SUBSCRIPTION,
+// origin_id = subscription.id), then enriches each Job with its phase rollup
+// from ListJobPhasesByJob. Jobs with parent_job_id are nested under their
+// parent. nil-safe: when deps are unwired the tab degrades to the empty
+// state.
+//
+// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 +
+// 2026-04-30 cyclic-subscription-jobs plan §7.1 — branches on isCyclic.
+//
+// jobs slice is pre-loaded by the page handler (single fan-out so the Jobs
+// tab + Operations tab + visibility gate share one read). When non-cyclic
+// the legacy parent-child rendering is preserved verbatim (regression
+// guard: `09-non-cyclic-unaffected.spec.ts` is the canary).
+func applyOperationsTabData(
+	ctx context.Context,
+	deps *DetailViewDeps,
+	pageData *PageData,
+	subscriptionID string,
+	sub *subscriptionpb.Subscription,
+	jobs []*jobpb.Job,
+	isCyclic bool,
+) {
+	pageData.OperationsSpawnURL = strings.ReplaceAll(deps.SpawnJobsURL, "{subscriptionId}", subscriptionID)
+	pageData.OperationsEmptyText = strings.ReplaceAll(
+		deps.Labels.Operations.EmptyMessage,
+		"{{.SpawnAction}}",
+		deps.Labels.Operations.SpawnAction,
+	)
+	if isCyclic {
+		// Cyclic branch — render the cycle accordion. Legacy fields stay
+		// zero-valued so the template's IsCyclic-gated section takes over.
+		pageData.OperationsCyclic = buildSubscriptionCyclesData(ctx, deps, sub, jobs)
+		// HasJobs stays true when ANY job exists (engagement shell counts).
+		// The template falls back to the empty-state CTA only when the
+		// cyclic data block has no engagement and no cycles AND no Jobs.
+		pageData.OperationsHasJobs = len(jobs) > 0
+		return
+	}
+	// AD_HOC branch — Phase D MVP reuses the cyclic accordion shape (each
+	// usage Job is one accordion row keyed on usage_ordinal == cycle_index).
+	// EntitlementUsed/Total drive the entitlement banner above the accordion
+	// for AMOUNT_BASIS_TOTAL_PACKAGE. v1.5 will replace the accordion with a
+	// dedicated visit-list partial + Request-Usage CTA per ad-hoc plan §5.2.
+	if computeIsAdHoc(sub) {
+		pageData.IsAdHoc = true
+		pp := sub.GetPricePlan()
+		pageData.AdHocBasis = pp.GetAmountBasis().String()
+		pageData.OperationsCyclic = buildSubscriptionCyclesData(ctx, deps, sub, jobs)
+		// Count usage Jobs (parent_job_id != "" AND usage_ordinal > 0).
+		var used int32
+		for _, j := range jobs {
+			if j.GetParentJobId() == "" {
+				continue
+			}
+			if j.GetUsageOrdinal() == 0 && j.GetCycleIndex() == 0 {
+				continue
+			}
+			used++
+		}
+		pageData.EntitlementUsed = used
+		pageData.EntitlementTotal = resolvedAdHocEntitlement(sub)
+		// Pre-resolve heading + counter copy. Lyngua keys carry the
+		// {{.UsedCount}}/{{.EntitledCount}}/{{.Amount}} placeholders.
+		usedStr := fmt.Sprintf("%d", used)
+		totalStr := fmt.Sprintf("%d", pageData.EntitlementTotal)
+		amountStr := formatPriceCentavos(pp.GetBillingAmount(), pp.GetBillingCurrency())
+		repl := strings.NewReplacer(
+			"{{.UsedCount}}", usedStr,
+			"{{.EntitledCount}}", totalStr,
+			"{{.RemainingCount}}", fmt.Sprintf("%d", pageData.EntitlementTotal-used),
+			"{{.Amount}}", amountStr,
+		)
+		if pageData.AdHocBasis == "AMOUNT_BASIS_TOTAL_PACKAGE" {
+			pageData.EntitlementHeadingText = repl.Replace(deps.Labels.Operations.AdHocPoolHeading)
+		} else {
+			pageData.EntitlementHeadingText = repl.Replace(deps.Labels.Operations.AdHocPerCallHeading)
+		}
+		pageData.EntitlementBannerText = repl.Replace(deps.Labels.Operations.EntitlementUsed)
+		pageData.OperationsHasJobs = len(jobs) > 0
+		return
+	}
+	// Non-cyclic — preserve existing rendering path verbatim.
+	if len(jobs) == 0 {
+		return
+	}
+	rows := buildOperationsRows(ctx, deps, jobs)
+	pageData.OperationsHasJobs = len(rows) > 0
+	pageData.OperationsRootJobs = rows
+}
+
+// loadSubscriptionJobs reads ALL Jobs for a subscription (origin_type =
+// SUBSCRIPTION, origin_id = subscription.id). Cached at the page-handler
+// level so Operations tab + Jobs tab + visibility gate share one round-trip.
+//
+// 2026-04-30 cyclic-subscription-jobs plan §21.5.
+func loadSubscriptionJobs(ctx context.Context, deps *DetailViewDeps, subscriptionID string) []*jobpb.Job {
+	if deps.GetJobsByOrigin == nil || subscriptionID == "" {
+		return nil
+	}
+	resp, err := deps.GetJobsByOrigin(ctx, &jobpb.GetJobsByOriginRequest{
+		OriginType: enums.OriginType_ORIGIN_TYPE_SUBSCRIPTION,
+		OriginId:   subscriptionID,
+	})
+	if err != nil {
+		log.Printf("Failed to load jobs for subscription %s: %v", subscriptionID, err)
+		return nil
+	}
+	if resp == nil {
+		return nil
+	}
+	return resp.GetJobs()
+}
+
+// computeIsCyclic mirrors espyna's `eligibleForInstanceSpawn` predicate (cyclic
+// branch only): RECURRING OR (CONTRACT AND billing_cycle_value > 0). AD_HOC
+// is also instance-spawning but rendered through a separate code path —
+// computeIsAdHoc covers it.
+func computeIsCyclic(sub *subscriptionpb.Subscription) bool {
+	if sub == nil {
+		return false
+	}
+	pp := sub.GetPricePlan()
+	if pp == nil {
+		return false
+	}
+	kind := pp.GetBillingKind()
+	if kind == priceplanpb.BillingKind_BILLING_KIND_RECURRING {
+		return true
+	}
+	if kind == priceplanpb.BillingKind_BILLING_KIND_CONTRACT && pp.GetBillingCycleValue() > 0 {
+		return true
+	}
+	return false
+}
+
+// formatPriceCentavos converts centavos to a display string. Mirrors the
+// per-package formatCentavos helpers in sibling action.go files; kept local
+// so the subscription/detail package owns its currency formatting.
+func formatPriceCentavos(centavos int64, currency string) string {
+	whole := centavos / 100
+	cents := centavos % 100
+	if cents < 0 {
+		cents = -cents
+	}
+	if currency == "" {
+		currency = "PHP"
+	}
+	return fmt.Sprintf("%s %d.%02d", currency, whole, cents)
+}
+
+// computeIsAdHoc returns true when the subscription's PricePlan is AD_HOC.
+// 2026-05-01 ad-hoc-subscription-billing plan §5.1.
+func computeIsAdHoc(sub *subscriptionpb.Subscription) bool {
+	if sub == nil {
+		return false
+	}
+	pp := sub.GetPricePlan()
+	if pp == nil {
+		return false
+	}
+	return pp.GetBillingKind() == priceplanpb.BillingKind_BILLING_KIND_AD_HOC
+}
+
+// resolvedAdHocEntitlement returns the effective entitled-occurrences count
+// for an AD_HOC × TOTAL_PACKAGE subscription. Mirrors
+// `espyna.resolvedEntitlement` — Subscription override beats PricePlan template
+// (codex MAJ-1).
+func resolvedAdHocEntitlement(sub *subscriptionpb.Subscription) int32 {
+	if sub == nil {
+		return 0
+	}
+	if v := sub.GetEntitledOccurrencesOverride(); v > 0 {
+		return v
+	}
+	if pp := sub.GetPricePlan(); pp != nil {
+		return pp.GetEntitledOccurrences()
+	}
+	return 0
+}
+
+// buildSubscriptionCyclesData partitions the Job list into engagement shell
+// + once-at-start children + cycle accordions per cyclic-subscription-jobs
+// plan §7.1. Sorted descending by CycleIndex (most-recent on top).
+func buildSubscriptionCyclesData(
+	ctx context.Context,
+	deps *DetailViewDeps,
+	sub *subscriptionpb.Subscription,
+	jobs []*jobpb.Job,
+) *SubscriptionCyclesData {
+	data := &SubscriptionCyclesData{
+		CycleEmpty: deps.Labels.Operations.CycleEmpty,
+	}
+
+	// Pass 1 — find subscription shell job (parent_job_id == "").
+	var subscriptionShellJob *jobpb.Job
+	for _, j := range jobs {
+		if j.GetParentJobId() == "" {
+			subscriptionShellJob = j
+			break
+		}
+	}
+	if subscriptionShellJob != nil {
+		data.SubscriptionShellJobID = subscriptionShellJob.GetId()
+		data.SubscriptionShellName = subscriptionShellJob.GetName()
+		started := ""
+		if ts := sub.GetDateTimeStart(); ts != nil && ts.IsValid() {
+			started = ts.AsTime().Format("2006-01-02")
+		}
+		r := strings.NewReplacer(
+			"{{.Started}}", started,
+			"{{.Name}}", subscriptionShellJob.GetName(),
+		)
+		data.SubscriptionHeading = r.Replace(deps.Labels.Operations.SubscriptionHeading)
+	}
+
+	// Pass 2 — bucket children: cycle Jobs (have cycle_index) vs onboarding
+	// (parent_job_id set but cycle_index == 0 / nil).
+	cyclesByIndex := map[int32][]*jobpb.Job{}
+	cycleIndices := []int32{}
+	for _, j := range jobs {
+		parentID := j.GetParentJobId()
+		if parentID == "" {
+			continue
+		}
+		if j.GetCycleIndex() == 0 {
+			// Onboarding / once-at-start — cycle_index is NULL on the proto
+			// so the getter returns 0.
+			data.OnceAtStartJobs = append(data.OnceAtStartJobs, jobToOperationsRow(ctx, deps, j))
+			continue
+		}
+		idx := j.GetCycleIndex()
+		if _, exists := cyclesByIndex[idx]; !exists {
+			cycleIndices = append(cycleIndices, idx)
+		}
+		cyclesByIndex[idx] = append(cyclesByIndex[idx], j)
+	}
+
+	// Sort indices descending (most recent on top).
+	sort.Slice(cycleIndices, func(i, j int) bool {
+		return cycleIndices[i] > cycleIndices[j]
+	})
+
+	for i, idx := range cycleIndices {
+		group := cyclesByIndex[idx]
+		view := buildSubscriptionCycleView(ctx, deps, idx, group)
+		// Most-recent cycle expanded by default; older cycles collapsed.
+		view.OpenByDefault = (i == 0)
+		data.Cycles = append(data.Cycles, view)
+	}
+	return data
+}
+
+// buildSubscriptionCycleView constructs one cycle accordion entry from the
+// Jobs in that cycle (1 for visits_per_cycle=1, N for multi-visit). The first
+// Job's cycle_period_* fields represent the cycle's overall window.
+func buildSubscriptionCycleView(
+	ctx context.Context,
+	deps *DetailViewDeps,
+	cycleIndex int32,
+	group []*jobpb.Job,
+) SubscriptionCycleView {
+	v := SubscriptionCycleView{
+		CycleIndex: cycleIndex,
+	}
+	if len(group) == 0 {
+		return v
+	}
+	first := group[0]
+	v.PeriodStart = first.GetCyclePeriodStart()
+	v.PeriodEnd = first.GetCyclePeriodEnd()
+	v.PeriodLabel = formatCyclePeriodLabel(v.PeriodStart, v.PeriodEnd)
+
+	// Heading template is "Cycle {{.CycleIndex}} — {{.PeriodLabel}}".
+	r := strings.NewReplacer(
+		"{{.CycleIndex}}", intStr(int(cycleIndex)),
+		"{{.PeriodLabel}}", v.PeriodLabel,
+	)
+	v.HeadingText = r.Replace(deps.Labels.Operations.CycleHeading)
+
+	// Status rollup — view-side aggregation per plan §7.1.
+	v.StatusKey, v.StatusLabel, v.StatusVariant = rollupCycleStatus(group, deps.Labels.Operations)
+
+	// Per-Job rows (operations rendering — phase summary etc).
+	v.Jobs = make([]OperationsJobRow, 0, len(group))
+	for _, j := range group {
+		v.Jobs = append(v.Jobs, jobToOperationsRow(ctx, deps, j))
+	}
+
+	// InvoiceLabel — cycleNoInvoice when no Revenue is matched yet. The
+	// matched-revenue path requires a separate Revenue lookup by date join
+	// (plan §2.2 — no proto FK in v1); v1 surfaces "Not yet invoiced" until
+	// the Revenue lookup is wired through.
+	v.InvoiceLabel = deps.Labels.Operations.CycleNoInvoice
+	return v
+}
+
+// formatCyclePeriodLabel renders a "May 2026"-style label from ISO date
+// strings. Falls back to the raw start string if parsing fails.
+func formatCyclePeriodLabel(start, _ string) string {
+	if start == "" {
+		return ""
+	}
+	// Use a stable format key recognised by Go's time package. Keep parsing
+	// loose — operators may store DateTime values too.
+	for _, layout := range []string{"2006-01-02", "2006-01-02T15:04:05Z07:00", time.RFC3339} {
+		if t, err := time.Parse(layout, start); err == nil {
+			return t.Format("Jan 2006")
+		}
+	}
+	return start
+}
+
+// rollupCycleStatus aggregates per-Job statuses into a cycle-level rollup.
+// Pending if all Jobs are PLANNED/PENDING/DRAFT; In progress if any ACTIVE;
+// Completed when all CLOSED/COMPLETED; Overdue when at least one is past-due
+// (proxy: PAUSED). Lyngua-resolved labels.
+func rollupCycleStatus(group []*jobpb.Job, l subscription.SubscriptionOperationsLabels) (string, string, string) {
+	hasActive := false
+	hasOverdue := false
+	allDone := true
+	for _, j := range group {
+		switch j.GetStatus() {
+		case enums.JobStatus_JOB_STATUS_ACTIVE:
+			hasActive = true
+			allDone = false
+		case enums.JobStatus_JOB_STATUS_PAUSED:
+			hasOverdue = true
+			allDone = false
+		case enums.JobStatus_JOB_STATUS_COMPLETED, enums.JobStatus_JOB_STATUS_CLOSED:
+			// done
+		default:
+			allDone = false
+		}
+	}
+	switch {
+	case hasOverdue:
+		return "overdue", l.CycleStatusOverdue, "danger"
+	case hasActive:
+		return "inProgress", l.CycleStatusInProgress, "success"
+	case allDone && len(group) > 0:
+		return "completed", l.CycleStatusCompleted, "info"
+	default:
+		return "pending", l.CycleStatusPending, "warning"
+	}
+}
+
+// applyJobsTabData populates the new flat Jobs tab. Hidden (HasJobs=false)
+// when no Jobs exist; the page handler also gates the tab nav item upstream.
+//
+// 2026-04-30 cyclic-subscription-jobs plan §21.5.
+func applyJobsTabData(
+	ctx context.Context,
+	deps *DetailViewDeps,
+	pageData *PageData,
+	jobs []*jobpb.Job,
+) {
+	if pageData.Jobs == nil {
+		pageData.Jobs = &SubscriptionJobsTabData{
+			HasJobs:      len(jobs) > 0,
+			StatusCounts: map[string]int{},
+			TypeCounts:   map[string]int{},
+		}
+	}
+	if len(jobs) == 0 {
+		return
+	}
+	l := deps.Labels.Jobs
+	rows := make([]SubscriptionJobRow, 0, len(jobs))
+	for _, j := range jobs {
+		jobType := jobTypeKey(j)
+		typeLabel := jobTypeLabel(jobType, l)
+		statusKey, statusVariant := operationsJobStatusInfo(j.GetStatus())
+		statusLabel := statusLabelForJobStatus(j.GetStatus(), deps.Labels.Operations)
+		periodLabel := ""
+		if j.GetCycleIndex() != 0 {
+			periodLabel = formatCyclePeriodLabel(j.GetCyclePeriodStart(), j.GetCyclePeriodEnd())
+		}
+		row := SubscriptionJobRow{
+			JobID:         j.GetId(),
+			JobName:       j.GetName(),
+			JobType:       jobType,
+			JobTypeLabel:  typeLabel,
+			Status:        statusKey,
+			StatusLabel:   statusLabel,
+			StatusVariant: statusVariant,
+			PeriodLabel:   periodLabel,
+			CycleIndex:    j.GetCycleIndex(),
+		}
+		if deps.JobDetailURL != "" {
+			row.DetailURL = strings.ReplaceAll(deps.JobDetailURL, "{id}", j.GetId())
+		}
+		rows = append(rows, row)
+		pageData.Jobs.StatusCounts[statusKey]++
+		pageData.Jobs.TypeCounts[jobType]++
+	}
+	// Sort by cycle_index descending (engagement first, then most-recent
+	// cycles); ties broken by name. Engagement shell has cycle_index=0 and
+	// parent_job_id="" — pin it to top by giving it a sentinel.
+	sort.SliceStable(rows, func(i, jj int) bool {
+		if rows[i].JobType == "shell" {
+			return true
+		}
+		if rows[jj].JobType == "shell" {
+			return false
+		}
+		if rows[i].CycleIndex != rows[jj].CycleIndex {
+			return rows[i].CycleIndex > rows[jj].CycleIndex
+		}
+		return rows[i].JobName < rows[jj].JobName
+	})
+	pageData.Jobs.Rows = rows
+}
+
+// jobTypeKey classifies a Job for the Jobs tab Type column / filter chips.
+// shell      = parent_job_id empty (the subscription's parent shell Job);
+// onboarding = parent_job_id set AND cycle_index == 0 (the once-at-shell-start child);
+// cycle      = parent_job_id set AND cycle_index > 0.
+// AD_HOC plan reinterprets "cycle" as "visit" — that override lives in the
+// downstream plan, not here.
+//
+// These values are NOT DB-stored — they are derived at render time from the
+// Job entity's parent_job_id and cycle_index. Renaming them is a pure code
+// change with no migration required.
+func jobTypeKey(j *jobpb.Job) string {
+	if j.GetParentJobId() == "" {
+		return "shell"
+	}
+	if j.GetCycleIndex() == 0 {
+		return "onboarding"
+	}
+	return "cycle"
+}
+
+func jobTypeLabel(key string, l subscription.SubscriptionJobsTabLabels) string {
+	switch key {
+	case "shell":
+		return l.TypeSubscription
+	case "onboarding":
+		return l.TypeOnboarding
+	case "cycle":
+		return l.TypeCycle
+	case "visit":
+		return l.TypeVisit
+	}
+	return key
+}
+
+func statusLabelForJobStatus(s enums.JobStatus, l subscription.SubscriptionOperationsLabels) string {
+	switch s {
+	case enums.JobStatus_JOB_STATUS_ACTIVE:
+		return l.CycleStatusInProgress
+	case enums.JobStatus_JOB_STATUS_COMPLETED, enums.JobStatus_JOB_STATUS_CLOSED:
+		return l.CycleStatusCompleted
+	case enums.JobStatus_JOB_STATUS_PAUSED:
+		return l.CycleStatusOverdue
+	default:
+		return l.CycleStatusPending
+	}
+}
+
+// buildOperationsRows converts a flat Job slice into a parent-child tree
+// suitable for the Operations tab template. Each row carries its phase
+// summary string already rendered.
+func buildOperationsRows(ctx context.Context, deps *DetailViewDeps, jobs []*jobpb.Job) []OperationsJobRow {
+	byID := map[string]*OperationsJobRow{}
+	roots := make([]OperationsJobRow, 0)
+	// First pass: build node map.
+	for _, j := range jobs {
+		row := jobToOperationsRow(ctx, deps, j)
+		byID[j.GetId()] = &row
+	}
+	// Second pass: link children, collect roots.
+	for _, j := range jobs {
+		row := byID[j.GetId()]
+		if row == nil {
+			continue
+		}
+		parentID := j.GetParentJobId()
+		if parentID == "" {
+			roots = append(roots, *row)
+			continue
+		}
+		parent, ok := byID[parentID]
+		if !ok {
+			// Orphan child — render at the root for visibility.
+			roots = append(roots, *row)
+			continue
+		}
+		parent.Children = append(parent.Children, *row)
+	}
+	// Re-link children from the byID map after the appends (we need the
+	// updated parent in the roots slice — Go maps store pointers but value
+	// receivers in roots copied. Recompute the roots' Children from byID).
+	for i := range roots {
+		if updated, ok := byID[roots[i].JobID]; ok {
+			roots[i].Children = updated.Children
+		}
+	}
+	return roots
+}
+
+func jobToOperationsRow(ctx context.Context, deps *DetailViewDeps, j *jobpb.Job) OperationsJobRow {
+	statusKey, statusVariant := operationsJobStatusInfo(j.GetStatus())
+	row := OperationsJobRow{
+		JobID:          j.GetId(),
+		JobName:        j.GetName(),
+		IsRoot:         j.GetParentJobId() == "",
+		StatusKey:      statusKey,
+		StatusVariant:  statusVariant,
+		BillingRuleKey: operationsBillingRuleKey(j.GetBillingRuleType()),
+	}
+	if deps.JobDetailURL != "" {
+		row.JobDetailURL = strings.ReplaceAll(deps.JobDetailURL, "{id}", j.GetId())
+	}
+	row.PhaseSummaryText = renderPhaseSummary(ctx, deps, j.GetId())
+	return row
+}
+
+func renderPhaseSummary(ctx context.Context, deps *DetailViewDeps, jobID string) string {
+	if deps.ListJobPhasesByJob == nil {
+		return ""
+	}
+	resp, err := deps.ListJobPhasesByJob(ctx, &jobphasepb.ListJobPhasesByJobRequest{JobId: jobID})
+	if err != nil || resp == nil {
+		return ""
+	}
+	phases := resp.GetJobPhases()
+	total := len(phases)
+	complete := 0
+	for _, p := range phases {
+		if p.GetStatus() == jobphasepb.PhaseStatus_PHASE_STATUS_COMPLETED {
+			complete++
+		}
+	}
+	tmpl := deps.Labels.Operations.PhaseSummary
+	r := strings.NewReplacer(
+		"{{.Complete}}", intStr(complete),
+		"{{.Total}}", intStr(total),
+	)
+	return r.Replace(tmpl)
+}
+
+func operationsJobStatusInfo(s enums.JobStatus) (string, string) {
+	switch s {
+	case enums.JobStatus_JOB_STATUS_DRAFT:
+		return "draft", "default"
+	case enums.JobStatus_JOB_STATUS_PENDING:
+		return "pending", "warning"
+	case enums.JobStatus_JOB_STATUS_PLANNED:
+		return "planned", "default"
+	case enums.JobStatus_JOB_STATUS_ACTIVE:
+		return "active", "success"
+	case enums.JobStatus_JOB_STATUS_PAUSED:
+		return "paused", "warning"
+	case enums.JobStatus_JOB_STATUS_COMPLETED:
+		return "completed", "info"
+	case enums.JobStatus_JOB_STATUS_CLOSED:
+		return "closed", "default"
+	default:
+		return "draft", "default"
+	}
+}
+
+func operationsBillingRuleKey(b enums.BillingRuleType) string {
+	switch b {
+	case enums.BillingRuleType_BILLING_RULE_TYPE_MILESTONE:
+		return "milestone"
+	case enums.BillingRuleType_BILLING_RULE_TYPE_T_AND_M:
+		return "t_and_m"
+	case enums.BillingRuleType_BILLING_RULE_TYPE_NON_BILLABLE:
+		return "non_billable"
+	case enums.BillingRuleType_BILLING_RULE_TYPE_FIXED_FEE:
+		return "fixed_fee"
+	case enums.BillingRuleType_BILLING_RULE_TYPE_INCLUDED:
+		return "included"
+	default:
+		return "unspecified"
+	}
+}
+
+func intStr(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	var b [20]byte
+	i := len(b)
+	for n > 0 {
+		i--
+		b[i] = byte('0' + n%10)
+		n /= 10
+	}
+	if neg {
+		i--
+		b[i] = '-'
+	}
+	return string(b[i:])
+}

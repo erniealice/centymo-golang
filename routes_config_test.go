@@ -59,8 +59,8 @@ func centymoRouteContractCases() []routeContractCase {
 				"LineItemTableURL":  true,
 			},
 		},
-		{name: "PlanRoutes", routes: DefaultPlanRoutes(), routeMap: DefaultPlanRoutes().RouteMap()},
-		{name: "SubscriptionRoutes", routes: DefaultSubscriptionRoutes(), routeMap: DefaultSubscriptionRoutes().RouteMap()},
+		// PlanRoutes / SubscriptionRoutes / PricePlanRoutes / PriceScheduleRoutes
+		// moved to domain/subscription (centymo W4) — tested in that package.
 		{name: "CollectionRoutes", routes: DefaultCollectionRoutes(), routeMap: DefaultCollectionRoutes().RouteMap()},
 		{name: "DisbursementRoutes", routes: DefaultDisbursementRoutes(), routeMap: DefaultDisbursementRoutes().RouteMap()},
 		{name: "PriceListRoutes", routes: productdom.DefaultPriceListRoutes(), routeMap: productdom.DefaultPriceListRoutes().RouteMap()},

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	centymo "github.com/erniealice/centymo-golang"
+	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
 	lyngua "github.com/erniealice/lyngua"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -117,14 +117,14 @@ func TestBlockLoadsRouteOverridesForSelectedModules(t *testing.T) {
 			option:      WithSubscription(),
 			useCases:    newSubscriptionUseCases(),
 			expectPath:  "/app/memberships/list/{status}",
-			defaultPath: centymo.SubscriptionListURL,
+			defaultPath: subscriptiondom.SubscriptionListURL,
 		},
 		{
 			name:        "plan routes use service override",
 			option:      WithPlan(),
 			useCases:    newPlanUseCases(),
 			expectPath:  "/app/packages/list/{status}",
-			defaultPath: centymo.PlanListURL,
+			defaultPath: subscriptiondom.PlanListURL,
 		},
 	}
 

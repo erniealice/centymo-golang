@@ -52,15 +52,16 @@ import (
 	templateview "github.com/erniealice/hybra-golang/views/template"
 
 	centymo "github.com/erniealice/centymo-golang"
+	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
+	inventorymod "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
+	resourcemod "github.com/erniealice/centymo-golang/domain/product/views/resource"
+	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
+	revenuemod "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
+	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
 	collectionmod "github.com/erniealice/centymo-golang/views/collection"
 	disbursementmod "github.com/erniealice/centymo-golang/views/disbursement"
 	expendituremod "github.com/erniealice/centymo-golang/views/expenditure"
-	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
-	inventorymod "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
-	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
-	revenuemod "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
-	resourcemod "github.com/erniealice/centymo-golang/domain/product/views/resource"
 )
 
 // ---------------------------------------------------------------------------
@@ -204,28 +205,28 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		productLineRoutes := productdom.DefaultProductLineRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_line", &productLineRoutes)
 
-		pricePlanRoutes := centymo.DefaultPricePlanRoutes()
+		pricePlanRoutes := subscriptiondom.DefaultPricePlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_plan", &pricePlanRoutes)
 
-		priceScheduleRoutes := centymo.DefaultPriceScheduleRoutes()
+		priceScheduleRoutes := subscriptiondom.DefaultPriceScheduleRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_schedule", &priceScheduleRoutes)
 
 		// Inventory-mount variant — namespace-shifted onto /app/inventory/price-schedules/*.
 		// Anchors ActiveNav to "inventory" so the inventory accordion sidebar stays open
 		// when users browse price schedules from the inventory side. A lyngua
 		// `price_schedule_inventory` override can layer additional tweaks on top.
-		priceScheduleInventoryRoutes := centymo.DefaultPriceScheduleInventoryRoutes()
+		priceScheduleInventoryRoutes := subscriptiondom.DefaultPriceScheduleInventoryRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_schedule_inventory", &priceScheduleInventoryRoutes)
 
 		priceListRoutes := productdom.DefaultPriceListRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "price_list", &priceListRoutes)
 
-		planRoutes := centymo.DefaultPlanRoutes()
+		planRoutes := subscriptiondom.DefaultPlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "plan", &planRoutes)
 
 		// Bundle-mount Plan routes — namespace-shifted onto /app/inventory/bundles/*.
 		// Lyngua plan_bundle block can layer additional tweaks on top.
-		planBundleRoutes := centymo.DefaultPlanBundleRoutes()
+		planBundleRoutes := subscriptiondom.DefaultPlanBundleRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "plan_bundle", &planBundleRoutes)
 
 		// Inventory-mount ProductLine routes — namespace-shifted onto /app/inventory/product-lines/*.
@@ -233,7 +234,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		productLineInventoryRoutes := productdom.DefaultProductLineInventoryRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "product_line_inventory", &productLineInventoryRoutes)
 
-		subscriptionRoutes := centymo.DefaultSubscriptionRoutes()
+		subscriptionRoutes := subscriptiondom.DefaultSubscriptionRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "subscription", &subscriptionRoutes)
 
 		collectionRoutes := centymo.DefaultCollectionRoutes()
@@ -291,13 +292,13 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		productLineLabels := productdom.DefaultProductLineLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_line.json", "product_line", &productLineLabels)
 
-		pricePlanLabels := centymo.DefaultPricePlanLabels()
+		pricePlanLabels := subscriptiondom.DefaultPricePlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_plan.json", "price_plan", &pricePlanLabels)
 
-		productPricePlanLabels := centymo.DefaultProductPricePlanLabels()
+		productPricePlanLabels := subscriptiondom.DefaultProductPricePlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_price_plan.json", "product_price_plan", &productPricePlanLabels)
 
-		priceScheduleLabels := centymo.DefaultPriceScheduleLabels()
+		priceScheduleLabels := subscriptiondom.DefaultPriceScheduleLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_schedule.json", "priceSchedule", &priceScheduleLabels)
 
 		var priceListLabels productdom.PriceListLabels
@@ -321,10 +322,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		disbursementLabels := centymo.DefaultDisbursementLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "disbursement.json", "disbursement", &disbursementLabels)
 
-		planLabels := centymo.DefaultPlanLabels()
+		planLabels := subscriptiondom.DefaultPlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "plan.json", "plan", &planLabels)
 
-		subscriptionLabels := centymo.DefaultSubscriptionLabels()
+		subscriptionLabels := subscriptiondom.DefaultSubscriptionLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "subscription.json", "subscription", &subscriptionLabels)
 
 		resourceRoutes := productdom.DefaultResourceRoutes()

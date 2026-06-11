@@ -57,6 +57,23 @@ var legacyAllow = map[string]string{
 	"datasource.go":         "DEFERRAL (D2/TD): DataSource legacy view-data port — keep at root, do not touch in W1-W7",
 	"assets.go":             "DEFERRAL: AssetsFS //go:embed (post-Wave-P) — keep at root strict-root caveat, do not touch in W1-W7",
 	"docs":                  "PERMANENT (not debt): centymo/docs/ holds plan markdown, no Go. Resolve at W9 by adding \"docs\" to the SHARED allowedFirstLevelDirs across all adoptions (cyta/hybra/centymo) — a template-level change — NOT by deleting this line.",
+	// ── W4 (subscription) — R3 mechanical-longest-match false positives ──────
+	// These 3 files hold types whose NAMES resolve to another esqyma domain
+	// (ProductPlanForm/ProductKindOption -> product; ClientPackages -> entity)
+	// but which are functionally subscription-aggregate sub-types / projections.
+	// They stay in package subscription for cohesion (moving them would force a
+	// subscription->product / ->entity sibling import). Renaming is out of scope
+	// for a pure structural wave. W9 resolves the naming, then deletes these.
+	"plan_product_subtypes.go":  "W9: rename ProductPlanForm/ProductKindOption sub-types (R3 longest-match collides with product domain); functionally Plan sub-types nested in PlanLabels",
+	"client_packages_labels.go": "W9: rename ClientPackages projection (R3 longest-match collides with entity/client); subscription-domain client-Packages-tab labels",
+	"product_plan.go":           "W9: view-local ProductPlanFormLabels in domain/subscription/views/plan/action (R3 longest-match collides with product domain); single file, single type",
+	// ── W4 (subscription) — R4 pre-existing oversized view handlers ──────────
+	// detail/page.go for subscription (1916) + price_plan (1720) were ALREADY
+	// >1200 at HEAD, excused under the "views" first-segment before W4 re-rooted
+	// them under domain/. Splitting view handlers is a separate (view-split)
+	// wave, not this pure label/route relocation. Only these 2 page.go exceed
+	// the threshold today, so this basename excuses no other current violation.
+	"page.go": "VIEW-SPLIT wave: subscription/detail/page.go (1916) + price_plan/detail/page.go (1720) pre-existing >1200 view handlers, re-rooted from views/ in W4; split per concern in a dedicated wave",
 }
 var charterViews = []string{} // crossCutting only: allowed views/<x> concern groups
 

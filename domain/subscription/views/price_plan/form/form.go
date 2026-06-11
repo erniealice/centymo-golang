@@ -1,0 +1,372 @@
+// Package form owns the shared template data shape for the canonical
+// price-plan-drawer-form.html template. All three callers — plan-detail
+// rate-cards tab, price-schedule-detail package-prices tab, and the
+// standalone price-plan list — build a form.Data and render the same
+// template, differing only in the Context discriminator.
+package form
+
+import (
+	subscription "github.com/erniealice/centymo-golang/domain/subscription"
+	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/types"
+)
+
+// Context identifies which URL context the drawer was opened from. The
+// template uses this to decide which field is a locked display row vs. an
+// auto-complete. See price-plan-drawer-form.html for the branching.
+type Context string
+
+const (
+	ContextPlan       Context = "Plan"
+	ContextSchedule   Context = "Schedule"
+	ContextStandalone Context = "Standalone"
+)
+
+// Data is the template shape for price-plan-drawer-form.html.
+//
+// Both PlanID and ScheduleID are always set (either pre-seeded from path
+// context or picked by the user on submit). The template emits a hidden
+// input for whichever one matches Context and an auto-complete for the
+// other; in Standalone mode both are auto-completes.
+type Data struct {
+	FormAction  string
+	WorkspaceID string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	Nonce       string // CSP nonce; populated by ViewAdapter.injectPageData (NonceFromContext) for inline <script nonce>
+	IsEdit      bool
+	Context     Context
+	ID          string // PricePlan.ID — present on edit, empty on add
+
+	// Context-locked IDs.
+	PlanID     string
+	ScheduleID string
+
+	// Locked display values shown in the disabled form-group in their
+	// respective contexts. The rate-card auto-complete surfaces each
+	// schedule's location as a per-option Description — no separate
+	// LocationName field is needed here.
+	PlanName     string
+	ScheduleName string
+
+	// Form values (edit preload / add defaults).
+	Name          string
+	Description   string
+	Amount        string // decimal display, e.g. "1500.00"
+	Currency      string
+	DurationValue string // DEPRECATED: Phase 1 dual-write; keep for read-back
+	DurationUnit  string // DEPRECATED: Phase 1 dual-write; keep for read-back
+	Active        bool
+
+	// Wave 2: new billing semantics fields (Phase 1 dual-write alongside DurationValue/Unit).
+	//
+	// 2026-04-30 enum-select-canonicalize — BillingKindOptions /
+	// AmountBasisOptions removed. The drawer template hardcodes the option
+	// values; only the selected value is passed in.
+	BillingKind         string
+	AmountBasis         string
+	BillingCycleValue   string // int32 as string for form field
+	BillingCycleUnit    string
+	TermValue           string               // int32 as string for form field; backs default_term_value on the wire
+	TermUnit            string               // backs default_term_unit on the wire
+	DurationUnitOptions []types.SelectOption // reused for both billing_cycle_unit and term unit
+	// 2026-05-01 ad-hoc-subscription-billing plan §5.5 — int32 as string for
+	// form field. Surfaced only when (BillingKind=AD_HOC AND
+	// AmountBasis=TOTAL_PACKAGE). Empty otherwise — server resets to NULL on
+	// kind/basis change so leftover values can't leak.
+	EntitledOccurrences string
+
+	// Auto-complete option lists. Each entry is {Value, Label, Selected?}.
+	// PlanOptions is consumed in Schedule + Standalone contexts;
+	// ScheduleOptions in Plan + Standalone contexts.
+	PlanOptions     []map[string]any
+	ScheduleOptions []map[string]any
+
+	SelectedPlanID        string
+	SelectedPlanLabel     string
+	SelectedScheduleID    string
+	SelectedScheduleLabel string
+
+	// Pricing-lock signal from the reference checker. When InUse is true
+	// on an edit load, the template disables amount/currency/duration_*.
+	InUse       bool
+	LockMessage string
+
+	// 2026-04-30 cyclic-subscription-jobs plan §7.4 — client-side block
+	// for the MILESTONE × cyclic combo. ParentPlanIsCyclic is true when
+	// the parent Plan has visits_per_cycle > 1 (multi-visit cyclic). The
+	// drawer's applyBasisOptionGuards() reads data-parent-plan-cyclic
+	// attribute and disables the MILESTONE option in the billing_kind
+	// dropdown when set, surfacing MilestoneCyclicBlock as a tooltip.
+	//
+	// Server-side validation already shipped in espyna Phase C — this
+	// is the client-side guard for UX symmetry.
+	ParentPlanIsCyclic bool
+
+	// 2026-04-27 plan-client-scope plan §6.7 — surfaced when the parent
+	// PriceSchedule is client-scoped. The template renders an info banner
+	// "{ClientName} owns this rate card..." above the first form section
+	// and emits a hidden client_id input populated server-side. Empty when
+	// the parent schedule is master.
+	ParentScheduleClientID   string
+	ParentScheduleClientName string
+
+	// 2026-04-27 plan-client-scope plan §6.7 — Schedule field rendering
+	// mode. When the parent Plan is client-scoped, the price-schedule
+	// auto-complete is replaced with a readonly display row that carries
+	// the resolved or derived schedule label, plus a hidden
+	// `price_schedule_id` input. When the resolution misses (no schedule
+	// exists yet for the client), `ScheduleID` is empty and submitting will
+	// trigger an auto-create on the use-case side.
+	//
+	// Modes:
+	//   "picker"   → standard auto-complete (default, when plan.client_id == "").
+	//   "readonly" → static label + hidden input (when plan.client_id != "").
+	ScheduleFieldMode string
+	// ScheduleLabel is the resolved or derived display label for the
+	// readonly mode (e.g. "Cruz Engineering - Rate Cards"). Empty in picker
+	// mode.
+	ScheduleLabel string
+	// ScheduleLockedClientName carries the parent Plan's client name when
+	// ScheduleFieldMode == "readonly". Used by the lyngua-driven
+	// ScheduleLockedTooltip template ({{.ClientName}}).
+	ScheduleLockedClientName string
+	// ScheduleAutoHint is the resolved info-line shown beneath the readonly
+	// schedule field — either "no schedule yet, will create on save" or
+	// "will be added to existing schedule for X". The handler picks the right
+	// variant based on whether ScheduleID resolved (via findClientPriceSchedule).
+	// Empty when the field is in picker mode or the parent Plan is master.
+	ScheduleAutoHint string
+
+	Labels       Labels
+	CommonLabels pyeza.CommonLabels
+}
+
+// Labels are the template-facing flat labels consumed by the drawer.
+type Labels struct {
+	SectionBasic           string
+	SectionPricing         string
+	NameLabel              string
+	NamePlaceholder        string
+	DescriptionLabel       string
+	DescriptionPlaceholder string
+	AmountLabel            string
+	AmountPlaceholder      string
+	CurrencyLabel          string
+	CurrencyPlaceholder    string
+	DurationLabel          string
+	DurationUnitLabel      string
+	ActiveLabel            string
+	PlanLabel              string
+	PlanPlaceholder        string
+	PlanSearch             string
+	ScheduleLabel          string
+	SchedulePlaceholder    string
+	ScheduleSearch         string
+	LocationHintPrefix     string
+
+	// Wave 2: new billing semantics labels.
+	BillingKindLabel        string
+	AmountBasisLabel        string
+	BillingCycleLabel       string
+	BillingCyclePlaceholder string
+	TermLabel               string
+	TermPlaceholder         string
+	TermOpenEndedHelp       string
+
+	// 2026-04-30 enum-select-canonicalize — per-option labels for the
+	// hardcoded BillingKind / AmountBasis <option> tags rendered directly
+	// in price-plan-drawer-form.html. The template is the source of
+	// truth; a drift test in templates_test.go diffs the option values
+	// against the proto enum's _name map so MILESTONE-style additions
+	// can't sneak past again.
+	BillingKindOneTime          string
+	BillingKindRecurring        string
+	BillingKindContract         string
+	BillingKindMilestone        string
+	BillingKindAdHoc            string
+	AmountBasisPerCycle         string
+	AmountBasisTotalPackage     string
+	AmountBasisDerivedFromLines string
+	AmountBasisPerOccurrence    string
+
+	// Per-option hint copy. Surfaced inline below each select via JS that reads
+	// data-hint-{value} attributes on the option matching the current selection.
+	BillingKindOneTimeHint          string
+	BillingKindRecurringHint        string
+	BillingKindContractHint         string
+	BillingKindMilestoneHint        string
+	BillingKindAdHocHint            string
+	AmountBasisPerCycleHint         string
+	AmountBasisTotalPackageHint     string
+	AmountBasisDerivedFromLinesHint string
+	AmountBasisPerOccurrenceHint    string
+
+	// 2026-05-01 ad-hoc-subscription-billing plan §5.5 — entitled_occurrences
+	// surfaced only on (AD_HOC × TOTAL_PACKAGE).
+	EntitledOccurrencesLabel       string
+	EntitledOccurrencesPlaceholder string
+	EntitledOccurrencesInfo        string
+
+	// Field-level info text surfaced via an info button beside each label.
+	// Hover/click opens a popover explaining what the field means.
+	PlanInfo         string
+	ScheduleInfo     string
+	NameInfo         string
+	DescriptionInfo  string
+	BillingKindInfo  string
+	AmountBasisInfo  string
+	AmountInfo       string
+	CurrencyInfo     string
+	BillingCycleInfo string
+	TermInfo         string
+	ActiveInfo       string
+
+	// 2026-04-27 plan-client-scope plan §6.7 — info banner template.
+	// Templated via {{.ClientName}}. Blank means "no banner".
+	ParentScheduleClientNotice string
+
+	// 2026-05-03 — info banners rendered inline below the readonly Schedule
+	// display. ScheduleClientPickerNotice when the parent schedule is
+	// client-scoped, ScheduleGeneralPickerNotice when general-scope.
+	ScheduleClientPickerNotice  string
+	ScheduleGeneralPickerNotice string
+
+	// 2026-04-27 plan-client-scope plan §6.7 — tooltip for the readonly
+	// Schedule field when the parent Plan is client-scoped. Templated via
+	// {{.ClientName}}. Blank means "no tooltip".
+	ScheduleLockedTooltip string
+
+	// 2026-04-30 cyclic-subscription-jobs plan §9.4 — tooltip surfaced on
+	// the disabled MILESTONE option when the parent Plan is cyclic.
+	MilestoneCyclicBlock string
+
+	// 2026-05-01 ad-hoc-subscription-billing plan §6 — drawer-level guards.
+	AdHocPoolNoTemplate           string
+	AdHocPerCallNoTemplate        string
+	AdHocNoEntitlement            string
+	AdHocBillingCycleNotAllowed   string
+	AdHocVisitsPerCycleNotAllowed string
+}
+
+// LabelsFromPricePlan maps subscription.PricePlanFormLabels (the tier-aware
+// struct populated by lyngua) into the flat template-facing Labels shape.
+// Fields are sourced entirely from the struct; no hardcoded English fallbacks.
+// Lyngua is the single source of truth — if a key is missing, the field renders
+// empty and the missing key should be fixed in the JSON, not here.
+func LabelsFromPricePlan(pp subscription.PricePlanFormLabels) Labels {
+	return Labels{
+		SectionBasic:           pp.SectionBasic,
+		SectionPricing:         pp.SectionPricing,
+		NameLabel:              pp.Name,
+		NamePlaceholder:        pp.NamePlaceholder,
+		DescriptionLabel:       pp.Description,
+		DescriptionPlaceholder: pp.DescPlaceholder,
+		AmountLabel:            pp.Amount,
+		AmountPlaceholder:      pp.AmountPlaceholder,
+		CurrencyLabel:          pp.Currency,
+		CurrencyPlaceholder:    pp.CurrencyPlaceholder,
+		DurationLabel:          pp.DurationValue,
+		DurationUnitLabel:      pp.DurationUnit,
+		ActiveLabel:            pp.Active,
+		PlanLabel:              pp.PlanLabel,
+		PlanPlaceholder:        pp.PlanPlaceholder,
+		PlanSearch:             pp.PlanSearch,
+		ScheduleLabel:          pp.Schedule,
+		SchedulePlaceholder:    pp.SchedulePlaceholder,
+		ScheduleSearch:         pp.ScheduleSearch,
+		LocationHintPrefix:     pp.LocationHintPrefix,
+		// Wave 2 new fields
+		BillingKindLabel:        pp.BillingKindLabel,
+		AmountBasisLabel:        pp.AmountBasisLabel,
+		BillingCycleLabel:       pp.BillingCycleLabel,
+		BillingCyclePlaceholder: pp.BillingCyclePlaceholder,
+		TermLabel:               pp.TermLabel,
+		TermPlaceholder:         pp.TermPlaceholder,
+		TermOpenEndedHelp:       pp.TermOpenEndedHelp,
+		// 2026-04-30 enum-select-canonicalize — pass through the per-option
+		// labels so the inline <option> tags in price-plan-drawer-form.html
+		// can read them directly.
+		BillingKindOneTime:          pp.BillingKindOneTime,
+		BillingKindRecurring:        pp.BillingKindRecurring,
+		BillingKindContract:         pp.BillingKindContract,
+		BillingKindMilestone:        pp.BillingKindMilestone,
+		BillingKindAdHoc:            pp.BillingKindAdHoc,
+		AmountBasisPerCycle:         pp.AmountBasisPerCycle,
+		AmountBasisTotalPackage:     pp.AmountBasisTotalPackage,
+		AmountBasisDerivedFromLines: pp.AmountBasisDerivedFromLines,
+		AmountBasisPerOccurrence:    pp.AmountBasisPerOccurrence,
+
+		BillingKindOneTimeHint:          pp.BillingKindOneTimeHint,
+		BillingKindRecurringHint:        pp.BillingKindRecurringHint,
+		BillingKindContractHint:         pp.BillingKindContractHint,
+		BillingKindMilestoneHint:        pp.BillingKindMilestoneHint,
+		BillingKindAdHocHint:            pp.BillingKindAdHocHint,
+		AmountBasisPerCycleHint:         pp.AmountBasisPerCycleHint,
+		AmountBasisTotalPackageHint:     pp.AmountBasisTotalPackageHint,
+		AmountBasisDerivedFromLinesHint: pp.AmountBasisDerivedFromLinesHint,
+		AmountBasisPerOccurrenceHint:    pp.AmountBasisPerOccurrenceHint,
+		EntitledOccurrencesLabel:        pp.EntitledOccurrencesLabel,
+		EntitledOccurrencesPlaceholder:  pp.EntitledOccurrencesPlaceholder,
+		EntitledOccurrencesInfo:         pp.EntitledOccurrencesInfo,
+		// Field-level info popovers
+		PlanInfo:         pp.PlanInfo,
+		ScheduleInfo:     pp.ScheduleInfo,
+		NameInfo:         pp.NameInfo,
+		DescriptionInfo:  pp.DescriptionInfo,
+		BillingKindInfo:  pp.BillingKindInfo,
+		AmountBasisInfo:  pp.AmountBasisInfo,
+		AmountInfo:       pp.AmountInfo,
+		CurrencyInfo:     pp.CurrencyInfo,
+		BillingCycleInfo: pp.BillingCycleInfo,
+		TermInfo:         pp.TermInfo,
+		ActiveInfo:       pp.ActiveInfo,
+		// 2026-04-27 plan-client-scope plan §6.7.
+		ParentScheduleClientNotice:  pp.ParentScheduleClientNotice,
+		ScheduleClientPickerNotice:  pp.ScheduleClientPickerNotice,
+		ScheduleGeneralPickerNotice: pp.ScheduleGeneralPickerNotice,
+		ScheduleLockedTooltip:       pp.ScheduleLockedTooltip,
+		// 2026-04-30 cyclic-subscription-jobs plan §9.4.
+		MilestoneCyclicBlock: pp.MilestoneCyclicBlock,
+		// 2026-05-01 ad-hoc-subscription-billing plan §6 — drawer-level guards.
+		AdHocPoolNoTemplate:           pp.AdHocPoolNoTemplate,
+		AdHocPerCallNoTemplate:        pp.AdHocPerCallNoTemplate,
+		AdHocNoEntitlement:            pp.AdHocNoEntitlement,
+		AdHocBillingCycleNotAllowed:   pp.AdHocBillingCycleNotAllowed,
+		AdHocVisitsPerCycleNotAllowed: pp.AdHocVisitsPerCycleNotAllowed,
+	}
+}
+
+// BuildOptions converts a slice of (id, name, description) tuples into the
+// auto-complete option map shape the template expects. Description is
+// surfaced by the auto-complete as a .form-hint right below the field,
+// updating as the user switches selections.
+func BuildOptions(entries []Option, selectedID string) []map[string]any {
+	opts := make([]map[string]any, 0, len(entries))
+	for _, e := range entries {
+		opts = append(opts, map[string]any{
+			"Value":       e.ID,
+			"Label":       e.Name,
+			"Description": e.Description,
+			"Selected":    e.ID == selectedID,
+		})
+	}
+	return opts
+}
+
+// Option is a simple tuple used when building auto-complete lists.
+// Description is optional and rendered as a form-hint below the field
+// whenever the option is the current selection.
+type Option struct {
+	ID          string
+	Name        string
+	Description string
+}
+
+// FindLabel returns the Name for a given ID, or empty string if not found.
+func FindLabel(entries []Option, id string) string {
+	for _, e := range entries {
+		if e.ID == id {
+			return e.Name
+		}
+	}
+	return ""
+}

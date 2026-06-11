@@ -24,9 +24,10 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	centymo "github.com/erniealice/centymo-golang"
-	subscriptionaction "github.com/erniealice/centymo-golang/views/subscription/action"
-	subscriptiondetail "github.com/erniealice/centymo-golang/views/subscription/detail"
-	subscriptionlist "github.com/erniealice/centymo-golang/views/subscription/list"
+	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
+	subscriptionaction "github.com/erniealice/centymo-golang/domain/subscription/views/subscription/action"
+	subscriptiondetail "github.com/erniealice/centymo-golang/domain/subscription/views/subscription/detail"
+	subscriptionlist "github.com/erniealice/centymo-golang/domain/subscription/views/subscription/list"
 )
 
 // subscriptionWiring holds everything wireSubscriptionModule needs from the
@@ -44,10 +45,10 @@ type subscriptionWiring struct {
 	deleteAttachment func(context.Context, *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	newAttachmentID  func() string
 	// Routes + labels
-	subscriptionRoutes  centymo.SubscriptionRoutes
-	priceScheduleRoutes centymo.PriceScheduleRoutes
-	subscriptionLabels  centymo.SubscriptionLabels
-	priceScheduleLabels centymo.PriceScheduleLabels
+	subscriptionRoutes  subscriptiondom.SubscriptionRoutes
+	priceScheduleRoutes subscriptiondom.PriceScheduleRoutes
+	subscriptionLabels  subscriptiondom.SubscriptionLabels
+	priceScheduleLabels subscriptiondom.PriceScheduleLabels
 	centymoTableLabels  types.TableLabels
 }
 
@@ -345,12 +346,12 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 					return &subscriptionaction.MaterializeInstanceJobsResponse{}, nil
 				}
 				return &subscriptionaction.MaterializeInstanceJobsResponse{
-					SpawnedCycleCount:         int(resp.GetSpawnedCycleCount()),
-					SpawnedJobCount:           int(resp.GetSpawnedJobCount()),
-					OnceAtStartJobCount:       int(resp.GetOnceAtStartJobCount()),
+					SpawnedCycleCount:       int(resp.GetSpawnedCycleCount()),
+					SpawnedJobCount:         int(resp.GetSpawnedJobCount()),
+					OnceAtStartJobCount:     int(resp.GetOnceAtStartJobCount()),
 					ShellJobWasNewlyCreated: resp.GetEngagementWasNewlyCreated(),
-					SkippedReason:             resp.GetSkippedReason(),
-					BackfillCappedAt:          resp.GetBackfillCappedAt(),
+					SkippedReason:           resp.GetSkippedReason(),
+					BackfillCappedAt:        resp.GetBackfillCappedAt(),
 				}, nil
 			}
 		}
