@@ -11,16 +11,16 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	centymo "github.com/erniealice/centymo-golang"
-	serialform "github.com/erniealice/centymo-golang/views/inventory/serial/form"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
+	serialform "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/serial/form"
 
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 )
 
 // Deps is the dependency subset needed by the serial feature.
 type Deps struct {
-	Routes centymo.InventoryRoutes
-	Labels centymo.InventoryLabels
+	Routes invdomain.InventoryRoutes
+	Labels invdomain.InventoryLabels
 
 	CreateInventorySerial func(ctx context.Context, req *inventoryserialpb.CreateInventorySerialRequest) (*inventoryserialpb.CreateInventorySerialResponse, error)
 	ReadInventorySerial   func(ctx context.Context, req *inventoryserialpb.ReadInventorySerialRequest) (*inventoryserialpb.ReadInventorySerialResponse, error)
@@ -28,7 +28,7 @@ type Deps struct {
 	DeleteInventorySerial func(ctx context.Context, req *inventoryserialpb.DeleteInventorySerialRequest) (*inventoryserialpb.DeleteInventorySerialResponse, error)
 }
 
-func formLabels(t func(string) string, s centymo.InventorySerialLabels) serialform.Labels {
+func formLabels(t func(string) string, s invdomain.InventorySerialLabels) serialform.Labels {
 	return serialform.Labels{
 		SerialNumber:  t("inventory.serial.serialNumber"),
 		IMEI:          t("inventory.serial.imei"),
@@ -37,7 +37,7 @@ func formLabels(t func(string) string, s centymo.InventorySerialLabels) serialfo
 		WarrantyEnd:   t("inventory.serial.warrantyEnd"),
 		PurchaseOrder: t("inventory.serial.purchaseOrder"),
 		SoldReference: t("inventory.serial.soldReference"),
-		// Info fields sourced from centymo.InventorySerialLabels (populated from lyngua JSON + defaults).
+		// Info fields sourced from invdomain.InventorySerialLabels (populated from lyngua JSON + defaults).
 		SerialNumberInfo:  s.SerialNumberInfo,
 		IMEIInfo:          s.IMEIInfo,
 		StatusInfo:        s.StatusInfo,

@@ -8,15 +8,15 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	"github.com/erniealice/centymo-golang"
-	inventoryaction "github.com/erniealice/centymo-golang/views/inventory/action"
-	inventorydashboard "github.com/erniealice/centymo-golang/views/inventory/dashboard"
-	inventorydepreciation "github.com/erniealice/centymo-golang/views/inventory/depreciation"
-	inventorydetail "github.com/erniealice/centymo-golang/views/inventory/detail"
-	inventorylist "github.com/erniealice/centymo-golang/views/inventory/list"
-	inventorymovements "github.com/erniealice/centymo-golang/views/inventory/movements"
-	inventoryserial "github.com/erniealice/centymo-golang/views/inventory/serial"
-	inventorytransaction "github.com/erniealice/centymo-golang/views/inventory/transaction"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
+	inventoryaction "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/action"
+	inventorydashboard "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/dashboard"
+	inventorydepreciation "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/depreciation"
+	inventorydetail "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/detail"
+	inventorylist "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/list"
+	inventorymovements "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/movements"
+	inventoryserial "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/serial"
+	inventorytransaction "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/transaction"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
@@ -34,8 +34,8 @@ import (
 
 // ModuleDeps holds all dependencies for the inventory module.
 type ModuleDeps struct {
-	Routes       centymo.InventoryRoutes
-	Labels       centymo.InventoryLabels
+	Routes       invdomain.InventoryRoutes
+	Labels       invdomain.InventoryLabels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
@@ -85,7 +85,7 @@ type ModuleDeps struct {
 
 // Module holds all constructed inventory views.
 type Module struct {
-	routes             centymo.InventoryRoutes
+	routes             invdomain.InventoryRoutes
 	Dashboard          view.View
 	List               view.View
 	Detail             view.View

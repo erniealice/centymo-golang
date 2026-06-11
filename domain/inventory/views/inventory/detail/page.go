@@ -6,6 +6,7 @@ import (
 	"log"
 
 	centymo "github.com/erniealice/centymo-golang"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
@@ -27,7 +28,7 @@ import (
 
 // DetailViewDeps holds view dependencies.
 type DetailViewDeps struct {
-	Routes                     centymo.InventoryRoutes
+	Routes                     invdomain.InventoryRoutes
 	ReadInventoryItem          func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ListInventorySerials       func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
 	ListInventoryTransactions  func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
@@ -35,7 +36,7 @@ type DetailViewDeps struct {
 	ListProductVariantOptions  func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 	ListProductOptionValues    func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
 	ListProductOptions         func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
-	Labels                     centymo.InventoryLabels
+	Labels                     invdomain.InventoryLabels
 	CommonLabels               pyeza.CommonLabels
 	TableLabels                types.TableLabels
 
@@ -74,7 +75,7 @@ type PageData struct {
 	types.PageData
 	ContentTemplate     string
 	Item                map[string]any
-	Labels              centymo.InventoryLabels
+	Labels              invdomain.InventoryLabels
 	ActiveTab           string
 	TabItems            []pyeza.TabItem
 	IsSerialized        bool
@@ -370,7 +371,7 @@ func inventoryItemToMap(item *inventoryitempb.InventoryItem) map[string]any {
 	return m
 }
 
-func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool, routes centymo.InventoryRoutes) []pyeza.TabItem {
+func buildTabItems(l invdomain.InventoryLabels, id string, isSerialized bool, routes invdomain.InventoryRoutes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	tabs := []pyeza.TabItem{
@@ -390,7 +391,7 @@ func buildTabItems(l centymo.InventoryLabels, id string, isSerialized bool, rout
 	return tabs
 }
 
-func trackingModeDisplayLabel(trackingMode string, l centymo.InventoryLabels) string {
+func trackingModeDisplayLabel(trackingMode string, l invdomain.InventoryLabels) string {
 	switch trackingMode {
 	case "none":
 		return l.TrackingMode.None
@@ -544,7 +545,7 @@ func loadSerials(ctx context.Context, deps *DetailViewDeps, inventoryItemID stri
 	return resp.GetData()
 }
 
-func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l centymo.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string, routes centymo.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
+func buildSerialTable(serials []*inventoryserialpb.InventorySerial, l invdomain.InventoryLabels, tableLabels types.TableLabels, inventoryItemID string, routes invdomain.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "serial_number", Label: l.Detail.SerialNumber},
 		{Key: "imei", Label: l.Detail.IMEI, NoSort: true, WidthClass: "col-6xl"},
@@ -643,7 +644,7 @@ func computeSerialSummary(serials []*inventoryserialpb.InventorySerial) *SerialS
 // Transactions tab
 // ---------------------------------------------------------------------------
 
-func buildTransactionTable(ctx context.Context, deps *DetailViewDeps, inventoryItemID string, l centymo.InventoryLabels, tableLabels types.TableLabels, routes centymo.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
+func buildTransactionTable(ctx context.Context, deps *DetailViewDeps, inventoryItemID string, l invdomain.InventoryLabels, tableLabels types.TableLabels, routes invdomain.InventoryRoutes, perms *types.UserPermissions) *types.TableConfig {
 	resp, err := deps.ListInventoryTransactions(ctx, &inventorytransactionpb.ListInventoryTransactionsRequest{
 		InventoryItemId: &inventoryItemID,
 	})
@@ -752,7 +753,7 @@ func formatQuantity(qty float64, txType string) string {
 // Depreciation tab
 // ---------------------------------------------------------------------------
 
-func loadDepreciation(ctx context.Context, deps *DetailViewDeps, inventoryItemID string, l centymo.InventoryLabels) *DepreciationInfo {
+func loadDepreciation(ctx context.Context, deps *DetailViewDeps, inventoryItemID string, l invdomain.InventoryLabels) *DepreciationInfo {
 	resp, err := deps.ListInventoryDepreciations(ctx, &inventorydepreciationpb.ListInventoryDepreciationsRequest{
 		InventoryItemId: &inventoryItemID,
 	})
@@ -770,16 +771,16 @@ func loadDepreciation(ctx context.Context, deps *DetailViewDeps, inventoryItemID
 	return &DepreciationInfo{
 		ID:          r.GetId(),
 		Method:      depreciationMethodLabel(r.GetMethod(), l),
-		CostBasis:   fmt.Sprintf("%g", r.GetCostBasis()),
-		SalvageVal:  fmt.Sprintf("%g", r.GetSalvageValue()),
+		CostBasis:   fmt.Sprintf("%d", r.GetCostBasis()),
+		SalvageVal:  fmt.Sprintf("%d", r.GetSalvageValue()),
 		UsefulLife:  fmt.Sprintf("%d %s", r.GetUsefulLifeMonths(), l.Depreciation.MonthsUnit),
 		StartDate:   r.GetStartDate(),
-		Accumulated: fmt.Sprintf("%g", r.GetAccumulatedDepreciation()),
-		BookValue:   fmt.Sprintf("%g", r.GetBookValue()),
+		Accumulated: fmt.Sprintf("%d", r.GetAccumulatedDepreciation()),
+		BookValue:   fmt.Sprintf("%d", r.GetBookValue()),
 	}
 }
 
-func depreciationMethodLabel(method string, l centymo.InventoryLabels) string {
+func depreciationMethodLabel(method string, l invdomain.InventoryLabels) string {
 	switch method {
 	case "straight_line":
 		return l.Depreciation.MethodStraightLine
@@ -796,7 +797,7 @@ func depreciationMethodLabel(method string, l centymo.InventoryLabels) string {
 // Audit tab
 // ---------------------------------------------------------------------------
 
-func buildAuditTable(l centymo.InventoryLabels, tableLabels types.TableLabels) *types.TableConfig {
+func buildAuditTable(l invdomain.InventoryLabels, tableLabels types.TableLabels) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "date", Label: l.Detail.Date, WidthClass: "col-5xl"},
 		{Key: "action", Label: l.Detail.AuditAction},

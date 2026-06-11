@@ -7,6 +7,7 @@ import (
 	"time"
 
 	centymo "github.com/erniealice/centymo-golang"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -23,7 +24,7 @@ type Deps struct {
 	ListInventoryItems                func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
 	ListInventoryTransactions         func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
 	ListLocations                     func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
-	Labels                            centymo.InventoryLabels
+	Labels                            invdomain.InventoryLabels
 	CommonLabels                      pyeza.CommonLabels
 	TableLabels                       types.TableLabels
 }
@@ -45,7 +46,7 @@ type PageData struct {
 	types.PageData
 	ContentTemplate  string
 	Table            *types.TableConfig
-	Labels           centymo.InventoryMovementsLabels
+	Labels           invdomain.InventoryMovementsLabels
 	DateFrom         string
 	DateTo           string
 	LocationFilter   string
@@ -56,7 +57,7 @@ type PageData struct {
 }
 
 // transactionTypes returns the list of known transaction types for filters.
-func transactionTypes(l centymo.InventoryTransactionLabels) []TransactionTypeOption {
+func transactionTypes(l invdomain.InventoryTransactionLabels) []TransactionTypeOption {
 	return []TransactionTypeOption{
 		{Value: "received", Label: l.TypeReceived},
 		{Value: "sold", Label: l.TypeSold},

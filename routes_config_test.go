@@ -42,7 +42,7 @@ func centymoRouteContractCases() []routeContractCase {
 	return []routeContractCase{
 		{name: "ProductRoutes", routes: DefaultProductRoutes(), routeMap: DefaultProductRoutes().RouteMap()},
 		{name: "ProductLineRoutes", routes: DefaultProductLineRoutes(), routeMap: DefaultProductLineRoutes().RouteMap()},
-		{name: "InventoryRoutes", routes: DefaultInventoryRoutes(), routeMap: DefaultInventoryRoutes().RouteMap()},
+		// InventoryRoutes moved to domain/inventory — tested in domain/inventory package
 		{name: "RevenueRoutes", routes: DefaultRevenueRoutes(), routeMap: DefaultRevenueRoutes().RouteMap()},
 		{
 			name:     "ExpenditureRoutes",

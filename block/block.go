@@ -55,7 +55,8 @@ import (
 	collectionmod "github.com/erniealice/centymo-golang/views/collection"
 	disbursementmod "github.com/erniealice/centymo-golang/views/disbursement"
 	expendituremod "github.com/erniealice/centymo-golang/views/expenditure"
-	inventorymod "github.com/erniealice/centymo-golang/views/inventory"
+	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
+	inventorymod "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
 	resourcemod "github.com/erniealice/centymo-golang/views/resource"
 	revenuemod "github.com/erniealice/centymo-golang/views/revenue"
 )
@@ -170,7 +171,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		centymoTableLabels := pyeza.MapTableLabels(ctx.Common)
 
 		// --- Load routes (defaults + optional lyngua overrides) ---
-		inventoryRoutes := centymo.DefaultInventoryRoutes()
+		inventoryRoutes := inventorydomain.DefaultInventoryRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "inventory", &inventoryRoutes)
 
 		revenueRoutes := centymo.DefaultRevenueRoutes()
@@ -243,7 +244,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "expenditure", &expenditureRoutes)
 
 		// --- Load labels ---
-		var inventoryLabels centymo.InventoryLabels
+		var inventoryLabels inventorydomain.InventoryLabels
 		// Wave 4.2 — wire the standalone inventory child JSONs into the
 		// InventoryLabels sub-fields. These files live ONLY in the general/
 		// tier (there is no general/inventory.json), so they supply the

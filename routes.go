@@ -253,15 +253,6 @@ const (
 	// The dashboard sits ABOVE the service-mount product list at this URL.
 	ServiceDashboardURL = "/services/dashboard"
 
-	// Inventory routes — list is per-location
-	InventoryDashboardURL  = "/inventory/dashboard"
-	InventoryListURL       = "/inventory/list/{location}"
-	InventoryAddURL        = "/action/inventory/add"
-	InventoryEditURL       = "/action/inventory/edit/{id}"
-	InventoryDeleteURL     = "/action/inventory/delete"
-	InventoryBulkDeleteURL = "/action/inventory/bulk-delete"
-	InventoryDetailURL     = "/inventory/detail/{id}"
-
 	// Product action routes
 	ProductAddURL        = "/action/product/add"
 	ProductEditURL       = "/action/product/edit/{id}"
@@ -341,50 +332,6 @@ const (
 	ProductLineTabActionURL        = "/action/product-line/{id}/tab/{tab}"
 	ProductLineAttachmentUploadURL = "/action/product-line/{id}/attachments/upload"
 	ProductLineAttachmentDeleteURL = "/action/product-line/{id}/attachments/delete"
-
-	// Inventory status routes
-	InventorySetStatusURL     = "/action/inventory/set-status"
-	InventoryBulkSetStatusURL = "/action/inventory/bulk-set-status"
-
-	// Inventory tab action route
-	InventoryTabActionURL        = "/action/inventory/detail/{id}/tab/{tab}"
-	InventoryAttachmentUploadURL = "/action/inventory/detail/{id}/attachments/upload"
-	InventoryAttachmentDeleteURL = "/action/inventory/detail/{id}/attachments/delete"
-
-	// Inventory movements (global transaction history)
-	InventoryMovementsURL       = "/inventory/movements"
-	InventoryMovementsTableURL  = "/action/inventory/movements/table"
-	InventoryMovementsExportURL = "/action/inventory/movements/export"
-
-	// Inventory serial routes
-	InventorySerialTableURL  = "/action/inventory/detail/{id}/serials/table"
-	InventorySerialAssignURL = "/action/inventory/detail/{id}/serials/assign"
-	InventorySerialEditURL   = "/action/inventory/detail/{id}/serials/edit/{sid}"
-	InventorySerialRemoveURL = "/action/inventory/detail/{id}/serials/remove"
-
-	// Inventory transaction routes
-	InventoryTransactionTableURL  = "/action/inventory/detail/{id}/transactions/table"
-	InventoryTransactionAssignURL = "/action/inventory/detail/{id}/transactions/assign"
-
-	// Inventory depreciation routes
-	InventoryDepreciationAssignURL = "/action/inventory/detail/{id}/depreciation/assign"
-	InventoryDepreciationEditURL   = "/action/inventory/detail/{id}/depreciation/edit/{did}"
-
-	// Inventory attribute routes (within detail)
-	InventoryAttributeTableURL = "/action/inventory/detail/{id}/attributes/table"
-
-	// Inventory dashboard partial routes
-	InventoryDashboardStatsURL     = "/action/inventory/dashboard/stats"
-	InventoryDashboardChartURL     = "/action/inventory/dashboard/chart"
-	InventoryDashboardMovementsURL = "/action/inventory/dashboard/movements"
-	InventoryDashboardAlertsURL    = "/action/inventory/dashboard/alerts"
-
-	// Inventory product-context detail routes
-	InventoryProductDetailURL    = "/products/detail/{pid}/inventory/detail/{iid}"
-	InventoryProductTabActionURL = "/action/product/{pid}/inventory/{iid}/tab/{tab}"
-
-	// Inventory table refresh (per-location)
-	InventoryTableURL = "/action/inventory/table/{location}"
 
 	// Revenue routes
 	RevenueDashboardURL     = "/sales/dashboard"

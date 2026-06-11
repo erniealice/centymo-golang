@@ -13,8 +13,8 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	centymo "github.com/erniealice/centymo-golang"
-	transactionform "github.com/erniealice/centymo-golang/views/inventory/transaction/form"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
+	transactionform "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/transaction/form"
 
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
@@ -22,21 +22,21 @@ import (
 
 // Deps is the dependency subset needed by the transaction feature.
 type Deps struct {
-	Routes centymo.InventoryRoutes
-	Labels centymo.InventoryLabels
+	Routes invdomain.InventoryRoutes
+	Labels invdomain.InventoryLabels
 
 	CreateInventoryTransaction func(ctx context.Context, req *inventorytransactionpb.CreateInventoryTransactionRequest) (*inventorytransactionpb.CreateInventoryTransactionResponse, error)
 	ReadInventoryItem          func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	UpdateInventoryItem        func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
 }
 
-func formLabels(t func(string) string, tx centymo.InventoryTransactionLabels) transactionform.Labels {
+func formLabels(t func(string) string, tx invdomain.InventoryTransactionLabels) transactionform.Labels {
 	return transactionform.Labels{
 		Type:      t("inventory.transaction.type"),
 		Quantity:  t("inventory.transaction.quantity"),
 		Date:      t("inventory.transaction.date"),
 		Reference: t("inventory.transaction.reference"),
-		// Info fields sourced from centymo.InventoryTransactionLabels (populated from lyngua JSON + defaults).
+		// Info fields sourced from invdomain.InventoryTransactionLabels (populated from lyngua JSON + defaults).
 		TypeInfo:      tx.TypeInfo,
 		QuantityInfo:  tx.QuantityInfo,
 		DateInfo:      tx.DateInfo,

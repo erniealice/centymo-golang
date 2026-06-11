@@ -6,6 +6,7 @@ import (
 	"log"
 
 	centymo "github.com/erniealice/centymo-golang"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -19,12 +20,12 @@ import (
 
 // Deps holds view dependencies.
 type Deps struct {
-	Routes                     centymo.InventoryRoutes
+	Routes                     invdomain.InventoryRoutes
 	ListInventoryItems         func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
 	ListInventorySerials       func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
 	ListInventoryTransactions  func(ctx context.Context, req *inventorytransactionpb.ListInventoryTransactionsRequest) (*inventorytransactionpb.ListInventoryTransactionsResponse, error)
 	ListInventoryDepreciations func(ctx context.Context, req *inventorydepreciationpb.ListInventoryDepreciationsRequest) (*inventorydepreciationpb.ListInventoryDepreciationsResponse, error)
-	Labels                     centymo.InventoryLabels
+	Labels                     invdomain.InventoryLabels
 	CommonLabels               pyeza.CommonLabels
 }
 

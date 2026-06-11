@@ -30,7 +30,7 @@ import (
 	expenditure "github.com/erniealice/centymo-golang/views/expenditure"
 	expense_recognition "github.com/erniealice/centymo-golang/views/expense_recognition"
 	expense_recognition_line "github.com/erniealice/centymo-golang/views/expense_recognition_line"
-	inventory "github.com/erniealice/centymo-golang/views/inventory"
+	inventory "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
 	plan "github.com/erniealice/centymo-golang/views/plan"
 	price_plan "github.com/erniealice/centymo-golang/views/price_plan"
 	price_schedule "github.com/erniealice/centymo-golang/views/price_schedule"

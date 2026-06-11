@@ -14,30 +14,30 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	centymo "github.com/erniealice/centymo-golang"
-	depreciationform "github.com/erniealice/centymo-golang/views/inventory/depreciation/form"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
+	depreciationform "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/depreciation/form"
 
 	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
 )
 
 // Deps is the dependency subset needed by the depreciation feature.
 type Deps struct {
-	Routes centymo.InventoryRoutes
-	Labels centymo.InventoryLabels
+	Routes invdomain.InventoryRoutes
+	Labels invdomain.InventoryLabels
 
 	CreateInventoryDepreciation func(ctx context.Context, req *inventorydepreciationpb.CreateInventoryDepreciationRequest) (*inventorydepreciationpb.CreateInventoryDepreciationResponse, error)
 	ReadInventoryDepreciation   func(ctx context.Context, req *inventorydepreciationpb.ReadInventoryDepreciationRequest) (*inventorydepreciationpb.ReadInventoryDepreciationResponse, error)
 	UpdateInventoryDepreciation func(ctx context.Context, req *inventorydepreciationpb.UpdateInventoryDepreciationRequest) (*inventorydepreciationpb.UpdateInventoryDepreciationResponse, error)
 }
 
-func formLabels(t func(string) string, d centymo.InventoryDepreciationLabels) depreciationform.Labels {
+func formLabels(t func(string) string, d invdomain.InventoryDepreciationLabels) depreciationform.Labels {
 	return depreciationform.Labels{
 		Method:       t("inventory.depreciation.method"),
 		CostBasis:    t("inventory.depreciation.costBasis"),
 		SalvageValue: t("inventory.depreciation.salvageValue"),
 		UsefulLife:   t("inventory.depreciation.usefulLife"),
 		StartDate:    t("inventory.depreciation.startDate"),
-		// Info fields sourced from centymo.InventoryDepreciationLabels (populated from lyngua JSON + defaults).
+		// Info fields sourced from invdomain.InventoryDepreciationLabels (populated from lyngua JSON + defaults).
 		MethodInfo:       d.MethodInfo,
 		CostBasisInfo:    d.CostBasisInfo,
 		SalvageValueInfo: d.SalvageValueInfo,

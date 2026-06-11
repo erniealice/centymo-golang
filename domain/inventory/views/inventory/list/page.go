@@ -15,15 +15,16 @@ import (
 
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 
-	"github.com/erniealice/centymo-golang"
+	centymo "github.com/erniealice/centymo-golang"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
 
 // ListViewDeps holds view dependencies.
 type ListViewDeps struct {
-	Routes             centymo.InventoryRoutes
+	Routes             invdomain.InventoryRoutes
 	ListInventoryItems func(ctx context.Context, req *inventoryitempb.ListInventoryItemsRequest) (*inventoryitempb.ListInventoryItemsResponse, error)
-	Labels             centymo.InventoryLabels
+	Labels             invdomain.InventoryLabels
 	CommonLabels       pyeza.CommonLabels
 	TableLabels        types.TableLabels
 }
@@ -224,7 +225,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 	return tableConfig, nil
 }
 
-func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
+func inventoryColumns(l invdomain.InventoryLabels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "product_name", Label: l.Columns.ProductName},
 		{Key: "sku", Label: l.Columns.SKU, NoFilter: true, WidthClass: "col-4xl"},
@@ -237,7 +238,7 @@ func inventoryColumns(l centymo.InventoryLabels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryLabels, routes centymo.InventoryRoutes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(items []*inventoryitempb.InventoryItem, l invdomain.InventoryLabels, routes invdomain.InventoryRoutes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, item := range items {
 		id := item.GetId()
@@ -307,7 +308,7 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l centymo.InventoryL
 	return rows
 }
 
-func itemTypeLabel(itemType string, l centymo.InventoryLabels) string {
+func itemTypeLabel(itemType string, l invdomain.InventoryLabels) string {
 	switch itemType {
 	case "none":
 		return l.TrackingMode.None

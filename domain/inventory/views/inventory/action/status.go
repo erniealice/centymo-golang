@@ -6,11 +6,11 @@ import (
 
 	"github.com/erniealice/pyeza-golang/view"
 
-	centymo "github.com/erniealice/centymo-golang"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
 )
 
 // NewSetStatusAction creates the inventory activate/deactivate action (POST only).
-func NewSetStatusAction(setActive func(ctx context.Context, id string, active bool) error, labels centymo.InventoryLabels) view.View {
+func NewSetStatusAction(setActive func(ctx context.Context, id string, active bool) error, labels invdomain.InventoryLabels) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {
@@ -42,7 +42,7 @@ func NewSetStatusAction(setActive func(ctx context.Context, id string, active bo
 }
 
 // NewBulkSetStatusAction creates the inventory bulk activate/deactivate action (POST only).
-func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, active bool) error, labels centymo.InventoryLabels) view.View {
+func NewBulkSetStatusAction(setActive func(ctx context.Context, id string, active bool) error, labels invdomain.InventoryLabels) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		perms := view.GetUserPermissions(ctx)
 		if !perms.Can("inventory_item", "update") {

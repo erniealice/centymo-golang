@@ -10,8 +10,8 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
-	centymo "github.com/erniealice/centymo-golang"
-	inventoryform "github.com/erniealice/centymo-golang/views/inventory/form"
+	invdomain "github.com/erniealice/centymo-golang/domain/inventory"
+	inventoryform "github.com/erniealice/centymo-golang/domain/inventory/views/inventory/form"
 
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 )
@@ -21,8 +21,8 @@ import (
 // respective feature packages (inventory/serial, inventory/transaction,
 // inventory/depreciation).
 type Deps struct {
-	Routes              centymo.InventoryRoutes
-	Labels              centymo.InventoryLabels
+	Routes              invdomain.InventoryRoutes
+	Labels              invdomain.InventoryLabels
 	CreateInventoryItem func(ctx context.Context, req *inventoryitempb.CreateInventoryItemRequest) (*inventoryitempb.CreateInventoryItemResponse, error)
 	ReadInventoryItem   func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	UpdateInventoryItem func(ctx context.Context, req *inventoryitempb.UpdateInventoryItemRequest) (*inventoryitempb.UpdateInventoryItemResponse, error)
@@ -36,7 +36,7 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func formLabels(t func(string) string, f centymo.InventoryFormLabels) inventoryform.Labels {
+func formLabels(t func(string) string, f invdomain.InventoryFormLabels) inventoryform.Labels {
 	return inventoryform.Labels{
 		Product:          t("inventory.form.product"),
 		SKU:              t("inventory.form.sku"),
@@ -48,7 +48,7 @@ func formLabels(t func(string) string, f centymo.InventoryFormLabels) inventoryf
 		Notes:            t("inventory.form.notes"),
 		NotesPlaceholder: t("inventory.form.notesPlaceholder"),
 		Active:           t("inventory.form.active"),
-		// Info fields sourced from centymo.InventoryFormLabels (populated from lyngua JSON + defaults).
+		// Info fields sourced from invdomain.InventoryFormLabels (populated from lyngua JSON + defaults).
 		ProductInfo:       f.ProductInfo,
 		SKUInfo:           f.SKUInfo,
 		OnHandInfo:        f.OnHandInfo,
