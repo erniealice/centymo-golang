@@ -25,9 +25,9 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
-	subscriptionaction "github.com/erniealice/centymo-golang/domain/subscription/views/subscription/action"
-	subscriptiondetail "github.com/erniealice/centymo-golang/domain/subscription/views/subscription/detail"
-	subscriptionlist "github.com/erniealice/centymo-golang/domain/subscription/views/subscription/list"
+	subscriptionaction "github.com/erniealice/centymo-golang/domain/subscription/subscription/action"
+	subscriptiondetail "github.com/erniealice/centymo-golang/domain/subscription/subscription/detail"
+	subscriptionlist "github.com/erniealice/centymo-golang/domain/subscription/subscription/list"
 )
 
 // subscriptionWiring holds everything wireSubscriptionModule needs from the

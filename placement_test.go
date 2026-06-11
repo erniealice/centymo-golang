@@ -64,7 +64,7 @@ var legacyAllow = map[string]string{
 	// for a pure structural wave. W9 resolves the naming, then deletes these.
 	"plan_product_subtypes.go":  "W9: rename ProductPlanForm/ProductKindOption sub-types (R3 longest-match collides with product domain); functionally Plan sub-types nested in PlanLabels",
 	"client_packages_labels.go": "W9: rename ClientPackages projection (R3 longest-match collides with entity/client); subscription-domain client-Packages-tab labels",
-	"product_plan.go":           "W9: view-local ProductPlanFormLabels in domain/subscription/views/plan/action (R3 longest-match collides with product domain); single file, single type",
+	"product_plan.go":           "W9: view-local ProductPlanFormLabels in domain/subscription/plan/action (R3 longest-match collides with product domain); single file, single type",
 	// ── W4 (subscription) — R4 pre-existing oversized view handlers ──────────
 	// detail/page.go for subscription (1916) + price_plan (1720) were ALREADY
 	// >1200 at HEAD, excused under the "views" first-segment before W4 re-rooted
@@ -83,6 +83,16 @@ var legacyAllow = map[string]string{
 	// W9 resolves by renaming or by teaching the gate that *_kind enum labels live
 	// with their consuming domain, then deletes this line.
 	"advance.go": "W9: AdvanceKindLabels/AdvanceKindRootLabels (R3 longest-match collides with common/advance_kind enum); they are treasury-domain labels for that shared enum",
+	// ── FINALIZE (centymo restructure) — permissive entries for the consumer
+	//    facade + in-module leaf + R3 longest-match false positives on the
+	//    hand-written domain/<d>/<d>.go facades. None are real misplacements; the
+	//    facade re-exports prefixed names whose NAME (not home) resolves to a
+	//    sibling/other domain. W9 resolves the naming, then deletes these.
+	"shared":              "FINALIZE: domain/shared/ in-module leaf (DataSource + Location*) — charter'd cross-domain leaf so entity view pkgs import it instead of the root (breaks entity->root->facade cycle); also domain/treasury/shared/ holds the advance contract. Migrates out (DataSource->pyeza, Location->entydad) at Wave P/WL.",
+	"treasury.go":         "FINALIZE: treasury-domain consumer facade re-exports (AdvanceKindLabels/AdvanceKindRootLabels NAME-resolve to common/advance_kind; Disbursement/Collection/AdvancesDashboard resolve correctly). Pure re-export, zero behaviour.",
+	"subscription.go":     "FINALIZE: subscription facade re-exports — ClientPackagesLabels/ProductPlanFormLabels/ProductKindOptionLabels NAMES longest-match to entity/product domains but are subscription-aggregate re-exports. Pure re-export.",
+	"product_subtypes.go": "FINALIZE: plan/product_subtypes.go — ProductPlanFormLabels/ProductKindOptionLabels (R3 longest-match collides with product domain); functionally Plan sub-types nested in PlanLabels.",
+	"client_packages":     "FINALIZE: subscription/client_packages/ — ClientPackages projection (R3 longest-match collides with entity/client); subscription-domain client-Packages-tab labels.",
 }
 var charterViews = []string{} // crossCutting only: allowed views/<x> concern groups
 

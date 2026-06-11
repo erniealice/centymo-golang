@@ -15,7 +15,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
-	advancesdashboardmod "github.com/erniealice/centymo-golang/domain/treasury/views/advances_dashboard"
+	advancesdashboardmod "github.com/erniealice/centymo-golang/domain/treasury/advancesdashboard"
 )
 
 // advancesDashboardWiring holds everything wireAdvancesDashboardModule needs

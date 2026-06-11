@@ -22,12 +22,12 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
-	procurementrequestmod "github.com/erniealice/centymo-golang/domain/expenditure/views/procurement_request"
-	procurementrequestlinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/procurement_request_line"
-	suppliercontractmod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract"
-	suppliercontractlinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_line"
+	procurementrequestmodmodule "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request/module"
+	procurementrequestlinemod "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request_line"
+	suppliercontractmodmodule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract/module"
+	suppliercontractlinemod "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_line"
 	procurementdomain "github.com/erniealice/centymo-golang/domain/procurement"
-	procurementmod "github.com/erniealice/centymo-golang/domain/procurement/views/procurement"
+	procurementmodmodule "github.com/erniealice/centymo-golang/domain/procurement/procurementdashboard/module"
 )
 
 // supplierCommitmentWiring holds everything wireSupplierCommitmentModules
@@ -71,7 +71,7 @@ func wireSupplierCommitmentModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 
 	// SupplierContract module
 	if cfg.wantSupplierContract() {
-		scDeps := &suppliercontractmod.ModuleDeps{
+		scDeps := &suppliercontractmodmodule.ModuleDeps{
 			Routes:       w.supplierContractRoutes,
 			Labels:       w.supplierContractLabels,
 			CommonLabels: ctx.Common,
@@ -126,7 +126,7 @@ func wireSupplierCommitmentModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 		scDeps.CreateAttachment = w.createAttachment
 		scDeps.DeleteAttachment = w.deleteAttachment
 		scDeps.NewAttachmentID = w.newAttachmentID
-		suppliercontractmod.NewModule(scDeps).RegisterRoutes(ctx.Routes)
+		suppliercontractmodmodule.NewModule(scDeps).RegisterRoutes(ctx.Routes)
 	}
 
 	// SupplierContractLine module — child rows of SupplierContract.
@@ -147,7 +147,7 @@ func wireSupplierCommitmentModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 
 	// ProcurementRequest module
 	if cfg.wantProcurementRequest() {
-		prDeps := &procurementrequestmod.ModuleDeps{
+		prDeps := &procurementrequestmodmodule.ModuleDeps{
 			Routes:       w.procurementRequestRoutes,
 			Labels:       w.procurementRequestLabels,
 			CommonLabels: ctx.Common,
@@ -215,7 +215,7 @@ func wireSupplierCommitmentModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 		prDeps.CreateAttachment = w.createAttachment
 		prDeps.DeleteAttachment = w.deleteAttachment
 		prDeps.NewAttachmentID = w.newAttachmentID
-		procurementrequestmod.NewModule(prDeps).RegisterRoutes(ctx.Routes)
+		procurementrequestmodmodule.NewModule(prDeps).RegisterRoutes(ctx.Routes)
 	}
 
 	// ProcurementRequestLine module — child rows of ProcurementRequest.
@@ -237,7 +237,7 @@ func wireSupplierCommitmentModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 	// Procurement Operations composition app (read-only — no proto entity).
 	// Nil-safe: missing list closures render empty states in each view.
 	if cfg.wantProcurement() {
-		procDeps := &procurementmod.ModuleDeps{
+		procDeps := &procurementmodmodule.ModuleDeps{
 			Routes:       w.procurementRoutes,
 			Labels:       w.procurementLabels,
 			CommonLabels: ctx.Common,
@@ -245,6 +245,6 @@ func wireSupplierCommitmentModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 		procDeps.ListSupplierContracts = useCases.SupplierContract.ListSupplierContracts
 		procDeps.ListProcurementRequests = useCases.SupplierContract.ListProcurementRequests
 		procDeps.ListExpenditures = useCases.Expenditure.ListExpenditures
-		procurementmod.NewModule(procDeps).RegisterRoutes(ctx.Routes)
+		procurementmodmodule.NewModule(procDeps).RegisterRoutes(ctx.Routes)
 	}
 }

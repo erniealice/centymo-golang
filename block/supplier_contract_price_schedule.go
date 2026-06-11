@@ -17,8 +17,8 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
-	suppliercontractpriceschedulemod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_price_schedule"
-	suppliercontractpricescheduleinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/supplier_contract_price_schedule_line"
+	suppliercontractpriceschedulemodmodule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule/module"
+	suppliercontractpricescheduleinemod "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule_line"
 )
 
 // supplierContractPriceScheduleWiring holds everything wireSupplierContractPriceScheduleModules
@@ -43,7 +43,7 @@ type supplierContractPriceScheduleWiring struct {
 func wireSupplierContractPriceScheduleModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w supplierContractPriceScheduleWiring) {
 	// SupplierContractPriceSchedule module
 	if cfg.wantSupplierContractPriceSchedule() {
-		scpsDeps := &suppliercontractpriceschedulemod.ModuleDeps{
+		scpsDeps := &suppliercontractpriceschedulemodmodule.ModuleDeps{
 			Routes:       w.supplierContractPriceScheduleRoutes,
 			Labels:       w.supplierContractPriceScheduleLabels,
 			CommonLabels: ctx.Common,
@@ -87,7 +87,7 @@ func wireSupplierContractPriceScheduleModules(ctx *pyeza.AppContext, cfg *blockC
 		scpsDeps.CreateAttachment = w.createAttachment
 		scpsDeps.DeleteAttachment = w.deleteAttachment
 		scpsDeps.NewAttachmentID = w.newAttachmentID
-		suppliercontractpriceschedulemod.NewModule(scpsDeps).RegisterRoutes(ctx.Routes)
+		suppliercontractpriceschedulemodmodule.NewModule(scpsDeps).RegisterRoutes(ctx.Routes)
 	}
 
 	// SupplierContractPriceScheduleLine module — child rows of SupplierContractPriceSchedule.

@@ -36,6 +36,12 @@ package block
 import (
 	"context"
 	"fmt"
+	expendituremodmodule "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/module"
+	inventorymodmodule "github.com/erniealice/centymo-golang/domain/inventory/inventory/module"
+	resourcemodmodule "github.com/erniealice/centymo-golang/domain/product/resource/module"
+	revenuemodmodule "github.com/erniealice/centymo-golang/domain/revenue/revenue/module"
+	collectionmodmodule "github.com/erniealice/centymo-golang/domain/treasury/collection/module"
+	disbursementmodmodule "github.com/erniealice/centymo-golang/domain/treasury/disbursement/module"
 	"log"
 	"net/http"
 	"os"
@@ -53,18 +59,12 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
-	expendituremod "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure"
 	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
-	inventorymod "github.com/erniealice/centymo-golang/domain/inventory/views/inventory"
 	procurementdomain "github.com/erniealice/centymo-golang/domain/procurement"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
-	resourcemod "github.com/erniealice/centymo-golang/domain/product/views/resource"
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
-	revenuemod "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
 	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
-	collectionmod "github.com/erniealice/centymo-golang/domain/treasury/views/collection"
-	disbursementmod "github.com/erniealice/centymo-golang/domain/treasury/views/disbursement"
 )
 
 // ---------------------------------------------------------------------------
@@ -430,7 +430,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantInventory() {
-			invDeps := &inventorymod.ModuleDeps{
+			invDeps := &inventorymodmodule.ModuleDeps{
 				Routes:       inventoryRoutes,
 				Labels:       inventoryLabels,
 				CommonLabels: ctx.Common,
@@ -471,7 +471,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			invDeps.ListProductOptions = useCases.Product.ListProductOptions
 			invDeps.ListLocations = useCases.Entity.Location.ListLocations
 
-			invMod := inventorymod.NewModule(invDeps)
+			invMod := inventorymodmodule.NewModule(invDeps)
 			invMod.RegisterRoutes(ctx.Routes)
 			// CSV export is a raw http.HandlerFunc (bypasses view/template layer)
 			handleFunc(ctx.Routes, "GET", inventoryRoutes.MovementsExportURL, invMod.MovementsExport)
@@ -482,19 +482,19 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantRevenue() {
-			revDeps := &revenuemod.ModuleDeps{
+			revDeps := &revenuemodmodule.ModuleDeps{
 				Routes:       revenueRoutes,
 				DB:           db,
 				Labels:       revenueLabels,
 				CommonLabels: ctx.Common,
 				TableLabels:  centymoTableLabels,
 				// Payment terms dropdown (client/both scope)
-				ListPaymentTerms: func(fctx context.Context) ([]*revenuemod.PaymentTermOption, error) {
+				ListPaymentTerms: func(fctx context.Context) ([]*revenuemodmodule.PaymentTermOption, error) {
 					rows, err := db.ListSimple(fctx, "payment_term")
 					if err != nil {
 						return nil, err
 					}
-					opts := make([]*revenuemod.PaymentTermOption, 0, len(rows))
+					opts := make([]*revenuemodmodule.PaymentTermOption, 0, len(rows))
 					for _, row := range rows {
 						id, _ := row["id"].(string)
 						name, _ := row["name"].(string)
@@ -514,7 +514,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						case float64:
 							netDays = int32(v)
 						}
-						opts = append(opts, &revenuemod.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
+						opts = append(opts, &revenuemodmodule.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
 					}
 					return opts, nil
 				},
@@ -571,7 +571,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// Phase 5: wire tax lines read-access
 			revDeps.ListRevenueTaxLines = useCases.Revenue.ListRevenueTaxLines
 
-			revenueMod := revenuemod.NewModule(revDeps)
+			revenueMod := revenuemodmodule.NewModule(revDeps)
 			revenueMod.RegisterRoutes(ctx.Routes)
 			// Invoice download is http.HandlerFunc (bypasses view/template layer)
 			handleFunc(ctx.Routes, "GET", revenueRoutes.InvoiceDownloadURL, revenueMod.InvoiceDownload)
@@ -670,7 +670,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			collectionAdvanceLabels := treasurydomain.DefaultTreasuryCollectionAdvanceLabels()
 			_ = translations.LoadPathIfExists("en", ctx.BusinessType, "treasury_collection.json", "advance", &collectionAdvanceLabels)
 
-			collDeps := &collectionmod.ModuleDeps{
+			collDeps := &collectionmodmodule.ModuleDeps{
 				Routes:           collectionRoutes,
 				Labels:           collectionLabels,
 				CommonLabels:     ctx.Common,
@@ -697,7 +697,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			collDeps.GetFunctionalCurrency = func(fctx context.Context) string {
 				return getFunctionalCurrency(fctx, useCases)
 			}
-			collectionmod.NewModule(collDeps).RegisterRoutes(ctx.Routes)
+			collectionmodmodule.NewModule(collDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		// =====================================================================
@@ -709,7 +709,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			disbursementAdvanceLabels := treasurydomain.DefaultTreasuryDisbursementAdvanceLabels()
 			_ = translations.LoadPathIfExists("en", ctx.BusinessType, "treasury_disbursement.json", "advance", &disbursementAdvanceLabels)
 
-			disbursementmod.NewModule(&disbursementmod.ModuleDeps{
+			disbursementmodmodule.NewModule(&disbursementmodmodule.ModuleDeps{
 				Routes:             disbursementRoutes,
 				Labels:             disbursementLabels,
 				CommonLabels:       ctx.Common,
@@ -739,7 +739,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantExpenditure() {
-			expDeps := &expendituremod.ModuleDeps{
+			expDeps := &expendituremodmodule.ModuleDeps{
 				Routes:         expenditureRoutes,
 				DB:             db,
 				Labels:         expenditureLabels,
@@ -747,12 +747,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				CommonLabels:   ctx.Common,
 				TableLabels:    centymoTableLabels,
 				// Payment terms dropdown (supplier/both scope)
-				ListPaymentTerms: func(fctx context.Context) ([]*expendituremod.PaymentTermOption, error) {
+				ListPaymentTerms: func(fctx context.Context) ([]*expendituremodmodule.PaymentTermOption, error) {
 					rows, err := db.ListSimple(fctx, "payment_term")
 					if err != nil {
 						return nil, err
 					}
-					opts := make([]*expendituremod.PaymentTermOption, 0, len(rows))
+					opts := make([]*expendituremodmodule.PaymentTermOption, 0, len(rows))
 					for _, row := range rows {
 						id, _ := row["id"].(string)
 						name, _ := row["name"].(string)
@@ -772,7 +772,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						case float64:
 							netDays = int32(v)
 						}
-						opts = append(opts, &expendituremod.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
+						opts = append(opts, &expendituremodmodule.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
 					}
 					return opts, nil
 				},
@@ -825,7 +825,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			expDeps.CreateAttachment = createAttachment
 			expDeps.DeleteAttachment = deleteAttachment
 			expDeps.NewAttachmentID = newAttachmentID
-			expendituremod.NewModule(expDeps).RegisterRoutes(ctx.Routes)
+			expendituremodmodule.NewModule(expDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		// =====================================================================
@@ -833,7 +833,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantResource() {
-			resourcemod.NewModule(&resourcemod.ModuleDeps{
+			resourcemodmodule.NewModule(&resourcemodmodule.ModuleDeps{
 				Routes:         resourceRoutes,
 				Labels:         resourceLabels,
 				CommonLabels:   ctx.Common,

@@ -9,6 +9,7 @@ package block
 
 import (
 	"context"
+	productmodmodule "github.com/erniealice/centymo-golang/domain/product/product/module"
 
 	"github.com/erniealice/espyna-golang/reference"
 
@@ -19,8 +20,7 @@ import (
 
 	centymo "github.com/erniealice/centymo-golang"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
-	productmod "github.com/erniealice/centymo-golang/domain/product/views/product"
-	productlinemod "github.com/erniealice/centymo-golang/domain/product/views/product/line"
+	productlinemod "github.com/erniealice/centymo-golang/domain/product/product/line"
 )
 
 // productWiring holds everything wireProductModules needs from the surrounding
@@ -80,7 +80,7 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 			defaultTrackingMode = "none"
 		}
 
-		productDeps := &productmod.ModuleDeps{
+		productDeps := &productmodmodule.ModuleDeps{
 			Routes:              w.productRoutes,
 			Mode:                "service",
 			DB:                  w.db,
@@ -198,7 +198,7 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 			productDeps.ListPlans = useCases.Plan.ListPlans
 		}
 		wireServiceDashboard(productDeps, useCases)
-		productModule := productmod.NewModule(productDeps)
+		productModule := productmodmodule.NewModule(productDeps)
 		productModule.RegisterRoutes(ctx.Routes)
 		// Attachment preview/download streams raw bytes — registered at the
 		// block layer because RegisterRoutes only handles view.View, not
@@ -237,7 +237,7 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 			// grants keep working on the Products surface without any
 			// role-permission migration.
 			productInventoryDeps.PermissionEntity = "product"
-			productmod.NewModule(&productInventoryDeps).RegisterRoutes(ctx.Routes)
+			productmodmodule.NewModule(&productInventoryDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		// Supplies-flavoured product mount. Mode="supplies" narrows the
@@ -264,7 +264,7 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 			// stock-clerk role can be granted Supplies CRUD without any
 			// grant on Products or Services.
 			productSuppliesDeps.PermissionEntity = "supplies"
-			productmod.NewModule(&productSuppliesDeps).RegisterRoutes(ctx.Routes)
+			productmodmodule.NewModule(&productSuppliesDeps).RegisterRoutes(ctx.Routes)
 		}
 	}
 

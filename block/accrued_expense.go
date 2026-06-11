@@ -17,8 +17,8 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
-	accruedexpensemod "github.com/erniealice/centymo-golang/domain/expenditure/views/accrued_expense"
-	accruedexpensesettlementmod "github.com/erniealice/centymo-golang/domain/expenditure/views/accrued_expense_settlement"
+	accruedexpensemodmodule "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense/module"
+	accruedexpensesettlementmod "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense_settlement"
 )
 
 // accruedExpenseWiring holds everything wireAccruedExpenseModules
@@ -43,7 +43,7 @@ type accruedExpenseWiring struct {
 func wireAccruedExpenseModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w accruedExpenseWiring) {
 	// AccruedExpense module
 	if cfg.wantAccruedExpense() {
-		aeDeps := &accruedexpensemod.ModuleDeps{
+		aeDeps := &accruedexpensemodmodule.ModuleDeps{
 			Routes:       w.accruedExpenseRoutes,
 			Labels:       w.accruedExpenseLabels,
 			CommonLabels: ctx.Common,
@@ -88,7 +88,7 @@ func wireAccruedExpenseModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases
 		aeDeps.CreateAttachment = w.createAttachment
 		aeDeps.DeleteAttachment = w.deleteAttachment
 		aeDeps.NewAttachmentID = w.newAttachmentID
-		accruedexpensemod.NewModule(aeDeps).RegisterRoutes(ctx.Routes)
+		accruedexpensemodmodule.NewModule(aeDeps).RegisterRoutes(ctx.Routes)
 	}
 
 	// AccruedExpenseSettlement module — inline child of AccruedExpense (shares parent routes).

@@ -1,0 +1,54 @@
+package action
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition"
+
+	"github.com/erniealice/pyeza-golang/view"
+
+	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
+)
+
+// Deps holds dependencies for the expense_recognition action handlers.
+//
+// Note: there is intentionally NO Add/Edit drawer-form action — recognitions
+// are created BY use case (RecognizeFromExpenditure / RecognizeFromContract),
+// not by user input. The only operator-driven action is Reverse (handled by
+// the detail package).
+type Deps struct {
+	Routes                   expense_recognition.Routes
+	Labels                   expense_recognition.Labels
+	DeleteExpenseRecognition func(ctx context.Context, req *expenserecognitionpb.DeleteExpenseRecognitionRequest) (*expenserecognitionpb.DeleteExpenseRecognitionResponse, error)
+}
+
+// NewDeleteAction handles POST /action/expense-recognition/delete (Draft only).
+func NewDeleteAction(deps *Deps) view.View {
+	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
+		perms := view.GetUserPermissions(ctx)
+		if !perms.Can("expense_recognition", "delete") {
+			return view.HTMXError("Missing permission: expense_recognition:delete")
+		}
+		if viewCtx.Request.Method != http.MethodPost {
+			return view.Error(fmt.Errorf("method not allowed"))
+		}
+		id := viewCtx.Request.FormValue("id")
+		if id == "" {
+			return view.Error(fmt.Errorf("missing id"))
+		}
+		if deps.DeleteExpenseRecognition == nil {
+			return view.HTMXError("delete handler not wired")
+		}
+		_, err := deps.DeleteExpenseRecognition(ctx, &expenserecognitionpb.DeleteExpenseRecognitionRequest{
+			Data: &expenserecognitionpb.ExpenseRecognition{Id: id},
+		})
+		if err != nil {
+			log.Printf("DeleteExpenseRecognition %s: %v", id, err)
+			return view.Error(fmt.Errorf("failed to delete recognition: %w", err))
+		}
+		return view.HTMXSuccess("expense-recognitions-table")
+	})
+}

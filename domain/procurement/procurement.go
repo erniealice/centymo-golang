@@ -1,84 +1,187 @@
+// Package procurement is the procurement-domain consumer facade (centymo restructure).
+//
+// PURE RE-EXPORT — zero behaviour. The procurement domain's data/route types,
+// Default* constructors, and URL consts moved into per-entity packages under
+// domain/procurement/<entity>/ with entity-local names (the <Entity> prefix stripped).
+// This facade re-adds the original prefixed names so existing consumers
+// (block/, service-admin) keep resolving procurement.<Entity>Labels /
+// procurement.Default<Entity>Routes() / procurement.<Entity>ListURL unchanged.
+//
+// An entity package MUST NEVER import this facade (that would be an import
+// cycle procurement -> <entity> -> procurement); cross-entity references go DIRECT to the
+// sibling package.
 package procurement
 
-// procurement.go — procurement-domain composition surface (centymo W7).
-//
-// Holds the Procurement Operations composition app's label + route contract.
-// The bare "procurement" view dir owns NO esqyma proto entity — it is a
-// composition surface over the procurement domain's entities (mirrors the
-// schedule/cyta pattern). It lives in domain/procurement/ by domain-name match.
-//
-// Extracted verbatim from the root labels.go (ProcurementLabels) and
-// routes_config.go (ProcurementRoutes + Default*/RouteMap) per the domain-first
-// restructure. Pure structural move — no behaviour change.
+import (
+	costplanpkg "github.com/erniealice/centymo-golang/domain/procurement/cost_plan"
+	costschedulepkg "github.com/erniealice/centymo-golang/domain/procurement/cost_schedule"
+	procurementdashboardpkg "github.com/erniealice/centymo-golang/domain/procurement/procurementdashboard"
+	supplierplanpkg "github.com/erniealice/centymo-golang/domain/procurement/supplier_plan"
+	supplierproductcostplanpkg "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_cost_plan"
+	supplierproductplanpkg "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_plan"
+	suppliersubscriptionpkg "github.com/erniealice/centymo-golang/domain/procurement/supplier_subscription"
+)
 
-// ---------------------------------------------------------------------------
-// P3b — Procurement Operations app labels
-// (composition surface, no proto entity — mirrors the schedule/cyta pattern)
-// ---------------------------------------------------------------------------
+// Re-exported data/route types (type aliases — identity-preserving).
+type (
+	CostPlanActionLabels                   = costplanpkg.ActionLabels
+	CostPlanBulkLabels                     = costplanpkg.BulkLabels
+	CostPlanButtonLabels                   = costplanpkg.ButtonLabels
+	CostPlanColumnLabels                   = costplanpkg.ColumnLabels
+	CostPlanConfirmLabels                  = costplanpkg.ConfirmLabels
+	CostPlanDetailLabels                   = costplanpkg.DetailLabels
+	CostPlanEmptyLabels                    = costplanpkg.EmptyLabels
+	CostPlanErrorLabels                    = costplanpkg.ErrorLabels
+	CostPlanFormLabels                     = costplanpkg.FormLabels
+	CostPlanLabels                         = costplanpkg.Labels
+	CostPlanPageLabels                     = costplanpkg.PageLabels
+	CostPlanRoutes                         = costplanpkg.Routes
+	CostPlanStatusLabels                   = costplanpkg.StatusLabels
+	CostPlanTabLabels                      = costplanpkg.TabLabels
+	CostScheduleActionLabels               = costschedulepkg.ActionLabels
+	CostScheduleBulkLabels                 = costschedulepkg.BulkLabels
+	CostScheduleButtonLabels               = costschedulepkg.ButtonLabels
+	CostScheduleColumnLabels               = costschedulepkg.ColumnLabels
+	CostScheduleConfirmLabels              = costschedulepkg.ConfirmLabels
+	CostScheduleDetailLabels               = costschedulepkg.DetailLabels
+	CostScheduleEmptyLabels                = costschedulepkg.EmptyLabels
+	CostScheduleErrorLabels                = costschedulepkg.ErrorLabels
+	CostScheduleFormLabels                 = costschedulepkg.FormLabels
+	CostScheduleLabels                     = costschedulepkg.Labels
+	CostSchedulePageLabels                 = costschedulepkg.PageLabels
+	CostScheduleRoutes                     = costschedulepkg.Routes
+	CostScheduleStatusLabels               = costschedulepkg.StatusLabels
+	CostScheduleTabLabels                  = costschedulepkg.TabLabels
+	ProcurementLabels                      = procurementdashboardpkg.Labels
+	ProcurementRoutes                      = procurementdashboardpkg.Routes
+	SupplierPlanActionLabels               = supplierplanpkg.ActionLabels
+	SupplierPlanBulkLabels                 = supplierplanpkg.BulkLabels
+	SupplierPlanButtonLabels               = supplierplanpkg.ButtonLabels
+	SupplierPlanColumnLabels               = supplierplanpkg.ColumnLabels
+	SupplierPlanConfirmLabels              = supplierplanpkg.ConfirmLabels
+	SupplierPlanDetailLabels               = supplierplanpkg.DetailLabels
+	SupplierPlanEmptyLabels                = supplierplanpkg.EmptyLabels
+	SupplierPlanErrorLabels                = supplierplanpkg.ErrorLabels
+	SupplierPlanFormLabels                 = supplierplanpkg.FormLabels
+	SupplierPlanLabels                     = supplierplanpkg.Labels
+	SupplierPlanPageLabels                 = supplierplanpkg.PageLabels
+	SupplierPlanRoutes                     = supplierplanpkg.Routes
+	SupplierPlanStatusLabels               = supplierplanpkg.StatusLabels
+	SupplierPlanTabLabels                  = supplierplanpkg.TabLabels
+	SupplierProductCostPlanActionLabels    = supplierproductcostplanpkg.ActionLabels
+	SupplierProductCostPlanColumnLabels    = supplierproductcostplanpkg.ColumnLabels
+	SupplierProductCostPlanEmptyLabels     = supplierproductcostplanpkg.EmptyLabels
+	SupplierProductCostPlanErrorLabels     = supplierproductcostplanpkg.ErrorLabels
+	SupplierProductCostPlanFormLabels      = supplierproductcostplanpkg.FormLabels
+	SupplierProductCostPlanLabels          = supplierproductcostplanpkg.Labels
+	SupplierProductPlanActionLabels        = supplierproductplanpkg.ActionLabels
+	SupplierProductPlanBulkLabels          = supplierproductplanpkg.BulkLabels
+	SupplierProductPlanButtonLabels        = supplierproductplanpkg.ButtonLabels
+	SupplierProductPlanColumnLabels        = supplierproductplanpkg.ColumnLabels
+	SupplierProductPlanConfirmLabels       = supplierproductplanpkg.ConfirmLabels
+	SupplierProductPlanDetailLabels        = supplierproductplanpkg.DetailLabels
+	SupplierProductPlanEmptyLabels         = supplierproductplanpkg.EmptyLabels
+	SupplierProductPlanErrorLabels         = supplierproductplanpkg.ErrorLabels
+	SupplierProductPlanFormLabels          = supplierproductplanpkg.FormLabels
+	SupplierProductPlanLabels              = supplierproductplanpkg.Labels
+	SupplierProductPlanPageLabels          = supplierproductplanpkg.PageLabels
+	SupplierProductPlanRoutes              = supplierproductplanpkg.Routes
+	SupplierProductPlanStatusLabels        = supplierproductplanpkg.StatusLabels
+	SupplierProductPlanTabLabels           = supplierproductplanpkg.TabLabels
+	SupplierSubscriptionActionLabels       = suppliersubscriptionpkg.ActionLabels
+	SupplierSubscriptionBulkLabels         = suppliersubscriptionpkg.BulkLabels
+	SupplierSubscriptionButtonLabels       = suppliersubscriptionpkg.ButtonLabels
+	SupplierSubscriptionColumnLabels       = suppliersubscriptionpkg.ColumnLabels
+	SupplierSubscriptionConfirmLabels      = suppliersubscriptionpkg.ConfirmLabels
+	SupplierSubscriptionDetailLabels       = suppliersubscriptionpkg.DetailLabels
+	SupplierSubscriptionEmptyLabels        = suppliersubscriptionpkg.EmptyLabels
+	SupplierSubscriptionErrorLabels        = suppliersubscriptionpkg.ErrorLabels
+	SupplierSubscriptionFormLabels         = suppliersubscriptionpkg.FormLabels
+	SupplierSubscriptionLabels             = suppliersubscriptionpkg.Labels
+	SupplierSubscriptionPageLabels         = suppliersubscriptionpkg.PageLabels
+	SupplierSubscriptionRecognitionsLabels = suppliersubscriptionpkg.RecognitionsLabels
+	SupplierSubscriptionRoutes             = suppliersubscriptionpkg.Routes
+	SupplierSubscriptionStatusLabels       = suppliersubscriptionpkg.StatusLabels
+	SupplierSubscriptionTabLabels          = suppliersubscriptionpkg.TabLabels
+)
 
-// ProcurementLabels holds all translatable strings for the Procurement
-// Operations composition app. Populated via lyngua (P4). These keys are
-// intentionally generic so they render without overrides when lyngua has not
-// yet supplied values.
-type ProcurementLabels struct {
-	AppLabel              string `json:"app_label"`
-	DashboardTitle        string `json:"dashboard_title"`
-	PendingApprovalsTitle string `json:"pending_approvals_title"`
-	ExpiringTitle         string `json:"expiring_title"`
-	VarianceTitle         string `json:"variance_title"`
-	RecurrenceTitle       string `json:"recurrence_title"`
-	RenewalsTitle         string `json:"renewals_title"`
-	UtilizationTitle      string `json:"utilization_title"`
-	EmptyRenewals         string `json:"empty_renewals"`
-	EmptyVariance         string `json:"empty_variance"`
-	EmptyUtilization      string `json:"empty_utilization"`
-	EmptyRecurrence       string `json:"empty_recurrence"`
-	DaysUntilExpiry       string `json:"days_until_expiry"`
-	UtilizationPercent    string `json:"utilization_percent"`
-	BudgetPressureLabel   string `json:"budget_pressure_label"`
-}
+// Re-exported URL route consts (const-identity preserved).
+const (
+	CostPlanAddURL                          = costplanpkg.AddURL
+	CostPlanBulkDeleteURL                   = costplanpkg.BulkDeleteURL
+	CostPlanBulkSetStatusURL                = costplanpkg.BulkSetStatusURL
+	CostPlanDeleteURL                       = costplanpkg.DeleteURL
+	CostPlanDetailURL                       = costplanpkg.DetailURL
+	CostPlanEditURL                         = costplanpkg.EditURL
+	CostPlanListURL                         = costplanpkg.ListURL
+	CostPlanProductCostAddURL               = costplanpkg.ProductCostAddURL
+	CostPlanProductCostDeleteURL            = costplanpkg.ProductCostDeleteURL
+	CostPlanProductCostEditURL              = costplanpkg.ProductCostEditURL
+	CostPlanSetStatusURL                    = costplanpkg.SetStatusURL
+	CostPlanTabActionURL                    = costplanpkg.TabActionURL
+	CostPlanTableURL                        = costplanpkg.TableURL
+	CostScheduleAddURL                      = costschedulepkg.AddURL
+	CostScheduleBulkDeleteURL               = costschedulepkg.BulkDeleteURL
+	CostScheduleBulkSetStatusURL            = costschedulepkg.BulkSetStatusURL
+	CostScheduleDeleteURL                   = costschedulepkg.DeleteURL
+	CostScheduleDetailURL                   = costschedulepkg.DetailURL
+	CostScheduleEditURL                     = costschedulepkg.EditURL
+	CostScheduleListURL                     = costschedulepkg.ListURL
+	CostScheduleSetStatusURL                = costschedulepkg.SetStatusURL
+	CostScheduleTabActionURL                = costschedulepkg.TabActionURL
+	CostScheduleTableURL                    = costschedulepkg.TableURL
+	ProcurementDashboardURL                 = procurementdashboardpkg.DashboardURL
+	ProcurementRecurrenceDraftsURL          = procurementdashboardpkg.RecurrenceDraftsURL
+	ProcurementRenewalCalendarURL           = procurementdashboardpkg.RenewalCalendarURL
+	ProcurementUtilizationURL               = procurementdashboardpkg.UtilizationURL
+	ProcurementVarianceURL                  = procurementdashboardpkg.VarianceURL
+	SupplierPlanAddURL                      = supplierplanpkg.AddURL
+	SupplierPlanBulkDeleteURL               = supplierplanpkg.BulkDeleteURL
+	SupplierPlanBulkSetStatusURL            = supplierplanpkg.BulkSetStatusURL
+	SupplierPlanDeleteURL                   = supplierplanpkg.DeleteURL
+	SupplierPlanDetailURL                   = supplierplanpkg.DetailURL
+	SupplierPlanEditURL                     = supplierplanpkg.EditURL
+	SupplierPlanListURL                     = supplierplanpkg.ListURL
+	SupplierPlanSetStatusURL                = supplierplanpkg.SetStatusURL
+	SupplierPlanTabActionURL                = supplierplanpkg.TabActionURL
+	SupplierPlanTableURL                    = supplierplanpkg.TableURL
+	SupplierProductPlanAddURL               = supplierproductplanpkg.AddURL
+	SupplierProductPlanBulkDeleteURL        = supplierproductplanpkg.BulkDeleteURL
+	SupplierProductPlanBulkSetStatusURL     = supplierproductplanpkg.BulkSetStatusURL
+	SupplierProductPlanDeleteURL            = supplierproductplanpkg.DeleteURL
+	SupplierProductPlanDetailURL            = supplierproductplanpkg.DetailURL
+	SupplierProductPlanEditURL              = supplierproductplanpkg.EditURL
+	SupplierProductPlanListURL              = supplierproductplanpkg.ListURL
+	SupplierProductPlanSetStatusURL         = supplierproductplanpkg.SetStatusURL
+	SupplierProductPlanTabActionURL         = supplierproductplanpkg.TabActionURL
+	SupplierProductPlanTableURL             = supplierproductplanpkg.TableURL
+	SupplierSubscriptionAddURL              = suppliersubscriptionpkg.AddURL
+	SupplierSubscriptionBulkDeleteURL       = suppliersubscriptionpkg.BulkDeleteURL
+	SupplierSubscriptionBulkSetStatusURL    = suppliersubscriptionpkg.BulkSetStatusURL
+	SupplierSubscriptionDeleteURL           = suppliersubscriptionpkg.DeleteURL
+	SupplierSubscriptionDetailURL           = suppliersubscriptionpkg.DetailURL
+	SupplierSubscriptionEditURL             = suppliersubscriptionpkg.EditURL
+	SupplierSubscriptionListURL             = suppliersubscriptionpkg.ListURL
+	SupplierSubscriptionRecognizeExpenseURL = suppliersubscriptionpkg.RecognizeExpenseURL
+	SupplierSubscriptionSearchCostPlanURL   = suppliersubscriptionpkg.SearchCostPlanURL
+	SupplierSubscriptionSearchSupplierURL   = suppliersubscriptionpkg.SearchSupplierURL
+	SupplierSubscriptionSetStatusURL        = suppliersubscriptionpkg.SetStatusURL
+	SupplierSubscriptionTabActionURL        = suppliersubscriptionpkg.TabActionURL
+	SupplierSubscriptionTableURL            = suppliersubscriptionpkg.TableURL
+)
 
-// ---------------------------------------------------------------------------
-// P3b — Procurement Operations app routes
-// (composition surface; no proto entity — mirrors the schedule/cyta pattern)
-// ---------------------------------------------------------------------------
-
-// ProcurementRoutes holds the URL constants for the Procurement Operations app.
-// service-admin composition (P3c) wires them into
-// SidebarRoutes.Operations.Procurement.
-type ProcurementRoutes struct {
-	// Dashboard
-	DashboardURL string `json:"dashboard_url"`
-
-	// Contract operations (views over SupplierContract)
-	RenewalCalendarURL string `json:"renewal_calendar_url"`
-	VarianceURL        string `json:"variance_url"`
-	UtilizationURL     string `json:"utilization_url"`
-
-	// Recurrence drafts queue (lights up when P5 ships the recurrence engine)
-	RecurrenceDraftsURL string `json:"recurrence_drafts_url"`
-}
-
-// DefaultProcurementRoutes returns a ProcurementRoutes populated from the
-// package-level route constants defined in routes.go.
-func DefaultProcurementRoutes() ProcurementRoutes {
-	return ProcurementRoutes{
-		DashboardURL:        ProcurementDashboardURL,
-		RenewalCalendarURL:  ProcurementRenewalCalendarURL,
-		VarianceURL:         ProcurementVarianceURL,
-		UtilizationURL:      ProcurementUtilizationURL,
-		RecurrenceDraftsURL: ProcurementRecurrenceDraftsURL,
-	}
-}
-
-// RouteMap returns a map of dot-notation keys to route paths for all
-// procurement operations app routes.
-func (r ProcurementRoutes) RouteMap() map[string]string {
-	return map[string]string{
-		"procurement.dashboard":         r.DashboardURL,
-		"procurement.renewals":          r.RenewalCalendarURL,
-		"procurement.variance":          r.VarianceURL,
-		"procurement.utilization":       r.UtilizationURL,
-		"procurement.recurrence_drafts": r.RecurrenceDraftsURL,
-	}
-}
+// Re-exported Default* constructors (function values).
+var (
+	DefaultCostPlanLabels                = costplanpkg.DefaultLabels
+	DefaultCostPlanRoutes                = costplanpkg.DefaultRoutes
+	DefaultCostScheduleLabels            = costschedulepkg.DefaultLabels
+	DefaultCostScheduleRoutes            = costschedulepkg.DefaultRoutes
+	DefaultProcurementRoutes             = procurementdashboardpkg.DefaultRoutes
+	DefaultSupplierPlanLabels            = supplierplanpkg.DefaultLabels
+	DefaultSupplierPlanRoutes            = supplierplanpkg.DefaultRoutes
+	DefaultSupplierProductCostPlanLabels = supplierproductcostplanpkg.DefaultLabels
+	DefaultSupplierProductPlanLabels     = supplierproductplanpkg.DefaultLabels
+	DefaultSupplierProductPlanRoutes     = supplierproductplanpkg.DefaultRoutes
+	DefaultSupplierSubscriptionLabels    = suppliersubscriptionpkg.DefaultLabels
+	DefaultSupplierSubscriptionRoutes    = suppliersubscriptionpkg.DefaultRoutes
+)

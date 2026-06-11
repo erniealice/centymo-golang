@@ -1,9 +1,21 @@
 package centymo
 
 import (
-	"github.com/erniealice/centymo-golang/domain/subscription"
-	"github.com/erniealice/centymo-golang/domain/treasury"
+	pricesched "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	subscriptionentity "github.com/erniealice/centymo-golang/domain/subscription/subscription"
+	advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/advancesdashboard"
+	disbursement "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
+	shared "github.com/erniealice/centymo-golang/domain/treasury/shared"
 )
+
+// NOTE (centymo restructure): these compatibility aliases point DIRECTLY at the
+// owning entity packages (domain/<d>/<entity>) rather than the domain facade
+// (domain/<d>). The root package must not import the domain facades — that would
+// create an import cycle (root -> facade -> entity -> root, since entity views
+// still import the root for DataSource/LocationDisplayName). Pointing at the
+// root-free entity packages preserves the exact external symbol surface
+// (centymo.SubscriptionRoutes, centymo.DisbursementRoutes, …) with ZERO
+// behaviour change. The names below are byte-identical to the prior shim.
 
 // ── centymo W4 subscription-domain compatibility shim ────────────────────────
 // The Subscription/PriceSchedule route types + their Default* constructors moved
@@ -13,12 +25,12 @@ import (
 // constructors. These thin aliases + forwarders keep that consumer compiling
 // with ZERO behaviour change (pure type-identity aliases). Remove once entydad
 // is re-pointed to domain/subscription directly (W9 / entydad-coordinated).
-type SubscriptionRoutes = subscription.SubscriptionRoutes
-type PriceScheduleRoutes = subscription.PriceScheduleRoutes
+type SubscriptionRoutes = subscriptionentity.Routes
+type PriceScheduleRoutes = pricesched.Routes
 
-func DefaultSubscriptionRoutes() SubscriptionRoutes { return subscription.DefaultSubscriptionRoutes() }
+func DefaultSubscriptionRoutes() SubscriptionRoutes { return subscriptionentity.DefaultRoutes() }
 func DefaultPriceScheduleRoutes() PriceScheduleRoutes {
-	return subscription.DefaultPriceScheduleRoutes()
+	return pricesched.DefaultRoutes()
 }
 
 // ── centymo W5 treasury-domain compatibility shim ────────────────────────────
@@ -31,20 +43,20 @@ func DefaultPriceScheduleRoutes() PriceScheduleRoutes {
 //     flow creates a pre-linked disbursement)
 //   - views/supplier_billing_event/* -> TreasuryAdvancesRoutes (+ its Default*)
 //     and AdvanceRecognizeMilestoneInput/Output
-//   - domain/subscription/views/...  -> AdvanceRecognizeMilestoneInput/Output
+//   - domain/subscription/...  -> AdvanceRecognizeMilestoneInput/Output
 //     (already-migrated W4 billing-event action)
 //
 // These thin aliases + forwarders keep those consumers compiling with ZERO
 // behaviour change. Removed as each consuming domain migrates (W6 / W9).
-type DisbursementRoutes = treasury.DisbursementRoutes
-type DisbursementLabels = treasury.DisbursementLabels
-type DisbursementFormLabels = treasury.DisbursementFormLabels
-type TreasuryAdvancesRoutes = treasury.TreasuryAdvancesRoutes
-type AdvanceRecognizeMilestoneInput = treasury.AdvanceRecognizeMilestoneInput
-type AdvanceRecognizeMilestoneOutput = treasury.AdvanceRecognizeMilestoneOutput
+type DisbursementRoutes = disbursement.Routes
+type DisbursementLabels = disbursement.Labels
+type DisbursementFormLabels = disbursement.FormLabels
+type TreasuryAdvancesRoutes = advancesdashboard.Routes
+type AdvanceRecognizeMilestoneInput = shared.AdvanceRecognizeMilestoneInput
+type AdvanceRecognizeMilestoneOutput = shared.AdvanceRecognizeMilestoneOutput
 
 func DefaultTreasuryAdvancesRoutes() TreasuryAdvancesRoutes {
-	return treasury.DefaultTreasuryAdvancesRoutes()
+	return advancesdashboard.DefaultRoutes()
 }
 
 // Three-level routing system for centymo views:

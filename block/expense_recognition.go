@@ -17,8 +17,8 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
-	expenserecognitionmod "github.com/erniealice/centymo-golang/domain/expenditure/views/expense_recognition"
-	expenserecognitionlinemod "github.com/erniealice/centymo-golang/domain/expenditure/views/expense_recognition_line"
+	expenserecognitionmodmodule "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition/module"
+	expenserecognitionlinemod "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition_line"
 )
 
 // expenseRecognitionWiring holds everything wireExpenseRecognitionModules
@@ -43,7 +43,7 @@ type expenseRecognitionWiring struct {
 func wireExpenseRecognitionModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w expenseRecognitionWiring) {
 	// ExpenseRecognition module — no Add/Edit drawer (created BY use case).
 	if cfg.wantExpenseRecognition() {
-		erDeps := &expenserecognitionmod.ModuleDeps{
+		erDeps := &expenserecognitionmodmodule.ModuleDeps{
 			Routes:       w.expenseRecognitionRoutes,
 			Labels:       w.expenseRecognitionLabels,
 			CommonLabels: ctx.Common,
@@ -82,7 +82,7 @@ func wireExpenseRecognitionModules(ctx *pyeza.AppContext, cfg *blockConfig, useC
 		erDeps.CreateAttachment = w.createAttachment
 		erDeps.DeleteAttachment = w.deleteAttachment
 		erDeps.NewAttachmentID = w.newAttachmentID
-		expenserecognitionmod.NewModule(erDeps).RegisterRoutes(ctx.Routes)
+		expenserecognitionmodmodule.NewModule(erDeps).RegisterRoutes(ctx.Routes)
 	}
 
 	// ExpenseRecognitionLine module — inline child of ExpenseRecognition.

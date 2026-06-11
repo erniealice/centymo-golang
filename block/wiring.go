@@ -12,16 +12,15 @@ package block
 
 import (
 	"context"
+	expendituremodmodule "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/module"
+	productmodmodule "github.com/erniealice/centymo-golang/domain/product/product/module"
+	collectionmodmodule "github.com/erniealice/centymo-golang/domain/treasury/collection/module"
 	"time"
 
-	expenseboard "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure/expense_dashboard"
-	purchaseboard "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure/purchase_dashboard"
-	productdashboard "github.com/erniealice/centymo-golang/domain/product/views/product/dashboard"
-	collectiondashboard "github.com/erniealice/centymo-golang/domain/treasury/views/collection/dashboard"
-
-	expendituremod "github.com/erniealice/centymo-golang/domain/expenditure/views/expenditure"
-	productmod "github.com/erniealice/centymo-golang/domain/product/views/product"
-	collectionmod "github.com/erniealice/centymo-golang/domain/treasury/views/collection"
+	expenseboard "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/expense_dashboard"
+	purchaseboard "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/purchase_dashboard"
+	productdashboard "github.com/erniealice/centymo-golang/domain/product/product/dashboard"
+	collectiondashboard "github.com/erniealice/centymo-golang/domain/treasury/collection/dashboard"
 )
 
 // ---------------------------------------------------------------------------
@@ -30,7 +29,7 @@ import (
 
 // wireCashDashboard sets collectionDeps.GetCashDashboardPageData from
 // useCases.Collection.GetCashDashboard if non-nil.
-func wireCashDashboard(deps *collectionmod.ModuleDeps, useCases *UseCases) {
+func wireCashDashboard(deps *collectionmodmodule.ModuleDeps, useCases *UseCases) {
 	if useCases == nil || useCases.Collection.GetCashDashboard == nil {
 		return
 	}
@@ -49,7 +48,7 @@ func wireCashDashboard(deps *collectionmod.ModuleDeps, useCases *UseCases) {
 
 // wireServiceDashboard sets productDeps.GetServiceDashboardPageData from
 // useCases.Product.GetServiceDashboard if non-nil.
-func wireServiceDashboard(deps *productmod.ModuleDeps, useCases *UseCases) {
+func wireServiceDashboard(deps *productmodmodule.ModuleDeps, useCases *UseCases) {
 	if useCases == nil || useCases.Product.GetServiceDashboard == nil {
 		return
 	}
@@ -68,7 +67,7 @@ func wireServiceDashboard(deps *productmod.ModuleDeps, useCases *UseCases) {
 
 // wirePurchaseDashboard sets expDeps.GetPurchaseDashboardPageData from
 // useCases.Expenditure.GetPurchaseDashboard if non-nil.
-func wirePurchaseDashboard(deps *expendituremod.ModuleDeps, useCases *UseCases) {
+func wirePurchaseDashboard(deps *expendituremodmodule.ModuleDeps, useCases *UseCases) {
 	if useCases == nil || useCases.Expenditure.GetPurchaseDashboard == nil {
 		return
 	}
@@ -87,7 +86,7 @@ func wirePurchaseDashboard(deps *expendituremod.ModuleDeps, useCases *UseCases) 
 
 // wireExpenseDashboard sets expDeps.GetExpenseDashboardPageData from
 // useCases.Expenditure.GetExpenseDashboard if non-nil.
-func wireExpenseDashboard(deps *expendituremod.ModuleDeps, useCases *UseCases) {
+func wireExpenseDashboard(deps *expendituremodmodule.ModuleDeps, useCases *UseCases) {
 	if useCases == nil || useCases.Expenditure.GetExpenseDashboard == nil {
 		return
 	}
