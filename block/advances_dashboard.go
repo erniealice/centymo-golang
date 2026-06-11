@@ -14,20 +14,20 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
-	advancesdashboardmod "github.com/erniealice/centymo-golang/views/advances_dashboard"
+	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
+	advancesdashboardmod "github.com/erniealice/centymo-golang/domain/treasury/views/advances_dashboard"
 )
 
 // advancesDashboardWiring holds everything wireAdvancesDashboardModule needs
 // from the surrounding Block() scope. Kept private; never re-exported.
 type advancesDashboardWiring struct {
-	routes               centymo.TreasuryAdvancesRoutes
-	labels               centymo.AdvancesDashboardLabels
-	enumLabels           centymo.AdvanceEnumLabels
-	collectionRoutes     centymo.CollectionRoutes
-	disbursementRoutes   centymo.DisbursementRoutes
-	centymoTableLabels   types.TableLabels
-	functionalCurrency   func(ctx context.Context) string
+	routes             treasurydomain.TreasuryAdvancesRoutes
+	labels             treasurydomain.AdvancesDashboardLabels
+	enumLabels         treasurydomain.AdvanceEnumLabels
+	collectionRoutes   treasurydomain.CollectionRoutes
+	disbursementRoutes treasurydomain.DisbursementRoutes
+	centymoTableLabels types.TableLabels
+	functionalCurrency func(ctx context.Context) string
 }
 
 // wireAdvancesDashboardModule lifts the body of `if cfg.wantTreasuryAdvances()`

@@ -50,8 +50,7 @@ var legacyAllow = map[string]string{
 	"routes_config.go":      "W1-W7: dissolve per-domain into domain/<d>/routes.go (2730 LoC, 32 Default*Routes funcs)",
 	"routes.go":             "W1-W7: dissolve per-domain into domain/<d>/routes.go (770 LoC URL consts)",
 	"routes_config_test.go": "W1-W7: moves/splits alongside routes_config.go (153 LoC)",
-	"advance_actions.go":    "W5: -> domain/treasury/advance.go (86 LoC, 8 Advance*ViewInput/Output structs)",
-	"advance_labels.go":     "W5+W6: SPLIT -> treasury/advance.go (L1-181 Advance/AdvancesDashboard) + expenditure/supplier_billing_event_labels.go (L182-498 SupplierBillingEvent*) per esqyma domainOf",
+	"advance_labels.go":     "W6: -> domain/expenditure/supplier_billing_event_labels.go (SupplierBillingEvent* labels remain at root; the treasury half — Advance enums/TreasuryAdvance/AdvancesDashboard + Default* — landed in domain/treasury/advance.go in W5)",
 	"views":                 "W1-W7: regroup 35 entity-flat dirs under domain/<d>/views/<entity>/",
 	"services":              "W8 (DEFERRED): -> espyna (checkout) + keep serial.go/service.go/types.go pending; out of scope for W1-W7",
 	"datasource.go":         "DEFERRAL (D2/TD): DataSource legacy view-data port — keep at root, do not touch in W1-W7",
@@ -74,6 +73,17 @@ var legacyAllow = map[string]string{
 	// wave, not this pure label/route relocation. Only these 2 page.go exceed
 	// the threshold today, so this basename excuses no other current violation.
 	"page.go": "VIEW-SPLIT wave: subscription/detail/page.go (1916) + price_plan/detail/page.go (1720) pre-existing >1200 view handlers, re-rooted from views/ in W4; split per concern in a dedicated wave",
+	// ── W5 (treasury) — R3 mechanical-longest-match false positive ───────────
+	// advance.go (domain/treasury) holds the treasury-shared advance contract.
+	// Its AdvanceKindLabels / AdvanceKindRootLabels NAMES resolve by longest-match
+	// to esqyma common/advance_kind (the AdvanceKind enum is a shared esqyma enum
+	// in the common domain), but these are the treasury-domain *presentation
+	// labels* for that enum (the advance-kind dropdown on treasury collection /
+	// disbursement). Every other type in advance.go resolves to no esqyma entity
+	// (R3 skips it), so this basename excuses ONLY the two AdvanceKind* labels.
+	// W9 resolves by renaming or by teaching the gate that *_kind enum labels live
+	// with their consuming domain, then deletes this line.
+	"advance.go": "W9: AdvanceKindLabels/AdvanceKindRootLabels (R3 longest-match collides with common/advance_kind enum); they are treasury-domain labels for that shared enum",
 }
 var charterViews = []string{} // crossCutting only: allowed views/<x> concern groups
 

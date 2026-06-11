@@ -59,8 +59,9 @@ import (
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
 	revenuemod "github.com/erniealice/centymo-golang/domain/revenue/views/revenue"
 	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
-	collectionmod "github.com/erniealice/centymo-golang/views/collection"
-	disbursementmod "github.com/erniealice/centymo-golang/views/disbursement"
+	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
+	collectionmod "github.com/erniealice/centymo-golang/domain/treasury/views/collection"
+	disbursementmod "github.com/erniealice/centymo-golang/domain/treasury/views/disbursement"
 	expendituremod "github.com/erniealice/centymo-golang/views/expenditure"
 )
 
@@ -237,10 +238,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		subscriptionRoutes := subscriptiondom.DefaultSubscriptionRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "subscription", &subscriptionRoutes)
 
-		collectionRoutes := centymo.DefaultCollectionRoutes()
+		collectionRoutes := treasurydomain.DefaultCollectionRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "treasury_collection", &collectionRoutes)
 
-		disbursementRoutes := centymo.DefaultDisbursementRoutes()
+		disbursementRoutes := treasurydomain.DefaultDisbursementRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "treasury_disbursement", &disbursementRoutes)
 
 		expenditureRoutes := centymo.DefaultExpenditureRoutes()
@@ -316,10 +317,10 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// (deps.Labels.Category) render blank without this overlay.
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expenditure_category.json", "expenditure_category", &expenditureLabels.Category)
 
-		collectionLabels := centymo.DefaultCollectionLabels()
+		collectionLabels := treasurydomain.DefaultCollectionLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "collection.json", "collection", &collectionLabels)
 
-		disbursementLabels := centymo.DefaultDisbursementLabels()
+		disbursementLabels := treasurydomain.DefaultDisbursementLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "disbursement.json", "disbursement", &disbursementLabels)
 
 		planLabels := subscriptiondom.DefaultPlanLabels()
@@ -386,11 +387,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// from advances_dashboard.json + advance_kind.json (the latter is
 		// shared with the per-tab AdvanceKind/AdvanceStatus badge rendering
 		// done in the existing collection/disbursement detail pages).
-		advancesDashboardRoutes := centymo.DefaultTreasuryAdvancesRoutes()
+		advancesDashboardRoutes := treasurydomain.DefaultTreasuryAdvancesRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "treasury_advances", &advancesDashboardRoutes)
-		advancesDashboardLabels := centymo.DefaultAdvancesDashboardLabels()
+		advancesDashboardLabels := treasurydomain.DefaultAdvancesDashboardLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advances_dashboard.json", "advancesDashboard", &advancesDashboardLabels)
-		advanceEnumLabels := centymo.DefaultAdvanceEnumLabels()
+		advanceEnumLabels := treasurydomain.DefaultAdvanceEnumLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advance_kind.json", "advanceKind.labels", &advanceEnumLabels)
 
 		// P3 (20260506-supplier-subscriptions) — Routes + Labels for the six new procurement modules.
@@ -664,7 +665,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// labels + the UNSCHEDULED workflow closures. Loaded from lyngua
 			// once per Block() invocation and reused here + on the disbursement
 			// side below.
-			collectionAdvanceLabels := centymo.DefaultTreasuryCollectionAdvanceLabels()
+			collectionAdvanceLabels := treasurydomain.DefaultTreasuryCollectionAdvanceLabels()
 			_ = translations.LoadPathIfExists("en", ctx.BusinessType, "treasury_collection.json", "advance", &collectionAdvanceLabels)
 
 			collDeps := &collectionmod.ModuleDeps{
@@ -703,7 +704,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		if cfg.wantDisbursement() {
 			// 20260517-advance-cash-events Plan B Phase 4.
-			disbursementAdvanceLabels := centymo.DefaultTreasuryDisbursementAdvanceLabels()
+			disbursementAdvanceLabels := treasurydomain.DefaultTreasuryDisbursementAdvanceLabels()
 			_ = translations.LoadPathIfExists("en", ctx.BusinessType, "treasury_disbursement.json", "advance", &disbursementAdvanceLabels)
 
 			disbursementmod.NewModule(&disbursementmod.ModuleDeps{

@@ -11,18 +11,18 @@ package block
 import (
 	"context"
 
-	centymo "github.com/erniealice/centymo-golang"
+	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 )
 
 // bridgeSettleAdvance translates the block UseCases-level
 // SettleUnscheduledAdvance closure (if any) into a view-level closure the
 // per-package collection/disbursement modules can call directly without
 // importing the block sub-package.
-func bridgeSettleAdvance(uc func(ctx context.Context, in AdvanceSettleInput) (*AdvanceSettleOutput, error)) func(ctx context.Context, in centymo.AdvanceSettleViewInput) (*centymo.AdvanceSettleViewOutput, error) {
+func bridgeSettleAdvance(uc func(ctx context.Context, in AdvanceSettleInput) (*AdvanceSettleOutput, error)) func(ctx context.Context, in treasurydomain.AdvanceSettleViewInput) (*treasurydomain.AdvanceSettleViewOutput, error) {
 	if uc == nil {
 		return nil
 	}
-	return func(ctx context.Context, in centymo.AdvanceSettleViewInput) (*centymo.AdvanceSettleViewOutput, error) {
+	return func(ctx context.Context, in treasurydomain.AdvanceSettleViewInput) (*treasurydomain.AdvanceSettleViewOutput, error) {
 		out, err := uc(ctx, AdvanceSettleInput{
 			AdvanceID:       in.AdvanceID,
 			Amount:          in.Amount,
@@ -32,7 +32,7 @@ func bridgeSettleAdvance(uc func(ctx context.Context, in AdvanceSettleInput) (*A
 		if err != nil || out == nil {
 			return nil, err
 		}
-		return &centymo.AdvanceSettleViewOutput{
+		return &treasurydomain.AdvanceSettleViewOutput{
 			NewRemainingAmount:  out.NewRemainingAmount,
 			NewRecognizedAmount: out.NewRecognizedAmount,
 			NewStatus:           out.NewStatus,
@@ -41,11 +41,11 @@ func bridgeSettleAdvance(uc func(ctx context.Context, in AdvanceSettleInput) (*A
 }
 
 // bridgeRefundAdvance mirrors bridgeSettleAdvance for the Refund closure.
-func bridgeRefundAdvance(uc func(ctx context.Context, in AdvanceRefundInput) (*AdvanceRefundOutput, error)) func(ctx context.Context, in centymo.AdvanceRefundViewInput) (*centymo.AdvanceRefundViewOutput, error) {
+func bridgeRefundAdvance(uc func(ctx context.Context, in AdvanceRefundInput) (*AdvanceRefundOutput, error)) func(ctx context.Context, in treasurydomain.AdvanceRefundViewInput) (*treasurydomain.AdvanceRefundViewOutput, error) {
 	if uc == nil {
 		return nil
 	}
-	return func(ctx context.Context, in centymo.AdvanceRefundViewInput) (*centymo.AdvanceRefundViewOutput, error) {
+	return func(ctx context.Context, in treasurydomain.AdvanceRefundViewInput) (*treasurydomain.AdvanceRefundViewOutput, error) {
 		out, err := uc(ctx, AdvanceRefundInput{
 			AdvanceID:          in.AdvanceID,
 			Amount:             in.Amount,
@@ -56,7 +56,7 @@ func bridgeRefundAdvance(uc func(ctx context.Context, in AdvanceRefundInput) (*A
 		if err != nil || out == nil {
 			return nil, err
 		}
-		return &centymo.AdvanceRefundViewOutput{
+		return &treasurydomain.AdvanceRefundViewOutput{
 			NewRemainingAmount: out.NewRemainingAmount,
 			NewStatus:          out.NewStatus,
 		}, nil
@@ -64,11 +64,11 @@ func bridgeRefundAdvance(uc func(ctx context.Context, in AdvanceRefundInput) (*A
 }
 
 // bridgeCancelAdvance mirrors bridgeSettleAdvance for the Cancel closure.
-func bridgeCancelAdvance(uc func(ctx context.Context, in AdvanceCancelInput) (*AdvanceCancelOutput, error)) func(ctx context.Context, in centymo.AdvanceCancelViewInput) (*centymo.AdvanceCancelViewOutput, error) {
+func bridgeCancelAdvance(uc func(ctx context.Context, in AdvanceCancelInput) (*AdvanceCancelOutput, error)) func(ctx context.Context, in treasurydomain.AdvanceCancelViewInput) (*treasurydomain.AdvanceCancelViewOutput, error) {
 	if uc == nil {
 		return nil
 	}
-	return func(ctx context.Context, in centymo.AdvanceCancelViewInput) (*centymo.AdvanceCancelViewOutput, error) {
+	return func(ctx context.Context, in treasurydomain.AdvanceCancelViewInput) (*treasurydomain.AdvanceCancelViewOutput, error) {
 		out, err := uc(ctx, AdvanceCancelInput{
 			AdvanceID: in.AdvanceID,
 			Reason:    in.Reason,
@@ -76,6 +76,6 @@ func bridgeCancelAdvance(uc func(ctx context.Context, in AdvanceCancelInput) (*A
 		if err != nil || out == nil {
 			return nil, err
 		}
-		return &centymo.AdvanceCancelViewOutput{NewStatus: out.NewStatus}, nil
+		return &treasurydomain.AdvanceCancelViewOutput{NewStatus: out.NewStatus}, nil
 	}
 }

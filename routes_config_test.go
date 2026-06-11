@@ -61,8 +61,8 @@ func centymoRouteContractCases() []routeContractCase {
 		},
 		// PlanRoutes / SubscriptionRoutes / PricePlanRoutes / PriceScheduleRoutes
 		// moved to domain/subscription (centymo W4) — tested in that package.
-		{name: "CollectionRoutes", routes: DefaultCollectionRoutes(), routeMap: DefaultCollectionRoutes().RouteMap()},
-		{name: "DisbursementRoutes", routes: DefaultDisbursementRoutes(), routeMap: DefaultDisbursementRoutes().RouteMap()},
+		// CollectionRoutes / DisbursementRoutes / TreasuryAdvancesRoutes moved to
+		// domain/treasury (centymo W5) — tested in that package.
 		{name: "PriceListRoutes", routes: productdom.DefaultPriceListRoutes(), routeMap: productdom.DefaultPriceListRoutes().RouteMap()},
 	}
 }

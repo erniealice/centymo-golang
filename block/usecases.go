@@ -21,7 +21,6 @@ import (
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	workspacepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
-	supplierbillingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_billing_event"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
@@ -31,6 +30,7 @@ import (
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
+	supplierbillingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_billing_event"
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
 	suppliercontractpriceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
@@ -79,11 +79,11 @@ import (
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 
-	centymo "github.com/erniealice/centymo-golang"
-	collectiondashboard "github.com/erniealice/centymo-golang/views/collection/dashboard"
+	productdashboard "github.com/erniealice/centymo-golang/domain/product/views/product/dashboard"
+	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
+	collectiondashboard "github.com/erniealice/centymo-golang/domain/treasury/views/collection/dashboard"
 	expenseboard "github.com/erniealice/centymo-golang/views/expenditure/expense_dashboard"
 	purchaseboard "github.com/erniealice/centymo-golang/views/expenditure/purchase_dashboard"
-	productdashboard "github.com/erniealice/centymo-golang/domain/product/views/product/dashboard"
 )
 
 // UseCases declares everything centymo's Block() needs from outside.
@@ -438,11 +438,11 @@ type AdvanceSettleOutput struct {
 
 // AdvanceRefundInput captures the Refund drawer fields.
 type AdvanceRefundInput struct {
-	AdvanceID         string
-	Amount            int64
-	RefundMethod      string
+	AdvanceID          string
+	Amount             int64
+	RefundMethod       string
 	DestinationAccount string
-	Reason            string
+	Reason             string
 }
 
 // AdvanceRefundOutput is the response shape the view renders into a toast.
@@ -481,8 +481,8 @@ type TreasuryAdvancesUseCases struct {
 	// live at the centymo package root (see advance_actions.go) so the
 	// per-package view modules can import them without circling through
 	// block/.
-	RecognizeMilestoneAdvanceCollection   func(ctx context.Context, in centymo.AdvanceRecognizeMilestoneInput) (*centymo.AdvanceRecognizeMilestoneOutput, error)
-	RecognizeMilestoneAdvanceDisbursement func(ctx context.Context, in centymo.AdvanceRecognizeMilestoneInput) (*centymo.AdvanceRecognizeMilestoneOutput, error)
+	RecognizeMilestoneAdvanceCollection   func(ctx context.Context, in treasurydomain.AdvanceRecognizeMilestoneInput) (*treasurydomain.AdvanceRecognizeMilestoneOutput, error)
+	RecognizeMilestoneAdvanceDisbursement func(ctx context.Context, in treasurydomain.AdvanceRecognizeMilestoneInput) (*treasurydomain.AdvanceRecognizeMilestoneOutput, error)
 }
 
 // AdvancesDashboardData is the view-typed return shape for the workspace
@@ -490,28 +490,28 @@ type TreasuryAdvancesUseCases struct {
 // TreasuryCollection / TreasuryDisbursement rows into these view-friendly
 // rows.
 type AdvancesDashboardData struct {
-	Outflows                []AdvancesDashboardRow
-	Inflows                 []AdvancesDashboardRow
-	OutflowTotalRemaining   int64
-	InflowTotalRemaining    int64
-	OutflowActiveCount      int
-	InflowActiveCount       int
-	OutflowFullyRecognized  int
-	InflowFullyRecognized   int
-	Currency                string
+	Outflows               []AdvancesDashboardRow
+	Inflows                []AdvancesDashboardRow
+	OutflowTotalRemaining  int64
+	InflowTotalRemaining   int64
+	OutflowActiveCount     int
+	InflowActiveCount      int
+	OutflowFullyRecognized int
+	InflowFullyRecognized  int
+	Currency               string
 }
 
 // AdvancesDashboardRow is the per-row shape the dashboard renders.
 type AdvancesDashboardRow struct {
-	ID                string
-	ReferenceNumber   string
-	CounterpartyName  string
-	Kind              string // raw enum string (e.g. "TIME_BASED")
-	Status            string // raw enum string (e.g. "ACTIVE")
-	Currency          string
-	TotalAmount       int64
-	RemainingAmount   int64
-	RecognizedAmount  int64
+	ID               string
+	ReferenceNumber  string
+	CounterpartyName string
+	Kind             string // raw enum string (e.g. "TIME_BASED")
+	Status           string // raw enum string (e.g. "ACTIVE")
+	Currency         string
+	TotalAmount      int64
+	RemainingAmount  int64
+	RecognizedAmount int64
 }
 
 // -- Expenditure -------------------------------------------------------------

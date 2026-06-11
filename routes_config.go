@@ -1,6 +1,9 @@
 package centymo
 
-import "github.com/erniealice/centymo-golang/domain/subscription"
+import (
+	"github.com/erniealice/centymo-golang/domain/subscription"
+	"github.com/erniealice/centymo-golang/domain/treasury"
+)
 
 // ── centymo W4 subscription-domain compatibility shim ────────────────────────
 // The Subscription/PriceSchedule route types + their Default* constructors moved
@@ -13,8 +16,33 @@ import "github.com/erniealice/centymo-golang/domain/subscription"
 type SubscriptionRoutes = subscription.SubscriptionRoutes
 type PriceScheduleRoutes = subscription.PriceScheduleRoutes
 
-func DefaultSubscriptionRoutes() SubscriptionRoutes  { return subscription.DefaultSubscriptionRoutes() }
+func DefaultSubscriptionRoutes() SubscriptionRoutes   { return subscription.DefaultSubscriptionRoutes() }
 func DefaultPriceScheduleRoutes() PriceScheduleRoutes { return subscription.DefaultPriceScheduleRoutes() }
+
+// ── centymo W5 treasury-domain compatibility shim ────────────────────────────
+// Treasury types (Collection/Disbursement labels+routes, TreasuryAdvancesRoutes,
+// the AdvanceRecognizeMilestone view I/O) moved to domain/treasury/ (centymo W5).
+// The not-yet-migrated W6 view packages still reference a subset of them via the
+// centymo root:
+//   - views/expenditure/*            -> DisbursementRoutes / DisbursementLabels /
+//                                       DisbursementFormLabels (the expense "pay"
+//                                       flow creates a pre-linked disbursement)
+//   - views/supplier_billing_event/* -> TreasuryAdvancesRoutes (+ its Default*)
+//                                       and AdvanceRecognizeMilestoneInput/Output
+//   - domain/subscription/views/...  -> AdvanceRecognizeMilestoneInput/Output
+//                                       (already-migrated W4 billing-event action)
+// These thin aliases + forwarders keep those consumers compiling with ZERO
+// behaviour change. Removed as each consuming domain migrates (W6 / W9).
+type DisbursementRoutes = treasury.DisbursementRoutes
+type DisbursementLabels = treasury.DisbursementLabels
+type DisbursementFormLabels = treasury.DisbursementFormLabels
+type TreasuryAdvancesRoutes = treasury.TreasuryAdvancesRoutes
+type AdvanceRecognizeMilestoneInput = treasury.AdvanceRecognizeMilestoneInput
+type AdvanceRecognizeMilestoneOutput = treasury.AdvanceRecognizeMilestoneOutput
+
+func DefaultTreasuryAdvancesRoutes() TreasuryAdvancesRoutes {
+	return treasury.DefaultTreasuryAdvancesRoutes()
+}
 
 // Three-level routing system for centymo views:
 //
@@ -209,224 +237,6 @@ func (r ExpenditureRoutes) RouteMap() map[string]string {
 		"expenditure.purchase_order.line_item.edit":    r.PurchaseOrderLineItemEditURL,
 		"expenditure.purchase_order.line_item.remove":  r.PurchaseOrderLineItemRemoveURL,
 		"expenditure.purchase_order.confirm_receipt":   r.PurchaseOrderConfirmReceiptURL,
-	}
-}
-
-// CollectionRoutes holds all route paths for collection (money IN) views
-// and actions.
-type CollectionRoutes struct {
-	ListURL          string `json:"list_url"`
-	DetailURL        string `json:"detail_url"`
-	DashboardURL     string `json:"dashboard_url"`
-	AddURL           string `json:"add_url"`
-	EditURL          string `json:"edit_url"`
-	DeleteURL        string `json:"delete_url"`
-	BulkDeleteURL    string `json:"bulk_delete_url"`
-	SetStatusURL     string `json:"set_status_url"`
-	BulkSetStatusURL string `json:"bulk_set_status_url"`
-	TabActionURL     string `json:"tab_action_url"`
-
-	// Attachment routes
-	AttachmentUploadURL string `json:"attachment_upload_url"`
-	AttachmentDeleteURL string `json:"attachment_delete_url"`
-
-	// Advance Cash Events (Plan B Phase 3) — UNSCHEDULED workflow drawers +
-	// the Advance Schedule tab partial. Empty defaults render the actions as
-	// disabled / hidden.
-	AdvanceScheduleTabURL string `json:"advance_schedule_tab_url"`
-	SettleURL             string `json:"settle_url"`
-	RefundURL             string `json:"refund_url"`
-	CancelURL             string `json:"cancel_url"`
-}
-
-// DefaultCollectionRoutes returns a CollectionRoutes populated from the
-// package-level route constants defined in routes.go.
-func DefaultCollectionRoutes() CollectionRoutes {
-	return CollectionRoutes{
-		ListURL:          CollectionListURL,
-		DetailURL:        CollectionDetailURL,
-		DashboardURL:     CollectionDashboardURL,
-		AddURL:           CollectionAddURL,
-		EditURL:          CollectionEditURL,
-		DeleteURL:        CollectionDeleteURL,
-		BulkDeleteURL:    CollectionBulkDeleteURL,
-		SetStatusURL:     CollectionSetStatusURL,
-		BulkSetStatusURL: CollectionBulkSetStatusURL,
-		TabActionURL:     CollectionTabActionURL,
-
-		AttachmentUploadURL: CollectionAttachmentUploadURL,
-		AttachmentDeleteURL: CollectionAttachmentDeleteURL,
-
-		// 20260517-advance-cash-events Plan B Phase 3.
-		AdvanceScheduleTabURL: TreasuryCollectionAdvanceScheduleTabURL,
-		SettleURL:             TreasuryCollectionSettleURL,
-		RefundURL:             TreasuryCollectionRefundURL,
-		CancelURL:             TreasuryCollectionCancelURL,
-	}
-}
-
-// RouteMap returns a map of dot-notation keys to route paths for all
-// collection routes.
-func (r CollectionRoutes) RouteMap() map[string]string {
-	return map[string]string{
-		"collection.list":            r.ListURL,
-		"collection.detail":          r.DetailURL,
-		"collection.dashboard":       r.DashboardURL,
-		"collection.add":             r.AddURL,
-		"collection.edit":            r.EditURL,
-		"collection.delete":          r.DeleteURL,
-		"collection.bulk_delete":     r.BulkDeleteURL,
-		"collection.set_status":      r.SetStatusURL,
-		"collection.bulk_set_status": r.BulkSetStatusURL,
-		"collection.tab_action":      r.TabActionURL,
-
-		"collection.attachment.upload": r.AttachmentUploadURL,
-		"collection.attachment.delete": r.AttachmentDeleteURL,
-
-		// 20260517-advance-cash-events Plan B Phase 3.
-		"collection.advance_schedule_tab": r.AdvanceScheduleTabURL,
-		"collection.settle":               r.SettleURL,
-		"collection.refund":               r.RefundURL,
-		"collection.cancel":               r.CancelURL,
-	}
-}
-
-// DisbursementRoutes holds all route paths for disbursement (money OUT) views
-// and actions.
-type DisbursementRoutes struct {
-	ListURL          string `json:"list_url"`
-	DetailURL        string `json:"detail_url"`
-	DashboardURL     string `json:"dashboard_url"`
-	AddURL           string `json:"add_url"`
-	EditURL          string `json:"edit_url"`
-	DeleteURL        string `json:"delete_url"`
-	BulkDeleteURL    string `json:"bulk_delete_url"`
-	SetStatusURL     string `json:"set_status_url"`
-	BulkSetStatusURL string `json:"bulk_set_status_url"`
-	TabActionURL     string `json:"tab_action_url"`
-
-	// Attachment routes
-	AttachmentUploadURL string `json:"attachment_upload_url"`
-	AttachmentDeleteURL string `json:"attachment_delete_url"`
-
-	// Advance Cash Events (Plan B Phase 3) — UNSCHEDULED workflow drawers +
-	// the Advance Schedule tab partial. Mirrors CollectionRoutes.
-	AdvanceScheduleTabURL string `json:"advance_schedule_tab_url"`
-	SettleURL             string `json:"settle_url"`
-	RefundURL             string `json:"refund_url"`
-	CancelURL             string `json:"cancel_url"`
-}
-
-// DefaultDisbursementRoutes returns a DisbursementRoutes populated from the
-// package-level route constants defined in routes.go.
-func DefaultDisbursementRoutes() DisbursementRoutes {
-	return DisbursementRoutes{
-		ListURL:          DisbursementListURL,
-		DetailURL:        DisbursementDetailURL,
-		DashboardURL:     DisbursementDashboardURL,
-		AddURL:           DisbursementAddURL,
-		EditURL:          DisbursementEditURL,
-		DeleteURL:        DisbursementDeleteURL,
-		BulkDeleteURL:    DisbursementBulkDeleteURL,
-		SetStatusURL:     DisbursementSetStatusURL,
-		BulkSetStatusURL: DisbursementBulkSetStatusURL,
-		TabActionURL:     DisbursementTabActionURL,
-
-		AttachmentUploadURL: DisbursementAttachmentUploadURL,
-		AttachmentDeleteURL: DisbursementAttachmentDeleteURL,
-
-		// 20260517-advance-cash-events Plan B Phase 3.
-		AdvanceScheduleTabURL: TreasuryDisbursementAdvanceScheduleTabURL,
-		SettleURL:             TreasuryDisbursementSettleURL,
-		RefundURL:             TreasuryDisbursementRefundURL,
-		CancelURL:             TreasuryDisbursementCancelURL,
-	}
-}
-
-// RouteMap returns a map of dot-notation keys to route paths for all
-// disbursement routes.
-func (r DisbursementRoutes) RouteMap() map[string]string {
-	return map[string]string{
-		"disbursement.list":            r.ListURL,
-		"disbursement.detail":          r.DetailURL,
-		"disbursement.dashboard":       r.DashboardURL,
-		"disbursement.add":             r.AddURL,
-		"disbursement.edit":            r.EditURL,
-		"disbursement.delete":          r.DeleteURL,
-		"disbursement.bulk_delete":     r.BulkDeleteURL,
-		"disbursement.set_status":      r.SetStatusURL,
-		"disbursement.bulk_set_status": r.BulkSetStatusURL,
-		"disbursement.tab_action":      r.TabActionURL,
-
-		"disbursement.attachment.upload": r.AttachmentUploadURL,
-		"disbursement.attachment.delete": r.AttachmentDeleteURL,
-
-		// 20260517-advance-cash-events Plan B Phase 3.
-		"disbursement.advance_schedule_tab": r.AdvanceScheduleTabURL,
-		"disbursement.settle":               r.SettleURL,
-		"disbursement.refund":               r.RefundURL,
-		"disbursement.cancel":               r.CancelURL,
-	}
-}
-
-// ---------------------------------------------------------------------------
-// 20260517-advance-cash-events Plan B Phase 3 — TreasuryAdvancesRoutes
-// ---------------------------------------------------------------------------
-
-// TreasuryAdvancesRoutes holds all route paths for the cash-app "Advances"
-// section: the workspace-level dashboard plus the filtered-list URLs for
-// advance Collections / advance Disbursements (which point at the existing
-// list pages with the `advance_kind` filter chip pre-applied).
-//
-// The Settle / Refund / Cancel drawer routes live on CollectionRoutes /
-// DisbursementRoutes because they are anchored on the existing detail pages
-// — there is no separate "advance" entity.
-type TreasuryAdvancesRoutes struct {
-	// ActiveNav is the sidebar navigation context; the Advances section sits
-	// inside the Cash app so this remains "cash".
-	ActiveNav string `json:"active_nav"`
-
-	// DashboardURL is the workspace-level Advances Dashboard.
-	DashboardURL string `json:"dashboard_url"`
-
-	// AdvanceCollectionListURL / AdvanceDisbursementListURL are deep-links
-	// into the existing Collection / Disbursement list pages with the
-	// `advance_kind=any` chip pre-applied via the query string.
-	AdvanceCollectionListURL   string `json:"advance_collection_list_url"`
-	AdvanceDisbursementListURL string `json:"advance_disbursement_list_url"`
-
-	// SupplierBillingEvent surfaces (buying-side MILESTONE anchor). Listed
-	// here so the cash-app sidebar can deep-link to them, even though the
-	// entity is buying-side. (Plan B Phase 7 wires the Recognize button.)
-	SupplierBillingEventListURL      string `json:"supplier_billing_event_list_url"`
-	SupplierBillingEventDetailURL    string `json:"supplier_billing_event_detail_url"`
-	SupplierBillingEventRecognizeURL string `json:"supplier_billing_event_recognize_url"`
-}
-
-// DefaultTreasuryAdvancesRoutes returns a TreasuryAdvancesRoutes populated
-// from the package-level route constants defined in routes.go.
-func DefaultTreasuryAdvancesRoutes() TreasuryAdvancesRoutes {
-	return TreasuryAdvancesRoutes{
-		ActiveNav:                        "cash",
-		DashboardURL:                     AdvancesDashboardURL,
-		AdvanceCollectionListURL:         AdvanceCollectionListURL,
-		AdvanceDisbursementListURL:       AdvanceDisbursementListURL,
-		SupplierBillingEventListURL:      SupplierBillingEventListURL,
-		SupplierBillingEventDetailURL:    SupplierBillingEventDetailURL,
-		SupplierBillingEventRecognizeURL: SupplierBillingEventRecognizeURL,
-	}
-}
-
-// RouteMap returns a map of dot-notation keys to route paths for all
-// treasury-advances routes.
-func (r TreasuryAdvancesRoutes) RouteMap() map[string]string {
-	return map[string]string{
-		"treasury_advances.dashboard":                  r.DashboardURL,
-		"treasury_advances.advance_collection_list":    r.AdvanceCollectionListURL,
-		"treasury_advances.advance_disbursement_list":  r.AdvanceDisbursementListURL,
-		"supplier_billing_event.list":                  r.SupplierBillingEventListURL,
-		"supplier_billing_event.detail":                r.SupplierBillingEventDetailURL,
-		"supplier_billing_event.recognize":             r.SupplierBillingEventRecognizeURL,
 	}
 }
 

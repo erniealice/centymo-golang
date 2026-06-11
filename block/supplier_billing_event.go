@@ -3,7 +3,7 @@
 //
 // Mirror of advances_dashboard.go for the buying-side MILESTONE anchor.
 // Wires the list + detail + Recognize routes from
-// `centymo.TreasuryAdvancesRoutes.SupplierBillingEvent*URL`. Recognize is
+// `treasurydomain.TreasuryAdvancesRoutes.SupplierBillingEvent*URL`. Recognize is
 // fed by `useCases.TreasuryAdvances.RecognizeMilestoneAdvanceDisbursement`.
 package block
 
@@ -11,13 +11,14 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 
 	centymo "github.com/erniealice/centymo-golang"
+	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 	supplierbillingeventmod "github.com/erniealice/centymo-golang/views/supplier_billing_event"
 )
 
 // supplierBillingEventWiring holds everything wireSupplierBillingEventModule
 // needs from the surrounding Block() scope.
 type supplierBillingEventWiring struct {
-	routes centymo.TreasuryAdvancesRoutes
+	routes treasurydomain.TreasuryAdvancesRoutes
 }
 
 // wireSupplierBillingEventModule mounts the list, detail, and Recognize
