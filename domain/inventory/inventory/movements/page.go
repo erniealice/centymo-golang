@@ -26,6 +26,9 @@ type Deps struct {
 	Labels                            inventory.Labels
 	CommonLabels                      pyeza.CommonLabels
 	TableLabels                       types.TableLabels
+	// LocationName resolves a location id to a display name via the typed espyna
+	// location use-case; nil falls back to the pass-through stub.
+	LocationName shared.LocationResolver
 }
 
 // LocationOption represents a location for the filter dropdown.
@@ -250,7 +253,7 @@ func queryFilteredRows(ctx context.Context, deps *Deps, dateFrom, dateTo, locati
 			}
 		}
 
-		locationName := shared.LocationDisplayName(m.GetLocationId())
+		locationName := shared.ResolveLocationName(ctx, deps.LocationName, m.GetLocationId())
 		qtyStr := formatQuantity(m.GetQuantity(), txTypeVal)
 
 		rows = append(rows, types.TableRow{
@@ -316,7 +319,7 @@ func queryFallbackRows(ctx context.Context, deps *Deps) []types.TableRow {
 			if name != "" {
 				itemName = name
 			}
-			locationName = shared.LocationDisplayName(item.GetLocationId())
+			locationName = shared.ResolveLocationName(ctx, deps.LocationName, item.GetLocationId())
 			itemSKU = item.GetSku()
 		}
 

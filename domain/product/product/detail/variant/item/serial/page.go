@@ -74,7 +74,7 @@ func NewPageView(deps *variant.DetailViewDeps) view.View {
 			return view.Error(err)
 		}
 		itemName := item.GetName()
-		locationName := shared.LocationDisplayName(item.GetLocationId())
+		locationName := shared.ResolveLocationName(ctx, deps.LocationName, item.GetLocationId())
 
 		// Load serial
 		serial, err := readSerial(ctx, deps, itemID, serialID)

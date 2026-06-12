@@ -38,6 +38,9 @@ type DetailViewDeps struct {
 	Labels                     inventory.Labels
 	CommonLabels               pyeza.CommonLabels
 	TableLabels                types.TableLabels
+	// LocationName resolves a location id to a display name via the typed espyna
+	// location use-case; nil falls back to the pass-through stub.
+	LocationName shared.LocationResolver
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -122,7 +125,7 @@ func NewView(deps *DetailViewDeps) view.View {
 
 		name := item.GetName()
 		locationID := item.GetLocationId()
-		locationName := shared.LocationDisplayName(locationID)
+		locationName := shared.ResolveLocationName(ctx, deps.LocationName, locationID)
 		headerTitle := name + " \u2014 " + locationName
 
 		activeTab := viewCtx.QueryParams["tab"]
@@ -281,7 +284,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			TrackingMode:        trackingMode,
 			TrackingModeLabel:   trackingModeDisplayLabel(trackingMode, l),
 			TrackingModeVariant: trackingModeDisplayVariant(trackingMode),
-			LocationName:        shared.LocationDisplayName(item.GetLocationId()),
+			LocationName:        shared.ResolveLocationName(ctx, deps.LocationName, item.GetLocationId()),
 			AvailableQty:        available,
 		}
 

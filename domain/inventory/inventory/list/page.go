@@ -26,6 +26,9 @@ type ListViewDeps struct {
 	Labels             inventory.Labels
 	CommonLabels       pyeza.CommonLabels
 	TableLabels        types.TableLabels
+	// LocationName resolves a location id/slug to a display name via the typed
+	// espyna location use-case; nil falls back to the pass-through stub.
+	LocationName shared.LocationResolver
 }
 
 // PageData holds the data for the inventory list page.
@@ -61,14 +64,15 @@ func NewView(deps *ListViewDeps) view.View {
 			return view.Error(err)
 		}
 
+		locationName := shared.ResolveLocationName(ctx, deps.LocationName, location)
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:   viewCtx.CacheVersion,
-				Title:          deps.Labels.Page.Heading + " \u2014 " + shared.LocationDisplayName(location),
+				Title:          deps.Labels.Page.Heading + " \u2014 " + locationName,
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      "inventory",
 				ActiveSubNav:   location,
-				HeaderTitle:    deps.Labels.Page.Heading + " \u2014 " + shared.LocationDisplayName(location),
+				HeaderTitle:    deps.Labels.Page.Heading + " \u2014 " + locationName,
 				HeaderSubtitle: deps.Labels.Page.Caption,
 				HeaderIcon:     "icon-package",
 				CommonLabels:   deps.CommonLabels,

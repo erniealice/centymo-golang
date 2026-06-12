@@ -98,7 +98,7 @@ func NewPageView(deps *variant.DetailViewDeps) view.View {
 
 		name := item.GetName()
 		locationID := item.GetLocationId()
-		locationName := shared.LocationDisplayName(locationID)
+		locationName := shared.ResolveLocationName(ctx, deps.LocationName, locationID)
 		headerTitle := name + " \u2014 " + locationName
 
 		trackingMode := product.GetTrackingMode()
@@ -223,7 +223,7 @@ func NewTabAction(deps *variant.DetailViewDeps) view.View {
 
 		name := item.GetName()
 		locationID := item.GetLocationId()
-		locationName := shared.LocationDisplayName(locationID)
+		locationName := shared.ResolveLocationName(ctx, deps.LocationName, locationID)
 
 		active := item.GetActive()
 		itemStatus := "active"

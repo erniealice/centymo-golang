@@ -19,9 +19,52 @@ import (
 	purchaseboard "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/purchase_dashboard"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
 	productdashboard "github.com/erniealice/centymo-golang/domain/product/product/dashboard"
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 	collectiondashboard "github.com/erniealice/centymo-golang/domain/treasury/collection/dashboard"
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 )
+
+// ---------------------------------------------------------------------------
+// Location name resolver (DB-backed display names for inventory/product views)
+// ---------------------------------------------------------------------------
+
+// buildLocationResolver returns a shared.LocationResolver backed by the typed
+// espyna location use-case (useCases.Entity.Location.ListLocations). It maps a
+// location id to its human name; unknown ids (e.g. the inventory list's human
+// slug "ayala-central-bloc", which is not a location row) pass through unchanged
+// — preserving the LocationDisplayName stub's behaviour.
+//
+// Nil-safe: when ListLocations is unwired it returns nil, so every consumer
+// falls back to shared.LocationDisplayName via shared.ResolveLocationName.
+//
+// Each call lists locations and builds a fresh id→name map (matching the
+// existing per-call resolveLocationLabel / loadLocations precedents). Batch
+// denormalisation onto inventory_item is a deferred follow-up (plan Q5).
+func buildLocationResolver(useCases *UseCases) shared.LocationResolver {
+	if useCases == nil || useCases.Entity.Location.ListLocations == nil {
+		return nil
+	}
+	list := useCases.Entity.Location.ListLocations
+	return func(ctx context.Context, id string) string {
+		if id == "" {
+			return id
+		}
+		resp, err := list(ctx, &locationpb.ListLocationsRequest{})
+		if err != nil || resp == nil {
+			return id
+		}
+		for _, loc := range resp.GetData() {
+			if loc.GetId() == id {
+				if name := loc.GetName(); name != "" {
+					return name
+				}
+				return id
+			}
+		}
+		return id
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Cash (collection) dashboard wiring

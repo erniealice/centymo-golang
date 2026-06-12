@@ -27,6 +27,9 @@ type ProductDetailDeps struct {
 	Labels       inventory.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
+	// LocationName resolves a location id to a display name via the typed espyna
+	// location use-case; nil falls back to the pass-through stub.
+	LocationName shared.LocationResolver
 }
 
 // ProductDetailPageData extends PageData with product context.
@@ -80,7 +83,7 @@ func NewProductDetailView(deps *ProductDetailDeps) view.View {
 
 		name := item.GetName()
 		locationID := item.GetLocationId()
-		locationName := shared.LocationDisplayName(locationID)
+		locationName := shared.ResolveLocationName(ctx, deps.LocationName, locationID)
 
 		activeTab := viewCtx.QueryParams["tab"]
 		if activeTab == "" {
@@ -219,7 +222,7 @@ func NewProductDetailTabAction(deps *ProductDetailDeps) view.View {
 				TrackingMode:        trackingMode,
 				TrackingModeLabel:   trackingModeDisplayLabel(trackingMode, l),
 				TrackingModeVariant: trackingModeDisplayVariant(trackingMode),
-				LocationName:        shared.LocationDisplayName(item.GetLocationId()),
+				LocationName:        shared.ResolveLocationName(ctx, deps.LocationName, item.GetLocationId()),
 				AvailableQty:        computeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved()),
 			},
 			ProductID:   productID,

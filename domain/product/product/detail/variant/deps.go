@@ -110,6 +110,10 @@ type DetailViewDeps struct {
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
+	// LocationName resolves a location id to a display name via the typed espyna
+	// location use-case; nil falls back to the pass-through stub.
+	LocationName shared.LocationResolver
+
 	// Typed proto funcs for product_variant
 	ReadProductVariant   func(ctx context.Context, req *productvariantpb.ReadProductVariantRequest) (*productvariantpb.ReadProductVariantResponse, error)
 	CreateProductVariant func(ctx context.Context, req *productvariantpb.CreateProductVariantRequest) (*productvariantpb.CreateProductVariantResponse, error)

@@ -143,6 +143,11 @@ type ProductModuleDeps struct {
 	ReadInventoryItem    func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ListInventorySerials func(ctx context.Context, req *inventoryserialpb.ListInventorySerialsRequest) (*inventoryserialpb.ListInventorySerialsResponse, error)
 
+	// LocationName resolves a location id to a DB-backed display name (variant
+	// stock views). Fed at composition time from the typed espyna location
+	// use-case; nil falls back to the pass-through stub.
+	LocationName shared.LocationResolver
+
 	// Product Variant Image CRUD
 	ListProductVariantImages  func(ctx context.Context, req *productvariantimagepb.ListProductVariantImagesRequest) (*productvariantimagepb.ListProductVariantImagesResponse, error)
 	CreateProductVariantImage func(ctx context.Context, req *productvariantimagepb.CreateProductVariantImageRequest) (*productvariantimagepb.CreateProductVariantImageResponse, error)
@@ -298,6 +303,7 @@ func NewProductModule(deps *ProductModuleDeps) *ProductModule {
 		ListInventoryItems:         deps.ListInventoryItems,
 		ReadInventoryItem:          deps.ReadInventoryItem,
 		ListInventorySerials:       deps.ListInventorySerials,
+		LocationName:               deps.LocationName,
 		ListProductVariantImages:   deps.ListProductVariantImages,
 		CreateProductVariantImage:  deps.CreateProductVariantImage,
 		DeleteProductVariantImage:  deps.DeleteProductVariantImage,

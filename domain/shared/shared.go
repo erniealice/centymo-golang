@@ -29,6 +29,29 @@ type DataSource interface {
 // TODO(WL): resolve the real name via the entydad location entity (location_area).
 // The hardcoded demo LocationMap was removed 2026-06-12 to avoid confusion; until the
 // typed location path is wired, this passes the slug/ID through unchanged.
+//
+// This stub remains the fallback when no LocationResolver is injected (tests, or a
+// half-wired composition root). Live composition feeds a DB-backed resolver via the
+// typed espyna location use-case (see block wiring); see ResolveLocationName.
 func LocationDisplayName(slug string) string {
 	return slug
+}
+
+// LocationResolver maps a location id/slug to a human display name. It is fed at
+// composition time by the typed espyna location use-case (ListLocations →
+// id→name map). It MUST be pass-through safe: when the id is unknown it returns
+// the input unchanged, preserving the LocationDisplayName stub's behaviour (the
+// inventory list, for instance, passes a human slug like "ayala-central-bloc"
+// that has no matching location row).
+type LocationResolver func(ctx context.Context, id string) string
+
+// ResolveLocationName resolves a location id/slug to a display name using the
+// injected resolver, falling back to the LocationDisplayName pass-through stub
+// when no resolver is wired. Every view consumer routes through this helper so
+// the nil-resolver path stays identical to today's behaviour.
+func ResolveLocationName(ctx context.Context, resolver LocationResolver, id string) string {
+	if resolver == nil {
+		return LocationDisplayName(id)
+	}
+	return resolver(ctx, id)
 }

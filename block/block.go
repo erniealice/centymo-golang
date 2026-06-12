@@ -467,6 +467,8 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			invDeps.ListProductOptionValues = useCases.Product.ListProductOptionValues
 			invDeps.ListProductOptions = useCases.Product.ListProductOptions
 			invDeps.ListLocations = useCases.Entity.Location.ListLocations
+			// DB-backed location display names (nil-safe → stub fallback).
+			invDeps.LocationName = buildLocationResolver(useCases)
 
 			invMod := inventorydomain.NewInventoryModule(invDeps)
 			invMod.RegisterRoutes(ctx.Routes)

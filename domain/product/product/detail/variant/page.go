@@ -430,7 +430,7 @@ func buildStockTable(ctx context.Context, deps *DetailViewDeps, productID, varia
 		iid := item.GetId()
 		sku := item.GetSku()
 		locationID := item.GetLocationId()
-		locationName := shared.LocationDisplayName(locationID)
+		locationName := shared.ResolveLocationName(ctx, deps.LocationName, locationID)
 
 		qtyStr := fmt.Sprintf("%v", item.GetQuantityOnHand())
 

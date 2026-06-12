@@ -180,6 +180,10 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 		if useCases.Inventory.ListInventorySerials != nil {
 			productDeps.ListInventorySerials = useCases.Inventory.ListInventorySerials
 		}
+		// DB-backed location display names on variant stock views (nil-safe →
+		// stub fallback). Set before the inventory/supplies mount copies so all
+		// three product mounts share the resolver.
+		productDeps.LocationName = buildLocationResolver(useCases)
 		// Pricing deps (for variant detail Pricing tab).
 		if useCases.Product.ListProductPlans != nil {
 			productDeps.ListProductPlans = useCases.Product.ListProductPlans

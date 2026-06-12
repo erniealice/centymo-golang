@@ -18,6 +18,7 @@ import (
 	inventorytransaction "github.com/erniealice/centymo-golang/domain/inventory/inventory/transaction"
 
 	epkg "github.com/erniealice/centymo-golang/domain/inventory/inventory"
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	inventorydepreciationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_depreciation"
@@ -71,6 +72,11 @@ type InventoryModuleDeps struct {
 	ListProductOptionValues   func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
 	ListProductOptions        func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
 	ListLocations             func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+
+	// LocationName resolves a location id/slug to a DB-backed display name. Fed
+	// at composition time from the typed espyna location use-case; nil falls back
+	// to the pass-through stub (shared.LocationDisplayName).
+	LocationName shared.LocationResolver
 
 	// Attachment operations
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
@@ -148,6 +154,7 @@ func NewInventoryModule(deps *InventoryModuleDeps) *InventoryModule {
 		Labels:                     deps.Labels,
 		CommonLabels:               deps.CommonLabels,
 		TableLabels:                deps.TableLabels,
+		LocationName:               deps.LocationName,
 		AttachmentOps: attachment.AttachmentOps{
 			UploadFile:       deps.UploadFile,
 			ListAttachments:  deps.ListAttachments,
@@ -167,6 +174,7 @@ func NewInventoryModule(deps *InventoryModuleDeps) *InventoryModule {
 		Labels:            deps.Labels,
 		CommonLabels:      deps.CommonLabels,
 		TableLabels:       deps.TableLabels,
+		LocationName:      deps.LocationName,
 	}
 
 	movementsDeps := &inventorymovements.Deps{
@@ -177,6 +185,7 @@ func NewInventoryModule(deps *InventoryModuleDeps) *InventoryModule {
 		Labels:                            deps.Labels,
 		CommonLabels:                      deps.CommonLabels,
 		TableLabels:                       deps.TableLabels,
+		LocationName:                      deps.LocationName,
 	}
 
 	depreciationDeps := &inventorydepreciation.Deps{
@@ -213,6 +222,7 @@ func NewInventoryModule(deps *InventoryModuleDeps) *InventoryModule {
 			Labels:             deps.Labels,
 			CommonLabels:       deps.CommonLabels,
 			TableLabels:        deps.TableLabels,
+			LocationName:       deps.LocationName,
 		}),
 		Detail:             inventorydetail.NewView(detailDeps),
 		Add:                inventoryaction.NewAddAction(actionDeps),
