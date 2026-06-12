@@ -6,8 +6,9 @@
 // the in-module home that lets the per-entity view packages stop importing the
 // root `package centymo` (which imports the domain facades via routes_config.go —
 // an entity -> root -> facade -> entity cycle). The symbols here are slated to
-// migrate out of centymo entirely (DataSource -> pyeza data port; Location* ->
-// entydad location entity) under Wave P / WL; until then they live in this leaf.
+// migrate out of centymo entirely (DataSource -> pyeza data port;
+// LocationDisplayName -> entydad location entity) under Wave P / WL; until then
+// they live in this leaf.
 package shared
 
 import "context"
@@ -24,19 +25,10 @@ type DataSource interface {
 	HardDelete(ctx context.Context, collection string, id string) error
 }
 
-// LocationMap maps a location slug to its display name. (entydad-bound: WL
-// deferral — replace the hardcoded map with the location entity's real name.)
-var LocationMap = map[string]string{
-	"ayala-central-bloc": "Ayala Central Bloc",
-	"sm-city-cebu":       "SM City Cebu",
-	"ayala-center-cebu":  "Ayala Center Cebu",
-	"robinsons-galleria": "Robinsons Galleria",
-}
-
-// LocationDisplayName returns the display name for a location slug.
+// LocationDisplayName returns a human label for a location slug/ID.
+// TODO(WL): resolve the real name via the entydad location entity (location_area).
+// The hardcoded demo LocationMap was removed 2026-06-12 to avoid confusion; until the
+// typed location path is wired, this passes the slug/ID through unchanged.
 func LocationDisplayName(slug string) string {
-	if name, ok := LocationMap[slug]; ok {
-		return name
-	}
 	return slug
 }

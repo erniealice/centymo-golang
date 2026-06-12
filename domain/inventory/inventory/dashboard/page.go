@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	inventory "github.com/erniealice/centymo-golang/domain/inventory/inventory"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	"log"
 
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -101,7 +100,9 @@ func NewView(deps *Deps) view.View {
 				{Icon: "icon-dollar-sign", Value: fmt.Sprintf("%.0f", ag.totalStockValue), Label: l.TotalStockValue, Color: "terracotta", TestID: "inventory-stat-value"},
 				{Icon: "icon-alert-triangle", Value: fmt.Sprintf("%d", ag.lowStockCount), Label: l.LowStockAlerts, Color: "amber", TestID: "inventory-stat-low-stock"},
 				{Icon: "icon-repeat", Value: fmt.Sprintf("%d", ag.totalItems), Label: l.StockTurnover, Color: "sage", TestID: "inventory-stat-items"},
-				{Icon: "icon-map-pin", Value: fmt.Sprintf("%d", len(shared.LocationMap)), Label: l.ItemsByLocation, Color: "navy", TestID: "inventory-stat-locations"},
+				// inventory-stat-locations tile removed 2026-06-12: it derived from the
+				// hardcoded demo LocationMap (always 4) and was misleading. A real
+				// distinct-location count belongs to the typed entydad location path (WL).
 				{Icon: "icon-trending-down", Value: fmt.Sprintf("%.0f / %.0f", float64(ag.totalCostBasis)/100.0, float64(ag.totalBookValue)/100.0), Label: l.DepreciationSummary, Color: "terracotta", TestID: "inventory-stat-depreciation"},
 				{Icon: "icon-hash", Value: fmt.Sprintf("%d / %d", ag.serialAvailable, ag.totalSerials), Label: l.SerialUnitStatus, Color: "sage", TestID: "inventory-stat-serials"},
 				{Icon: "icon-pie-chart", Value: fmt.Sprintf("%d %s", len(ag.categoryCount), l.TypesUnit), Label: l.CategoryDistribution, Color: "amber", TestID: "inventory-stat-categories"},

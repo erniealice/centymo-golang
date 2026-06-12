@@ -35,7 +35,7 @@ centymo-golang/
   placement_test.go            # Option-B structural gate (R1–R6), proto-derived
   assets.go                    # AssetsFS //go:embed  (root residual → pyeza Wave P)
   datasource.go                # DataSource alias = shared.DataSource  (root residual)
-  labels.go                    # LocationMap / LocationDisplayName alias = shared.*  (root residual)
+  labels.go                    # LocationDisplayName alias = shared.*  (root residual)
   routes.go  routes_config.go  # root compatibility shim for external consumers (entydad)
 
   domain/<domain>/
