@@ -12,10 +12,10 @@ import (
 	revenuepayment "github.com/erniealice/centymo-golang/domain/revenue/revenue/payment"
 	revenuesearch "github.com/erniealice/centymo-golang/domain/revenue/revenue/search"
 	revenuesettings "github.com/erniealice/centymo-golang/domain/revenue/revenue/settings"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
@@ -25,7 +25,9 @@ import (
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	revenuepaymentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_payment"
 	revenuetaxlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_tax_line"
+	collectionmethodpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
@@ -42,7 +44,6 @@ type PaymentTermOption = revenueaction.PaymentTermOption
 // RevenueModuleDeps holds all dependencies for the revenue module.
 type RevenueModuleDeps struct {
 	Routes          epkg.Routes
-	DB              shared.DataSource // KEEP — used for revenue_payment, collection_method, location
 	GetListPageData func(ctx context.Context, req *revenuepb.GetRevenueListPageDataRequest) (*revenuepb.GetRevenueListPageDataResponse, error)
 	Labels          epkg.Labels
 	CommonLabels    pyeza.CommonLabels
@@ -77,6 +78,27 @@ type RevenueModuleDeps struct {
 	UpdateRevenueLineItem func(ctx context.Context, req *revenuelineitempb.UpdateRevenueLineItemRequest) (*revenuelineitempb.UpdateRevenueLineItemResponse, error)
 	DeleteRevenueLineItem func(ctx context.Context, req *revenuelineitempb.DeleteRevenueLineItemRequest) (*revenuelineitempb.DeleteRevenueLineItemResponse, error)
 	ListRevenueLineItems  func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
+
+	// Typed revenue_payment operations (for payment drawer + detail tab).
+	// 20260612-datasource-typed-path W5 — replaces DataSource on "revenue_payment".
+	// Optional — every call site nil-checks and degrades to empty/zero result.
+	CreateRevenuePayment func(ctx context.Context, req *revenuepaymentpb.CreateRevenuePaymentRequest) (*revenuepaymentpb.CreateRevenuePaymentResponse, error)
+	ReadRevenuePayment   func(ctx context.Context, req *revenuepaymentpb.ReadRevenuePaymentRequest) (*revenuepaymentpb.ReadRevenuePaymentResponse, error)
+	UpdateRevenuePayment func(ctx context.Context, req *revenuepaymentpb.UpdateRevenuePaymentRequest) (*revenuepaymentpb.UpdateRevenuePaymentResponse, error)
+	DeleteRevenuePayment func(ctx context.Context, req *revenuepaymentpb.DeleteRevenuePaymentRequest) (*revenuepaymentpb.DeleteRevenuePaymentResponse, error)
+	ListRevenuePayments  func(ctx context.Context, req *revenuepaymentpb.ListRevenuePaymentsRequest) (*revenuepaymentpb.ListRevenuePaymentsResponse, error)
+
+	// Typed collection_method reads (for payment drawer method-name lookup +
+	// select options). 20260612-datasource-typed-path W5 — replaces DataSource
+	// on "collection_method". Optional — nil-safe.
+	ReadCollectionMethod  func(ctx context.Context, req *collectionmethodpb.ReadCollectionMethodRequest) (*collectionmethodpb.ReadCollectionMethodResponse, error)
+	ListCollectionMethods func(ctx context.Context, req *collectionmethodpb.ListCollectionMethodsRequest) (*collectionmethodpb.ListCollectionMethodsResponse, error)
+
+	// Typed location reads (for revenue drawer location label + autocomplete).
+	// 20260612-datasource-typed-path W5/W2 — replaces DataSource on "location".
+	// Optional — nil-safe.
+	ListLocations func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	ReadLocation  func(ctx context.Context, req *locationpb.ReadLocationRequest) (*locationpb.ReadLocationResponse, error)
 
 	// Typed inventory operations (for action views — stock deduction on status change)
 	ReadInventoryItem            func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
@@ -180,7 +202,9 @@ func NewRevenueModule(deps *RevenueModuleDeps) *RevenueModule {
 	actionDeps := &revenueaction.Deps{
 		Routes:                           deps.Routes,
 		Labels:                           deps.Labels,
-		DB:                               deps.DB,
+		ListLocations:                    deps.ListLocations,
+		ReadLocation:                     deps.ReadLocation,
+		ListRevenuePayments:              deps.ListRevenuePayments,
 		ListPaymentTerms:                 deps.ListPaymentTerms,
 		ListClients:                      deps.ListClients,
 		SearchClientsByName:              deps.SearchClientsByName,
@@ -208,9 +232,18 @@ func NewRevenueModule(deps *RevenueModuleDeps) *RevenueModule {
 		ListRevenueTaxLines:              deps.ListRevenueTaxLines,
 		WithholdingCertAddURL:            deps.WithholdingCertAddURL,
 	}
-	paymentDeps := &revenuepayment.Deps{Routes: deps.Routes, DB: deps.DB, Labels: deps.Labels}
+	paymentDeps := &revenuepayment.Deps{
+		Routes:                deps.Routes,
+		Labels:               deps.Labels,
+		CreateRevenuePayment:  deps.CreateRevenuePayment,
+		ReadRevenuePayment:    deps.ReadRevenuePayment,
+		UpdateRevenuePayment:  deps.UpdateRevenuePayment,
+		DeleteRevenuePayment:  deps.DeleteRevenuePayment,
+		ReadCollectionMethod:  deps.ReadCollectionMethod,
+		ListCollectionMethods: deps.ListCollectionMethods,
+	}
 	searchDeps := &revenuesearch.Deps{
-		DB:                  deps.DB,
+		ListLocations:       deps.ListLocations,
 		ListClients:         deps.ListClients,
 		SearchClientsByName: deps.SearchClientsByName,
 		ListSubscriptions:   deps.ListSubscriptions,
@@ -218,12 +251,12 @@ func NewRevenueModule(deps *RevenueModuleDeps) *RevenueModule {
 	}
 	detailDeps := &revenuedetail.DetailViewDeps{
 		Routes:               deps.Routes,
-		DB:                   deps.DB,
 		Labels:               deps.Labels,
 		CommonLabels:         deps.CommonLabels,
 		TableLabels:          deps.TableLabels,
 		ReadRevenue:          deps.ReadRevenue,
 		ListRevenueLineItems: deps.ListRevenueLineItems,
+		ListRevenuePayments:  deps.ListRevenuePayments,
 		AttachmentOps: attachment.AttachmentOps{
 			UploadFile:       deps.UploadFile,
 			ListAttachments:  deps.ListAttachments,

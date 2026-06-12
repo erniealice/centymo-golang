@@ -8,8 +8,8 @@ package search
 import (
 	"context"
 	"encoding/json"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	"log"
@@ -27,7 +27,10 @@ const searchResultLimit = 20
 
 // Deps holds dependencies for the search handlers.
 type Deps struct {
-	DB                  shared.DataSource
+	// Typed location list (location autocomplete). 20260612-datasource-typed-path
+	// W5/W2 — replaces DataSource ListSimple("location"). Optional — nil-safe
+	// (returns an empty result set when unwired).
+	ListLocations       func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
 	ListClients         func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
 	SearchClientsByName func(ctx context.Context, req *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
 	ListSubscriptions   func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
@@ -194,7 +197,7 @@ func NewSearchSubscriptionsAction(deps *Deps) http.HandlerFunc {
 func NewSearchLocationsAction(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		if deps.DB == nil {
+		if deps.ListLocations == nil {
 			writeJSON(w, []searchOption{})
 			return
 		}
@@ -202,7 +205,7 @@ func NewSearchLocationsAction(deps *Deps) http.HandlerFunc {
 		query := strings.TrimSpace(r.URL.Query().Get("q"))
 		queryLower := strings.ToLower(query)
 
-		records, err := deps.DB.ListSimple(ctx, "location")
+		resp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
 		if err != nil {
 			log.Printf("search locations: failed to list locations: %v", err)
 			writeJSON(w, []searchOption{})
@@ -210,13 +213,12 @@ func NewSearchLocationsAction(deps *Deps) http.HandlerFunc {
 		}
 
 		var results []searchOption
-		for _, rec := range records {
-			active, _ := rec["active"].(bool)
-			if !active {
+		for _, loc := range resp.GetData() {
+			if !loc.GetActive() {
 				continue
 			}
-			id, _ := rec["id"].(string)
-			name, _ := rec["name"].(string)
+			id := loc.GetId()
+			name := loc.GetName()
 			if id == "" {
 				continue
 			}

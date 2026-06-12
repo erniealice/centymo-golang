@@ -71,6 +71,7 @@ import (
 	resourcepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/resource"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	revenuepaymentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_payment"
 	revenuerunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_run"
 	revenuetaxlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_tax_line"
 	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
@@ -80,6 +81,7 @@ import (
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
+	collectionmethodpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 
 	expenseboard "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/expense_dashboard"
@@ -109,6 +111,7 @@ type UseCases struct {
 	// Domain CRUD + use-case groups (singular field, `XxxUseCases` type)
 	// Ordered alphabetically for easy scanning.
 	Collection       CollectionUseCases
+	CollectionMethod CollectionMethodUseCases
 	Common           CommonUseCases
 	Disbursement     DisbursementUseCases
 	Entity           EntityUseCases
@@ -224,6 +227,24 @@ type RevenueUseCases struct {
 	// Ex-helpers promoted to proto-defined use cases in Phase 0:
 	ListRevenueRunCandidates func(context.Context, *revenuerunpb.ListRevenueRunCandidatesRequest) (*revenuerunpb.ListRevenueRunCandidatesResponse, error)
 	GenerateRevenueRun       func(context.Context, *revenuerunpb.GenerateRevenueRunRequest) (*revenuerunpb.GenerateRevenueRunResponse, error)
+	// 20260612-datasource-typed-path W5 — revenue_payment CRUD, typed path
+	// replacing the centymo DataSource duck's ListSimple/Create/Read/Update/
+	// Delete on the "revenue_payment" collection. Wired by service-admin in W7.
+	// Nil-safe — the payment drawer + detail tab degrade to an empty state when
+	// unwired (mock builds, half-wired composition root).
+	RevenuePayment RevenuePaymentUseCases
+}
+
+// RevenuePaymentUseCases groups the typed revenue_payment CRUD closures the
+// revenue payment drawer + detail-tab views need. Replaces the duck-typed
+// DataSource.{Create,Read,Update,Delete,ListSimple}("revenue_payment") path.
+// 20260612-datasource-typed-path W5.
+type RevenuePaymentUseCases struct {
+	CreateRevenuePayment func(context.Context, *revenuepaymentpb.CreateRevenuePaymentRequest) (*revenuepaymentpb.CreateRevenuePaymentResponse, error)
+	ReadRevenuePayment   func(context.Context, *revenuepaymentpb.ReadRevenuePaymentRequest) (*revenuepaymentpb.ReadRevenuePaymentResponse, error)
+	UpdateRevenuePayment func(context.Context, *revenuepaymentpb.UpdateRevenuePaymentRequest) (*revenuepaymentpb.UpdateRevenuePaymentResponse, error)
+	DeleteRevenuePayment func(context.Context, *revenuepaymentpb.DeleteRevenuePaymentRequest) (*revenuepaymentpb.DeleteRevenuePaymentResponse, error)
+	ListRevenuePayments  func(context.Context, *revenuepaymentpb.ListRevenuePaymentsRequest) (*revenuepaymentpb.ListRevenuePaymentsResponse, error)
 }
 
 // RevenueRunUseCases — repo-direct operations on the RevenueRun entity.
@@ -398,6 +419,19 @@ type CollectionUseCases struct {
 	SettleUnscheduledAdvance func(ctx context.Context, in AdvanceSettleInput) (*AdvanceSettleOutput, error)
 	RefundUnscheduledAdvance func(ctx context.Context, in AdvanceRefundInput) (*AdvanceRefundOutput, error)
 	CancelAdvance            func(ctx context.Context, in AdvanceCancelInput) (*AdvanceCancelOutput, error)
+}
+
+// -- CollectionMethod (treasury) ---------------------------------------------
+
+// CollectionMethodUseCases groups the typed collection_method reads the revenue
+// payment drawer needs (Read for the payment_method name lookup, List for the
+// drawer's method-select options). Replaces the duck-typed
+// DataSource.{Read,ListSimple}("collection_method") path.
+// 20260612-datasource-typed-path W5. Nil-safe — the drawer renders an empty
+// method list + falls back to the raw method id when unwired.
+type CollectionMethodUseCases struct {
+	ReadCollectionMethod  func(context.Context, *collectionmethodpb.ReadCollectionMethodRequest) (*collectionmethodpb.ReadCollectionMethodResponse, error)
+	ListCollectionMethods func(context.Context, *collectionmethodpb.ListCollectionMethodsRequest) (*collectionmethodpb.ListCollectionMethodsResponse, error)
 }
 
 // -- Disbursement (treasury) -------------------------------------------------

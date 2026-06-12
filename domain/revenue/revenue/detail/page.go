@@ -4,11 +4,8 @@ import (
 	"context"
 	"fmt"
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue/revenue"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 	"log"
-	"strconv"
-	"strings"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
@@ -17,15 +14,16 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	revenuepaymentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_payment"
 )
 
 // DetailViewDeps holds view dependencies.
 type DetailViewDeps struct {
 	Routes       revenuedomain.Routes
-	DB           shared.DataSource // KEEP — used for revenue_payment operations
 	Labels       revenuedomain.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
@@ -35,6 +33,11 @@ type DetailViewDeps struct {
 
 	// Typed line item operations
 	ListRevenueLineItems func(ctx context.Context, req *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error)
+
+	// Typed revenue_payment list (payment tab). 20260612-datasource-typed-path
+	// W5 — replaces DataSource ListSimple("revenue_payment"). Optional —
+	// nil-safe (renders an empty payment table).
+	ListRevenuePayments func(ctx context.Context, req *revenuepaymentpb.ListRevenuePaymentsRequest) (*revenuepaymentpb.ListRevenuePaymentsResponse, error)
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -149,29 +152,23 @@ func NewView(deps *DetailViewDeps) view.View {
 			pageData.TotalAmount = totalAmountCell
 
 		case "payment":
-			allPayments, err := deps.DB.ListSimple(ctx, "revenue_payment")
-			if err != nil {
-				log.Printf("Failed to list payments for revenue %s: %v", id, err)
-				allPayments = []map[string]any{}
-			}
-			payments := filterPayments(allPayments, id)
+			payments := listRevenuePayments(ctx, deps.ListRevenuePayments, id)
 			currency, _ := revenue["currency"].(string)
 			perms := view.GetUserPermissions(ctx)
 			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.PaymentAddURL = route.ResolveURL(deps.Routes.PaymentAddURL, "id", id)
 
 			// Calculate totals
-			totalAmountCell, _ := revenue["total_amount"].(types.TableCell)
-			totalPaid := sumPayments(payments)
-			totalAmountFloat := parseAmount(totalAmountCell.Value)
-			remaining := totalAmountFloat - totalPaid
+			totalCentavos, _ := revenue["total_amount_centavos"].(int64)
+			paidCentavos := sumPaymentsCentavos(payments)
+			remainingCentavos := totalCentavos - paidCentavos
 
-			pageData.TotalPaid = currency + " " + formatAmount(totalPaid)
-			pageData.RemainingBalance = currency + " " + formatAmount(remaining)
-			if remaining <= 0 {
+			pageData.TotalPaid = types.FormatMoney(paidCentavos, currency)
+			pageData.RemainingBalance = types.FormatMoney(remainingCentavos, currency)
+			if remainingCentavos <= 0 {
 				pageData.PaymentStatus = "paid"
 				pageData.PaymentStatusVariant = "success"
-			} else if totalPaid > 0 {
+			} else if paidCentavos > 0 {
 				pageData.PaymentStatus = "partial"
 				pageData.PaymentStatusVariant = "warning"
 			} else {
@@ -179,7 +176,7 @@ func NewView(deps *DetailViewDeps) view.View {
 				pageData.PaymentStatusVariant = "info"
 			}
 			// Keep legacy field for backward compat
-			pageData.Payment = findPayment(allPayments, id, revenue)
+			pageData.Payment = findPayment(payments, id, revenue)
 
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
@@ -301,35 +298,29 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			pageData.TotalAmount = totalAmountCell
 
 		case "payment":
-			allPayments, err := deps.DB.ListSimple(ctx, "revenue_payment")
-			if err != nil {
-				log.Printf("Failed to list payments for revenue %s: %v", id, err)
-				allPayments = []map[string]any{}
-			}
-			payments := filterPayments(allPayments, id)
+			payments := listRevenuePayments(ctx, deps.ListRevenuePayments, id)
 			currency, _ := revenue["currency"].(string)
 			perms := view.GetUserPermissions(ctx)
 			pageData.PaymentTable = buildPaymentTable(payments, l, deps.TableLabels, currency, id, deps.Routes, perms)
 			pageData.PaymentAddURL = route.ResolveURL(deps.Routes.PaymentAddURL, "id", id)
 
-			totalAmountCell, _ := revenue["total_amount"].(types.TableCell)
-			totalPaid := sumPayments(payments)
-			totalAmountFloat := parseAmount(totalAmountCell.Value)
-			remaining := totalAmountFloat - totalPaid
+			totalCentavos, _ := revenue["total_amount_centavos"].(int64)
+			paidCentavos := sumPaymentsCentavos(payments)
+			remainingCentavos := totalCentavos - paidCentavos
 
-			pageData.TotalPaid = currency + " " + formatAmount(totalPaid)
-			pageData.RemainingBalance = currency + " " + formatAmount(remaining)
-			if remaining <= 0 {
+			pageData.TotalPaid = types.FormatMoney(paidCentavos, currency)
+			pageData.RemainingBalance = types.FormatMoney(remainingCentavos, currency)
+			if remainingCentavos <= 0 {
 				pageData.PaymentStatus = "paid"
 				pageData.PaymentStatusVariant = "success"
-			} else if totalPaid > 0 {
+			} else if paidCentavos > 0 {
 				pageData.PaymentStatus = "partial"
 				pageData.PaymentStatusVariant = "warning"
 			} else {
 				pageData.PaymentStatus = "unpaid"
 				pageData.PaymentStatusVariant = "info"
 			}
-			pageData.Payment = findPayment(allPayments, id, revenue)
+			pageData.Payment = findPayment(payments, id, revenue)
 
 		case "audit":
 			pageData.AuditTable = buildAuditTable(l, deps.TableLabels)
@@ -470,12 +461,43 @@ func buildAuditTable(l revenuedomain.Labels, tableLabels types.TableLabels) *typ
 	return cfg
 }
 
-// filterPayments filters payments belonging to a specific revenue.
-func filterPayments(all []map[string]any, revenueID string) []map[string]any {
-	result := []map[string]any{}
+// listRevenuePayments fetches the revenue's payments via the typed use case
+// with a SERVER-SIDE revenue_id filter. 20260612-datasource-typed-path W5 —
+// replaces DataSource ListSimple("revenue_payment") + client filter. Nil-safe:
+// returns an empty slice when the closure is unwired (mock builds / half-wired
+// composition root), so the tab renders an empty payment table rather than
+// crashing.
+func listRevenuePayments(ctx context.Context, list func(ctx context.Context, req *revenuepaymentpb.ListRevenuePaymentsRequest) (*revenuepaymentpb.ListRevenuePaymentsResponse, error), revenueID string) []*revenuepaymentpb.RevenuePayment {
+	if list == nil {
+		return []*revenuepaymentpb.RevenuePayment{}
+	}
+	resp, err := list(ctx, &revenuepaymentpb.ListRevenuePaymentsRequest{
+		Filters: &commonpb.FilterRequest{
+			Filters: []*commonpb.TypedFilter{{
+				Field: "revenue_id",
+				FilterType: &commonpb.TypedFilter_StringFilter{
+					StringFilter: &commonpb.StringFilter{
+						Value:    revenueID,
+						Operator: commonpb.StringOperator_STRING_EQUALS,
+					},
+				},
+			}},
+		},
+	})
+	if err != nil {
+		log.Printf("Failed to list payments for revenue %s: %v", revenueID, err)
+		return []*revenuepaymentpb.RevenuePayment{}
+	}
+	return filterPayments(resp.GetData(), revenueID)
+}
+
+// filterPayments filters payments belonging to a specific revenue. Defensive
+// client-side re-filter behind the server-side revenue_id filter (a partial
+// adapter may not honour it) — behaviour-preserving with the prior client filter.
+func filterPayments(all []*revenuepaymentpb.RevenuePayment, revenueID string) []*revenuepaymentpb.RevenuePayment {
+	result := []*revenuepaymentpb.RevenuePayment{}
 	for _, p := range all {
-		rid, _ := p["revenue_id"].(string)
-		if rid == revenueID {
+		if p.GetRevenueId() == revenueID {
 			result = append(result, p)
 		}
 	}
@@ -483,7 +505,7 @@ func filterPayments(all []map[string]any, revenueID string) []map[string]any {
 }
 
 // buildPaymentTable creates the payment table config for the payment tab.
-func buildPaymentTable(payments []map[string]any, l revenuedomain.Labels, tableLabels types.TableLabels, currency string, revenueID string, routes revenuedomain.Routes, perms *types.UserPermissions) *types.TableConfig {
+func buildPaymentTable(payments []*revenuepaymentpb.RevenuePayment, l revenuedomain.Labels, tableLabels types.TableLabels, currency string, revenueID string, routes revenuedomain.Routes, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "method", Label: l.Detail.PaymentMethod, NoSort: true},
 		{Key: "amount", Label: l.Detail.AmountPaid, NoSort: true, WidthClass: "col-3xl"},
@@ -494,18 +516,20 @@ func buildPaymentTable(payments []map[string]any, l revenuedomain.Labels, tableL
 
 	rows := []types.TableRow{}
 	for _, p := range payments {
-		id, _ := p["id"].(string)
-		method, _ := p["payment_method"].(string)
-		amount, _ := p["amount_paid"].(string)
-		refNum, _ := p["reference_number"].(string)
-		receivedBy, _ := p["received_by"].(string)
-		paymentDate, _ := p["payment_date"].(string)
+		id := p.GetId()
+		method := p.GetPaymentMethod()
+		// amount is centavos (int64, Rule #1); FormatMoney renders ÷100 with the
+		// "<currency> <amount>" prefix, matching the prior currency+" "+amount.
+		amountDisplay := types.FormatMoney(p.GetAmount(), currency)
+		refNum := p.GetReferenceNumber()
+		receivedBy := p.GetReceivedBy()
+		paymentDate := p.GetPaymentDate()
 
 		rows = append(rows, types.TableRow{
 			ID: id,
 			Cells: []types.TableCell{
 				{Type: "text", Value: method},
-				{Type: "text", Value: currency + " " + amount},
+				{Type: "text", Value: amountDisplay},
 				{Type: "text", Value: refNum},
 				{Type: "text", Value: receivedBy},
 				{Type: "text", Value: paymentDate},
@@ -532,32 +556,14 @@ func buildPaymentTable(payments []map[string]any, l revenuedomain.Labels, tableL
 	}
 }
 
-// sumPayments totals the amount_paid across all payment records.
-func sumPayments(payments []map[string]any) float64 {
-	total := 0.0
+// sumPaymentsCentavos totals the payment amount (int64 centavos, Rule #1) across
+// all records. Kept in centavos end-to-end — no float/display-string round-trip.
+func sumPaymentsCentavos(payments []*revenuepaymentpb.RevenuePayment) int64 {
+	var totalCentavos int64
 	for _, p := range payments {
-		amount, _ := p["amount_paid"].(string)
-		total += parseAmount(amount)
+		totalCentavos += p.GetAmount()
 	}
-	return total
-}
-
-// parseAmount converts a string amount to float64.
-func parseAmount(s string) float64 {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return 0
-	}
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return 0
-	}
-	return f
-}
-
-// formatAmount formats a float64 as a comma-separated 2-decimal string.
-func formatAmount(f float64) string {
-	return types.MoneyCell(f*100, "", true).Value
+	return totalCentavos
 }
 
 // ---------------------------------------------------------------------------
@@ -567,21 +573,22 @@ func formatAmount(f float64) string {
 // revenueToMap converts a Revenue protobuf to a map[string]any for template use.
 func revenueToMap(r *revenuepb.Revenue) map[string]any {
 	return map[string]any{
-		"id":                   r.GetId(),
-		"name":                 r.GetName(),
-		"client_id":            r.GetClientId(),
-		"revenue_date_string":  r.GetRevenueDate(),
-		"total_amount":         types.MoneyCell(float64(r.GetTotalAmount()), r.GetCurrency(), true),
-		"currency":             r.GetCurrency(),
-		"status":               r.GetStatus(),
-		"reference_number":     r.GetReferenceNumber(),
-		"notes":                r.GetNotes(),
-		"location_id":          r.GetLocationId(),
-		"active":               r.GetActive(),
-		"date_created_string":  r.GetDateCreatedString(),
-		"date_modified_string": r.GetDateModifiedString(),
-		"payment_term_id":      r.GetPaymentTermId(),
-		"due_date_string":      r.GetDueDate(),
+		"id":                    r.GetId(),
+		"name":                  r.GetName(),
+		"client_id":             r.GetClientId(),
+		"revenue_date_string":   r.GetRevenueDate(),
+		"total_amount":          types.MoneyCell(float64(r.GetTotalAmount()), r.GetCurrency(), true),
+		"total_amount_centavos": r.GetTotalAmount(),
+		"currency":              r.GetCurrency(),
+		"status":                r.GetStatus(),
+		"reference_number":      r.GetReferenceNumber(),
+		"notes":                 r.GetNotes(),
+		"location_id":           r.GetLocationId(),
+		"active":                r.GetActive(),
+		"date_created_string":   r.GetDateCreatedString(),
+		"date_modified_string":  r.GetDateModifiedString(),
+		"payment_term_id":       r.GetPaymentTermId(),
+		"due_date_string":       r.GetDueDate(),
 		"payment_term_name": func() string {
 			if pt := r.GetPaymentTerm(); pt != nil {
 				return pt.GetName()
@@ -629,30 +636,27 @@ func listLineItemMaps(ctx context.Context, listFn func(ctx context.Context, req 
 }
 
 // findPayment finds the payment record for a given revenue ID.
-func findPayment(payments []map[string]any, revenueID string, revenue map[string]any) *PaymentInfo {
+// 20260612-datasource-typed-path W5 — reads proto getters, not map keys.
+// Note: the proto carries no card_last4 field (it never existed on the
+// revenue_payment record), so CardLast4 is left empty — behaviour-preserving
+// (the old map key was always absent on a revenue_payment row).
+func findPayment(payments []*revenuepaymentpb.RevenuePayment, revenueID string, revenue map[string]any) *PaymentInfo {
 	currency, _ := revenue["currency"].(string)
 
 	for _, p := range payments {
-		rid, _ := p["revenue_id"].(string)
-		if rid != revenueID {
+		if p.GetRevenueId() != revenueID {
 			continue
 		}
 
-		method, _ := p["payment_method"].(string)
-		amount, _ := p["amount_paid"].(string)
-		cardLast4, _ := p["card_last4"].(string)
-		paymentDate, _ := p["payment_date"].(string)
-		receivedBy, _ := p["received_by"].(string)
-		receivedRole, _ := p["received_role"].(string)
-
+		// amount is centavos (int64, Rule #1); FormatMoney renders ÷100 with the
+		// "<currency> <amount>" prefix, matching the prior currency+" "+amount.
 		return &PaymentInfo{
-			Method:       method,
-			AmountPaid:   currency + " " + amount,
+			Method:       p.GetPaymentMethod(),
+			AmountPaid:   types.FormatMoney(p.GetAmount(), currency),
 			Currency:     currency,
-			CardLast4:    cardLast4,
-			PaymentDate:  paymentDate,
-			ReceivedBy:   receivedBy,
-			ReceivedRole: receivedRole,
+			PaymentDate:  p.GetPaymentDate(),
+			ReceivedBy:   p.GetReceivedBy(),
+			ReceivedRole: p.GetReceivedRole(),
 		}
 	}
 

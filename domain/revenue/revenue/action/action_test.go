@@ -15,6 +15,7 @@ import (
 
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	revenuepaymentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_payment"
 )
 
 // ---------------------------------------------------------------------------
@@ -48,31 +49,6 @@ func testRoutes() revenuedomain.Routes {
 	}
 }
 
-// mockDB is a minimal DataSource mock for tests.
-type mockDB struct {
-	listSimple func(ctx context.Context, collection string) ([]map[string]any, error)
-}
-
-func (m *mockDB) ListSimple(ctx context.Context, collection string) ([]map[string]any, error) {
-	if m.listSimple != nil {
-		return m.listSimple(ctx, collection)
-	}
-	return nil, nil
-}
-func (m *mockDB) Create(_ context.Context, _ string, _ map[string]any) (map[string]any, error) {
-	return nil, nil
-}
-func (m *mockDB) Read(_ context.Context, _ string, _ string) (map[string]any, error) {
-	return nil, nil
-}
-func (m *mockDB) Update(_ context.Context, _ string, _ string, _ map[string]any) (map[string]any, error) {
-	return nil, nil
-}
-func (m *mockDB) Delete(_ context.Context, _ string, _ string) error { return nil }
-func (m *mockDB) HardDelete(_ context.Context, _ string, _ string) error {
-	return nil
-}
-
 // ctxWithPerms returns a context with the given permission codes.
 func ctxWithPerms(codes ...string) context.Context {
 	perms := types.NewUserPermissions(codes)
@@ -103,7 +79,6 @@ func TestNewAddAction_PermissionDenied(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewAddAction(deps)
@@ -159,7 +134,6 @@ func TestNewAddAction_POST_MissingFields(t *testing.T) {
 			deps := &Deps{
 				Routes: testRoutes(),
 				Labels: testLabels(),
-				DB:     &mockDB{},
 				CreateRevenue: func(_ context.Context, _ *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error) {
 					createCalled = true
 					return &revenuepb.CreateRevenueResponse{
@@ -199,7 +173,6 @@ func TestNewAddAction_POST_CreateFailure(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 		CreateRevenue: func(_ context.Context, _ *revenuepb.CreateRevenueRequest) (*revenuepb.CreateRevenueResponse, error) {
 			return nil, fmt.Errorf("database unavailable")
 		},
@@ -227,7 +200,6 @@ func TestNewEditAction_PermissionDenied(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewEditAction(deps)
@@ -252,7 +224,6 @@ func TestNewDeleteAction_PermissionDenied(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewDeleteAction(deps)
@@ -277,7 +248,6 @@ func TestNewDeleteAction_MissingID(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewDeleteAction(deps)
@@ -305,7 +275,6 @@ func TestNewSetStatusAction_PermissionDenied(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewSetStatusAction(deps)
@@ -345,7 +314,6 @@ func TestNewSetStatusAction_InvalidStatus(t *testing.T) {
 			deps := &Deps{
 				Routes: testRoutes(),
 				Labels: testLabels(),
-				DB:     &mockDB{},
 			}
 
 			v := NewSetStatusAction(deps)
@@ -379,7 +347,6 @@ func TestNewSetStatusAction_MissingID(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewSetStatusAction(deps)
@@ -407,7 +374,6 @@ func TestNewSetStatusAction_CompleteWithNoItems(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 		ListRevenueLineItems: func(_ context.Context, _ *revenuelineitempb.ListRevenueLineItemsRequest) (*revenuelineitempb.ListRevenueLineItemsResponse, error) {
 			return &revenuelineitempb.ListRevenueLineItemsResponse{
 				Data: nil, // no line items
@@ -440,15 +406,15 @@ func TestNewSetStatusAction_CancelWithPayments(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB: &mockDB{
-			listSimple: func(_ context.Context, collection string) ([]map[string]any, error) {
-				if collection == "revenue_payment" {
-					return []map[string]any{
-						{"id": "pay-001", "revenue_id": "rev-001", "amount": 100.0},
-					}, nil
-				}
-				return nil, nil
-			},
+		// 20260612-datasource-typed-path W5 — typed revenue_payment list
+		// replaces the DataSource ListSimple("revenue_payment") path. The D21
+		// cancellation guard blocks when this returns ≥1 payment for the revenue.
+		ListRevenuePayments: func(_ context.Context, _ *revenuepaymentpb.ListRevenuePaymentsRequest) (*revenuepaymentpb.ListRevenuePaymentsResponse, error) {
+			return &revenuepaymentpb.ListRevenuePaymentsResponse{
+				Data: []*revenuepaymentpb.RevenuePayment{
+					{Id: "pay-001", RevenueId: "rev-001", Amount: 10000},
+				},
+			}, nil
 		},
 	}
 
@@ -477,7 +443,6 @@ func TestNewBulkDeleteAction_PermissionDenied(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewBulkDeleteAction(deps)
@@ -502,7 +467,6 @@ func TestNewBulkDeleteAction_NoIDs(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewBulkDeleteAction(deps)
@@ -530,7 +494,6 @@ func TestNewBulkSetStatusAction_InvalidStatus(t *testing.T) {
 	deps := &Deps{
 		Routes: testRoutes(),
 		Labels: testLabels(),
-		DB:     &mockDB{},
 	}
 
 	v := NewBulkSetStatusAction(deps)

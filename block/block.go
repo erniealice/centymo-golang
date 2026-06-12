@@ -483,7 +483,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if cfg.wantRevenue() {
 			revDeps := &revenuedomain.RevenueModuleDeps{
 				Routes:       revenueRoutes,
-				DB:           db,
 				Labels:       revenueLabels,
 				CommonLabels: ctx.Common,
 				TableLabels:  centymoTableLabels,
@@ -569,6 +568,18 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			revDeps.RecognizeRevenueFromSubscription = useCases.Revenue.RecognizeRevenueFromSubscription
 			// Phase 5: wire tax lines read-access
 			revDeps.ListRevenueTaxLines = useCases.Revenue.ListRevenueTaxLines
+			// 20260612-datasource-typed-path W5 — typed revenue_payment +
+			// collection_method + location closures replace the DataSource duck.
+			// These are nil in W5 (service-admin binds them in W7); every
+			// downstream call site is nil-safe (renders empty / falls back to id).
+			revDeps.CreateRevenuePayment = useCases.Revenue.RevenuePayment.CreateRevenuePayment
+			revDeps.ReadRevenuePayment = useCases.Revenue.RevenuePayment.ReadRevenuePayment
+			revDeps.UpdateRevenuePayment = useCases.Revenue.RevenuePayment.UpdateRevenuePayment
+			revDeps.DeleteRevenuePayment = useCases.Revenue.RevenuePayment.DeleteRevenuePayment
+			revDeps.ListRevenuePayments = useCases.Revenue.RevenuePayment.ListRevenuePayments
+			revDeps.ReadCollectionMethod = useCases.CollectionMethod.ReadCollectionMethod
+			revDeps.ListCollectionMethods = useCases.CollectionMethod.ListCollectionMethods
+			revDeps.ListLocations = useCases.Entity.Location.ListLocations
 
 			revenueMod := revenuedomain.NewRevenueModule(revDeps)
 			revenueMod.RegisterRoutes(ctx.Routes)

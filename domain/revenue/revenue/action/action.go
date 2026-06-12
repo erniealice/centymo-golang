@@ -10,11 +10,12 @@ import (
 
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue/revenue"
 	"github.com/erniealice/centymo-golang/domain/revenue/revenue/form"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	serialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
@@ -25,6 +26,7 @@ import (
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
+	revenuepaymentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_payment"
 	revenuetaxlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_tax_line"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
@@ -39,7 +41,17 @@ type PaymentTermOption = form.PaymentTermOption
 type Deps struct {
 	Routes revenuedomain.Routes
 	Labels revenuedomain.Labels
-	DB     shared.DataSource // KEEP — used for location, revenue_payment, and collection_method operations
+
+	// Typed location reads (revenue drawer location label). 20260612-datasource-typed-path
+	// W5/W2 — replaces DataSource on "location". Optional — nil-safe.
+	ListLocations func(ctx context.Context, req *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
+	ReadLocation  func(ctx context.Context, req *locationpb.ReadLocationRequest) (*locationpb.ReadLocationResponse, error)
+
+	// Typed revenue_payment list (D21 cancellation guard — "does this revenue
+	// have payments?"). 20260612-datasource-typed-path W5 — replaces DataSource
+	// ListSimple("revenue_payment") + client-side filter with a server-side
+	// revenue_id filter. Optional — nil-safe (degrades to "no payments").
+	ListRevenuePayments func(ctx context.Context, req *revenuepaymentpb.ListRevenuePaymentsRequest) (*revenuepaymentpb.ListRevenuePaymentsResponse, error)
 
 	// Payment terms dropdown (optional — gracefully degrades when nil)
 	ListPaymentTerms func(ctx context.Context) ([]*PaymentTermOption, error)
@@ -239,23 +251,40 @@ func resolveSubscriptionLabel(ctx context.Context, subscriptionID string, listSu
 	return subscriptionID
 }
 
-// resolveLocationLabel finds the display name for a location by ID using the DB.
-func resolveLocationLabel(ctx context.Context, locationID string, db shared.DataSource) string {
-	if locationID == "" || db == nil {
+// resolveLocationLabel finds the display name for a location by ID using the
+// typed location use case. 20260612-datasource-typed-path W5/W2 — replaces the
+// DataSource ListSimple("location") path. The revenue's location_id is a real
+// location id (record.GetLocationId()), so ReadLocation is the primary path
+// with a ListLocations name-match fallback (R4). Nil-safe: returns the raw id
+// when no closure is wired or the lookup fails (mirrors the prior pass-through).
+func resolveLocationLabel(ctx context.Context, deps *Deps, locationID string) string {
+	if locationID == "" {
 		return ""
 	}
-	records, err := db.ListSimple(ctx, "location")
-	if err != nil {
-		return locationID
-	}
-	for _, r := range records {
-		id, _ := r["id"].(string)
-		if id == locationID {
-			name, _ := r["name"].(string)
-			if name != "" {
-				return name
+	if deps.ReadLocation != nil {
+		resp, err := deps.ReadLocation(ctx, &locationpb.ReadLocationRequest{
+			Data: &locationpb.Location{Id: locationID},
+		})
+		if err == nil {
+			for _, loc := range resp.GetData() {
+				if loc.GetId() == locationID {
+					if name := loc.GetName(); name != "" {
+						return name
+					}
+				}
 			}
-			return locationID
+		}
+	}
+	if deps.ListLocations != nil {
+		resp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
+		if err == nil {
+			for _, loc := range resp.GetData() {
+				if loc.GetId() == locationID {
+					if name := loc.GetName(); name != "" {
+						return name
+					}
+				}
+			}
 		}
 	}
 	return locationID
@@ -595,7 +624,7 @@ func NewEditAction(deps *Deps) view.View {
 			existingSubscriptionID := record.GetSubscriptionId()
 			subscriptionLabel := resolveSubscriptionLabel(ctx, existingSubscriptionID, deps.ListSubscriptions)
 			existingLocationID := record.GetLocationId()
-			locationLabel := resolveLocationLabel(ctx, existingLocationID, deps.DB)
+			locationLabel := resolveLocationLabel(ctx, deps, existingLocationID)
 			revenueType := "one_time"
 			if existingSubscriptionID != "" {
 				revenueType = "from_subscription"
@@ -856,7 +885,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 
 		// D21: Block cancellation if payments exist
 		if targetStatus == "cancelled" {
-			payments, err := getPaymentsForRevenue(ctx, deps.DB, id)
+			payments, err := getPaymentsForRevenue(ctx, deps.ListRevenuePayments, id)
 			if err != nil {
 				log.Printf("Failed to list payments for sale %s: %v", id, err)
 				return view.HTMXError(err.Error())
@@ -927,7 +956,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 		if targetStatus == "cancelled" {
 			withPayments := 0
 			for _, id := range ids {
-				payments, err := getPaymentsForRevenue(ctx, deps.DB, id)
+				payments, err := getPaymentsForRevenue(ctx, deps.ListRevenuePayments, id)
 				if err != nil {
 					log.Printf("Failed to check payments for sale %s: %v", id, err)
 					continue
@@ -1041,17 +1070,38 @@ func strPtr(s string) *string {
 	return &s
 }
 
-// getPaymentsForRevenue returns all revenue_payment records for a given revenue ID.
-func getPaymentsForRevenue(ctx context.Context, db shared.DataSource, revenueID string) ([]map[string]any, error) {
-	all, err := db.ListSimple(ctx, "revenue_payment")
+// getPaymentsForRevenue returns the revenue_payment records for a given revenue
+// ID via the typed use case with a SERVER-SIDE revenue_id filter.
+// 20260612-datasource-typed-path W5 — replaces DataSource ListSimple +
+// client-side filter. Nil-safe: returns an empty slice (no error) when the
+// closure is unwired, so the D21 cancellation guard treats it as "no payments"
+// rather than crashing.
+func getPaymentsForRevenue(ctx context.Context, list func(ctx context.Context, req *revenuepaymentpb.ListRevenuePaymentsRequest) (*revenuepaymentpb.ListRevenuePaymentsResponse, error), revenueID string) ([]*revenuepaymentpb.RevenuePayment, error) {
+	if list == nil {
+		return []*revenuepaymentpb.RevenuePayment{}, nil
+	}
+	resp, err := list(ctx, &revenuepaymentpb.ListRevenuePaymentsRequest{
+		Filters: &commonpb.FilterRequest{
+			Filters: []*commonpb.TypedFilter{{
+				Field: "revenue_id",
+				FilterType: &commonpb.TypedFilter_StringFilter{
+					StringFilter: &commonpb.StringFilter{
+						Value:    revenueID,
+						Operator: commonpb.StringOperator_STRING_EQUALS,
+					},
+				},
+			}},
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
-	var payments []map[string]any
-	for _, r := range all {
-		rid, _ := r["revenue_id"].(string)
-		if rid == revenueID {
-			payments = append(payments, r)
+	// Defensive client-side re-filter: a partial adapter may not honour the
+	// server-side filter. Behaviour-preserving with the prior client filter.
+	var payments []*revenuepaymentpb.RevenuePayment
+	for _, p := range resp.GetData() {
+		if p.GetRevenueId() == revenueID {
+			payments = append(payments, p)
 		}
 	}
 	return payments, nil
