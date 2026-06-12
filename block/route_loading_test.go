@@ -28,32 +28,6 @@ func (r *testRouteRegistrar) GET(path string, _ view.View, _ ...string) {
 
 func (r *testRouteRegistrar) POST(_ string, _ view.View, _ ...string) {}
 
-type testDataSource struct{}
-
-func (d *testDataSource) ListSimple(context.Context, string) ([]map[string]any, error) {
-	return nil, nil
-}
-
-func (d *testDataSource) Create(context.Context, string, map[string]any) (map[string]any, error) {
-	return map[string]any{}, nil
-}
-
-func (d *testDataSource) Read(context.Context, string, string) (map[string]any, error) {
-	return map[string]any{}, nil
-}
-
-func (d *testDataSource) Update(context.Context, string, string, map[string]any) (map[string]any, error) {
-	return map[string]any{}, nil
-}
-
-func (d *testDataSource) Delete(context.Context, string, string) error {
-	return nil
-}
-
-func (d *testDataSource) HardDelete(context.Context, string, string) error {
-	return nil
-}
-
 // newPlanUseCases returns a UseCases value with no-op stubs for the required
 // Plan CRUD fields, as validated by RequireFor when WithPlan() is enabled.
 func newPlanUseCases() *UseCases {
@@ -139,7 +113,9 @@ func TestBlockLoadsRouteOverridesForSelectedModules(t *testing.T) {
 				Common:       pyeza.CommonLabels{},
 				BusinessType: "service",
 				Translations: lynguaV1.NewTranslationProviderFromFS(lyngua.TranslationsFS),
-				DB:           &testDataSource{},
+				// ctx.DB intentionally unset — the centymo DataSource duck was
+				// deleted (20260612-datasource-typed-path W6); Block() no longer
+				// reads ctx.DB.
 			}
 
 			if err := Block(tc.option, WithUseCases(tc.useCases))(ctx); err != nil {

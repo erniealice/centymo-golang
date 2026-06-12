@@ -17,7 +17,6 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
 	productlinemod "github.com/erniealice/centymo-golang/domain/product/line"
 )
@@ -25,7 +24,6 @@ import (
 // productWiring holds everything wireProductModules needs from the surrounding
 // Block() scope. More than 6 fields → struct. Kept private; never re-exported.
 type productWiring struct {
-	db         centymo.DataSource
 	refChecker reference.Checker
 	// Image + attachment ops
 	uploadImage      func(context.Context, string, string, []byte, string) error
@@ -82,7 +80,6 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 		productDeps := &productdom.ProductModuleDeps{
 			Routes:              w.productRoutes,
 			Mode:                "service",
-			DB:                  w.db,
 			Labels:              w.productLabels,
 			CommonLabels:        ctx.Common,
 			TableLabels:         w.centymoTableLabels,
@@ -100,11 +97,9 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 			// role grant Services CRUD without implicit grant on Products
 			// or Supplies.
 			PermissionEntity: "service",
-			// SetProductActive uses raw DB update (proto3 omits false booleans)
-			SetProductActive: func(fctx context.Context, id string, active bool) error {
-				_, err := w.db.Update(fctx, "product", id, map[string]any{"active": active})
-				return err
-			},
+			// SetProductActive: narrow typed SetActive closure (proto3 omits false
+			// booleans, so the typed proto Update can't clear `active`).
+			SetProductActive: setActiveClosure(useCases, "product"),
 			// Image upload (product variant images)
 			UploadImage: w.uploadImage,
 			// Attachments
@@ -133,6 +128,7 @@ func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCa
 		if useCases.Product.ListProductVariantOptions != nil {
 			productDeps.ListProductVariantOptions = useCases.Product.ListProductVariantOptions
 			productDeps.CreateProductVariantOption = useCases.Product.CreateProductVariantOption
+			productDeps.DeleteProductVariantOption = useCases.Product.DeleteProductVariantOption
 		}
 		if useCases.Product.ListProductOptions != nil {
 			productDeps.ListProductOptions = useCases.Product.ListProductOptions

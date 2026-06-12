@@ -23,7 +23,6 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
 	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
 	subscriptionaction "github.com/erniealice/centymo-golang/domain/subscription/subscription/action"
 	subscriptiondetail "github.com/erniealice/centymo-golang/domain/subscription/subscription/detail"
@@ -34,7 +33,6 @@ import (
 // surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type subscriptionWiring struct {
-	db         centymo.DataSource
 	refChecker reference.Checker
 	// Attachment ops
 	uploadFile       func(context.Context, string, string, []byte, string) error
@@ -92,11 +90,9 @@ func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *U
 			ReadSubscription:   useCases.Subscription.ReadSubscription,
 			UpdateSubscription: useCases.Subscription.UpdateSubscription,
 			DeleteSubscription: useCases.Subscription.DeleteSubscription,
-			// SetSubscriptionActive uses raw DB update (proto3 omits false booleans)
-			SetSubscriptionActive: func(fctx context.Context, id string, active bool) error {
-				_, err := w.db.Update(fctx, "subscription", id, map[string]any{"active": active})
-				return err
-			},
+			// SetSubscriptionActive: narrow typed SetActive closure (proto3 omits
+			// false booleans, so the typed proto Update can't clear `active`).
+			SetSubscriptionActive: setActiveClosure(useCases, "subscription"),
 		}
 		if w.refChecker != nil {
 			subActionDeps.GetInUseIDs = w.refChecker.GetSubscriptionInUseIDs

@@ -21,6 +21,7 @@ import (
 	commonv1pb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
+	paymenttermpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/payment_term"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	workspacepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
@@ -108,6 +109,17 @@ type UseCases struct {
 	// Used by workflow action closures that need to record the acting user
 	// (e.g. ApprovedBy, ActivatedBy) without importing the espyna consumer package.
 	ExtractUserID func(context.Context) string
+
+	// SetActive sets ONLY the `active` boolean column on the named collection. It
+	// is a deliberate, auditable, capability-narrow replacement for the deleted
+	// DataSource duck's generic Update — needed because proto3 omits false bools,
+	// so the typed proto Update cannot clear `active`. The collection argument is
+	// the table name (e.g. "subscription", "plan", "inventory_item",
+	// "cost_schedule"). Bound by service-admin in W7; nil-safe — when unbound the
+	// per-entity activate/deactivate toggles log + no-op (the row's active flag is
+	// left unchanged rather than panicking).
+	// 20260612-datasource-typed-path W6.
+	SetActive func(ctx context.Context, collection string, id string, active bool) error
 	// Domain CRUD + use-case groups (singular field, `XxxUseCases` type)
 	// Ordered alphabetically for easy scanning.
 	Collection       CollectionUseCases
@@ -136,6 +148,25 @@ type UseCases struct {
 	ExpenseRecognitionRun ExpenseRecognitionRunUseCases
 }
 
+// setActiveClosure adapts the capability-narrow UseCases.SetActive into the
+// per-entity `func(ctx, id, active) error` shape the view-layer action Deps
+// expect (SetSubscriptionActive, SetPlanActive, SetItemActive, …), binding the
+// collection name. Nil-safe: when SetActive is unbound (service-admin wires it
+// in W7) the returned closure logs and no-ops rather than panicking — the
+// activate/deactivate toggle silently leaves the row unchanged, matching the
+// fail-soft contract every other unwired typed closure in this package uses.
+// 20260612-datasource-typed-path W6 — replaces the deleted DataSource duck's
+// `Update(collection, id, {"active": active})` call at each toggle site.
+func setActiveClosure(useCases *UseCases, collection string) func(context.Context, string, bool) error {
+	return func(ctx context.Context, id string, active bool) error {
+		if useCases == nil || useCases.SetActive == nil {
+			log.Printf("centymo.Block: SetActive(%q) is not wired — active toggle no-op for id %s (bind UseCases.SetActive in service-admin)", collection, id)
+			return nil
+		}
+		return useCases.SetActive(ctx, collection, id, active)
+	}
+}
+
 // ExpenseRecognitionRunUseCases groups everything the centymo
 // expense_recognition_run view module needs from outside.
 //
@@ -162,10 +193,22 @@ type CommonUseCases struct {
 // -- Entity ------------------------------------------------------------------
 
 type EntityUseCases struct {
-	Client    ClientUseCases
-	Location  LocationUseCases
-	Supplier  SupplierUseCases
-	Workspace WorkspaceUseCases
+	Client      ClientUseCases
+	Location    LocationUseCases
+	PaymentTerm PaymentTermUseCases
+	Supplier    SupplierUseCases
+	Workspace   WorkspaceUseCases
+}
+
+// PaymentTermUseCases groups the typed payment_term reads the revenue
+// (client/both scope) + expenditure (supplier/both scope) payment-terms
+// dropdowns need. Replaces the duck-typed DataSource.ListSimple("payment_term")
+// path. The block scopes/filters the returned rows itself (by entity_scope), so
+// a single unfiltered ListPaymentTerms closure serves both callers.
+// 20260612-datasource-typed-path W6. Nil-safe — the dropdowns render empty
+// (no payment-term options) when unwired.
+type PaymentTermUseCases struct {
+	ListPaymentTerms func(context.Context, *paymenttermpb.ListPaymentTermsRequest) (*paymenttermpb.ListPaymentTermsResponse, error)
 }
 
 type ClientUseCases struct {
@@ -276,6 +319,13 @@ type ProductUseCases struct {
 	// ProductVariantOption
 	ListProductVariantOptions  func(context.Context, *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 	CreateProductVariantOption func(context.Context, *productvariantoptionpb.CreateProductVariantOptionRequest) (*productvariantoptionpb.CreateProductVariantOptionResponse, error)
+	// DeleteProductVariantOption replaces the duck-typed
+	// DataSource.HardDelete("product_variant_option", id) path used by the
+	// variant detail's deleteVariantOptions cleanup. The product_variant_option
+	// proto Delete is a hard delete on this junction table. Bound by
+	// service-admin in W7; nil-safe — when unbound the cleanup logs + skips.
+	// 20260612-datasource-typed-path W6.
+	DeleteProductVariantOption func(context.Context, *productvariantoptionpb.DeleteProductVariantOptionRequest) (*productvariantoptionpb.DeleteProductVariantOptionResponse, error)
 	// ProductOption CRUD
 	ListProductOptions  func(context.Context, *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
 	ReadProductOption   func(context.Context, *productoptionpb.ReadProductOptionRequest) (*productoptionpb.ReadProductOptionResponse, error)

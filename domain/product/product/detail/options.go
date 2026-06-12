@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	product "github.com/erniealice/centymo-golang/domain/product/product"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -21,7 +20,6 @@ import (
 // OptionsDeps holds dependencies for option action handlers.
 type OptionsDeps struct {
 	Routes       product.Routes
-	DB           shared.DataSource
 	Labels       product.Labels
 	CommonLabels any
 	TableLabels  types.TableLabels
@@ -60,7 +58,6 @@ func NewOptionsTableView(deps *OptionsDeps) view.View {
 		}
 		detailDeps := &DetailViewDeps{
 			Routes:                  deps.Routes,
-			DB:                      deps.DB,
 			Labels:                  deps.Labels,
 			CommonLabels:            commonLabels,
 			TableLabels:             deps.TableLabels,

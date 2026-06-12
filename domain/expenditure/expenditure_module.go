@@ -2,7 +2,6 @@ package expenditure
 
 import (
 	"context"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	templateviewform "github.com/erniealice/hybra-golang/views/template/form"
 
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -39,7 +38,6 @@ type PaymentTermOption = expenditureaction.PaymentTermOption
 // ExpenditureModuleDeps holds all dependencies for the expenditure module.
 type ExpenditureModuleDeps struct {
 	Routes           epkg.Routes
-	DB               shared.DataSource
 	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
 	Labels           epkg.Labels
 	TemplateLabels   templateviewform.Labels

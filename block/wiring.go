@@ -32,11 +32,10 @@ import (
 // buildLocationResolver returns a shared.LocationResolver backed by the typed
 // espyna location use-case (useCases.Entity.Location.ListLocations). It maps a
 // location id to its human name; unknown ids (e.g. the inventory list's human
-// slug "ayala-central-bloc", which is not a location row) pass through unchanged
-// — preserving the LocationDisplayName stub's behaviour.
+// slug "ayala-central-bloc", which is not a location row) pass through unchanged.
 //
 // Nil-safe: when ListLocations is unwired it returns nil, so every consumer
-// falls back to shared.LocationDisplayName via shared.ResolveLocationName.
+// falls back to the pass-through (id unchanged) via shared.ResolveLocationName.
 //
 // Each call lists locations and builds a fresh id→name map (matching the
 // existing per-call resolveLocationLabel / loadLocations precedents). Batch

@@ -2,7 +2,6 @@ package expenditure
 
 import (
 	"context"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -24,7 +23,6 @@ import (
 // PurchaseOrderModuleDeps holds all dependencies for the purchase order module.
 type PurchaseOrderModuleDeps struct {
 	Routes       sib_expenditure_expenditure.Routes
-	DB           shared.DataSource
 	Labels       sib_expenditure_expenditure.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels

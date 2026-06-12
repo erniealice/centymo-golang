@@ -8,12 +8,9 @@
 package block
 
 import (
-	"context"
-
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
 	procurement "github.com/erniealice/centymo-golang/domain/procurement"
 	costplanaction "github.com/erniealice/centymo-golang/domain/procurement/cost_plan/action"
@@ -23,7 +20,6 @@ import (
 // needs from the surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type supplierSubscriptionWiring struct {
-	db                            centymo.DataSource
 	costScheduleRoutes            procurement.CostScheduleRoutes
 	costScheduleLabels            procurement.CostScheduleLabels
 	supplierPlanRoutes            procurement.SupplierPlanRoutes
@@ -53,14 +49,11 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// =====================================================================
 	if cfg.wantCostSchedule() {
 		csDeps := &procurement.CostScheduleModuleDeps{
-			Routes:       w.costScheduleRoutes,
-			Labels:       w.costScheduleLabels,
-			CommonLabels: ctx.Common,
-			TableLabels:  w.centymoTableLabels,
-			SetCostScheduleActive: func(fctx context.Context, id string, active bool) error {
-				_, err := w.db.Update(fctx, "cost_schedule", id, map[string]any{"active": active})
-				return err
-			},
+			Routes:                w.costScheduleRoutes,
+			Labels:                w.costScheduleLabels,
+			CommonLabels:          ctx.Common,
+			TableLabels:           w.centymoTableLabels,
+			SetCostScheduleActive: setActiveClosure(useCases, "cost_schedule"),
 		}
 		cs := useCases.Procurement.CostSchedule
 		if cs.CreateCostSchedule != nil {
@@ -89,15 +82,12 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// =====================================================================
 	if cfg.wantSupplierPlan() {
 		spDeps := &procurement.SupplierPlanModuleDeps{
-			Routes:       w.supplierPlanRoutes,
-			Labels:       w.supplierPlanLabels,
-			CommonLabels: ctx.Common,
-			TableLabels:  w.centymoTableLabels,
-			SetSupplierPlanActive: func(fctx context.Context, id string, active bool) error {
-				_, err := w.db.Update(fctx, "supplier_plan", id, map[string]any{"active": active})
-				return err
-			},
-			SearchSupplierURL: w.supplierPlanRoutes.SearchSupplierURL,
+			Routes:                w.supplierPlanRoutes,
+			Labels:                w.supplierPlanLabels,
+			CommonLabels:          ctx.Common,
+			TableLabels:           w.centymoTableLabels,
+			SetSupplierPlanActive: setActiveClosure(useCases, "supplier_plan"),
+			SearchSupplierURL:     w.supplierPlanRoutes.SearchSupplierURL,
 		}
 		sp := useCases.Procurement.SupplierPlan
 		if sp.CreateSupplierPlan != nil {
@@ -126,15 +116,12 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// =====================================================================
 	if cfg.wantCostPlan() {
 		cpDeps := &procurement.CostPlanModuleDeps{
-			Routes:            w.costPlanRoutes,
-			Labels:            w.costPlanLabels,
-			ProductCostLabels: w.supplierProductCostPlanLabels,
-			CommonLabels:      ctx.Common,
-			TableLabels:       w.centymoTableLabels,
-			SetCostPlanActive: func(fctx context.Context, id string, active bool) error {
-				_, err := w.db.Update(fctx, "cost_plan", id, map[string]any{"active": active})
-				return err
-			},
+			Routes:                       w.costPlanRoutes,
+			Labels:                       w.costPlanLabels,
+			ProductCostLabels:            w.supplierProductCostPlanLabels,
+			CommonLabels:                 ctx.Common,
+			TableLabels:                  w.centymoTableLabels,
+			SetCostPlanActive:            setActiveClosure(useCases, "cost_plan"),
 			SearchSupplierPlanURL:        w.costPlanRoutes.SearchSupplierPlanURL,
 			SearchCostScheduleURL:        w.costPlanRoutes.SearchCostScheduleURL,
 			SearchSupplierProductPlanURL: w.costPlanRoutes.SearchSupplierProductPlanURL,
@@ -180,16 +167,13 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// =====================================================================
 	if cfg.wantSupplierProductPlan() {
 		sppDeps := &procurement.SupplierProductPlanModuleDeps{
-			Routes:       w.supplierProductPlanRoutes,
-			Labels:       w.supplierProductPlanLabels,
-			CommonLabels: ctx.Common,
-			TableLabels:  w.centymoTableLabels,
-			SetSupplierProductPlanActive: func(fctx context.Context, id string, active bool) error {
-				_, err := w.db.Update(fctx, "supplier_product_plan", id, map[string]any{"active": active})
-				return err
-			},
-			SearchSupplierPlanURL: w.supplierProductPlanRoutes.SearchSupplierPlanURL,
-			SearchProductURL:      w.supplierProductPlanRoutes.SearchProductURL,
+			Routes:                       w.supplierProductPlanRoutes,
+			Labels:                       w.supplierProductPlanLabels,
+			CommonLabels:                 ctx.Common,
+			TableLabels:                  w.centymoTableLabels,
+			SetSupplierProductPlanActive: setActiveClosure(useCases, "supplier_product_plan"),
+			SearchSupplierPlanURL:        w.supplierProductPlanRoutes.SearchSupplierPlanURL,
+			SearchProductURL:             w.supplierProductPlanRoutes.SearchProductURL,
 		}
 		spp := useCases.Procurement.SupplierProductPlan
 		if spp.CreateSupplierProductPlan != nil {
@@ -265,15 +249,12 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// =====================================================================
 	if cfg.wantSupplierSubscription() {
 		ssDeps := &procurement.SupplierSubscriptionModuleDeps{
-			Routes:                      w.supplierSubscriptionRoutes,
-			Labels:                      w.supplierSubscriptionLabels,
-			ExpenseRecognitionRunLabels: w.expenseRecognitionRunLabels,
-			CommonLabels:                ctx.Common,
-			TableLabels:                 w.centymoTableLabels,
-			SetSupplierSubscriptionActive: func(fctx context.Context, id string, active bool) error {
-				_, err := w.db.Update(fctx, "supplier_subscription", id, map[string]any{"active": active})
-				return err
-			},
+			Routes:                        w.supplierSubscriptionRoutes,
+			Labels:                        w.supplierSubscriptionLabels,
+			ExpenseRecognitionRunLabels:   w.expenseRecognitionRunLabels,
+			CommonLabels:                  ctx.Common,
+			TableLabels:                   w.centymoTableLabels,
+			SetSupplierSubscriptionActive: setActiveClosure(useCases, "supplier_subscription"),
 		}
 		ss := useCases.Procurement.SupplierSubscription
 		if ss.CreateSupplierSubscription != nil {

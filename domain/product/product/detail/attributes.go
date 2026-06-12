@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	product "github.com/erniealice/centymo-golang/domain/product/product"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -42,7 +41,6 @@ type AttributeFormData struct {
 // AttributeDeps holds dependencies for attribute action handlers.
 type AttributeDeps struct {
 	Routes       product.Routes
-	DB           shared.DataSource
 	Labels       product.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels

@@ -34,8 +34,9 @@ centymo-golang/
   go.mod
   placement_test.go            # Option-B structural gate (R1–R6), proto-derived
   assets.go                    # AssetsFS //go:embed  (root residual → pyeza Wave P)
-  datasource.go                # DataSource alias = shared.DataSource  (root residual)
-  labels.go                    # LocationDisplayName alias = shared.*  (root residual)
+  # datasource.go / labels.go DELETED in 20260612-datasource-typed-path W6
+  #   (the DataSource duck + LocationDisplayName stub are gone — all former
+  #    users migrated to narrow typed closures on the block UseCases).
   routes.go  routes_config.go  # root compatibility shim for external consumers (entydad)
 
   domain/<domain>/

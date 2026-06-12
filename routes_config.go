@@ -3,17 +3,18 @@ package centymo
 import (
 	pricesched "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	subscriptionentity "github.com/erniealice/centymo-golang/domain/subscription/subscription"
-	advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 	disbursement "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
 	shared "github.com/erniealice/centymo-golang/domain/treasury/shared"
+	advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 )
 
 // NOTE (centymo restructure): these compatibility aliases point DIRECTLY at the
 // owning entity packages (domain/<d>/<entity>) rather than the domain facade
 // (domain/<d>). The root package must not import the domain facades — that would
-// create an import cycle (root -> facade -> entity -> root, since entity views
-// still import the root for DataSource/LocationDisplayName). Pointing at the
-// root-free entity packages preserves the exact external symbol surface
+// create an import cycle (root -> facade -> entity -> root). Historically entity
+// views imported the root for the DataSource/LocationDisplayName duck; that duck
+// was deleted in 20260612-datasource-typed-path W6, but pointing these aliases at
+// the root-free entity packages still preserves the exact external symbol surface
 // (centymo.SubscriptionRoutes, centymo.DisbursementRoutes, …) with ZERO
 // behaviour change. The names below are byte-identical to the prior shim.
 

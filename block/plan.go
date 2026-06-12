@@ -21,7 +21,6 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
-	centymo "github.com/erniealice/centymo-golang"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
 	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
 	planaction "github.com/erniealice/centymo-golang/domain/subscription/plan/action"
@@ -33,7 +32,6 @@ import (
 // planWiring holds everything wirePlanModules needs from the surrounding Block()
 // scope. More than 6 fields → struct. Kept private; never re-exported.
 type planWiring struct {
-	db         centymo.DataSource
 	refChecker reference.Checker
 	// Attachment ops
 	uploadFile       func(context.Context, string, string, []byte, string) error
@@ -420,11 +418,9 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 				ReadPlan:   useCases.Plan.ReadPlan,
 				UpdatePlan: useCases.Plan.UpdatePlan,
 				DeletePlan: useCases.Plan.DeletePlan,
-				// SetPlanActive uses raw DB update (proto3 omits false booleans)
-				SetPlanActive: func(fctx context.Context, id string, active bool) error {
-					_, err := w.db.Update(fctx, "plan", id, map[string]any{"active": active})
-					return err
-				},
+				// SetPlanActive: narrow typed SetActive closure (proto3 omits false
+				// booleans, so the typed proto Update can't clear `active`).
+				SetPlanActive: setActiveClosure(useCases, "plan"),
 			}
 			// 2026-04-27 plan-client-scope plan §6.2 — Client picker support
 			// + reference-checker lock state.
@@ -674,11 +670,9 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 					ReadPlan:   useCases.Plan.ReadPlan,
 					UpdatePlan: useCases.Plan.UpdatePlan,
 					DeletePlan: useCases.Plan.DeletePlan,
-					// SetPlanActive uses raw DB update (proto3 omits false booleans)
-					SetPlanActive: func(fctx context.Context, id string, active bool) error {
-						_, err := w.db.Update(fctx, "plan", id, map[string]any{"active": active})
-						return err
-					},
+					// SetPlanActive: narrow typed SetActive closure (proto3 omits
+					// false booleans, so the typed proto Update can't clear `active`).
+					SetPlanActive: setActiveClosure(useCases, "plan"),
 				}
 				// 2026-04-27 plan-client-scope plan §6.2 — same Client picker
 				// + lock state on the bundle mount.

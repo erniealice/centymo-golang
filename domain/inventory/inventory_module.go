@@ -75,7 +75,7 @@ type InventoryModuleDeps struct {
 
 	// LocationName resolves a location id/slug to a DB-backed display name. Fed
 	// at composition time from the typed espyna location use-case; nil falls back
-	// to the pass-through stub (shared.LocationDisplayName).
+	// to a pass-through (id unchanged) via shared.ResolveLocationName.
 	LocationName shared.LocationResolver
 
 	// Attachment operations

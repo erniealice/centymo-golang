@@ -105,7 +105,6 @@ type VariantFormData struct {
 // DetailViewDeps holds dependencies for variant action handlers.
 type DetailViewDeps struct {
 	Routes       product.Routes
-	DB           shared.DataSource
 	Labels       product.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
@@ -123,6 +122,10 @@ type DetailViewDeps struct {
 	// Typed proto funcs for product_variant_option
 	ListProductVariantOptions  func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 	CreateProductVariantOption func(ctx context.Context, req *productvariantoptionpb.CreateProductVariantOptionRequest) (*productvariantoptionpb.CreateProductVariantOptionResponse, error)
+	// DeleteProductVariantOption hard-deletes a product_variant_option junction
+	// row. Replaces the deleted DataSource duck's HardDelete path used by
+	// deleteVariantOptions. 20260612-datasource-typed-path W6.
+	DeleteProductVariantOption func(ctx context.Context, req *productvariantoptionpb.DeleteProductVariantOptionRequest) (*productvariantoptionpb.DeleteProductVariantOptionResponse, error)
 
 	// Typed proto funcs for product_option/value (for dropdowns)
 	ListProductOptions       func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
@@ -431,7 +434,10 @@ func upsertFreeOptionValue(ctx context.Context, deps *DetailViewDeps, optionID, 
 
 // deleteVariantOptions removes all product_variant_option rows for a variant.
 func deleteVariantOptions(ctx context.Context, deps *DetailViewDeps, variantID string) {
-	if deps.ListProductVariantOptions == nil || deps.DB == nil {
+	// 20260612-datasource-typed-path W6 — DeleteProductVariantOption replaces the
+	// deleted DataSource duck's HardDelete("product_variant_option", id). Nil-safe:
+	// when unwired (service-admin binds it in W7) the cleanup logs + skips.
+	if deps.ListProductVariantOptions == nil || deps.DeleteProductVariantOption == nil {
 		return
 	}
 	voResp, err := deps.ListProductVariantOptions(ctx, &productvariantoptionpb.ListProductVariantOptionsRequest{})
@@ -446,8 +452,9 @@ func deleteVariantOptions(ctx context.Context, deps *DetailViewDeps, variantID s
 		}
 		voID := vo.GetId()
 		if voID != "" {
-			err := deps.DB.HardDelete(ctx, "product_variant_option", voID)
-			if err != nil {
+			if _, err := deps.DeleteProductVariantOption(ctx, &productvariantoptionpb.DeleteProductVariantOptionRequest{
+				Data: &productvariantoptionpb.ProductVariantOption{Id: voID},
+			}); err != nil {
 				log.Printf("Failed to hard-delete product_variant_option %s: %v", voID, err)
 			}
 		}

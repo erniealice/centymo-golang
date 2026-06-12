@@ -70,7 +70,6 @@ func NewOptionValueTableView(deps *OptionsDeps) view.View {
 
 		detailDeps := &DetailViewDeps{
 			Routes:                  deps.Routes,
-			DB:                      deps.DB,
 			Labels:                  deps.Labels,
 			TableLabels:             deps.TableLabels,
 			ListProductOptions:      deps.ListProductOptions,

@@ -41,7 +41,6 @@ import (
 // ProductModuleDeps holds all dependencies for the product module.
 type ProductModuleDeps struct {
 	Routes       epkg.Routes
-	DB           shared.DataSource
 	Labels       epkg.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
@@ -107,6 +106,10 @@ type ProductModuleDeps struct {
 	// Product Variant Option
 	ListProductVariantOptions  func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
 	CreateProductVariantOption func(ctx context.Context, req *productvariantoptionpb.CreateProductVariantOptionRequest) (*productvariantoptionpb.CreateProductVariantOptionResponse, error)
+	// DeleteProductVariantOption hard-deletes a product_variant_option junction
+	// row (variant detail cleanup). Replaces the deleted DataSource duck's
+	// HardDelete path. 20260612-datasource-typed-path W6.
+	DeleteProductVariantOption func(ctx context.Context, req *productvariantoptionpb.DeleteProductVariantOptionRequest) (*productvariantoptionpb.DeleteProductVariantOptionResponse, error)
 
 	// Product Option CRUD
 	ListProductOptions  func(ctx context.Context, req *productoptionpb.ListProductOptionsRequest) (*productoptionpb.ListProductOptionsResponse, error)
@@ -259,7 +262,6 @@ func NewProductModule(deps *ProductModuleDeps) *ProductModule {
 		Labels:                    deps.Labels,
 		CommonLabels:              deps.CommonLabels,
 		TableLabels:               deps.TableLabels,
-		DB:                        deps.DB,
 		ListProductVariants:       deps.ListProductVariants,
 		ListProductOptions:        deps.ListProductOptions,
 		ListProductOptionValues:   deps.ListProductOptionValues,
@@ -285,7 +287,6 @@ func NewProductModule(deps *ProductModuleDeps) *ProductModule {
 	}
 	variantDeps := &productvariant.DetailViewDeps{
 		Routes:                     deps.Routes,
-		DB:                         deps.DB,
 		Labels:                     deps.Labels,
 		CommonLabels:               deps.CommonLabels,
 		TableLabels:                deps.TableLabels,
@@ -295,6 +296,7 @@ func NewProductModule(deps *ProductModuleDeps) *ProductModule {
 		DeleteProductVariant:       deps.DeleteProductVariant,
 		ListProductVariantOptions:  deps.ListProductVariantOptions,
 		CreateProductVariantOption: deps.CreateProductVariantOption,
+		DeleteProductVariantOption: deps.DeleteProductVariantOption,
 		ListProductOptions:         deps.ListProductOptions,
 		ListProductOptionValues:    deps.ListProductOptionValues,
 		CreateProductOptionValue:   deps.CreateProductOptionValue,
@@ -330,7 +332,6 @@ func NewProductModule(deps *ProductModuleDeps) *ProductModule {
 	}
 	optionDeps := &productdetail.OptionsDeps{
 		Routes:                   deps.Routes,
-		DB:                       deps.DB,
 		Labels:                   deps.Labels,
 		CommonLabels:             deps.CommonLabels,
 		TableLabels:              deps.TableLabels,
@@ -348,7 +349,6 @@ func NewProductModule(deps *ProductModuleDeps) *ProductModule {
 	}
 	attributeDeps := &productdetail.AttributeDeps{
 		Routes:                 deps.Routes,
-		DB:                     deps.DB,
 		Labels:                 deps.Labels,
 		CommonLabels:           deps.CommonLabels,
 		TableLabels:            deps.TableLabels,

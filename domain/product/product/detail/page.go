@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	product "github.com/erniealice/centymo-golang/domain/product/product"
-	shared "github.com/erniealice/centymo-golang/domain/shared"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
@@ -35,8 +34,6 @@ type DetailViewDeps struct {
 	Labels       product.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
-	// DataSource for backward compat
-	DB shared.DataSource
 
 	// Typed proto funcs
 	ListProductVariants       func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)

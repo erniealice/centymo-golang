@@ -23,7 +23,6 @@ func NewTableView(deps *DetailViewDeps) view.View {
 
 		detailDeps := &detail.DetailViewDeps{
 			Routes:                    deps.Routes,
-			DB:                        deps.DB,
 			Labels:                    deps.Labels,
 			TableLabels:               deps.TableLabels,
 			ListProductVariants:       deps.ListProductVariants,

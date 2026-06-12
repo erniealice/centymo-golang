@@ -47,11 +47,11 @@ import (
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
+	paymenttermpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/payment_term"
 	workspacepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace"
 
 	templateview "github.com/erniealice/hybra-golang/views/template"
 
-	centymo "github.com/erniealice/centymo-golang"
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
 	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
 	procurementdomain "github.com/erniealice/centymo-golang/domain/procurement"
@@ -139,11 +139,11 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		}
 		useCases := cfg.useCases
 
-		// --- Type-assert DB ---
-		db, ok := ctx.DB.(centymo.DataSource)
-		if !ok || db == nil {
-			return fmt.Errorf("centymo.Block: ctx.DB must implement centymo.DataSource")
-		}
+		// 20260612-datasource-typed-path W6 — the centymo DataSource duck is
+		// deleted. ctx.DB is no longer type-asserted here: every former duck call
+		// site (SetActive toggles, payment_term list, product_variant_option
+		// hard-delete) now flows through narrow typed closures on *UseCases, bound
+		// by service-admin. ctx.DB is intentionally ignored by centymo.
 
 		// --- Type-assert reference checker (optional — nil-safe) ---
 		var refChecker reference.Checker
@@ -432,11 +432,9 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				Labels:       inventoryLabels,
 				CommonLabels: ctx.Common,
 				TableLabels:  centymoTableLabels,
-				// SetItemActive uses raw DB update (proto3 omits false booleans)
-				SetItemActive: func(fctx context.Context, id string, active bool) error {
-					_, err := db.Update(fctx, "inventory_item", id, map[string]any{"active": active})
-					return err
-				},
+				// SetItemActive: narrow typed SetActive closure (proto3 omits false
+				// booleans, so the typed proto Update can't clear `active`).
+				SetItemActive: setActiveClosure(useCases, "inventory_item"),
 				// Attachments
 				UploadFile:       uploadFile,
 				ListAttachments:  listAttachments,
@@ -486,33 +484,31 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				Labels:       revenueLabels,
 				CommonLabels: ctx.Common,
 				TableLabels:  centymoTableLabels,
-				// Payment terms dropdown (client/both scope)
+				// Payment terms dropdown (client/both scope). 20260612-datasource-
+				// typed-path W6 — typed payment_term list replaces the DataSource
+				// duck's ListSimple("payment_term"); the entity_scope filter stays
+				// in the block. Nil-safe: empty options when ListPaymentTerms is
+				// unwired (service-admin binds it in W7).
 				ListPaymentTerms: func(fctx context.Context) ([]*revenuedomain.PaymentTermOption, error) {
-					rows, err := db.ListSimple(fctx, "payment_term")
+					list := useCases.Entity.PaymentTerm.ListPaymentTerms
+					if list == nil {
+						return nil, nil
+					}
+					resp, err := list(fctx, &paymenttermpb.ListPaymentTermsRequest{})
 					if err != nil {
 						return nil, err
 					}
-					opts := make([]*revenuedomain.PaymentTermOption, 0, len(rows))
-					for _, row := range rows {
-						id, _ := row["id"].(string)
-						name, _ := row["name"].(string)
-						entityScope, _ := row["entity_scope"].(string)
+					terms := resp.GetData()
+					opts := make([]*revenuedomain.PaymentTermOption, 0, len(terms))
+					for _, t := range terms {
+						id := t.GetId()
 						if id == "" {
 							continue
 						}
-						if entityScope != "client" && entityScope != "both" {
+						if scope := t.GetEntityScope(); scope != "client" && scope != "both" {
 							continue
 						}
-						var netDays int32
-						switch v := row["net_days"].(type) {
-						case int32:
-							netDays = v
-						case int64:
-							netDays = int32(v)
-						case float64:
-							netDays = int32(v)
-						}
-						opts = append(opts, &revenuedomain.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
+						opts = append(opts, &revenuedomain.PaymentTermOption{Id: id, Name: t.GetName(), NetDays: t.GetNetDays()})
 					}
 					return opts, nil
 				},
@@ -598,7 +594,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		// See product.go for wireProductModules (Product 3-mount + ProductLine 2-mount).
 		wireProductModules(ctx, cfg, useCases, productWiring{
-			db:                         db,
 			refChecker:                 refChecker,
 			uploadImage:                uploadImage,
 			uploadFile:                 uploadFile,
@@ -622,7 +617,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		// See plan.go for wirePlanModules (PricePlan, PriceSchedule, PriceList, Plan + PlanBundle).
 		wirePlanModules(ctx, cfg, useCases, planWiring{
-			db:                           db,
 			refChecker:                   refChecker,
 			uploadFile:                   uploadFile,
 			downloadFile:                 downloadFile,
@@ -652,7 +646,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		wireSubscriptionModule(ctx, cfg, useCases, subscriptionWiring{
-			db:                  db,
 			refChecker:          refChecker,
 			uploadFile:          uploadFile,
 			downloadFile:        downloadFile,
@@ -751,38 +744,35 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		if cfg.wantExpenditure() {
 			expDeps := &expendituredomain.ExpenditureModuleDeps{
 				Routes:         expenditureRoutes,
-				DB:             db,
 				Labels:         expenditureLabels,
 				TemplateLabels: templateview.DefaultLabels(),
 				CommonLabels:   ctx.Common,
 				TableLabels:    centymoTableLabels,
-				// Payment terms dropdown (supplier/both scope)
+				// Payment terms dropdown (supplier/both scope). 20260612-datasource-
+				// typed-path W6 — typed payment_term list replaces the DataSource
+				// duck's ListSimple("payment_term"); the entity_scope filter stays
+				// in the block. Nil-safe: empty options when ListPaymentTerms is
+				// unwired (service-admin binds it in W7).
 				ListPaymentTerms: func(fctx context.Context) ([]*expendituredomain.PaymentTermOption, error) {
-					rows, err := db.ListSimple(fctx, "payment_term")
+					list := useCases.Entity.PaymentTerm.ListPaymentTerms
+					if list == nil {
+						return nil, nil
+					}
+					resp, err := list(fctx, &paymenttermpb.ListPaymentTermsRequest{})
 					if err != nil {
 						return nil, err
 					}
-					opts := make([]*expendituredomain.PaymentTermOption, 0, len(rows))
-					for _, row := range rows {
-						id, _ := row["id"].(string)
-						name, _ := row["name"].(string)
-						entityScope, _ := row["entity_scope"].(string)
+					terms := resp.GetData()
+					opts := make([]*expendituredomain.PaymentTermOption, 0, len(terms))
+					for _, t := range terms {
+						id := t.GetId()
 						if id == "" {
 							continue
 						}
-						if entityScope != "supplier" && entityScope != "both" {
+						if scope := t.GetEntityScope(); scope != "supplier" && scope != "both" {
 							continue
 						}
-						var netDays int32
-						switch v := row["net_days"].(type) {
-						case int32:
-							netDays = v
-						case int64:
-							netDays = int32(v)
-						case float64:
-							netDays = int32(v)
-						}
-						opts = append(opts, &expendituredomain.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
+						opts = append(opts, &expendituredomain.PaymentTermOption{Id: id, Name: t.GetName(), NetDays: t.GetNetDays()})
 					}
 					return opts, nil
 				},
@@ -983,7 +973,6 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 
 		// See supplier_subscription.go for wireSupplierSubscriptionModules.
 		wireSupplierSubscriptionModules(ctx, cfg, useCases, supplierSubscriptionWiring{
-			db:                            db,
 			costScheduleRoutes:            costScheduleRoutes,
 			costScheduleLabels:            costScheduleLabels,
 			supplierPlanRoutes:            supplierPlanRoutes,
