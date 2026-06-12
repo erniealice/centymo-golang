@@ -9,11 +9,6 @@ package block
 
 import (
 	"context"
-	costplanmodmodule "github.com/erniealice/centymo-golang/domain/procurement/cost_plan/module"
-	costschedulemodmodule "github.com/erniealice/centymo-golang/domain/procurement/cost_schedule/module"
-	supplierplanmodmodule "github.com/erniealice/centymo-golang/domain/procurement/supplier_plan/module"
-	supplierproductplanmodmodule "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_plan/module"
-	suppliersubscriptionmodmodule "github.com/erniealice/centymo-golang/domain/procurement/supplier_subscription/module"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -57,7 +52,7 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// P3 — CostSchedule module
 	// =====================================================================
 	if cfg.wantCostSchedule() {
-		csDeps := &costschedulemodmodule.ModuleDeps{
+		csDeps := &procurement.CostScheduleModuleDeps{
 			Routes:       w.costScheduleRoutes,
 			Labels:       w.costScheduleLabels,
 			CommonLabels: ctx.Common,
@@ -86,14 +81,14 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 		if cs.GetCostScheduleItemPageData != nil {
 			csDeps.GetCostScheduleItemPageData = cs.GetCostScheduleItemPageData
 		}
-		costschedulemodmodule.NewModule(csDeps).RegisterRoutes(ctx.Routes)
+		procurement.NewCostScheduleModule(csDeps).RegisterRoutes(ctx.Routes)
 	}
 
 	// =====================================================================
 	// P3 — SupplierPlan module
 	// =====================================================================
 	if cfg.wantSupplierPlan() {
-		spDeps := &supplierplanmodmodule.ModuleDeps{
+		spDeps := &procurement.SupplierPlanModuleDeps{
 			Routes:       w.supplierPlanRoutes,
 			Labels:       w.supplierPlanLabels,
 			CommonLabels: ctx.Common,
@@ -123,14 +118,14 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 		if sp.GetSupplierPlanItemPageData != nil {
 			spDeps.GetSupplierPlanItemPageData = sp.GetSupplierPlanItemPageData
 		}
-		supplierplanmodmodule.NewModule(spDeps).RegisterRoutes(ctx.Routes)
+		procurement.NewSupplierPlanModule(spDeps).RegisterRoutes(ctx.Routes)
 	}
 
 	// =====================================================================
 	// P3 — CostPlan module (with inline SupplierProductCostPlan editor)
 	// =====================================================================
 	if cfg.wantCostPlan() {
-		cpDeps := &costplanmodmodule.ModuleDeps{
+		cpDeps := &procurement.CostPlanModuleDeps{
 			Routes:            w.costPlanRoutes,
 			Labels:            w.costPlanLabels,
 			ProductCostLabels: w.supplierProductCostPlanLabels,
@@ -176,7 +171,7 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 		if spcp.DeleteSupplierProductCostPlan != nil {
 			cpDeps.DeleteSupplierProductCostPlan = spcp.DeleteSupplierProductCostPlan
 		}
-		cpMod := costplanmodmodule.NewModule(cpDeps)
+		cpMod := procurement.NewCostPlanModule(cpDeps)
 		cpMod.RegisterRoutes(ctx.Routes)
 	}
 
@@ -184,7 +179,7 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// P3 — SupplierProductPlan module
 	// =====================================================================
 	if cfg.wantSupplierProductPlan() {
-		sppDeps := &supplierproductplanmodmodule.ModuleDeps{
+		sppDeps := &procurement.SupplierProductPlanModuleDeps{
 			Routes:       w.supplierProductPlanRoutes,
 			Labels:       w.supplierProductPlanLabels,
 			CommonLabels: ctx.Common,
@@ -215,7 +210,7 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 		if spp.GetSupplierProductPlanItemPageData != nil {
 			sppDeps.GetSupplierProductPlanItemPageData = spp.GetSupplierProductPlanItemPageData
 		}
-		supplierproductplanmodmodule.NewModule(sppDeps).RegisterRoutes(ctx.Routes)
+		procurement.NewSupplierProductPlanModule(sppDeps).RegisterRoutes(ctx.Routes)
 	}
 
 	// =====================================================================
@@ -269,7 +264,7 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 	// P3 — SupplierSubscription module
 	// =====================================================================
 	if cfg.wantSupplierSubscription() {
-		ssDeps := &suppliersubscriptionmodmodule.ModuleDeps{
+		ssDeps := &procurement.SupplierSubscriptionModuleDeps{
 			Routes:                      w.supplierSubscriptionRoutes,
 			Labels:                      w.supplierSubscriptionLabels,
 			ExpenseRecognitionRunLabels: w.expenseRecognitionRunLabels,
@@ -303,6 +298,6 @@ func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, us
 		if cp := useCases.Procurement.CostPlan; cp.ReadCostPlan != nil {
 			ssDeps.ReadCostPlan = cp.ReadCostPlan
 		}
-		suppliersubscriptionmodmodule.NewModule(ssDeps).RegisterRoutes(ctx.Routes)
+		procurement.NewSupplierSubscriptionModule(ssDeps).RegisterRoutes(ctx.Routes)
 	}
 }

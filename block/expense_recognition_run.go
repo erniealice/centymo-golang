@@ -10,7 +10,6 @@ package block
 
 import (
 	"context"
-	expenserunmodmodule "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition_run/module"
 	"log"
 	"os"
 	"strconv"
@@ -44,7 +43,7 @@ type expenseRecognitionRunWiring struct {
 // Expense Recognition Run. block.go calls this exactly once when
 // cfg.wantExpenseRecognitionRun() is true and all required deps are set.
 func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w expenseRecognitionRunWiring) {
-	deps := &expenserunmodmodule.ModuleDeps{
+	deps := &expendituredomain.ExpenseRecognitionRunModuleDeps{
 		Routes:                    w.routes,
 		Labels:                    w.labels,
 		CommonLabels:              ctx.Common,
@@ -55,16 +54,16 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 
 	// Surface D — ListExpenseRecognitionRuns translator.
 	if useCases.ExpenseRecognitionRun.ListExpenseRecognitionRuns != nil {
-		deps.ListExpenseRecognitionRuns = func(fctx context.Context, scope expenserunmodmodule.ListExpenseRecognitionRunsScope) ([]expenserunmodmodule.ExpenseRecognitionRunRow, string, error) {
+		deps.ListExpenseRecognitionRuns = func(fctx context.Context, scope expendituredomain.ListExpenseRecognitionRunsScope) ([]expendituredomain.ExpenseRecognitionRunRow, string, error) {
 			req := &expenserecognitionrunpb.ListExpenseRecognitionRunsRequest{}
 			resp, err := useCases.ExpenseRecognitionRun.ListExpenseRecognitionRuns(fctx, req)
 			if err != nil {
 				return nil, "", err
 			}
 			if resp == nil {
-				return []expenserunmodmodule.ExpenseRecognitionRunRow{}, "", nil
+				return []expendituredomain.ExpenseRecognitionRunRow{}, "", nil
 			}
-			rows := make([]expenserunmodmodule.ExpenseRecognitionRunRow, 0, len(resp.GetData()))
+			rows := make([]expendituredomain.ExpenseRecognitionRunRow, 0, len(resp.GetData()))
 			for _, r := range resp.GetData() {
 				row := protoExpenseRunToRow(r)
 				if scope.Status != "" && row.Status != scope.Status {
@@ -78,7 +77,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 
 	// Surface D — ReadExpenseRecognitionRun translator.
 	if useCases.ExpenseRecognitionRun.ReadExpenseRecognitionRun != nil {
-		deps.ReadExpenseRecognitionRun = func(fctx context.Context, id string) (*expenserunmodmodule.ExpenseRecognitionRunWithAttempts, error) {
+		deps.ReadExpenseRecognitionRun = func(fctx context.Context, id string) (*expendituredomain.ExpenseRecognitionRunWithAttempts, error) {
 			resp, err := useCases.ExpenseRecognitionRun.ReadExpenseRecognitionRun(fctx, &expenserecognitionrunpb.ReadExpenseRecognitionRunRequest{
 				Data: &expenserecognitionrunpb.ExpenseRecognitionRun{Id: id},
 			})
@@ -90,7 +89,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 			}
 			run := protoExpenseRunToRow(resp.GetData()[0])
 
-			var attempts []expenserunmodmodule.ExpenseRecognitionRunAttemptRow
+			var attempts []expendituredomain.ExpenseRecognitionRunAttemptRow
 			if useCases.ExpenseRecognitionRun.ListExpenseRecognitionRunAttempts != nil {
 				attResp, err := useCases.ExpenseRecognitionRun.ListExpenseRecognitionRunAttempts(fctx, &expenserecognitionrunpb.ListExpenseRecognitionRunAttemptsRequest{
 					RunId: id,
@@ -98,20 +97,20 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 				if err != nil {
 					log.Printf("centymo.Block: failed to load attempts for expense run %s: %v", id, err)
 				} else if attResp != nil {
-					attempts = make([]expenserunmodmodule.ExpenseRecognitionRunAttemptRow, 0, len(attResp.GetData()))
+					attempts = make([]expendituredomain.ExpenseRecognitionRunAttemptRow, 0, len(attResp.GetData()))
 					for _, a := range attResp.GetData() {
 						attempts = append(attempts, protoExpenseRunAttemptToRow(a))
 					}
 				}
 			}
-			return &expenserunmodmodule.ExpenseRecognitionRunWithAttempts{Run: run, Attempts: attempts}, nil
+			return &expendituredomain.ExpenseRecognitionRunWithAttempts{Run: run, Attempts: attempts}, nil
 		}
 	}
 
 	// Surface D — ListExpendituresByRunID translator (Bills tab).
 	if useCases.Expenditure.ListExpenditures != nil {
 		expenditureDetailURLPattern := w.expenditureRoutes.DetailURL
-		deps.ListExpendituresByRunID = func(fctx context.Context, runID string) ([]expenserunmodmodule.ExpenditureRow, error) {
+		deps.ListExpendituresByRunID = func(fctx context.Context, runID string) ([]expendituredomain.ExpenditureRow, error) {
 			resp, err := useCases.Expenditure.ListExpenditures(fctx, &expenditurepb.ListExpendituresRequest{
 				Filters: &commonpb.FilterRequest{
 					Filters: []*commonpb.TypedFilter{
@@ -130,14 +129,14 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 			if err != nil {
 				return nil, err
 			}
-			rows := make([]expenserunmodmodule.ExpenditureRow, 0)
+			rows := make([]expendituredomain.ExpenditureRow, 0)
 			if resp != nil {
 				for _, e := range resp.GetData() {
 					detailURL := ""
 					if expenditureDetailURLPattern != "" {
 						detailURL = route.ResolveURL(expenditureDetailURLPattern, "id", e.GetId())
 					}
-					rows = append(rows, expenserunmodmodule.ExpenditureRow{
+					rows = append(rows, expendituredomain.ExpenditureRow{
 						ID:              e.GetId(),
 						ReferenceNumber: e.GetReferenceNumber(),
 						ExpenditureDate: expenditureDateString(e),
@@ -154,7 +153,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 
 	// Surface D — ListExpenseRecognitionsByRunID translator (Recognitions tab).
 	if useCases.Expenditure.ListExpenseRecognitions != nil {
-		deps.ListExpenseRecognitionsByRunID = func(fctx context.Context, runID string) ([]expenserunmodmodule.ExpenseRecognitionRow, error) {
+		deps.ListExpenseRecognitionsByRunID = func(fctx context.Context, runID string) ([]expendituredomain.ExpenseRecognitionRow, error) {
 			resp, err := useCases.Expenditure.ListExpenseRecognitions(fctx, &expenserecognitionpb.ListExpenseRecognitionsRequest{
 				Filters: &commonpb.FilterRequest{
 					Filters: []*commonpb.TypedFilter{
@@ -173,7 +172,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 			if err != nil {
 				return nil, err
 			}
-			rows := make([]expenserunmodmodule.ExpenseRecognitionRow, 0)
+			rows := make([]expendituredomain.ExpenseRecognitionRow, 0)
 			if resp != nil {
 				for _, r := range resp.GetData() {
 					sourceKind := ""
@@ -186,7 +185,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 					if r.RecognitionDate != nil {
 						recDate = r.GetRecognitionDate().AsTime().Format("2006-01-02")
 					}
-					rows = append(rows, expenserunmodmodule.ExpenseRecognitionRow{
+					rows = append(rows, expendituredomain.ExpenseRecognitionRow{
 						ID:              r.GetId(),
 						ReferenceNumber: r.GetName(),
 						RecognitionDate: recDate,
@@ -203,17 +202,17 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 
 	// Surface B — ListSuppliers translator.
 	if useCases.Entity.Supplier.ListSuppliers != nil {
-		deps.ListSuppliers = func(fctx context.Context, cursor string) ([]expenserunmodmodule.QueueSupplierRecord, string, error) {
+		deps.ListSuppliers = func(fctx context.Context, cursor string) ([]expendituredomain.QueueSupplierRecord, string, error) {
 			resp, err := useCases.Entity.Supplier.ListSuppliers(fctx, &supplierpb.ListSuppliersRequest{})
 			if err != nil {
 				return nil, "", err
 			}
 			if resp == nil {
-				return []expenserunmodmodule.QueueSupplierRecord{}, "", nil
+				return []expendituredomain.QueueSupplierRecord{}, "", nil
 			}
-			records := make([]expenserunmodmodule.QueueSupplierRecord, 0, len(resp.GetData()))
+			records := make([]expendituredomain.QueueSupplierRecord, 0, len(resp.GetData()))
 			for _, s := range resp.GetData() {
-				records = append(records, expenserunmodmodule.QueueSupplierRecord{
+				records = append(records, expendituredomain.QueueSupplierRecord{
 					ID:   s.GetId(),
 					Name: s.GetName(),
 				})
@@ -224,7 +223,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 
 	// Surface B — ListExpenseRunCandidates translator.
 	if useCases.ExpenseRecognitionRun.ListExpenseRunCandidates != nil {
-		deps.ListExpenseRunCandidates = func(fctx context.Context, supplierID, asOfDate string) ([]expenserunmodmodule.QueueCandidateInput, error) {
+		deps.ListExpenseRunCandidates = func(fctx context.Context, supplierID, asOfDate string) ([]expendituredomain.QueueCandidateInput, error) {
 			supplierIDCopy := supplierID
 			asOfDateCopy := asOfDate
 			resp, err := useCases.ExpenseRecognitionRun.ListExpenseRunCandidates(fctx, &expenserecognitionrunpb.ListExpenseRunCandidatesRequest{
@@ -239,7 +238,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 			if resp == nil {
 				return nil, nil
 			}
-			out := make([]expenserunmodmodule.QueueCandidateInput, 0, len(resp.GetData()))
+			out := make([]expendituredomain.QueueCandidateInput, 0, len(resp.GetData()))
 			for _, c := range resp.GetData() {
 				sourceKind := ""
 				switch c.GetSourceKind() {
@@ -248,7 +247,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 				case expenserecognitionrunpb.ExpenseRecognitionRunSourceKind_EXPENSE_RECOGNITION_RUN_SOURCE_KIND_ADVANCE_DISBURSEMENT:
 					sourceKind = "advance_disbursement"
 				}
-				out = append(out, expenserunmodmodule.QueueCandidateInput{
+				out = append(out, expendituredomain.QueueCandidateInput{
 					SourceKind:             sourceKind,
 					SupplierSubscriptionID: c.GetSupplierSubscriptionId(),
 					AdvanceDisbursementID:  c.GetAdvanceDisbursementId(),
@@ -263,7 +262,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 
 	// Surface A + C — drawer candidate listing translator.
 	if useCases.ExpenseRecognitionRun.ListExpenseRunCandidates != nil {
-		deps.ListExpenseRunCandidatesForDrawer = func(fctx context.Context, scope expenserunmodmodule.DrawerListScope) ([]expenserunmodmodule.DrawerCandidateRow, error) {
+		deps.ListExpenseRunCandidatesForDrawer = func(fctx context.Context, scope expendituredomain.DrawerListScope) ([]expendituredomain.DrawerCandidateRow, error) {
 			scopeMsg := &expenserecognitionrunpb.ExpenseRecognitionRunScopeMsg{
 				AsOfDate: &scope.AsOfDate,
 			}
@@ -284,9 +283,9 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 			if resp == nil {
 				return nil, nil
 			}
-			out := make([]expenserunmodmodule.DrawerCandidateRow, 0, len(resp.GetData()))
+			out := make([]expendituredomain.DrawerCandidateRow, 0, len(resp.GetData()))
 			for _, c := range resp.GetData() {
-				out = append(out, expenserunmodmodule.DrawerCandidateRow{
+				out = append(out, expendituredomain.DrawerCandidateRow{
 					SourceKind:             expenseRunSourceKindString(c.GetSourceKind()),
 					SourceLabel:            c.GetSourceLabel(),
 					SupplierSubscriptionID: c.GetSupplierSubscriptionId(),
@@ -308,7 +307,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 
 	// Surface A + C — drawer Generate translator.
 	if useCases.ExpenseRecognitionRun.GenerateExpenseRun != nil {
-		deps.GenerateExpenseRunForDrawer = func(fctx context.Context, in expenserunmodmodule.DrawerGenerateInput) (*expenserunmodmodule.BatchRunOutput, error) {
+		deps.GenerateExpenseRunForDrawer = func(fctx context.Context, in expendituredomain.DrawerGenerateInput) (*expendituredomain.BatchRunOutput, error) {
 			scopeMsg := &expenserecognitionrunpb.ExpenseRecognitionRunScopeMsg{
 				AsOfDate: &in.AsOfDate,
 			}
@@ -340,7 +339,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 					errored++
 				}
 			}
-			return &expenserunmodmodule.BatchRunOutput{
+			return &expendituredomain.BatchRunOutput{
 				RunID:   resp.GetRun().GetId(),
 				Created: created,
 				Skipped: skipped,
@@ -351,7 +350,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 
 	// Surface B — GenerateExpenseRun translator.
 	if useCases.ExpenseRecognitionRun.GenerateExpenseRun != nil {
-		deps.GenerateExpenseRun = func(fctx context.Context, in expenserunmodmodule.BatchRunInput) (*expenserunmodmodule.BatchRunOutput, error) {
+		deps.GenerateExpenseRun = func(fctx context.Context, in expendituredomain.BatchRunInput) (*expendituredomain.BatchRunOutput, error) {
 			supplierID := in.SupplierID
 			asOfDate := in.AsOfDate
 			resp, err := useCases.ExpenseRecognitionRun.GenerateExpenseRun(fctx, &expenserecognitionrunpb.GenerateExpenseRunRequest{
@@ -377,7 +376,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 					errored++
 				}
 			}
-			return &expenserunmodmodule.BatchRunOutput{
+			return &expendituredomain.BatchRunOutput{
 				RunID:   resp.GetRun().GetId(),
 				Created: created,
 				Skipped: skipped,
@@ -386,7 +385,7 @@ func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, us
 		}
 	}
 
-	expenserunmodmodule.NewModule(deps).RegisterRoutes(ctx.Routes)
+	expendituredomain.NewExpenseRecognitionRunModule(deps).RegisterRoutes(ctx.Routes)
 }
 
 // ---------------------------------------------------------------------------
@@ -457,11 +456,11 @@ func expenseRunSourceKindString(sk expenserecognitionrunpb.ExpenseRecognitionRun
 }
 
 // protoExpenseRunToRow translates a *expenserecognitionrunpb.ExpenseRecognitionRun
-// proto message to the view-typed expenserunmodmodule.ExpenseRecognitionRunRow.
+// proto message to the view-typed expendituredomain.ExpenseRecognitionRunRow.
 // IsStalePending is computed using EXPENSE_RUN_PENDING_STALE_MINUTES (default 5).
-func protoExpenseRunToRow(r *expenserecognitionrunpb.ExpenseRecognitionRun) expenserunmodmodule.ExpenseRecognitionRunRow {
+func protoExpenseRunToRow(r *expenserecognitionrunpb.ExpenseRecognitionRun) expendituredomain.ExpenseRecognitionRunRow {
 	if r == nil {
-		return expenserunmodmodule.ExpenseRecognitionRunRow{}
+		return expendituredomain.ExpenseRecognitionRunRow{}
 	}
 	initiatedAt := expenseRunMillisToRFC3339(r.GetInitiatedAt())
 	completedAt := expenseRunMillisToRFC3339(r.GetCompletedAt())
@@ -474,7 +473,7 @@ func protoExpenseRunToRow(r *expenserecognitionrunpb.ExpenseRecognitionRun) expe
 		isStalePending = age > expenseRunStaleThreshold()
 	}
 
-	return expenserunmodmodule.ExpenseRecognitionRunRow{
+	return expendituredomain.ExpenseRecognitionRunRow{
 		ID:                     r.GetId(),
 		ScopeKind:              expenseRunScopeKindString(r.GetScope()),
 		SupplierID:             r.GetSupplierId(),
@@ -494,11 +493,11 @@ func protoExpenseRunToRow(r *expenserecognitionrunpb.ExpenseRecognitionRun) expe
 }
 
 // protoExpenseRunAttemptToRow translates a proto attempt to the view-typed row.
-func protoExpenseRunAttemptToRow(a *expenserecognitionrunpb.ExpenseRecognitionRunAttempt) expenserunmodmodule.ExpenseRecognitionRunAttemptRow {
+func protoExpenseRunAttemptToRow(a *expenserecognitionrunpb.ExpenseRecognitionRunAttempt) expendituredomain.ExpenseRecognitionRunAttemptRow {
 	if a == nil {
-		return expenserunmodmodule.ExpenseRecognitionRunAttemptRow{}
+		return expendituredomain.ExpenseRecognitionRunAttemptRow{}
 	}
-	return expenserunmodmodule.ExpenseRecognitionRunAttemptRow{
+	return expendituredomain.ExpenseRecognitionRunAttemptRow{
 		ID:                     a.GetId(),
 		RunID:                  a.GetRunId(),
 		SourceKind:             expenseRunSourceKindString(a.GetSourceKind()),

@@ -1,0 +1,179 @@
+package treasury
+
+import (
+	"context"
+
+	shared "github.com/erniealice/centymo-golang/domain/treasury/shared"
+	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/types"
+	"github.com/erniealice/pyeza-golang/view"
+
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
+	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
+
+	epkg "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
+	disbursementaction "github.com/erniealice/centymo-golang/domain/treasury/disbursement/action"
+	disbursementdetail "github.com/erniealice/centymo-golang/domain/treasury/disbursement/detail"
+	disbursementlist "github.com/erniealice/centymo-golang/domain/treasury/disbursement/list"
+)
+
+// DisbursementModuleDeps holds all dependencies for the disbursement module.
+type DisbursementModuleDeps struct {
+	Routes       epkg.Routes
+	Labels       epkg.Labels
+	CommonLabels pyeza.CommonLabels
+	TableLabels  types.TableLabels
+
+	// Typed disbursement use case functions
+	CreateDisbursement func(ctx context.Context, req *disbursementpb.CreateDisbursementRequest) (*disbursementpb.CreateDisbursementResponse, error)
+	ReadDisbursement   func(ctx context.Context, req *disbursementpb.ReadDisbursementRequest) (*disbursementpb.ReadDisbursementResponse, error)
+	UpdateDisbursement func(ctx context.Context, req *disbursementpb.UpdateDisbursementRequest) (*disbursementpb.UpdateDisbursementResponse, error)
+	DeleteDisbursement func(ctx context.Context, req *disbursementpb.DeleteDisbursementRequest) (*disbursementpb.DeleteDisbursementResponse, error)
+	ListDisbursements  func(ctx context.Context, req *disbursementpb.ListDisbursementsRequest) (*disbursementpb.ListDisbursementsResponse, error)
+
+	// Expenditure (bill) listing (optional — used to populate bill dropdown on disbursement form)
+	ListExpenditures func(ctx context.Context, req *expenditurepb.ListExpendituresRequest) (*expenditurepb.ListExpendituresResponse, error)
+
+	// Attachment operations
+	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
+	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
+	CreateAttachment func(ctx context.Context, req *attachmentpb.CreateAttachmentRequest) (*attachmentpb.CreateAttachmentResponse, error)
+	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
+	NewID            func() string
+
+	// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow.
+	AdvanceLabels            shared.TreasuryAdvanceLabels
+	AdvanceEnumLabels        shared.AdvanceEnumLabels
+	SettleUnscheduledAdvance func(ctx context.Context, in shared.AdvanceSettleViewInput) (*shared.AdvanceSettleViewOutput, error)
+	RefundUnscheduledAdvance func(ctx context.Context, in shared.AdvanceRefundViewInput) (*shared.AdvanceRefundViewOutput, error)
+	CancelAdvance            func(ctx context.Context, in shared.AdvanceCancelViewInput) (*shared.AdvanceCancelViewOutput, error)
+}
+
+// DisbursementModule holds all constructed disbursement views.
+type DisbursementModule struct {
+	routes           epkg.Routes
+	Dashboard        view.View
+	List             view.View
+	Detail           view.View
+	TabAction        view.View
+	Add              view.View
+	Edit             view.View
+	Delete           view.View
+	BulkDelete       view.View
+	SetStatus        view.View
+	BulkSetStatus    view.View
+	AttachmentUpload view.View
+	AttachmentDelete view.View
+	// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow drawers.
+	AdvanceSettle view.View
+	AdvanceRefund view.View
+	AdvanceCancel view.View
+}
+
+// NewDisbursementModule creates the disbursement module with all views.
+func NewDisbursementModule(deps *DisbursementModuleDeps) *DisbursementModule {
+	listDeps := &disbursementlist.ListViewDeps{
+		Routes:            deps.Routes,
+		ListDisbursements: deps.ListDisbursements,
+		RefreshURL:        deps.Routes.ListURL,
+		Labels:            deps.Labels,
+		CommonLabels:      deps.CommonLabels,
+		TableLabels:       deps.TableLabels,
+	}
+
+	detailDeps := &disbursementdetail.DetailViewDeps{
+		Routes:            deps.Routes,
+		ReadDisbursement:  deps.ReadDisbursement,
+		Labels:            deps.Labels,
+		CommonLabels:      deps.CommonLabels,
+		TableLabels:       deps.TableLabels,
+		AdvanceLabels:     deps.AdvanceLabels,
+		AdvanceEnumLabels: deps.AdvanceEnumLabels,
+	}
+	detailDeps.UploadFile = deps.UploadFile
+	detailDeps.ListAttachments = deps.ListAttachments
+	detailDeps.CreateAttachment = deps.CreateAttachment
+	detailDeps.DeleteAttachment = deps.DeleteAttachment
+	detailDeps.NewAttachmentID = deps.NewID
+
+	actionDeps := &disbursementaction.Deps{
+		Routes:             deps.Routes,
+		Labels:             deps.Labels,
+		CreateDisbursement: deps.CreateDisbursement,
+		ReadDisbursement:   deps.ReadDisbursement,
+		UpdateDisbursement: deps.UpdateDisbursement,
+		DeleteDisbursement: deps.DeleteDisbursement,
+		ListExpenditures:   deps.ListExpenditures,
+	}
+
+	// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow.
+	advanceActionDeps := &disbursementaction.AdvanceActionDeps{
+		Routes:            deps.Routes,
+		Labels:            deps.Labels,
+		AdvanceLabels:     deps.AdvanceLabels,
+		EnumLabels:        deps.AdvanceEnumLabels,
+		CommonLabels:      deps.CommonLabels,
+		SettleUnscheduled: deps.SettleUnscheduledAdvance,
+		RefundUnscheduled: deps.RefundUnscheduledAdvance,
+		Cancel:            deps.CancelAdvance,
+	}
+
+	return &DisbursementModule{
+		routes:           deps.Routes,
+		Dashboard:        disbursementlist.NewView(listDeps),
+		List:             disbursementlist.NewView(listDeps),
+		Detail:           disbursementdetail.NewView(detailDeps),
+		TabAction:        disbursementdetail.NewTabAction(detailDeps),
+		Add:              disbursementaction.NewAddAction(actionDeps),
+		Edit:             disbursementaction.NewEditAction(actionDeps),
+		Delete:           disbursementaction.NewDeleteAction(actionDeps),
+		BulkDelete:       disbursementaction.NewBulkDeleteAction(actionDeps),
+		SetStatus:        disbursementaction.NewSetStatusAction(actionDeps),
+		BulkSetStatus:    disbursementaction.NewBulkSetStatusAction(actionDeps),
+		AttachmentUpload: disbursementdetail.NewAttachmentUploadAction(detailDeps),
+		AttachmentDelete: disbursementdetail.NewAttachmentDeleteAction(detailDeps),
+		AdvanceSettle:    disbursementaction.NewSettleAction(advanceActionDeps),
+		AdvanceRefund:    disbursementaction.NewRefundAction(advanceActionDeps),
+		AdvanceCancel:    disbursementaction.NewCancelAction(advanceActionDeps),
+	}
+}
+
+// RegisterRoutes registers all disbursement routes.
+func (m *DisbursementModule) RegisterRoutes(r view.RouteRegistrar) {
+	r.GET(m.routes.DashboardURL, m.Dashboard)
+	r.GET(m.routes.ListURL, m.List)
+	r.GET(m.routes.DetailURL, m.Detail)
+	r.GET(m.routes.TabActionURL, m.TabAction)
+
+	// Action routes (GET + POST for form-based)
+	r.GET(m.routes.AddURL, m.Add)
+	r.POST(m.routes.AddURL, m.Add)
+	r.GET(m.routes.EditURL, m.Edit)
+	r.POST(m.routes.EditURL, m.Edit)
+
+	// Delete + status (POST only)
+	r.POST(m.routes.DeleteURL, m.Delete)
+	r.POST(m.routes.BulkDeleteURL, m.BulkDelete)
+	r.POST(m.routes.SetStatusURL, m.SetStatus)
+	r.POST(m.routes.BulkSetStatusURL, m.BulkSetStatus)
+	// Attachments
+	if m.AttachmentUpload != nil {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
+	}
+	// 20260517-advance-cash-events Plan B Phase 4 — UNSCHEDULED workflow drawers.
+	if m.routes.SettleURL != "" {
+		r.GET(m.routes.SettleURL, m.AdvanceSettle)
+		r.POST(m.routes.SettleURL, m.AdvanceSettle)
+	}
+	if m.routes.RefundURL != "" {
+		r.GET(m.routes.RefundURL, m.AdvanceRefund)
+		r.POST(m.routes.RefundURL, m.AdvanceRefund)
+	}
+	if m.routes.CancelURL != "" {
+		r.GET(m.routes.CancelURL, m.AdvanceCancel)
+		r.POST(m.routes.CancelURL, m.AdvanceCancel)
+	}
+}

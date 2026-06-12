@@ -8,9 +8,6 @@ package block
 
 import (
 	"context"
-	pricelistmodmodule "github.com/erniealice/centymo-golang/domain/product/price_list/module"
-	priceplanmodmodule "github.com/erniealice/centymo-golang/domain/subscription/price_plan/module"
-	priceschedulemodmodule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule/module"
 
 	"github.com/erniealice/espyna-golang/reference"
 
@@ -104,7 +101,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 				}
 			}
 
-			pricePlanDeps := &priceplanmodmodule.ModuleDeps{
+			pricePlanDeps := &subscriptiondom.PricePlanModuleDeps{
 				Routes:                    w.pricePlanRoutes,
 				Labels:                    w.pricePlanLabels,
 				ProductPricePlanLabels:    w.productPricePlanLabels,
@@ -156,7 +153,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 			pricePlanDeps.CreateAttachment = w.createAttachment
 			pricePlanDeps.DeleteAttachment = w.deleteAttachment
 			pricePlanDeps.NewAttachmentID = w.newAttachmentID
-			priceplanmodmodule.NewModule(pricePlanDeps).RegisterRoutes(ctx.Routes)
+			subscriptiondom.NewPricePlanModule(pricePlanDeps).RegisterRoutes(ctx.Routes)
 		}
 	}
 
@@ -195,7 +192,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 				}
 			}
 
-			priceScheduleDeps := &priceschedulemodmodule.ModuleDeps{
+			priceScheduleDeps := &subscriptiondom.PriceScheduleModuleDeps{
 				Routes:                   w.priceScheduleRoutes,
 				Labels:                   w.priceScheduleLabels,
 				PricePlanLabels:          w.pricePlanLabels,
@@ -262,7 +259,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 			priceScheduleDeps.CreateAttachment = w.createAttachment
 			priceScheduleDeps.DeleteAttachment = w.deleteAttachment
 			priceScheduleDeps.NewAttachmentID = w.newAttachmentID
-			priceschedulemodmodule.NewModule(priceScheduleDeps).RegisterRoutes(ctx.Routes)
+			subscriptiondom.NewPriceScheduleModule(priceScheduleDeps).RegisterRoutes(ctx.Routes)
 
 			// =====================================================================
 			// PriceSchedule inventory-mount (second registration on distinct URLs)
@@ -271,7 +268,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 			// Gate: if a lyngua price_schedule_inventory override ever collapses ListURL
 			// back onto the services mount, skip to avoid a ServeMux duplicate-route panic.
 			if w.priceScheduleInventoryRoutes.ListURL != w.priceScheduleRoutes.ListURL {
-				priceScheduleInventoryDeps := &priceschedulemodmodule.ModuleDeps{
+				priceScheduleInventoryDeps := &subscriptiondom.PriceScheduleModuleDeps{
 					Routes:                   w.priceScheduleInventoryRoutes,
 					Labels:                   w.priceScheduleLabels,
 					PricePlanLabels:          w.pricePlanLabels,
@@ -304,7 +301,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 					DeleteAttachment:         w.deleteAttachment,
 					NewAttachmentID:          w.newAttachmentID,
 				}
-				priceschedulemodmodule.NewModule(priceScheduleInventoryDeps).RegisterRoutes(ctx.Routes)
+				subscriptiondom.NewPriceScheduleModule(priceScheduleInventoryDeps).RegisterRoutes(ctx.Routes)
 			}
 		}
 	}
@@ -319,7 +316,7 @@ func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases
 			getPriceListInUseIDs = w.refChecker.GetPriceListInUseIDs
 		}
 
-		pricelistmodmodule.NewModule(&pricelistmodmodule.ModuleDeps{
+		productdom.NewPriceListModule(&productdom.PriceListModuleDeps{
 			Routes:             w.priceListRoutes,
 			Labels:             w.priceListLabels,
 			CommonLabels:       ctx.Common,

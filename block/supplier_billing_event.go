@@ -8,7 +8,6 @@
 package block
 
 import (
-	supplierbillingeventmodmodule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event/module"
 	pyeza "github.com/erniealice/pyeza-golang"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
@@ -28,7 +27,7 @@ type supplierBillingEventWiring struct {
 // UseCases.TreasuryAdvances can be missing — the underlying view module's
 // nil-safety handles each independently.
 func wireSupplierBillingEventModule(ctx *pyeza.AppContext, useCases *UseCases, w supplierBillingEventWiring) {
-	deps := supplierbillingeventmodmodule.ModuleDeps{
+	deps := expendituredomain.SupplierBillingEventModuleDeps{
 		Routes:       w.routes,
 		Labels:       expendituredomain.DefaultSupplierBillingEventLabels(),
 		CommonLabels: ctx.Common,
@@ -40,6 +39,6 @@ func wireSupplierBillingEventModule(ctx *pyeza.AppContext, useCases *UseCases, w
 		ReadSupplierBillingEvent:  useCases.Expenditure.ReadSupplierBillingEvent,
 		Recognize:                 useCases.TreasuryAdvances.RecognizeMilestoneAdvanceDisbursement,
 	}
-	module := supplierbillingeventmodmodule.NewModule(deps)
+	module := expendituredomain.NewSupplierBillingEventModule(deps)
 	module.RegisterRoutes(ctx.Routes)
 }

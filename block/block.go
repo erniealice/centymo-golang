@@ -36,12 +36,6 @@ package block
 import (
 	"context"
 	"fmt"
-	expendituremodmodule "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/module"
-	inventorymodmodule "github.com/erniealice/centymo-golang/domain/inventory/inventory/module"
-	resourcemodmodule "github.com/erniealice/centymo-golang/domain/product/resource/module"
-	revenuemodmodule "github.com/erniealice/centymo-golang/domain/revenue/revenue/module"
-	collectionmodmodule "github.com/erniealice/centymo-golang/domain/treasury/collection/module"
-	disbursementmodmodule "github.com/erniealice/centymo-golang/domain/treasury/disbursement/module"
 	"log"
 	"net/http"
 	"os"
@@ -433,7 +427,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantInventory() {
-			invDeps := &inventorymodmodule.ModuleDeps{
+			invDeps := &inventorydomain.InventoryModuleDeps{
 				Routes:       inventoryRoutes,
 				Labels:       inventoryLabels,
 				CommonLabels: ctx.Common,
@@ -474,7 +468,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			invDeps.ListProductOptions = useCases.Product.ListProductOptions
 			invDeps.ListLocations = useCases.Entity.Location.ListLocations
 
-			invMod := inventorymodmodule.NewModule(invDeps)
+			invMod := inventorydomain.NewInventoryModule(invDeps)
 			invMod.RegisterRoutes(ctx.Routes)
 			// CSV export is a raw http.HandlerFunc (bypasses view/template layer)
 			handleFunc(ctx.Routes, "GET", inventoryRoutes.MovementsExportURL, invMod.MovementsExport)
@@ -485,19 +479,19 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantRevenue() {
-			revDeps := &revenuemodmodule.ModuleDeps{
+			revDeps := &revenuedomain.RevenueModuleDeps{
 				Routes:       revenueRoutes,
 				DB:           db,
 				Labels:       revenueLabels,
 				CommonLabels: ctx.Common,
 				TableLabels:  centymoTableLabels,
 				// Payment terms dropdown (client/both scope)
-				ListPaymentTerms: func(fctx context.Context) ([]*revenuemodmodule.PaymentTermOption, error) {
+				ListPaymentTerms: func(fctx context.Context) ([]*revenuedomain.PaymentTermOption, error) {
 					rows, err := db.ListSimple(fctx, "payment_term")
 					if err != nil {
 						return nil, err
 					}
-					opts := make([]*revenuemodmodule.PaymentTermOption, 0, len(rows))
+					opts := make([]*revenuedomain.PaymentTermOption, 0, len(rows))
 					for _, row := range rows {
 						id, _ := row["id"].(string)
 						name, _ := row["name"].(string)
@@ -517,7 +511,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						case float64:
 							netDays = int32(v)
 						}
-						opts = append(opts, &revenuemodmodule.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
+						opts = append(opts, &revenuedomain.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
 					}
 					return opts, nil
 				},
@@ -574,7 +568,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			// Phase 5: wire tax lines read-access
 			revDeps.ListRevenueTaxLines = useCases.Revenue.ListRevenueTaxLines
 
-			revenueMod := revenuemodmodule.NewModule(revDeps)
+			revenueMod := revenuedomain.NewRevenueModule(revDeps)
 			revenueMod.RegisterRoutes(ctx.Routes)
 			// Invoice download is http.HandlerFunc (bypasses view/template layer)
 			handleFunc(ctx.Routes, "GET", revenueRoutes.InvoiceDownloadURL, revenueMod.InvoiceDownload)
@@ -673,7 +667,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			collectionAdvanceLabels := treasurydomain.DefaultTreasuryCollectionAdvanceLabels()
 			_ = translations.LoadPathIfExists("en", ctx.BusinessType, "treasury_collection.json", "advance", &collectionAdvanceLabels)
 
-			collDeps := &collectionmodmodule.ModuleDeps{
+			collDeps := &treasurydomain.CollectionModuleDeps{
 				Routes:           collectionRoutes,
 				Labels:           collectionLabels,
 				CommonLabels:     ctx.Common,
@@ -700,7 +694,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			collDeps.GetFunctionalCurrency = func(fctx context.Context) string {
 				return getFunctionalCurrency(fctx, useCases)
 			}
-			collectionmodmodule.NewModule(collDeps).RegisterRoutes(ctx.Routes)
+			treasurydomain.NewCollectionModule(collDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		// =====================================================================
@@ -712,7 +706,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			disbursementAdvanceLabels := treasurydomain.DefaultTreasuryDisbursementAdvanceLabels()
 			_ = translations.LoadPathIfExists("en", ctx.BusinessType, "treasury_disbursement.json", "advance", &disbursementAdvanceLabels)
 
-			disbursementmodmodule.NewModule(&disbursementmodmodule.ModuleDeps{
+			treasurydomain.NewDisbursementModule(&treasurydomain.DisbursementModuleDeps{
 				Routes:             disbursementRoutes,
 				Labels:             disbursementLabels,
 				CommonLabels:       ctx.Common,
@@ -742,7 +736,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantExpenditure() {
-			expDeps := &expendituremodmodule.ModuleDeps{
+			expDeps := &expendituredomain.ExpenditureModuleDeps{
 				Routes:         expenditureRoutes,
 				DB:             db,
 				Labels:         expenditureLabels,
@@ -750,12 +744,12 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 				CommonLabels:   ctx.Common,
 				TableLabels:    centymoTableLabels,
 				// Payment terms dropdown (supplier/both scope)
-				ListPaymentTerms: func(fctx context.Context) ([]*expendituremodmodule.PaymentTermOption, error) {
+				ListPaymentTerms: func(fctx context.Context) ([]*expendituredomain.PaymentTermOption, error) {
 					rows, err := db.ListSimple(fctx, "payment_term")
 					if err != nil {
 						return nil, err
 					}
-					opts := make([]*expendituremodmodule.PaymentTermOption, 0, len(rows))
+					opts := make([]*expendituredomain.PaymentTermOption, 0, len(rows))
 					for _, row := range rows {
 						id, _ := row["id"].(string)
 						name, _ := row["name"].(string)
@@ -775,7 +769,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 						case float64:
 							netDays = int32(v)
 						}
-						opts = append(opts, &expendituremodmodule.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
+						opts = append(opts, &expendituredomain.PaymentTermOption{Id: id, Name: name, NetDays: netDays})
 					}
 					return opts, nil
 				},
@@ -828,7 +822,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 			expDeps.CreateAttachment = createAttachment
 			expDeps.DeleteAttachment = deleteAttachment
 			expDeps.NewAttachmentID = newAttachmentID
-			expendituremodmodule.NewModule(expDeps).RegisterRoutes(ctx.Routes)
+			expendituredomain.NewExpenditureModule(expDeps).RegisterRoutes(ctx.Routes)
 		}
 
 		// =====================================================================
@@ -836,7 +830,7 @@ func Block(opts ...BlockOption) pyeza.AppOption {
 		// =====================================================================
 
 		if cfg.wantResource() {
-			resourcemodmodule.NewModule(&resourcemodmodule.ModuleDeps{
+			productdom.NewResourceModule(&productdom.ResourceModuleDeps{
 				Routes:         resourceRoutes,
 				Labels:         resourceLabels,
 				CommonLabels:   ctx.Common,
