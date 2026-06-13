@@ -105,7 +105,7 @@ import (
 //  4. Grouped by what CENTYMO does, NOT by espyna's container shape.
 type UseCases struct {
 	// ExtractUserID extracts the authenticated user ID from a request context.
-	// Wired by service-admin's adapter to consumer.ExtractUserIDFromContext.
+	// Wired by service-admin's adapter to identity.Must(ctx).UserID.
 	// Used by workflow action closures that need to record the acting user
 	// (e.g. ApprovedBy, ActivatedBy) without importing the espyna consumer package.
 	ExtractUserID func(context.Context) string
