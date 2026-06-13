@@ -13,5 +13,15 @@ func Describe() compose.Unit {
 		LabelJSON: compose.JSONBinding{File: "supplier_contract_price_schedule.json", Key: "supplierContractPriceSchedule"},
 		LabelName: "SupplierContractPriceScheduleLabels",
 		Templates: TemplatesFS,
+		Nav: compose.NavContrib{
+			Permission: "supplier_contract_price_schedule:list",
+			Items: []compose.NavItem{
+				// supplier app — sub-link beneath Supplier Contracts (SPS Wave 4)
+				{Key: "contracts-price-schedules", Route: "supplier_contract_price_schedule.list",
+					Params: map[string]string{"status": "scheduled"},
+					Label: "Price Schedules", Icon: "icon-calendar",
+					Permission: "supplier_contract_price_schedule:list"},
+			},
+		},
 	}
 }
