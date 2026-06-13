@@ -12,5 +12,18 @@ func Describe() compose.Unit {
 		Routes:    &r,
 		RouteJSON: compose.JSONBinding{File: "route.json", Key: "procurement"},
 		Templates: TemplatesFS,
+		Nav: compose.NavContrib{
+			Permission: "procurement_request:list|supplier_contract:list",
+			AppEntry: &compose.AppEntry{
+				Key: "procurement", Route: "procurement.dashboard",
+				Label: "Procurement", Icon: "icon-clipboard",
+				Permission: "procurement_request:list|supplier_contract:list",
+			},
+			Items: []compose.NavItem{
+				{Key: "dashboard", Route: "procurement.dashboard",
+					Label: "Dashboard", Icon: "icon-layout-dashboard",
+					Permission: "procurement_request:list|supplier_contract:list"},
+			},
+		},
 	}
 }

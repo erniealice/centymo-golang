@@ -13,5 +13,15 @@ func Describe() compose.Unit {
 		LabelJSON: compose.JSONBinding{File: "cost_schedule.json", Key: "costSchedule"},
 		LabelName: "CostScheduleLabels",
 		Templates: templateFS,
+		Nav: compose.NavContrib{
+			Permission: "cost_schedule:list",
+			Items: []compose.NavItem{
+				// supplier app — Cost Schedules section
+				{Key: "cost-schedules-active", Route: "cost_schedule.list", Params: map[string]string{"status": "active"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "cost_schedule:list"},
+				{Key: "cost-schedules-inactive", Route: "cost_schedule.list", Params: map[string]string{"status": "inactive"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "cost_schedule:list"},
+			},
+		},
 	}
 }

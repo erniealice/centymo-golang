@@ -14,5 +14,19 @@ func Describe() compose.Unit {
 		Routes:    &r,
 		RouteJSON: compose.JSONBinding{File: "route.json", Key: "product"},
 		Templates: TemplatesFS,
+		Nav: compose.NavContrib{
+			Permission: "service:list",
+			AppEntry: &compose.AppEntry{
+				Key: "service", Route: "product.list", Params: map[string]string{"status": "active"},
+				Label: "Services", Icon: "icon-briefcase",
+				Permission: "service:list",
+			},
+			Items: []compose.NavItem{
+				{Key: "services-active", Route: "product.list", Params: map[string]string{"status": "active"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "service:list"},
+				{Key: "services-inactive", Route: "product.list", Params: map[string]string{"status": "inactive"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "service:list"},
+			},
+		},
 	}
 }

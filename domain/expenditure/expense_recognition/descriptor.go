@@ -13,5 +13,13 @@ func Describe() compose.Unit {
 		LabelJSON: compose.JSONBinding{File: "expense_recognition.json", Key: "expenseRecognition"},
 		LabelName: "ExpenseRecognitionLabels",
 		Templates: TemplatesFS,
+		Nav: compose.NavContrib{
+			Permission: "expense_recognition:list",
+			Items: []compose.NavItem{
+				// expense app — SPS Wave 4 accrual-basis recognized cost
+				{Key: "expense-recognitions", Route: "expense_recognition.list", Params: map[string]string{"status": "posted"},
+					Label: "Expense Recognitions", Icon: "icon-file-text", Permission: "expense_recognition:list"},
+			},
+		},
 	}
 }

@@ -13,5 +13,20 @@ func Describe() compose.Unit {
 		LabelJSON: compose.JSONBinding{File: "collection.json", Key: "collection"},
 		LabelName: "CollectionLabels",
 		Templates: TemplatesFS,
+		Nav: compose.NavContrib{
+			Permission: "collection:list",
+			AppEntry: &compose.AppEntry{
+				Key: "cash", Route: "collection.list", Params: map[string]string{"status": "pending"},
+				Label: "Cash", Icon: "icon-credit-card",
+				Permission: "collection:list",
+			},
+			Items: []compose.NavItem{
+				// cash app — Collections section
+				{Key: "collections-pending", Route: "collection.list", Params: map[string]string{"status": "pending"},
+					Label: "Pending", Icon: "icon-clock", Permission: "collection:list"},
+				{Key: "collections-completed", Route: "collection.list", Params: map[string]string{"status": "completed"},
+					Label: "Complete", Icon: "icon-check-circle", Permission: "collection:list"},
+			},
+		},
 	}
 }

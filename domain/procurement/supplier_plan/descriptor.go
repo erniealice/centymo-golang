@@ -13,5 +13,15 @@ func Describe() compose.Unit {
 		LabelJSON: compose.JSONBinding{File: "supplier_plan.json", Key: "supplierPlan"},
 		LabelName: "SupplierPlanLabels",
 		Templates: templateFS,
+		Nav: compose.NavContrib{
+			Permission: "supplier_plan:list",
+			Items: []compose.NavItem{
+				// supplier app — Supplier Plans section
+				{Key: "supplier-plans-active", Route: "supplier_plan.list", Params: map[string]string{"status": "active"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "supplier_plan:list"},
+				{Key: "supplier-plans-inactive", Route: "supplier_plan.list", Params: map[string]string{"status": "inactive"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "supplier_plan:list"},
+			},
+		},
 	}
 }

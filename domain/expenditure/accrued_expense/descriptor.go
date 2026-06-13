@@ -13,5 +13,13 @@ func Describe() compose.Unit {
 		LabelJSON: compose.JSONBinding{File: "accrued_expense.json", Key: "accruedExpense"},
 		LabelName: "AccruedExpenseLabels",
 		Templates: TemplatesFS,
+		Nav: compose.NavContrib{
+			Permission: "accrued_expense:list",
+			Items: []compose.NavItem{
+				// expense app — SPS Wave 4 accrued expenses
+				{Key: "accrued-expenses", Route: "accrued_expense.list", Params: map[string]string{"status": "outstanding"},
+					Label: "Accrued Expenses", Icon: "icon-alert-circle", Permission: "accrued_expense:list"},
+			},
+		},
 	}
 }

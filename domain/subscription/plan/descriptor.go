@@ -13,5 +13,15 @@ func Describe() compose.Unit {
 		LabelJSON: compose.JSONBinding{File: "plan.json", Key: "plan"},
 		LabelName: "PlanLabels",
 		Templates: TemplatesFS,
+		Nav: compose.NavContrib{
+			Permission: "plan:list",
+			Items: []compose.NavItem{
+				// service app — "Plans" / "Packages" section
+				{Key: "plans-active", Route: "plan.list", Params: map[string]string{"status": "active"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "plan:list"},
+				{Key: "plans-inactive", Route: "plan.list", Params: map[string]string{"status": "inactive"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "plan:list"},
+			},
+		},
 	}
 }
