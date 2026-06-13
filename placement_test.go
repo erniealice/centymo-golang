@@ -105,13 +105,14 @@ var legacyAllow = map[string]string{
 	"domain/expenditure/accrued_expense_settlement": "settlement sub-flow of the accrued_expense entity; esqyma has accrued_expense but no accrued_expense_settlement — EXPIRES 2026-07-15 (capstone: fold into accrued_expense/ as a sub-view or add the esqyma entity)",
 	"domain/inventory/inventory":                    "aggregate inventory view; esqyma inventory entities are inventory_item/_attribute/_serial/_transaction/_depreciation (no bare `inventory`) — EXPIRES 2026-07-15 (capstone: re-home under inventory_item/ or split per esqyma inventory entity)",
 	"domain/subscription/client_packages":           "subscription-aggregate client-packages projection (the subscription detail Packages tab); no esqyma client_packages entity — EXPIRES 2026-07-15 (capstone: rename to a subscription-prefixed domain-view or fold into subscription/)",
-	// ── R4: pre-existing oversized detail view handlers (>1200 lines) ─────────
-	// Both predate this restructure (re-rooted from views/ unchanged); splitting
-	// a view handler per concern is a dedicated VIEW-SPLIT wave, not this pure
-	// structural/wiring pass. Precise full-path keys so the basename page.go
-	// excuses NO other file.
-	"domain/subscription/price_plan/detail/page.go":   "pre-existing 1723-line price_plan detail view handler — EXPIRES 2026-07-15 (VIEW-SPLIT wave: split per concern)",
-	"domain/subscription/subscription/detail/page.go": "pre-existing 1916-line subscription detail view handler — EXPIRES 2026-07-15 (VIEW-SPLIT wave: split per concern)",
+	// ── R4: pre-existing oversized files (>1200 lines) ──────────────────────
+	// These predate this restructure; splitting per concern is a dedicated
+	// VIEW-SPLIT / BLOCK-SPLIT wave, not this pure structural/wiring pass.
+	// Precise full-path keys so the basename excuses NO other file.
+	"block/catalog.go":                                 "pre-existing 1287-line block catalog — EXPIRES 2026-07-15 (BLOCK-SPLIT wave: split per domain)",
+	"domain/revenue/revenue/action/action.go":          "pre-existing 1207-line revenue action handler — EXPIRES 2026-07-15 (VIEW-SPLIT wave: split per concern)",
+	"domain/subscription/price_plan/detail/page.go":    "pre-existing 1723-line price_plan detail view handler — EXPIRES 2026-07-15 (VIEW-SPLIT wave: split per concern)",
+	"domain/subscription/subscription/detail/page.go":  "pre-existing 1916-line subscription detail view handler — EXPIRES 2026-07-15 (VIEW-SPLIT wave: split per concern)",
 }
 var charterViews = []string{} // crossCutting only — unused here
 // subContexts: NAVIGATION-ONLY folders chartered directly under a single domain
