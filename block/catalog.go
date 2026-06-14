@@ -29,7 +29,6 @@ import (
 	supplierbillingeventpkg "github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event"
 	suppliercontractpkg "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
 	suppliercontractpriceschedulepkg "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule"
-	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	inventorydomain "github.com/erniealice/centymo-golang/domain/inventory"
 	inventorypkg "github.com/erniealice/centymo-golang/domain/inventory/inventory"
 	procurementdomain "github.com/erniealice/centymo-golang/domain/procurement"
@@ -55,6 +54,7 @@ import (
 	collectionpkg "github.com/erniealice/centymo-golang/domain/treasury/collection"
 	disbursementpkg "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
 	advancesdashboardpkg "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
+	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 )
 
 // allEnabledConfig returns a blockConfig with all modules enabled, used by
@@ -338,18 +338,18 @@ func PriceListUnit(uc *UseCases, _ *Infra) compose.Unit {
 		labels := labelsOrZero[pricelistpkg.Labels](&u)
 
 		deps := &productdom.PriceListModuleDeps{
-			Routes:         *r,
-			Labels:         labels,
-			CommonLabels:   mc.Common,
-			TableLabels:    mc.Table,
-			ListPriceLists: uc.Product.ListPriceLists,
-			ReadPriceList:           uc.Product.ReadPriceList,
-			CreatePriceList:         uc.Product.CreatePriceList,
-			UpdatePriceList:         uc.Product.UpdatePriceList,
-			DeletePriceList:         uc.Product.DeletePriceList,
-			ListPriceProducts:       uc.Product.ListPriceProducts,
-			CreatePriceProduct:      uc.Product.CreatePriceProduct,
-			DeletePriceProduct:      uc.Product.DeletePriceProduct,
+			Routes:             *r,
+			Labels:             labels,
+			CommonLabels:       mc.Common,
+			TableLabels:        mc.Table,
+			ListPriceLists:     uc.Product.ListPriceLists,
+			ReadPriceList:      uc.Product.ReadPriceList,
+			CreatePriceList:    uc.Product.CreatePriceList,
+			UpdatePriceList:    uc.Product.UpdatePriceList,
+			DeletePriceList:    uc.Product.DeletePriceList,
+			ListPriceProducts:  uc.Product.ListPriceProducts,
+			CreatePriceProduct: uc.Product.CreatePriceProduct,
+			DeletePriceProduct: uc.Product.DeletePriceProduct,
 		}
 		productdom.NewPriceListModule(deps).RegisterRoutes(mc.Routes)
 		return nil
@@ -434,40 +434,40 @@ func PriceScheduleUnit(uc *UseCases, infra *Infra) compose.Unit {
 		}
 
 		deps := &subscriptiondom.PriceScheduleModuleDeps{
-			Routes:                   *r,
-			Labels:                   *l,
-			PricePlanLabels:          pricePlanLabels,
-			ProductPricePlanLabels:   productPricePlanLabels,
-			CommonLabels:             mc.Common,
-			TableLabels:              mc.Table,
-			GetPriceScheduleInUseIDs: getPriceScheduleInUseIDs,
-			GetPricePlanInUseIDs:     getPricePlanInUseIDs,
-			ListPriceSchedules:       uc.PriceSchedule.ListPriceSchedules,
-			ReadPriceSchedule:        uc.PriceSchedule.ReadPriceSchedule,
-			CreatePriceSchedule:      uc.PriceSchedule.CreatePriceSchedule,
-			UpdatePriceSchedule:      uc.PriceSchedule.UpdatePriceSchedule,
-			DeletePriceSchedule:      uc.PriceSchedule.DeletePriceSchedule,
-			ListLocations:            uc.Entity.Location.ListLocations,
-			ListClients:              uc.Entity.Client.ListClients,
-			ListPlans:                uc.Plan.ListPlans,
-			ListPricePlans:           uc.PricePlan.ListPricePlans,
-			ReadPricePlan:            uc.PricePlan.ReadPricePlan,
-			CreatePricePlan:          uc.PricePlan.CreatePricePlan,
-			UpdatePricePlan:          uc.PricePlan.UpdatePricePlan,
-			DeletePricePlan:          uc.PricePlan.DeletePricePlan,
-			ListProducts:             uc.Product.ListProducts,
-			ListProductPlans:         uc.Product.ListProductPlans,
-			ListProductVariants:      uc.Product.ListProductVariants,
-			ListProductPricePlans:    uc.PricePlan.ListProductPricePlans,
-			CreateProductPricePlan:   uc.PricePlan.CreateProductPricePlan,
-			UpdateProductPricePlan:   uc.PricePlan.UpdateProductPricePlan,
-			DeleteProductPricePlan:   uc.PricePlan.DeleteProductPricePlan,
+			Routes:                       *r,
+			Labels:                       *l,
+			PricePlanLabels:              pricePlanLabels,
+			ProductPricePlanLabels:       productPricePlanLabels,
+			CommonLabels:                 mc.Common,
+			TableLabels:                  mc.Table,
+			GetPriceScheduleInUseIDs:     getPriceScheduleInUseIDs,
+			GetPricePlanInUseIDs:         getPricePlanInUseIDs,
+			ListPriceSchedules:           uc.PriceSchedule.ListPriceSchedules,
+			ReadPriceSchedule:            uc.PriceSchedule.ReadPriceSchedule,
+			CreatePriceSchedule:          uc.PriceSchedule.CreatePriceSchedule,
+			UpdatePriceSchedule:          uc.PriceSchedule.UpdatePriceSchedule,
+			DeletePriceSchedule:          uc.PriceSchedule.DeletePriceSchedule,
+			ListLocations:                uc.Entity.Location.ListLocations,
+			ListClients:                  uc.Entity.Client.ListClients,
+			ListPlans:                    uc.Plan.ListPlans,
+			ListPricePlans:               uc.PricePlan.ListPricePlans,
+			ReadPricePlan:                uc.PricePlan.ReadPricePlan,
+			CreatePricePlan:              uc.PricePlan.CreatePricePlan,
+			UpdatePricePlan:              uc.PricePlan.UpdatePricePlan,
+			DeletePricePlan:              uc.PricePlan.DeletePricePlan,
+			ListProducts:                 uc.Product.ListProducts,
+			ListProductPlans:             uc.Product.ListProductPlans,
+			ListProductVariants:          uc.Product.ListProductVariants,
+			ListProductPricePlans:        uc.PricePlan.ListProductPricePlans,
+			CreateProductPricePlan:       uc.PricePlan.CreateProductPricePlan,
+			UpdateProductPricePlan:       uc.PricePlan.UpdateProductPricePlan,
+			DeleteProductPricePlan:       uc.PricePlan.DeleteProductPricePlan,
 			ListSubscriptionsByPricePlan: uc.PriceSchedule.ListSubscriptionsByPricePlan,
-			UploadFile:               infra.UploadFile,
-			ListAttachments:          infra.ListAttachments,
-			CreateAttachment:         infra.CreateAttachment,
-			DeleteAttachment:         infra.DeleteAttachment,
-			NewAttachmentID:          infra.NewAttachmentID,
+			UploadFile:                   infra.UploadFile,
+			ListAttachments:              infra.ListAttachments,
+			CreateAttachment:             infra.CreateAttachment,
+			DeleteAttachment:             infra.DeleteAttachment,
+			NewAttachmentID:              infra.NewAttachmentID,
 		}
 		subscriptiondom.NewPriceScheduleModule(deps).RegisterRoutes(mc.Routes)
 		return nil
@@ -511,7 +511,16 @@ func PlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}
-		wirePlanModules(minCtx, allEnabledConfig(), uc, planWiring{
+		// IMPORTANT: enable ONLY the plan (+ plan-bundle) sections of
+		// wirePlanModules here. The price_plan, price_schedule, and price_list
+		// sections are owned by their OWN compose units (PricePlanUnit,
+		// PriceScheduleUnit, PriceListUnit) and are registered there. Passing
+		// allEnabledConfig() (enableAll=true) makes this Mount ALSO register
+		// those three modules, double-registering ~60 routes and panicking the
+		// stdlib ServeMux ("pattern ... conflicts with pattern ..."). This was
+		// latent while the centymo engine aborted in Phase 1 (no Mount ran);
+		// it surfaces once Phase-1 overlay gaps are fixed and Phase 2 executes.
+		wirePlanModules(minCtx, &blockConfig{plan: true}, uc, planWiring{
 			refChecker:                   infra.RefChecker,
 			uploadFile:                   infra.UploadFile,
 			downloadFile:                 infra.DownloadFile,
@@ -750,11 +759,11 @@ func ExpenseRecognitionUnit(uc *UseCases, infra *Infra) compose.Unit {
 		l := u.Labels.(*expenserecognitionpkg.Labels)
 
 		erDeps := &expendituredomain.ExpenseRecognitionModuleDeps{
-			Routes:       *r,
-			Labels:       *l,
-			CommonLabels: mc.Common,
-			TableLabels:  mc.Table,
-			UploadFile:   infra.UploadFile,
+			Routes:           *r,
+			Labels:           *l,
+			CommonLabels:     mc.Common,
+			TableLabels:      mc.Table,
+			UploadFile:       infra.UploadFile,
 			ListAttachments:  infra.ListAttachments,
 			CreateAttachment: infra.CreateAttachment,
 			DeleteAttachment: infra.DeleteAttachment,
@@ -862,15 +871,15 @@ func RevenueRunUnit(uc *UseCases, infra *Infra) compose.Unit {
 			Common: mc.Common,
 		}
 		wireRevenueRunModule(minCtx, allEnabledConfig(), uc, revenueRunWiring{
-			revenueRunRoutes:  revenuedomain.RevenueRunRoutes(*r),
-			revenueRunLabels:  revenuedomain.RevenueRunLabels(*l),
-			revenueRoutes:     revenueRoutes,
+			revenueRunRoutes:   revenuedomain.RevenueRunRoutes(*r),
+			revenueRunLabels:   revenuedomain.RevenueRunLabels(*l),
+			revenueRoutes:      revenueRoutes,
 			centymoTableLabels: mc.Table,
-			uploadFile:        infra.UploadFile,
-			listAttachments:   infra.ListAttachments,
-			createAttachment:  infra.CreateAttachment,
-			deleteAttachment:  infra.DeleteAttachment,
-			newAttachmentID:   infra.NewAttachmentID,
+			uploadFile:         infra.UploadFile,
+			listAttachments:    infra.ListAttachments,
+			createAttachment:   infra.CreateAttachment,
+			deleteAttachment:   infra.DeleteAttachment,
+			newAttachmentID:    infra.NewAttachmentID,
 		})
 		return nil
 	}
