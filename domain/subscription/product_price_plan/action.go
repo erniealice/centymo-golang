@@ -150,12 +150,23 @@ func NewAddAction(deps *Deps) view.View {
 		if parent.BillingKind == "BILLING_KIND_ONE_TIME" {
 			billingTreatment = ""
 		}
+		// Advertised rate band (optional). Reject malformed/negative; allow blank.
+		bandMin, okMin := parseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_min"))
+		if !okMin {
+			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
+		}
+		bandMax, okMax := parseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_max"))
+		if !okMax {
+			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
+		}
 		record := &productpriceplanpb.ProductPricePlan{
-			PricePlanId:     ppid,
-			ProductPlanId:   productPlanID,
-			BillingAmount:   priceCentavos,
-			BillingCurrency: currency,
-			Active:          true,
+			PricePlanId:      ppid,
+			ProductPlanId:    productPlanID,
+			BillingAmount:    priceCentavos,
+			BillingCurrency:  currency,
+			BillingAmountMin: bandMin,
+			BillingAmountMax: bandMax,
+			Active:           true,
 		}
 		if billingTreatment != "" {
 			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
@@ -230,6 +241,8 @@ func NewEditAction(deps *Deps) view.View {
 				PricePlanID:         ppid,
 				ProductPlanID:       existingProductPlanID,
 				Price:               fmt.Sprintf("%.2f", float64(existing.GetBillingAmount())/100.0),
+				BillingAmountMin:    formatOptionalCentavos(existing.BillingAmountMin),
+				BillingAmountMax:    formatOptionalCentavos(existing.BillingAmountMax),
 				Currency:            currency,
 				CommonLabels:        deps.CommonLabels,
 				PlanName:            planName,
@@ -289,13 +302,24 @@ func NewEditAction(deps *Deps) view.View {
 		if parent.BillingKind == "BILLING_KIND_ONE_TIME" {
 			billingTreatment = ""
 		}
+		// Advertised rate band (optional). Reject malformed/negative; allow blank.
+		bandMin, okMin := parseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_min"))
+		if !okMin {
+			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
+		}
+		bandMax, okMax := parseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_max"))
+		if !okMax {
+			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
+		}
 		updated := &productpriceplanpb.ProductPricePlan{
-			Id:              pppid,
-			PricePlanId:     ppid,
-			ProductPlanId:   existing.GetProductPlanId(),
-			BillingAmount:   priceCentavos,
-			BillingCurrency: currency,
-			Active:          existing.GetActive(),
+			Id:               pppid,
+			PricePlanId:      ppid,
+			ProductPlanId:    existing.GetProductPlanId(),
+			BillingAmount:    priceCentavos,
+			BillingCurrency:  currency,
+			BillingAmountMin: bandMin,
+			BillingAmountMax: bandMax,
+			Active:           existing.GetActive(),
 		}
 		if billingTreatment != "" {
 			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
@@ -363,6 +387,13 @@ type productPriceFormData struct {
 	Price         string
 	Currency      string
 	CommonLabels  pyeza.CommonLabels
+
+	// 20260604-performance-evaluation Phase A — advertised rate band
+	// (billing_amount_min/max, proto fields 22/23). Decimal-formatted for the
+	// form (e.g. "30000.00"); empty string means "unset" (the proto field is
+	// optional / *int64). Converted to/from centavos via parseOptionalCentavos.
+	BillingAmountMin string
+	BillingAmountMax string
 
 	// Display-only context (read-only).
 	PlanName           string
@@ -588,6 +619,33 @@ func parsePriceCentavos(s string) (int64, bool) {
 		return 0, false
 	}
 	return int64(math.Round(f * 100)), true
+}
+
+// parseOptionalCentavos parses a decimal amount string for an OPTIONAL band
+// field (billing_amount_min/max). A blank/whitespace value yields (nil, true)
+// — the proto field stays unset. A present value is converted to centavos and
+// returned as a *int64. A malformed or negative value yields (nil, false).
+func parseOptionalCentavos(s string) (*int64, bool) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, true
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil || f < 0 {
+		return nil, false
+	}
+	c := int64(math.Round(f * 100))
+	return &c, true
+}
+
+// formatOptionalCentavos renders an optional centavos pointer as a decimal
+// string for the drawer form (e.g. 3000000 → "30000.00"). A nil pointer
+// (unset band bound) renders as the empty string so the input stays blank.
+func formatOptionalCentavos(p *int64) string {
+	if p == nil {
+		return ""
+	}
+	return fmt.Sprintf("%.2f", float64(*p)/100.0)
 }
 
 // basisBannerMessage returns a one-line explanation about the parent's amount_basis.

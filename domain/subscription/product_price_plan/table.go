@@ -39,6 +39,10 @@ type TableDeps struct {
 	ColumnCurrency  string
 	ColumnTreatment string
 	ColumnEffective string
+	// ColumnRateBand labels the advertised rate-band column
+	// (billing_amount_min → billing_amount_max). 20260604-performance-evaluation
+	// Phase A. Falls back to the PPP form label when the caller leaves it blank.
+	ColumnRateBand string
 
 	// Edit action label and empty-state strings.
 	EditLabel    string
@@ -75,10 +79,19 @@ func BuildTable(ctx context.Context, deps *TableDeps, parent ParentContext) *typ
 	perms := view.GetUserPermissions(ctx)
 	showTreatment := parent.BillingKind != "BILLING_KIND_ONE_TIME"
 
+	// Rate-band column header — caller may leave ColumnRateBand blank, in which
+	// case the PPP form label supplies the default ("Rate band").
+	rateBandLabel := deps.ColumnRateBand
+	if rateBandLabel == "" {
+		rateBandLabel = deps.ProductPricePlanLabels.Form.ColumnRateBand
+	}
+
 	columns := []types.TableColumn{
 		{Key: "product", Label: deps.ColumnProduct},
 		{Key: "price", Label: deps.ColumnPrice, WidthClass: "col-4xl", Align: "right"},
 		{Key: "currency", Label: deps.ColumnCurrency, NoSort: true, WidthClass: "col-2xl"},
+		// Advertised rate band (billing_amount_min → billing_amount_max).
+		{Key: "rate_band", Label: rateBandLabel, NoSort: true, WidthClass: "col-4xl", Align: "right"},
 	}
 	if showTreatment {
 		columns = append(columns, types.TableColumn{Key: "treatment", Label: deps.ColumnTreatment, NoSort: true, WidthClass: "col-3xl"})
@@ -157,6 +170,8 @@ func BuildTable(ctx context.Context, deps *TableDeps, parent ParentContext) *typ
 					{Type: "text", Value: productName},
 					priceCell,
 					{Type: "text", Value: itemCurrency},
+					// Advertised rate band. "—" when neither bound is set.
+					{Type: "text", Value: RateBandDisplay(item.BillingAmountMin, item.BillingAmountMax, itemCurrency)},
 				}
 				if showTreatment {
 					cells = append(cells, types.TableCell{Type: "text", Value: BillingTreatmentDisplay(item.GetBillingTreatment().String(), pplLabels)})
@@ -254,6 +269,27 @@ func BillingTreatmentDisplay(value string, l FormLabels) string {
 		return l.BillingTreatmentUsageBased
 	}
 	return "—"
+}
+
+// RateBandDisplay renders the advertised rate band
+// (billing_amount_min → billing_amount_max, both optional *int64 centavos) as a
+// money range using the line's currency. 20260604-performance-evaluation Phase A.
+//
+//	both set  → "PHP 30,000.00 → PHP 50,000.00"
+//	min only  → "from PHP 30,000.00"
+//	max only  → "up to PHP 50,000.00"
+//	neither   → "—" (visually quiet, like the treatment cell)
+func RateBandDisplay(minC, maxC *int64, currency string) string {
+	switch {
+	case minC == nil && maxC == nil:
+		return "—"
+	case minC != nil && maxC == nil:
+		return "from " + types.FormatMoney(*minC, currency)
+	case minC == nil && maxC != nil:
+		return "up to " + types.FormatMoney(*maxC, currency)
+	default:
+		return types.FormatMoney(*minC, currency) + " → " + types.FormatMoney(*maxC, currency)
+	}
 }
 
 // EffectiveRangeDisplay renders the per-line effective dates as "start → end",

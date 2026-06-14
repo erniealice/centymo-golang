@@ -97,6 +97,40 @@ Data: ProductPricePlanFormData — see views/price_plan/detail/page.go
             "EffectiveSectionTitle" ""
         )}}
 
+        {{/* ── Advertised rate band (20260604-performance-evaluation Phase A) ──
+             billing_amount_min/max are the advertised band floor/ceiling in
+             centavos (proto fields 22/23, optional). Display/quote bounds: a
+             seat's contracted_amount must fall within [min, max] when both are
+             set; the band CHECK is enforced server-side in the seat
+             create/update use case, NOT here. Both inputs are optional. Field
+             names are the proto field names [FORM-001]; values are decimal
+             (amount ÷ 100) and converted back to centavos on POST. */}}
+        {{template "form-section" (dict "Title" .Labels.SectionRateBand)}}
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "billing_amount_min"
+                "Label" .Labels.BillingAmountMinLabel
+                "Value" .BillingAmountMin
+                "Placeholder" .Labels.BillingAmountMinPlaceholder
+                "Step" "0.01"
+                "Min" "0"
+                "Info" .Labels.BillingAmountMinInfo
+                "TestId" "ppp-billing-amount-min"
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "billing_amount_max"
+                "Label" .Labels.BillingAmountMaxLabel
+                "Value" .BillingAmountMax
+                "Placeholder" .Labels.BillingAmountMaxPlaceholder
+                "Step" "0.01"
+                "Min" "0"
+                "Info" .Labels.BillingAmountMaxInfo
+                "TestId" "ppp-billing-amount-max"
+            )}}
+        </div>
+
         {{/* ── Tax overrides (Phase 5) — optional per-PPP overrides ── */}}
         {{if or .TaxTreatmentOptions .WithholdingClassOptions}}
         {{template "form-section" (dict "Title" .Labels.SectionTax)}}

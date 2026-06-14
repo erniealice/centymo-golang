@@ -29,6 +29,25 @@ type FormLabels struct {
 	DateStartLabel                     string `json:"dateStartLabel"`
 	DateEndLabel                       string `json:"dateEndLabel"`
 
+	// 20260604-performance-evaluation Phase A — advertised rate band (the
+	// Offering's rate band). billing_amount_min/max are the advertised band
+	// FLOOR/CEILING in centavos (proto fields 22/23, optional). They are
+	// display/quote bounds: a seat's contracted_amount must fall within
+	// [min, max] when both are set (band CHECK enforced server-side in the
+	// subscription_seat create/update use case — NOT here). billing_amount
+	// (field 11) remains the operative contracted rate. Both inputs are
+	// optional; leaving them blank means "no advertised band".
+	BillingAmountMinLabel       string `json:"billingAmountMinLabel"`
+	BillingAmountMinPlaceholder string `json:"billingAmountMinPlaceholder"`
+	BillingAmountMinInfo        string `json:"billingAmountMinInfo"`
+	BillingAmountMaxLabel       string `json:"billingAmountMaxLabel"`
+	BillingAmountMaxPlaceholder string `json:"billingAmountMaxPlaceholder"`
+	BillingAmountMaxInfo        string `json:"billingAmountMaxInfo"`
+	// Section header for the rate-band fields group on the drawer.
+	SectionRateBand string `json:"sectionRateBand"`
+	// Table column header for the combined band display column.
+	ColumnRateBand string `json:"columnRateBand"`
+
 	// Field-level info text surfaced via an info button beside each label.
 	ProductInfo          string `json:"productInfo"`
 	PriceInfo            string `json:"priceInfo"`
@@ -98,6 +117,15 @@ func DefaultLabels() Labels {
 			CurrencyPlaceholder:                "e.g. PHP",
 			DateStartLabel:                     "Effective from",
 			DateEndLabel:                       "Effective until",
+			// 20260604-performance-evaluation Phase A — advertised rate band defaults.
+			BillingAmountMinLabel:       "Band floor",
+			BillingAmountMinPlaceholder: "0.00",
+			BillingAmountMinInfo:        "Advertised band floor in centavos (displayed as amount ÷ 100). The lowest rate a seat on this line may be contracted at. Leave blank for no floor.",
+			BillingAmountMaxLabel:       "Band ceiling",
+			BillingAmountMaxPlaceholder: "0.00",
+			BillingAmountMaxInfo:        "Advertised band ceiling in centavos (displayed as amount ÷ 100). The highest rate a seat on this line may be contracted at. Leave blank for no ceiling.",
+			SectionRateBand:             "Advertised rate band",
+			ColumnRateBand:              "Rate band",
 			// Field-level info popovers — use proto-generic wording; tiers override via lyngua.
 			ProductInfo:          "The product this price applies to.",
 			PriceInfo:            "Price in centavos. Displayed as amount ÷ 100.",
