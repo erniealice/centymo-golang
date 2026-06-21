@@ -11,7 +11,7 @@ import (
 	"context"
 	"log"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
@@ -39,7 +39,7 @@ type advancesDashboardWiring struct {
 // view-typed closure the service-admin adapter wires from espyna's
 // ListAdvanceCollectionsByWorkspace / ListAdvanceDisbursementsByWorkspace
 // repositories. The closure can be nil; the view degrades to empty state.
-func wireAdvancesDashboardModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w advancesDashboardWiring) {
+func wireAdvancesDashboardModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w advancesDashboardWiring) {
 	deps := &advancesdashboardmod.ModuleDeps{
 		Routes:                        w.routes,
 		Labels:                        w.labels,

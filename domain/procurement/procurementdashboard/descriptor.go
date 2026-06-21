@@ -1,6 +1,6 @@
 package procurementdashboard
 
-import "github.com/erniealice/pyeza-golang/compose"
+import "github.com/erniealice/espyna-golang/consumer/compose"
 
 // Describe returns the composition-v2 descriptor for the procurement dashboard.
 // This is a composition-surface (no proto entity) so it has no Labels DefaultLabels

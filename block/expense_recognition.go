@@ -13,7 +13,7 @@ import (
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
@@ -39,7 +39,7 @@ type expenseRecognitionWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the SPS Wave 4 ExpRec wiring used to be.
-func wireExpenseRecognitionModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w expenseRecognitionWiring) {
+func wireExpenseRecognitionModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w expenseRecognitionWiring) {
 	// ExpenseRecognition module — no Add/Edit drawer (created BY use case).
 	if cfg.wantExpenseRecognition() {
 		erDeps := &expendituredomain.ExpenseRecognitionModuleDeps{

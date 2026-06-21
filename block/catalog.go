@@ -17,8 +17,8 @@ package block
 import (
 	"context"
 
-	pyeza "github.com/erniealice/pyeza-golang"
-	"github.com/erniealice/pyeza-golang/compose"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
+	"github.com/erniealice/espyna-golang/consumer/compose"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
 	accruedexpensepkg "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense"
@@ -507,7 +507,7 @@ func PlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 			psRoutes = priceschedulepkg.DefaultRoutes()
 		}
 
-		minCtx := &pyeza.AppContext{
+		minCtx := &consumerapp.AppContext{
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}
@@ -568,7 +568,7 @@ func SubscriptionUnit(uc *UseCases, infra *Infra) compose.Unit {
 			_ = psr // routes already set in wiring below
 		}
 
-		minCtx := &pyeza.AppContext{
+		minCtx := &consumerapp.AppContext{
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}
@@ -806,7 +806,7 @@ func ExpenseRecognitionRunUnit(uc *UseCases, _ *Infra) compose.Unit {
 			expenditureRoutes = expendituredomain.ExpenditureRoutes(*er)
 		}
 
-		minCtx := &pyeza.AppContext{
+		minCtx := &consumerapp.AppContext{
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}
@@ -831,7 +831,7 @@ func AccruedExpenseUnit(uc *UseCases, infra *Infra) compose.Unit {
 		r := u.Routes.(*accruedexpensepkg.Routes)
 		l := u.Labels.(*accruedexpensepkg.Labels)
 
-		minCtx := &pyeza.AppContext{
+		minCtx := &consumerapp.AppContext{
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}
@@ -866,7 +866,7 @@ func RevenueRunUnit(uc *UseCases, infra *Infra) compose.Unit {
 			revenueRoutes = revenuedomain.RevenueRoutes(*rr)
 		}
 
-		minCtx := &pyeza.AppContext{
+		minCtx := &consumerapp.AppContext{
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}
@@ -902,7 +902,7 @@ func SupplierContractUnit(uc *UseCases, infra *Infra) compose.Unit {
 			scpsRoutes = expendituredomain.SupplierContractPriceScheduleRoutes(*pr)
 		}
 
-		minCtx := &pyeza.AppContext{
+		minCtx := &consumerapp.AppContext{
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}
@@ -932,7 +932,7 @@ func ProcurementRequestUnit(uc *UseCases, infra *Infra) compose.Unit {
 		r := u.Routes.(*procurementrequestpkg.Routes)
 		l := u.Labels.(*procurementrequestpkg.Labels)
 
-		minCtx := &pyeza.AppContext{
+		minCtx := &consumerapp.AppContext{
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}
@@ -961,7 +961,7 @@ func SupplierContractPriceScheduleUnit(uc *UseCases, infra *Infra) compose.Unit 
 		r := u.Routes.(*suppliercontractpriceschedulepkg.Routes)
 		l := u.Labels.(*suppliercontractpriceschedulepkg.Labels)
 
-		minCtx := &pyeza.AppContext{
+		minCtx := &consumerapp.AppContext{
 			Routes: mc.Routes,
 			Common: mc.Common,
 		}

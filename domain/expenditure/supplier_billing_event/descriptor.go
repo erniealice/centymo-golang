@@ -1,6 +1,6 @@
 package supplier_billing_event
 
-import "github.com/erniealice/pyeza-golang/compose"
+import "github.com/erniealice/espyna-golang/consumer/compose"
 
 // Describe returns the composition-v2 descriptor for the supplier_billing_event
 // entity. This entity has no Routes struct (only URL constants in routes.go), so

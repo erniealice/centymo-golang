@@ -13,7 +13,7 @@ import (
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
@@ -39,7 +39,7 @@ type accruedExpenseWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the SPS Wave 4 AccruedExpense wiring used to be.
-func wireAccruedExpenseModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w accruedExpenseWiring) {
+func wireAccruedExpenseModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w accruedExpenseWiring) {
 	// AccruedExpense module
 	if cfg.wantAccruedExpense() {
 		aeDeps := &expendituredomain.AccruedExpenseModuleDeps{

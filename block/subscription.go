@@ -20,7 +20,7 @@ import (
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
@@ -55,7 +55,7 @@ type subscriptionWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the Subscription wiring used to be.
-func wireSubscriptionModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w subscriptionWiring) {
+func wireSubscriptionModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w subscriptionWiring) {
 	if !cfg.wantSubscription() {
 		return
 	}

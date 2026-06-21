@@ -10,7 +10,7 @@ import (
 	cashdashboardview "github.com/erniealice/centymo-golang/domain/treasury/collection/dashboard"
 
 	"github.com/erniealice/espyna-golang/consumer"
-	composehelper "github.com/erniealice/espyna-golang/consumer/compose"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/espyna-golang/reference"
 	advancekindpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common/advance_kind"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
@@ -23,14 +23,13 @@ import (
 	expendituredashpb "github.com/erniealice/esqyma/pkg/schema/v1/service/dashboard/expenditure"
 	productdashpb "github.com/erniealice/esqyma/pkg/schema/v1/service/dashboard/product"
 	treasurydashpb "github.com/erniealice/esqyma/pkg/schema/v1/service/dashboard/treasury"
-	"github.com/erniealice/pyeza-golang"
 )
 
-// centymoEngineBlock returns a pyeza.AppOption that registers all centymo
+// centymoEngineBlock returns a consumerapp.AppOption that registers all centymo
 // domain modules via the compose engine (replaces legacy centymoBlock).
-func EngineBlock() pyeza.AppOption {
-	return func(ctx *pyeza.AppContext) error {
-		uc, err := composehelper.RequireUseCases(ctx, "centymoEngineBlock")
+func EngineBlock() consumerapp.AppOption {
+	return func(ctx *consumerapp.AppContext) error {
+		uc, err := consumerapp.RequireUseCases(ctx, "centymoEngineBlock")
 		if err != nil {
 			return err
 		}
@@ -55,7 +54,7 @@ func EngineBlock() pyeza.AppOption {
 		}
 
 		units := AllUnits(adapted, infra)
-		return composehelper.AssembleEngineBlock("centymo", units, ctx)
+		return consumerapp.AssembleEngineBlock("centymo", units, ctx)
 	}
 }
 

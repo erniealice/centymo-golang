@@ -1,6 +1,6 @@
 package supplier_contract_price_schedule
 
-import "github.com/erniealice/pyeza-golang/compose"
+import "github.com/erniealice/espyna-golang/consumer/compose"
 
 func Describe() compose.Unit {
 	r := DefaultRoutes()
@@ -19,7 +19,7 @@ func Describe() compose.Unit {
 				// supplier app — sub-link beneath Supplier Contracts (SPS Wave 4)
 				{Key: "contracts-price-schedules", Route: "supplier_contract_price_schedule.list",
 					Params: map[string]string{"status": "scheduled"},
-					Label: "Price Schedules", Icon: "icon-calendar",
+					Label:  "Price Schedules", Icon: "icon-calendar",
 					Permission: "supplier_contract_price_schedule:list"},
 			},
 		},

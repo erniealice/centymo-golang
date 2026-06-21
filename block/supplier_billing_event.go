@@ -8,7 +8,7 @@
 package block
 
 import (
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
@@ -26,7 +26,7 @@ type supplierBillingEventWiring struct {
 // Nil-safe: all three view ops on UseCases.Expenditure /
 // UseCases.TreasuryAdvances can be missing — the underlying view module's
 // nil-safety handles each independently.
-func wireSupplierBillingEventModule(ctx *pyeza.AppContext, useCases *UseCases, w supplierBillingEventWiring) {
+func wireSupplierBillingEventModule(ctx *consumerapp.AppContext, useCases *UseCases, w supplierBillingEventWiring) {
 	deps := expendituredomain.SupplierBillingEventModuleDeps{
 		Routes:       w.routes,
 		Labels:       expendituredomain.DefaultSupplierBillingEventLabels(),

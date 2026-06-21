@@ -20,7 +20,7 @@ import (
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuerunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_run"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 
@@ -45,7 +45,7 @@ type revenueRunWiring struct {
 // wireRevenueRunModule lifts the body of `if cfg.wantRevenueRun()` from Block().
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once when cfg.wantRevenueRun().
-func wireRevenueRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w revenueRunWiring) {
+func wireRevenueRunModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w revenueRunWiring) {
 	rrDeps := &revenuedomain.RevenueRunModuleDeps{
 		Routes:       w.revenueRunRoutes,
 		Labels:       w.revenueRunLabels,

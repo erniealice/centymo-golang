@@ -1,6 +1,6 @@
 package price_list
 
-import "github.com/erniealice/pyeza-golang/compose"
+import "github.com/erniealice/espyna-golang/consumer/compose"
 
 // Describe returns the composition-v2 descriptor for the price_list entity.
 // Labels are not yet exposed via DefaultLabels() — the LabelJSON binding is

@@ -13,7 +13,7 @@ import (
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	scpspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
@@ -39,7 +39,7 @@ type supplierContractPriceScheduleWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the SPS Wave 4 wiring used to be.
-func wireSupplierContractPriceScheduleModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w supplierContractPriceScheduleWiring) {
+func wireSupplierContractPriceScheduleModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w supplierContractPriceScheduleWiring) {
 	// SupplierContractPriceSchedule module
 	if cfg.wantSupplierContractPriceSchedule() {
 		scpsDeps := &expendituredomain.SupplierContractPriceScheduleModuleDeps{

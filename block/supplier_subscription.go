@@ -8,7 +8,7 @@
 package block
 
 import (
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
@@ -43,7 +43,7 @@ type supplierSubscriptionWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the P3 supplier-subscription wiring used to be.
-func wireSupplierSubscriptionModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w supplierSubscriptionWiring) {
+func wireSupplierSubscriptionModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w supplierSubscriptionWiring) {
 	// =====================================================================
 	// P3 — CostSchedule module
 	// =====================================================================

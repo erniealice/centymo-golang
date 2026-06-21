@@ -14,7 +14,7 @@ import (
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	productdom "github.com/erniealice/centymo-golang/domain/product"
@@ -53,7 +53,7 @@ type productWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the product wiring used to be.
-func wireProductModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w productWiring) {
+func wireProductModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w productWiring) {
 	// =====================================================================
 	// Product module
 	// =====================================================================

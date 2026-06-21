@@ -18,7 +18,7 @@ import (
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	productdom "github.com/erniealice/centymo-golang/domain/product"
@@ -63,7 +63,7 @@ type planWiring struct {
 // Behaviour-preserving: same construction order, same registration order,
 // same callbacks. block.go calls this exactly once at the position where
 // the plan wiring used to be.
-func wirePlanModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w planWiring) {
+func wirePlanModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w planWiring) {
 	// =====================================================================
 	// Price Plan module (standalone — separate from plan-nested price plans)
 	// =====================================================================

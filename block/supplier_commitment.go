@@ -18,7 +18,7 @@ import (
 	procurementrequestpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request"
 	suppliercontractpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/types"
 
 	expendituredomain "github.com/erniealice/centymo-golang/domain/expenditure"
@@ -50,7 +50,7 @@ type supplierCommitmentWiring struct {
 // `if cfg.wantSupplierXxx()` / `if cfg.wantProcurementXxx()` branches
 // from Block(). Behaviour-preserving: same construction order, same
 // registration order, same callbacks. block.go calls this exactly once.
-func wireSupplierCommitmentModules(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w supplierCommitmentWiring) {
+func wireSupplierCommitmentModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w supplierCommitmentWiring) {
 	// =====================================================================
 	// 20260427-supplier-commitments — five new modules (P3a + P3b)
 	//

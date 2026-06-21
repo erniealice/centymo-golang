@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	lyngua "github.com/erniealice/lyngua"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -108,7 +109,7 @@ func TestBlockLoadsRouteOverridesForSelectedModules(t *testing.T) {
 			t.Parallel()
 
 			routes := newTestRouteRegistrar()
-			ctx := &pyeza.AppContext{
+			ctx := &consumerapp.AppContext{
 				Routes:       routes,
 				Common:       pyeza.CommonLabels{},
 				BusinessType: "service",

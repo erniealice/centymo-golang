@@ -21,7 +21,7 @@ import (
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
 	expenserecognitionrunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_run"
 
-	pyeza "github.com/erniealice/pyeza-golang"
+	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 
@@ -42,7 +42,7 @@ type expenseRecognitionRunWiring struct {
 // wireExpenseRecognitionRunModule wires Surfaces B + D of the buying-side
 // Expense Recognition Run. block.go calls this exactly once when
 // cfg.wantExpenseRecognitionRun() is true and all required deps are set.
-func wireExpenseRecognitionRunModule(ctx *pyeza.AppContext, cfg *blockConfig, useCases *UseCases, w expenseRecognitionRunWiring) {
+func wireExpenseRecognitionRunModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *UseCases, w expenseRecognitionRunWiring) {
 	deps := &expendituredomain.ExpenseRecognitionRunModuleDeps{
 		Routes:                    w.routes,
 		Labels:                    w.labels,
