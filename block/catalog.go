@@ -50,6 +50,7 @@ import (
 	priceplanpkg "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	priceschedulepkg "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	subscriptionpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription"
+	subscriptiongrouppkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 	collectionpkg "github.com/erniealice/centymo-golang/domain/treasury/collection"
 	disbursementpkg "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
@@ -470,6 +471,36 @@ func PriceScheduleUnit(uc *UseCases, infra *Infra) compose.Unit {
 			NewAttachmentID:              infra.NewAttachmentID,
 		}
 		subscriptiondom.NewPriceScheduleModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// SubscriptionGroup (education "section / cohort" cohort)
+// ---------------------------------------------------------------------------
+
+func SubscriptionGroupUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := subscriptiongrouppkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*subscriptiongrouppkg.Routes)
+		l := u.Labels.(*subscriptiongrouppkg.Labels)
+
+		deps := &subscriptiondom.SubscriptionGroupModuleDeps{
+			Routes:                  *r,
+			Labels:                  *l,
+			CommonLabels:            mc.Common,
+			TableLabels:             mc.Table,
+			ListSubscriptionGroups:  uc.SubscriptionGroup.ListSubscriptionGroups,
+			ReadSubscriptionGroup:   uc.SubscriptionGroup.ReadSubscriptionGroup,
+			CreateSubscriptionGroup: uc.SubscriptionGroup.CreateSubscriptionGroup,
+			UpdateSubscriptionGroup: uc.SubscriptionGroup.UpdateSubscriptionGroup,
+			DeleteSubscriptionGroup: uc.SubscriptionGroup.DeleteSubscriptionGroup,
+			// Program (plan) + period (price_schedule) pickers / display lookups.
+			ListPlans:          uc.Plan.ListPlans,
+			ListPriceSchedules: uc.PriceSchedule.ListPriceSchedules,
+		}
+		subscriptiondom.NewSubscriptionGroupModule(deps).RegisterRoutes(mc.Routes)
 		return nil
 	}
 	return u
@@ -1272,6 +1303,7 @@ func AllUnits(uc *UseCases, infra *Infra) []compose.Unit {
 		PriceListUnit(uc, infra),
 		PricePlanUnit(uc, infra),
 		PriceScheduleUnit(uc, infra),
+		SubscriptionGroupUnit(uc, infra),
 		PlanUnit(uc, infra),
 		SubscriptionUnit(uc, infra),
 		CollectionUnit(uc, infra),

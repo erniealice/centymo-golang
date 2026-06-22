@@ -1,0 +1,128 @@
+{{define "subscription-group-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
+    {{actionForm .FormAction .WorkspaceID}}
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* ================================================================ */}}
+        {{/* Section: Section details                                         */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" .Labels.SectionIdentity)}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "name" "Label" .Labels.Name "Value" .Name "Required" true "Placeholder" .Labels.NamePlaceholder "Info" .Labels.NameInfo)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "kind"
+                "Label" .Labels.Kind
+                "Value" .Kind
+                "Placeholder" .Labels.KindPlaceholder
+                "Options" .KindOptions
+                "Info" .Labels.KindInfo
+            )}}
+        </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section: Program & period                                        */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" .Labels.SectionAnchors)}}
+
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "subscription-group-plan-select"
+                "Name" "plan_id"
+                "Label" .Labels.Plan
+                "Placeholder" .Labels.PlanPlaceholder
+                "SearchPlaceholder" .Labels.PlanSearch
+                "Options" .PlanOptions
+                "Value" .PlanID
+                "SelectedLabel" .PlanLabel
+                "Info" .Labels.PlanInfo
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "subscription-group-schedule-select"
+                "Name" "price_schedule_id"
+                "Label" .Labels.PriceSchedule
+                "Placeholder" .Labels.PriceSchedulePH
+                "SearchPlaceholder" .Labels.PriceScheduleSrch
+                "Options" .PriceScheduleOptions
+                "Value" .PriceScheduleID
+                "SelectedLabel" .PriceScheduleLabel
+                "Info" .Labels.PriceScheduleInfo
+            )}}
+        </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section: Capacity                                                */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" .Labels.SectionCapacity)}}
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "capacity_mode"
+                "Label" .Labels.CapacityMode
+                "Value" .CapacityMode
+                "Options" .CapacityModeOptions
+                "Info" .Labels.CapacityModeInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "max_capacity"
+                "Label" .Labels.MaxCapacity
+                "Value" .MaxCapacity
+                "Placeholder" .Labels.MaxCapacityPH
+                "Min" "0"
+                "Info" .Labels.MaxCapacityInfo
+            )}}
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+
+{{/* capacity_mode → max_capacity enable/disable. max_capacity is read only
+     when the mode is CAPPED (proto contract), so the input is disabled
+     otherwise to keep the POST shape honest. */}}
+<script nonce="{{$.Nonce}}">
+(function () {
+    var form = document.currentScript.previousElementSibling;
+    while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
+    if (!form) { return; }
+    var modeSelect = form.querySelector('select[name="capacity_mode"]');
+    var capInput = form.querySelector('input[name="max_capacity"]');
+    if (!modeSelect || !capInput) { return; }
+    function applyCapacityGuard() {
+        var capped = modeSelect.value === 'CAPACITY_MODE_CAPPED';
+        capInput.disabled = !capped;
+        if (!capped) { capInput.value = ''; }
+    }
+    modeSelect.addEventListener('change', applyCapacityGuard);
+    applyCapacityGuard();
+}());
+</script>
+{{end}}

@@ -81,6 +81,7 @@ import (
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
+	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 	collectionmethodpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
@@ -122,24 +123,25 @@ type UseCases struct {
 	SetActive func(ctx context.Context, collection string, id string, active bool) error
 	// Domain CRUD + use-case groups (singular field, `XxxUseCases` type)
 	// Ordered alphabetically for easy scanning.
-	Collection       CollectionUseCases
-	CollectionMethod CollectionMethodUseCases
-	Common           CommonUseCases
-	Disbursement     DisbursementUseCases
-	Entity           EntityUseCases
-	Expenditure      ExpenditureUseCases
-	Inventory        InventoryUseCases
-	Operation        OperationUseCases
-	Plan             PlanUseCases
-	PricePlan        PricePlanUseCases
-	PriceSchedule    PriceScheduleUseCases
-	PriceList        PriceListUseCases
-	Procurement      ProcurementUseCases
-	Product          ProductUseCases
-	Revenue          RevenueUseCases
-	RevenueRun       RevenueRunUseCases
-	Subscription     SubscriptionUseCases
-	SupplierContract SupplierContractUseCases
+	Collection        CollectionUseCases
+	CollectionMethod  CollectionMethodUseCases
+	Common            CommonUseCases
+	Disbursement      DisbursementUseCases
+	Entity            EntityUseCases
+	Expenditure       ExpenditureUseCases
+	Inventory         InventoryUseCases
+	Operation         OperationUseCases
+	Plan              PlanUseCases
+	PricePlan         PricePlanUseCases
+	PriceSchedule     PriceScheduleUseCases
+	PriceList         PriceListUseCases
+	Procurement       ProcurementUseCases
+	Product           ProductUseCases
+	Revenue           RevenueUseCases
+	RevenueRun        RevenueRunUseCases
+	Subscription      SubscriptionUseCases
+	SubscriptionGroup SubscriptionGroupUseCases
+	SupplierContract  SupplierContractUseCases
 
 	// 20260517-advance-cash-events Plan B Phase 3 — workspace advances dashboard.
 	TreasuryAdvances TreasuryAdvancesUseCases
@@ -422,6 +424,21 @@ type PriceScheduleUseCases struct {
 	UpdatePriceSchedule          func(context.Context, *priceschedulepb.UpdatePriceScheduleRequest) (*priceschedulepb.UpdatePriceScheduleResponse, error)
 	DeletePriceSchedule          func(context.Context, *priceschedulepb.DeletePriceScheduleRequest) (*priceschedulepb.DeletePriceScheduleResponse, error)
 	ListSubscriptionsByPricePlan func(context.Context, *subscriptionpb.ListSubscriptionsByPricePlanRequest) (*subscriptionpb.ListSubscriptionsByPricePlanResponse, error)
+}
+
+// -- SubscriptionGroup -------------------------------------------------------
+//
+// The education "section / cohort" cohort. Simple single-aggregate CRUD +
+// List; no cross-entity orchestration. Closures use the subscription_group
+// proto req/resp types and bind to espyna's
+// uc.Subscription.SubscriptionGroup.* use cases (see engineblock.go).
+
+type SubscriptionGroupUseCases struct {
+	ListSubscriptionGroups  func(context.Context, *subscriptiongrouppb.ListSubscriptionGroupsRequest) (*subscriptiongrouppb.ListSubscriptionGroupsResponse, error)
+	ReadSubscriptionGroup   func(context.Context, *subscriptiongrouppb.ReadSubscriptionGroupRequest) (*subscriptiongrouppb.ReadSubscriptionGroupResponse, error)
+	CreateSubscriptionGroup func(context.Context, *subscriptiongrouppb.CreateSubscriptionGroupRequest) (*subscriptiongrouppb.CreateSubscriptionGroupResponse, error)
+	UpdateSubscriptionGroup func(context.Context, *subscriptiongrouppb.UpdateSubscriptionGroupRequest) (*subscriptiongrouppb.UpdateSubscriptionGroupResponse, error)
+	DeleteSubscriptionGroup func(context.Context, *subscriptiongrouppb.DeleteSubscriptionGroupRequest) (*subscriptiongrouppb.DeleteSubscriptionGroupResponse, error)
 }
 
 // -- PriceList ---------------------------------------------------------------

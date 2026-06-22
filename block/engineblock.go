@@ -424,6 +424,15 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 		if uc.Subscription.Subscription != nil {
 			result.PriceSchedule.ListSubscriptionsByPricePlan = uc.Subscription.Subscription.ListSubscriptionsByPricePlan.Execute
 		}
+
+		// -- SubscriptionGroup (education "section / cohort" cohort) --
+		if uc.Subscription.SubscriptionGroup != nil {
+			result.SubscriptionGroup.ListSubscriptionGroups = uc.Subscription.SubscriptionGroup.ListSubscriptionGroups.Execute
+			result.SubscriptionGroup.ReadSubscriptionGroup = uc.Subscription.SubscriptionGroup.ReadSubscriptionGroup.Execute
+			result.SubscriptionGroup.CreateSubscriptionGroup = uc.Subscription.SubscriptionGroup.CreateSubscriptionGroup.Execute
+			result.SubscriptionGroup.UpdateSubscriptionGroup = uc.Subscription.SubscriptionGroup.UpdateSubscriptionGroup.Execute
+			result.SubscriptionGroup.DeleteSubscriptionGroup = uc.Subscription.SubscriptionGroup.DeleteSubscriptionGroup.Execute
+		}
 	}
 
 	// -- Revenue -----------------------------------------------------------------
