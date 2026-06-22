@@ -58,6 +58,9 @@ import (
 	supplierproductplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/supplier_product_plan"
 	suppliersubscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/supplier_subscription"
 	linepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line"
+	lineworkspaceuserpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line_workspace_user"
+	plangrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/plan_group"
+	plangroupplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/plan_group_plan"
 	pricelistpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_list"
 	priceproductpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/price_product"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -66,6 +69,7 @@ import (
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
 	productoptionvaluepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option_value"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan_staff"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	productvariantimagepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_image"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
@@ -79,9 +83,13 @@ import (
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	pricescheduleworkspaceuserpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule_workspace_user"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
+	subscriptiongroupmemberpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_member"
+	subscriptiongroupproductplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
+	subscriptiongroupworkspaceuserpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_workspace_user"
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
 	collectionmethodpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
@@ -130,18 +138,30 @@ type UseCases struct {
 	Entity            EntityUseCases
 	Expenditure       ExpenditureUseCases
 	Inventory         InventoryUseCases
+	LineWorkspaceUser LineWorkspaceUserUseCases
 	Operation         OperationUseCases
 	Plan              PlanUseCases
+	PlanGroup         PlanGroupUseCases
+	PlanGroupPlan     PlanGroupPlanUseCases
 	PricePlan         PricePlanUseCases
 	PriceSchedule     PriceScheduleUseCases
+
+	PriceScheduleWorkspaceUser PriceScheduleWorkspaceUserUseCases
+
 	PriceList         PriceListUseCases
 	Procurement       ProcurementUseCases
 	Product           ProductUseCases
+	ProductPlanStaff  ProductPlanStaffUseCases
 	Revenue           RevenueUseCases
 	RevenueRun        RevenueRunUseCases
 	Subscription      SubscriptionUseCases
 	SubscriptionGroup SubscriptionGroupUseCases
-	SupplierContract  SupplierContractUseCases
+
+	SubscriptionGroupMember           SubscriptionGroupMemberUseCases
+	SubscriptionGroupProductPlanStaff SubscriptionGroupProductPlanStaffUseCases
+	SubscriptionGroupWorkspaceUser    SubscriptionGroupWorkspaceUserUseCases
+
+	SupplierContract SupplierContractUseCases
 
 	// 20260517-advance-cash-events Plan B Phase 3 — workspace advances dashboard.
 	TreasuryAdvances TreasuryAdvancesUseCases
@@ -439,6 +459,112 @@ type SubscriptionGroupUseCases struct {
 	CreateSubscriptionGroup func(context.Context, *subscriptiongrouppb.CreateSubscriptionGroupRequest) (*subscriptiongrouppb.CreateSubscriptionGroupResponse, error)
 	UpdateSubscriptionGroup func(context.Context, *subscriptiongrouppb.UpdateSubscriptionGroupRequest) (*subscriptiongrouppb.UpdateSubscriptionGroupResponse, error)
 	DeleteSubscriptionGroup func(context.Context, *subscriptiongrouppb.DeleteSubscriptionGroupRequest) (*subscriptiongrouppb.DeleteSubscriptionGroupResponse, error)
+}
+
+// -- SubscriptionGroupMember -------------------------------------------------
+//
+// Roster of members within a subscription_group (education cohort/section).
+// Simple single-aggregate CRUD + List. Closures use the
+// subscription_group_member proto req/resp types and bind to espyna's
+// uc.Subscription.SubscriptionGroupMember.* use cases (see engineblock.go).
+
+type SubscriptionGroupMemberUseCases struct {
+	ListSubscriptionGroupMembers  func(context.Context, *subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest) (*subscriptiongroupmemberpb.ListSubscriptionGroupMembersResponse, error)
+	ReadSubscriptionGroupMember   func(context.Context, *subscriptiongroupmemberpb.ReadSubscriptionGroupMemberRequest) (*subscriptiongroupmemberpb.ReadSubscriptionGroupMemberResponse, error)
+	CreateSubscriptionGroupMember func(context.Context, *subscriptiongroupmemberpb.CreateSubscriptionGroupMemberRequest) (*subscriptiongroupmemberpb.CreateSubscriptionGroupMemberResponse, error)
+	UpdateSubscriptionGroupMember func(context.Context, *subscriptiongroupmemberpb.UpdateSubscriptionGroupMemberRequest) (*subscriptiongroupmemberpb.UpdateSubscriptionGroupMemberResponse, error)
+	DeleteSubscriptionGroupMember func(context.Context, *subscriptiongroupmemberpb.DeleteSubscriptionGroupMemberRequest) (*subscriptiongroupmemberpb.DeleteSubscriptionGroupMemberResponse, error)
+}
+
+// -- SubscriptionGroupWorkspaceUser ------------------------------------------
+//
+// Workspace-user (staff) access grants on a subscription_group. Single-aggregate
+// CRUD + List; binds to uc.Subscription.SubscriptionGroupWorkspaceUser.*.
+
+type SubscriptionGroupWorkspaceUserUseCases struct {
+	ListSubscriptionGroupWorkspaceUsers  func(context.Context, *subscriptiongroupworkspaceuserpb.ListSubscriptionGroupWorkspaceUsersRequest) (*subscriptiongroupworkspaceuserpb.ListSubscriptionGroupWorkspaceUsersResponse, error)
+	ReadSubscriptionGroupWorkspaceUser   func(context.Context, *subscriptiongroupworkspaceuserpb.ReadSubscriptionGroupWorkspaceUserRequest) (*subscriptiongroupworkspaceuserpb.ReadSubscriptionGroupWorkspaceUserResponse, error)
+	CreateSubscriptionGroupWorkspaceUser func(context.Context, *subscriptiongroupworkspaceuserpb.CreateSubscriptionGroupWorkspaceUserRequest) (*subscriptiongroupworkspaceuserpb.CreateSubscriptionGroupWorkspaceUserResponse, error)
+	UpdateSubscriptionGroupWorkspaceUser func(context.Context, *subscriptiongroupworkspaceuserpb.UpdateSubscriptionGroupWorkspaceUserRequest) (*subscriptiongroupworkspaceuserpb.UpdateSubscriptionGroupWorkspaceUserResponse, error)
+	DeleteSubscriptionGroupWorkspaceUser func(context.Context, *subscriptiongroupworkspaceuserpb.DeleteSubscriptionGroupWorkspaceUserRequest) (*subscriptiongroupworkspaceuserpb.DeleteSubscriptionGroupWorkspaceUserResponse, error)
+}
+
+// -- SubscriptionGroupProductPlanStaff ---------------------------------------
+//
+// Staff-to-product-plan assignments scoped to a subscription_group. Single-
+// aggregate CRUD + List; binds to uc.Subscription.SubscriptionGroupProductPlanStaff.*.
+
+type SubscriptionGroupProductPlanStaffUseCases struct {
+	ListSubscriptionGroupProductPlanStaffs  func(context.Context, *subscriptiongroupproductplanstaffpb.ListSubscriptionGroupProductPlanStaffsRequest) (*subscriptiongroupproductplanstaffpb.ListSubscriptionGroupProductPlanStaffsResponse, error)
+	ReadSubscriptionGroupProductPlanStaff   func(context.Context, *subscriptiongroupproductplanstaffpb.ReadSubscriptionGroupProductPlanStaffRequest) (*subscriptiongroupproductplanstaffpb.ReadSubscriptionGroupProductPlanStaffResponse, error)
+	CreateSubscriptionGroupProductPlanStaff func(context.Context, *subscriptiongroupproductplanstaffpb.CreateSubscriptionGroupProductPlanStaffRequest) (*subscriptiongroupproductplanstaffpb.CreateSubscriptionGroupProductPlanStaffResponse, error)
+	UpdateSubscriptionGroupProductPlanStaff func(context.Context, *subscriptiongroupproductplanstaffpb.UpdateSubscriptionGroupProductPlanStaffRequest) (*subscriptiongroupproductplanstaffpb.UpdateSubscriptionGroupProductPlanStaffResponse, error)
+	DeleteSubscriptionGroupProductPlanStaff func(context.Context, *subscriptiongroupproductplanstaffpb.DeleteSubscriptionGroupProductPlanStaffRequest) (*subscriptiongroupproductplanstaffpb.DeleteSubscriptionGroupProductPlanStaffResponse, error)
+}
+
+// -- PriceScheduleWorkspaceUser ----------------------------------------------
+//
+// Workspace-user (staff) access grants on a price_schedule. Single-aggregate
+// CRUD + List; binds to uc.Subscription.PriceScheduleWorkspaceUser.*.
+
+type PriceScheduleWorkspaceUserUseCases struct {
+	ListPriceScheduleWorkspaceUsers  func(context.Context, *pricescheduleworkspaceuserpb.ListPriceScheduleWorkspaceUsersRequest) (*pricescheduleworkspaceuserpb.ListPriceScheduleWorkspaceUsersResponse, error)
+	ReadPriceScheduleWorkspaceUser   func(context.Context, *pricescheduleworkspaceuserpb.ReadPriceScheduleWorkspaceUserRequest) (*pricescheduleworkspaceuserpb.ReadPriceScheduleWorkspaceUserResponse, error)
+	CreatePriceScheduleWorkspaceUser func(context.Context, *pricescheduleworkspaceuserpb.CreatePriceScheduleWorkspaceUserRequest) (*pricescheduleworkspaceuserpb.CreatePriceScheduleWorkspaceUserResponse, error)
+	UpdatePriceScheduleWorkspaceUser func(context.Context, *pricescheduleworkspaceuserpb.UpdatePriceScheduleWorkspaceUserRequest) (*pricescheduleworkspaceuserpb.UpdatePriceScheduleWorkspaceUserResponse, error)
+	DeletePriceScheduleWorkspaceUser func(context.Context, *pricescheduleworkspaceuserpb.DeletePriceScheduleWorkspaceUserRequest) (*pricescheduleworkspaceuserpb.DeletePriceScheduleWorkspaceUserResponse, error)
+}
+
+// -- PlanGroup ---------------------------------------------------------------
+//
+// A named grouping of plans (product catalog bundling). Single-aggregate CRUD +
+// List; binds to uc.Product.PlanGroup.*.
+
+type PlanGroupUseCases struct {
+	ListPlanGroups  func(context.Context, *plangrouppb.ListPlanGroupsRequest) (*plangrouppb.ListPlanGroupsResponse, error)
+	ReadPlanGroup   func(context.Context, *plangrouppb.ReadPlanGroupRequest) (*plangrouppb.ReadPlanGroupResponse, error)
+	CreatePlanGroup func(context.Context, *plangrouppb.CreatePlanGroupRequest) (*plangrouppb.CreatePlanGroupResponse, error)
+	UpdatePlanGroup func(context.Context, *plangrouppb.UpdatePlanGroupRequest) (*plangrouppb.UpdatePlanGroupResponse, error)
+	DeletePlanGroup func(context.Context, *plangrouppb.DeletePlanGroupRequest) (*plangrouppb.DeletePlanGroupResponse, error)
+}
+
+// -- PlanGroupPlan -----------------------------------------------------------
+//
+// Membership rows linking a plan_group to its plans. Single-aggregate CRUD +
+// List; binds to uc.Product.PlanGroupPlan.*.
+
+type PlanGroupPlanUseCases struct {
+	ListPlanGroupPlans  func(context.Context, *plangroupplanpb.ListPlanGroupPlansRequest) (*plangroupplanpb.ListPlanGroupPlansResponse, error)
+	ReadPlanGroupPlan   func(context.Context, *plangroupplanpb.ReadPlanGroupPlanRequest) (*plangroupplanpb.ReadPlanGroupPlanResponse, error)
+	CreatePlanGroupPlan func(context.Context, *plangroupplanpb.CreatePlanGroupPlanRequest) (*plangroupplanpb.CreatePlanGroupPlanResponse, error)
+	UpdatePlanGroupPlan func(context.Context, *plangroupplanpb.UpdatePlanGroupPlanRequest) (*plangroupplanpb.UpdatePlanGroupPlanResponse, error)
+	DeletePlanGroupPlan func(context.Context, *plangroupplanpb.DeletePlanGroupPlanRequest) (*plangroupplanpb.DeletePlanGroupPlanResponse, error)
+}
+
+// -- ProductPlanStaff --------------------------------------------------------
+//
+// Staff assignments on a product_plan. Single-aggregate CRUD + List; binds to
+// uc.Product.ProductPlanStaff.*.
+
+type ProductPlanStaffUseCases struct {
+	ListProductPlanStaffs  func(context.Context, *productplanstaffpb.ListProductPlanStaffsRequest) (*productplanstaffpb.ListProductPlanStaffsResponse, error)
+	ReadProductPlanStaff   func(context.Context, *productplanstaffpb.ReadProductPlanStaffRequest) (*productplanstaffpb.ReadProductPlanStaffResponse, error)
+	CreateProductPlanStaff func(context.Context, *productplanstaffpb.CreateProductPlanStaffRequest) (*productplanstaffpb.CreateProductPlanStaffResponse, error)
+	UpdateProductPlanStaff func(context.Context, *productplanstaffpb.UpdateProductPlanStaffRequest) (*productplanstaffpb.UpdateProductPlanStaffResponse, error)
+	DeleteProductPlanStaff func(context.Context, *productplanstaffpb.DeleteProductPlanStaffRequest) (*productplanstaffpb.DeleteProductPlanStaffResponse, error)
+}
+
+// -- LineWorkspaceUser -------------------------------------------------------
+//
+// Workspace-user (staff) access grants on a product line. Single-aggregate CRUD
+// + List; binds to uc.Product.LineWorkspaceUser.*.
+
+type LineWorkspaceUserUseCases struct {
+	ListLineWorkspaceUsers  func(context.Context, *lineworkspaceuserpb.ListLineWorkspaceUsersRequest) (*lineworkspaceuserpb.ListLineWorkspaceUsersResponse, error)
+	ReadLineWorkspaceUser   func(context.Context, *lineworkspaceuserpb.ReadLineWorkspaceUserRequest) (*lineworkspaceuserpb.ReadLineWorkspaceUserResponse, error)
+	CreateLineWorkspaceUser func(context.Context, *lineworkspaceuserpb.CreateLineWorkspaceUserRequest) (*lineworkspaceuserpb.CreateLineWorkspaceUserResponse, error)
+	UpdateLineWorkspaceUser func(context.Context, *lineworkspaceuserpb.UpdateLineWorkspaceUserRequest) (*lineworkspaceuserpb.UpdateLineWorkspaceUserResponse, error)
+	DeleteLineWorkspaceUser func(context.Context, *lineworkspaceuserpb.DeleteLineWorkspaceUserRequest) (*lineworkspaceuserpb.DeleteLineWorkspaceUserResponse, error)
 }
 
 // -- PriceList ---------------------------------------------------------------

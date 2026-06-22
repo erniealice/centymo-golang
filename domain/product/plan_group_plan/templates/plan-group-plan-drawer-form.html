@@ -1,0 +1,59 @@
+{{define "plan-group-plan-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
+    {{actionForm .FormAction .WorkspaceID}}
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* ================================================================ */}}
+        {{/* Section: Plan group plan details                                  */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" .Labels.SectionIdentity)}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "plan_group_id" "Label" .Labels.PlanGroupID "Value" .PlanGroupID "Required" true "Placeholder" .Labels.PlanGroupIDPlaceholder "Info" .Labels.PlanGroupIDInfo)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "plan_id" "Label" .Labels.PlanID "Value" .PlanID "Required" true "Placeholder" .Labels.PlanIDPlaceholder "Info" .Labels.PlanIDInfo)}}
+        </div>
+
+        {{/* ================================================================ */}}
+        {{/* Section: Ordering                                                 */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" .Labels.SectionOrdering)}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "sequence_order"
+                "Label" .Labels.SequenceOrder
+                "Value" .SequenceOrder
+                "Placeholder" .Labels.SequenceOrderPlaceholder
+                "Min" "0"
+                "Info" .Labels.SequenceOrderInfo
+            )}}
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

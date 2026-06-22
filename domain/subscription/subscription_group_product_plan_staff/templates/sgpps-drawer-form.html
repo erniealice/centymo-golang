@@ -1,0 +1,78 @@
+{{define "sgpps-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
+    {{actionForm .FormAction .WorkspaceID}}
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* ================================================================ */}}
+        {{/* Section: Assignment details                                      */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" .Labels.SectionAssignment)}}
+
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "sgpps-group-select"
+                "Name" "subscription_group_id"
+                "Label" .Labels.SubscriptionGroupID
+                "Placeholder" .Labels.SubscriptionGroupPH
+                "SearchPlaceholder" .Labels.SubscriptionGroupSearch
+                "Options" .SubscriptionGroupOpts
+                "Value" .SubscriptionGroupID
+                "SelectedLabel" .SubscriptionGroupLabel
+                "Info" .Labels.SubscriptionGroupInfo
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "sgpps-plan-select"
+                "Name" "product_plan_id"
+                "Label" .Labels.ProductPlanID
+                "Placeholder" .Labels.ProductPlanPH
+                "SearchPlaceholder" .Labels.ProductPlanSearch
+                "Options" .ProductPlanOpts
+                "Value" .ProductPlanID
+                "SelectedLabel" .ProductPlanLabel
+                "Info" .Labels.ProductPlanInfo
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "sgpps-staff-select"
+                "Name" "staff_id"
+                "Label" .Labels.StaffID
+                "Placeholder" .Labels.StaffPH
+                "SearchPlaceholder" .Labels.StaffSearch
+                "Options" .StaffOpts
+                "Value" .StaffID
+                "SelectedLabel" .StaffLabel
+                "Info" .Labels.StaffInfo
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "role" "Label" .Labels.Role "Value" .Role "Placeholder" .Labels.RolePlaceholder "Info" .Labels.RoleInfo)}}
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

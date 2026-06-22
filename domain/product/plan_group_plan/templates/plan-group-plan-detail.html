@@ -1,0 +1,71 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "plan-group-plan-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "plan-group-plan-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.Title}}">
+    {{/* --- Tab Buttons --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "plan-group-plan-detail-tabs")}}
+    </div>
+
+    {{/* --- Tab Content Area --- */}}
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+            {{template "plan-group-plan-tab-info" .}}
+        {{end}}
+    </div>
+</div>
+{{template "centymo-lf-delegation" .}}
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "plan-group-plan-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">{{.Labels.Tabs.Info}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.PlanGroupID}}</span>
+            <span class="detail-info-value">{{.PlanGroupID}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.PlanID}}</span>
+            <span class="detail-info-value">{{.PlanID}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.SequenceOrder}}</span>
+            <span class="detail-info-value">{{if .SequenceOrder}}{{.SequenceOrder}}{{else}}&mdash;{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span>
+                <span class="badge badge--{{.StatusVariant}}">
+                    {{.Status}}
+                </span>
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.DateCreated}}</span>
+            <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}&mdash;{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.DateModified}}</span>
+            <span class="detail-info-value">{{if .ModifiedDate}}{{.ModifiedDate}}{{else}}&mdash;{{end}}</span>
+        </div>
+    </div>
+
+    <div class="detail-actions detail-actions--spaced" style="margin-top: var(--spacing-xl);">
+        <a class="btn btn-primary"
+           hx-get="{{routeWith "plan_group_plan.edit" "id" .ID}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Buttons.Edit}}">
+            {{.Labels.Buttons.Edit}}
+        </a>
+    </div>
+</div>
+{{end}}

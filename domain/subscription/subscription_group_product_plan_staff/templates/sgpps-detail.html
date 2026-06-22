@@ -1,0 +1,75 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "sgpps-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "sgpps-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.Title}}">
+    {{/* --- Tab Buttons --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "sgpps-detail-tabs")}}
+    </div>
+
+    {{/* --- Tab Content Area --- */}}
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+            {{template "sgpps-tab-info" .}}
+        {{end}}
+    </div>
+</div>
+{{template "centymo-lf-delegation" .}}
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "sgpps-tab-info"}}
+<div class="tab-scroll">
+    <h4 class="detail-section-title">{{.Labels.Tabs.Info}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.SubscriptionGroupID}}</span>
+            <span class="detail-info-value">{{if .SubscriptionGroupID}}{{.SubscriptionGroupID}}{{else}}{{.Labels.Detail.NoGroup}}{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.ProductPlanID}}</span>
+            <span class="detail-info-value">{{if .ProductPlanID}}{{.ProductPlanID}}{{else}}{{.Labels.Detail.NoPlan}}{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.StaffID}}</span>
+            <span class="detail-info-value">{{if .StaffID}}{{.StaffID}}{{else}}{{.Labels.Detail.NoStaff}}{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Role}}</span>
+            <span class="detail-info-value">{{.Role}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span>
+                <span class="badge badge--{{.StatusVariant}}">
+                    {{.Status}}
+                </span>
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.DateCreated}}</span>
+            <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.DateModified}}</span>
+            <span class="detail-info-value">{{if .ModifiedDate}}{{.ModifiedDate}}{{else}}—{{end}}</span>
+        </div>
+    </div>
+
+    <div class="detail-actions detail-actions--spaced" style="margin-top: var(--spacing-xl);">
+        <a class="btn btn-primary"
+           hx-get="{{routeWith "subscription_group_product_plan_staff.edit" "id" .ID}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Buttons.Edit}}">
+            {{.Labels.Buttons.Edit}}
+        </a>
+    </div>
+</div>
+{{end}}

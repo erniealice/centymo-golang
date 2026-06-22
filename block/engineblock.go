@@ -309,6 +309,42 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 			result.Product.UpdateResource = uc.Product.Resource.UpdateResource.Execute
 			result.Product.DeleteResource = uc.Product.Resource.DeleteResource.Execute
 		}
+
+		// -- PlanGroup (top-level on centymo UseCases) --
+		if uc.Product.PlanGroup != nil {
+			result.PlanGroup.ListPlanGroups = uc.Product.PlanGroup.ListPlanGroups.Execute
+			result.PlanGroup.ReadPlanGroup = uc.Product.PlanGroup.ReadPlanGroup.Execute
+			result.PlanGroup.CreatePlanGroup = uc.Product.PlanGroup.CreatePlanGroup.Execute
+			result.PlanGroup.UpdatePlanGroup = uc.Product.PlanGroup.UpdatePlanGroup.Execute
+			result.PlanGroup.DeletePlanGroup = uc.Product.PlanGroup.DeletePlanGroup.Execute
+		}
+
+		// -- PlanGroupPlan (top-level on centymo UseCases) --
+		if uc.Product.PlanGroupPlan != nil {
+			result.PlanGroupPlan.ListPlanGroupPlans = uc.Product.PlanGroupPlan.ListPlanGroupPlans.Execute
+			result.PlanGroupPlan.ReadPlanGroupPlan = uc.Product.PlanGroupPlan.ReadPlanGroupPlan.Execute
+			result.PlanGroupPlan.CreatePlanGroupPlan = uc.Product.PlanGroupPlan.CreatePlanGroupPlan.Execute
+			result.PlanGroupPlan.UpdatePlanGroupPlan = uc.Product.PlanGroupPlan.UpdatePlanGroupPlan.Execute
+			result.PlanGroupPlan.DeletePlanGroupPlan = uc.Product.PlanGroupPlan.DeletePlanGroupPlan.Execute
+		}
+
+		// -- ProductPlanStaff (top-level on centymo UseCases) --
+		if uc.Product.ProductPlanStaff != nil {
+			result.ProductPlanStaff.ListProductPlanStaffs = uc.Product.ProductPlanStaff.ListProductPlanStaffs.Execute
+			result.ProductPlanStaff.ReadProductPlanStaff = uc.Product.ProductPlanStaff.ReadProductPlanStaff.Execute
+			result.ProductPlanStaff.CreateProductPlanStaff = uc.Product.ProductPlanStaff.CreateProductPlanStaff.Execute
+			result.ProductPlanStaff.UpdateProductPlanStaff = uc.Product.ProductPlanStaff.UpdateProductPlanStaff.Execute
+			result.ProductPlanStaff.DeleteProductPlanStaff = uc.Product.ProductPlanStaff.DeleteProductPlanStaff.Execute
+		}
+
+		// -- LineWorkspaceUser (top-level on centymo UseCases) --
+		if uc.Product.LineWorkspaceUser != nil {
+			result.LineWorkspaceUser.ListLineWorkspaceUsers = uc.Product.LineWorkspaceUser.ListLineWorkspaceUsers.Execute
+			result.LineWorkspaceUser.ReadLineWorkspaceUser = uc.Product.LineWorkspaceUser.ReadLineWorkspaceUser.Execute
+			result.LineWorkspaceUser.CreateLineWorkspaceUser = uc.Product.LineWorkspaceUser.CreateLineWorkspaceUser.Execute
+			result.LineWorkspaceUser.UpdateLineWorkspaceUser = uc.Product.LineWorkspaceUser.UpdateLineWorkspaceUser.Execute
+			result.LineWorkspaceUser.DeleteLineWorkspaceUser = uc.Product.LineWorkspaceUser.DeleteLineWorkspaceUser.Execute
+		}
 		// Wave C P1.C.11 — Product (service-kind) dashboard rewired to
 		// service-driven path. Q-SDM-DASHBOARD-DOWNSTREAM (LOCKED 2026-05-20):
 		// same-commit rewire from `uc.Product.Dashboard.Execute` (entity-
@@ -432,6 +468,42 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 			result.SubscriptionGroup.CreateSubscriptionGroup = uc.Subscription.SubscriptionGroup.CreateSubscriptionGroup.Execute
 			result.SubscriptionGroup.UpdateSubscriptionGroup = uc.Subscription.SubscriptionGroup.UpdateSubscriptionGroup.Execute
 			result.SubscriptionGroup.DeleteSubscriptionGroup = uc.Subscription.SubscriptionGroup.DeleteSubscriptionGroup.Execute
+		}
+
+		// -- SubscriptionGroupMember (top-level on centymo UseCases) --
+		if uc.Subscription.SubscriptionGroupMember != nil {
+			result.SubscriptionGroupMember.ListSubscriptionGroupMembers = uc.Subscription.SubscriptionGroupMember.ListSubscriptionGroupMembers.Execute
+			result.SubscriptionGroupMember.ReadSubscriptionGroupMember = uc.Subscription.SubscriptionGroupMember.ReadSubscriptionGroupMember.Execute
+			result.SubscriptionGroupMember.CreateSubscriptionGroupMember = uc.Subscription.SubscriptionGroupMember.CreateSubscriptionGroupMember.Execute
+			result.SubscriptionGroupMember.UpdateSubscriptionGroupMember = uc.Subscription.SubscriptionGroupMember.UpdateSubscriptionGroupMember.Execute
+			result.SubscriptionGroupMember.DeleteSubscriptionGroupMember = uc.Subscription.SubscriptionGroupMember.DeleteSubscriptionGroupMember.Execute
+		}
+
+		// -- SubscriptionGroupWorkspaceUser (top-level on centymo UseCases) --
+		if uc.Subscription.SubscriptionGroupWorkspaceUser != nil {
+			result.SubscriptionGroupWorkspaceUser.ListSubscriptionGroupWorkspaceUsers = uc.Subscription.SubscriptionGroupWorkspaceUser.ListSubscriptionGroupWorkspaceUsers.Execute
+			result.SubscriptionGroupWorkspaceUser.ReadSubscriptionGroupWorkspaceUser = uc.Subscription.SubscriptionGroupWorkspaceUser.ReadSubscriptionGroupWorkspaceUser.Execute
+			result.SubscriptionGroupWorkspaceUser.CreateSubscriptionGroupWorkspaceUser = uc.Subscription.SubscriptionGroupWorkspaceUser.CreateSubscriptionGroupWorkspaceUser.Execute
+			result.SubscriptionGroupWorkspaceUser.UpdateSubscriptionGroupWorkspaceUser = uc.Subscription.SubscriptionGroupWorkspaceUser.UpdateSubscriptionGroupWorkspaceUser.Execute
+			result.SubscriptionGroupWorkspaceUser.DeleteSubscriptionGroupWorkspaceUser = uc.Subscription.SubscriptionGroupWorkspaceUser.DeleteSubscriptionGroupWorkspaceUser.Execute
+		}
+
+		// -- SubscriptionGroupProductPlanStaff (top-level on centymo UseCases) --
+		if uc.Subscription.SubscriptionGroupProductPlanStaff != nil {
+			result.SubscriptionGroupProductPlanStaff.ListSubscriptionGroupProductPlanStaffs = uc.Subscription.SubscriptionGroupProductPlanStaff.ListSubscriptionGroupProductPlanStaffs.Execute
+			result.SubscriptionGroupProductPlanStaff.ReadSubscriptionGroupProductPlanStaff = uc.Subscription.SubscriptionGroupProductPlanStaff.ReadSubscriptionGroupProductPlanStaff.Execute
+			result.SubscriptionGroupProductPlanStaff.CreateSubscriptionGroupProductPlanStaff = uc.Subscription.SubscriptionGroupProductPlanStaff.CreateSubscriptionGroupProductPlanStaff.Execute
+			result.SubscriptionGroupProductPlanStaff.UpdateSubscriptionGroupProductPlanStaff = uc.Subscription.SubscriptionGroupProductPlanStaff.UpdateSubscriptionGroupProductPlanStaff.Execute
+			result.SubscriptionGroupProductPlanStaff.DeleteSubscriptionGroupProductPlanStaff = uc.Subscription.SubscriptionGroupProductPlanStaff.DeleteSubscriptionGroupProductPlanStaff.Execute
+		}
+
+		// -- PriceScheduleWorkspaceUser (top-level on centymo UseCases) --
+		if uc.Subscription.PriceScheduleWorkspaceUser != nil {
+			result.PriceScheduleWorkspaceUser.ListPriceScheduleWorkspaceUsers = uc.Subscription.PriceScheduleWorkspaceUser.ListPriceScheduleWorkspaceUsers.Execute
+			result.PriceScheduleWorkspaceUser.ReadPriceScheduleWorkspaceUser = uc.Subscription.PriceScheduleWorkspaceUser.ReadPriceScheduleWorkspaceUser.Execute
+			result.PriceScheduleWorkspaceUser.CreatePriceScheduleWorkspaceUser = uc.Subscription.PriceScheduleWorkspaceUser.CreatePriceScheduleWorkspaceUser.Execute
+			result.PriceScheduleWorkspaceUser.UpdatePriceScheduleWorkspaceUser = uc.Subscription.PriceScheduleWorkspaceUser.UpdatePriceScheduleWorkspaceUser.Execute
+			result.PriceScheduleWorkspaceUser.DeletePriceScheduleWorkspaceUser = uc.Subscription.PriceScheduleWorkspaceUser.DeletePriceScheduleWorkspaceUser.Execute
 		}
 	}
 

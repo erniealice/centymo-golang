@@ -1,0 +1,45 @@
+{{define "subscription-group-member-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response">
+    {{actionForm .FormAction .WorkspaceID}}
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{/* ================================================================ */}}
+        {{/* Section: Member details                                          */}}
+        {{/* ================================================================ */}}
+        {{template "form-section" (dict "Title" .Labels.SectionIdentity)}}
+
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "subscription_group_id" "Label" .Labels.SubscriptionGroup "Value" .SubscriptionGroupId "Required" true "Placeholder" .Labels.SubscriptionGroupPH "Info" .Labels.SubscriptionGroupInfo)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "subscription_id" "Label" .Labels.Subscription "Value" .SubscriptionId "Required" true "Placeholder" .Labels.SubscriptionPH "Info" .Labels.SubscriptionInfo)}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "client_id" "Label" .Labels.Client "Value" .ClientId "Required" true "Placeholder" .Labels.ClientPH "Info" .Labels.ClientInfo)}}
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

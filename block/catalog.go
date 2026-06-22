@@ -39,8 +39,12 @@ import (
 	supplierproductplanpkg "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_plan"
 	suppliersubscriptionpkg "github.com/erniealice/centymo-golang/domain/procurement/supplier_subscription"
 	productdom "github.com/erniealice/centymo-golang/domain/product"
+	lineworkspaceuserpkg "github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
+	plangrouppkg "github.com/erniealice/centymo-golang/domain/product/plan_group"
+	plangroupplanpkg "github.com/erniealice/centymo-golang/domain/product/plan_group_plan"
 	pricelistpkg "github.com/erniealice/centymo-golang/domain/product/price_list"
 	productpkg "github.com/erniealice/centymo-golang/domain/product/product"
+	productplanstaffpkg "github.com/erniealice/centymo-golang/domain/product/product_plan_staff"
 	resourcepkg "github.com/erniealice/centymo-golang/domain/product/resource"
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
 	revenuepkg "github.com/erniealice/centymo-golang/domain/revenue/revenue"
@@ -49,8 +53,12 @@ import (
 	planpkg "github.com/erniealice/centymo-golang/domain/subscription/plan"
 	priceplanpkg "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	priceschedulepkg "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	pricescheduleworkspaceuserpkg "github.com/erniealice/centymo-golang/domain/subscription/price_schedule_workspace_user"
 	subscriptionpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	subscriptiongrouppkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
+	subscriptiongroupmemberpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
+	subscriptiongroupproductplanstaffpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_product_plan_staff"
+	subscriptiongroupworkspaceuserpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_workspace_user"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 	collectionpkg "github.com/erniealice/centymo-golang/domain/treasury/collection"
 	disbursementpkg "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
@@ -501,6 +509,222 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra) compose.Unit {
 			ListPriceSchedules: uc.PriceSchedule.ListPriceSchedules,
 		}
 		subscriptiondom.NewSubscriptionGroupModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// SubscriptionGroupMember (cohort roster)
+// ---------------------------------------------------------------------------
+
+func SubscriptionGroupMemberUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := subscriptiongroupmemberpkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*subscriptiongroupmemberpkg.Routes)
+		l := u.Labels.(*subscriptiongroupmemberpkg.Labels)
+
+		deps := &subscriptiondom.SubscriptionGroupMemberModuleDeps{
+			Routes:                        *r,
+			Labels:                        *l,
+			CommonLabels:                  mc.Common,
+			TableLabels:                   mc.Table,
+			ListSubscriptionGroupMembers:  uc.SubscriptionGroupMember.ListSubscriptionGroupMembers,
+			ReadSubscriptionGroupMember:   uc.SubscriptionGroupMember.ReadSubscriptionGroupMember,
+			CreateSubscriptionGroupMember: uc.SubscriptionGroupMember.CreateSubscriptionGroupMember,
+			UpdateSubscriptionGroupMember: uc.SubscriptionGroupMember.UpdateSubscriptionGroupMember,
+			DeleteSubscriptionGroupMember: uc.SubscriptionGroupMember.DeleteSubscriptionGroupMember,
+		}
+		subscriptiondom.NewSubscriptionGroupMemberModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// SubscriptionGroupWorkspaceUser (cohort staff grants)
+// ---------------------------------------------------------------------------
+
+func SubscriptionGroupWorkspaceUserUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := subscriptiongroupworkspaceuserpkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*subscriptiongroupworkspaceuserpkg.Routes)
+		l := u.Labels.(*subscriptiongroupworkspaceuserpkg.Labels)
+
+		deps := &subscriptiondom.SubscriptionGroupWorkspaceUserModuleDeps{
+			Routes:                               *r,
+			Labels:                               *l,
+			CommonLabels:                         mc.Common,
+			TableLabels:                          mc.Table,
+			ListSubscriptionGroupWorkspaceUsers:  uc.SubscriptionGroupWorkspaceUser.ListSubscriptionGroupWorkspaceUsers,
+			ReadSubscriptionGroupWorkspaceUser:   uc.SubscriptionGroupWorkspaceUser.ReadSubscriptionGroupWorkspaceUser,
+			CreateSubscriptionGroupWorkspaceUser: uc.SubscriptionGroupWorkspaceUser.CreateSubscriptionGroupWorkspaceUser,
+			UpdateSubscriptionGroupWorkspaceUser: uc.SubscriptionGroupWorkspaceUser.UpdateSubscriptionGroupWorkspaceUser,
+			DeleteSubscriptionGroupWorkspaceUser: uc.SubscriptionGroupWorkspaceUser.DeleteSubscriptionGroupWorkspaceUser,
+		}
+		subscriptiondom.NewSubscriptionGroupWorkspaceUserModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// SubscriptionGroupProductPlanStaff (cohort staff-to-plan assignments)
+// ---------------------------------------------------------------------------
+
+func SubscriptionGroupProductPlanStaffUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := subscriptiongroupproductplanstaffpkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*subscriptiongroupproductplanstaffpkg.Routes)
+		l := u.Labels.(*subscriptiongroupproductplanstaffpkg.Labels)
+
+		deps := &subscriptiondom.SubscriptionGroupProductPlanStaffModuleDeps{
+			Routes:                                  *r,
+			Labels:                                  *l,
+			CommonLabels:                            mc.Common,
+			TableLabels:                             mc.Table,
+			ListSubscriptionGroupProductPlanStaffs:  uc.SubscriptionGroupProductPlanStaff.ListSubscriptionGroupProductPlanStaffs,
+			ReadSubscriptionGroupProductPlanStaff:   uc.SubscriptionGroupProductPlanStaff.ReadSubscriptionGroupProductPlanStaff,
+			CreateSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.CreateSubscriptionGroupProductPlanStaff,
+			UpdateSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.UpdateSubscriptionGroupProductPlanStaff,
+			DeleteSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.DeleteSubscriptionGroupProductPlanStaff,
+		}
+		subscriptiondom.NewSubscriptionGroupProductPlanStaffModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// PriceScheduleWorkspaceUser (price-schedule staff grants)
+// ---------------------------------------------------------------------------
+
+func PriceScheduleWorkspaceUserUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := pricescheduleworkspaceuserpkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*pricescheduleworkspaceuserpkg.Routes)
+		l := u.Labels.(*pricescheduleworkspaceuserpkg.Labels)
+
+		deps := &subscriptiondom.PriceScheduleWorkspaceUserModuleDeps{
+			Routes:                           *r,
+			Labels:                           *l,
+			CommonLabels:                     mc.Common,
+			TableLabels:                      mc.Table,
+			ListPriceScheduleWorkspaceUsers:  uc.PriceScheduleWorkspaceUser.ListPriceScheduleWorkspaceUsers,
+			ReadPriceScheduleWorkspaceUser:   uc.PriceScheduleWorkspaceUser.ReadPriceScheduleWorkspaceUser,
+			CreatePriceScheduleWorkspaceUser: uc.PriceScheduleWorkspaceUser.CreatePriceScheduleWorkspaceUser,
+			UpdatePriceScheduleWorkspaceUser: uc.PriceScheduleWorkspaceUser.UpdatePriceScheduleWorkspaceUser,
+			DeletePriceScheduleWorkspaceUser: uc.PriceScheduleWorkspaceUser.DeletePriceScheduleWorkspaceUser,
+		}
+		subscriptiondom.NewPriceScheduleWorkspaceUserModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// PlanGroup (plan catalog grouping)
+// ---------------------------------------------------------------------------
+
+func PlanGroupUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := plangrouppkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*plangrouppkg.Routes)
+		l := u.Labels.(*plangrouppkg.Labels)
+
+		deps := &productdom.PlanGroupModuleDeps{
+			Routes:          *r,
+			Labels:          *l,
+			CommonLabels:    mc.Common,
+			TableLabels:     mc.Table,
+			ListPlanGroups:  uc.PlanGroup.ListPlanGroups,
+			ReadPlanGroup:   uc.PlanGroup.ReadPlanGroup,
+			CreatePlanGroup: uc.PlanGroup.CreatePlanGroup,
+			UpdatePlanGroup: uc.PlanGroup.UpdatePlanGroup,
+			DeletePlanGroup: uc.PlanGroup.DeletePlanGroup,
+		}
+		productdom.NewPlanGroupModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// PlanGroupPlan (plan-group membership rows)
+// ---------------------------------------------------------------------------
+
+func PlanGroupPlanUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := plangroupplanpkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*plangroupplanpkg.Routes)
+		l := u.Labels.(*plangroupplanpkg.Labels)
+
+		deps := &productdom.PlanGroupPlanModuleDeps{
+			Routes:              *r,
+			Labels:              *l,
+			CommonLabels:        mc.Common,
+			TableLabels:         mc.Table,
+			ListPlanGroupPlans:  uc.PlanGroupPlan.ListPlanGroupPlans,
+			ReadPlanGroupPlan:   uc.PlanGroupPlan.ReadPlanGroupPlan,
+			CreatePlanGroupPlan: uc.PlanGroupPlan.CreatePlanGroupPlan,
+			UpdatePlanGroupPlan: uc.PlanGroupPlan.UpdatePlanGroupPlan,
+			DeletePlanGroupPlan: uc.PlanGroupPlan.DeletePlanGroupPlan,
+		}
+		productdom.NewPlanGroupPlanModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// ProductPlanStaff (product-plan staff assignments)
+// ---------------------------------------------------------------------------
+
+func ProductPlanStaffUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := productplanstaffpkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*productplanstaffpkg.Routes)
+		l := u.Labels.(*productplanstaffpkg.Labels)
+
+		deps := &productdom.ProductPlanStaffModuleDeps{
+			Routes:                 *r,
+			Labels:                 *l,
+			CommonLabels:           mc.Common,
+			TableLabels:            mc.Table,
+			ListProductPlanStaffs:  uc.ProductPlanStaff.ListProductPlanStaffs,
+			ReadProductPlanStaff:   uc.ProductPlanStaff.ReadProductPlanStaff,
+			CreateProductPlanStaff: uc.ProductPlanStaff.CreateProductPlanStaff,
+			UpdateProductPlanStaff: uc.ProductPlanStaff.UpdateProductPlanStaff,
+			DeleteProductPlanStaff: uc.ProductPlanStaff.DeleteProductPlanStaff,
+		}
+		productdom.NewProductPlanStaffModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// ---------------------------------------------------------------------------
+// LineWorkspaceUser (product-line staff grants)
+// ---------------------------------------------------------------------------
+
+func LineWorkspaceUserUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := lineworkspaceuserpkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*lineworkspaceuserpkg.Routes)
+		l := u.Labels.(*lineworkspaceuserpkg.Labels)
+
+		deps := &productdom.LineWorkspaceUserModuleDeps{
+			Routes:                  *r,
+			Labels:                  *l,
+			CommonLabels:            mc.Common,
+			TableLabels:             mc.Table,
+			ListLineWorkspaceUsers:  uc.LineWorkspaceUser.ListLineWorkspaceUsers,
+			ReadLineWorkspaceUser:   uc.LineWorkspaceUser.ReadLineWorkspaceUser,
+			CreateLineWorkspaceUser: uc.LineWorkspaceUser.CreateLineWorkspaceUser,
+			UpdateLineWorkspaceUser: uc.LineWorkspaceUser.UpdateLineWorkspaceUser,
+			DeleteLineWorkspaceUser: uc.LineWorkspaceUser.DeleteLineWorkspaceUser,
+		}
+		productdom.NewLineWorkspaceUserModule(deps).RegisterRoutes(mc.Routes)
 		return nil
 	}
 	return u
@@ -1300,10 +1524,18 @@ func AllUnits(uc *UseCases, infra *Infra) []compose.Unit {
 		RevenueUnit(uc, infra),
 		ProductUnit(uc, infra),
 		ResourceUnit(uc, infra),
+		PlanGroupUnit(uc, infra),
+		PlanGroupPlanUnit(uc, infra),
+		ProductPlanStaffUnit(uc, infra),
+		LineWorkspaceUserUnit(uc, infra),
 		PriceListUnit(uc, infra),
 		PricePlanUnit(uc, infra),
 		PriceScheduleUnit(uc, infra),
+		PriceScheduleWorkspaceUserUnit(uc, infra),
 		SubscriptionGroupUnit(uc, infra),
+		SubscriptionGroupMemberUnit(uc, infra),
+		SubscriptionGroupWorkspaceUserUnit(uc, infra),
+		SubscriptionGroupProductPlanStaffUnit(uc, infra),
 		PlanUnit(uc, infra),
 		SubscriptionUnit(uc, infra),
 		CollectionUnit(uc, infra),
