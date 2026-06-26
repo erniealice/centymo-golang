@@ -9,7 +9,7 @@ package block
 import (
 	"context"
 
-	"github.com/erniealice/espyna-golang/reference"
+	"github.com/erniealice/espyna-golang/ports"
 
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
@@ -32,7 +32,7 @@ import (
 // planWiring holds everything wirePlanModules needs from the surrounding Block()
 // scope. More than 6 fields → struct. Kept private; never re-exported.
 type planWiring struct {
-	refChecker reference.Checker
+	refChecker ports.Checker
 	// Attachment ops
 	uploadFile       func(context.Context, string, string, []byte, string) error
 	downloadFile     func(context.Context, string, string) ([]byte, error)

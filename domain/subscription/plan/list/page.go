@@ -7,7 +7,7 @@ import (
 
 	plan "github.com/erniealice/centymo-golang/domain/subscription/plan"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
-	"github.com/erniealice/espyna-golang/tableparams"
+	"github.com/erniealice/espyna-golang/shared/tableparams"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"

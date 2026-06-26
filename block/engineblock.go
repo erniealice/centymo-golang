@@ -11,7 +11,7 @@ import (
 
 	"github.com/erniealice/espyna-golang/consumer"
 	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
-	"github.com/erniealice/espyna-golang/reference"
+	"github.com/erniealice/espyna-golang/ports"
 	advancekindpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common/advance_kind"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	paymenttermpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/payment_term"
@@ -48,7 +48,7 @@ func EngineBlock() consumerapp.AppOption {
 		infra.SendEmail, _ = ctx.SendEmail.(func(context.Context, []string, string, string, string, string, []byte) error)
 		infra.GenerateDoc, _ = ctx.GenerateDoc.(func([]byte, map[string]any) ([]byte, error))
 		if ctx.RefChecker != nil {
-			if rc, ok := ctx.RefChecker.(reference.Checker); ok {
+			if rc, ok := ctx.RefChecker.(ports.Checker); ok {
 				infra.RefChecker = rc
 			}
 		}

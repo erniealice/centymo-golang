@@ -11,7 +11,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/erniealice/espyna-golang/reference"
+	"github.com/erniealice/espyna-golang/ports"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	revenuerunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_run"
@@ -33,7 +33,7 @@ import (
 // surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type subscriptionWiring struct {
-	refChecker reference.Checker
+	refChecker ports.Checker
 	// Attachment ops
 	uploadFile       func(context.Context, string, string, []byte, string) error
 	downloadFile     func(context.Context, string, string) ([]byte, error)

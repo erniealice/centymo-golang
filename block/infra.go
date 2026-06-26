@@ -3,7 +3,7 @@ package block
 import (
 	"context"
 
-	"github.com/erniealice/espyna-golang/reference"
+	"github.com/erniealice/espyna-golang/ports"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 )
@@ -39,7 +39,7 @@ type Infra struct {
 	DeleteDocTemplate  func(context.Context, *documenttemplatepb.DeleteDocumentTemplateRequest) (*documenttemplatepb.DeleteDocumentTemplateResponse, error)
 
 	// Reference checker (optional — nil-safe)
-	RefChecker reference.Checker
+	RefChecker ports.Checker
 
 	// Cross-package URL patterns (wired by service-admin)
 	SupplierDetailURL                      string

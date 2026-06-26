@@ -10,7 +10,7 @@ package block
 import (
 	"context"
 
-	"github.com/erniealice/espyna-golang/reference"
+	"github.com/erniealice/espyna-golang/ports"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 
@@ -24,7 +24,7 @@ import (
 // productWiring holds everything wireProductModules needs from the surrounding
 // Block() scope. More than 6 fields → struct. Kept private; never re-exported.
 type productWiring struct {
-	refChecker reference.Checker
+	refChecker ports.Checker
 	// Image + attachment ops
 	uploadImage      func(context.Context, string, string, []byte, string) error
 	uploadFile       func(context.Context, string, string, []byte, string) error

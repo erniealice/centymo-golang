@@ -44,7 +44,7 @@ import (
 	pyeza "github.com/erniealice/pyeza-golang"
 
 	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
-	"github.com/erniealice/espyna-golang/reference"
+	"github.com/erniealice/espyna-golang/ports"
 
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
@@ -147,9 +147,9 @@ func Block(opts ...BlockOption) consumerapp.AppOption {
 		// by service-admin. ctx.DB is intentionally ignored by centymo.
 
 		// --- Type-assert reference checker (optional — nil-safe) ---
-		var refChecker reference.Checker
+		var refChecker ports.Checker
 		if ctx.RefChecker != nil {
-			refChecker, _ = ctx.RefChecker.(reference.Checker)
+			refChecker, _ = ctx.RefChecker.(ports.Checker)
 		}
 
 		// --- Type-assert attachment operations ---

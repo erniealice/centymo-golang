@@ -11,7 +11,7 @@ import (
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue/revenue_run"
 	rrshared "github.com/erniealice/centymo-golang/domain/revenue/revenue_run/shared"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
-	"github.com/erniealice/espyna-golang/tableparams"
+	"github.com/erniealice/espyna-golang/shared/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
