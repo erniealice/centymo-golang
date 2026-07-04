@@ -18,9 +18,9 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// supplier app — Supplier Product Plans section
 				{Key: "supplier-product-plans-active", Route: "supplier_product_plan.list", Params: map[string]string{"status": "active"},
-					Label: "Active", Icon: "icon-check-circle", Permission: "supplier_product_plan:list"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "supplier_product_plan:list", LabelKey: "active_label", IconKey: "supplier_product_plans_active_icon"},
 				{Key: "supplier-product-plans-inactive", Route: "supplier_product_plan.list", Params: map[string]string{"status": "inactive"},
-					Label: "Inactive", Icon: "icon-circle", Permission: "supplier_product_plan:list"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "supplier_product_plan:list", LabelKey: "inactive_label", IconKey: "supplier_product_plans_inactive_icon"},
 			},
 		},
 	}

@@ -18,7 +18,7 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// expense app — SPS Wave 4 accrued expenses
 				{Key: "accrued-expenses", Route: "accrued_expense.list", Params: map[string]string{"status": "outstanding"},
-					Label: "Accrued Expenses", Icon: "icon-alert-circle", Permission: "accrued_expense:list"},
+					Label: "Accrued Expenses", Icon: "icon-alert-circle", Permission: "accrued_expense:list", LabelKey: "accrued_expense_list_label", IconKey: "accrued_expense_list_icon"},
 			},
 		},
 	}

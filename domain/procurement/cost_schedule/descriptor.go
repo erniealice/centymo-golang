@@ -18,9 +18,9 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// supplier app — Cost Schedules section
 				{Key: "cost-schedules-active", Route: "cost_schedule.list", Params: map[string]string{"status": "active"},
-					Label: "Active", Icon: "icon-check-circle", Permission: "cost_schedule:list"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "cost_schedule:list", LabelKey: "active_label", IconKey: "cost_schedules_active_icon"},
 				{Key: "cost-schedules-inactive", Route: "cost_schedule.list", Params: map[string]string{"status": "inactive"},
-					Label: "Inactive", Icon: "icon-circle", Permission: "cost_schedule:list"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "cost_schedule:list", LabelKey: "inactive_label", IconKey: "cost_schedules_inactive_icon"},
 			},
 		},
 	}

@@ -18,9 +18,9 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// service app — "Resources" section
 				{Key: "resources-active", Route: "resource.list", Params: map[string]string{"status": "active"},
-					Label: "Active", Icon: "icon-check-circle", Permission: "resource:list"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "resource:list", LabelKey: "active_label", IconKey: "resources_active_icon"},
 				{Key: "resources-inactive", Route: "resource.list", Params: map[string]string{"status": "inactive"},
-					Label: "Inactive", Icon: "icon-circle", Permission: "resource:list"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "resource:list", LabelKey: "inactive_label", IconKey: "resources_inactive_icon"},
 			},
 		},
 	}

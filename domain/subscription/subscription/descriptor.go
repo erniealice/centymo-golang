@@ -18,9 +18,9 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// job app (Engagements / Subscriptions section)
 				{Key: "subscriptions-active", Route: "subscription.list", Params: map[string]string{"status": "active"},
-					Label: "Active", Icon: "icon-check-circle", Permission: "subscription:list"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "subscription:list", LabelKey: "active_label", IconKey: "subscriptions_active_icon"},
 				{Key: "subscriptions-inactive", Route: "subscription.list", Params: map[string]string{"status": "inactive"},
-					Label: "Inactive", Icon: "icon-circle", Permission: "subscription:list"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "subscription:list", LabelKey: "inactive_label", IconKey: "subscriptions_inactive_icon"},
 			},
 		},
 	}

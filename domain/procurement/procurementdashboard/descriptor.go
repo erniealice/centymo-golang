@@ -22,7 +22,7 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				{Key: "dashboard", Route: "procurement.dashboard",
 					Label: "Dashboard", Icon: "icon-layout-dashboard",
-					Permission: "procurement_request:list|supplier_contract:list"},
+					Permission: "procurement_request:list|supplier_contract:list", LabelKey: "dashboard_label", IconKey: "dashboard_icon"},
 			},
 		},
 	}

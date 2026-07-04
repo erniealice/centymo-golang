@@ -20,7 +20,7 @@ func Describe() compose.Unit {
 				{Key: "contracts-price-schedules", Route: "supplier_contract_price_schedule.list",
 					Params: map[string]string{"status": "scheduled"},
 					Label:  "Price Schedules", Icon: "icon-calendar",
-					Permission: "supplier_contract_price_schedule:list"},
+					Permission: "supplier_contract_price_schedule:list", LabelKey: "price_schedule_list_label", IconKey: "price_schedule_list_icon"},
 			},
 		},
 	}

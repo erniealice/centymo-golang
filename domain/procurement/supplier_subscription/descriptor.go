@@ -18,9 +18,9 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// supplier app — Supplier Subscriptions section
 				{Key: "supplier-subscriptions-active", Route: "supplier_subscription.list", Params: map[string]string{"status": "active"},
-					Label: "Active", Icon: "icon-check-circle", Permission: "supplier_subscription:list"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "supplier_subscription:list", LabelKey: "active_label", IconKey: "supplier_subscriptions_active_icon"},
 				{Key: "supplier-subscriptions-inactive", Route: "supplier_subscription.list", Params: map[string]string{"status": "inactive"},
-					Label: "Inactive", Icon: "icon-circle", Permission: "supplier_subscription:list"},
+					Label: "Inactive", Icon: "icon-circle", Permission: "supplier_subscription:list", LabelKey: "inactive_label", IconKey: "supplier_subscriptions_inactive_icon"},
 			},
 		},
 	}

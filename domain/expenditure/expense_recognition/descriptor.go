@@ -18,7 +18,7 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// expense app — SPS Wave 4 accrual-basis recognized cost
 				{Key: "expense-recognitions", Route: "expense_recognition.list", Params: map[string]string{"status": "posted"},
-					Label: "Expense Recognitions", Icon: "icon-file-text", Permission: "expense_recognition:list"},
+					Label: "Expense Recognitions", Icon: "icon-file-text", Permission: "expense_recognition:list", LabelKey: "expense_recognition_list_label", IconKey: "expense_recognition_list_icon"},
 			},
 		},
 	}

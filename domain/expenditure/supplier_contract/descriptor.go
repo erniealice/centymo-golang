@@ -18,15 +18,15 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// supplier app — Supplier Contracts section (master data)
 				{Key: "contracts-active", Route: "supplier_contract.list", Params: map[string]string{"status": "active"},
-					Label: "Active", Icon: "icon-check-circle", Permission: "supplier_contract:list"},
+					Label: "Active", Icon: "icon-check-circle", Permission: "supplier_contract:list", LabelKey: "active_label", IconKey: "supplier_contracts_active_icon"},
 				{Key: "contracts-expiring", Route: "supplier_contract.list", Params: map[string]string{"status": "expiring"},
-					Label: "Expiring", Icon: "icon-alert-triangle", Permission: "supplier_contract:list"},
+					Label: "Expiring", Icon: "icon-alert-triangle", Permission: "supplier_contract:list", LabelKey: "expiring_label", IconKey: "supplier_contracts_expiring_icon"},
 				{Key: "contracts-pending", Route: "supplier_contract.list", Params: map[string]string{"status": "pending_approval"},
-					Label: "Pending Approval", Icon: "icon-clock", Permission: "supplier_contract:list"},
+					Label: "Pending Approval", Icon: "icon-clock", Permission: "supplier_contract:list", LabelKey: "pending_approval_label", IconKey: "supplier_contracts_pending_icon"},
 				{Key: "contracts-draft", Route: "supplier_contract.list", Params: map[string]string{"status": "draft"},
-					Label: "Draft", Icon: "icon-file-text", Permission: "supplier_contract:list"},
+					Label: "Draft", Icon: "icon-file-text", Permission: "supplier_contract:list", LabelKey: "draft_label", IconKey: "supplier_contracts_draft_icon"},
 				{Key: "contracts-terminated", Route: "supplier_contract.list", Params: map[string]string{"status": "terminated"},
-					Label: "Terminated", Icon: "icon-x-circle", Permission: "supplier_contract:list"},
+					Label: "Terminated", Icon: "icon-x-circle", Permission: "supplier_contract:list", LabelKey: "terminated_label", IconKey: "supplier_contracts_terminated_icon"},
 			},
 		},
 	}

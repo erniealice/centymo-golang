@@ -21,9 +21,9 @@ func Describe() compose.Unit {
 			},
 			Items: []compose.NavItem{
 				{Key: "dashboard", Route: "inventory.dashboard",
-					Label: "Dashboard", Icon: "icon-layout-dashboard", Permission: "product:list"},
+					Label: "Dashboard", Icon: "icon-layout-dashboard", Permission: "product:list", LabelKey: "dashboard_label", IconKey: "dashboard_icon"},
 				{Key: "movements", Route: "inventory.movements",
-					Label: "Movements", Icon: "icon-repeat", Permission: "product:list"},
+					Label: "Movements", Icon: "icon-repeat", Permission: "product:list", LabelKey: "movements_label", IconKey: "movements_icon"},
 			},
 		},
 	}

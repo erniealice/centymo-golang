@@ -23,9 +23,9 @@ func Describe() compose.Unit {
 			Items: []compose.NavItem{
 				// cash app — Collections section
 				{Key: "collections-pending", Route: "collection.list", Params: map[string]string{"status": "pending"},
-					Label: "Pending", Icon: "icon-clock", Permission: "collection:list"},
+					Label: "Pending", Icon: "icon-clock", Permission: "collection:list", LabelKey: "pending_label", IconKey: "collections_pending_icon"},
 				{Key: "collections-completed", Route: "collection.list", Params: map[string]string{"status": "completed"},
-					Label: "Complete", Icon: "icon-check-circle", Permission: "collection:list"},
+					Label: "Complete", Icon: "icon-check-circle", Permission: "collection:list", LabelKey: "complete_label", IconKey: "collections_complete_icon"},
 			},
 		},
 	}

@@ -21,14 +21,14 @@ func Describe() compose.Unit {
 			},
 			Items: []compose.NavItem{
 				{Key: "dashboard", Route: "revenue.dashboard",
-					Label: "Dashboard", Icon: "icon-layout-dashboard", Permission: "invoice:list"},
+					Label: "Dashboard", Icon: "icon-layout-dashboard", Permission: "invoice:list", LabelKey: "dashboard_label", IconKey: "dashboard_icon"},
 				// Revenue (invoices) by status
 				{Key: "draft", Route: "revenue.list", Params: map[string]string{"status": "draft"},
-					Label: "Draft", Icon: "icon-file-text", Permission: "invoice:list"},
+					Label: "Draft", Icon: "icon-file-text", Permission: "invoice:list", LabelKey: "revenue_draft_label", IconKey: "revenue_draft_icon"},
 				{Key: "complete", Route: "revenue.list", Params: map[string]string{"status": "complete"},
-					Label: "Complete", Icon: "icon-check-circle", Permission: "invoice:list"},
+					Label: "Complete", Icon: "icon-check-circle", Permission: "invoice:list", LabelKey: "revenue_complete_label", IconKey: "revenue_complete_icon"},
 				{Key: "cancelled", Route: "revenue.list", Params: map[string]string{"status": "cancelled"},
-					Label: "Cancelled", Icon: "icon-x-circle", Permission: "invoice:list"},
+					Label: "Cancelled", Icon: "icon-x-circle", Permission: "invoice:list", LabelKey: "revenue_cancelled_label", IconKey: "revenue_cancelled_icon"},
 				// Note: invoice templates URL (SettingsTemplatesURL) is not in the
 				// revenue RouteMap — it will be added in Phase 2 sidebar skeleton.
 			},
