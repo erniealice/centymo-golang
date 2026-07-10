@@ -8,14 +8,21 @@ import (
 	"time"
 
 	subscription_group "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
+	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
+	subscriptiongroupmemberpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_member"
 )
 
 // DetailViewDeps holds view dependencies for the subscription group detail page.
@@ -27,6 +34,15 @@ type DetailViewDeps struct {
 	ReadSubscriptionGroup func(ctx context.Context, req *subscriptiongrouppb.ReadSubscriptionGroupRequest) (*subscriptiongrouppb.ReadSubscriptionGroupResponse, error)
 	ListPlans             func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	ListPriceSchedules    func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+
+	// Subscriptions tab (the section roster): subscription_group_member rows,
+	// with client + subscription display names resolved via a batch map.
+	ListSubscriptionGroupMembers func(ctx context.Context, req *subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest) (*subscriptiongroupmemberpb.ListSubscriptionGroupMembersResponse, error)
+	ListClients                  func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	ListSubscriptions            func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
+
+	attachment.AttachmentOps // attachments tab
+	auditlog.AuditOps        // audit tab (ListAuditHistory is nil in centymo today — renders empty)
 }
 
 // PageData holds the data for the subscription group detail page.
@@ -48,6 +64,16 @@ type PageData struct {
 	StatusVariant string
 	CreatedDate   string
 	ModifiedDate  string
+
+	// Subscriptions tab (the section roster)
+	Subscriptions *types.TableConfig
+	// Attachments tab
+	AttachmentTable *types.TableConfig
+	// Audit tab
+	AuditEntries    []auditlog.AuditEntryView
+	AuditHasNext    bool
+	AuditNextCursor string
+	AuditHistoryURL string
 }
 
 // NewView creates the subscription group detail view (full page).
@@ -59,7 +85,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		}
 		id := viewCtx.Request.PathValue("id")
 
-		activeTab := viewCtx.Request.URL.Query().Get("tab")
+		activeTab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.URL.Query().Get("tab"))
 		if activeTab == "" {
 			activeTab = "info"
 		}
@@ -76,7 +102,7 @@ func NewView(deps *DetailViewDeps) view.View {
 func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
-		tab := viewCtx.Request.PathValue("tab")
+		tab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.PathValue("tab"))
 		if tab == "" {
 			tab = "info"
 		}
@@ -84,7 +110,16 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		if err != nil {
 			return view.Error(err)
 		}
-		return view.OK("subscription-group-tab-"+tab, pageData)
+		// attachments + audit reuse the pyeza global blocks; every other tab is a
+		// module-defined {{define "subscription-group-tab-<tab>"}}.
+		templateName := "subscription-group-tab-" + tab
+		switch tab {
+		case "attachments":
+			templateName = "attachment-tab"
+		case "audit":
+			templateName = "audit-history-tab"
+		}
+		return view.OK(templateName, pageData)
 	})
 }
 
@@ -133,11 +168,17 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		statusVariant = "warning"
 	}
 
+	base := route.ResolveURL(deps.Routes.DetailURL, "id", id)
+	action := route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "")
+	// Key stays canonical ("subscriptions"); the URL slug is lyngua-fied per tier
+	// (education → "enrollments") via ResolveTabSlug. CanonicalizeTab (in NewView /
+	// NewTabAction) maps the slug back so dispatch + template lookups stay canonical.
+	subsSlug := l.Tabs.ResolveTabSlug("subscriptions")
 	tabItems := []pyeza.TabItem{
-		{Key: "info", Label: l.Tabs.Info,
-			Href:  route.ResolveURL(deps.Routes.DetailURL, "id", id) + "?tab=info",
-			HxGet: route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "info"),
-			Icon:  "icon-info"},
+		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "subscriptions", Label: l.Tabs.Subscriptions, Href: base + "?tab=" + subsSlug, HxGet: action + subsSlug, Icon: "icon-users"},
+		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
+		{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 	}
 
 	tz := types.LocationFromContext(ctx)
@@ -183,6 +224,45 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		CreatedDate:     createdDate,
 		ModifiedDate:    modifiedDate,
 	}
+
+	// Load the active tab's payload on demand (the info fields above are always set).
+	switch activeTab {
+	case "subscriptions":
+		pageData.Subscriptions = buildSubscriptionsTable(ctx, deps, id, l)
+	case "attachments":
+		if deps.ListAttachments != nil {
+			cfg := attachmentConfig(deps)
+			resp, err := deps.ListAttachments(ctx, cfg.EntityType, id)
+			if err != nil {
+				log.Printf("Failed to list attachments for subscription_group %s: %v", id, err)
+			}
+			var items []*attachmentpb.Attachment
+			if resp != nil {
+				items = resp.GetData()
+			}
+			pageData.AttachmentTable = attachment.BuildTable(items, cfg, id)
+		}
+	case "audit":
+		if deps.ListAuditHistory != nil {
+			cursor := viewCtx.Request.URL.Query().Get("cursor")
+			auditResp, err := deps.ListAuditHistory(ctx, &auditlog.ListAuditRequest{
+				EntityType:  "subscription_group",
+				EntityID:    id,
+				Limit:       20,
+				CursorToken: cursor,
+			})
+			if err != nil {
+				log.Printf("Failed to load audit history for subscription_group %s: %v", id, err)
+			}
+			if auditResp != nil {
+				pageData.AuditEntries = auditResp.Entries
+				pageData.AuditHasNext = auditResp.HasNext
+				pageData.AuditNextCursor = auditResp.NextCursor
+			}
+		}
+		pageData.AuditHistoryURL = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "audit"
+	}
+
 	return pageData, nil
 }
 
@@ -231,4 +311,156 @@ func lookupScheduleName(ctx context.Context, deps *DetailViewDeps, scheduleID st
 		}
 	}
 	return ""
+}
+
+// buildSubscriptionsTable renders the section roster: one row per
+// subscription_group_member, resolving client + subscription display names via a
+// single batch fetch each (never per-row). Fail-closed on
+// subscription_group_member:list INSIDE the tab body (empty table, not a full-page
+// view.Forbidden — which would be wrong for an HTMX tab swap).
+func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, groupID string, l subscription_group.Labels) *types.TableConfig {
+	perms := view.GetUserPermissions(ctx)
+	columns := []types.TableColumn{
+		{Key: "client", Label: l.Columns.Client, NoSort: true, NoFilter: true},
+		{Key: "subscription", Label: l.Columns.Subscription, NoSort: true, NoFilter: true, WidthClass: "col-2xl"},
+		{Key: "status", Label: l.Columns.Status, NoSort: true, NoFilter: true, WidthClass: "col-2xl"},
+	}
+	cfg := &types.TableConfig{
+		ID:          "subscription-group-subscriptions-table",
+		Columns:     columns,
+		Rows:        []types.TableRow{},
+		Labels:      deps.TableLabels,
+		EmptyState:  types.TableEmptyState{Title: l.Empty.Title, Message: l.Empty.Message},
+		ShowSearch:  true,
+		ShowColumns: true,
+		ShowDensity: true,
+		ShowEntries: true,
+	}
+
+	if perms == nil || !perms.Can("subscription_group_member", "list") || deps.ListSubscriptionGroupMembers == nil {
+		types.ApplyTableSettings(cfg)
+		return cfg
+	}
+
+	resp, err := deps.ListSubscriptionGroupMembers(ctx, &subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest{
+		Filters: &commonpb.FilterRequest{
+			Filters: []*commonpb.TypedFilter{{
+				Field: "subscription_group_id",
+				FilterType: &commonpb.TypedFilter_StringFilter{
+					StringFilter: &commonpb.StringFilter{Value: groupID, Operator: commonpb.StringOperator_STRING_EQUALS},
+				},
+			}},
+		},
+	})
+	if err != nil {
+		log.Printf("Failed to list members for subscription_group %s: %v", groupID, err)
+		types.ApplyTableSettings(cfg)
+		return cfg
+	}
+	members := resp.GetData()
+
+	clientNames := resolveClientNames(ctx, deps, members)
+	subCodes := resolveSubscriptionCodes(ctx, deps, members)
+
+	rows := make([]types.TableRow, 0, len(members))
+	for _, m := range members {
+		client := clientNames[m.GetClientId()]
+		if client == "" {
+			client = m.GetClientId()
+		}
+		sub := subCodes[m.GetSubscriptionId()]
+		if sub == "" {
+			sub = m.GetSubscriptionId()
+		}
+		st, variant := "active", "success"
+		if !m.GetActive() {
+			st, variant = "inactive", "warning"
+		}
+		rows = append(rows, types.TableRow{
+			ID: m.GetId(),
+			Cells: []types.TableCell{
+				{Type: "text", Value: client},
+				{Type: "text", Value: sub},
+				{Type: "badge", Value: st, Variant: variant},
+			},
+		})
+	}
+	cfg.Rows = rows
+	types.ApplyColumnStyles(columns, rows)
+	types.ApplyTableSettings(cfg)
+	return cfg
+}
+
+// idListFilter builds an `id IN (…)` filter — resolves EXACTLY the roster's
+// referenced rows, not a paginated first page. LIST_IN → SQL IN in the postgres
+// adapter (operations.go buildListFilter); precedent: product/list/page.go.
+func idListFilter(ids []string) *commonpb.FilterRequest {
+	return &commonpb.FilterRequest{Filters: []*commonpb.TypedFilter{{
+		Field: "id",
+		FilterType: &commonpb.TypedFilter_ListFilter{
+			ListFilter: &commonpb.ListFilter{Values: ids, Operator: commonpb.ListOperator_LIST_IN},
+		},
+	}}}
+}
+
+// resolveClientNames maps client_id → display name for exactly the roster's
+// clients (LIST_IN by id), falling back to first+last when the name is blank.
+func resolveClientNames(ctx context.Context, deps *DetailViewDeps, members []*subscriptiongroupmemberpb.SubscriptionGroupMember) map[string]string {
+	if deps.ListClients == nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	var ids []string
+	for _, m := range members {
+		if id := m.GetClientId(); id != "" && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{Filters: idListFilter(ids)})
+	if err != nil {
+		log.Printf("Failed to list clients for subscription_group roster: %v", err)
+		return nil
+	}
+	m := make(map[string]string, len(resp.GetData()))
+	for _, c := range resp.GetData() {
+		name := strings.TrimSpace(c.GetName())
+		if name == "" {
+			name = strings.TrimSpace(c.GetFirstName() + " " + c.GetLastName())
+		}
+		m[c.GetId()] = name
+	}
+	return m
+}
+
+// resolveSubscriptionCodes maps subscription_id → code for exactly the roster's
+// subscriptions (LIST_IN by id).
+func resolveSubscriptionCodes(ctx context.Context, deps *DetailViewDeps, members []*subscriptiongroupmemberpb.SubscriptionGroupMember) map[string]string {
+	if deps.ListSubscriptions == nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	var ids []string
+	for _, m := range members {
+		if id := m.GetSubscriptionId(); id != "" && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	resp, err := deps.ListSubscriptions(ctx, &subscriptionpb.ListSubscriptionsRequest{Filters: idListFilter(ids)})
+	if err != nil {
+		log.Printf("Failed to list subscriptions for subscription_group roster: %v", err)
+		return nil
+	}
+	m := make(map[string]string, len(resp.GetData()))
+	for _, s := range resp.GetData() {
+		m[s.GetId()] = s.GetCode()
+	}
+	return m
 }

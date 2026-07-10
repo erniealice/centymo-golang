@@ -19,7 +19,7 @@ type Labels struct {
 	Empty   EmptyLabels   `json:"empty"`
 	Form    FormLabels    `json:"form"`
 	Actions ActionLabels  `json:"actions"`
-	Bulk    BulkLabels    `json:"bulkActions"`
+	Bulk    BulkLabels    `json:"bulk_actions"`
 	Detail  DetailLabels  `json:"detail"`
 	Status  StatusLabels  `json:"status"`
 	Confirm ConfirmLabels `json:"confirm"`
@@ -28,22 +28,22 @@ type Labels struct {
 
 type PageLabels struct {
 	Heading          string `json:"heading"`
-	HeadingDraft     string `json:"headingDraft"`
-	HeadingPending   string `json:"headingPending"`
-	HeadingApproved  string `json:"headingApproved"`
-	HeadingPaid      string `json:"headingPaid"`
-	HeadingCancelled string `json:"headingCancelled"`
+	HeadingDraft     string `json:"heading_draft"`
+	HeadingPending   string `json:"heading_pending"`
+	HeadingApproved  string `json:"heading_approved"`
+	HeadingPaid      string `json:"heading_paid"`
+	HeadingCancelled string `json:"heading_cancelled"`
 	Caption          string `json:"caption"`
-	CaptionDraft     string `json:"captionDraft"`
-	CaptionPending   string `json:"captionPending"`
-	CaptionApproved  string `json:"captionApproved"`
-	CaptionPaid      string `json:"captionPaid"`
-	CaptionCancelled string `json:"captionCancelled"`
+	CaptionDraft     string `json:"caption_draft"`
+	CaptionPending   string `json:"caption_pending"`
+	CaptionApproved  string `json:"caption_approved"`
+	CaptionPaid      string `json:"caption_paid"`
+	CaptionCancelled string `json:"caption_cancelled"`
 	Dashboard        string `json:"dashboard"`
 }
 
 type ButtonLabels struct {
-	AddDisbursement string `json:"addDisbursement"`
+	AddDisbursement string `json:"add_disbursement"`
 }
 
 type ColumnLabels struct {
@@ -57,64 +57,64 @@ type ColumnLabels struct {
 }
 
 type EmptyLabels struct {
-	DraftTitle       string `json:"draftTitle"`
-	DraftMessage     string `json:"draftMessage"`
-	PendingTitle     string `json:"pendingTitle"`
-	PendingMessage   string `json:"pendingMessage"`
-	ApprovedTitle    string `json:"approvedTitle"`
-	ApprovedMessage  string `json:"approvedMessage"`
-	PaidTitle        string `json:"paidTitle"`
-	PaidMessage      string `json:"paidMessage"`
-	CancelledTitle   string `json:"cancelledTitle"`
-	CancelledMessage string `json:"cancelledMessage"`
+	DraftTitle       string `json:"draft_title"`
+	DraftMessage     string `json:"draft_message"`
+	PendingTitle     string `json:"pending_title"`
+	PendingMessage   string `json:"pending_message"`
+	ApprovedTitle    string `json:"approved_title"`
+	ApprovedMessage  string `json:"approved_message"`
+	PaidTitle        string `json:"paid_title"`
+	PaidMessage      string `json:"paid_message"`
+	CancelledTitle   string `json:"cancelled_title"`
+	CancelledMessage string `json:"cancelled_message"`
 }
 
 type FormLabels struct {
 	Payee                   string `json:"payee"`
-	PayeePlaceholder        string `json:"payeePlaceholder"`
+	PayeePlaceholder        string `json:"payee_placeholder"`
 	Date                    string `json:"date"`
 	Amount                  string `json:"amount"`
 	Currency                string `json:"currency"`
 	Reference               string `json:"reference"`
-	ReferencePlaceholder    string `json:"referencePlaceholder"`
-	PaymentMethod           string `json:"paymentMethod"`
+	ReferencePlaceholder    string `json:"reference_placeholder"`
+	PaymentMethod           string `json:"payment_method"`
 	Category                string `json:"category"`
 	Status                  string `json:"status"`
 	Notes                   string `json:"notes"`
-	NotesPlaceholder        string `json:"notesPlaceholder"`
-	ApprovedBy              string `json:"approvedBy"`
-	AmountPlaceholder       string `json:"amountPlaceholder"`
-	CurrencyPlaceholder     string `json:"currencyPlaceholder"`
-	MethodCash              string `json:"methodCash"`
-	MethodBankTransfer      string `json:"methodBankTransfer"`
-	MethodCheck             string `json:"methodCheck"`
-	MethodGCash             string `json:"methodGCash"`
-	MethodOther             string `json:"methodOther"`
-	StatusDraft             string `json:"statusDraft"`
-	StatusPending           string `json:"statusPending"`
-	StatusApproved          string `json:"statusApproved"`
-	StatusPaid              string `json:"statusPaid"`
-	StatusCancelled         string `json:"statusCancelled"`
-	TypeSupplierPayment     string `json:"typeSupplierPayment"`
-	TypePayroll             string `json:"typePayroll"`
-	TypeRent                string `json:"typeRent"`
-	TypeUtilities           string `json:"typeUtilities"`
-	TypeOther               string `json:"typeOther"`
-	ApproverNamePlaceholder string `json:"approverNamePlaceholder"`
-	LinkToBill              string `json:"linkToBill"`
-	NoBillOption            string `json:"noBillOption"`
+	NotesPlaceholder        string `json:"notes_placeholder"`
+	ApprovedBy              string `json:"approved_by"`
+	AmountPlaceholder       string `json:"amount_placeholder"`
+	CurrencyPlaceholder     string `json:"currency_placeholder"`
+	MethodCash              string `json:"method_cash"`
+	MethodBankTransfer      string `json:"method_bank_transfer"`
+	MethodCheck             string `json:"method_check"`
+	MethodGCash             string `json:"method_gcash"`
+	MethodOther             string `json:"method_other"`
+	StatusDraft             string `json:"status_draft"`
+	StatusPending           string `json:"status_pending"`
+	StatusApproved          string `json:"status_approved"`
+	StatusPaid              string `json:"status_paid"`
+	StatusCancelled         string `json:"status_cancelled"`
+	TypeSupplierPayment     string `json:"type_supplier_payment"`
+	TypePayroll             string `json:"type_payroll"`
+	TypeRent                string `json:"type_rent"`
+	TypeUtilities           string `json:"type_utilities"`
+	TypeOther               string `json:"type_other"`
+	ApproverNamePlaceholder string `json:"approver_name_placeholder"`
+	LinkToBill              string `json:"link_to_bill"`
+	NoBillOption            string `json:"no_bill_option"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	ReferenceInfo     string `json:"referenceInfo"`
-	DateInfo          string `json:"dateInfo"`
-	PayeeInfo         string `json:"payeeInfo"`
-	AmountInfo        string `json:"amountInfo"`
-	CurrencyInfo      string `json:"currencyInfo"`
-	PaymentMethodInfo string `json:"paymentMethodInfo"`
-	StatusInfo        string `json:"statusInfo"`
-	CategoryInfo      string `json:"categoryInfo"`
-	ApprovedByInfo    string `json:"approvedByInfo"`
-	NotesInfo         string `json:"notesInfo"`
+	ReferenceInfo     string `json:"reference_info"`
+	DateInfo          string `json:"date_info"`
+	PayeeInfo         string `json:"payee_info"`
+	AmountInfo        string `json:"amount_info"`
+	CurrencyInfo      string `json:"currency_info"`
+	PaymentMethodInfo string `json:"payment_method_info"`
+	StatusInfo        string `json:"status_info"`
+	CategoryInfo      string `json:"category_info"`
+	ApprovedByInfo    string `json:"approved_by_info"`
+	NotesInfo         string `json:"notes_info"`
 }
 
 type ActionLabels struct {
@@ -122,7 +122,7 @@ type ActionLabels struct {
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
 	Approve    string `json:"approve"`
-	MarkPaid   string `json:"markPaid"`
+	MarkPaid   string `json:"mark_paid"`
 	Cancel     string `json:"cancel"`
 	Submit     string `json:"submit"`
 	Reactivate string `json:"reactivate"`
@@ -131,13 +131,13 @@ type ActionLabels struct {
 type BulkLabels struct {
 	Delete   string `json:"delete"`
 	Approve  string `json:"approve"`
-	MarkPaid string `json:"markPaid"`
+	MarkPaid string `json:"mark_paid"`
 }
 
 type DetailLabels struct {
-	PageTitle         string `json:"pageTitle"`
-	TitlePrefix       string `json:"titlePrefix"`
-	PaymentInfo       string `json:"paymentInfo"`
+	PageTitle         string `json:"page_title"`
+	TitlePrefix       string `json:"title_prefix"`
+	PaymentInfo       string `json:"payment_info"`
 	Payee             string `json:"payee"`
 	Date              string `json:"date"`
 	Amount            string `json:"amount"`
@@ -146,16 +146,16 @@ type DetailLabels struct {
 	Method            string `json:"method"`
 	Category          string `json:"category"`
 	Reference         string `json:"reference"`
-	ApprovedBy        string `json:"approvedBy"`
+	ApprovedBy        string `json:"approved_by"`
 	Notes             string `json:"notes"`
-	TabBasicInfo      string `json:"tabBasicInfo"`
-	TabAttachments    string `json:"tabAttachments"`
-	TabAuditTrail     string `json:"tabAuditTrail"`
-	TabAuditHistory   string `json:"tabAuditHistory"`
-	AuditAction       string `json:"auditAction"`
-	AuditUser         string `json:"auditUser"`
-	AuditEmptyTitle   string `json:"auditEmptyTitle"`
-	AuditEmptyMessage string `json:"auditEmptyMessage"`
+	TabBasicInfo      string `json:"tab_basic_info"`
+	TabAttachments    string `json:"tab_attachments"`
+	TabAuditTrail     string `json:"tab_audit_trail"`
+	TabAuditHistory   string `json:"tab_audit_history"`
+	AuditAction       string `json:"audit_action"`
+	AuditUser         string `json:"audit_user"`
+	AuditEmptyTitle   string `json:"audit_empty_title"`
+	AuditEmptyMessage string `json:"audit_empty_message"`
 }
 
 type StatusLabels struct {
@@ -168,39 +168,39 @@ type StatusLabels struct {
 
 type ConfirmLabels struct {
 	Submit                string `json:"submit"`
-	SubmitMessage         string `json:"submitMessage"`
+	SubmitMessage         string `json:"submit_message"`
 	Approve               string `json:"approve"`
-	ApproveMessage        string `json:"approveMessage"`
-	MarkPaid              string `json:"markPaid"`
-	MarkPaidMessage       string `json:"markPaidMessage"`
+	ApproveMessage        string `json:"approve_message"`
+	MarkPaid              string `json:"mark_paid"`
+	MarkPaidMessage       string `json:"mark_paid_message"`
 	Cancel                string `json:"cancel"`
-	CancelMessage         string `json:"cancelMessage"`
+	CancelMessage         string `json:"cancel_message"`
 	Reactivate            string `json:"reactivate"`
-	ReactivateMessage     string `json:"reactivateMessage"`
+	ReactivateMessage     string `json:"reactivate_message"`
 	Delete                string `json:"delete"`
-	DeleteMessage         string `json:"deleteMessage"`
-	BulkSubmit            string `json:"bulkSubmit"`
-	BulkSubmitMessage     string `json:"bulkSubmitMessage"`
-	BulkApprove           string `json:"bulkApprove"`
-	BulkApproveMessage    string `json:"bulkApproveMessage"`
-	BulkMarkPaid          string `json:"bulkMarkPaid"`
-	BulkMarkPaidMessage   string `json:"bulkMarkPaidMessage"`
-	BulkCancel            string `json:"bulkCancel"`
-	BulkCancelMessage     string `json:"bulkCancelMessage"`
-	BulkReactivate        string `json:"bulkReactivate"`
-	BulkReactivateMessage string `json:"bulkReactivateMessage"`
-	BulkDelete            string `json:"bulkDelete"`
-	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	DeleteMessage         string `json:"delete_message"`
+	BulkSubmit            string `json:"bulk_submit"`
+	BulkSubmitMessage     string `json:"bulk_submit_message"`
+	BulkApprove           string `json:"bulk_approve"`
+	BulkApproveMessage    string `json:"bulk_approve_message"`
+	BulkMarkPaid          string `json:"bulk_mark_paid"`
+	BulkMarkPaidMessage   string `json:"bulk_mark_paid_message"`
+	BulkCancel            string `json:"bulk_cancel"`
+	BulkCancelMessage     string `json:"bulk_cancel_message"`
+	BulkReactivate        string `json:"bulk_reactivate"`
+	BulkReactivateMessage string `json:"bulk_reactivate_message"`
+	BulkDelete            string `json:"bulk_delete"`
+	BulkDeleteMessage     string `json:"bulk_delete_message"`
 }
 
 type ErrorLabels struct {
-	PermissionDenied  string `json:"permissionDenied"`
-	InvalidFormData   string `json:"invalidFormData"`
-	NotFound          string `json:"notFound"`
-	IDRequired        string `json:"idRequired"`
-	NoIDsProvided     string `json:"noIDsProvided"`
-	InvalidStatus     string `json:"invalidStatus"`
-	InvalidTransition string `json:"invalidTransition"`
+	PermissionDenied  string `json:"permission_denied"`
+	InvalidFormData   string `json:"invalid_form_data"`
+	NotFound          string `json:"not_found"`
+	IDRequired        string `json:"id_required"`
+	NoIDsProvided     string `json:"no_ids_provided"`
+	InvalidStatus     string `json:"invalid_status"`
+	InvalidTransition string `json:"invalid_transition"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.

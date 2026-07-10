@@ -25,24 +25,24 @@ type Labels struct {
 
 type NounLabels struct {
 	Name       string `json:"name"`
-	NamePlural string `json:"namePlural"`
+	NamePlural string `json:"name_plural"`
 	Line       string `json:"line"`
-	LinePlural string `json:"linePlural"`
+	LinePlural string `json:"line_plural"`
 }
 
 type PageLabels struct {
 	Heading           string `json:"heading"`
 	Caption           string `json:"caption"`
-	HeadingScheduled  string `json:"headingScheduled"`
-	HeadingActive     string `json:"headingActive"`
-	HeadingSuperseded string `json:"headingSuperseded"`
-	HeadingCancelled  string `json:"headingCancelled"`
-	TabTitle          string `json:"tabTitle"`
+	HeadingScheduled  string `json:"heading_scheduled"`
+	HeadingActive     string `json:"heading_active"`
+	HeadingSuperseded string `json:"heading_superseded"`
+	HeadingCancelled  string `json:"heading_cancelled"`
+	TabTitle          string `json:"tab_title"`
 }
 
 type ButtonLabels struct {
 	Add       string `json:"add"`
-	AddLine   string `json:"addLine"`
+	AddLine   string `json:"add_line"`
 	Activate  string `json:"activate"`
 	Supersede string `json:"supersede"`
 	Cancel    string `json:"cancel"`
@@ -51,88 +51,88 @@ type ButtonLabels struct {
 type FilterLabels struct {
 	All                 string `json:"all"`
 	Status              string `json:"status"`
-	AnyStatus           string `json:"anyStatus"`
-	SupplierContract    string `json:"supplierContract"`
-	AnySupplierContract string `json:"anySupplierContract"`
-	DateRange           string `json:"dateRange"`
+	AnyStatus           string `json:"any_status"`
+	SupplierContract    string `json:"supplier_contract"`
+	AnySupplierContract string `json:"any_supplier_contract"`
+	DateRange           string `json:"date_range"`
 }
 
 type ColumnLabels struct {
-	InternalID       string `json:"internalId"`
+	InternalID       string `json:"internal_id"`
 	Name             string `json:"name"`
-	SupplierContract string `json:"supplierContract"`
-	SequenceNumber   string `json:"sequenceNumber"`
-	DateStart        string `json:"dateStart"`
-	DateEnd          string `json:"dateEnd"`
+	SupplierContract string `json:"supplier_contract"`
+	SequenceNumber   string `json:"sequence_number"`
+	DateStart        string `json:"date_start"`
+	DateEnd          string `json:"date_end"`
 	Status           string `json:"status"`
 	Currency         string `json:"currency"`
-	LineCount        string `json:"lineCount"`
+	LineCount        string `json:"line_count"`
 	Total            string `json:"total"`
 }
 
 type EmptyLabels struct {
 	Title             string `json:"title"`
 	Message           string `json:"message"`
-	ScheduledTitle    string `json:"scheduledTitle"`
-	ScheduledMessage  string `json:"scheduledMessage"`
-	ActiveTitle       string `json:"activeTitle"`
-	ActiveMessage     string `json:"activeMessage"`
-	SupersededTitle   string `json:"supersededTitle"`
-	SupersededMessage string `json:"supersededMessage"`
-	CancelledTitle    string `json:"cancelledTitle"`
-	CancelledMessage  string `json:"cancelledMessage"`
+	ScheduledTitle    string `json:"scheduled_title"`
+	ScheduledMessage  string `json:"scheduled_message"`
+	ActiveTitle       string `json:"active_title"`
+	ActiveMessage     string `json:"active_message"`
+	SupersededTitle   string `json:"superseded_title"`
+	SupersededMessage string `json:"superseded_message"`
+	CancelledTitle    string `json:"cancelled_title"`
+	CancelledMessage  string `json:"cancelled_message"`
 }
 
 type FormLabels struct {
 	// Section headers
-	SectionIdentity  string `json:"sectionIdentity"`
-	SectionValidity  string `json:"sectionValidity"`
-	SectionScoping   string `json:"sectionScoping"`
-	SectionLifecycle string `json:"sectionLifecycle"`
-	SectionNotes     string `json:"sectionNotes"`
+	SectionIdentity  string `json:"section_identity"`
+	SectionValidity  string `json:"section_validity"`
+	SectionScoping   string `json:"section_scoping"`
+	SectionLifecycle string `json:"section_lifecycle"`
+	SectionNotes     string `json:"section_notes"`
 
 	// Identity
 	Name                   string `json:"name"`
-	NamePlaceholder        string `json:"namePlaceholder"`
-	NameInfo               string `json:"nameInfo"`
+	NamePlaceholder        string `json:"name_placeholder"`
+	NameInfo               string `json:"name_info"`
 	Description            string `json:"description"`
-	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
-	InternalID             string `json:"internalId"`
-	InternalIDPlaceholder  string `json:"internalIdPlaceholder"`
-	InternalIDInfo         string `json:"internalIdInfo"`
+	DescriptionPlaceholder string `json:"description_placeholder"`
+	InternalID             string `json:"internal_id"`
+	InternalIDPlaceholder  string `json:"internal_id_placeholder"`
+	InternalIDInfo         string `json:"internal_id_info"`
 
 	// Scoping
-	SupplierContract       string `json:"supplierContract"`
-	SelectSupplierContract string `json:"selectSupplierContract"`
-	SupplierContractInfo   string `json:"supplierContractInfo"`
+	SupplierContract       string `json:"supplier_contract"`
+	SelectSupplierContract string `json:"select_supplier_contract"`
+	SupplierContractInfo   string `json:"supplier_contract_info"`
 
 	// Validity
-	DateStart          string `json:"dateStart"`
-	DateStartInfo      string `json:"dateStartInfo"`
-	DateEnd            string `json:"dateEnd"`
-	DateEndPlaceholder string `json:"dateEndPlaceholder"`
-	DateEndInfo        string `json:"dateEndInfo"`
+	DateStart          string `json:"date_start"`
+	DateStartInfo      string `json:"date_start_info"`
+	DateEnd            string `json:"date_end"`
+	DateEndPlaceholder string `json:"date_end_placeholder"`
+	DateEndInfo        string `json:"date_end_info"`
 
 	// Currency / location
 	Currency            string `json:"currency"`
-	CurrencyPlaceholder string `json:"currencyPlaceholder"`
-	CurrencyInfo        string `json:"currencyInfo"`
+	CurrencyPlaceholder string `json:"currency_placeholder"`
+	CurrencyInfo        string `json:"currency_info"`
 	Location            string `json:"location"`
-	SelectLocation      string `json:"selectLocation"`
-	LocationInfo        string `json:"locationInfo"`
+	SelectLocation      string `json:"select_location"`
+	LocationInfo        string `json:"location_info"`
 
 	// Lifecycle
 	Status                    string `json:"status"`
-	SelectStatus              string `json:"selectStatus"`
-	StatusInfo                string `json:"statusInfo"`
-	SequenceNumber            string `json:"sequenceNumber"`
-	SequenceNumberPlaceholder string `json:"sequenceNumberPlaceholder"`
-	SequenceNumberInfo        string `json:"sequenceNumberInfo"`
+	SelectStatus              string `json:"select_status"`
+	StatusInfo                string `json:"status_info"`
+	SequenceNumber            string `json:"sequence_number"`
+	SequenceNumberPlaceholder string `json:"sequence_number_placeholder"`
+	SequenceNumberInfo        string `json:"sequence_number_info"`
 
 	// Notes
 	Notes            string `json:"notes"`
-	NotesPlaceholder string `json:"notesPlaceholder"`
-	NotesInfo        string `json:"notesInfo"`
+	NotesPlaceholder string `json:"notes_placeholder"`
+	NotesInfo        string `json:"notes_info"`
 }
 
 type StatusLabels struct {
@@ -151,61 +151,61 @@ type TabLabels struct {
 type LinesLabels struct {
 	Title               string         `json:"title"`
 	Empty               string         `json:"empty"`
-	AddLine             string         `json:"addLine"`
-	ColumnContractLine  string         `json:"columnContractLine"`
-	ColumnUnitPrice     string         `json:"columnUnitPrice"`
-	ColumnQuantity      string         `json:"columnQuantity"`
-	ColumnMinimumAmount string         `json:"columnMinimumAmount"`
-	ColumnCurrency      string         `json:"columnCurrency"`
-	ColumnCycleOverride string         `json:"columnCycleOverride"`
-	LineForm            LineFormLabels `json:"lineForm"`
+	AddLine             string         `json:"add_line"`
+	ColumnContractLine  string         `json:"column_contract_line"`
+	ColumnUnitPrice     string         `json:"column_unit_price"`
+	ColumnQuantity      string         `json:"column_quantity"`
+	ColumnMinimumAmount string         `json:"column_minimum_amount"`
+	ColumnCurrency      string         `json:"column_currency"`
+	ColumnCycleOverride string         `json:"column_cycle_override"`
+	LineForm            LineFormLabels `json:"line_form"`
 }
 
 type LineFormLabels struct {
-	SectionLink                   string `json:"sectionLink"`
-	SectionPricing                string `json:"sectionPricing"`
-	SectionCycle                  string `json:"sectionCycle"`
-	SupplierContractLine          string `json:"supplierContractLine"`
-	SelectSupplierContractLine    string `json:"selectSupplierContractLine"`
-	SupplierContractLineInfo      string `json:"supplierContractLineInfo"`
-	UnitPrice                     string `json:"unitPrice"`
-	UnitPricePlaceholder          string `json:"unitPricePlaceholder"`
-	UnitPriceInfo                 string `json:"unitPriceInfo"`
-	MinimumAmount                 string `json:"minimumAmount"`
-	MinimumAmountPlaceholder      string `json:"minimumAmountPlaceholder"`
-	MinimumAmountInfo             string `json:"minimumAmountInfo"`
+	SectionLink                   string `json:"section_link"`
+	SectionPricing                string `json:"section_pricing"`
+	SectionCycle                  string `json:"section_cycle"`
+	SupplierContractLine          string `json:"supplier_contract_line"`
+	SelectSupplierContractLine    string `json:"select_supplier_contract_line"`
+	SupplierContractLineInfo      string `json:"supplier_contract_line_info"`
+	UnitPrice                     string `json:"unit_price"`
+	UnitPricePlaceholder          string `json:"unit_price_placeholder"`
+	UnitPriceInfo                 string `json:"unit_price_info"`
+	MinimumAmount                 string `json:"minimum_amount"`
+	MinimumAmountPlaceholder      string `json:"minimum_amount_placeholder"`
+	MinimumAmountInfo             string `json:"minimum_amount_info"`
 	Quantity                      string `json:"quantity"`
-	QuantityPlaceholder           string `json:"quantityPlaceholder"`
-	QuantityInfo                  string `json:"quantityInfo"`
+	QuantityPlaceholder           string `json:"quantity_placeholder"`
+	QuantityInfo                  string `json:"quantity_info"`
 	Currency                      string `json:"currency"`
-	CurrencyPlaceholder           string `json:"currencyPlaceholder"`
-	CycleValueOverride            string `json:"cycleValueOverride"`
-	CycleValueOverridePlaceholder string `json:"cycleValueOverridePlaceholder"`
-	CycleValueOverrideInfo        string `json:"cycleValueOverrideInfo"`
-	CycleUnitOverride             string `json:"cycleUnitOverride"`
-	CycleUnitOverridePlaceholder  string `json:"cycleUnitOverridePlaceholder"`
-	CycleUnitOverrideInfo         string `json:"cycleUnitOverrideInfo"`
+	CurrencyPlaceholder           string `json:"currency_placeholder"`
+	CycleValueOverride            string `json:"cycle_value_override"`
+	CycleValueOverridePlaceholder string `json:"cycle_value_override_placeholder"`
+	CycleValueOverrideInfo        string `json:"cycle_value_override_info"`
+	CycleUnitOverride             string `json:"cycle_unit_override"`
+	CycleUnitOverridePlaceholder  string `json:"cycle_unit_override_placeholder"`
+	CycleUnitOverrideInfo         string `json:"cycle_unit_override_info"`
 }
 
 type DetailLabels struct {
-	PageTitle            string `json:"pageTitle"`
+	PageTitle            string `json:"page_title"`
 	Title                string `json:"title"`
-	InfoSection          string `json:"infoSection"`
-	LinesSection         string `json:"linesSection"`
-	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditEmptyTitle      string `json:"auditEmptyTitle"`
-	AuditEmptyMessage    string `json:"auditEmptyMessage"`
-	TabAttachments       string `json:"tabAttachments"`
+	InfoSection          string `json:"info_section"`
+	LinesSection         string `json:"lines_section"`
+	AuditTrailComingSoon string `json:"audit_trail_coming_soon"`
+	AuditEmptyTitle      string `json:"audit_empty_title"`
+	AuditEmptyMessage    string `json:"audit_empty_message"`
+	TabAttachments       string `json:"tab_attachments"`
 }
 
 type ErrorLabels struct {
-	PermissionDenied    string `json:"permissionDenied"`
-	InvalidFormData     string `json:"invalidFormData"`
-	NotFound            string `json:"notFound"`
-	IDRequired          string `json:"idRequired"`
-	NoPermission        string `json:"noPermission"`
-	CannotDelete        string `json:"cannotDelete"`
-	InUse               string `json:"inUse"`
+	PermissionDenied    string `json:"permission_denied"`
+	InvalidFormData     string `json:"invalid_form_data"`
+	NotFound            string `json:"not_found"`
+	IDRequired          string `json:"id_required"`
+	NoPermission        string `json:"no_permission"`
+	CannotDelete        string `json:"cannot_delete"`
+	InUse               string `json:"in_use"`
 	CreationFailed      string `json:"creation_failed"`
 	UpdateFailed        string `json:"update_failed"`
 	DeletionFailed      string `json:"deletion_failed"`
@@ -214,7 +214,7 @@ type ErrorLabels struct {
 	ActivationFailed    string `json:"activation_failed"`
 	SupersedeFailed     string `json:"supersede_failed"`
 	OverlapDetected     string `json:"overlap_detected"`
-	LoadFailed          string `json:"loadFailed"`
+	LoadFailed          string `json:"load_failed"`
 }
 
 // DefaultLabels returns English fallback labels.

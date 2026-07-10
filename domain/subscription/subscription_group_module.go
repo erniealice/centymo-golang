@@ -7,14 +7,19 @@ import (
 	subscriptiongroupdetail "github.com/erniealice/centymo-golang/domain/subscription/subscription_group/detail"
 	subscriptiongrouplist "github.com/erniealice/centymo-golang/domain/subscription/subscription_group/list"
 
+	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/hybra-golang/views/auditlog"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	view "github.com/erniealice/pyeza-golang/view"
 
 	epkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
+	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
+	subscriptiongroupmemberpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_member"
 )
 
 // SubscriptionGroupModuleDeps holds all dependencies for the
@@ -35,6 +40,14 @@ type SubscriptionGroupModuleDeps struct {
 	ListPlans          func(ctx context.Context, req *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)
 	ListPriceSchedules func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
 
+	// Subscriptions (roster) tab: members + client/subscription name resolution.
+	ListSubscriptionGroupMembers func(ctx context.Context, req *subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest) (*subscriptiongroupmemberpb.ListSubscriptionGroupMembersResponse, error)
+	ListClients                  func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
+	ListSubscriptions            func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
+
+	attachment.AttachmentOps // attachments tab
+	auditlog.AuditOps        // audit tab (nil today → renders empty)
+
 	// Optional reference checker; nil disables delete gating (no ref-checker
 	// method exists for subscription_group yet).
 	GetSubscriptionGroupInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
@@ -42,18 +55,20 @@ type SubscriptionGroupModuleDeps struct {
 
 // SubscriptionGroupModule holds all constructed subscription_group views.
 type SubscriptionGroupModule struct {
-	routes        epkg.Routes
-	Dashboard     view.View
-	List          view.View
-	Table         view.View
-	Add           view.View
-	Edit          view.View
-	Delete        view.View
-	BulkDelete    view.View
-	SetStatus     view.View
-	BulkSetStatus view.View
-	Detail        view.View
-	TabAction     view.View
+	routes           epkg.Routes
+	Dashboard        view.View
+	List             view.View
+	Table            view.View
+	Add              view.View
+	Edit             view.View
+	Delete           view.View
+	BulkDelete       view.View
+	SetStatus        view.View
+	BulkSetStatus    view.View
+	Detail           view.View
+	TabAction        view.View
+	AttachmentUpload view.View
+	AttachmentDelete view.View
 }
 
 // NewSubscriptionGroupModule creates the subscription_group module with all
@@ -83,28 +98,35 @@ func NewSubscriptionGroupModule(deps *SubscriptionGroupModuleDeps) *Subscription
 	tableView := subscriptiongrouplist.NewTableView(listDeps)
 
 	detailDeps := &subscriptiongroupdetail.DetailViewDeps{
-		Routes:                deps.Routes,
-		Labels:                deps.Labels,
-		CommonLabels:          deps.CommonLabels,
-		TableLabels:           deps.TableLabels,
-		ReadSubscriptionGroup: deps.ReadSubscriptionGroup,
-		ListPlans:             deps.ListPlans,
-		ListPriceSchedules:    deps.ListPriceSchedules,
+		Routes:                       deps.Routes,
+		Labels:                       deps.Labels,
+		CommonLabels:                 deps.CommonLabels,
+		TableLabels:                  deps.TableLabels,
+		ReadSubscriptionGroup:        deps.ReadSubscriptionGroup,
+		ListPlans:                    deps.ListPlans,
+		ListPriceSchedules:           deps.ListPriceSchedules,
+		ListSubscriptionGroupMembers: deps.ListSubscriptionGroupMembers,
+		ListClients:                  deps.ListClients,
+		ListSubscriptions:            deps.ListSubscriptions,
+		AttachmentOps:                deps.AttachmentOps,
+		AuditOps:                     deps.AuditOps,
 	}
 
 	return &SubscriptionGroupModule{
-		routes:        deps.Routes,
-		Dashboard:     listView,
-		List:          listView,
-		Table:         tableView,
-		Add:           subscriptiongroupaction.NewAddAction(actionDeps),
-		Edit:          subscriptiongroupaction.NewEditAction(actionDeps),
-		Delete:        subscriptiongroupaction.NewDeleteAction(actionDeps),
-		BulkDelete:    subscriptiongroupaction.NewBulkDeleteAction(actionDeps),
-		SetStatus:     subscriptiongroupaction.NewSetStatusAction(actionDeps),
-		BulkSetStatus: subscriptiongroupaction.NewBulkSetStatusAction(actionDeps),
-		Detail:        subscriptiongroupdetail.NewView(detailDeps),
-		TabAction:     subscriptiongroupdetail.NewTabAction(detailDeps),
+		routes:           deps.Routes,
+		Dashboard:        listView,
+		List:             listView,
+		Table:            tableView,
+		Add:              subscriptiongroupaction.NewAddAction(actionDeps),
+		Edit:             subscriptiongroupaction.NewEditAction(actionDeps),
+		Delete:           subscriptiongroupaction.NewDeleteAction(actionDeps),
+		BulkDelete:       subscriptiongroupaction.NewBulkDeleteAction(actionDeps),
+		SetStatus:        subscriptiongroupaction.NewSetStatusAction(actionDeps),
+		BulkSetStatus:    subscriptiongroupaction.NewBulkSetStatusAction(actionDeps),
+		Detail:           subscriptiongroupdetail.NewView(detailDeps),
+		TabAction:        subscriptiongroupdetail.NewTabAction(detailDeps),
+		AttachmentUpload: subscriptiongroupdetail.NewAttachmentUploadAction(detailDeps),
+		AttachmentDelete: subscriptiongroupdetail.NewAttachmentDeleteAction(detailDeps),
 	}
 }
 
@@ -127,5 +149,12 @@ func (m *SubscriptionGroupModule) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.TabAction != nil && m.routes.TabActionURL != "" {
 		r.GET(m.routes.TabActionURL, m.TabAction)
+	}
+	if m.AttachmentUpload != nil && m.routes.AttachmentUploadURL != "" {
+		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+		r.POST(m.routes.AttachmentUploadURL, m.AttachmentUpload)
+	}
+	if m.AttachmentDelete != nil && m.routes.AttachmentDeleteURL != "" {
+		r.POST(m.routes.AttachmentDeleteURL, m.AttachmentDelete)
 	}
 }

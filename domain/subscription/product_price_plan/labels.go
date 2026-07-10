@@ -13,21 +13,21 @@ type Labels struct {
 // FormLabels holds translatable labels for the ProductPricePlan
 // add/edit drawer form. Keys match lyngua product_price_plan.json → product_price_plan.form.
 type FormLabels struct {
-	BillingTreatmentLabel              string `json:"billingTreatmentLabel"`
-	BillingTreatmentRecurring          string `json:"billingTreatmentRecurring"`
-	BillingTreatmentRecurringHelp      string `json:"billingTreatmentRecurringHelp"`
-	BillingTreatmentOneTimeInitial     string `json:"billingTreatmentOneTimeInitial"`
-	BillingTreatmentOneTimeInitialHelp string `json:"billingTreatmentOneTimeInitialHelp"`
-	BillingTreatmentUsageBased         string `json:"billingTreatmentUsageBased"`
-	BillingTreatmentUsageBasedHelp     string `json:"billingTreatmentUsageBasedHelp"`
-	ProductLabel                       string `json:"productLabel"`
-	ProductPlaceholder                 string `json:"productPlaceholder"`
-	PriceLabel                         string `json:"priceLabel"`
-	PricePlaceholder                   string `json:"pricePlaceholder"`
-	CurrencyLabel                      string `json:"currencyLabel"`
-	CurrencyPlaceholder                string `json:"currencyPlaceholder"`
-	DateStartLabel                     string `json:"dateStartLabel"`
-	DateEndLabel                       string `json:"dateEndLabel"`
+	BillingTreatmentLabel              string `json:"billing_treatment_label"`
+	BillingTreatmentRecurring          string `json:"billing_treatment_recurring"`
+	BillingTreatmentRecurringHelp      string `json:"billing_treatment_recurring_help"`
+	BillingTreatmentOneTimeInitial     string `json:"billing_treatment_one_time_initial"`
+	BillingTreatmentOneTimeInitialHelp string `json:"billing_treatment_one_time_initial_help"`
+	BillingTreatmentUsageBased         string `json:"billing_treatment_usage_based"`
+	BillingTreatmentUsageBasedHelp     string `json:"billing_treatment_usage_based_help"`
+	ProductLabel                       string `json:"product_label"`
+	ProductPlaceholder                 string `json:"product_placeholder"`
+	PriceLabel                         string `json:"price_label"`
+	PricePlaceholder                   string `json:"price_placeholder"`
+	CurrencyLabel                      string `json:"currency_label"`
+	CurrencyPlaceholder                string `json:"currency_placeholder"`
+	DateStartLabel                     string `json:"date_start_label"`
+	DateEndLabel                       string `json:"date_end_label"`
 
 	// 20260604-performance-evaluation Phase A — advertised rate band (the
 	// Offering's rate band). billing_amount_min/max are the advertised band
@@ -37,51 +37,51 @@ type FormLabels struct {
 	// subscription_seat create/update use case — NOT here). billing_amount
 	// (field 11) remains the operative contracted rate. Both inputs are
 	// optional; leaving them blank means "no advertised band".
-	BillingAmountMinLabel       string `json:"billingAmountMinLabel"`
-	BillingAmountMinPlaceholder string `json:"billingAmountMinPlaceholder"`
-	BillingAmountMinInfo        string `json:"billingAmountMinInfo"`
-	BillingAmountMaxLabel       string `json:"billingAmountMaxLabel"`
-	BillingAmountMaxPlaceholder string `json:"billingAmountMaxPlaceholder"`
-	BillingAmountMaxInfo        string `json:"billingAmountMaxInfo"`
+	BillingAmountMinLabel       string `json:"billing_amount_min_label"`
+	BillingAmountMinPlaceholder string `json:"billing_amount_min_placeholder"`
+	BillingAmountMinInfo        string `json:"billing_amount_min_info"`
+	BillingAmountMaxLabel       string `json:"billing_amount_max_label"`
+	BillingAmountMaxPlaceholder string `json:"billing_amount_max_placeholder"`
+	BillingAmountMaxInfo        string `json:"billing_amount_max_info"`
 	// Section header for the rate-band fields group on the drawer.
-	SectionRateBand string `json:"sectionRateBand"`
+	SectionRateBand string `json:"section_rate_band"`
 	// Table column header for the combined band display column.
-	ColumnRateBand string `json:"columnRateBand"`
+	ColumnRateBand string `json:"column_rate_band"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	ProductInfo          string `json:"productInfo"`
-	PriceInfo            string `json:"priceInfo"`
-	CurrencyInfo         string `json:"currencyInfo"`
-	BillingTreatmentInfo string `json:"billingTreatmentInfo"`
-	DateStartInfo        string `json:"dateStartInfo"`
-	DateEndInfo          string `json:"dateEndInfo"`
+	ProductInfo          string `json:"product_info"`
+	PriceInfo            string `json:"price_info"`
+	CurrencyInfo         string `json:"currency_info"`
+	BillingTreatmentInfo string `json:"billing_treatment_info"`
+	DateStartInfo        string `json:"date_start_info"`
+	DateEndInfo          string `json:"date_end_info"`
 
 	// Model D — catalog line picker (replaces product_id with product_plan_id)
-	CatalogLineLabel       string `json:"catalogLineLabel"`
-	CatalogLinePlaceholder string `json:"catalogLinePlaceholder"`
-	CatalogLineInfo        string `json:"catalogLineInfo"`
+	CatalogLineLabel       string `json:"catalog_line_label"`
+	CatalogLinePlaceholder string `json:"catalog_line_placeholder"`
+	CatalogLineInfo        string `json:"catalog_line_info"`
 
 	// 2026-04-29 milestone-billing plan §5 / Phase D — milestone (job
 	// template phase) select. Surfaced when the parent PricePlan has
 	// billing_kind = MILESTONE; an empty selection falls through to the
 	// first event for the milestone plan.
-	MilestonePhaseLabel       string `json:"milestonePhaseLabel"`
-	MilestonePhaseFallthrough string `json:"milestonePhaseFallthrough"`
-	MilestonePhaseBillable    string `json:"milestonePhaseBillable"`
+	MilestonePhaseLabel       string `json:"milestone_phase_label"`
+	MilestonePhaseFallthrough string `json:"milestone_phase_fallthrough"`
+	MilestonePhaseBillable    string `json:"milestone_phase_billable"`
 
 	// Tax override labels (Phase 5) — optional per-PPP tax overrides.
-	SectionTax                  string `json:"sectionTax"`
-	TaxTreatmentLabel           string `json:"taxTreatmentLabel"`
-	TaxTreatmentPlaceholder     string `json:"taxTreatmentPlaceholder"`
-	TaxTreatmentInfo            string `json:"taxTreatmentInfo"`
-	WithholdingClassLabel       string `json:"withholdingClassLabel"`
-	WithholdingClassPlaceholder string `json:"withholdingClassPlaceholder"`
-	WithholdingClassInfo        string `json:"withholdingClassInfo"`
+	SectionTax                  string `json:"section_tax"`
+	TaxTreatmentLabel           string `json:"tax_treatment_label"`
+	TaxTreatmentPlaceholder     string `json:"tax_treatment_placeholder"`
+	TaxTreatmentInfo            string `json:"tax_treatment_info"`
+	WithholdingClassLabel       string `json:"withholding_class_label"`
+	WithholdingClassPlaceholder string `json:"withholding_class_placeholder"`
+	WithholdingClassInfo        string `json:"withholding_class_info"`
 
 	// Read-only parent-PricePlan context block rendered above the editable
 	// fields (ppp-parent-context.html). Shared across the PPP drawer and the
 	// price-schedule-scoped product-price drawer.
-	ParentContext PricePlanParentContextLabels `json:"parentContext"`
+	ParentContext PricePlanParentContextLabels `json:"parent_context"`
 }
 
 // PricePlanParentContextLabels labels the read-only "parent context" rows on
@@ -89,11 +89,11 @@ type FormLabels struct {
 // "Price Schedule" by default; the professional/education tiers override it to
 // "Rate Card" via lyngua.
 type PricePlanParentContextLabels struct {
-	MoreDetails  string `json:"moreDetails"`
-	RateCard     string `json:"rateCard"`
-	BillingModel string `json:"billingModel"`
-	AmountBasis  string `json:"amountBasis"`
-	BillingCycle string `json:"billingCycle"`
+	MoreDetails  string `json:"more_details"`
+	RateCard     string `json:"rate_card"`
+	BillingModel string `json:"billing_model"`
+	AmountBasis  string `json:"amount_basis"`
+	BillingCycle string `json:"billing_cycle"`
 	Term         string `json:"term"`
 	Currency     string `json:"currency"`
 }

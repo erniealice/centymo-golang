@@ -24,21 +24,21 @@ type StatusLabels struct {
 // TriggerLabels — labels for the trigger enum.
 type TriggerLabels struct {
 	Unspecified string `json:"unspecified"`
-	ManualEarly string `json:"manualEarly"`
-	ManualLate  string `json:"manualLate"`
+	ManualEarly string `json:"manual_early"`
+	ManualLate  string `json:"manual_late"`
 }
 
 // ColumnLabels — list table column headers.
 type ColumnLabels struct {
 	ID                   string `json:"id"`
-	SupplierSubscription string `json:"supplierSubscription"`
-	SupplierContract     string `json:"supplierContract"`
-	BillableAmount       string `json:"billableAmount"`
+	SupplierSubscription string `json:"supplier_subscription"`
+	SupplierContract     string `json:"supplier_contract"`
+	BillableAmount       string `json:"billable_amount"`
 	Currency             string `json:"currency"`
 	Status               string `json:"status"`
 	Trigger              string `json:"trigger"`
-	ExpenseRecognition   string `json:"expenseRecognition"`
-	DateCreated          string `json:"dateCreated"`
+	ExpenseRecognition   string `json:"expense_recognition"`
+	DateCreated          string `json:"date_created"`
 	Actions              string `json:"actions"`
 }
 
@@ -51,7 +51,7 @@ type PageLabels struct {
 // ActionLabels — row-action button labels.
 type ActionLabels struct {
 	Recognize string `json:"recognize"`
-	MarkReady string `json:"markReady"`
+	MarkReady string `json:"mark_ready"`
 	Waive     string `json:"waive"`
 	Cancel    string `json:"cancel"`
 }
@@ -59,10 +59,10 @@ type ActionLabels struct {
 // DetailLabels — detail page tab + section labels.
 type DetailLabels struct {
 	Title              string `json:"title"`
-	TabInfo            string `json:"tabInfo"`
-	TabAudit           string `json:"tabAudit"`
-	InfoHeading        string `json:"infoHeading"`
-	LinkedAdvanceBadge string `json:"linkedAdvanceBadge"`
+	TabInfo            string `json:"tab_info"`
+	TabAudit           string `json:"tab_audit"`
+	InfoHeading        string `json:"info_heading"`
+	LinkedAdvanceBadge string `json:"linked_advance_badge"`
 }
 
 // EmptyLabels — empty-state labels for the list view.
@@ -73,10 +73,10 @@ type EmptyLabels struct {
 
 // ErrorLabels — error toasts / validations.
 type ErrorLabels struct {
-	PermissionDenied  string `json:"permissionDenied"`
-	NotFound          string `json:"notFound"`
-	AlreadyRecognized string `json:"alreadyRecognized"`
-	InvalidTransition string `json:"invalidTransition"`
+	PermissionDenied  string `json:"permission_denied"`
+	NotFound          string `json:"not_found"`
+	AlreadyRecognized string `json:"already_recognized"`
+	InvalidTransition string `json:"invalid_transition"`
 }
 
 // Labels — root struct for supplier_billing_event.json.

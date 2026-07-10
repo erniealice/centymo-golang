@@ -26,34 +26,34 @@ type Labels struct {
 type PageLabels struct {
 	Heading            string `json:"heading"`
 	Caption            string `json:"caption"`
-	HeadingOutstanding string `json:"headingOutstanding"`
-	HeadingPartial     string `json:"headingPartial"`
-	HeadingSettled     string `json:"headingSettled"`
-	HeadingReversed    string `json:"headingReversed"`
+	HeadingOutstanding string `json:"heading_outstanding"`
+	HeadingPartial     string `json:"heading_partial"`
+	HeadingSettled     string `json:"heading_settled"`
+	HeadingReversed    string `json:"heading_reversed"`
 	Dashboard          string `json:"dashboard"`
 }
 
 type ButtonLabels struct {
 	Add                string `json:"add"`
-	AccrueFromContract string `json:"accrueFromContract"`
+	AccrueFromContract string `json:"accrue_from_contract"`
 	Settle             string `json:"settle"`
 	Reverse            string `json:"reverse"`
-	AddSettlement      string `json:"addSettlement"`
+	AddSettlement      string `json:"add_settlement"`
 }
 
 type ColumnLabels struct {
-	InternalID       string `json:"internalId"`
+	InternalID       string `json:"internal_id"`
 	Name             string `json:"name"`
 	Supplier         string `json:"supplier"`
-	SupplierContract string `json:"supplierContract"`
-	RecognitionDate  string `json:"recognitionDate"`
-	PeriodStart      string `json:"periodStart"`
-	PeriodEnd        string `json:"periodEnd"`
-	CycleDate        string `json:"cycleDate"`
+	SupplierContract string `json:"supplier_contract"`
+	RecognitionDate  string `json:"recognition_date"`
+	PeriodStart      string `json:"period_start"`
+	PeriodEnd        string `json:"period_end"`
+	CycleDate        string `json:"cycle_date"`
 	Currency         string `json:"currency"`
-	AccruedAmount    string `json:"accruedAmount"`
-	SettledAmount    string `json:"settledAmount"`
-	RemainingAmount  string `json:"remainingAmount"`
+	AccruedAmount    string `json:"accrued_amount"`
+	SettledAmount    string `json:"settled_amount"`
+	RemainingAmount  string `json:"remaining_amount"`
 	Status           string `json:"status"`
 }
 
@@ -65,121 +65,121 @@ type TabLabels struct {
 }
 
 type DetailLabels struct {
-	PageTitle            string `json:"pageTitle"`
+	PageTitle            string `json:"page_title"`
 	Title                string `json:"title"`
-	InfoSection          string `json:"infoSection"`
-	SettlementsSection   string `json:"settlementsSection"`
-	SourceSection        string `json:"sourceSection"`
-	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditEmptyTitle      string `json:"auditEmptyTitle"`
-	AuditEmptyMessage    string `json:"auditEmptyMessage"`
-	TabAttachments       string `json:"tabAttachments"`
+	InfoSection          string `json:"info_section"`
+	SettlementsSection   string `json:"settlements_section"`
+	SourceSection        string `json:"source_section"`
+	AuditTrailComingSoon string `json:"audit_trail_coming_soon"`
+	AuditEmptyTitle      string `json:"audit_empty_title"`
+	AuditEmptyMessage    string `json:"audit_empty_message"`
+	TabAttachments       string `json:"tab_attachments"`
 
 	// Info-tab + source-tab field labels (4.4)
 	Notes          string `json:"notes"`
-	SourceContract string `json:"sourceContract"`
+	SourceContract string `json:"source_contract"`
 	Supplier       string `json:"supplier"`
-	ExpenseAccount string `json:"expenseAccount"`
-	AccrualAccount string `json:"accrualAccount"`
+	ExpenseAccount string `json:"expense_account"`
+	AccrualAccount string `json:"accrual_account"`
 }
 
 type SettlementLabels struct {
 	Expenditure        string `json:"expenditure"`
-	AmountSettled      string `json:"amountSettled"`
+	AmountSettled      string `json:"amount_settled"`
 	Currency           string `json:"currency"`
-	FxRate             string `json:"fxRate"`
-	FxAdjustmentAmount string `json:"fxAdjustmentAmount"`
-	SettledAt          string `json:"settledAt"`
+	FxRate             string `json:"fx_rate"`
+	FxAdjustmentAmount string `json:"fx_adjustment_amount"`
+	SettledAt          string `json:"settled_at"`
 	Reversal           string `json:"reversal"`
-	EmptyTitle         string `json:"emptyTitle"`
-	EmptyMessage       string `json:"emptyMessage"`
-	AddSettlement      string `json:"addSettlement"`
+	EmptyTitle         string `json:"empty_title"`
+	EmptyMessage       string `json:"empty_message"`
+	AddSettlement      string `json:"add_settlement"`
 
 	// Drawer form labels
-	FormExpenditure            string `json:"formExpenditure"`
-	FormExpenditurePlaceholder string `json:"formExpenditurePlaceholder"`
-	FormAmountSettled          string `json:"formAmountSettled"`
-	FormCurrency               string `json:"formCurrency"`
-	FormFxRate                 string `json:"formFxRate"`
-	FormFxRateInfo             string `json:"formFxRateInfo"`
-	FormReversalReason         string `json:"formReversalReason"`
+	FormExpenditure            string `json:"form_expenditure"`
+	FormExpenditurePlaceholder string `json:"form_expenditure_placeholder"`
+	FormAmountSettled          string `json:"form_amount_settled"`
+	FormCurrency               string `json:"form_currency"`
+	FormFxRate                 string `json:"form_fx_rate"`
+	FormFxRateInfo             string `json:"form_fx_rate_info"`
+	FormReversalReason         string `json:"form_reversal_reason"`
 }
 
 type FormLabels struct {
 	// Section headers
-	SectionIdentity   string `json:"sectionIdentity"`
-	SectionSource     string `json:"sectionSource"`
-	SectionPeriod     string `json:"sectionPeriod"`
-	SectionMoney      string `json:"sectionMoney"`
-	SectionAccounting string `json:"sectionAccounting"`
-	SectionLifecycle  string `json:"sectionLifecycle"`
-	SectionNotes      string `json:"sectionNotes"`
+	SectionIdentity   string `json:"section_identity"`
+	SectionSource     string `json:"section_source"`
+	SectionPeriod     string `json:"section_period"`
+	SectionMoney      string `json:"section_money"`
+	SectionAccounting string `json:"section_accounting"`
+	SectionLifecycle  string `json:"section_lifecycle"`
+	SectionNotes      string `json:"section_notes"`
 
 	// §1 Identity
 	Name                   string `json:"name"`
-	NamePlaceholder        string `json:"namePlaceholder"`
-	NameInfo               string `json:"nameInfo"`
+	NamePlaceholder        string `json:"name_placeholder"`
+	NameInfo               string `json:"name_info"`
 	Description            string `json:"description"`
-	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
-	InternalID             string `json:"internalId"`
-	InternalIDPlaceholder  string `json:"internalIdPlaceholder"`
+	DescriptionPlaceholder string `json:"description_placeholder"`
+	InternalID             string `json:"internal_id"`
+	InternalIDPlaceholder  string `json:"internal_id_placeholder"`
 
 	// §2 Source
-	SupplierContract       string `json:"supplierContract"`
-	SelectSupplierContract string `json:"selectSupplierContract"`
-	SupplierContractInfo   string `json:"supplierContractInfo"`
+	SupplierContract       string `json:"supplier_contract"`
+	SelectSupplierContract string `json:"select_supplier_contract"`
+	SupplierContractInfo   string `json:"supplier_contract_info"`
 	Supplier               string `json:"supplier"`
-	SelectSupplier         string `json:"selectSupplier"`
-	SupplierInfo           string `json:"supplierInfo"`
+	SelectSupplier         string `json:"select_supplier"`
+	SupplierInfo           string `json:"supplier_info"`
 
 	// §3 Period
-	RecognitionDate      string `json:"recognitionDate"`
-	RecognitionDateInfo  string `json:"recognitionDateInfo"`
-	PeriodStart          string `json:"periodStart"`
-	PeriodStartInfo      string `json:"periodStartInfo"`
-	PeriodEnd            string `json:"periodEnd"`
-	PeriodEndInfo        string `json:"periodEndInfo"`
-	CycleDate            string `json:"cycleDate"`
-	CycleDatePlaceholder string `json:"cycleDatePlaceholder"`
-	CycleDateInfo        string `json:"cycleDateInfo"`
+	RecognitionDate      string `json:"recognition_date"`
+	RecognitionDateInfo  string `json:"recognition_date_info"`
+	PeriodStart          string `json:"period_start"`
+	PeriodStartInfo      string `json:"period_start_info"`
+	PeriodEnd            string `json:"period_end"`
+	PeriodEndInfo        string `json:"period_end_info"`
+	CycleDate            string `json:"cycle_date"`
+	CycleDatePlaceholder string `json:"cycle_date_placeholder"`
+	CycleDateInfo        string `json:"cycle_date_info"`
 
 	// §4 Money
 	Currency                 string `json:"currency"`
-	CurrencyPlaceholder      string `json:"currencyPlaceholder"`
-	CurrencyInfo             string `json:"currencyInfo"`
-	AccruedAmount            string `json:"accruedAmount"`
-	AccruedAmountPlaceholder string `json:"accruedAmountPlaceholder"`
-	AccruedAmountInfo        string `json:"accruedAmountInfo"`
-	SettledAmount            string `json:"settledAmount"`
-	SettledAmountInfo        string `json:"settledAmountInfo"`
-	RemainingAmount          string `json:"remainingAmount"`
-	RemainingAmountInfo      string `json:"remainingAmountInfo"`
+	CurrencyPlaceholder      string `json:"currency_placeholder"`
+	CurrencyInfo             string `json:"currency_info"`
+	AccruedAmount            string `json:"accrued_amount"`
+	AccruedAmountPlaceholder string `json:"accrued_amount_placeholder"`
+	AccruedAmountInfo        string `json:"accrued_amount_info"`
+	SettledAmount            string `json:"settled_amount"`
+	SettledAmountInfo        string `json:"settled_amount_info"`
+	RemainingAmount          string `json:"remaining_amount"`
+	RemainingAmountInfo      string `json:"remaining_amount_info"`
 
 	// §5 Lifecycle
 	Status            string `json:"status"`
-	SelectStatus      string `json:"selectStatus"`
-	StatusInfo        string `json:"statusInfo"`
-	StatusOutstanding string `json:"statusOutstanding"`
-	StatusPartial     string `json:"statusPartial"`
-	StatusSettled     string `json:"statusSettled"`
-	StatusReversed    string `json:"statusReversed"`
+	SelectStatus      string `json:"select_status"`
+	StatusInfo        string `json:"status_info"`
+	StatusOutstanding string `json:"status_outstanding"`
+	StatusPartial     string `json:"status_partial"`
+	StatusSettled     string `json:"status_settled"`
+	StatusReversed    string `json:"status_reversed"`
 
 	// §6 Accounting
-	ExpenseAccount       string `json:"expenseAccount"`
-	SelectExpenseAccount string `json:"selectExpenseAccount"`
-	ExpenseAccountInfo   string `json:"expenseAccountInfo"`
-	AccrualAccount       string `json:"accrualAccount"`
-	SelectAccrualAccount string `json:"selectAccrualAccount"`
-	AccrualAccountInfo   string `json:"accrualAccountInfo"`
+	ExpenseAccount       string `json:"expense_account"`
+	SelectExpenseAccount string `json:"select_expense_account"`
+	ExpenseAccountInfo   string `json:"expense_account_info"`
+	AccrualAccount       string `json:"accrual_account"`
+	SelectAccrualAccount string `json:"select_accrual_account"`
+	AccrualAccountInfo   string `json:"accrual_account_info"`
 
 	// §7 Notes
 	Notes            string `json:"notes"`
-	NotesPlaceholder string `json:"notesPlaceholder"`
-	NotesInfo        string `json:"notesInfo"`
+	NotesPlaceholder string `json:"notes_placeholder"`
+	NotesInfo        string `json:"notes_info"`
 
 	// Buttons
 	Edit      string `json:"edit"`
-	EditTitle string `json:"editTitle"`
+	EditTitle string `json:"edit_title"`
 	Active    string `json:"active"`
 }
 
@@ -194,20 +194,20 @@ type ActionLabels struct {
 	View               string `json:"view"`
 	Edit               string `json:"edit"`
 	Delete             string `json:"delete"`
-	AccrueFromContract string `json:"accrueFromContract"`
+	AccrueFromContract string `json:"accrue_from_contract"`
 	Settle             string `json:"settle"`
 	Reverse            string `json:"reverse"`
-	AddSettlement      string `json:"addSettlement"`
-	NoPermission       string `json:"noPermission"`
+	AddSettlement      string `json:"add_settlement"`
+	NoPermission       string `json:"no_permission"`
 }
 
 type ConfirmLabels struct {
 	Delete         string `json:"delete"`
-	DeleteMessage  string `json:"deleteMessage"`
+	DeleteMessage  string `json:"delete_message"`
 	Settle         string `json:"settle"`
-	SettleMessage  string `json:"settleMessage"`
+	SettleMessage  string `json:"settle_message"`
 	Reverse        string `json:"reverse"`
-	ReverseMessage string `json:"reverseMessage"`
+	ReverseMessage string `json:"reverse_message"`
 }
 
 type BalanceLabels struct {
@@ -221,22 +221,22 @@ type BalanceLabels struct {
 type EmptyLabels struct {
 	Title              string `json:"title"`
 	Message            string `json:"message"`
-	OutstandingTitle   string `json:"outstandingTitle"`
-	OutstandingMessage string `json:"outstandingMessage"`
-	PartialTitle       string `json:"partialTitle"`
-	PartialMessage     string `json:"partialMessage"`
-	SettledTitle       string `json:"settledTitle"`
-	SettledMessage     string `json:"settledMessage"`
-	ReversedTitle      string `json:"reversedTitle"`
-	ReversedMessage    string `json:"reversedMessage"`
+	OutstandingTitle   string `json:"outstanding_title"`
+	OutstandingMessage string `json:"outstanding_message"`
+	PartialTitle       string `json:"partial_title"`
+	PartialMessage     string `json:"partial_message"`
+	SettledTitle       string `json:"settled_title"`
+	SettledMessage     string `json:"settled_message"`
+	ReversedTitle      string `json:"reversed_title"`
+	ReversedMessage    string `json:"reversed_message"`
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoPermission     string `json:"noPermission"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoPermission     string `json:"no_permission"`
 	CreationFailed   string `json:"creation_failed"`
 	UpdateFailed     string `json:"update_failed"`
 	DeletionFailed   string `json:"deletion_failed"`

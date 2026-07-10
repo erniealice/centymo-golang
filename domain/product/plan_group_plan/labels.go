@@ -21,8 +21,8 @@ type Labels struct {
 type PageLabels struct {
 	Title         string `json:"title"`
 	Subtitle      string `json:"subtitle"`
-	ActiveTitle   string `json:"activeTitle"`
-	InactiveTitle string `json:"inactiveTitle"`
+	ActiveTitle   string `json:"active_title"`
+	InactiveTitle string `json:"inactive_title"`
 }
 
 type ButtonLabels struct {
@@ -30,17 +30,17 @@ type ButtonLabels struct {
 	Add        string `json:"add"`
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
-	BulkDelete string `json:"bulkDelete"`
+	BulkDelete string `json:"bulk_delete"`
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
 }
 
 type ColumnLabels struct {
-	PlanGroupID   string `json:"planGroupId"`
-	PlanID        string `json:"planId"`
-	SequenceOrder string `json:"sequenceOrder"`
+	PlanGroupID   string `json:"plan_group_id"`
+	PlanID        string `json:"plan_id"`
+	SequenceOrder string `json:"sequence_order"`
 	Status        string `json:"status"`
-	DateCreated   string `json:"dateCreated"`
+	DateCreated   string `json:"date_created"`
 	Actions       string `json:"actions"`
 }
 
@@ -51,37 +51,37 @@ type EmptyLabels struct {
 
 // FormLabels holds the drawer-form field labels.
 type FormLabels struct {
-	SectionIdentity          string `json:"sectionIdentity"`
-	SectionOrdering          string `json:"sectionOrdering"`
-	PlanGroupID              string `json:"planGroupId"`
-	PlanGroupIDPlaceholder   string `json:"planGroupIdPlaceholder"`
-	PlanGroupIDInfo          string `json:"planGroupIdInfo"`
-	PlanID                   string `json:"planId"`
-	PlanIDPlaceholder        string `json:"planIdPlaceholder"`
-	PlanIDInfo               string `json:"planIdInfo"`
-	SequenceOrder            string `json:"sequenceOrder"`
-	SequenceOrderPlaceholder string `json:"sequenceOrderPlaceholder"`
-	SequenceOrderInfo        string `json:"sequenceOrderInfo"`
+	SectionIdentity          string `json:"section_identity"`
+	SectionOrdering          string `json:"section_ordering"`
+	PlanGroupID              string `json:"plan_group_id"`
+	PlanGroupIDPlaceholder   string `json:"plan_group_id_placeholder"`
+	PlanGroupIDInfo          string `json:"plan_group_id_info"`
+	PlanID                   string `json:"plan_id"`
+	PlanIDPlaceholder        string `json:"plan_id_placeholder"`
+	PlanIDInfo               string `json:"plan_id_info"`
+	SequenceOrder            string `json:"sequence_order"`
+	SequenceOrderPlaceholder string `json:"sequence_order_placeholder"`
+	SequenceOrderInfo        string `json:"sequence_order_info"`
 	Active                   string `json:"active"`
-	ActiveInfo               string `json:"activeInfo"`
+	ActiveInfo               string `json:"active_info"`
 }
 
 type BulkLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type ConfirmLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type TabLabels struct {
@@ -90,19 +90,19 @@ type TabLabels struct {
 
 type DetailLabels struct {
 	Title        string `json:"title"`
-	DateCreated  string `json:"dateCreated"`
-	DateModified string `json:"dateModified"`
-	NoSubtitle   string `json:"noSubtitle"`
+	DateCreated  string `json:"date_created"`
+	DateModified string `json:"date_modified"`
+	NoSubtitle   string `json:"no_subtitle"`
 }
 
 type ErrorLabels struct {
-	NotFound     string `json:"notFound"`
-	LoadFailed   string `json:"loadFailed"`
+	NotFound     string `json:"not_found"`
+	LoadFailed   string `json:"load_failed"`
 	Unauthorized string `json:"unauthorized"`
-	CreateFailed string `json:"createFailed"`
-	UpdateFailed string `json:"updateFailed"`
-	DeleteFailed string `json:"deleteFailed"`
-	InUse        string `json:"inUse"`
+	CreateFailed string `json:"create_failed"`
+	UpdateFailed string `json:"update_failed"`
+	DeleteFailed string `json:"delete_failed"`
+	InUse        string `json:"in_use"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.

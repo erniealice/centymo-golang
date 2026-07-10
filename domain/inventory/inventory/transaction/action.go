@@ -46,12 +46,12 @@ func formLabels(t func(string) string, tx inventory.TransactionLabels) transacti
 
 func typeOptions(t func(string) string) []pyeza.SelectOption {
 	return []pyeza.SelectOption{
-		{Value: "received", Label: t("inventory.transaction.typeReceived")},
-		{Value: "sold", Label: t("inventory.transaction.typeSold")},
-		{Value: "adjusted", Label: t("inventory.transaction.typeAdjusted")},
-		{Value: "transferred", Label: t("inventory.transaction.typeTransferred")},
-		{Value: "returned", Label: t("inventory.transaction.typeReturned")},
-		{Value: "write_off", Label: t("inventory.transaction.typeWriteOff")},
+		{Value: "received", Label: t("inventory.transaction.type_received")},
+		{Value: "sold", Label: t("inventory.transaction.type_sold")},
+		{Value: "adjusted", Label: t("inventory.transaction.type_adjusted")},
+		{Value: "transferred", Label: t("inventory.transaction.type_transferred")},
+		{Value: "returned", Label: t("inventory.transaction.type_returned")},
+		{Value: "write_off", Label: t("inventory.transaction.type_write_off")},
 	}
 }
 

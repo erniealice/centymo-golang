@@ -11,22 +11,22 @@ type Labels struct {
 	Tabs               TabLabels               `json:"tabs"`
 	Detail             DetailLabels            `json:"detail"`
 	Lines              LineLabels              `json:"lines"`
-	LinkedPOs          LinkedPOLabels          `json:"linkedPos"`
-	LinkedExpenditures LinkedExpenditureLabels `json:"linkedExpenditures"`
+	LinkedPOs          LinkedPOLabels          `json:"linked_pos"`
+	LinkedExpenditures LinkedExpenditureLabels `json:"linked_expenditures"`
 	Form               FormLabels              `json:"form"`
 	Empty              EmptyLabels             `json:"empty"`
 }
 
 type PageLabels struct {
 	Heading           string `json:"heading"`
-	HeadingDraft      string `json:"headingDraft"`
-	HeadingActive     string `json:"headingActive"`
-	HeadingExpiring   string `json:"headingExpiring"`
-	HeadingExpired    string `json:"headingExpired"`
-	HeadingTerminated string `json:"headingTerminated"`
+	HeadingDraft      string `json:"heading_draft"`
+	HeadingActive     string `json:"heading_active"`
+	HeadingExpiring   string `json:"heading_expiring"`
+	HeadingExpired    string `json:"heading_expired"`
+	HeadingTerminated string `json:"heading_terminated"`
 	Caption           string `json:"caption"`
-	AddButton         string `json:"addButton"`
-	DetailSubtitle    string `json:"detailSubtitle"`
+	AddButton         string `json:"add_button"`
+	DetailSubtitle    string `json:"detail_subtitle"`
 }
 
 type ColumnLabels struct {
@@ -44,83 +44,83 @@ type ColumnLabels struct {
 type TabLabels struct {
 	Info                string `json:"info"`
 	Lines               string `json:"lines"`
-	LinkedPOs           string `json:"linkedPos"`
-	LinkedExpenditures  string `json:"linkedExpenditures"`
-	PriceSchedules      string `json:"priceSchedules"`
+	LinkedPOs           string `json:"linked_pos"`
+	LinkedExpenditures  string `json:"linked_expenditures"`
+	PriceSchedules      string `json:"price_schedules"`
 	Activity            string `json:"activity"`
-	ActivityEmpty       string `json:"activityEmpty"`
-	PriceSchedulesEmpty string `json:"priceSchedulesEmpty"`
+	ActivityEmpty       string `json:"activity_empty"`
+	PriceSchedulesEmpty string `json:"price_schedules_empty"`
 }
 
 type DetailLabels struct {
-	InfoSection     string `json:"infoSection"`
+	InfoSection     string `json:"info_section"`
 	Name            string `json:"name"`
 	Kind            string `json:"kind"`
 	Status          string `json:"status"`
 	Supplier        string `json:"supplier"`
-	StartDate       string `json:"startDate"`
-	EndDate         string `json:"endDate"`
-	AutoRenew       string `json:"autoRenew"`
+	StartDate       string `json:"start_date"`
+	EndDate         string `json:"end_date"`
+	AutoRenew       string `json:"auto_renew"`
 	Currency        string `json:"currency"`
-	CommittedAmount string `json:"committedAmount"`
-	ReleasedAmount  string `json:"releasedAmount"`
-	BilledAmount    string `json:"billedAmount"`
-	RemainingAmount string `json:"remainingAmount"`
+	CommittedAmount string `json:"committed_amount"`
+	ReleasedAmount  string `json:"released_amount"`
+	BilledAmount    string `json:"billed_amount"`
+	RemainingAmount string `json:"remaining_amount"`
 	Notes           string `json:"notes"`
-	TabAttachments  string `json:"tabAttachments"`
+	TabAttachments  string `json:"tab_attachments"`
 }
 
 type LineLabels struct {
 	// Column labels
 	Description  string `json:"description"`
-	LineType     string `json:"lineType"`
+	LineType     string `json:"line_type"`
 	Quantity     string `json:"quantity"`
-	UnitPrice    string `json:"unitPrice"`
+	UnitPrice    string `json:"unit_price"`
 	Total        string `json:"total"`
 	Treatment    string `json:"treatment"`
-	EmptyTitle   string `json:"emptyTitle"`
-	EmptyMessage string `json:"emptyMessage"`
-	AddLine      string `json:"addLine"`
+	EmptyTitle   string `json:"empty_title"`
+	EmptyMessage string `json:"empty_message"`
+	AddLine      string `json:"add_line"`
 
 	// Enum label values for treatment
-	TreatmentRecurring         string `json:"treatmentRecurring"`
-	TreatmentOneTime           string `json:"treatmentOneTime"`
-	TreatmentUsageBased        string `json:"treatmentUsageBased"`
-	TreatmentMinimumCommitment string `json:"treatmentMinimumCommitment"`
+	TreatmentRecurring         string `json:"treatment_recurring"`
+	TreatmentOneTime           string `json:"treatment_one_time"`
+	TreatmentUsageBased        string `json:"treatment_usage_based"`
+	TreatmentMinimumCommitment string `json:"treatment_minimum_commitment"`
 
 	// Enum label values for line_type
-	LineTypeGoods   string `json:"lineTypeGoods"`
-	LineTypeService string `json:"lineTypeService"`
-	LineTypeExpense string `json:"lineTypeExpense"`
+	LineTypeGoods   string `json:"line_type_goods"`
+	LineTypeService string `json:"line_type_service"`
+	LineTypeExpense string `json:"line_type_expense"`
 
 	// Drawer form labels
-	FormDescription               string `json:"formDescription"`
-	FormDescriptionPlaceholder    string `json:"formDescriptionPlaceholder"`
-	FormLineType                  string `json:"formLineType"`
-	FormLineTypeInfo              string `json:"formLineTypeInfo"`
-	FormTreatment                 string `json:"formTreatment"`
-	FormTreatmentInfo             string `json:"formTreatmentInfo"`
-	FormProduct                   string `json:"formProduct"`
-	FormProductPlaceholder        string `json:"formProductPlaceholder"`
-	FormQuantity                  string `json:"formQuantity"`
-	FormQuantityInfo              string `json:"formQuantityInfo"`
-	FormUnitPrice                 string `json:"formUnitPrice"`
-	FormUnitPriceInfo             string `json:"formUnitPriceInfo"`
-	FormExpenseAccount            string `json:"formExpenseAccount"`
-	FormExpenseAccountPlaceholder string `json:"formExpenseAccountPlaceholder"`
-	FormStartDate                 string `json:"formStartDate"`
-	FormStartDateHint             string `json:"formStartDateHint"`
-	FormEndDate                   string `json:"formEndDate"`
-	FormLineNumber                string `json:"formLineNumber"`
+	FormDescription               string `json:"form_description"`
+	FormDescriptionPlaceholder    string `json:"form_description_placeholder"`
+	FormLineType                  string `json:"form_line_type"`
+	FormLineTypeInfo              string `json:"form_line_type_info"`
+	FormTreatment                 string `json:"form_treatment"`
+	FormTreatmentInfo             string `json:"form_treatment_info"`
+	FormProduct                   string `json:"form_product"`
+	FormProductPlaceholder        string `json:"form_product_placeholder"`
+	FormQuantity                  string `json:"form_quantity"`
+	FormQuantityInfo              string `json:"form_quantity_info"`
+	FormUnitPrice                 string `json:"form_unit_price"`
+	FormUnitPriceInfo             string `json:"form_unit_price_info"`
+	FormExpenseAccount            string `json:"form_expense_account"`
+	FormExpenseAccountPlaceholder string `json:"form_expense_account_placeholder"`
+	FormStartDate                 string `json:"form_start_date"`
+	FormStartDateHint             string `json:"form_start_date_hint"`
+	FormEndDate                   string `json:"form_end_date"`
+	FormLineNumber                string `json:"form_line_number"`
 }
 
 type LinkedPOLabels struct {
-	PONumber     string `json:"poNumber"`
+	PONumber     string `json:"po_number"`
 	Status       string `json:"status"`
-	TotalAmount  string `json:"totalAmount"`
-	OrderDate    string `json:"orderDate"`
-	EmptyTitle   string `json:"emptyTitle"`
-	EmptyMessage string `json:"emptyMessage"`
+	TotalAmount  string `json:"total_amount"`
+	OrderDate    string `json:"order_date"`
+	EmptyTitle   string `json:"empty_title"`
+	EmptyMessage string `json:"empty_message"`
 }
 
 type LinkedExpenditureLabels struct {
@@ -128,94 +128,94 @@ type LinkedExpenditureLabels struct {
 	Status       string `json:"status"`
 	Amount       string `json:"amount"`
 	Date         string `json:"date"`
-	EmptyTitle   string `json:"emptyTitle"`
-	EmptyMessage string `json:"emptyMessage"`
+	EmptyTitle   string `json:"empty_title"`
+	EmptyMessage string `json:"empty_message"`
 }
 
 // FormLabels holds all form-level labels for the drawer form.
 type FormLabels struct {
 	// Section headers (5-section parity layout)
-	SectionIdentity       string `json:"sectionIdentity"`
-	SectionValidity       string `json:"sectionValidity"`
-	SectionMoney          string `json:"sectionMoney"`
-	SectionCategorization string `json:"sectionCategorization"`
-	SectionOthers         string `json:"sectionOthers"`
+	SectionIdentity       string `json:"section_identity"`
+	SectionValidity       string `json:"section_validity"`
+	SectionMoney          string `json:"section_money"`
+	SectionCategorization string `json:"section_categorization"`
+	SectionOthers         string `json:"section_others"`
 
 	// §1 Identity
 	Name                      string `json:"name"`
-	NamePlaceholder           string `json:"namePlaceholder"`
-	NameInfo                  string `json:"nameInfo"`
-	ContractNumber            string `json:"contractNumber"`
-	ContractNumberPlaceholder string `json:"contractNumberPlaceholder"`
+	NamePlaceholder           string `json:"name_placeholder"`
+	NameInfo                  string `json:"name_info"`
+	ContractNumber            string `json:"contract_number"`
+	ContractNumberPlaceholder string `json:"contract_number_placeholder"`
 	Kind                      string `json:"kind"`
-	KindInfo                  string `json:"kindInfo"`
-	KindSubscription          string `json:"kindSubscription"`
-	KindRetainer              string `json:"kindRetainer"`
-	KindLease                 string `json:"kindLease"`
-	KindUtility               string `json:"kindUtility"`
-	KindFramework             string `json:"kindFramework"`
-	KindBlanket               string `json:"kindBlanket"`
-	KindOneTime               string `json:"kindOneTime"`
-	KindOther                 string `json:"kindOther"`
+	KindInfo                  string `json:"kind_info"`
+	KindSubscription          string `json:"kind_subscription"`
+	KindRetainer              string `json:"kind_retainer"`
+	KindLease                 string `json:"kind_lease"`
+	KindUtility               string `json:"kind_utility"`
+	KindFramework             string `json:"kind_framework"`
+	KindBlanket               string `json:"kind_blanket"`
+	KindOneTime               string `json:"kind_one_time"`
+	KindOther                 string `json:"kind_other"`
 	Supplier                  string `json:"supplier"`
-	SupplierPlaceholder       string `json:"supplierPlaceholder"`
-	SupplierInfo              string `json:"supplierInfo"`
+	SupplierPlaceholder       string `json:"supplier_placeholder"`
+	SupplierInfo              string `json:"supplier_info"`
 
 	// §2 Validity & Recurrence
-	StartDate             string `json:"startDate"`
-	EndDate               string `json:"endDate"`
-	EndDateHint           string `json:"endDateHint"`
-	BillingCycleValue     string `json:"billingCycleValue"`
-	BillingCycleUnit      string `json:"billingCycleUnit"`
-	BillingCycleInfo      string `json:"billingCycleInfo"`
-	CycleUnitDay          string `json:"cycleUnitDay"`
-	CycleUnitWeek         string `json:"cycleUnitWeek"`
-	CycleUnitMonth        string `json:"cycleUnitMonth"`
-	CycleUnitYear         string `json:"cycleUnitYear"`
-	AutoRenew             string `json:"autoRenew"`
-	RenewalNoticeDays     string `json:"renewalNoticeDays"`
-	RenewalNoticeDaysHint string `json:"renewalNoticeDaysHint"`
+	StartDate             string `json:"start_date"`
+	EndDate               string `json:"end_date"`
+	EndDateHint           string `json:"end_date_hint"`
+	BillingCycleValue     string `json:"billing_cycle_value"`
+	BillingCycleUnit      string `json:"billing_cycle_unit"`
+	BillingCycleInfo      string `json:"billing_cycle_info"`
+	CycleUnitDay          string `json:"cycle_unit_day"`
+	CycleUnitWeek         string `json:"cycle_unit_week"`
+	CycleUnitMonth        string `json:"cycle_unit_month"`
+	CycleUnitYear         string `json:"cycle_unit_year"`
+	AutoRenew             string `json:"auto_renew"`
+	RenewalNoticeDays     string `json:"renewal_notice_days"`
+	RenewalNoticeDaysHint string `json:"renewal_notice_days_hint"`
 
 	// §3 Money & Approval
 	Currency               string `json:"currency"`
-	CurrencyInfo           string `json:"currencyInfo"`
+	CurrencyInfo           string `json:"currency_info"`
 	Status                 string `json:"status"`
-	StatusInfo             string `json:"statusInfo"`
-	StatusDraft            string `json:"statusDraft"`
-	StatusRequested        string `json:"statusRequested"`
-	StatusPendingApproval  string `json:"statusPendingApproval"`
-	StatusApproved         string `json:"statusApproved"`
-	StatusActive           string `json:"statusActive"`
-	StatusExpiring         string `json:"statusExpiring"`
-	StatusSuspended        string `json:"statusSuspended"`
-	StatusExpired          string `json:"statusExpired"`
-	StatusTerminated       string `json:"statusTerminated"`
-	StatusRejected         string `json:"statusRejected"`
-	CommittedAmount        string `json:"committedAmount"`
-	CommittedAmountInfo    string `json:"committedAmountInfo"`
-	CycleAmount            string `json:"cycleAmount"`
-	CycleAmountHint        string `json:"cycleAmountHint"`
-	PaymentTerm            string `json:"paymentTerm"`
-	PaymentTermPlaceholder string `json:"paymentTermPlaceholder"`
-	ApprovedBy             string `json:"approvedBy"`
-	ApprovedDate           string `json:"approvedDate"`
+	StatusInfo             string `json:"status_info"`
+	StatusDraft            string `json:"status_draft"`
+	StatusRequested        string `json:"status_requested"`
+	StatusPendingApproval  string `json:"status_pending_approval"`
+	StatusApproved         string `json:"status_approved"`
+	StatusActive           string `json:"status_active"`
+	StatusExpiring         string `json:"status_expiring"`
+	StatusSuspended        string `json:"status_suspended"`
+	StatusExpired          string `json:"status_expired"`
+	StatusTerminated       string `json:"status_terminated"`
+	StatusRejected         string `json:"status_rejected"`
+	CommittedAmount        string `json:"committed_amount"`
+	CommittedAmountInfo    string `json:"committed_amount_info"`
+	CycleAmount            string `json:"cycle_amount"`
+	CycleAmountHint        string `json:"cycle_amount_hint"`
+	PaymentTerm            string `json:"payment_term"`
+	PaymentTermPlaceholder string `json:"payment_term_placeholder"`
+	ApprovedBy             string `json:"approved_by"`
+	ApprovedDate           string `json:"approved_date"`
 
 	// §4 Categorization
-	ExpenditureCategory            string `json:"expenditureCategory"`
-	ExpenditureCategoryPlaceholder string `json:"expenditureCategoryPlaceholder"`
-	ExpenseAccount                 string `json:"expenseAccount"`
-	ExpenseAccountPlaceholder      string `json:"expenseAccountPlaceholder"`
+	ExpenditureCategory            string `json:"expenditure_category"`
+	ExpenditureCategoryPlaceholder string `json:"expenditure_category_placeholder"`
+	ExpenseAccount                 string `json:"expense_account"`
+	ExpenseAccountPlaceholder      string `json:"expense_account_placeholder"`
 	Location                       string `json:"location"`
-	LocationPlaceholder            string `json:"locationPlaceholder"`
+	LocationPlaceholder            string `json:"location_placeholder"`
 
 	// §5 Others
 	Notes            string `json:"notes"`
-	NotesPlaceholder string `json:"notesPlaceholder"`
+	NotesPlaceholder string `json:"notes_placeholder"`
 	Active           string `json:"active"`
 
 	// Action buttons on detail page
 	Edit      string `json:"edit"`
-	EditTitle string `json:"editTitle"`
+	EditTitle string `json:"edit_title"`
 	Approve   string `json:"approve"`
 	Terminate string `json:"terminate"`
 }

@@ -3,14 +3,16 @@ package revenue
 import "github.com/erniealice/espyna-golang/consumer/compose"
 
 // Describe returns the composition-v2 descriptor for the revenue entity.
-// Labels are not yet exposed via DefaultLabels() — the LabelJSON binding is
-// left empty until a DefaultLabels factory is added.
 func Describe() compose.Unit {
 	r := DefaultRoutes()
+	l := DefaultLabels()
 	return compose.Unit{
 		Key:       "revenue.revenue",
 		Routes:    &r,
 		RouteJSON: compose.JSONBinding{File: "route.json", Key: "revenue"},
+		Labels:    &l,
+		LabelJSON: compose.JSONBinding{File: "revenue.json", Key: "revenue"},
+		LabelName: "RevenueLabels",
 		Templates: TemplatesFS,
 		Nav: compose.NavContrib{
 			Permission: "invoice:list",

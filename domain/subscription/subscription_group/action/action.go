@@ -165,7 +165,7 @@ func NewEditAction(deps *Deps) view.View {
 			formAction := route.ResolveURL(deps.Routes.EditURL, "id", id)
 			formID := id
 			if isClone {
-				name = strings.TrimSpace(name) + viewCtx.T("actions.copySuffix")
+				name = strings.TrimSpace(name) + viewCtx.T("actions.copy_suffix")
 				formAction = deps.Routes.AddURL
 				formID = ""
 			}

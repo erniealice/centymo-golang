@@ -148,6 +148,52 @@ type Routes struct {
 	AttachmentUploadURL   string `json:"attachment_upload_url"`
 	AttachmentDeleteURL   string `json:"attachment_delete_url"`
 	AttachmentDownloadURL string `json:"attachment_download_url"`
+
+	// Tabs maps canonical detail-tab keys ("package", "operations", "jobs",
+	// ...) to a vertical's URL vocabulary for the ?tab= query value and the
+	// tab-action path segment (e.g. education overrides "jobs" → "classes"
+	// via route.json). Unmapped keys fall through to the canonical name, and
+	// canonical spellings stay accepted as aliases so pre-override deep links
+	// keep working.
+	Tabs map[string]string `json:"tabs"`
+
+	// HiddenTabs lists canonical detail-tab keys a vertical suppresses
+	// entirely (tab strip + deep links, which fall back to "info"). E.g.
+	// education hides "package" (no per-student custom-pricing motion) and
+	// "operations" (the flat jobs table serves as the single work view).
+	HiddenTabs []string `json:"hidden_tabs"`
+}
+
+// TabHidden reports whether a canonical detail-tab key is suppressed for
+// this vertical via the route.json hidden_tabs override.
+func (r Routes) TabHidden(canonical string) bool {
+	for _, h := range r.HiddenTabs {
+		if h == canonical {
+			return true
+		}
+	}
+	return false
+}
+
+// TabKey returns the vertical's URL token for a canonical detail-tab key,
+// falling back to the canonical key when no override is configured.
+func (r Routes) TabKey(canonical string) string {
+	if v, ok := r.Tabs[canonical]; ok && v != "" {
+		return v
+	}
+	return canonical
+}
+
+// CanonicalTab reverse-maps a ?tab= URL token back to its canonical key.
+// Canonical tokens pass through unchanged, so overridden and canonical
+// spellings are both accepted.
+func (r Routes) CanonicalTab(param string) string {
+	for canonical, token := range r.Tabs {
+		if token == param {
+			return canonical
+		}
+	}
+	return param
 }
 
 // DefaultRoutes returns a Routes populated from the

@@ -11,10 +11,10 @@ import (
 // FilterLabels holds translatable labels for the scope filter chip on the
 // plan list page (§6.1 of the 2026-04-27 plan-client-scope plan).
 type FilterLabels struct {
-	ScopeChipLabel string `json:"scopeChipLabel"`
-	ScopeMaster    string `json:"scopeMaster"`
-	ScopeClient    string `json:"scopeClient"`
-	ScopeAll       string `json:"scopeAll"`
+	ScopeChipLabel string `json:"scope_chip_label"`
+	ScopeMaster    string `json:"scope_master"`
+	ScopeClient    string `json:"scope_client"`
+	ScopeAll       string `json:"scope_all"`
 }
 
 // Labels holds all translatable strings for the plan module.
@@ -25,13 +25,13 @@ type Labels struct {
 	Empty           EmptyLabels           `json:"empty"`
 	Form            FormLabels            `json:"form"`
 	Actions         ActionLabels          `json:"actions"`
-	Bulk            BulkLabels            `json:"bulkActions"`
+	Bulk            BulkLabels            `json:"bulk_actions"`
 	Status          StatusLabels          `json:"status"`
 	Detail          DetailLabels          `json:"detail"`
 	Tabs            TabLabels             `json:"tabs"`
 	Confirm         ConfirmLabels         `json:"confirm"`
 	Errors          ErrorLabels           `json:"errors"`
-	ProductPlanForm ProductPlanFormLabels `json:"productPlanForm"`
+	ProductPlanForm ProductPlanFormLabels `json:"product_plan_form"`
 	Filters         FilterLabels          `json:"filters"`
 }
 
@@ -46,84 +46,84 @@ type FormSectionLabels struct {
 
 type FormLabels struct {
 	Name                string            `json:"name"`
-	NamePlaceholder     string            `json:"namePlaceholder"`
+	NamePlaceholder     string            `json:"name_placeholder"`
 	Description         string            `json:"description"`
-	DescPlaceholder     string            `json:"descriptionPlaceholder"`
-	FulfillmentType     string            `json:"fulfillmentType"`
+	DescPlaceholder     string            `json:"description_placeholder"`
+	FulfillmentType     string            `json:"fulfillment_type"`
 	Active              string            `json:"active"`
 	Products            string            `json:"products"`
-	ProductsPlaceholder string            `json:"productsPlaceholder"`
-	ProductsSearch      string            `json:"productsSearch"`
+	ProductsPlaceholder string            `json:"products_placeholder"`
+	ProductsSearch      string            `json:"products_search"`
 	Sections            FormSectionLabels `json:"sections"`
 
 	// Fulfillment type option labels
-	TypeSchedule string `json:"typeSchedule"`
-	TypeLicense  string `json:"typeLicense"`
-	TypeContent  string `json:"typeContent"`
-	TypePhysical string `json:"typePhysical"`
+	TypeSchedule string `json:"type_schedule"`
+	TypeLicense  string `json:"type_license"`
+	TypeContent  string `json:"type_content"`
+	TypePhysical string `json:"type_physical"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string `json:"nameInfo"`
-	DescriptionInfo string `json:"descriptionInfo"`
-	ActiveInfo      string `json:"activeInfo"`
+	NameInfo        string `json:"name_info"`
+	DescriptionInfo string `json:"description_info"`
+	ActiveInfo      string `json:"active_info"`
 
 	// Client-scope fields (2026-04-27 plan-client-scope plan §7).
 	// Set on the Plan add/edit drawer Client picker.
-	ClientLabel             string `json:"clientLabel"`
-	ClientHelp              string `json:"clientHelp"`
-	ClientPlaceholder       string `json:"clientPlaceholder"`
-	ClientSearchPlaceholder string `json:"clientSearchPlaceholder"`
-	ClientNoResults         string `json:"clientNoResults"`
-	ClientLockedTooltip     string `json:"clientLockedTooltip"`
-	ClientForLabel          string `json:"clientForLabel"` // "For {{.ClientName}}" — read-only badge in client-context entry-point
-	ClientInfo              string `json:"clientInfo"`
+	ClientLabel             string `json:"client_label"`
+	ClientHelp              string `json:"client_help"`
+	ClientPlaceholder       string `json:"client_placeholder"`
+	ClientSearchPlaceholder string `json:"client_search_placeholder"`
+	ClientNoResults         string `json:"client_no_results"`
+	ClientLockedTooltip     string `json:"client_locked_tooltip"`
+	ClientForLabel          string `json:"client_for_label"` // "For {{.ClientName}}" — read-only badge in client-context entry-point
+	ClientInfo              string `json:"client_info"`
 
 	// JobTemplate select (2026-04-29 auto-spawn-jobs-from-subscription plan §5
 	// — Plan.job_template_id assignment from the drawer). Empty value =
 	// advisory-only plan; spawn use case skips silently.
-	JobTemplate     string `json:"jobTemplate"`
-	JobTemplateNone string `json:"jobTemplateNone"`
-	JobTemplateHint string `json:"jobTemplateHint"`
+	JobTemplate     string `json:"job_template"`
+	JobTemplateNone string `json:"job_template_none"`
+	JobTemplateHint string `json:"job_template_hint"`
 
 	// 2026-04-30 cyclic-subscription-jobs plan §9.3 — visits_per_cycle field.
 	// Number of cycle Job instances spawned per billing cycle (default 1).
-	VisitsPerCycleLabel       string `json:"visitsPerCycleLabel"`
-	VisitsPerCyclePlaceholder string `json:"visitsPerCyclePlaceholder"`
-	VisitsPerCycleHint        string `json:"visitsPerCycleHint"`
+	VisitsPerCycleLabel       string `json:"visits_per_cycle_label"`
+	VisitsPerCyclePlaceholder string `json:"visits_per_cycle_placeholder"`
+	VisitsPerCycleHint        string `json:"visits_per_cycle_hint"`
 
 	// Client-scope cascade notice — shown unconditionally below the client picker
 	// so operators see the schedule restriction before filling other fields.
 	// Tier-specific wording lives in lyngua; default uses proto-generic vocabulary.
-	ClientScopeCascadeNotice string `json:"clientScopeCascadeNotice"`
+	ClientScopeCascadeNotice string `json:"client_scope_cascade_notice"`
 }
 
 type DetailLabels struct {
-	PageTitle             string `json:"pageTitle"`
+	PageTitle             string `json:"page_title"`
 	Price                 string `json:"price"`
 	Currency              string `json:"currency"`
 	Status                string `json:"status"`
 	Description           string `json:"description"`
-	FulfillmentType       string `json:"fulfillmentType"`
-	CreatedDate           string `json:"createdDate"`
-	ModifiedDate          string `json:"modifiedDate"`
-	NoProductsAssigned    string `json:"noProductsAssigned"`
-	NoProductsAssignedMsg string `json:"noProductsAssignedMsg"`
-	NoProductsDesc        string `json:"noProductsDesc"`
-	NoPricePlans          string `json:"noPricePlans"`
-	NoPricePlansMsg       string `json:"noPricePlansMsg"`
-	NoPricePlansDesc      string `json:"noPricePlansDesc"`
-	AuditTrailComingSoon  string `json:"auditTrailComingSoon"`
+	FulfillmentType       string `json:"fulfillment_type"`
+	CreatedDate           string `json:"created_date"`
+	ModifiedDate          string `json:"modified_date"`
+	NoProductsAssigned    string `json:"no_products_assigned"`
+	NoProductsAssignedMsg string `json:"no_products_assigned_msg"`
+	NoProductsDesc        string `json:"no_products_desc"`
+	NoPricePlans          string `json:"no_price_plans"`
+	NoPricePlansMsg       string `json:"no_price_plans_msg"`
+	NoPricePlansDesc      string `json:"no_price_plans_desc"`
+	AuditTrailComingSoon  string `json:"audit_trail_coming_soon"`
 }
 
 type TabLabels struct {
 	Info          string `json:"info"`
 	Products      string `json:"products"`
-	ProductsSlug  string `json:"productsSlug"`
-	PricePlan     string `json:"pricePlan"`
-	PricePlanSlug string `json:"pricePlanSlug"`
+	ProductsSlug  string `json:"products_slug"`
+	PricePlan     string `json:"price_plan"`
+	PricePlanSlug string `json:"price_plan_slug"`
 	Attachments   string `json:"attachments"`
-	AuditTrail    string `json:"auditTrail"`
-	AuditHistory  string `json:"auditHistory"`
+	AuditTrail    string `json:"audit_trail"`
+	AuditHistory  string `json:"audit_history"`
 }
 
 // ResolveTabSlug returns the URL slug for a canonical tab key. The "products"
@@ -160,17 +160,17 @@ func (t TabLabels) CanonicalizeTab(slug string) string {
 
 type ConfirmLabels struct {
 	Delete                string `json:"delete"`
-	DeleteMessage         string `json:"deleteMessage"`
+	DeleteMessage         string `json:"delete_message"`
 	Activate              string `json:"activate"`
-	ActivateMessage       string `json:"activateMessage"`
+	ActivateMessage       string `json:"activate_message"`
 	Deactivate            string `json:"deactivate"`
-	DeactivateMessage     string `json:"deactivateMessage"`
-	BulkActivate          string `json:"bulkActivate"`
-	BulkActivateMessage   string `json:"bulkActivateMessage"`
-	BulkDeactivate        string `json:"bulkDeactivate"`
-	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
-	BulkDelete            string `json:"bulkDelete"`
-	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	DeactivateMessage     string `json:"deactivate_message"`
+	BulkActivate          string `json:"bulk_activate"`
+	BulkActivateMessage   string `json:"bulk_activate_message"`
+	BulkDeactivate        string `json:"bulk_deactivate"`
+	BulkDeactivateMessage string `json:"bulk_deactivate_message"`
+	BulkDelete            string `json:"bulk_delete"`
+	BulkDeleteMessage     string `json:"bulk_delete_message"`
 }
 
 func DefaultLabels() Labels {
@@ -348,18 +348,18 @@ func DefaultLabels() Labels {
 
 type PageLabels struct {
 	Heading         string `json:"heading"`
-	HeadingActive   string `json:"headingActive"`
-	HeadingInactive string `json:"headingInactive"`
+	HeadingActive   string `json:"heading_active"`
+	HeadingInactive string `json:"heading_inactive"`
 	Caption         string `json:"caption"`
-	CaptionActive   string `json:"captionActive"`
-	CaptionInactive string `json:"captionInactive"`
+	CaptionActive   string `json:"caption_active"`
+	CaptionInactive string `json:"caption_inactive"`
 }
 
 type ButtonLabels struct {
-	AddPlan       string `json:"addPlan"`
-	AddPricePlan  string `json:"addPricePlan"`
-	EditPricePlan string `json:"editPricePlan"`
-	AddProduct    string `json:"addProduct"`
+	AddPlan       string `json:"add_plan"`
+	AddPricePlan  string `json:"add_price_plan"`
+	EditPricePlan string `json:"edit_price_plan"`
+	AddProduct    string `json:"add_product"`
 }
 
 type ColumnLabels struct {
@@ -369,20 +369,20 @@ type ColumnLabels struct {
 	Price         string `json:"price"`
 	Status        string `json:"status"`
 	Product       string `json:"product"`
-	PricePlan     string `json:"pricePlan"`
-	PriceSchedule string `json:"priceSchedule"`
+	PricePlan     string `json:"price_plan"`
+	PriceSchedule string `json:"price_schedule"`
 	Duration      string `json:"duration"`
 	Location      string `json:"location"`
-	ItemType      string `json:"itemType"`
+	ItemType      string `json:"item_type"`
 }
 
 type EmptyLabels struct {
 	Title           string `json:"title"`
 	Message         string `json:"message"`
-	ActiveTitle     string `json:"activeTitle"`
-	ActiveMessage   string `json:"activeMessage"`
-	InactiveTitle   string `json:"inactiveTitle"`
-	InactiveMessage string `json:"inactiveMessage"`
+	ActiveTitle     string `json:"active_title"`
+	ActiveMessage   string `json:"active_message"`
+	InactiveTitle   string `json:"inactive_title"`
+	InactiveMessage string `json:"inactive_message"`
 }
 
 type ActionLabels struct {
@@ -403,17 +403,17 @@ type StatusLabels struct {
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoIDsProvided    string `json:"noIDsProvided"`
-	InvalidStatus    string `json:"invalidStatus"`
-	NoPermission     string `json:"noPermission"`
-	CannotDelete     string `json:"cannotDelete"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoIDsProvided    string `json:"no_ids_provided"`
+	InvalidStatus    string `json:"invalid_status"`
+	NoPermission     string `json:"no_permission"`
+	CannotDelete     string `json:"cannot_delete"`
 
 	// 2026-04-27 plan-client-scope plan §7 — surfaced when an operator tries
 	// to change a Plan's client_id while one of its PricePlans is attached
 	// to an active subscription. Hard block; no force-override.
-	ClientScopeLocked string `json:"clientScopeLocked"`
+	ClientScopeLocked string `json:"client_scope_locked"`
 }

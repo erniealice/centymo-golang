@@ -12,13 +12,13 @@ type Labels struct {
 	Empty      EmptyLabels      `json:"empty"`
 	Form       FormLabels       `json:"form"`
 	Actions    ActionLabels     `json:"actions"`
-	Bulk       BulkLabels       `json:"bulkActions"`
+	Bulk       BulkLabels       `json:"bulk_actions"`
 	Status     StatusLabels     `json:"status"`
 	Detail     DetailLabels     `json:"detail"`
 	Tabs       TabLabels        `json:"tabs"`
 	Invoices   InvoicesLabels   `json:"invoices"`
 	Recognize  RecognizeLabels  `json:"recognize"`
-	RevenueRun RevenueRunLabels `json:"revenueRun"`
+	RevenueRun RevenueRunLabels `json:"revenue_run"`
 	Milestone  MilestoneLabels  `json:"milestone"`
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / §9 — Operations
 	// tab on the subscription detail page + retroactive spawn drawer copy.
@@ -34,15 +34,15 @@ type Labels struct {
 
 type PageLabels struct {
 	Heading         string `json:"heading"`
-	HeadingActive   string `json:"headingActive"`
-	HeadingInactive string `json:"headingInactive"`
+	HeadingActive   string `json:"heading_active"`
+	HeadingInactive string `json:"heading_inactive"`
 	Caption         string `json:"caption"`
-	CaptionActive   string `json:"captionActive"`
-	CaptionInactive string `json:"captionInactive"`
+	CaptionActive   string `json:"caption_active"`
+	CaptionInactive string `json:"caption_inactive"`
 }
 
 type ButtonLabels struct {
-	AddSubscription string `json:"addSubscription"`
+	AddSubscription string `json:"add_subscription"`
 }
 
 type ColumnLabels struct {
@@ -50,8 +50,8 @@ type ColumnLabels struct {
 	Client    string `json:"client"`
 	Customer  string `json:"customer"` // legacy alias; kept for backward compat with old translations
 	Plan      string `json:"plan"`
-	StartDate string `json:"startDate"`
-	EndDate   string `json:"endDate"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 	Status    string `json:"status"`
 }
 
@@ -70,13 +70,13 @@ type ActionLabels struct {
 
 	// 2026-04-27 plan-client-scope plan §6.5 / §7 — CTA copy on the
 	// subscription detail's Package tab. Templated via {{.ClientName}}.
-	CustomizePackage string `json:"customizePackage"`
+	CustomizePackage string `json:"customize_package"`
 }
 
 type BulkLabels struct {
 	Delete     string `json:"delete"`
-	Activate   string `json:"bulkActivate"`
-	Deactivate string `json:"bulkDeactivate"`
+	Activate   string `json:"bulk_activate"`
+	Deactivate string `json:"bulk_deactivate"`
 }
 
 type StatusLabels struct {
@@ -85,22 +85,22 @@ type StatusLabels struct {
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoIDsProvided    string `json:"noIDsProvided"`
-	InvalidStatus    string `json:"invalidStatus"`
-	NoPermission     string `json:"noPermission"`
-	CannotDelete     string `json:"cannotDelete"`
-	InUse            string `json:"inUse"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoIDsProvided    string `json:"no_ids_provided"`
+	InvalidStatus    string `json:"invalid_status"`
+	NoPermission     string `json:"no_permission"`
+	CannotDelete     string `json:"cannot_delete"`
+	InUse            string `json:"in_use"`
 
 	// 2026-04-27 plan-client-scope plan §3.3 / §7 — surfaced when the
 	// subscription's selected price_plan belongs to a different client.
-	PlanClientMismatch string `json:"planClientMismatch"`
+	PlanClientMismatch string `json:"plan_client_mismatch"`
 	// Surfaced when the customize-package CTA fails (cross-package errors
 	// from the espyna use case bubble up here as a generic fallback).
-	CustomizeFailed string `json:"customizeFailed"`
+	CustomizeFailed string `json:"customize_failed"`
 }
 
 // ---------------------------------------------------------------------------
@@ -109,79 +109,96 @@ type ErrorLabels struct {
 
 type FormLabels struct {
 	Customer                  string `json:"customer"`
-	CustomerPlaceholder       string `json:"customerPlaceholder"`
+	CustomerPlaceholder       string `json:"customer_placeholder"`
 	Plan                      string `json:"plan"`
-	PlanPlaceholder           string `json:"planPlaceholder"`
-	StartDate                 string `json:"startDate"`
-	EndDate                   string `json:"endDate"`
-	StartTime                 string `json:"startTime"`
-	EndTime                   string `json:"endTime"`
-	TimePlaceholder           string `json:"timePlaceholder"`
+	PlanPlaceholder           string `json:"plan_placeholder"`
+	StartDate                 string `json:"start_date"`
+	EndDate                   string `json:"end_date"`
+	StartTime                 string `json:"start_time"`
+	EndTime                   string `json:"end_time"`
+	TimePlaceholder           string `json:"time_placeholder"`
 	Timezone                  string `json:"timezone"`
 	Active                    string `json:"active"`
 	Notes                     string `json:"notes"`
-	NotesPlaceholder          string `json:"notesPlaceholder"`
-	CustomerSearchPlaceholder string `json:"customerSearchPlaceholder"`
-	PlanSearchPlaceholder     string `json:"planSearchPlaceholder"`
-	CustomerNoResults         string `json:"customerNoResults"`
-	PlanNoResults             string `json:"planNoResults"`
+	NotesPlaceholder          string `json:"notes_placeholder"`
+	CustomerSearchPlaceholder string `json:"customer_search_placeholder"`
+	PlanSearchPlaceholder     string `json:"plan_search_placeholder"`
+	CustomerNoResults         string `json:"customer_no_results"`
+	PlanNoResults             string `json:"plan_no_results"`
 	Code                      string `json:"code"`
-	CodePlaceholder           string `json:"codePlaceholder"`
+	CodePlaceholder           string `json:"code_placeholder"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	CustomerInfo  string `json:"customerInfo"`
-	PlanInfo      string `json:"planInfo"`
-	CodeInfo      string `json:"codeInfo"`
-	StartDateInfo string `json:"startDateInfo"`
-	EndDateInfo   string `json:"endDateInfo"`
-	StartTimeInfo string `json:"startTimeInfo"`
-	EndTimeInfo   string `json:"endTimeInfo"`
-	NotesInfo     string `json:"notesInfo"`
+	CustomerInfo  string `json:"customer_info"`
+	PlanInfo      string `json:"plan_info"`
+	CodeInfo      string `json:"code_info"`
+	StartDateInfo string `json:"start_date_info"`
+	EndDateInfo   string `json:"end_date_info"`
+	StartTimeInfo string `json:"start_time_info"`
+	EndTimeInfo   string `json:"end_time_info"`
+	NotesInfo     string `json:"notes_info"`
 
 	// 2026-05-03 — Row-level help text rendered below the start/end date+time
 	// rows. Explains the operational consequence of the date range (which plans
 	// are eligible, when invoicing stops). Distinct from StartDateInfo /
 	// EndDateInfo (per-field popovers explaining what each field stores).
-	StartDateRowHelp string `json:"startDateRowHelp"`
-	EndDateRowHelp   string `json:"endDateRowHelp"`
+	StartDateRowHelp string `json:"start_date_row_help"`
+	EndDateRowHelp   string `json:"end_date_row_help"`
 
 	// 2026-04-27 plan-client-scope plan §5.1 / §7 — group headers in the
 	// grouped Plan / PricePlan auto-complete picker on the subscription
 	// drawer. Templated via {{.ClientName}} for the per-client group.
-	PlanGroupForClient string `json:"planGroupForClient"`
-	PlanGroupGeneral   string `json:"planGroupGeneral"`
+	PlanGroupForClient string `json:"plan_group_for_client"`
+	PlanGroupGeneral   string `json:"plan_group_general"`
 
 	// 2026-05-03 — info banner shown below the locked Customer field on the
 	// subscription create drawer, explaining that the Plan picker is
 	// scoped to plans assigned to this client (general-scope plans
 	// excluded, mirroring the search.go filter).
-	PlanClientScopeNotice string `json:"planClientScopeNotice"`
+	PlanClientScopeNotice string `json:"plan_client_scope_notice"`
 
 	// 2026-05-03 — Edit-drawer lock notice rendered when the subscription is
 	// referenced by Revenue / subscription_attribute / Job rows. Editing is
 	// disabled to preserve the audit trail.
-	EditLockedReason string `json:"editLockedReason"`
+	EditLockedReason string `json:"edit_locked_reason"`
 
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9 — Spawn
 	// Jobs toggle section on the subscription create drawer.
-	SpawnJobsSectionTitle string `json:"spawnJobsSectionTitle"`
-	SpawnJobsToggle       string `json:"spawnJobsToggle"`
-	SpawnJobsHelpText     string `json:"spawnJobsHelpText"`
-	SpawnJobsSummary      string `json:"spawnJobsSummary"`
-	SpawnJobsNone         string `json:"spawnJobsNone"`
+	SpawnJobsSectionTitle string `json:"spawn_jobs_section_title"`
+	SpawnJobsToggle       string `json:"spawn_jobs_toggle"`
+	SpawnJobsHelpText     string `json:"spawn_jobs_help_text"`
+	SpawnJobsSummary      string `json:"spawn_jobs_summary"`
+	SpawnJobsNone         string `json:"spawn_jobs_none"`
 }
 
 type DetailLabels struct {
-	PageTitle            string `json:"pageTitle"`
+	PageTitle            string `json:"page_title"`
 	Customer             string `json:"customer"`
 	Plan                 string `json:"plan"`
-	StartDate            string `json:"startDate"`
-	EndDate              string `json:"endDate"`
+	PriceSchedule        string `json:"price_schedule"`
+	StartDate            string `json:"start_date"`
+	EndDate              string `json:"end_date"`
 	Status               string `json:"status"`
-	CreatedDate          string `json:"createdDate"`
-	ModifiedDate         string `json:"modifiedDate"`
-	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditTrailDesc       string `json:"auditTrailDesc"`
+	CreatedDate          string `json:"created_date"`
+	ModifiedDate         string `json:"modified_date"`
+	AuditTrailComingSoon string `json:"audit_trail_coming_soon"`
+	AuditTrailDesc       string `json:"audit_trail_desc"`
+
+	// Info-tab section headers — the info grid renders as three sections:
+	// who the subscription is for, the subscription terms, and record logs.
+	SectionClient string `json:"section_client"`
+	SectionTerms  string `json:"section_terms"`
+	SectionLogs   string `json:"section_logs"`
+
+	// Person-name split for the customer section. Rendered instead of the
+	// single Customer row when the client has a linked user with name parts.
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+
+	// PackageEmpty is the Package tab's empty state (price plan enrichment
+	// missing). Previously this fell through to Invoices.Empty, which read
+	// as a nonsensical "No invoices yet" message on the package tab.
+	PackageEmpty string `json:"package_empty"`
 }
 
 type TabLabels struct {
@@ -192,42 +209,42 @@ type TabLabels struct {
 	Invoices     string `json:"invoices"`
 	History      string `json:"history"`
 	Attachments  string `json:"attachments"`
-	AuditTrail   string `json:"auditTrail"`
-	AuditHistory string `json:"auditHistory"`
+	AuditTrail   string `json:"audit_trail"`
+	AuditHistory string `json:"audit_history"`
 }
 
 type InvoicesLabels struct {
 	Title        string `json:"title"`
 	Empty        string `json:"empty"`
-	ColumnCode   string `json:"columnCode"`
-	ColumnDate   string `json:"columnDate"`
-	ColumnAmount string `json:"columnAmount"`
-	ColumnStatus string `json:"columnStatus"`
+	ColumnCode   string `json:"column_code"`
+	ColumnDate   string `json:"column_date"`
+	ColumnAmount string `json:"column_amount"`
+	ColumnStatus string `json:"column_status"`
 
 	// Recognize-revenue action surfaced as a primary action on the invoices
 	// tab toolbar AND on the empty-state. No page-header button (per plan
 	// §11.2 — tab-only).
-	RecognizeAction   string `json:"recognizeAction"`
-	RecognizeTitle    string `json:"recognizeTitle"`
-	RecognizeSubtitle string `json:"recognizeSubtitle"`
+	RecognizeAction   string `json:"recognize_action"`
+	RecognizeTitle    string `json:"recognize_title"`
+	RecognizeSubtitle string `json:"recognize_subtitle"`
 
 	// 2026-05-06 revenue-run plan Phase 1 — CTA labels for the three billing-kind
 	// branches on the Invoices tab. resolveInvoicesPrimaryAction (Phase 6) picks
 	// the correct one; all three must be pre-populated so no branch returns "".
-	RunInvoicesAction   string `json:"runInvoicesAction"`
-	PoolRecognizeAction string `json:"poolRecognizeAction"`
-	RequestUsageAction  string `json:"requestUsageAction"`
+	RunInvoicesAction   string `json:"run_invoices_action"`
+	PoolRecognizeAction string `json:"pool_recognize_action"`
+	RequestUsageAction  string `json:"request_usage_action"`
 
 	// 2026-05-11 run-invoices-polish Phase 3 — per-row action labels surfaced
 	// on the Invoices tab table (view, send email, print, edit).
-	RowActions InvoicesRowActionsLabels `json:"rowActions"`
+	RowActions InvoicesRowActionsLabels `json:"row_actions"`
 }
 
 // InvoicesRowActionsLabels holds per-row action button labels for
 // the Invoices tab on a subscription detail page.
 type InvoicesRowActionsLabels struct {
 	View      string `json:"view"`
-	SendEmail string `json:"sendEmail"`
+	SendEmail string `json:"send_email"`
 	Print     string `json:"print"`
 	Edit      string `json:"edit"`
 }
@@ -238,34 +255,34 @@ type InvoicesRowActionsLabels struct {
 // from their advisory counterparts since v1 surfaces them as hard blocks.
 type RecognizeLabels struct {
 	// Header / context section
-	ContextSection string `json:"contextSection"`
-	ClientLabel    string `json:"clientLabel"`
-	PlanLabel      string `json:"planLabel"`
-	QuantityLabel  string `json:"quantityLabel"`
+	ContextSection string `json:"context_section"`
+	ClientLabel    string `json:"client_label"`
+	PlanLabel      string `json:"plan_label"`
+	QuantityLabel  string `json:"quantity_label"`
 
 	// Period section
-	PeriodSection string `json:"periodSection"`
-	PeriodStart   string `json:"periodStart"`
-	PeriodEnd     string `json:"periodEnd"`
-	RevenueDate   string `json:"revenueDate"`
+	PeriodSection string `json:"period_section"`
+	PeriodStart   string `json:"period_start"`
+	PeriodEnd     string `json:"period_end"`
+	RevenueDate   string `json:"revenue_date"`
 
 	// Line items table
-	LineItemsSection    string `json:"lineItemsSection"`
-	ColumnDescription   string `json:"columnDescription"`
-	ColumnUnitPrice     string `json:"columnUnitPrice"`
-	ColumnQuantity      string `json:"columnQuantity"`
-	ColumnLineTotal     string `json:"columnLineTotal"`
-	ColumnTreatment     string `json:"columnTreatment"`
-	TotalLabel          string `json:"totalLabel"`
-	RemoveLine          string `json:"removeLine"`
-	TreatmentRecurring  string `json:"treatmentRecurring"`
-	TreatmentFirstCycle string `json:"treatmentFirstCycle"`
-	TreatmentUsageBased string `json:"treatmentUsageBased"`
-	TreatmentOneTime    string `json:"treatmentOneTime"`
+	LineItemsSection    string `json:"line_items_section"`
+	ColumnDescription   string `json:"column_description"`
+	ColumnUnitPrice     string `json:"column_unit_price"`
+	ColumnQuantity      string `json:"column_quantity"`
+	ColumnLineTotal     string `json:"column_line_total"`
+	ColumnTreatment     string `json:"column_treatment"`
+	TotalLabel          string `json:"total_label"`
+	RemoveLine          string `json:"remove_line"`
+	TreatmentRecurring  string `json:"treatment_recurring"`
+	TreatmentFirstCycle string `json:"treatment_first_cycle"`
+	TreatmentUsageBased string `json:"treatment_usage_based"`
+	TreatmentOneTime    string `json:"treatment_one_time"`
 
 	// Notes
-	NotesLabel       string `json:"notesLabel"`
-	NotesPlaceholder string `json:"notesPlaceholder"`
+	NotesLabel       string `json:"notes_label"`
+	NotesPlaceholder string `json:"notes_placeholder"`
 
 	// Footer buttons (v1 — single Generate button; "Save as Draft" is dropped
 	// per plan Phase D refinement since both paths run the idempotency check.)
@@ -273,40 +290,40 @@ type RecognizeLabels struct {
 	Cancel   string `json:"cancel"`
 
 	// Blocking error banners
-	CurrencyMismatchError     string `json:"currencyMismatchError"`
-	IdempotencyError          string `json:"idempotencyError"`
-	IdempotencyExistingLink   string `json:"idempotencyExistingLink"`
-	NoLinesError              string `json:"noLinesError"`
-	CycleNotConfiguredWarning string `json:"cycleNotConfiguredWarning"`
-	UsageBasedSkippedNotice   string `json:"usageBasedSkippedNotice"`
+	CurrencyMismatchError     string `json:"currency_mismatch_error"`
+	IdempotencyError          string `json:"idempotency_error"`
+	IdempotencyExistingLink   string `json:"idempotency_existing_link"`
+	NoLinesError              string `json:"no_lines_error"`
+	CycleNotConfiguredWarning string `json:"cycle_not_configured_warning"`
+	UsageBasedSkippedNotice   string `json:"usage_based_skipped_notice"`
 
 	// 2026-04-27 plan-client-scope plan §7 — info notice on the recognize
 	// drawer when the active subscription's PricePlan is client-scoped.
 	// Templated via {{.ClientName}}.
-	ClientCustomNotice string `json:"clientCustomNotice"`
+	ClientCustomNotice string `json:"client_custom_notice"`
 
 	// 2026-04-29 milestone-billing plan §5 / Phase E — milestone-specific
 	// drawer fields. Surfaced only when pricePlan.billing_kind = MILESTONE.
-	MilestoneSelect            string `json:"milestoneSelect"`
-	MilestoneSelectPlaceholder string `json:"milestoneSelectPlaceholder"`
-	NoReadyMilestone           string `json:"noReadyMilestone"`
-	MilestoneNotApplicable     string `json:"milestoneNotApplicable"`
-	BillAmount                 string `json:"billAmount"`
-	LeaveRemainderOpen         string `json:"leaveRemainderOpen"`
-	CloseShort                 string `json:"closeShort"`
-	PartialReason              string `json:"partialReason"`
-	PartialReasonRequired      string `json:"partialReasonRequired"`
-	OverBillingRejected        string `json:"overBillingRejected"`
+	MilestoneSelect            string `json:"milestone_select"`
+	MilestoneSelectPlaceholder string `json:"milestone_select_placeholder"`
+	NoReadyMilestone           string `json:"no_ready_milestone"`
+	MilestoneNotApplicable     string `json:"milestone_not_applicable"`
+	BillAmount                 string `json:"bill_amount"`
+	LeaveRemainderOpen         string `json:"leave_remainder_open"`
+	CloseShort                 string `json:"close_short"`
+	PartialReason              string `json:"partial_reason"`
+	PartialReasonRequired      string `json:"partial_reason_required"`
+	OverBillingRejected        string `json:"over_billing_rejected"`
 
 	// Tax preview labels (Phase 5)
-	TaxPreviewSection       string `json:"taxPreviewSection"`
-	TaxDirectionSurcharge   string `json:"taxDirectionSurcharge"`
-	TaxDirectionWithholding string `json:"taxDirectionWithholding"`
-	NetReceivable           string `json:"netReceivable"`
-	WHTAmount               string `json:"whtAmount"`
+	TaxPreviewSection       string `json:"tax_preview_section"`
+	TaxDirectionSurcharge   string `json:"tax_direction_surcharge"`
+	TaxDirectionWithholding string `json:"tax_direction_withholding"`
+	NetReceivable           string `json:"net_receivable"`
+	WHTAmount               string `json:"wht_amount"`
 	// TaxKindLabels maps tax_kind_snapshot values to localized display names.
 	// Populated from lyngua; used by convertPreviewTaxLines in the recognize view.
-	TaxKindLabels map[string]string `json:"taxKindLabels"`
+	TaxKindLabels map[string]string `json:"tax_kind_labels"`
 }
 
 // RevenueRunLabels holds drawer-form labels for the per-subscription
@@ -319,41 +336,41 @@ type RevenueRunLabels struct {
 	Subtitle string `json:"subtitle"`
 
 	// Read-only context row labels (subscription name + plan name)
-	SubscriptionLabel string `json:"subscriptionLabel"`
-	PlanLabel         string `json:"planLabel"`
+	SubscriptionLabel string `json:"subscription_label"`
+	PlanLabel         string `json:"plan_label"`
 	// ClientHintTemplate is shown as a hint beneath the subscription field.
 	// Use {client} as the substitution token. E.g. "Client: {client}".
-	ClientHintTemplate string `json:"clientHintTemplate"`
+	ClientHintTemplate string `json:"client_hint_template"`
 
-	AsOfDateLabel         string `json:"asOfDateLabel"`
-	AsOfDateHint          string `json:"asOfDateHint"`
-	BillThroughTodayLabel string `json:"billThroughTodayLabel"`
+	AsOfDateLabel         string `json:"as_of_date_label"`
+	AsOfDateHint          string `json:"as_of_date_hint"`
+	BillThroughTodayLabel string `json:"bill_through_today_label"`
 
 	// Period table columns
-	ColumnPeriod string `json:"columnPeriod"`
-	ColumnAmount string `json:"columnAmount"`
-	ColumnLines  string `json:"columnLines"`
+	ColumnPeriod string `json:"column_period"`
+	ColumnAmount string `json:"column_amount"`
+	ColumnLines  string `json:"column_lines"`
 
 	// Group headings / empty states
-	GroupNoPending        string `json:"groupNoPending"`
-	GroupCurrencyMismatch string `json:"groupCurrencyMismatch"`
-	EmptyTitle            string `json:"emptyTitle"`
-	EmptyMessage          string `json:"emptyMessage"`
+	GroupNoPending        string `json:"group_no_pending"`
+	GroupCurrencyMismatch string `json:"group_currency_mismatch"`
+	EmptyTitle            string `json:"empty_title"`
+	EmptyMessage          string `json:"empty_message"`
 
 	// IntroMessage is shown at the top of the drawer body as an info alert.
-	IntroMessage string `json:"introMessage"`
+	IntroMessage string `json:"intro_message"`
 
 	// Footer buttons
-	GenerateButton          string `json:"generateButton"`
-	GenerateButtonCountOne  string `json:"generateButtonCountOne"`
-	GenerateButtonCountMany string `json:"generateButtonCountMany"`
-	CancelButton            string `json:"cancelButton"`
+	GenerateButton          string `json:"generate_button"`
+	GenerateButtonCountOne  string `json:"generate_button_count_one"`
+	GenerateButtonCountMany string `json:"generate_button_count_many"`
+	CancelButton            string `json:"cancel_button"`
 
 	// Post-submit feedback
-	ToastSuccess string `json:"toastSuccess"`
-	ToastSkipped string `json:"toastSkipped"`
-	ToastErrored string `json:"toastErrored"`
-	ViewRunLink  string `json:"viewRunLink"`
+	ToastSuccess string `json:"toast_success"`
+	ToastSkipped string `json:"toast_skipped"`
+	ToastErrored string `json:"toast_errored"`
+	ViewRunLink  string `json:"view_run_link"`
 
 	// Inline error messages
 	Errors RevenueRunErrorLabels `json:"errors"`
@@ -362,11 +379,11 @@ type RevenueRunLabels struct {
 // RevenueRunErrorLabels holds inline error strings for the
 // per-subscription Invoice Run drawer.
 type RevenueRunErrorLabels struct {
-	PermissionDenied   string `json:"permissionDenied"`
-	IDRequired         string `json:"idRequired"`
-	InvalidFormData    string `json:"invalidFormData"`
-	UseCaseUnavailable string `json:"useCaseUnavailable"`
-	SelectOne          string `json:"selectOne"`
+	PermissionDenied   string `json:"permission_denied"`
+	IDRequired         string `json:"id_required"`
+	InvalidFormData    string `json:"invalid_form_data"`
+	UseCaseUnavailable string `json:"use_case_unavailable"`
+	SelectOne          string `json:"select_one"`
 }
 
 // MilestoneLabels holds labels for the Subscription Package tab's
@@ -375,24 +392,24 @@ type RevenueRunErrorLabels struct {
 type MilestoneLabels struct {
 	Title           string `json:"title"`
 	Subtitle        string `json:"subtitle"`
-	MarkReady       string `json:"markReady"`
+	MarkReady       string `json:"mark_ready"`
 	Waive           string `json:"waive"`
-	ViewInvoice     string `json:"viewInvoice"`
-	StatusPending   string `json:"statusPending"`
-	StatusReady     string `json:"statusReady"`
-	StatusBilled    string `json:"statusBilled"`
-	StatusWaived    string `json:"statusWaived"`
-	StatusDeferred  string `json:"statusDeferred"`
-	StatusCancelled string `json:"statusCancelled"`
-	TotalInvoiced   string `json:"totalInvoiced"`
-	AmountFull      string `json:"amountFull"`
-	AmountPartial   string `json:"amountPartial"`
+	ViewInvoice     string `json:"view_invoice"`
+	StatusPending   string `json:"status_pending"`
+	StatusReady     string `json:"status_ready"`
+	StatusBilled    string `json:"status_billed"`
+	StatusWaived    string `json:"status_waived"`
+	StatusDeferred  string `json:"status_deferred"`
+	StatusCancelled string `json:"status_cancelled"`
+	TotalInvoiced   string `json:"total_invoiced"`
+	AmountFull      string `json:"amount_full"`
+	AmountPartial   string `json:"amount_partial"`
 
 	// 20260517-advance-cash-events Plan B Phase 7 — Recognize CTA + the
 	// "linked to advance" badge that flags milestones tied to an advance
 	// Collection (via the collection_billing_event junction).
 	Recognize          string `json:"recognize"`
-	LinkedAdvanceBadge string `json:"linkedAdvanceBadge"`
+	LinkedAdvanceBadge string `json:"linked_advance_badge"`
 }
 
 // OperationsLabels holds labels for the Subscription detail's
@@ -401,62 +418,62 @@ type MilestoneLabels struct {
 // plan §9.1 (cycle accordion + backfill keys).
 type OperationsLabels struct {
 	Title        string `json:"title"`
-	EmptyTitle   string `json:"emptyTitle"`
-	EmptyMessage string `json:"emptyMessage"`
-	SpawnAction  string `json:"spawnAction"`
-	RootJob      string `json:"rootJob"`
-	ChildJob     string `json:"childJob"`
-	PhaseSummary string `json:"phaseSummary"`
-	ViewJobLink  string `json:"viewJobLink"`
+	EmptyTitle   string `json:"empty_title"`
+	EmptyMessage string `json:"empty_message"`
+	SpawnAction  string `json:"spawn_action"`
+	RootJob      string `json:"root_job"`
+	ChildJob     string `json:"child_job"`
+	PhaseSummary string `json:"phase_summary"`
+	ViewJobLink  string `json:"view_job_link"`
 
 	// 2026-04-30 cyclic-subscription-jobs plan §9.1 — cycle accordion copy.
-	SubscriptionHeading   string `json:"subscriptionHeading"`
-	CycleHeading          string `json:"cycleHeading"`
-	CyclePlaceholder      string `json:"cyclePlaceholder"`
-	CycleSpawnNow         string `json:"cycleSpawnNow"`
-	CycleStatusPending    string `json:"cycleStatusPending"`
-	CycleStatusInProgress string `json:"cycleStatusInProgress"`
-	CycleStatusCompleted  string `json:"cycleStatusCompleted"`
-	CycleStatusOverdue    string `json:"cycleStatusOverdue"`
-	CycleInvoiceLinked    string `json:"cycleInvoiceLinked"`
-	CycleNoInvoice        string `json:"cycleNoInvoice"`
-	CycleEmpty            string `json:"cycleEmpty"`
-	BackfillBanner        string `json:"backfillBanner"`
-	BackfillCta           string `json:"backfillCta"`
+	SubscriptionHeading   string `json:"subscription_heading"`
+	CycleHeading          string `json:"cycle_heading"`
+	CyclePlaceholder      string `json:"cycle_placeholder"`
+	CycleSpawnNow         string `json:"cycle_spawn_now"`
+	CycleStatusPending    string `json:"cycle_status_pending"`
+	CycleStatusInProgress string `json:"cycle_status_in_progress"`
+	CycleStatusCompleted  string `json:"cycle_status_completed"`
+	CycleStatusOverdue    string `json:"cycle_status_overdue"`
+	CycleInvoiceLinked    string `json:"cycle_invoice_linked"`
+	CycleNoInvoice        string `json:"cycle_no_invoice"`
+	CycleEmpty            string `json:"cycle_empty"`
+	BackfillBanner        string `json:"backfill_banner"`
+	BackfillCta           string `json:"backfill_cta"`
 
 	// 2026-05-01 ad-hoc-subscription-billing plan §5.2 — Operations tab
 	// AD_HOC mode keys. Vertical-neutral defaults ("usage", "occurrence")
 	// with professional-tier overrides ("service call", "retainer", etc.).
-	AdHocPoolHeading       string `json:"adHocPoolHeading"`
-	AdHocPerCallHeading    string `json:"adHocPerCallHeading"`
-	EntitlementUsed        string `json:"entitlementUsed"`
-	EntitlementRemaining   string `json:"entitlementRemaining"`
-	EntitlementExhausted   string `json:"entitlementExhausted"`
-	RequestUsageCta        string `json:"requestUsageCta"`
-	ExtendEntitlementCta   string `json:"extendEntitlementCta"`
-	UsageRequestedDate     string `json:"usageRequestedDate"`
-	UsageDeliveredDate     string `json:"usageDeliveredDate"`
-	UsageOrdinalLabel      string `json:"usageOrdinalLabel"`
-	UsageNotDelivered      string `json:"usageNotDelivered"`
-	PoolInvoiceLink        string `json:"poolInvoiceLink"`
-	PoolInvoicePending     string `json:"poolInvoicePending"`
-	PoolGenerateInvoiceCta string `json:"poolGenerateInvoiceCta"`
-	PerCallRecognizeCta    string `json:"perCallRecognizeCta"`
-	PerCallInvoiceLink     string `json:"perCallInvoiceLink"`
-	PerCallNotReady        string `json:"perCallNotReady"`
+	AdHocPoolHeading       string `json:"ad_hoc_pool_heading"`
+	AdHocPerCallHeading    string `json:"ad_hoc_per_call_heading"`
+	EntitlementUsed        string `json:"entitlement_used"`
+	EntitlementRemaining   string `json:"entitlement_remaining"`
+	EntitlementExhausted   string `json:"entitlement_exhausted"`
+	RequestUsageCta        string `json:"request_usage_cta"`
+	ExtendEntitlementCta   string `json:"extend_entitlement_cta"`
+	UsageRequestedDate     string `json:"usage_requested_date"`
+	UsageDeliveredDate     string `json:"usage_delivered_date"`
+	UsageOrdinalLabel      string `json:"usage_ordinal_label"`
+	UsageNotDelivered      string `json:"usage_not_delivered"`
+	PoolInvoiceLink        string `json:"pool_invoice_link"`
+	PoolInvoicePending     string `json:"pool_invoice_pending"`
+	PoolGenerateInvoiceCta string `json:"pool_generate_invoice_cta"`
+	PerCallRecognizeCta    string `json:"per_call_recognize_cta"`
+	PerCallInvoiceLink     string `json:"per_call_invoice_link"`
+	PerCallNotReady        string `json:"per_call_not_ready"`
 }
 
 // BackfillLabels holds labels for the Backfill cycle Jobs drawer.
 // Lyngua key: `subscription.detail.backfill.*`. See cyclic-subscription-jobs
 // plan §9.2.
 type BackfillLabels struct {
-	DrawerTitle       string `json:"drawerTitle"`
-	DrawerDescription string `json:"drawerDescription"`
-	PreviewLine       string `json:"previewLine"`
-	CountLabel        string `json:"countLabel"`
+	DrawerTitle       string `json:"drawer_title"`
+	DrawerDescription string `json:"drawer_description"`
+	PreviewLine       string `json:"preview_line"`
+	CountLabel        string `json:"count_label"`
 	Confirm           string `json:"confirm"`
 	Cancel            string `json:"cancel"`
-	MaxWarning        string `json:"maxWarning"`
+	MaxWarning        string `json:"max_warning"`
 }
 
 // JobsTabLabels holds labels for the new flat Jobs tab on the
@@ -465,24 +482,24 @@ type BackfillLabels struct {
 type JobsTabLabels struct {
 	Heading          string `json:"heading"`
 	Empty            string `json:"empty"`
-	FilterStatus     string `json:"filterStatus"`
-	FilterType       string `json:"filterType"`
-	FilterAll        string `json:"filterAll"`
-	SortBy           string `json:"sortBy"`
-	SortByCycle      string `json:"sortByCycle"`
-	ExportCsv        string `json:"exportCsv"`
+	FilterStatus     string `json:"filter_status"`
+	FilterType       string `json:"filter_type"`
+	FilterAll        string `json:"filter_all"`
+	SortBy           string `json:"sort_by"`
+	SortByCycle      string `json:"sort_by_cycle"`
+	ExportCsv        string `json:"export_csv"`
 	Summary          string `json:"summary"`
-	ColumnNumber     string `json:"columnNumber"`
-	ColumnName       string `json:"columnName"`
-	ColumnType       string `json:"columnType"`
-	ColumnPhase      string `json:"columnPhase"`
-	ColumnStatus     string `json:"columnStatus"`
-	ColumnPeriod     string `json:"columnPeriod"`
-	TypeSubscription string `json:"typeSubscription"`
-	TypeOnboarding   string `json:"typeOnboarding"`
-	TypeCycle        string `json:"typeCycle"`
-	TypeVisit        string `json:"typeVisit"`
-	SpawnFailedToast string `json:"spawnFailedToast"`
+	ColumnNumber     string `json:"column_number"`
+	ColumnName       string `json:"column_name"`
+	ColumnType       string `json:"column_type"`
+	ColumnPhase      string `json:"column_phase"`
+	ColumnStatus     string `json:"column_status"`
+	ColumnPeriod     string `json:"column_period"`
+	TypeSubscription string `json:"type_subscription"`
+	TypeOnboarding   string `json:"type_onboarding"`
+	TypeCycle        string `json:"type_cycle"`
+	TypeVisit        string `json:"type_visit"`
+	SpawnFailedToast string `json:"spawn_failed_toast"`
 }
 
 // SpawnLabels holds labels for the retroactive Spawn Jobs drawer.
@@ -490,29 +507,29 @@ type JobsTabLabels struct {
 // plan §5.3 / §9.
 type SpawnLabels struct {
 	Title             string `json:"title"`
-	DetectedTemplates string `json:"detectedTemplates"`
-	RootTemplate      string `json:"rootTemplate"`
+	DetectedTemplates string `json:"detected_templates"`
+	RootTemplate      string `json:"root_template"`
 	Cancel            string `json:"cancel"`
 	Confirm           string `json:"confirm"`
-	SuccessToast      string `json:"successToast"`
+	SuccessToast      string `json:"success_toast"`
 	Skipped           string `json:"skipped"`
 }
 
 type ConfirmLabels struct {
 	Cancel                string `json:"cancel"`
-	CancelMessage         string `json:"cancelMessage"`
+	CancelMessage         string `json:"cancel_message"`
 	Delete                string `json:"delete"`
-	DeleteMessage         string `json:"deleteMessage"`
+	DeleteMessage         string `json:"delete_message"`
 	Activate              string `json:"activate"`
-	ActivateMessage       string `json:"activateMessage"`
+	ActivateMessage       string `json:"activate_message"`
 	Deactivate            string `json:"deactivate"`
-	DeactivateMessage     string `json:"deactivateMessage"`
-	BulkActivate          string `json:"bulkActivate"`
-	BulkActivateMessage   string `json:"bulkActivateMessage"`
-	BulkDeactivate        string `json:"bulkDeactivate"`
-	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
-	BulkDelete            string `json:"bulkDelete"`
-	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	DeactivateMessage     string `json:"deactivate_message"`
+	BulkActivate          string `json:"bulk_activate"`
+	BulkActivateMessage   string `json:"bulk_activate_message"`
+	BulkDeactivate        string `json:"bulk_deactivate"`
+	BulkDeactivateMessage string `json:"bulk_deactivate_message"`
+	BulkDelete            string `json:"bulk_delete"`
+	BulkDeleteMessage     string `json:"bulk_delete_message"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.
@@ -609,6 +626,7 @@ func DefaultLabels() Labels {
 			PageTitle:            "Subscription Details",
 			Customer:             "Customer",
 			Plan:                 "Plan",
+			PriceSchedule:        "Price Schedule",
 			StartDate:            "Start Date",
 			EndDate:              "End Date",
 			Status:               "Status",
@@ -616,6 +634,12 @@ func DefaultLabels() Labels {
 			ModifiedDate:         "Last Modified",
 			AuditTrailComingSoon: "Audit trail coming soon.",
 			AuditTrailDesc:       "Audit trail for subscription changes is coming soon.",
+			SectionClient:        "Client",
+			SectionTerms:         "Subscription",
+			SectionLogs:          "Logs",
+			FirstName:            "First Name",
+			LastName:             "Last Name",
+			PackageEmpty:         "No package details available.",
 		},
 		Tabs: TabLabels{
 			Info:       "Information",

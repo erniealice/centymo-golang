@@ -30,13 +30,13 @@ type Deps struct {
 
 func formLabels(t func(string) string, s inventory.SerialLabels) serialform.Labels {
 	return serialform.Labels{
-		SerialNumber:  t("inventory.serial.serialNumber"),
+		SerialNumber:  t("inventory.serial.serial_number"),
 		IMEI:          t("inventory.serial.imei"),
 		Status:        t("inventory.serial.status"),
-		WarrantyStart: t("inventory.serial.warrantyStart"),
-		WarrantyEnd:   t("inventory.serial.warrantyEnd"),
-		PurchaseOrder: t("inventory.serial.purchaseOrder"),
-		SoldReference: t("inventory.serial.soldReference"),
+		WarrantyStart: t("inventory.serial.warranty_start"),
+		WarrantyEnd:   t("inventory.serial.warranty_end"),
+		PurchaseOrder: t("inventory.serial.purchase_order"),
+		SoldReference: t("inventory.serial.sold_reference"),
 		// Info fields sourced from inventory.SerialLabels (populated from lyngua JSON + defaults).
 		SerialNumberInfo:  s.SerialNumberInfo,
 		IMEIInfo:          s.IMEIInfo,
@@ -50,11 +50,11 @@ func formLabels(t func(string) string, s inventory.SerialLabels) serialform.Labe
 
 func statusOptions(t func(string) string) []pyeza.SelectOption {
 	return []pyeza.SelectOption{
-		{Value: "available", Label: t("inventory.serial.statusAvailable")},
-		{Value: "sold", Label: t("inventory.serial.statusSold")},
-		{Value: "reserved", Label: t("inventory.serial.statusReserved")},
-		{Value: "defective", Label: t("inventory.serial.statusDefective")},
-		{Value: "returned", Label: t("inventory.serial.statusReturned")},
+		{Value: "available", Label: t("inventory.serial.status_available")},
+		{Value: "sold", Label: t("inventory.serial.status_sold")},
+		{Value: "reserved", Label: t("inventory.serial.status_reserved")},
+		{Value: "defective", Label: t("inventory.serial.status_defective")},
+		{Value: "returned", Label: t("inventory.serial.status_returned")},
 	}
 }
 

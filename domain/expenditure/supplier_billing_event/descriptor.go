@@ -10,7 +10,7 @@ func Describe() compose.Unit {
 	return compose.Unit{
 		Key:       "expenditure.supplier_billing_event",
 		Labels:    &l,
-		LabelJSON: compose.JSONBinding{File: "advances_dashboard.json", Key: "supplierBillingEvent"},
+		LabelJSON: compose.JSONBinding{File: "advances_dashboard.json", Key: "supplier_billing_event"},
 		LabelName: "SupplierBillingEventLabels",
 		Templates: TemplatesFS,
 	}

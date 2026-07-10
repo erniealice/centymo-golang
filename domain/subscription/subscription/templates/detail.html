@@ -44,7 +44,7 @@
      data-is-ad-hoc="{{if .IsAdHoc}}true{{else}}false{{end}}"
      data-ad-hoc-basis="{{.AdHocBasis}}"
      hx-trigger="refresh-subscription-operations-tab from:body"
-     hx-get="{{index .Subscription "tab_invoices_url"}}"
+     hx-get="{{index .Subscription "tab_operations_url"}}"
      hx-target="this"
      hx-swap="outerHTML">
   {{if .IsCyclic}}
@@ -350,7 +350,7 @@
         {{end}}
     </div>
     {{else}}
-    <p>{{.Labels.Invoices.Empty}}</p>
+    <p>{{.Labels.Detail.PackageEmpty}}</p>
     {{end}}
 
     {{if .PackageCustomizeShown}}
@@ -471,15 +471,34 @@
 </div>
 {{end}}
 
-{{/* Basic Information Tab */}}
+{{/* Basic Information Tab — three sections: who the subscription is for,
+     the subscription terms, and record logs. The customer section splits
+     into Last/First name rows when the client is a person (linked user with
+     name parts); company clients keep the single customer row. */}}
 {{define "subscription-tab-info"}}
 <div class="tab-scroll">
-    <h4 class="detail-section-title">{{.Labels.Detail.PageTitle}}</h4>
+    <h4 class="detail-section-title">{{.Labels.Detail.SectionClient}}</h4>
     <div class="detail-info-grid">
+        {{if or (index .Subscription "client_last_name") (index .Subscription "client_first_name")}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.LastName}}</span>
+            <span class="detail-info-value">{{index .Subscription "client_last_name"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.FirstName}}</span>
+            <span class="detail-info-value">{{index .Subscription "client_first_name"}}</span>
+        </div>
+        {{else}}
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Customer}}</span>
             <span class="detail-info-value">{{index .Subscription "customer"}}</span>
         </div>
+        {{end}}
+    </div>
+
+    <h4 class="detail-section-title">{{.Labels.Detail.SectionTerms}}</h4>
+    {{/* Two rows: the offer + dates, then the priced commitment + status. */}}
+    <div class="detail-info-grid">
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Plan}}</span>
             <span class="detail-info-value">{{index .Subscription "plan"}}</span>
@@ -492,6 +511,12 @@
             <span class="detail-info-label">{{.Labels.Detail.EndDate}}</span>
             <span class="detail-info-value">{{index .Subscription "date_end_string"}}</span>
         </div>
+    </div>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.PriceSchedule}}</span>
+            <span class="detail-info-value">{{index .Subscription "price_schedule"}}</span>
+        </div>
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
             <span>
@@ -500,6 +525,10 @@
                 </span>
             </span>
         </div>
+    </div>
+
+    <h4 class="detail-section-title">{{.Labels.Detail.SectionLogs}}</h4>
+    <div class="detail-info-grid">
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.CreatedDate}}</span>
             <span class="detail-info-value">{{index .Subscription "date_created_string"}}</span>

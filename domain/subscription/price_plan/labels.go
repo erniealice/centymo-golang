@@ -17,38 +17,38 @@ type Labels struct {
 	Tabs         TabLabels2         `json:"tabs"`
 	Confirm      ConfirmLabels      `json:"confirm"`
 	Errors       ErrorLabels        `json:"errors"`
-	ProductPrice ProductPriceLabels `json:"productPrice"`
+	ProductPrice ProductPriceLabels `json:"product_price"`
 	Messages     MessageLabels      `json:"messages"`
 }
 
 // ProductPriceLabels holds labels for product-price sub-table actions and empty state.
 type ProductPriceLabels struct {
-	EditTitle   string `json:"editTitle"`
-	DeleteTitle string `json:"deleteTitle"`
-	EmptyTitle  string `json:"emptyTitle"`
-	EmptyMsg    string `json:"emptyMsg"`
+	EditTitle   string `json:"edit_title"`
+	DeleteTitle string `json:"delete_title"`
+	EmptyTitle  string `json:"empty_title"`
+	EmptyMsg    string `json:"empty_msg"`
 }
 
 // MessageLabels holds translatable message strings used in the price plan
 // and price schedule plan views (pricing-lock notices, validation errors).
 type MessageLabels struct {
-	PricingLockedReason     string `json:"pricingLockedReason"`
-	ItemPricingLockedReason string `json:"itemPricingLockedReason"`
-	CreateNotAvailable      string `json:"createNotAvailable"`
-	UpdateNotAvailable      string `json:"updateNotAvailable"`
-	ProductRequired         string `json:"productRequired"`
-	InvalidPrice            string `json:"invalidPrice"`
-	InUseCannotModify       string `json:"inUseCannotModify"`
-	IDRequired              string `json:"idRequired"`
-	DeleteNotAvailable      string `json:"deleteNotAvailable"`
-	CurrencyMismatch        string `json:"currencyMismatch"`
+	PricingLockedReason     string `json:"pricing_locked_reason"`
+	ItemPricingLockedReason string `json:"item_pricing_locked_reason"`
+	CreateNotAvailable      string `json:"create_not_available"`
+	UpdateNotAvailable      string `json:"update_not_available"`
+	ProductRequired         string `json:"product_required"`
+	InvalidPrice            string `json:"invalid_price"`
+	InUseCannotModify       string `json:"in_use_cannot_modify"`
+	IDRequired              string `json:"id_required"`
+	DeleteNotAvailable      string `json:"delete_not_available"`
+	CurrencyMismatch        string `json:"currency_mismatch"`
 }
 
 type PageLabels struct {
 	Title         string `json:"title"`
 	Subtitle      string `json:"subtitle"`
-	ActiveTitle   string `json:"activeTitle"`
-	InactiveTitle string `json:"inactiveTitle"`
+	ActiveTitle   string `json:"active_title"`
+	InactiveTitle string `json:"inactive_title"`
 }
 
 type ButtonLabels struct {
@@ -56,7 +56,7 @@ type ButtonLabels struct {
 	Add        string `json:"add"`
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
-	BulkDelete string `json:"bulkDelete"`
+	BulkDelete string `json:"bulk_delete"`
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
 }
@@ -71,7 +71,7 @@ type ColumnLabels2 struct {
 	Schedule    string `json:"schedule"`
 	Plan        string `json:"plan"`
 	Status      string `json:"status"`
-	DateCreated string `json:"dateCreated"`
+	DateCreated string `json:"date_created"`
 	Actions     string `json:"actions"`
 }
 
@@ -79,31 +79,31 @@ type EmptyLabels struct {
 	Title       string `json:"title"`
 	Message     string `json:"message"`
 	Description string `json:"description"`
-	ActionLabel string `json:"actionLabel"`
+	ActionLabel string `json:"action_label"`
 }
 
 type ActionLabels struct {
-	CreateSuccess string `json:"createSuccess"`
-	CreateError   string `json:"createError"`
-	UpdateSuccess string `json:"updateSuccess"`
-	UpdateError   string `json:"updateError"`
-	DeleteSuccess string `json:"deleteSuccess"`
-	DeleteError   string `json:"deleteError"`
+	CreateSuccess string `json:"create_success"`
+	CreateError   string `json:"create_error"`
+	UpdateSuccess string `json:"update_success"`
+	UpdateError   string `json:"update_error"`
+	DeleteSuccess string `json:"delete_success"`
+	DeleteError   string `json:"delete_error"`
 }
 
 type BulkLabels struct {
-	DeleteTitle   string `json:"deleteTitle"`
-	DeleteMessage string `json:"deleteMessage"`
-	StatusTitle   string `json:"statusTitle"`
-	StatusMessage string `json:"statusMessage"`
+	DeleteTitle   string `json:"delete_title"`
+	DeleteMessage string `json:"delete_message"`
+	StatusTitle   string `json:"status_title"`
+	StatusMessage string `json:"status_message"`
 }
 
 type DetailLabels2 struct {
 	Title          string `json:"title"`
-	InfoTab        string `json:"infoTab"`
-	AttachmentsTab string `json:"attachmentsTab"`
-	AuditTab       string `json:"auditTab"`
-	ProductsTab    string `json:"productsTab"`
+	InfoTab        string `json:"info_tab"`
+	AttachmentsTab string `json:"attachments_tab"`
+	AuditTab       string `json:"audit_tab"`
+	ProductsTab    string `json:"products_tab"`
 
 	// Info-tab field labels (price-schedule-plan-tab-info).
 	Heading       string `json:"heading"`
@@ -112,19 +112,19 @@ type DetailLabels2 struct {
 	Amount        string `json:"amount"`
 	Currency      string `json:"currency"`
 	Duration      string `json:"duration"`
-	ScheduleLabel string `json:"scheduleLabel"`
+	ScheduleLabel string `json:"schedule_label"`
 	Status        string `json:"status"`
-	DateCreated   string `json:"dateCreated"`
-	DateModified  string `json:"dateModified"`
+	DateCreated   string `json:"date_created"`
+	DateModified  string `json:"date_modified"`
 	Edit          string `json:"edit"`
-	EditTitle     string `json:"editTitle"`
+	EditTitle     string `json:"edit_title"`
 
 	// 2026-04-30 cyclic-subscription-jobs plan §20 — Billing model summary
 	// rendered on the info tab. Lyngua key: `pricePlan.detail.summary*`.
-	SummaryHeading            string             `json:"summaryHeading"`
-	CustomerHeading           string             `json:"customerHeading"`
-	OperationsHeading         string             `json:"operationsHeading"`
-	RevenueRecognitionHeading string             `json:"revenueRecognitionHeading"`
+	SummaryHeading            string             `json:"summary_heading"`
+	CustomerHeading           string             `json:"customer_heading"`
+	OperationsHeading         string             `json:"operations_heading"`
+	RevenueRecognitionHeading string             `json:"revenue_recognition_heading"`
 	Summary                   BillingSummaryCopy `json:"summary"`
 	Warning                   BillingSummaryWarn `json:"warning"`
 
@@ -139,20 +139,20 @@ type DetailLabels2 struct {
 // AD_HOC plan adds adHoc.* in a follow-up. Each entry has 3 lines:
 // customer, operations, revenue.
 type BillingSummaryCopy struct {
-	OneTime   SummaryByBasis `json:"oneTime"`
+	OneTime   SummaryByBasis `json:"one_time"`
 	Recurring SummaryByBasis `json:"recurring"`
 	Contract  SummaryByBasis `json:"contract"`
 	Milestone SummaryByBasis `json:"milestone"`
-	AdHoc     SummaryByBasis `json:"adHoc"`
+	AdHoc     SummaryByBasis `json:"ad_hoc"`
 }
 
 // SummaryByBasis groups the text lines per basis. Empty
 // strings on a basis means "no copy for that combo" — view skips it.
 type SummaryByBasis struct {
-	PerCycle         SummaryLines `json:"perCycle"`
-	TotalPackage     SummaryLines `json:"totalPackage"`
-	DerivedFromLines SummaryLines `json:"derivedFromLines"`
-	PerOccurrence    SummaryLines `json:"perOccurrence"`
+	PerCycle         SummaryLines `json:"per_cycle"`
+	TotalPackage     SummaryLines `json:"total_package"`
+	DerivedFromLines SummaryLines `json:"derived_from_lines"`
+	PerOccurrence    SummaryLines `json:"per_occurrence"`
 }
 
 // SummaryLines holds the 3 lines for a kind × basis cell.
@@ -165,14 +165,14 @@ type SummaryLines struct {
 // BillingSummaryWarn carries the warning-row copy keyed by symbol
 // per plan §20.3. View only renders entries whose preconditions trip.
 type BillingSummaryWarn struct {
-	MilestoneNoTemplate           string `json:"milestoneNoTemplate"`
-	RecurringNoTemplate           string `json:"recurringNoTemplate"`
-	VisitsPerCycleInvalidKind     string `json:"visitsPerCycleInvalidKind"`
-	AdHocPoolNoTemplate           string `json:"adHocPoolNoTemplate"`
-	AdHocPerCallNoTemplate        string `json:"adHocPerCallNoTemplate"`
-	AdHocNoEntitlement            string `json:"adHocNoEntitlement"`
-	AdHocBillingCycleNotAllowed   string `json:"adHocBillingCycleNotAllowed"`
-	AdHocVisitsPerCycleNotAllowed string `json:"adHocVisitsPerCycleNotAllowed"`
+	MilestoneNoTemplate           string `json:"milestone_no_template"`
+	RecurringNoTemplate           string `json:"recurring_no_template"`
+	VisitsPerCycleInvalidKind     string `json:"visits_per_cycle_invalid_kind"`
+	AdHocPoolNoTemplate           string `json:"ad_hoc_pool_no_template"`
+	AdHocPerCallNoTemplate        string `json:"ad_hoc_per_call_no_template"`
+	AdHocNoEntitlement            string `json:"ad_hoc_no_entitlement"`
+	AdHocBillingCycleNotAllowed   string `json:"ad_hoc_billing_cycle_not_allowed"`
+	AdHocVisitsPerCycleNotAllowed string `json:"ad_hoc_visits_per_cycle_not_allowed"`
 }
 
 type TabLabels2 struct {
@@ -187,56 +187,56 @@ type TabLabels2 struct {
 // and confirm-delete copy for the price-plan detail "Subscriptions" tab —
 // professional tier overrides this block to use the engagement vocabulary.
 type SubscriptionsSectionLabels struct {
-	ColumnName           string `json:"columnName"`
-	ColumnClient         string `json:"columnClient"`
-	ColumnPlan           string `json:"columnPlan"`
-	ColumnStartDate      string `json:"columnStartDate"`
-	ColumnEndDate        string `json:"columnEndDate"`
-	EmptyTitle           string `json:"emptyTitle"`
-	EmptyMessage         string `json:"emptyMessage"`
-	ConfirmDeleteTitle   string `json:"confirmDeleteTitle"`
-	ConfirmDeleteMessage string `json:"confirmDeleteMessage"`
+	ColumnName           string `json:"column_name"`
+	ColumnClient         string `json:"column_client"`
+	ColumnPlan           string `json:"column_plan"`
+	ColumnStartDate      string `json:"column_start_date"`
+	ColumnEndDate        string `json:"column_end_date"`
+	EmptyTitle           string `json:"empty_title"`
+	EmptyMessage         string `json:"empty_message"`
+	ConfirmDeleteTitle   string `json:"confirm_delete_title"`
+	ConfirmDeleteMessage string `json:"confirm_delete_message"`
 }
 
 type ConfirmLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 
 	// 2026-04-27 plan-client-scope plan §3.5 — fired by the centymo confirm
 	// dialog when an operator changes monetary fields on a client-scoped
 	// PricePlan that has N > 1 active subscriptions. Templated via
 	// {{.Count}} and {{.ClientName}}.
-	EditAmountMultipleSubscriptions string `json:"editAmountMultipleSubscriptions"`
+	EditAmountMultipleSubscriptions string `json:"edit_amount_multiple_subscriptions"`
 }
 
 type ErrorLabels struct {
-	NotFound     string `json:"notFound"`
-	LoadFailed   string `json:"loadFailed"`
+	NotFound     string `json:"not_found"`
+	LoadFailed   string `json:"load_failed"`
 	Unauthorized string `json:"unauthorized"`
-	CreateFailed string `json:"createFailed"`
-	UpdateFailed string `json:"updateFailed"`
-	DeleteFailed string `json:"deleteFailed"`
-	InUse        string `json:"inUse"`
+	CreateFailed string `json:"create_failed"`
+	UpdateFailed string `json:"update_failed"`
+	DeleteFailed string `json:"delete_failed"`
+	InUse        string `json:"in_use"`
 
 	// 2026-04-27 plan-client-scope plan §7. Surfaced when an UpdatePricePlan
 	// body sends a client_id that doesn't match the parent Plan's client_id.
-	ClientScopeMismatch string `json:"clientScopeMismatch"`
+	ClientScopeMismatch string `json:"client_scope_mismatch"`
 	// 2026-04-28 — surfaced when the operator picks a price_schedule whose
 	// client_id belongs to a different client than the parent Plan. Master
 	// schedules (sched.client_id == "") are still accepted; only the
 	// cross-client cases get rejected.
-	ScheduleClientMismatch string `json:"scheduleClientMismatch"`
+	ScheduleClientMismatch string `json:"schedule_client_mismatch"`
 	// 2026-04-28 — surfaced when an operator submits a PricePlan with no
 	// price_schedule_id under a client-scoped Plan. The use case used to
 	// auto-create a schedule with a synthetic now() date; reverted because
 	// that hid real operator intent. Operator must pick or create a client
 	// rate card first.
-	ScheduleRequiredForClientScope string `json:"scheduleRequiredForClientScope"`
+	ScheduleRequiredForClientScope string `json:"schedule_required_for_client_scope"`
 	// Server-side-only error key — the centymo confirm dialog catches the
 	// N>1-engagements gate before this surfaces.
-	MultiSubscriptionConfirmRequired string `json:"multiSubscriptionConfirmRequired"`
+	MultiSubscriptionConfirmRequired string `json:"multi_subscription_confirm_required"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.
@@ -495,86 +495,86 @@ func DefaultLabels() Labels {
 // FormLabels holds translatable labels for the PricePlan add/edit form.
 type FormLabels struct {
 	Name                string `json:"name"`
-	NamePlaceholder     string `json:"namePlaceholder"`
+	NamePlaceholder     string `json:"name_placeholder"`
 	Description         string `json:"description"`
-	DescPlaceholder     string `json:"descriptionPlaceholder"`
+	DescPlaceholder     string `json:"description_placeholder"`
 	Amount              string `json:"amount"`
-	AmountPlaceholder   string `json:"amountPlaceholder"`
+	AmountPlaceholder   string `json:"amount_placeholder"`
 	Currency            string `json:"currency"`
-	CurrencyPlaceholder string `json:"currencyPlaceholder"`
-	DurationValue       string `json:"durationValue"`
-	DurationUnit        string `json:"durationUnit"`
+	CurrencyPlaceholder string `json:"currency_placeholder"`
+	DurationValue       string `json:"duration_value"`
+	DurationUnit        string `json:"duration_unit"`
 	Schedule            string `json:"schedule"`
-	SchedulePlaceholder string `json:"schedulePlaceholder"`
-	ScheduleSearch      string `json:"scheduleSearch"`
+	SchedulePlaceholder string `json:"schedule_placeholder"`
+	ScheduleSearch      string `json:"schedule_search"`
 	Location            string `json:"location"`
-	LocationPlaceholder string `json:"locationPlaceholder"`
-	LocationHintPrefix  string `json:"locationHintPrefix"`
-	SelectLocation      string `json:"selectLocation"`
+	LocationPlaceholder string `json:"location_placeholder"`
+	LocationHintPrefix  string `json:"location_hint_prefix"`
+	SelectLocation      string `json:"select_location"`
 	Active              string `json:"active"`
-	PlanLabel           string `json:"planLabel"`
-	PlanPlaceholder     string `json:"planPlaceholder"`
-	PlanSearch          string `json:"planSearch"`
+	PlanLabel           string `json:"plan_label"`
+	PlanPlaceholder     string `json:"plan_placeholder"`
+	PlanSearch          string `json:"plan_search"`
 
 	// Wave 2 — new billing semantics fields (from lyngua price_plan.json → price_plan.form)
-	SectionBasic         string `json:"sectionBasic"`
-	SectionPricing       string `json:"sectionPricing"`
-	BillingKindLabel     string `json:"billingKindLabel"`
-	BillingKindOneTime   string `json:"billingKindOneTime"`
-	BillingKindRecurring string `json:"billingKindRecurring"`
-	BillingKindContract  string `json:"billingKindContract"`
-	BillingKindMilestone string `json:"billingKindMilestone"`
-	BillingKindAdHoc     string `json:"billingKindAdHoc"`
+	SectionBasic         string `json:"section_basic"`
+	SectionPricing       string `json:"section_pricing"`
+	BillingKindLabel     string `json:"billing_kind_label"`
+	BillingKindOneTime   string `json:"billing_kind_one_time"`
+	BillingKindRecurring string `json:"billing_kind_recurring"`
+	BillingKindContract  string `json:"billing_kind_contract"`
+	BillingKindMilestone string `json:"billing_kind_milestone"`
+	BillingKindAdHoc     string `json:"billing_kind_ad_hoc"`
 	// Per-option hint copy surfaced inline below the billing_kind select as the
 	// operator picks. Matches the multi-vertical convention — general/ tier ships
 	// neutral phrasing, professional/ overrides with engagement vocabulary.
-	BillingKindOneTimeHint      string `json:"billingKindOneTimeHint"`
-	BillingKindRecurringHint    string `json:"billingKindRecurringHint"`
-	BillingKindContractHint     string `json:"billingKindContractHint"`
-	BillingKindMilestoneHint    string `json:"billingKindMilestoneHint"`
-	BillingKindAdHocHint        string `json:"billingKindAdHocHint"`
-	AmountBasisLabel            string `json:"amountBasisLabel"`
-	AmountBasisPerCycle         string `json:"amountBasisPerCycle"`
-	AmountBasisTotalPackage     string `json:"amountBasisTotalPackage"`
-	AmountBasisDerivedFromLines string `json:"amountBasisDerivedFromLines"`
-	AmountBasisPerOccurrence    string `json:"amountBasisPerOccurrence"`
+	BillingKindOneTimeHint      string `json:"billing_kind_one_time_hint"`
+	BillingKindRecurringHint    string `json:"billing_kind_recurring_hint"`
+	BillingKindContractHint     string `json:"billing_kind_contract_hint"`
+	BillingKindMilestoneHint    string `json:"billing_kind_milestone_hint"`
+	BillingKindAdHocHint        string `json:"billing_kind_ad_hoc_hint"`
+	AmountBasisLabel            string `json:"amount_basis_label"`
+	AmountBasisPerCycle         string `json:"amount_basis_per_cycle"`
+	AmountBasisTotalPackage     string `json:"amount_basis_total_package"`
+	AmountBasisDerivedFromLines string `json:"amount_basis_derived_from_lines"`
+	AmountBasisPerOccurrence    string `json:"amount_basis_per_occurrence"`
 	// Per-option hint copy for amount_basis (mirrors billing_kind pattern).
-	AmountBasisPerCycleHint         string `json:"amountBasisPerCycleHint"`
-	AmountBasisTotalPackageHint     string `json:"amountBasisTotalPackageHint"`
-	AmountBasisDerivedFromLinesHint string `json:"amountBasisDerivedFromLinesHint"`
-	AmountBasisPerOccurrenceHint    string `json:"amountBasisPerOccurrenceHint"`
-	EntitledOccurrencesLabel        string `json:"entitledOccurrencesLabel"`
-	EntitledOccurrencesPlaceholder  string `json:"entitledOccurrencesPlaceholder"`
-	EntitledOccurrencesInfo         string `json:"entitledOccurrencesInfo"`
-	BillingCycleLabel               string `json:"billingCycleLabel"`
-	BillingCyclePlaceholder         string `json:"billingCyclePlaceholder"`
-	TermLabel                       string `json:"termLabel"`
-	TermPlaceholder                 string `json:"termPlaceholder"`
-	TermOpenEndedHelp               string `json:"termOpenEndedHelp"`
+	AmountBasisPerCycleHint         string `json:"amount_basis_per_cycle_hint"`
+	AmountBasisTotalPackageHint     string `json:"amount_basis_total_package_hint"`
+	AmountBasisDerivedFromLinesHint string `json:"amount_basis_derived_from_lines_hint"`
+	AmountBasisPerOccurrenceHint    string `json:"amount_basis_per_occurrence_hint"`
+	EntitledOccurrencesLabel        string `json:"entitled_occurrences_label"`
+	EntitledOccurrencesPlaceholder  string `json:"entitled_occurrences_placeholder"`
+	EntitledOccurrencesInfo         string `json:"entitled_occurrences_info"`
+	BillingCycleLabel               string `json:"billing_cycle_label"`
+	BillingCyclePlaceholder         string `json:"billing_cycle_placeholder"`
+	TermLabel                       string `json:"term_label"`
+	TermPlaceholder                 string `json:"term_placeholder"`
+	TermOpenEndedHelp               string `json:"term_open_ended_help"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	PlanInfo         string `json:"planInfo"`
-	ScheduleInfo     string `json:"scheduleInfo"`
-	NameInfo         string `json:"nameInfo"`
-	DescriptionInfo  string `json:"descriptionInfo"`
-	BillingKindInfo  string `json:"billingKindInfo"`
-	AmountBasisInfo  string `json:"amountBasisInfo"`
-	AmountInfo       string `json:"amountInfo"`
-	CurrencyInfo     string `json:"currencyInfo"`
-	BillingCycleInfo string `json:"billingCycleInfo"`
-	TermInfo         string `json:"termInfo"`
-	ActiveInfo       string `json:"activeInfo"`
+	PlanInfo         string `json:"plan_info"`
+	ScheduleInfo     string `json:"schedule_info"`
+	NameInfo         string `json:"name_info"`
+	DescriptionInfo  string `json:"description_info"`
+	BillingKindInfo  string `json:"billing_kind_info"`
+	AmountBasisInfo  string `json:"amount_basis_info"`
+	AmountInfo       string `json:"amount_info"`
+	CurrencyInfo     string `json:"currency_info"`
+	BillingCycleInfo string `json:"billing_cycle_info"`
+	TermInfo         string `json:"term_info"`
+	ActiveInfo       string `json:"active_info"`
 
 	// 2026-04-27 plan-client-scope plan §6.7 — info banner shown above the
 	// PricePlan add/edit form when its parent PriceSchedule is client-scoped.
 	// Templated via Go's text/template ({{.ClientName}}).
-	ParentScheduleClientNotice string `json:"parentScheduleClientNotice"`
+	ParentScheduleClientNotice string `json:"parent_schedule_client_notice"`
 
 	// 2026-04-27 plan-client-scope plan §6.7 — tooltip surfaced beside the
 	// readonly Schedule label when the PricePlan's parent Plan is
 	// client-scoped (the schedule field is locked to the resolved/derived
 	// client schedule). Templated via Go's text/template ({{.ClientName}}).
-	ScheduleLockedTooltip string `json:"scheduleLockedTooltip"`
+	ScheduleLockedTooltip string `json:"schedule_locked_tooltip"`
 	// 2026-04-28 — info-row hints rendered beneath the readonly Schedule
 	// label so the operator knows what happens on save:
 	//   ScheduleAutoCreateHint — no client rate card exists yet; one will be
@@ -582,8 +582,8 @@ type FormLabels struct {
 	//   ScheduleAutoReuseHint  — an existing client rate card was found; the
 	//     new price plan will attach to it.
 	// Both templated with {{.ClientName}}.
-	ScheduleAutoCreateHint string `json:"scheduleAutoCreateHint"`
-	ScheduleAutoReuseHint  string `json:"scheduleAutoReuseHint"`
+	ScheduleAutoCreateHint string `json:"schedule_auto_create_hint"`
+	ScheduleAutoReuseHint  string `json:"schedule_auto_reuse_hint"`
 
 	// 2026-05-03 — info banner rendered below the readonly Schedule display.
 	// ScheduleClientPickerNotice fires when the parent schedule is
@@ -591,20 +591,20 @@ type FormLabels struct {
 	// ScheduleGeneralPickerNotice fires when the parent schedule is
 	// general-scope: picker shows only general-scope plans (client-specific
 	// plans cannot attach to a general schedule).
-	ScheduleClientPickerNotice  string `json:"scheduleClientPickerNotice"`
-	ScheduleGeneralPickerNotice string `json:"scheduleGeneralPickerNotice"`
+	ScheduleClientPickerNotice  string `json:"schedule_client_picker_notice"`
+	ScheduleGeneralPickerNotice string `json:"schedule_general_picker_notice"`
 
 	// 2026-04-30 cyclic-subscription-jobs plan §9.4 — client-side block
 	// surfaced as a tooltip on the disabled MILESTONE option in the
 	// billing_kind dropdown when the parent Plan is cyclic.
-	MilestoneCyclicBlock string `json:"milestoneCyclicBlock"`
+	MilestoneCyclicBlock string `json:"milestone_cyclic_block"`
 
 	// 2026-05-01 ad-hoc-subscription-billing plan §6 — client-side guards
 	// surfaced as drawer warnings / tooltips on the disabled options. The
 	// server enforces the same rules in validate_ad_hoc.go.
-	AdHocPoolNoTemplate           string `json:"adHocPoolNoTemplate"`
-	AdHocPerCallNoTemplate        string `json:"adHocPerCallNoTemplate"`
-	AdHocNoEntitlement            string `json:"adHocNoEntitlement"`
-	AdHocBillingCycleNotAllowed   string `json:"adHocBillingCycleNotAllowed"`
-	AdHocVisitsPerCycleNotAllowed string `json:"adHocVisitsPerCycleNotAllowed"`
+	AdHocPoolNoTemplate           string `json:"ad_hoc_pool_no_template"`
+	AdHocPerCallNoTemplate        string `json:"ad_hoc_per_call_no_template"`
+	AdHocNoEntitlement            string `json:"ad_hoc_no_entitlement"`
+	AdHocBillingCycleNotAllowed   string `json:"ad_hoc_billing_cycle_not_allowed"`
+	AdHocVisitsPerCycleNotAllowed string `json:"ad_hoc_visits_per_cycle_not_allowed"`
 }

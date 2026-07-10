@@ -25,33 +25,33 @@ type Labels struct {
 
 type PageLabels struct {
 	Heading         string `json:"heading"`
-	HeadingActive   string `json:"headingActive"`
-	HeadingInactive string `json:"headingInactive"`
+	HeadingActive   string `json:"heading_active"`
+	HeadingInactive string `json:"heading_inactive"`
 	Caption         string `json:"caption"`
-	CaptionActive   string `json:"captionActive"`
-	CaptionInactive string `json:"captionInactive"`
-	PageTitle       string `json:"pageTitle"`
+	CaptionActive   string `json:"caption_active"`
+	CaptionInactive string `json:"caption_inactive"`
+	PageTitle       string `json:"page_title"`
 }
 
 type ColumnLabels struct {
 	Name      string `json:"name"`
-	StartDate string `json:"startDate"`
-	EndDate   string `json:"endDate"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 	Location  string `json:"location"`
 	Active    string `json:"active"`
 }
 
 type TabLabels struct {
 	Info      string `json:"info"`
-	CostPlans string `json:"costPlans"`
+	CostPlans string `json:"cost_plans"`
 	Activity  string `json:"activity"`
 }
 
 type DetailLabels struct {
-	InfoSection string `json:"infoSection"`
+	InfoSection string `json:"info_section"`
 	Name        string `json:"name"`
-	StartDate   string `json:"startDate"`
-	EndDate     string `json:"endDate"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
 	Location    string `json:"location"`
 	Description string `json:"description"`
 	Active      string `json:"active"`
@@ -59,20 +59,20 @@ type DetailLabels struct {
 }
 
 type FormLabels struct {
-	SectionIdentification string `json:"sectionIdentification"`
-	SectionRelationships  string `json:"sectionRelationships"`
-	SectionConfiguration  string `json:"sectionConfiguration"`
-	SectionSchedule       string `json:"sectionSchedule"`
-	SectionNotes          string `json:"sectionNotes"`
+	SectionIdentification string `json:"section_identification"`
+	SectionRelationships  string `json:"section_relationships"`
+	SectionConfiguration  string `json:"section_configuration"`
+	SectionSchedule       string `json:"section_schedule"`
+	SectionNotes          string `json:"section_notes"`
 
 	Name                string `json:"name"`
-	NamePlaceholder     string `json:"namePlaceholder"`
+	NamePlaceholder     string `json:"name_placeholder"`
 	Description         string `json:"description"`
-	DescPlaceholder     string `json:"descPlaceholder"`
-	StartDate           string `json:"startDate"`
-	EndDate             string `json:"endDate"`
+	DescPlaceholder     string `json:"desc_placeholder"`
+	StartDate           string `json:"start_date"`
+	EndDate             string `json:"end_date"`
 	Location            string `json:"location"`
-	LocationPlaceholder string `json:"locationPlaceholder"`
+	LocationPlaceholder string `json:"location_placeholder"`
 	Active              string `json:"active"`
 }
 
@@ -82,26 +82,26 @@ type ActionLabels struct {
 	Delete       string `json:"delete"`
 	Activate     string `json:"activate"`
 	Deactivate   string `json:"deactivate"`
-	NoPermission string `json:"noPermission"`
+	NoPermission string `json:"no_permission"`
 }
 
 type ConfirmLabels struct {
 	Delete                string `json:"delete"`
-	DeleteMessage         string `json:"deleteMessage"`
+	DeleteMessage         string `json:"delete_message"`
 	Activate              string `json:"activate"`
-	ActivateMessage       string `json:"activateMessage"`
+	ActivateMessage       string `json:"activate_message"`
 	Deactivate            string `json:"deactivate"`
-	DeactivateMessage     string `json:"deactivateMessage"`
-	BulkDelete            string `json:"bulkDelete"`
-	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
-	BulkActivate          string `json:"bulkActivate"`
-	BulkActivateMessage   string `json:"bulkActivateMessage"`
-	BulkDeactivate        string `json:"bulkDeactivate"`
-	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+	DeactivateMessage     string `json:"deactivate_message"`
+	BulkDelete            string `json:"bulk_delete"`
+	BulkDeleteMessage     string `json:"bulk_delete_message"`
+	BulkActivate          string `json:"bulk_activate"`
+	BulkActivateMessage   string `json:"bulk_activate_message"`
+	BulkDeactivate        string `json:"bulk_deactivate"`
+	BulkDeactivateMessage string `json:"bulk_deactivate_message"`
 }
 
 type ButtonLabels struct {
-	AddCostSchedule string `json:"addCostSchedule"`
+	AddCostSchedule string `json:"add_cost_schedule"`
 }
 
 type BulkLabels struct {
@@ -121,14 +121,14 @@ type EmptyLabels struct {
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoPermission     string `json:"noPermission"`
-	InUse            string `json:"inUse"`
-	LoadFailed       string `json:"loadFailed"`
-	NoIDsProvided    string `json:"noIdsProvided"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoPermission     string `json:"no_permission"`
+	InUse            string `json:"in_use"`
+	LoadFailed       string `json:"load_failed"`
+	NoIDsProvided    string `json:"no_ids_provided"`
 }
 
 // DefaultLabels returns English fallback labels.

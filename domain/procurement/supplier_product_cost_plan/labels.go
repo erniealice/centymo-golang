@@ -14,31 +14,31 @@ type Labels struct {
 }
 
 type FormLabels struct {
-	SectionIdentification string `json:"sectionIdentification"`
-	SectionRelationships  string `json:"sectionRelationships"`
-	SectionConfiguration  string `json:"sectionConfiguration"`
-	SectionSchedule       string `json:"sectionSchedule"`
-	SectionNotes          string `json:"sectionNotes"`
+	SectionIdentification string `json:"section_identification"`
+	SectionRelationships  string `json:"section_relationships"`
+	SectionConfiguration  string `json:"section_configuration"`
+	SectionSchedule       string `json:"section_schedule"`
+	SectionNotes          string `json:"section_notes"`
 
-	SupplierProductPlan            string `json:"supplierProductPlan"`
-	SupplierProductPlanPlaceholder string `json:"supplierProductPlanPlaceholder"`
-	BillingTreatment               string `json:"billingTreatment"`
+	SupplierProductPlan            string `json:"supplier_product_plan"`
+	SupplierProductPlanPlaceholder string `json:"supplier_product_plan_placeholder"`
+	BillingTreatment               string `json:"billing_treatment"`
 	Amount                         string `json:"amount"`
-	AmountPlaceholder              string `json:"amountPlaceholder"`
-	MinimumCommitment              string `json:"minimumCommitment"`
-	MinimumCommitmentPlaceholder   string `json:"minimumCommitmentPlaceholder"`
+	AmountPlaceholder              string `json:"amount_placeholder"`
+	MinimumCommitment              string `json:"minimum_commitment"`
+	MinimumCommitmentPlaceholder   string `json:"minimum_commitment_placeholder"`
 	Active                         string `json:"active"`
 
 	// BillingTreatment option labels
-	TreatmentRecurring         string `json:"treatmentRecurring"`
-	TreatmentOneTimeInitial    string `json:"treatmentOneTimeInitial"`
-	TreatmentUsageBased        string `json:"treatmentUsageBased"`
-	TreatmentMinimumCommitment string `json:"treatmentMinimumCommitment"`
+	TreatmentRecurring         string `json:"treatment_recurring"`
+	TreatmentOneTimeInitial    string `json:"treatment_one_time_initial"`
+	TreatmentUsageBased        string `json:"treatment_usage_based"`
+	TreatmentMinimumCommitment string `json:"treatment_minimum_commitment"`
 }
 
 type ColumnLabels struct {
-	SupplierProductPlan string `json:"supplierProductPlan"`
-	BillingTreatment    string `json:"billingTreatment"`
+	SupplierProductPlan string `json:"supplier_product_plan"`
+	BillingTreatment    string `json:"billing_treatment"`
 	Amount              string `json:"amount"`
 	Active              string `json:"active"`
 }
@@ -46,21 +46,21 @@ type ColumnLabels struct {
 type EmptyLabels struct {
 	Title   string `json:"title"`
 	Message string `json:"message"`
-	AddLine string `json:"addLine"`
+	AddLine string `json:"add_line"`
 }
 
 type ActionLabels struct {
 	Edit         string `json:"edit"`
 	Delete       string `json:"delete"`
 	Add          string `json:"add"`
-	NoPermission string `json:"noPermission"`
+	NoPermission string `json:"no_permission"`
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
 }
 
 // DefaultLabels returns English fallback labels.

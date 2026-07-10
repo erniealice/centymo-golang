@@ -1,5 +1,7 @@
 package subscription_group
 
+import "strings"
+
 // ---------------------------------------------------------------------------
 // Subscription Group (section / cohort) labels
 // ---------------------------------------------------------------------------
@@ -21,8 +23,8 @@ type Labels struct {
 type PageLabels struct {
 	Title         string `json:"title"`
 	Subtitle      string `json:"subtitle"`
-	ActiveTitle   string `json:"activeTitle"`
-	InactiveTitle string `json:"inactiveTitle"`
+	ActiveTitle   string `json:"active_title"`
+	InactiveTitle string `json:"inactive_title"`
 }
 
 type ButtonLabels struct {
@@ -30,18 +32,21 @@ type ButtonLabels struct {
 	Add        string `json:"add"`
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
-	BulkDelete string `json:"bulkDelete"`
+	BulkDelete string `json:"bulk_delete"`
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
 }
 
 type ColumnLabels struct {
-	Name        string `json:"name"`
-	Kind        string `json:"kind"`
-	Capacity    string `json:"capacity"`
-	Status      string `json:"status"`
-	DateCreated string `json:"dateCreated"`
-	Actions     string `json:"actions"`
+	Name          string `json:"name"`
+	Kind          string `json:"kind"`
+	Capacity      string `json:"capacity"`
+	PriceSchedule string `json:"price_schedule"` // education value: "Academic Year"
+	Client        string `json:"client"`         // subscriptions tab; education value: "Student"
+	Subscription  string `json:"subscription"`   // subscriptions tab; education value: "Enrollment"
+	Status        string `json:"status"`
+	DateCreated   string `json:"date_created"`
+	Actions       string `json:"actions"`
 }
 
 type EmptyLabels struct {
@@ -53,81 +58,108 @@ type EmptyLabels struct {
 // a subscription_group is a class roster / patient panel / project team
 // anchored to a program (plan) and a period (price_schedule).
 type FormLabels struct {
-	SectionIdentity   string `json:"sectionIdentity"`
-	SectionAnchors    string `json:"sectionAnchors"`
-	SectionCapacity   string `json:"sectionCapacity"`
+	SectionIdentity   string `json:"section_identity"`
+	SectionAnchors    string `json:"section_anchors"`
+	SectionCapacity   string `json:"section_capacity"`
 	Name              string `json:"name"`
-	NamePlaceholder   string `json:"namePlaceholder"`
-	NameInfo          string `json:"nameInfo"`
+	NamePlaceholder   string `json:"name_placeholder"`
+	NameInfo          string `json:"name_info"`
 	Kind              string `json:"kind"`
-	KindPlaceholder   string `json:"kindPlaceholder"`
-	KindInfo          string `json:"kindInfo"`
-	KindCohort        string `json:"kindCohort"`
-	KindRoster        string `json:"kindRoster"`
-	KindPanel         string `json:"kindPanel"`
-	KindProjectTeam   string `json:"kindProjectTeam"`
+	KindPlaceholder   string `json:"kind_placeholder"`
+	KindInfo          string `json:"kind_info"`
+	KindCohort        string `json:"kind_cohort"`
+	KindRoster        string `json:"kind_roster"`
+	KindPanel         string `json:"kind_panel"`
+	KindProjectTeam   string `json:"kind_project_team"`
 	Plan              string `json:"plan"`
-	PlanPlaceholder   string `json:"planPlaceholder"`
-	PlanSearch        string `json:"planSearch"`
-	PlanInfo          string `json:"planInfo"`
-	PriceSchedule     string `json:"priceSchedule"`
-	PriceSchedulePH   string `json:"priceSchedulePlaceholder"`
-	PriceScheduleSrch string `json:"priceScheduleSearch"`
-	PriceScheduleInfo string `json:"priceScheduleInfo"`
-	CapacityMode      string `json:"capacityMode"`
-	CapacityModeInfo  string `json:"capacityModeInfo"`
-	CapUnlimited      string `json:"capUnlimited"`
-	CapClosed         string `json:"capClosed"`
-	CapCapped         string `json:"capCapped"`
-	MaxCapacity       string `json:"maxCapacity"`
-	MaxCapacityPH     string `json:"maxCapacityPlaceholder"`
-	MaxCapacityInfo   string `json:"maxCapacityInfo"`
+	PlanPlaceholder   string `json:"plan_placeholder"`
+	PlanSearch        string `json:"plan_search"`
+	PlanInfo          string `json:"plan_info"`
+	PriceSchedule     string `json:"price_schedule"`
+	PriceSchedulePH   string `json:"price_schedule_placeholder"`
+	PriceScheduleSrch string `json:"price_schedule_search"`
+	PriceScheduleInfo string `json:"price_schedule_info"`
+	CapacityMode      string `json:"capacity_mode"`
+	CapacityModeInfo  string `json:"capacity_mode_info"`
+	CapUnlimited      string `json:"cap_unlimited"`
+	CapClosed         string `json:"cap_closed"`
+	CapCapped         string `json:"cap_capped"`
+	MaxCapacity       string `json:"max_capacity"`
+	MaxCapacityPH     string `json:"max_capacity_placeholder"`
+	MaxCapacityInfo   string `json:"max_capacity_info"`
 	Active            string `json:"active"`
-	ActiveInfo        string `json:"activeInfo"`
+	ActiveInfo        string `json:"active_info"`
 }
 
 type BulkLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type ConfirmLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type TabLabels struct {
-	Info string `json:"info"`
+	Info              string `json:"info"`
+	Subscriptions     string `json:"subscriptions"`      // label — education: "Enrollments"; general: "Subscriptions"
+	SubscriptionsSlug string `json:"subscriptions_slug"` // URL slug — education: "enrollments"; general (empty) → "subscriptions"
+	Audit             string `json:"audit"`
+	Attachments       string `json:"attachments"`
+}
+
+// ResolveTabSlug returns the URL slug for a canonical tab key. The "subscriptions"
+// tab re-slugs per tier (education ships "enrollments"); other tabs pass through.
+func (t TabLabels) ResolveTabSlug(canonical string) string {
+	if canonical == "subscriptions" {
+		if s := strings.TrimSpace(t.SubscriptionsSlug); s != "" {
+			return s
+		}
+	}
+	return canonical
+}
+
+// CanonicalizeTab maps an incoming URL tab slug back to its canonical key so
+// template lookups + equality checks stay tier-agnostic.
+func (t TabLabels) CanonicalizeTab(slug string) string {
+	if slug == "" {
+		return ""
+	}
+	if s := strings.TrimSpace(t.SubscriptionsSlug); s != "" && slug == s {
+		return "subscriptions"
+	}
+	return slug
 }
 
 type DetailLabels struct {
 	Title          string `json:"title"`
-	DateCreated    string `json:"dateCreated"`
-	DateModified   string `json:"dateModified"`
-	NoPlan         string `json:"noPlan"`
-	NoSchedule     string `json:"noSchedule"`
-	NoKind         string `json:"noKind"`
-	CapacityValue  string `json:"capacityValue"`  // e.g. "%d seats" (CAPPED)
-	CapacityModeNF string `json:"capacityModeNF"` // fallback when mode unspecified
-	NoSubtitle     string `json:"noSubtitle"`
+	DateCreated    string `json:"date_created"`
+	DateModified   string `json:"date_modified"`
+	NoPlan         string `json:"no_plan"`
+	NoSchedule     string `json:"no_schedule"`
+	NoKind         string `json:"no_kind"`
+	CapacityValue  string `json:"capacity_value"`   // e.g. "%d seats" (CAPPED)
+	CapacityModeNF string `json:"capacity_mode_nf"` // fallback when mode unspecified
+	NoSubtitle     string `json:"no_subtitle"`
 }
 
 type ErrorLabels struct {
-	NotFound     string `json:"notFound"`
-	LoadFailed   string `json:"loadFailed"`
+	NotFound     string `json:"not_found"`
+	LoadFailed   string `json:"load_failed"`
 	Unauthorized string `json:"unauthorized"`
-	CreateFailed string `json:"createFailed"`
-	UpdateFailed string `json:"updateFailed"`
-	DeleteFailed string `json:"deleteFailed"`
-	InUse        string `json:"inUse"`
+	CreateFailed string `json:"create_failed"`
+	UpdateFailed string `json:"update_failed"`
+	DeleteFailed string `json:"delete_failed"`
+	InUse        string `json:"in_use"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults using the
@@ -150,12 +182,15 @@ func DefaultLabels() Labels {
 			Deactivate: "Deactivate",
 		},
 		Columns: ColumnLabels{
-			Name:        "Name",
-			Kind:        "Type",
-			Capacity:    "Capacity",
-			Status:      "Status",
-			DateCreated: "Date Created",
-			Actions:     "Actions",
+			Name:          "Name",
+			Kind:          "Type",
+			Capacity:      "Capacity",
+			PriceSchedule: "Price Schedule",
+			Client:        "Client",
+			Subscription:  "Subscription",
+			Status:        "Status",
+			DateCreated:   "Date Created",
+			Actions:       "Actions",
 		},
 		Empty: EmptyLabels{
 			Title:   "No Sections",
@@ -211,7 +246,10 @@ func DefaultLabels() Labels {
 			DeactivateMessage: "Deactivate {{name}}?",
 		},
 		Tabs: TabLabels{
-			Info: "Info",
+			Info:          "Info",
+			Subscriptions: "Subscriptions",
+			Audit:         "Audit",
+			Attachments:   "Attachments",
 		},
 		Detail: DetailLabels{
 			Title:          "Section",

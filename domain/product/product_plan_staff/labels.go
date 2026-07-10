@@ -21,8 +21,8 @@ type Labels struct {
 type PageLabels struct {
 	Title         string `json:"title"`
 	Subtitle      string `json:"subtitle"`
-	ActiveTitle   string `json:"activeTitle"`
-	InactiveTitle string `json:"inactiveTitle"`
+	ActiveTitle   string `json:"active_title"`
+	InactiveTitle string `json:"inactive_title"`
 }
 
 type ButtonLabels struct {
@@ -30,17 +30,17 @@ type ButtonLabels struct {
 	Add        string `json:"add"`
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
-	BulkDelete string `json:"bulkDelete"`
+	BulkDelete string `json:"bulk_delete"`
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
 }
 
 type ColumnLabels struct {
-	StaffID     string `json:"staffId"`
-	ProductPlan string `json:"productPlan"`
+	StaffID     string `json:"staff_id"`
+	ProductPlan string `json:"product_plan"`
 	Role        string `json:"role"`
 	Status      string `json:"status"`
-	DateCreated string `json:"dateCreated"`
+	DateCreated string `json:"date_created"`
 	Actions     string `json:"actions"`
 }
 
@@ -53,37 +53,37 @@ type EmptyLabels struct {
 // assignment. A product_plan_staff row assigns a staff member to a
 // product_plan with a pool role (eligible / primary / assistant).
 type FormLabels struct {
-	SectionStaff       string `json:"sectionStaff"`
-	SectionAssignment  string `json:"sectionAssignment"`
-	StaffID            string `json:"staffId"`
-	StaffIDPlaceholder string `json:"staffIdPlaceholder"`
-	StaffIDInfo        string `json:"staffIdInfo"`
-	ProductPlanID      string `json:"productPlanId"`
-	ProductPlanPH      string `json:"productPlanPlaceholder"`
-	ProductPlanInfo    string `json:"productPlanInfo"`
+	SectionStaff       string `json:"section_staff"`
+	SectionAssignment  string `json:"section_assignment"`
+	StaffID            string `json:"staff_id"`
+	StaffIDPlaceholder string `json:"staff_id_placeholder"`
+	StaffIDInfo        string `json:"staff_id_info"`
+	ProductPlanID      string `json:"product_plan_id"`
+	ProductPlanPH      string `json:"product_plan_placeholder"`
+	ProductPlanInfo    string `json:"product_plan_info"`
 	Role               string `json:"role"`
-	RolePlaceholder    string `json:"rolePlaceholder"`
-	RoleInfo           string `json:"roleInfo"`
+	RolePlaceholder    string `json:"role_placeholder"`
+	RoleInfo           string `json:"role_info"`
 	Active             string `json:"active"`
-	ActiveInfo         string `json:"activeInfo"`
+	ActiveInfo         string `json:"active_info"`
 }
 
 type BulkLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type ConfirmLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type TabLabels struct {
@@ -92,21 +92,21 @@ type TabLabels struct {
 
 type DetailLabels struct {
 	Title         string `json:"title"`
-	DateCreated   string `json:"dateCreated"`
-	DateModified  string `json:"dateModified"`
-	NoProductPlan string `json:"noProductPlan"`
-	NoRole        string `json:"noRole"`
-	NoSubtitle    string `json:"noSubtitle"`
+	DateCreated   string `json:"date_created"`
+	DateModified  string `json:"date_modified"`
+	NoProductPlan string `json:"no_product_plan"`
+	NoRole        string `json:"no_role"`
+	NoSubtitle    string `json:"no_subtitle"`
 }
 
 type ErrorLabels struct {
-	NotFound     string `json:"notFound"`
-	LoadFailed   string `json:"loadFailed"`
+	NotFound     string `json:"not_found"`
+	LoadFailed   string `json:"load_failed"`
 	Unauthorized string `json:"unauthorized"`
-	CreateFailed string `json:"createFailed"`
-	UpdateFailed string `json:"updateFailed"`
-	DeleteFailed string `json:"deleteFailed"`
-	InUse        string `json:"inUse"`
+	CreateFailed string `json:"create_failed"`
+	UpdateFailed string `json:"update_failed"`
+	DeleteFailed string `json:"delete_failed"`
+	InUse        string `json:"in_use"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults using

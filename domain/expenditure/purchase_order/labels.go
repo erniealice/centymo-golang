@@ -6,7 +6,7 @@ package purchaseorder
 
 // ErrorLabels holds error messages for the purchase order action handlers.
 type ErrorLabels struct {
-	NoPermission string `json:"noPermission"`
+	NoPermission string `json:"no_permission"`
 }
 
 // Labels holds all translatable strings for the purchase order module.
@@ -18,118 +18,118 @@ type Labels struct {
 	Empty     EmptyLabels    `json:"empty"`
 	Form      FormLabels     `json:"form"`
 	Status    StatusLabels   `json:"status"`
-	POTypes   POTypeLabels   `json:"poTypes"`
-	LineTypes LineTypeLabels `json:"lineTypes"`
+	POTypes   POTypeLabels   `json:"po_types"`
+	LineTypes LineTypeLabels `json:"line_types"`
 	Actions   ActionLabels   `json:"actions"`
-	Bulk      BulkLabels     `json:"bulkActions"`
+	Bulk      BulkLabels     `json:"bulk_actions"`
 	Detail    DetailLabels   `json:"detail"`
-	LineItems LineItemLabels `json:"lineItems"`
+	LineItems LineItemLabels `json:"line_items"`
 	Receipt   ReceiptLabels  `json:"receipt"`
 	Errors    ErrorLabels    `json:"errors"`
 }
 
 type LabelNames struct {
 	Name           string `json:"name"`
-	NamePlural     string `json:"namePlural"`
-	LineItem       string `json:"lineItem"`
-	LineItemPlural string `json:"lineItemPlural"`
+	NamePlural     string `json:"name_plural"`
+	LineItem       string `json:"line_item"`
+	LineItemPlural string `json:"line_item_plural"`
 }
 
 type PageLabels struct {
 	Heading                  string `json:"heading"`
 	Caption                  string `json:"caption"`
-	HeadingDraft             string `json:"headingDraft"`
-	HeadingPendingApproval   string `json:"headingPendingApproval"`
-	HeadingApproved          string `json:"headingApproved"`
-	HeadingPartiallyReceived string `json:"headingPartiallyReceived"`
-	HeadingFullyReceived     string `json:"headingFullyReceived"`
-	HeadingBilled            string `json:"headingBilled"`
-	HeadingClosed            string `json:"headingClosed"`
-	HeadingCancelled         string `json:"headingCancelled"`
+	HeadingDraft             string `json:"heading_draft"`
+	HeadingPendingApproval   string `json:"heading_pending_approval"`
+	HeadingApproved          string `json:"heading_approved"`
+	HeadingPartiallyReceived string `json:"heading_partially_received"`
+	HeadingFullyReceived     string `json:"heading_fully_received"`
+	HeadingBilled            string `json:"heading_billed"`
+	HeadingClosed            string `json:"heading_closed"`
+	HeadingCancelled         string `json:"heading_cancelled"`
 	Dashboard                string `json:"dashboard"`
 }
 
 type ButtonLabels struct {
 	Add         string `json:"add"`
-	AddLineItem string `json:"addLineItem"`
+	AddLineItem string `json:"add_line_item"`
 }
 
 type ColumnLabels struct {
-	PONumber        string `json:"poNumber"`
-	POType          string `json:"poType"`
+	PONumber        string `json:"po_number"`
+	POType          string `json:"po_type"`
 	Supplier        string `json:"supplier"`
 	Location        string `json:"location"`
-	OrderDate       string `json:"orderDate"`
+	OrderDate       string `json:"order_date"`
 	Status          string `json:"status"`
 	Currency        string `json:"currency"`
 	Subtotal        string `json:"subtotal"`
-	TaxAmount       string `json:"taxAmount"`
-	TotalAmount     string `json:"totalAmount"`
-	PaymentTerms    string `json:"paymentTerms"`
-	ShippingTerms   string `json:"shippingTerms"`
-	ApprovedBy      string `json:"approvedBy"`
-	ReferenceNumber string `json:"referenceNumber"`
+	TaxAmount       string `json:"tax_amount"`
+	TotalAmount     string `json:"total_amount"`
+	PaymentTerms    string `json:"payment_terms"`
+	ShippingTerms   string `json:"shipping_terms"`
+	ApprovedBy      string `json:"approved_by"`
+	ReferenceNumber string `json:"reference_number"`
 	Notes           string `json:"notes"`
 }
 
 type EmptyLabels struct {
 	Title                    string `json:"title"`
 	Message                  string `json:"message"`
-	DraftTitle               string `json:"draftTitle"`
-	DraftMessage             string `json:"draftMessage"`
-	PendingApprovalTitle     string `json:"pendingApprovalTitle"`
-	PendingApprovalMessage   string `json:"pendingApprovalMessage"`
-	ApprovedTitle            string `json:"approvedTitle"`
-	ApprovedMessage          string `json:"approvedMessage"`
-	PartiallyReceivedTitle   string `json:"partiallyReceivedTitle"`
-	PartiallyReceivedMessage string `json:"partiallyReceivedMessage"`
-	FullyReceivedTitle       string `json:"fullyReceivedTitle"`
-	FullyReceivedMessage     string `json:"fullyReceivedMessage"`
-	BilledTitle              string `json:"billedTitle"`
-	BilledMessage            string `json:"billedMessage"`
-	ClosedTitle              string `json:"closedTitle"`
-	ClosedMessage            string `json:"closedMessage"`
-	CancelledTitle           string `json:"cancelledTitle"`
-	CancelledMessage         string `json:"cancelledMessage"`
+	DraftTitle               string `json:"draft_title"`
+	DraftMessage             string `json:"draft_message"`
+	PendingApprovalTitle     string `json:"pending_approval_title"`
+	PendingApprovalMessage   string `json:"pending_approval_message"`
+	ApprovedTitle            string `json:"approved_title"`
+	ApprovedMessage          string `json:"approved_message"`
+	PartiallyReceivedTitle   string `json:"partially_received_title"`
+	PartiallyReceivedMessage string `json:"partially_received_message"`
+	FullyReceivedTitle       string `json:"fully_received_title"`
+	FullyReceivedMessage     string `json:"fully_received_message"`
+	BilledTitle              string `json:"billed_title"`
+	BilledMessage            string `json:"billed_message"`
+	ClosedTitle              string `json:"closed_title"`
+	ClosedMessage            string `json:"closed_message"`
+	CancelledTitle           string `json:"cancelled_title"`
+	CancelledMessage         string `json:"cancelled_message"`
 }
 
 type FormLabels struct {
-	PONumber                   string `json:"poNumber"`
-	PONumberPlaceholder        string `json:"poNumberPlaceholder"`
-	POType                     string `json:"poType"`
-	SelectPOType               string `json:"selectPoType"`
+	PONumber                   string `json:"po_number"`
+	PONumberPlaceholder        string `json:"po_number_placeholder"`
+	POType                     string `json:"po_type"`
+	SelectPOType               string `json:"select_po_type"`
 	Supplier                   string `json:"supplier"`
-	SelectSupplier             string `json:"selectSupplier"`
+	SelectSupplier             string `json:"select_supplier"`
 	Location                   string `json:"location"`
-	SelectLocation             string `json:"selectLocation"`
-	OrderDate                  string `json:"orderDate"`
+	SelectLocation             string `json:"select_location"`
+	OrderDate                  string `json:"order_date"`
 	Currency                   string `json:"currency"`
 	Subtotal                   string `json:"subtotal"`
-	TaxAmount                  string `json:"taxAmount"`
-	TotalAmount                string `json:"totalAmount"`
-	PaymentTerms               string `json:"paymentTerms"`
-	ShippingTerms              string `json:"shippingTerms"`
-	ApprovedBy                 string `json:"approvedBy"`
-	ReferenceNumber            string `json:"referenceNumber"`
-	ReferenceNumberPlaceholder string `json:"referenceNumberPlaceholder"`
+	TaxAmount                  string `json:"tax_amount"`
+	TotalAmount                string `json:"total_amount"`
+	PaymentTerms               string `json:"payment_terms"`
+	ShippingTerms              string `json:"shipping_terms"`
+	ApprovedBy                 string `json:"approved_by"`
+	ReferenceNumber            string `json:"reference_number"`
+	ReferenceNumberPlaceholder string `json:"reference_number_placeholder"`
 	Notes                      string `json:"notes"`
-	NotesPlaceholder           string `json:"notesPlaceholder"`
-	SectionInfo                string `json:"sectionInfo"`
-	SectionSupplier            string `json:"sectionSupplier"`
-	SectionFinancials          string `json:"sectionFinancials"`
-	SectionNotes               string `json:"sectionNotes"`
+	NotesPlaceholder           string `json:"notes_placeholder"`
+	SectionInfo                string `json:"section_info"`
+	SectionSupplier            string `json:"section_supplier"`
+	SectionFinancials          string `json:"section_financials"`
+	SectionNotes               string `json:"section_notes"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	PONumberInfo         string `json:"poNumberInfo"`
-	POTypeInfo           string `json:"poTypeInfo"`
-	SupplierInfo         string `json:"supplierInfo"`
-	OrderDateInfo        string `json:"orderDateInfo"`
-	ExpectedDeliveryInfo string `json:"expectedDeliveryInfo"`
-	CurrencyInfo         string `json:"currencyInfo"`
-	PaymentTermsInfo     string `json:"paymentTermsInfo"`
-	ShippingTermsInfo    string `json:"shippingTermsInfo"`
-	ReferenceNumberInfo  string `json:"referenceNumberInfo"`
-	NotesInfo            string `json:"notesInfo"`
+	PONumberInfo         string `json:"po_number_info"`
+	POTypeInfo           string `json:"po_type_info"`
+	SupplierInfo         string `json:"supplier_info"`
+	OrderDateInfo        string `json:"order_date_info"`
+	ExpectedDeliveryInfo string `json:"expected_delivery_info"`
+	CurrencyInfo         string `json:"currency_info"`
+	PaymentTermsInfo     string `json:"payment_terms_info"`
+	ShippingTermsInfo    string `json:"shipping_terms_info"`
+	ReferenceNumberInfo  string `json:"reference_number_info"`
+	NotesInfo            string `json:"notes_info"`
 }
 
 type StatusLabels struct {
@@ -158,7 +158,7 @@ type LineTypeLabels struct {
 type ActionLabels struct {
 	Cancel         string `json:"cancel"`
 	Close          string `json:"close"`
-	ConfirmReceipt string `json:"confirmReceipt"`
+	ConfirmReceipt string `json:"confirm_receipt"`
 	Create         string `json:"create"`
 	Delete         string `json:"delete"`
 	Edit           string `json:"edit"`
@@ -176,105 +176,105 @@ type BulkLabels struct {
 
 // DetailLabels holds translatable strings for the PO detail page.
 type DetailLabels struct {
-	PageTitle            string `json:"pageTitle"`
+	PageTitle            string `json:"page_title"`
 	Title                string `json:"title"`
-	InfoSection          string `json:"supplierInfo"`
+	InfoSection          string `json:"supplier_info"`
 	Supplier             string `json:"supplier"`
 	Location             string `json:"location"`
-	OrderDate            string `json:"orderDate"`
-	PONumber             string `json:"poNumber"`
-	POType               string `json:"poType"`
+	OrderDate            string `json:"order_date"`
+	PONumber             string `json:"po_number"`
+	POType               string `json:"po_type"`
 	Status               string `json:"status"`
 	Currency             string `json:"currency"`
 	Subtotal             string `json:"subtotal"`
-	TaxAmount            string `json:"taxAmount"`
-	TotalAmount          string `json:"totalAmount"`
-	PaymentTerms         string `json:"paymentTerms"`
-	ShippingTerms        string `json:"shippingTerms"`
-	ApprovedBy           string `json:"approvedBy"`
-	ReferenceNumber      string `json:"referenceNumber"`
+	TaxAmount            string `json:"tax_amount"`
+	TotalAmount          string `json:"total_amount"`
+	PaymentTerms         string `json:"payment_terms"`
+	ShippingTerms        string `json:"shipping_terms"`
+	ApprovedBy           string `json:"approved_by"`
+	ReferenceNumber      string `json:"reference_number"`
 	Notes                string `json:"notes"`
-	LineItems            string `json:"lineItems"`
+	LineItems            string `json:"line_items"`
 	Description          string `json:"description"`
-	LineType             string `json:"lineType"`
-	LineNumber           string `json:"lineNumber"`
-	QuantityOrdered      string `json:"quantityOrdered"`
-	QuantityReceived     string `json:"quantityReceived"`
-	QuantityBilled       string `json:"quantityBilled"`
-	UnitPrice            string `json:"unitPrice"`
-	TotalPrice           string `json:"totalPrice"`
-	SubTotal             string `json:"subTotal"`
-	GrandTotal           string `json:"grandTotal"`
-	TabBasicInfo         string `json:"tabBasicInfo"`
-	TabLineItems         string `json:"tabLineItems"`
-	TabReceiving         string `json:"tabReceiving"`
-	TabAuditTrail        string `json:"tabAuditTrail"`
-	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditAction          string `json:"auditAction"`
-	AuditUser            string `json:"auditUser"`
-	AuditEmptyTitle      string `json:"auditEmptyTitle"`
-	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	LineType             string `json:"line_type"`
+	LineNumber           string `json:"line_number"`
+	QuantityOrdered      string `json:"quantity_ordered"`
+	QuantityReceived     string `json:"quantity_received"`
+	QuantityBilled       string `json:"quantity_billed"`
+	UnitPrice            string `json:"unit_price"`
+	TotalPrice           string `json:"total_price"`
+	SubTotal             string `json:"sub_total"`
+	GrandTotal           string `json:"grand_total"`
+	TabBasicInfo         string `json:"tab_basic_info"`
+	TabLineItems         string `json:"tab_line_items"`
+	TabReceiving         string `json:"tab_receiving"`
+	TabAuditTrail        string `json:"tab_audit_trail"`
+	AuditTrailComingSoon string `json:"audit_trail_coming_soon"`
+	AuditAction          string `json:"audit_action"`
+	AuditUser            string `json:"audit_user"`
+	AuditEmptyTitle      string `json:"audit_empty_title"`
+	AuditEmptyMessage    string `json:"audit_empty_message"`
 	Total                string `json:"total"`
-	AddLineItem          string `json:"addLineItem"`
-	NoLineItems          string `json:"noLineItems"`
-	ConfirmReceiptBtn    string `json:"confirmReceiptBtn"`
-	TabAttachments       string `json:"tabAttachments"`
+	AddLineItem          string `json:"add_line_item"`
+	NoLineItems          string `json:"no_line_items"`
+	ConfirmReceiptBtn    string `json:"confirm_receipt_btn"`
+	TabAttachments       string `json:"tab_attachments"`
 }
 
 // LineItemLabels holds translatable strings for the PO line item drawer form.
 type LineItemLabels struct {
-	AddItem                string `json:"addItem"`
-	AddLineItem            string `json:"addLineItem"`
+	AddItem                string `json:"add_item"`
+	AddLineItem            string `json:"add_line_item"`
 	Description            string `json:"description"`
-	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
-	EditItem               string `json:"editItem"`
-	EditLineItem           string `json:"editLineItem"`
-	InventoryItem          string `json:"inventoryItem"`
-	LineNumber             string `json:"lineNumber"`
-	LineType               string `json:"lineType"`
+	DescriptionPlaceholder string `json:"description_placeholder"`
+	EditItem               string `json:"edit_item"`
+	EditLineItem           string `json:"edit_line_item"`
+	InventoryItem          string `json:"inventory_item"`
+	LineNumber             string `json:"line_number"`
+	LineType               string `json:"line_type"`
 	Location               string `json:"location"`
 	Locked                 string `json:"locked"`
-	NoItems                string `json:"noItems"`
+	NoItems                string `json:"no_items"`
 	Notes                  string `json:"notes"`
 	Product                string `json:"product"`
-	QtyOrdered             string `json:"qtyOrdered"`
-	QuantityBilled         string `json:"quantityBilled"`
-	QuantityOrdered        string `json:"quantityOrdered"`
-	QuantityReceived       string `json:"quantityReceived"`
-	RemoveItem             string `json:"removeItem"`
-	RemoveLineItem         string `json:"removeLineItem"`
-	SelectItem             string `json:"selectItem"`
-	TotalPrice             string `json:"totalPrice"`
-	TypeExpense            string `json:"typeExpense"`
-	TypeGoods              string `json:"typeGoods"`
-	TypeService            string `json:"typeService"`
-	UnitPrice              string `json:"unitPrice"`
+	QtyOrdered             string `json:"qty_ordered"`
+	QuantityBilled         string `json:"quantity_billed"`
+	QuantityOrdered        string `json:"quantity_ordered"`
+	QuantityReceived       string `json:"quantity_received"`
+	RemoveItem             string `json:"remove_item"`
+	RemoveLineItem         string `json:"remove_line_item"`
+	SelectItem             string `json:"select_item"`
+	TotalPrice             string `json:"total_price"`
+	TypeExpense            string `json:"type_expense"`
+	TypeGoods              string `json:"type_goods"`
+	TypeService            string `json:"type_service"`
+	UnitPrice              string `json:"unit_price"`
 	Type                   string `json:"type"`
-	ProductID              string `json:"productId"`
-	InventoryItemID        string `json:"inventoryItemId"`
-	LocationID             string `json:"locationId"`
+	ProductID              string `json:"product_id"`
+	InventoryItemID        string `json:"inventory_item_id"`
+	LocationID             string `json:"location_id"`
 	Save                   string `json:"save"`
 	Cancel                 string `json:"cancel"`
 }
 
 // ReceiptLabels holds translatable strings for the confirm receipt drawer form.
 type ReceiptLabels struct {
-	AutoConfirmed     string `json:"autoConfirmed"`
-	NoLines           string `json:"noLines"`
-	OverReceiptError  string `json:"overReceiptError"`
-	PartialSuccess    string `json:"partialSuccess"`
-	QtyToReceive      string `json:"qtyToReceive"`
-	ReceiptDate       string `json:"receiptDate"`
-	ReceivingLocation string `json:"receivingLocation"`
-	ServiceRendered   string `json:"serviceRendered"`
+	AutoConfirmed     string `json:"auto_confirmed"`
+	NoLines           string `json:"no_lines"`
+	OverReceiptError  string `json:"over_receipt_error"`
+	PartialSuccess    string `json:"partial_success"`
+	QtyToReceive      string `json:"qty_to_receive"`
+	ReceiptDate       string `json:"receipt_date"`
+	ReceivingLocation string `json:"receiving_location"`
+	ServiceRendered   string `json:"service_rendered"`
 	Success           string `json:"success"`
 	Title             string `json:"title"`
-	AllReceived       string `json:"allReceived"`
+	AllReceived       string `json:"all_received"`
 	Description       string `json:"description"`
 	Type              string `json:"type"`
 	Ordered           string `json:"ordered"`
 	Received          string `json:"received"`
 	Remaining         string `json:"remaining"`
-	ConfirmButton     string `json:"confirmButton"`
+	ConfirmButton     string `json:"confirm_button"`
 	Cancel            string `json:"cancel"`
 }

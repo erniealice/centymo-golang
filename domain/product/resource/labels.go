@@ -12,7 +12,7 @@ type Labels struct {
 	Empty   EmptyLabels   `json:"empty"`
 	Form    FormLabels    `json:"form"`
 	Actions ActionLabels  `json:"actions"`
-	Bulk    BulkLabels    `json:"bulkActions"`
+	Bulk    BulkLabels    `json:"bulk_actions"`
 	Status  StatusLabels  `json:"status"`
 	Confirm ConfirmLabels `json:"confirm"`
 	Errors  ErrorLabels   `json:"errors"`
@@ -20,11 +20,11 @@ type Labels struct {
 
 type PageLabels struct {
 	Heading         string `json:"heading"`
-	HeadingActive   string `json:"headingActive"`
-	HeadingInactive string `json:"headingInactive"`
+	HeadingActive   string `json:"heading_active"`
+	HeadingInactive string `json:"heading_inactive"`
 	Caption         string `json:"caption"`
-	CaptionActive   string `json:"captionActive"`
-	CaptionInactive string `json:"captionInactive"`
+	CaptionActive   string `json:"caption_active"`
+	CaptionInactive string `json:"caption_inactive"`
 }
 
 type ButtonLabels struct {
@@ -45,17 +45,17 @@ type EmptyLabels struct {
 
 type FormLabels struct {
 	Name            string `json:"name"`
-	NamePlaceholder string `json:"namePlaceholder"`
+	NamePlaceholder string `json:"name_placeholder"`
 	Description     string `json:"description"`
-	DescPlaceholder string `json:"descriptionPlaceholder"`
-	ProductId       string `json:"productId"`
-	UserId          string `json:"userId"`
+	DescPlaceholder string `json:"description_placeholder"`
+	ProductId       string `json:"product_id"`
+	UserId          string `json:"user_id"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string `json:"nameInfo"`
-	DescriptionInfo string `json:"descriptionInfo"`
-	ProductIdInfo   string `json:"productIdInfo"`
-	UserIdInfo      string `json:"userIdInfo"`
+	NameInfo        string `json:"name_info"`
+	DescriptionInfo string `json:"description_info"`
+	ProductIdInfo   string `json:"product_id_info"`
+	UserIdInfo      string `json:"user_id_info"`
 }
 
 type ActionLabels struct {
@@ -77,24 +77,24 @@ type StatusLabels struct {
 
 type ConfirmLabels struct {
 	Delete              string `json:"delete"`
-	DeleteMessage       string `json:"deleteMessage"`
+	DeleteMessage       string `json:"delete_message"`
 	Activate            string `json:"activate"`
-	ActivateMessage     string `json:"activateMessage"`
+	ActivateMessage     string `json:"activate_message"`
 	Deactivate          string `json:"deactivate"`
-	DeactivateMessage   string `json:"deactivateMessage"`
-	BulkDelete          string `json:"bulkDelete"`
-	BulkDeleteMessage   string `json:"bulkDeleteMessage"`
-	BulkActivate        string `json:"bulkActivate"`
-	BulkActivateMessage string `json:"bulkActivateMessage"`
+	DeactivateMessage   string `json:"deactivate_message"`
+	BulkDelete          string `json:"bulk_delete"`
+	BulkDeleteMessage   string `json:"bulk_delete_message"`
+	BulkActivate        string `json:"bulk_activate"`
+	BulkActivateMessage string `json:"bulk_activate_message"`
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoPermission     string `json:"noPermission"`
-	CannotDelete     string `json:"cannotDelete"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoPermission     string `json:"no_permission"`
+	CannotDelete     string `json:"cannot_delete"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.

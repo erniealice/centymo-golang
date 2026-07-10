@@ -33,10 +33,10 @@ type Deps struct {
 func formLabels(t func(string) string, d inventory.DepreciationLabels) depreciationform.Labels {
 	return depreciationform.Labels{
 		Method:       t("inventory.depreciation.method"),
-		CostBasis:    t("inventory.depreciation.costBasis"),
-		SalvageValue: t("inventory.depreciation.salvageValue"),
-		UsefulLife:   t("inventory.depreciation.usefulLife"),
-		StartDate:    t("inventory.depreciation.startDate"),
+		CostBasis:    t("inventory.depreciation.cost_basis"),
+		SalvageValue: t("inventory.depreciation.salvage_value"),
+		UsefulLife:   t("inventory.depreciation.useful_life"),
+		StartDate:    t("inventory.depreciation.start_date"),
 		// Info fields sourced from inventory.DepreciationLabels (populated from lyngua JSON + defaults).
 		MethodInfo:       d.MethodInfo,
 		CostBasisInfo:    d.CostBasisInfo,
@@ -48,9 +48,9 @@ func formLabels(t func(string) string, d inventory.DepreciationLabels) depreciat
 
 func methodOptions(t func(string) string) []pyeza.SelectOption {
 	return []pyeza.SelectOption{
-		{Value: "straight_line", Label: t("inventory.depreciation.methodStraightLine")},
-		{Value: "declining_balance", Label: t("inventory.depreciation.methodDecliningBalance")},
-		{Value: "sum_of_years", Label: t("inventory.depreciation.methodSumOfYears")},
+		{Value: "straight_line", Label: t("inventory.depreciation.method_straight_line")},
+		{Value: "declining_balance", Label: t("inventory.depreciation.method_declining_balance")},
+		{Value: "sum_of_years", Label: t("inventory.depreciation.method_sum_of_years")},
 	}
 }
 

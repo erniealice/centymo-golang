@@ -24,22 +24,22 @@ type TableLabels struct {
 // AdvancesDashboardSectionLabels — labels for one half (outflow OR inflow)
 // of the Advances Dashboard.
 type SectionLabels struct {
-	CardTitle    string      `json:"cardTitle"`
+	CardTitle    string      `json:"card_title"`
 	Table        TableLabels `json:"table"`
-	EmptyTitle   string      `json:"emptyTitle"`
-	EmptyMessage string      `json:"emptyMessage"`
+	EmptyTitle   string      `json:"empty_title"`
+	EmptyMessage string      `json:"empty_message"`
 }
 
 // AdvancesDashboardLabels — root struct for the Advances Dashboard page.
 // JSON shape mirrors `advancesDashboard.*` in advances_dashboard.json.
 type Labels struct {
 	Title                string        `json:"title"`
-	AsOfLabel            string        `json:"asOfLabel"`
-	TotalOutflow         string        `json:"totalOutflow"`
-	TotalInflow          string        `json:"totalInflow"`
-	UtilizationLabel     string        `json:"utilizationLabel"`
-	ActiveCount          string        `json:"activeCount"`
-	FullyRecognizedCount string        `json:"fullyRecognizedCount"`
+	AsOfLabel            string        `json:"as_of_label"`
+	TotalOutflow         string        `json:"total_outflow"`
+	TotalInflow          string        `json:"total_inflow"`
+	UtilizationLabel     string        `json:"utilization_label"`
+	ActiveCount          string        `json:"active_count"`
+	FullyRecognizedCount string        `json:"fully_recognized_count"`
 	Outflow              SectionLabels `json:"outflow"`
 	Inflow               SectionLabels `json:"inflow"`
 }

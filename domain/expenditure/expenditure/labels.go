@@ -18,20 +18,20 @@ type Labels struct {
 	Status               StatusLabels               `json:"status"`
 	Types                TypeLabels                 `json:"types"`
 	Actions              ActionLabels               `json:"actions"`
-	Bulk                 BulkLabels                 `json:"bulkActions"`
+	Bulk                 BulkLabels                 `json:"bulk_actions"`
 	Detail               DetailLabels               `json:"detail"`
 	Errors               ErrorLabels                `json:"errors"`
 	Category             CategoryLabels             `json:"category"`
-	PaymentMethod        PaymentMethodLabels        `json:"paymentMethod"`
-	DisbursementCategory DisbursementCategoryLabels `json:"disbursementCategory"`
+	PaymentMethod        PaymentMethodLabels        `json:"payment_method"`
+	DisbursementCategory DisbursementCategoryLabels `json:"disbursement_category"`
 	Schedule             ScheduleLabels             `json:"schedule"`
-	LineItemForm         LineItemFormLabels         `json:"lineItemForm"`
-	DisbursementForm     DisbursementFormLabels     `json:"disbursementForm"`
-	PurchaseOrder        purchaseorder.Labels       `json:"purchaseOrder"`
+	LineItemForm         LineItemFormLabels         `json:"line_item_form"`
+	DisbursementForm     DisbursementFormLabels     `json:"disbursement_form"`
+	PurchaseOrder        purchaseorder.Labels       `json:"purchase_order"`
 
 	// Dashboard labels — Phase 5. One block per surface (purchase/expense).
-	PurchaseDashboard PurchaseDashboardLabels `json:"purchaseDashboard"`
-	ExpenseDashboard  ExpenseDashboardLabels  `json:"expenseDashboard"`
+	PurchaseDashboard PurchaseDashboardLabels `json:"purchase_dashboard"`
+	ExpenseDashboard  ExpenseDashboardLabels  `json:"expense_dashboard"`
 }
 
 // PurchaseDashboardLabels holds translatable strings for the purchase
@@ -39,24 +39,24 @@ type Labels struct {
 type PurchaseDashboardLabels struct {
 	Title             string `json:"title"`
 	Subtitle          string `json:"subtitle"`
-	StatOpenPOs       string `json:"statOpenPOs"`
-	StatAwaiting      string `json:"statAwaiting"`
-	StatSpentMTD      string `json:"statSpentMTD"`
-	StatTopSupplier   string `json:"statTopSupplier"`
-	WidgetMonthly     string `json:"widgetMonthly"`
-	WidgetTopSupplier string `json:"widgetTopSupplier"`
-	WidgetRecent      string `json:"widgetRecent"`
-	QuickNew          string `json:"quickNew"`
-	QuickReceive      string `json:"quickReceive"`
-	QuickMatch        string `json:"quickMatch"`
-	QuickSuppliers    string `json:"quickSuppliers"`
-	ViewAll           string `json:"viewAll"`
-	EmptyRecentTitle  string `json:"emptyRecentTitle"`
-	EmptyRecentDesc   string `json:"emptyRecentDesc"`
-	EmptySuppliers    string `json:"emptySuppliers"`
-	NewPurchase       string `json:"newPurchase"`
-	ColSupplier       string `json:"colSupplier"`
-	ColTotal          string `json:"colTotal"`
+	StatOpenPOs       string `json:"stat_open_pos"`
+	StatAwaiting      string `json:"stat_awaiting"`
+	StatSpentMTD      string `json:"stat_spent_mtd"`
+	StatTopSupplier   string `json:"stat_top_supplier"`
+	WidgetMonthly     string `json:"widget_monthly"`
+	WidgetTopSupplier string `json:"widget_top_supplier"`
+	WidgetRecent      string `json:"widget_recent"`
+	QuickNew          string `json:"quick_new"`
+	QuickReceive      string `json:"quick_receive"`
+	QuickMatch        string `json:"quick_match"`
+	QuickSuppliers    string `json:"quick_suppliers"`
+	ViewAll           string `json:"view_all"`
+	EmptyRecentTitle  string `json:"empty_recent_title"`
+	EmptyRecentDesc   string `json:"empty_recent_desc"`
+	EmptySuppliers    string `json:"empty_suppliers"`
+	NewPurchase       string `json:"new_purchase"`
+	ColSupplier       string `json:"col_supplier"`
+	ColTotal          string `json:"col_total"`
 }
 
 // ExpenseDashboardLabels holds translatable strings for the expense
@@ -64,24 +64,24 @@ type PurchaseDashboardLabels struct {
 type ExpenseDashboardLabels struct {
 	Title                 string `json:"title"`
 	Subtitle              string `json:"subtitle"`
-	StatPendingApproval   string `json:"statPendingApproval"`
-	StatApprovedMTD       string `json:"statApprovedMTD"`
-	StatReimbursable      string `json:"statReimbursable"`
-	StatCategoriesUsed    string `json:"statCategoriesUsed"`
-	WidgetByCategory      string `json:"widgetByCategory"`
-	WidgetTopCategory     string `json:"widgetTopCategory"`
-	WidgetRecent          string `json:"widgetRecent"`
-	QuickNew              string `json:"quickNew"`
-	QuickApprove          string `json:"quickApprove"`
-	QuickReimburse        string `json:"quickReimburse"`
-	QuickCategorySettings string `json:"quickCategorySettings"`
-	ViewAll               string `json:"viewAll"`
-	EmptyRecentTitle      string `json:"emptyRecentTitle"`
-	EmptyRecentDesc       string `json:"emptyRecentDesc"`
-	EmptyCategories       string `json:"emptyCategories"`
-	NewExpense            string `json:"newExpense"`
-	ColCategory           string `json:"colCategory"`
-	ColTotal              string `json:"colTotal"`
+	StatPendingApproval   string `json:"stat_pending_approval"`
+	StatApprovedMTD       string `json:"stat_approved_mtd"`
+	StatReimbursable      string `json:"stat_reimbursable"`
+	StatCategoriesUsed    string `json:"stat_categories_used"`
+	WidgetByCategory      string `json:"widget_by_category"`
+	WidgetTopCategory     string `json:"widget_top_category"`
+	WidgetRecent          string `json:"widget_recent"`
+	QuickNew              string `json:"quick_new"`
+	QuickApprove          string `json:"quick_approve"`
+	QuickReimburse        string `json:"quick_reimburse"`
+	QuickCategorySettings string `json:"quick_category_settings"`
+	ViewAll               string `json:"view_all"`
+	EmptyRecentTitle      string `json:"empty_recent_title"`
+	EmptyRecentDesc       string `json:"empty_recent_desc"`
+	EmptyCategories       string `json:"empty_categories"`
+	NewExpense            string `json:"new_expense"`
+	ColCategory           string `json:"col_category"`
+	ColTotal              string `json:"col_total"`
 }
 
 // CategoryLabels holds translatable strings for the expenditure
@@ -103,7 +103,7 @@ type CategoryPageLabels struct {
 }
 
 type CategoryButtonLabels struct {
-	AddCategory string `json:"addCategory"`
+	AddCategory string `json:"add_category"`
 }
 
 type CategoryColumnLabels struct {
@@ -124,9 +124,9 @@ type CategoryFormLabels struct {
 	Description string `json:"description"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	CodeInfo        string `json:"codeInfo"`
-	NameInfo        string `json:"nameInfo"`
-	DescriptionInfo string `json:"descriptionInfo"`
+	CodeInfo        string `json:"code_info"`
+	NameInfo        string `json:"name_info"`
+	DescriptionInfo string `json:"description_info"`
 }
 
 type CategoryActionLabels struct {
@@ -136,62 +136,62 @@ type CategoryActionLabels struct {
 }
 
 type CategoryErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	InvalidFormData  string `json:"invalidFormData"`
+	PermissionDenied string `json:"permission_denied"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	InvalidFormData  string `json:"invalid_form_data"`
 }
 
 type CategoryConfirmLabels struct {
-	DeleteTitle   string `json:"deleteTitle"`
-	DeleteMessage string `json:"deleteMessage"`
+	DeleteTitle   string `json:"delete_title"`
+	DeleteMessage string `json:"delete_message"`
 }
 
 // ErrorLabels holds error messages for the expenditure action handlers.
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoIDsProvided    string `json:"noIDsProvided"`
-	InvalidStatus    string `json:"invalidStatus"`
-	NoPermission     string `json:"noPermission"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoIDsProvided    string `json:"no_ids_provided"`
+	InvalidStatus    string `json:"invalid_status"`
+	NoPermission     string `json:"no_permission"`
 }
 
 type LabelNames struct {
 	Name           string `json:"name"`
-	NamePlural     string `json:"namePlural"`
+	NamePlural     string `json:"name_plural"`
 	Purchase       string `json:"purchase"`
-	PurchasePlural string `json:"purchasePlural"`
-	PurchaseOrder  string `json:"purchaseOrder"`
+	PurchasePlural string `json:"purchase_plural"`
+	PurchaseOrder  string `json:"purchase_order"`
 	Expense        string `json:"expense"`
-	ExpensePlural  string `json:"expensePlural"`
+	ExpensePlural  string `json:"expense_plural"`
 }
 
 type PageLabels struct {
-	PurchaseHeading          string `json:"purchaseHeading"`
-	PurchaseCaption          string `json:"purchaseCaption"`
-	PurchaseHeadingDraft     string `json:"purchaseHeadingDraft"`
-	PurchaseHeadingPending   string `json:"purchaseHeadingPending"`
-	PurchaseHeadingApproved  string `json:"purchaseHeadingApproved"`
-	PurchaseHeadingPaid      string `json:"purchaseHeadingPaid"`
-	PurchaseHeadingCancelled string `json:"purchaseHeadingCancelled"`
-	PurchaseHeadingOverdue   string `json:"purchaseHeadingOverdue"`
-	ExpenseHeading           string `json:"expenseHeading"`
-	ExpenseCaption           string `json:"expenseCaption"`
-	ExpenseHeadingDraft      string `json:"expenseHeadingDraft"`
-	ExpenseHeadingPending    string `json:"expenseHeadingPending"`
-	ExpenseHeadingApproved   string `json:"expenseHeadingApproved"`
-	ExpenseHeadingPaid       string `json:"expenseHeadingPaid"`
-	ExpenseHeadingCancelled  string `json:"expenseHeadingCancelled"`
-	ExpenseHeadingOverdue    string `json:"expenseHeadingOverdue"`
-	DashboardPurchase        string `json:"dashboardPurchase"`
-	DashboardExpense         string `json:"dashboardExpense"`
+	PurchaseHeading          string `json:"purchase_heading"`
+	PurchaseCaption          string `json:"purchase_caption"`
+	PurchaseHeadingDraft     string `json:"purchase_heading_draft"`
+	PurchaseHeadingPending   string `json:"purchase_heading_pending"`
+	PurchaseHeadingApproved  string `json:"purchase_heading_approved"`
+	PurchaseHeadingPaid      string `json:"purchase_heading_paid"`
+	PurchaseHeadingCancelled string `json:"purchase_heading_cancelled"`
+	PurchaseHeadingOverdue   string `json:"purchase_heading_overdue"`
+	ExpenseHeading           string `json:"expense_heading"`
+	ExpenseCaption           string `json:"expense_caption"`
+	ExpenseHeadingDraft      string `json:"expense_heading_draft"`
+	ExpenseHeadingPending    string `json:"expense_heading_pending"`
+	ExpenseHeadingApproved   string `json:"expense_heading_approved"`
+	ExpenseHeadingPaid       string `json:"expense_heading_paid"`
+	ExpenseHeadingCancelled  string `json:"expense_heading_cancelled"`
+	ExpenseHeadingOverdue    string `json:"expense_heading_overdue"`
+	DashboardPurchase        string `json:"dashboard_purchase"`
+	DashboardExpense         string `json:"dashboard_expense"`
 }
 
 type ButtonLabels struct {
-	AddPurchase string `json:"addPurchase"`
-	AddExpense  string `json:"addExpense"`
+	AddPurchase string `json:"add_purchase"`
+	AddExpense  string `json:"add_expense"`
 }
 
 type ColumnLabels struct {
@@ -205,67 +205,67 @@ type ColumnLabels struct {
 }
 
 type EmptyLabels struct {
-	PurchaseTitle            string `json:"purchaseTitle"`
-	PurchaseMessage          string `json:"purchaseMessage"`
-	PurchaseDraftTitle       string `json:"purchaseDraftTitle"`
-	PurchaseDraftMessage     string `json:"purchaseDraftMessage"`
-	PurchasePendingTitle     string `json:"purchasePendingTitle"`
-	PurchasePendingMessage   string `json:"purchasePendingMessage"`
-	PurchaseApprovedTitle    string `json:"purchaseApprovedTitle"`
-	PurchaseApprovedMessage  string `json:"purchaseApprovedMessage"`
-	PurchasePaidTitle        string `json:"purchasePaidTitle"`
-	PurchasePaidMessage      string `json:"purchasePaidMessage"`
-	PurchaseCancelledTitle   string `json:"purchaseCancelledTitle"`
-	PurchaseCancelledMessage string `json:"purchaseCancelledMessage"`
-	PurchaseOverdueTitle     string `json:"purchaseOverdueTitle"`
-	PurchaseOverdueMessage   string `json:"purchaseOverdueMessage"`
-	ExpenseTitle             string `json:"expenseTitle"`
-	ExpenseMessage           string `json:"expenseMessage"`
-	ExpenseDraftTitle        string `json:"expenseDraftTitle"`
-	ExpenseDraftMessage      string `json:"expenseDraftMessage"`
-	ExpensePendingTitle      string `json:"expensePendingTitle"`
-	ExpensePendingMessage    string `json:"expensePendingMessage"`
-	ExpenseApprovedTitle     string `json:"expenseApprovedTitle"`
-	ExpenseApprovedMessage   string `json:"expenseApprovedMessage"`
-	ExpensePaidTitle         string `json:"expensePaidTitle"`
-	ExpensePaidMessage       string `json:"expensePaidMessage"`
-	ExpenseCancelledTitle    string `json:"expenseCancelledTitle"`
-	ExpenseCancelledMessage  string `json:"expenseCancelledMessage"`
-	ExpenseOverdueTitle      string `json:"expenseOverdueTitle"`
-	ExpenseOverdueMessage    string `json:"expenseOverdueMessage"`
+	PurchaseTitle            string `json:"purchase_title"`
+	PurchaseMessage          string `json:"purchase_message"`
+	PurchaseDraftTitle       string `json:"purchase_draft_title"`
+	PurchaseDraftMessage     string `json:"purchase_draft_message"`
+	PurchasePendingTitle     string `json:"purchase_pending_title"`
+	PurchasePendingMessage   string `json:"purchase_pending_message"`
+	PurchaseApprovedTitle    string `json:"purchase_approved_title"`
+	PurchaseApprovedMessage  string `json:"purchase_approved_message"`
+	PurchasePaidTitle        string `json:"purchase_paid_title"`
+	PurchasePaidMessage      string `json:"purchase_paid_message"`
+	PurchaseCancelledTitle   string `json:"purchase_cancelled_title"`
+	PurchaseCancelledMessage string `json:"purchase_cancelled_message"`
+	PurchaseOverdueTitle     string `json:"purchase_overdue_title"`
+	PurchaseOverdueMessage   string `json:"purchase_overdue_message"`
+	ExpenseTitle             string `json:"expense_title"`
+	ExpenseMessage           string `json:"expense_message"`
+	ExpenseDraftTitle        string `json:"expense_draft_title"`
+	ExpenseDraftMessage      string `json:"expense_draft_message"`
+	ExpensePendingTitle      string `json:"expense_pending_title"`
+	ExpensePendingMessage    string `json:"expense_pending_message"`
+	ExpenseApprovedTitle     string `json:"expense_approved_title"`
+	ExpenseApprovedMessage   string `json:"expense_approved_message"`
+	ExpensePaidTitle         string `json:"expense_paid_title"`
+	ExpensePaidMessage       string `json:"expense_paid_message"`
+	ExpenseCancelledTitle    string `json:"expense_cancelled_title"`
+	ExpenseCancelledMessage  string `json:"expense_cancelled_message"`
+	ExpenseOverdueTitle      string `json:"expense_overdue_title"`
+	ExpenseOverdueMessage    string `json:"expense_overdue_message"`
 }
 
 type FormLabels struct {
-	VendorName                 string `json:"vendorName"`
-	VendorNamePlaceholder      string `json:"vendorNamePlaceholder"`
-	ExpenditureDate            string `json:"expenditureDate"`
-	TotalAmount                string `json:"totalAmount"`
+	VendorName                 string `json:"vendor_name"`
+	VendorNamePlaceholder      string `json:"vendor_name_placeholder"`
+	ExpenditureDate            string `json:"expenditure_date"`
+	TotalAmount                string `json:"total_amount"`
 	Currency                   string `json:"currency"`
 	Status                     string `json:"status"`
-	ReferenceNumber            string `json:"referenceNumber"`
-	ReferenceNumberPlaceholder string `json:"referenceNumberPlaceholder"`
-	PaymentTerms               string `json:"paymentTerms"`
-	DueDate                    string `json:"dueDate"`
-	ApprovedBy                 string `json:"approvedBy"`
-	ExpenditureType            string `json:"expenditureType"`
-	ExpenditureCategory        string `json:"expenditureCategory"`
+	ReferenceNumber            string `json:"reference_number"`
+	ReferenceNumberPlaceholder string `json:"reference_number_placeholder"`
+	PaymentTerms               string `json:"payment_terms"`
+	DueDate                    string `json:"due_date"`
+	ApprovedBy                 string `json:"approved_by"`
+	ExpenditureType            string `json:"expenditure_type"`
+	ExpenditureCategory        string `json:"expenditure_category"`
 	Notes                      string `json:"notes"`
-	NotesPlaceholder           string `json:"notesPlaceholder"`
-	SectionInfo                string `json:"sectionInfo"`
-	SectionVendor              string `json:"sectionVendor"`
-	SectionPayment             string `json:"sectionPayment"`
-	SectionNotes               string `json:"sectionNotes"`
+	NotesPlaceholder           string `json:"notes_placeholder"`
+	SectionInfo                string `json:"section_info"`
+	SectionVendor              string `json:"section_vendor"`
+	SectionPayment             string `json:"section_payment"`
+	SectionNotes               string `json:"section_notes"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	NameInfo            string `json:"nameInfo"`
-	ExpenditureTypeInfo string `json:"expenditureTypeInfo"`
-	CategoryInfo        string `json:"categoryInfo"`
-	DateInfo            string `json:"dateInfo"`
-	AmountInfo          string `json:"amountInfo"`
-	CurrencyInfo        string `json:"currencyInfo"`
-	ReferenceNumberInfo string `json:"referenceNumberInfo"`
-	SupplierInfo        string `json:"supplierInfo"`
-	NotesInfo           string `json:"notesInfo"`
+	NameInfo            string `json:"name_info"`
+	ExpenditureTypeInfo string `json:"expenditure_type_info"`
+	CategoryInfo        string `json:"category_info"`
+	DateInfo            string `json:"date_info"`
+	AmountInfo          string `json:"amount_info"`
+	CurrencyInfo        string `json:"currency_info"`
+	ReferenceNumberInfo string `json:"reference_number_info"`
+	SupplierInfo        string `json:"supplier_info"`
+	NotesInfo           string `json:"notes_info"`
 }
 
 type StatusLabels struct {
@@ -290,86 +290,86 @@ type ActionLabels struct {
 	Delete         string `json:"delete"`
 	Approve        string `json:"approve"`
 	Reject         string `json:"reject"`
-	MarkPaid       string `json:"markPaid"`
-	ViewPurchase   string `json:"viewPurchase"`
-	EditPurchase   string `json:"editPurchase"`
-	DeletePurchase string `json:"deletePurchase"`
-	ViewExpense    string `json:"viewExpense"`
-	EditExpense    string `json:"editExpense"`
-	DeleteExpense  string `json:"deleteExpense"`
+	MarkPaid       string `json:"mark_paid"`
+	ViewPurchase   string `json:"view_purchase"`
+	EditPurchase   string `json:"edit_purchase"`
+	DeletePurchase string `json:"delete_purchase"`
+	ViewExpense    string `json:"view_expense"`
+	EditExpense    string `json:"edit_expense"`
+	DeleteExpense  string `json:"delete_expense"`
 }
 
 type BulkLabels struct {
 	Delete   string `json:"delete"`
 	Approve  string `json:"approve"`
-	MarkPaid string `json:"markPaid"`
+	MarkPaid string `json:"mark_paid"`
 }
 
 type DetailLabels struct {
-	PurchasePageTitle    string `json:"purchasePageTitle"`
-	ExpensePageTitle     string `json:"expensePageTitle"`
-	VendorInfo           string `json:"vendorInfo"`
-	VendorName           string `json:"vendorName"`
+	PurchasePageTitle    string `json:"purchase_page_title"`
+	ExpensePageTitle     string `json:"expense_page_title"`
+	VendorInfo           string `json:"vendor_info"`
+	VendorName           string `json:"vendor_name"`
 	Date                 string `json:"date"`
 	Amount               string `json:"amount"`
 	Currency             string `json:"currency"`
 	Status               string `json:"status"`
 	Type                 string `json:"type"`
 	Category             string `json:"category"`
-	ReferenceNumber      string `json:"referenceNumber"`
-	PaymentTerms         string `json:"paymentTerms"`
-	DueDate              string `json:"dueDate"`
-	ApprovedBy           string `json:"approvedBy"`
+	ReferenceNumber      string `json:"reference_number"`
+	PaymentTerms         string `json:"payment_terms"`
+	DueDate              string `json:"due_date"`
+	ApprovedBy           string `json:"approved_by"`
 	Notes                string `json:"notes"`
-	LineItems            string `json:"lineItems"`
+	LineItems            string `json:"line_items"`
 	Description          string `json:"description"`
 	Quantity             string `json:"quantity"`
-	UnitPrice            string `json:"unitPrice"`
+	UnitPrice            string `json:"unit_price"`
 	Total                string `json:"total"`
-	SubTotal             string `json:"subTotal"`
-	GrandTotal           string `json:"grandTotal"`
-	TabBasicInfo         string `json:"tabBasicInfo"`
-	TabLineItems         string `json:"tabLineItems"`
-	TabPayment           string `json:"tabPayment"`
-	TabAuditTrail        string `json:"tabAuditTrail"`
-	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditAction          string `json:"auditAction"`
-	AuditUser            string `json:"auditUser"`
-	AuditEmptyTitle      string `json:"auditEmptyTitle"`
-	AuditEmptyMessage    string `json:"auditEmptyMessage"`
+	SubTotal             string `json:"sub_total"`
+	GrandTotal           string `json:"grand_total"`
+	TabBasicInfo         string `json:"tab_basic_info"`
+	TabLineItems         string `json:"tab_line_items"`
+	TabPayment           string `json:"tab_payment"`
+	TabAuditTrail        string `json:"tab_audit_trail"`
+	AuditTrailComingSoon string `json:"audit_trail_coming_soon"`
+	AuditAction          string `json:"audit_action"`
+	AuditUser            string `json:"audit_user"`
+	AuditEmptyTitle      string `json:"audit_empty_title"`
+	AuditEmptyMessage    string `json:"audit_empty_message"`
 	// Additional fields used in the expense detail template
 	Title          string `json:"title"`
-	InfoSection    string `json:"infoSection"`
+	InfoSection    string `json:"info_section"`
 	Name           string `json:"name"`
-	PaymentSummary string `json:"paymentSummary"`
-	TotalAmount    string `json:"totalAmount"`
+	PaymentSummary string `json:"payment_summary"`
+	TotalAmount    string `json:"total_amount"`
 	Paid           string `json:"paid"`
 	Outstanding    string `json:"outstanding"`
-	PaymentStatus  string `json:"paymentStatus"`
-	UpdateStatus   string `json:"updateStatus"`
-	SaveStatus     string `json:"saveStatus"`
+	PaymentStatus  string `json:"payment_status"`
+	UpdateStatus   string `json:"update_status"`
+	SaveStatus     string `json:"save_status"`
 	Payment        string `json:"payment"`
 	Pay            string `json:"pay"`
-	AddItem        string `json:"addItem"`
-	EmptyTitle     string `json:"emptyTitle"`
-	EmptyMessage   string `json:"emptyMessage"`
-	TabDetails     string `json:"tabDetails"`
-	TabPayments    string `json:"tabPayments"`
+	AddItem        string `json:"add_item"`
+	EmptyTitle     string `json:"empty_title"`
+	EmptyMessage   string `json:"empty_message"`
+	TabDetails     string `json:"tab_details"`
+	TabPayments    string `json:"tab_payments"`
 	// SPS P10 — Recognition + Accrual tabs on expenditure detail
-	TabRecognition          string `json:"tabRecognition"`
-	TabAccrual              string `json:"tabAccrual"`
-	RecognitionEmptyTitle   string `json:"recognitionEmptyTitle"`
-	RecognitionEmptyMessage string `json:"recognitionEmptyMessage"`
-	RecognitionRecognizeCTA string `json:"recognitionRecognizeCta"`
-	AccrualEmptyTitle       string `json:"accrualEmptyTitle"`
-	AccrualEmptyMessage     string `json:"accrualEmptyMessage"`
-	TabAttachments          string `json:"tabAttachments"`
+	TabRecognition          string `json:"tab_recognition"`
+	TabAccrual              string `json:"tab_accrual"`
+	RecognitionEmptyTitle   string `json:"recognition_empty_title"`
+	RecognitionEmptyMessage string `json:"recognition_empty_message"`
+	RecognitionRecognizeCTA string `json:"recognition_recognize_cta"`
+	AccrualEmptyTitle       string `json:"accrual_empty_title"`
+	AccrualEmptyMessage     string `json:"accrual_empty_message"`
+	TabAttachments          string `json:"tab_attachments"`
 }
 
 // PaymentMethodLabels holds translatable strings for disbursement payment methods.
 type PaymentMethodLabels struct {
 	Cash         string `json:"cash"`
-	BankTransfer string `json:"bankTransfer"`
+	BankTransfer string `json:"bank_transfer"`
 	Check        string `json:"check"`
 	GCash        string `json:"gcash"`
 	Other        string `json:"other"`
@@ -377,7 +377,7 @@ type PaymentMethodLabels struct {
 
 // DisbursementCategoryLabels holds translatable strings for disbursement categories.
 type DisbursementCategoryLabels struct {
-	SupplierPayment string `json:"supplierPayment"`
+	SupplierPayment string `json:"supplier_payment"`
 	Payroll         string `json:"payroll"`
 	Rent            string `json:"rent"`
 	Utilities       string `json:"utilities"`
@@ -389,22 +389,22 @@ type ScheduleLabels struct {
 	Scheduled    string `json:"scheduled"`
 	Paid         string `json:"paid"`
 	Remaining    string `json:"remaining"`
-	DueDate      string `json:"dueDate"`
-	AmountDue    string `json:"amountDue"`
-	PaidAmount   string `json:"paidAmount"`
-	PaidDate     string `json:"paidDate"`
+	DueDate      string `json:"due_date"`
+	AmountDue    string `json:"amount_due"`
+	PaidAmount   string `json:"paid_amount"`
+	PaidDate     string `json:"paid_date"`
 	Reference    string `json:"reference"`
-	EmptyTitle   string `json:"emptyTitle"`
-	EmptyMessage string `json:"emptyMessage"`
+	EmptyTitle   string `json:"empty_title"`
+	EmptyMessage string `json:"empty_message"`
 }
 
 // LineItemFormLabels holds translatable strings for the line item drawer form.
 type LineItemFormLabels struct {
-	EditTitle              string `json:"editTitle"`
+	EditTitle              string `json:"edit_title"`
 	Description            string `json:"description"`
-	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
+	DescriptionPlaceholder string `json:"description_placeholder"`
 	Quantity               string `json:"quantity"`
-	UnitPrice              string `json:"unitPrice"`
+	UnitPrice              string `json:"unit_price"`
 	Notes                  string `json:"notes"`
 	Save                   string `json:"save"`
 	Cancel                 string `json:"cancel"`
@@ -413,13 +413,18 @@ type LineItemFormLabels struct {
 // DisbursementFormLabels holds translatable strings for the pay (disbursement) drawer form.
 type DisbursementFormLabels struct {
 	Reference            string `json:"reference"`
-	ReferencePlaceholder string `json:"referencePlaceholder"`
+	ReferencePlaceholder string `json:"reference_placeholder"`
 	Payee                string `json:"payee"`
 	Amount               string `json:"amount"`
 	Currency             string `json:"currency"`
-	CurrencyPlaceholder  string `json:"currencyPlaceholder"`
-	PaymentMethod        string `json:"paymentMethod"`
+	CurrencyPlaceholder  string `json:"currency_placeholder"`
+	PaymentMethod        string `json:"payment_method"`
 	Category             string `json:"category"`
-	ApprovedBy           string `json:"approvedBy"`
-	ApproverPlaceholder  string `json:"approverPlaceholder"`
+	ApprovedBy           string `json:"approved_by"`
+	ApproverPlaceholder  string `json:"approver_placeholder"`
 }
+
+// DefaultLabels returns the zero-value label set. Every rendered string for
+// this entity must come from the lyngua cascade (general -> business-type
+// tier); there are no Go-side default strings to fall back on.
+func DefaultLabels() Labels { return Labels{} }

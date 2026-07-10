@@ -44,9 +44,9 @@ func BuildLabels(t func(string) string, f pricelist.FormLabels) Labels {
 	return Labels{
 		Name:            t("pricelist.form.name"),
 		Description:     t("pricelist.form.description"),
-		DescPlaceholder: t("pricelist.form.descriptionPlaceholder"),
-		DateStart:       t("pricelist.form.dateStart"),
-		DateEnd:         t("pricelist.form.dateEnd"),
+		DescPlaceholder: t("pricelist.form.description_placeholder"),
+		DateStart:       t("pricelist.form.date_start"),
+		DateEnd:         t("pricelist.form.date_end"),
 		Active:          t("pricelist.form.active"),
 		NameInfo:        f.NameInfo,
 		DescriptionInfo: f.DescriptionInfo,

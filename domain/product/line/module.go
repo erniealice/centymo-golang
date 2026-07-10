@@ -3,10 +3,10 @@ package line
 import (
 	"context"
 
-	product "github.com/erniealice/centymo-golang/domain/product/product"
 	lineaction "github.com/erniealice/centymo-golang/domain/product/line/action"
 	linedetail "github.com/erniealice/centymo-golang/domain/product/line/detail"
 	linelist "github.com/erniealice/centymo-golang/domain/product/line/list"
+	product "github.com/erniealice/centymo-golang/domain/product/product"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"

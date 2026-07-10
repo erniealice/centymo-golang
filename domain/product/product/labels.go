@@ -18,8 +18,8 @@ type TrackingModeLabels struct {
 // using the exact tier-cascaded strings that appear elsewhere in the UI.
 type KindLabels struct {
 	Service        string `json:"service"`
-	StockedGood    string `json:"stockedGood"`
-	NonStockedGood string `json:"nonStockedGood"`
+	StockedGood    string `json:"stocked_good"`
+	NonStockedGood string `json:"non_stocked_good"`
 	Consumable     string `json:"consumable"`
 }
 
@@ -45,7 +45,7 @@ type Labels struct {
 	Empty      EmptyLabels      `json:"empty"`
 	Form       FormLabels       `json:"form"`
 	Actions    ActionLabels     `json:"actions"`
-	Bulk       BulkLabels       `json:"bulkActions"`
+	Bulk       BulkLabels       `json:"bulk_actions"`
 	Tabs       TabLabels        `json:"tabs"`
 	Detail     DetailLabels     `json:"detail"`
 	Status     StatusLabels     `json:"status"`
@@ -59,12 +59,12 @@ type Labels struct {
 	// product.json "productKind"/"deliveryMode"/"trackingMode" blocks.
 	// Wired here so the drawer-form select uses the exact tier-cascaded
 	// display string for each enum value without hardcoding in Go.
-	ProductKind  KindLabels         `json:"productKind"`
-	DeliveryMode DeliveryModeLabels `json:"deliveryMode"`
-	TrackingMode TrackingModeLabels `json:"trackingMode"`
+	ProductKind  KindLabels         `json:"product_kind"`
+	DeliveryMode DeliveryModeLabels `json:"delivery_mode"`
+	TrackingMode TrackingModeLabels `json:"tracking_mode"`
 
 	// Phase 5 — service dashboard (product_kind=service surface).
-	ServiceDashboard ServiceDashboardLabels `json:"serviceDashboard"`
+	ServiceDashboard ServiceDashboardLabels `json:"service_dashboard"`
 }
 
 // ServiceDashboardLabels holds translatable strings for the service
@@ -74,38 +74,38 @@ type Labels struct {
 type ServiceDashboardLabels struct {
 	Title              string `json:"title"`
 	Subtitle           string `json:"subtitle"`
-	StatTotalActive    string `json:"statTotalActive"`
-	StatTopRevenue     string `json:"statTopRevenue"`
-	StatByLineCount    string `json:"statByLineCount"`
-	StatRecentlyAdded  string `json:"statRecentlyAdded"`
-	WidgetByLine       string `json:"widgetByLine"`
-	WidgetTopRevenue   string `json:"widgetTopRevenue"`
-	WidgetRecent       string `json:"widgetRecent"`
-	QuickNew           string `json:"quickNew"`
-	QuickBundleBuilder string `json:"quickBundleBuilder"`
-	QuickTagService    string `json:"quickTagService"`
-	QuickPriceSchedule string `json:"quickPriceSchedule"`
-	ViewAll            string `json:"viewAll"`
-	EmptyRecentTitle   string `json:"emptyRecentTitle"`
-	EmptyRecentDesc    string `json:"emptyRecentDesc"`
-	EmptyTopRevenue    string `json:"emptyTopRevenue"`
-	NewService         string `json:"newService"`
-	ColLine            string `json:"colLine"`
-	ColRank            string `json:"colRank"`
-	ColService         string `json:"colService"`
+	StatTotalActive    string `json:"stat_total_active"`
+	StatTopRevenue     string `json:"stat_top_revenue"`
+	StatByLineCount    string `json:"stat_by_line_count"`
+	StatRecentlyAdded  string `json:"stat_recently_added"`
+	WidgetByLine       string `json:"widget_by_line"`
+	WidgetTopRevenue   string `json:"widget_top_revenue"`
+	WidgetRecent       string `json:"widget_recent"`
+	QuickNew           string `json:"quick_new"`
+	QuickBundleBuilder string `json:"quick_bundle_builder"`
+	QuickTagService    string `json:"quick_tag_service"`
+	QuickPriceSchedule string `json:"quick_price_schedule"`
+	ViewAll            string `json:"view_all"`
+	EmptyRecentTitle   string `json:"empty_recent_title"`
+	EmptyRecentDesc    string `json:"empty_recent_desc"`
+	EmptyTopRevenue    string `json:"empty_top_revenue"`
+	NewService         string `json:"new_service"`
+	ColLine            string `json:"col_line"`
+	ColRank            string `json:"col_rank"`
+	ColService         string `json:"col_service"`
 }
 
 type PageLabels struct {
 	Heading         string `json:"heading"`
-	HeadingActive   string `json:"headingActive"`
-	HeadingInactive string `json:"headingInactive"`
+	HeadingActive   string `json:"heading_active"`
+	HeadingInactive string `json:"heading_inactive"`
 	Caption         string `json:"caption"`
-	CaptionActive   string `json:"captionActive"`
-	CaptionInactive string `json:"captionInactive"`
+	CaptionActive   string `json:"caption_active"`
+	CaptionInactive string `json:"caption_inactive"`
 }
 
 type ButtonLabels struct {
-	AddProduct string `json:"addProduct"`
+	AddProduct string `json:"add_product"`
 }
 
 type ColumnLabels struct {
@@ -117,78 +117,78 @@ type ColumnLabels struct {
 }
 
 type EmptyLabels struct {
-	ActiveTitle     string `json:"activeTitle"`
-	ActiveMessage   string `json:"activeMessage"`
-	InactiveTitle   string `json:"inactiveTitle"`
-	InactiveMessage string `json:"inactiveMessage"`
+	ActiveTitle     string `json:"active_title"`
+	ActiveMessage   string `json:"active_message"`
+	InactiveTitle   string `json:"inactive_title"`
+	InactiveMessage string `json:"inactive_message"`
 }
 
 type FormLabels struct {
 	Name            string `json:"name"`
 	Description     string `json:"description"`
-	DescPlaceholder string `json:"descriptionPlaceholder"`
+	DescPlaceholder string `json:"description_placeholder"`
 	Price           string `json:"price"`
 	Currency        string `json:"currency"`
 	Active          string `json:"active"`
 	Line            string `json:"line"`
-	LinePlaceholder string `json:"linePlaceholder"`
+	LinePlaceholder string `json:"line_placeholder"`
 
 	// Variant / option / attribute form labels
-	PricePlaceholder       string `json:"pricePlaceholder"`
-	SelectOption           string `json:"selectOption"`
+	PricePlaceholder       string `json:"price_placeholder"`
+	SelectOption           string `json:"select_option"`
 	Required               string `json:"required"`
 	Option                 string `json:"option"`
-	SelectAttribute        string `json:"selectAttribute"`
-	AllAttributesAssigned  string `json:"allAttributesAssigned"`
-	OptionNeedsValuesAlert string `json:"optionNeedsValuesAlert"`
+	SelectAttribute        string `json:"select_attribute"`
+	AllAttributesAssigned  string `json:"all_attributes_assigned"`
+	OptionNeedsValuesAlert string `json:"option_needs_values_alert"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string `json:"nameInfo"`
-	DescriptionInfo string `json:"descriptionInfo"`
-	LineInfo        string `json:"lineInfo"`
-	PriceInfo       string `json:"priceInfo"`
-	CurrencyInfo    string `json:"currencyInfo"`
-	ActiveInfo      string `json:"activeInfo"`
+	NameInfo        string `json:"name_info"`
+	DescriptionInfo string `json:"description_info"`
+	LineInfo        string `json:"line_info"`
+	PriceInfo       string `json:"price_info"`
+	CurrencyInfo    string `json:"currency_info"`
+	ActiveInfo      string `json:"active_info"`
 
 	// Model D — variant_mode toggle + unit field
-	VariantModeLabel        string `json:"variantModeLabel"`
-	VariantModeInfo         string `json:"variantModeInfo"`
-	VariantModeNone         string `json:"variantModeNone"`
-	VariantModeConfigurable string `json:"variantModeConfigurable"`
-	UnitLabel               string `json:"unitLabel"`
-	UnitInfo                string `json:"unitInfo"`
-	UnitPlaceholder         string `json:"unitPlaceholder"`
-	VariantPriceVaries      string `json:"variantPriceVaries"`
+	VariantModeLabel        string `json:"variant_mode_label"`
+	VariantModeInfo         string `json:"variant_mode_info"`
+	VariantModeNone         string `json:"variant_mode_none"`
+	VariantModeConfigurable string `json:"variant_mode_configurable"`
+	UnitLabel               string `json:"unit_label"`
+	UnitInfo                string `json:"unit_info"`
+	UnitPlaceholder         string `json:"unit_placeholder"`
+	VariantPriceVaries      string `json:"variant_price_varies"`
 	// Shown as help text beneath the variant toggle when the product already
 	// has option or variant rows, to explain why the toggle is disabled.
-	VariantModeLockedHelp string `json:"variantModeLockedHelp"`
+	VariantModeLockedHelp string `json:"variant_mode_locked_help"`
 	// Error surfaced by the Create/Update handlers when a caller tries to
 	// flip variant_mode on a product that still has options/variants.
-	VariantModeLockedError string `json:"variantModeLockedError"`
+	VariantModeLockedError string `json:"variant_mode_locked_error"`
 
 	// Four-axis product taxonomy — rendered as selects on the drawer form.
 	// Each axis carries its own Label + Info popover text plus per-enum-value
 	// Info (XxxValueInfo map) keyed by enum string. When the mount restricts
 	// the axis to one allowed value the select is rendered disabled so the
 	// user still sees the classification without being able to change it.
-	ProductKindLabel      string            `json:"productKindLabel"`
-	ProductKindInfo       string            `json:"productKindInfo"`
-	ProductKindValueInfo  map[string]string `json:"productKindValueInfo,omitempty"`
-	DeliveryModeLabel     string            `json:"deliveryModeLabel"`
-	DeliveryModeInfo      string            `json:"deliveryModeInfo"`
-	DeliveryModeValueInfo map[string]string `json:"deliveryModeValueInfo,omitempty"`
-	TrackingModeLabel     string            `json:"trackingModeLabel"`
-	TrackingModeInfo      string            `json:"trackingModeInfo"`
-	TrackingModeValueInfo map[string]string `json:"trackingModeValueInfo,omitempty"`
+	ProductKindLabel      string            `json:"product_kind_label"`
+	ProductKindInfo       string            `json:"product_kind_info"`
+	ProductKindValueInfo  map[string]string `json:"product_kind_value_info,omitempty"`
+	DeliveryModeLabel     string            `json:"delivery_mode_label"`
+	DeliveryModeInfo      string            `json:"delivery_mode_info"`
+	DeliveryModeValueInfo map[string]string `json:"delivery_mode_value_info,omitempty"`
+	TrackingModeLabel     string            `json:"tracking_mode_label"`
+	TrackingModeInfo      string            `json:"tracking_mode_info"`
+	TrackingModeValueInfo map[string]string `json:"tracking_mode_value_info,omitempty"`
 
 	// Tax section labels (Phase 5)
-	SectionTax                  string `json:"sectionTax"`
-	TaxTreatmentLabel           string `json:"taxTreatmentLabel"`
-	TaxTreatmentPlaceholder     string `json:"taxTreatmentPlaceholder"`
-	TaxTreatmentInfo            string `json:"taxTreatmentInfo"`
-	WithholdingClassLabel       string `json:"withholdingClassLabel"`
-	WithholdingClassPlaceholder string `json:"withholdingClassPlaceholder"`
-	WithholdingClassInfo        string `json:"withholdingClassInfo"`
+	SectionTax                  string `json:"section_tax"`
+	TaxTreatmentLabel           string `json:"tax_treatment_label"`
+	TaxTreatmentPlaceholder     string `json:"tax_treatment_placeholder"`
+	TaxTreatmentInfo            string `json:"tax_treatment_info"`
+	WithholdingClassLabel       string `json:"withholding_class_label"`
+	WithholdingClassPlaceholder string `json:"withholding_class_placeholder"`
+	WithholdingClassInfo        string `json:"withholding_class_info"`
 }
 
 type ActionLabels struct {
@@ -211,72 +211,72 @@ type TabLabels struct {
 	Stock        string `json:"stock"`
 	Lines        string `json:"lines"`
 	Attachments  string `json:"attachments"`
-	AuditTrail   string `json:"auditTrail"`
-	AuditHistory string `json:"auditHistory"`
+	AuditTrail   string `json:"audit_trail"`
+	AuditHistory string `json:"audit_history"`
 	// Inventory item sub-tabs
 	Serials        string `json:"serials"`
-	PricingHistory string `json:"pricingHistory"`
+	PricingHistory string `json:"pricing_history"`
 }
 
 type DetailLabels struct {
 	Price                string `json:"price"`
 	Currency             string `json:"currency"`
 	Collections          string `json:"collections"`
-	VariantCount         string `json:"variantCount"`
+	VariantCount         string `json:"variant_count"`
 	Status               string `json:"status"`
-	OptionsLabel         string `json:"optionsLabel"`
-	EmptyVariantsMessage string `json:"emptyVariantsMessage"`
+	OptionsLabel         string `json:"options_label"`
+	EmptyVariantsMessage string `json:"empty_variants_message"`
 	// Header subtitle fallback when the product has no description.
 	// Consumed by buildPageData to override the generic "Welcome back"
 	// CommonLabels default on the product detail page header.
-	NoDescriptionSubtitle string `json:"noDescriptionSubtitle"`
+	NoDescriptionSubtitle string `json:"no_description_subtitle"`
 	// Model D — detail-page rows for unit of measure + variant mode.
 	// Falls back to English defaults when lyngua doesn't overlay the key.
 	Unit        string `json:"unit"`
-	VariantMode string `json:"variantMode"`
+	VariantMode string `json:"variant_mode"`
 	// Serial table columns
-	SerialNumber       string `json:"serialNumber"`
+	SerialNumber       string `json:"serial_number"`
 	IMEI               string `json:"imei"`
-	WarrantyEnd        string `json:"warrantyEnd"`
-	PurchaseOrder      string `json:"purchaseOrder"`
-	NoSerialNumbers    string `json:"noSerialNumbers"`
-	NoSerialNumbersMsg string `json:"noSerialNumbersMsg"`
+	WarrantyEnd        string `json:"warranty_end"`
+	PurchaseOrder      string `json:"purchase_order"`
+	NoSerialNumbers    string `json:"no_serial_numbers"`
+	NoSerialNumbersMsg string `json:"no_serial_numbers_msg"`
 
 	// Variant detail labels
-	VariantInformation  string `json:"variantInformation"`
+	VariantInformation  string `json:"variant_information"`
 	Options             string `json:"options"`
-	VariantPricing      string `json:"variantPricing"`
-	VariantPricingDesc  string `json:"variantPricingDesc"`
-	InventoryStock      string `json:"inventoryStock"`
-	InventoryStockDesc  string `json:"inventoryStockDesc"`
-	DropImagesHere      string `json:"dropImagesHere"`
-	ImageFileHint       string `json:"imageFileHint"`
-	DeleteSelected      string `json:"deleteSelected"`
-	PrimaryBadge        string `json:"primaryBadge"`
-	NoImages            string `json:"noImages"`
-	NoImagesDesc        string `json:"noImagesDesc"`
-	AuditTrail          string `json:"auditTrail"`
-	AuditTrailDesc      string `json:"auditTrailDesc"`
-	NoSerialNumbersDesc string `json:"noSerialNumbersDesc"`
+	VariantPricing      string `json:"variant_pricing"`
+	VariantPricingDesc  string `json:"variant_pricing_desc"`
+	InventoryStock      string `json:"inventory_stock"`
+	InventoryStockDesc  string `json:"inventory_stock_desc"`
+	DropImagesHere      string `json:"drop_images_here"`
+	ImageFileHint       string `json:"image_file_hint"`
+	DeleteSelected      string `json:"delete_selected"`
+	PrimaryBadge        string `json:"primary_badge"`
+	NoImages            string `json:"no_images"`
+	NoImagesDesc        string `json:"no_images_desc"`
+	AuditTrail          string `json:"audit_trail"`
+	AuditTrailDesc      string `json:"audit_trail_desc"`
+	NoSerialNumbersDesc string `json:"no_serial_numbers_desc"`
 
 	// Stock detail labels
-	InventoryItem      string `json:"inventoryItem"`
+	InventoryItem      string `json:"inventory_item"`
 	Name               string `json:"name"`
 	SKU                string `json:"sku"`
 	Type               string `json:"type"`
 	Location           string `json:"location"`
-	QtyOnHand          string `json:"qtyOnHand"`
+	QtyOnHand          string `json:"qty_on_hand"`
 	Reserved           string `json:"reserved"`
 	Available          string `json:"available"`
-	StatTotal          string `json:"statTotal"`
-	StatAvailable      string `json:"statAvailable"`
-	StatSold           string `json:"statSold"`
-	StatReserved       string `json:"statReserved"`
-	PricingHistory     string `json:"pricingHistory"`
-	PricingHistoryDesc string `json:"pricingHistoryDesc"`
+	StatTotal          string `json:"stat_total"`
+	StatAvailable      string `json:"stat_available"`
+	StatSold           string `json:"stat_sold"`
+	StatReserved       string `json:"stat_reserved"`
+	PricingHistory     string `json:"pricing_history"`
+	PricingHistoryDesc string `json:"pricing_history_desc"`
 
 	// Serial detail labels
-	SerialInformation string `json:"serialInformation"`
+	SerialInformation string `json:"serial_information"`
 }
 
 type StatusLabels struct {
@@ -287,7 +287,7 @@ type StatusLabels struct {
 type VariantLabels struct {
 	Title         string `json:"title"`
 	SKU           string `json:"sku"`
-	PriceOverride string `json:"priceOverride"`
+	PriceOverride string `json:"price_override"`
 	Attributes    string `json:"attributes"`
 	Assign        string `json:"assign"`
 	Edit          string `json:"edit"`
@@ -295,10 +295,10 @@ type VariantLabels struct {
 	Empty         string `json:"empty"`
 	// Stock table columns
 	Location    string `json:"location"`
-	QtyOnHand   string `json:"qtyOnHand"`
-	SerialCount string `json:"serialCount"`
-	NoStock     string `json:"noStock"`
-	NoStockMsg  string `json:"noStockMsg"`
+	QtyOnHand   string `json:"qty_on_hand"`
+	SerialCount string `json:"serial_count"`
+	NoStock     string `json:"no_stock"`
+	NoStockMsg  string `json:"no_stock_msg"`
 	// Pricing tab column headers
 	Pricing VariantPricingLabels `json:"pricing"`
 }
@@ -308,13 +308,13 @@ type VariantPricingLabels struct {
 	Start    string `json:"start"`
 	End      string `json:"end"`
 	Package  string `json:"package"`
-	RateCard string `json:"rateCard"`
+	RateCard string `json:"rate_card"`
 	Amount   string `json:"amount"`
 }
 
 type AttributeLabels struct {
 	Title        string `json:"title"`
-	DefaultValue string `json:"defaultValue"`
+	DefaultValue string `json:"default_value"`
 	Assign       string `json:"assign"`
 	Remove       string `json:"remove"`
 	Empty        string `json:"empty"`
@@ -322,29 +322,29 @@ type AttributeLabels struct {
 
 type ConfirmLabels struct {
 	Activate              string `json:"activate"`
-	ActivateMessage       string `json:"activateMessage"`
+	ActivateMessage       string `json:"activate_message"`
 	Deactivate            string `json:"deactivate"`
-	DeactivateMessage     string `json:"deactivateMessage"`
-	BulkActivate          string `json:"bulkActivate"`
-	BulkActivateMessage   string `json:"bulkActivateMessage"`
-	BulkDeactivate        string `json:"bulkDeactivate"`
-	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
-	BulkDelete            string `json:"bulkDelete"`
-	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
-	RemoveVariant         string `json:"removeVariant"`
-	RemoveVariantMessage  string `json:"removeVariantMessage"`
+	DeactivateMessage     string `json:"deactivate_message"`
+	BulkActivate          string `json:"bulk_activate"`
+	BulkActivateMessage   string `json:"bulk_activate_message"`
+	BulkDeactivate        string `json:"bulk_deactivate"`
+	BulkDeactivateMessage string `json:"bulk_deactivate_message"`
+	BulkDelete            string `json:"bulk_delete"`
+	BulkDeleteMessage     string `json:"bulk_delete_message"`
+	RemoveVariant         string `json:"remove_variant"`
+	RemoveVariantMessage  string `json:"remove_variant_message"`
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoIDsProvided    string `json:"noIDsProvided"`
-	InvalidStatus    string `json:"invalidStatus"`
-	CannotDelete     string `json:"cannotDelete"`
-	NameRequired     string `json:"nameRequired"`
-	FieldRequired    string `json:"fieldRequired"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoIDsProvided    string `json:"no_ids_provided"`
+	InvalidStatus    string `json:"invalid_status"`
+	CannotDelete     string `json:"cannot_delete"`
+	NameRequired     string `json:"name_required"`
+	FieldRequired    string `json:"field_required"`
 }
 
 type BreadcrumbLabels struct {
@@ -362,7 +362,7 @@ type OptionLabels struct {
 	Tabs      OptionTabsLabels     `json:"tabs"`
 	Columns   OptionColumnLabels   `json:"columns"`
 	Form      OptionFormLabels     `json:"form"`
-	DataTypes OptionDataTypeLabels `json:"dataTypes"`
+	DataTypes OptionDataTypeLabels `json:"data_types"`
 	Value     OptionValueLabels    `json:"value"`
 	Actions   OptionActionLabels   `json:"actions"`
 	Empty     OptionEmptyLabels    `json:"empty"`
@@ -381,46 +381,46 @@ type OptionTabsLabels struct {
 type OptionColumnLabels struct {
 	Name        string `json:"name"`
 	Code        string `json:"code"`
-	DataType    string `json:"dataType"`
-	ValuesCount string `json:"valuesCount"`
-	SortOrder   string `json:"sortOrder"`
+	DataType    string `json:"data_type"`
+	ValuesCount string `json:"values_count"`
+	SortOrder   string `json:"sort_order"`
 	Required    string `json:"required"`
 	Status      string `json:"status"`
 }
 
 type OptionFormLabels struct {
 	Name                   string `json:"name"`
-	NamePlaceholder        string `json:"namePlaceholder"`
+	NamePlaceholder        string `json:"name_placeholder"`
 	Code                   string `json:"code"`
-	CodePlaceholder        string `json:"codePlaceholder"`
-	DataType               string `json:"dataType"`
-	SortOrder              string `json:"sortOrder"`
-	MinValue               string `json:"minValue"`
-	MaxValue               string `json:"maxValue"`
+	CodePlaceholder        string `json:"code_placeholder"`
+	DataType               string `json:"data_type"`
+	SortOrder              string `json:"sort_order"`
+	MinValue               string `json:"min_value"`
+	MaxValue               string `json:"max_value"`
 	Active                 string `json:"active"`
 	Required               string `json:"required"`
-	RequiredCaution        string `json:"requiredCaution"`
+	RequiredCaution        string `json:"required_caution"`
 	Description            string `json:"description"`
-	DescriptionPlaceholder string `json:"descriptionPlaceholder"`
-	DescriptionEmpty       string `json:"descriptionEmpty"`
+	DescriptionPlaceholder string `json:"description_placeholder"`
+	DescriptionEmpty       string `json:"description_empty"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string `json:"nameInfo"`
-	CodeInfo        string `json:"codeInfo"`
-	DataTypeInfo    string `json:"dataTypeInfo"`
-	MinValueInfo    string `json:"minValueInfo"`
-	MaxValueInfo    string `json:"maxValueInfo"`
-	SortOrderInfo   string `json:"sortOrderInfo"`
-	ActiveInfo      string `json:"activeInfo"`
-	DescriptionInfo string `json:"descriptionInfo"`
+	NameInfo        string `json:"name_info"`
+	CodeInfo        string `json:"code_info"`
+	DataTypeInfo    string `json:"data_type_info"`
+	MinValueInfo    string `json:"min_value_info"`
+	MaxValueInfo    string `json:"max_value_info"`
+	SortOrderInfo   string `json:"sort_order_info"`
+	ActiveInfo      string `json:"active_info"`
+	DescriptionInfo string `json:"description_info"`
 }
 
 type OptionDataTypeLabels struct {
-	TextList    string `json:"textList"`
-	NumberRange string `json:"numberRange"`
-	ColorList   string `json:"colorList"`
-	FreeText    string `json:"freeText"`
-	FreeNumber  string `json:"freeNumber"`
+	TextList    string `json:"text_list"`
+	NumberRange string `json:"number_range"`
+	ColorList   string `json:"color_list"`
+	FreeText    string `json:"free_text"`
+	FreeNumber  string `json:"free_number"`
 }
 
 type OptionValueLabels struct {
@@ -431,19 +431,19 @@ type OptionValueLabels struct {
 type OptionValueColumnLabels struct {
 	Label        string `json:"label"`
 	Value        string `json:"value"`
-	SortOrder    string `json:"sortOrder"`
-	ColorPreview string `json:"colorPreview"`
+	SortOrder    string `json:"sort_order"`
+	ColorPreview string `json:"color_preview"`
 	Status       string `json:"status"`
 }
 
 type OptionValueFormLabels struct {
 	Label               string `json:"label"`
-	LabelPlaceholder    string `json:"labelPlaceholder"`
+	LabelPlaceholder    string `json:"label_placeholder"`
 	Value               string `json:"value"`
-	ValuePlaceholder    string `json:"valuePlaceholder"`
-	SortOrder           string `json:"sortOrder"`
-	ColorHex            string `json:"colorHex"`
-	ColorHexPlaceholder string `json:"colorHexPlaceholder"`
+	ValuePlaceholder    string `json:"value_placeholder"`
+	SortOrder           string `json:"sort_order"`
+	ColorHex            string `json:"color_hex"`
+	ColorHexPlaceholder string `json:"color_hex_placeholder"`
 	Active              string `json:"active"`
 	// Context labels surfaced on the value drawer to remind the user
 	// which option this value belongs to.
@@ -451,34 +451,34 @@ type OptionValueFormLabels struct {
 	Required string `json:"required"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	LabelInfo     string `json:"labelInfo"`
-	ValueInfo     string `json:"valueInfo"`
-	SortOrderInfo string `json:"sortOrderInfo"`
-	ColorHexInfo  string `json:"colorHexInfo"`
-	ActiveInfo    string `json:"activeInfo"`
+	LabelInfo     string `json:"label_info"`
+	ValueInfo     string `json:"value_info"`
+	SortOrderInfo string `json:"sort_order_info"`
+	ColorHexInfo  string `json:"color_hex_info"`
+	ActiveInfo    string `json:"active_info"`
 }
 
 type OptionActionLabels struct {
-	AddOption         string `json:"addOption"`
-	EditOption        string `json:"editOption"`
-	EditProductOption string `json:"editProductOption"`
-	DeleteOption      string `json:"deleteOption"`
-	ViewValues        string `json:"viewValues"`
-	AddValue          string `json:"addValue"`
-	EditValue         string `json:"editValue"`
-	DeleteValue       string `json:"deleteValue"`
+	AddOption         string `json:"add_option"`
+	EditOption        string `json:"edit_option"`
+	EditProductOption string `json:"edit_product_option"`
+	DeleteOption      string `json:"delete_option"`
+	ViewValues        string `json:"view_values"`
+	AddValue          string `json:"add_value"`
+	EditValue         string `json:"edit_value"`
+	DeleteValue       string `json:"delete_value"`
 }
 
 type OptionEmptyLabels struct {
 	Title        string `json:"title"`
 	Message      string `json:"message"`
-	ValueTitle   string `json:"valueTitle"`
-	ValueMessage string `json:"valueMessage"`
+	ValueTitle   string `json:"value_title"`
+	ValueMessage string `json:"value_message"`
 }
 
 type OptionConfirmLabels struct {
-	DeleteOption string `json:"deleteOption"`
-	DeleteValue  string `json:"deleteValue"`
+	DeleteOption string `json:"delete_option"`
+	DeleteValue  string `json:"delete_value"`
 }
 
 // ---------------------------------------------------------------------------
@@ -493,7 +493,7 @@ type LineLabels struct {
 	Empty   LineEmptyLabels   `json:"empty"`
 	Form    LineFormLabels    `json:"form"`
 	Actions LineActionLabels  `json:"actions"`
-	Bulk    LineBulkLabels    `json:"bulkActions"`
+	Bulk    LineBulkLabels    `json:"bulk_actions"`
 	Tabs    LineTabLabels     `json:"tabs"`
 	Detail  LineDetailLabels  `json:"detail"`
 	Status  LineStatusLabels  `json:"status"`
@@ -503,29 +503,29 @@ type LineLabels struct {
 
 type LinePageLabels struct {
 	Heading          string `json:"heading"`
-	HeadingActive    string `json:"headingActive"`
-	HeadingInactive  string `json:"headingInactive"`
-	HeadingPending   string `json:"headingPending"`
-	HeadingCompleted string `json:"headingCompleted"`
-	HeadingFailed    string `json:"headingFailed"`
+	HeadingActive    string `json:"heading_active"`
+	HeadingInactive  string `json:"heading_inactive"`
+	HeadingPending   string `json:"heading_pending"`
+	HeadingCompleted string `json:"heading_completed"`
+	HeadingFailed    string `json:"heading_failed"`
 	Caption          string `json:"caption"`
-	CaptionActive    string `json:"captionActive"`
-	CaptionInactive  string `json:"captionInactive"`
-	CaptionPending   string `json:"captionPending"`
-	CaptionCompleted string `json:"captionCompleted"`
-	CaptionFailed    string `json:"captionFailed"`
+	CaptionActive    string `json:"caption_active"`
+	CaptionInactive  string `json:"caption_inactive"`
+	CaptionPending   string `json:"caption_pending"`
+	CaptionCompleted string `json:"caption_completed"`
+	CaptionFailed    string `json:"caption_failed"`
 }
 
 type LineButtonLabels struct {
-	AddProductLine    string `json:"addProductLine"`
-	EditProductLine   string `json:"editProductLine"`
-	DeleteProductLine string `json:"deleteProductLine"`
+	AddProductLine    string `json:"add_product_line"`
+	EditProductLine   string `json:"edit_product_line"`
+	DeleteProductLine string `json:"delete_product_line"`
 }
 
 type LineColumnLabels struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	DateCreated string `json:"dateCreated"`
+	DateCreated string `json:"date_created"`
 	Reference   string `json:"reference"`
 	Customer    string `json:"customer"`
 	Amount      string `json:"amount"`
@@ -535,59 +535,59 @@ type LineColumnLabels struct {
 }
 
 type LineEmptyLabels struct {
-	ActiveTitle      string `json:"activeTitle"`
-	ActiveMessage    string `json:"activeMessage"`
-	InactiveTitle    string `json:"inactiveTitle"`
-	InactiveMessage  string `json:"inactiveMessage"`
-	PendingTitle     string `json:"pendingTitle"`
-	PendingMessage   string `json:"pendingMessage"`
-	CompletedTitle   string `json:"completedTitle"`
-	CompletedMessage string `json:"completedMessage"`
-	FailedTitle      string `json:"failedTitle"`
-	FailedMessage    string `json:"failedMessage"`
+	ActiveTitle      string `json:"active_title"`
+	ActiveMessage    string `json:"active_message"`
+	InactiveTitle    string `json:"inactive_title"`
+	InactiveMessage  string `json:"inactive_message"`
+	PendingTitle     string `json:"pending_title"`
+	PendingMessage   string `json:"pending_message"`
+	CompletedTitle   string `json:"completed_title"`
+	CompletedMessage string `json:"completed_message"`
+	FailedTitle      string `json:"failed_title"`
+	FailedMessage    string `json:"failed_message"`
 }
 
 type LineFormLabels struct {
 	Name                    string `json:"name"`
-	NamePlaceholder         string `json:"namePlaceholder"`
+	NamePlaceholder         string `json:"name_placeholder"`
 	Description             string `json:"description"`
-	DescPlaceholder         string `json:"descriptionPlaceholder"`
+	DescPlaceholder         string `json:"description_placeholder"`
 	Active                  string `json:"active"`
 	Customer                string `json:"customer"`
 	Date                    string `json:"date"`
 	Amount                  string `json:"amount"`
 	Currency                string `json:"currency"`
 	Reference               string `json:"reference"`
-	ReferencePlaceholder    string `json:"referencePlaceholder"`
-	PaymentMethod           string `json:"paymentMethod"`
+	ReferencePlaceholder    string `json:"reference_placeholder"`
+	PaymentMethod           string `json:"payment_method"`
 	Status                  string `json:"status"`
 	Notes                   string `json:"notes"`
-	NotesPlaceholder        string `json:"notesPlaceholder"`
-	CustomerNamePlaceholder string `json:"customerNamePlaceholder"`
-	AmountPlaceholder       string `json:"amountPlaceholder"`
-	CurrencyPlaceholder     string `json:"currencyPlaceholder"`
-	MethodCash              string `json:"methodCash"`
-	MethodBankTransfer      string `json:"methodBankTransfer"`
-	MethodCheck             string `json:"methodCheck"`
-	MethodGCash             string `json:"methodGCash"`
-	MethodMaya              string `json:"methodMaya"`
-	MethodCard              string `json:"methodCard"`
-	MethodOther             string `json:"methodOther"`
-	StatusPending           string `json:"statusPending"`
-	StatusCompleted         string `json:"statusCompleted"`
-	StatusFailed            string `json:"statusFailed"`
+	NotesPlaceholder        string `json:"notes_placeholder"`
+	CustomerNamePlaceholder string `json:"customer_name_placeholder"`
+	AmountPlaceholder       string `json:"amount_placeholder"`
+	CurrencyPlaceholder     string `json:"currency_placeholder"`
+	MethodCash              string `json:"method_cash"`
+	MethodBankTransfer      string `json:"method_bank_transfer"`
+	MethodCheck             string `json:"method_check"`
+	MethodGCash             string `json:"method_gcash"`
+	MethodMaya              string `json:"method_maya"`
+	MethodCard              string `json:"method_card"`
+	MethodOther             string `json:"method_other"`
+	StatusPending           string `json:"status_pending"`
+	StatusCompleted         string `json:"status_completed"`
+	StatusFailed            string `json:"status_failed"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	NameInfo        string `json:"nameInfo"`
-	DescriptionInfo string `json:"descriptionInfo"`
-	ActiveInfo      string `json:"activeInfo"`
+	NameInfo        string `json:"name_info"`
+	DescriptionInfo string `json:"description_info"`
+	ActiveInfo      string `json:"active_info"`
 }
 
 type LineActionLabels struct {
 	View         string `json:"view"`
 	Edit         string `json:"edit"`
 	Delete       string `json:"delete"`
-	MarkComplete string `json:"markComplete"`
+	MarkComplete string `json:"mark_complete"`
 	Reactivate   string `json:"reactivate"`
 }
 
@@ -605,10 +605,10 @@ type LineTabLabels struct {
 }
 
 type LineDetailLabels struct {
-	TitlePrefix          string `json:"titlePrefix"`
-	PageTitle            string `json:"pageTitle"`
-	BasicInfo            string `json:"basicInfo"`
-	PaymentInfo          string `json:"paymentInfo"`
+	TitlePrefix          string `json:"title_prefix"`
+	PageTitle            string `json:"page_title"`
+	BasicInfo            string `json:"basic_info"`
+	PaymentInfo          string `json:"payment_info"`
 	Reference            string `json:"reference"`
 	Customer             string `json:"customer"`
 	Amount               string `json:"amount"`
@@ -617,49 +617,49 @@ type LineDetailLabels struct {
 	Date                 string `json:"date"`
 	Status               string `json:"status"`
 	Notes                string `json:"notes"`
-	CreatedDate          string `json:"createdDate"`
-	ModifiedDate         string `json:"modifiedDate"`
-	ActiveBadge          string `json:"activeBadge"`
-	InactiveBadge        string `json:"inactiveBadge"`
-	TabBasicInfo         string `json:"tabBasicInfo"`
-	TabAttachments       string `json:"tabAttachments"`
-	TabAuditTrail        string `json:"tabAuditTrail"`
-	TabAuditHistory      string `json:"tabAuditHistory"`
-	AuditAction          string `json:"auditAction"`
-	AuditUser            string `json:"auditUser"`
-	AuditEmptyTitle      string `json:"auditEmptyTitle"`
-	AuditEmptyMessage    string `json:"auditEmptyMessage"`
-	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditTrailDesc       string `json:"auditTrailDesc"`
+	CreatedDate          string `json:"created_date"`
+	ModifiedDate         string `json:"modified_date"`
+	ActiveBadge          string `json:"active_badge"`
+	InactiveBadge        string `json:"inactive_badge"`
+	TabBasicInfo         string `json:"tab_basic_info"`
+	TabAttachments       string `json:"tab_attachments"`
+	TabAuditTrail        string `json:"tab_audit_trail"`
+	TabAuditHistory      string `json:"tab_audit_history"`
+	AuditAction          string `json:"audit_action"`
+	AuditUser            string `json:"audit_user"`
+	AuditEmptyTitle      string `json:"audit_empty_title"`
+	AuditEmptyMessage    string `json:"audit_empty_message"`
+	AuditTrailComingSoon string `json:"audit_trail_coming_soon"`
+	AuditTrailDesc       string `json:"audit_trail_desc"`
 }
 
 type LineConfirmLabels struct {
-	MarkComplete          string `json:"markComplete"`
-	MarkCompleteMessage   string `json:"markCompleteMessage"`
+	MarkComplete          string `json:"mark_complete"`
+	MarkCompleteMessage   string `json:"mark_complete_message"`
 	Reactivate            string `json:"reactivate"`
-	ReactivateMessage     string `json:"reactivateMessage"`
+	ReactivateMessage     string `json:"reactivate_message"`
 	Delete                string `json:"delete"`
-	DeleteMessage         string `json:"deleteMessage"`
-	BulkActivate          string `json:"bulkActivate"`
-	BulkActivateMessage   string `json:"bulkActivateMessage"`
-	BulkDeactivate        string `json:"bulkDeactivate"`
-	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
-	BulkComplete          string `json:"bulkComplete"`
-	BulkCompleteMessage   string `json:"bulkCompleteMessage"`
-	BulkReactivate        string `json:"bulkReactivate"`
-	BulkReactivateMessage string `json:"bulkReactivateMessage"`
-	BulkDelete            string `json:"bulkDelete"`
-	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	DeleteMessage         string `json:"delete_message"`
+	BulkActivate          string `json:"bulk_activate"`
+	BulkActivateMessage   string `json:"bulk_activate_message"`
+	BulkDeactivate        string `json:"bulk_deactivate"`
+	BulkDeactivateMessage string `json:"bulk_deactivate_message"`
+	BulkComplete          string `json:"bulk_complete"`
+	BulkCompleteMessage   string `json:"bulk_complete_message"`
+	BulkReactivate        string `json:"bulk_reactivate"`
+	BulkReactivateMessage string `json:"bulk_reactivate_message"`
+	BulkDelete            string `json:"bulk_delete"`
+	BulkDeleteMessage     string `json:"bulk_delete_message"`
 }
 
 type LineErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoIDsProvided    string `json:"noIDsProvided"`
-	InvalidStatus    string `json:"invalidStatus"`
-	CannotDelete     string `json:"cannotDelete"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoIDsProvided    string `json:"no_ids_provided"`
+	InvalidStatus    string `json:"invalid_status"`
+	CannotDelete     string `json:"cannot_delete"`
 }
 
 // DefaultLineLabels returns LineLabels with sensible English defaults.
@@ -815,3 +815,8 @@ func DefaultLineLabels() LineLabels {
 		},
 	}
 }
+
+// DefaultLabels returns the zero-value label set. Every rendered string for
+// this entity must come from the lyngua cascade (general -> business-type
+// tier); there are no Go-side default strings to fall back on.
+func DefaultLabels() Labels { return Labels{} }

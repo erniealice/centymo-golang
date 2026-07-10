@@ -24,34 +24,34 @@ type Labels struct {
 type PageLabels struct {
 	Heading         string `json:"heading"`
 	Caption         string `json:"caption"`
-	HeadingDraft    string `json:"headingDraft"`
-	HeadingPosted   string `json:"headingPosted"`
-	HeadingReversed string `json:"headingReversed"`
+	HeadingDraft    string `json:"heading_draft"`
+	HeadingPosted   string `json:"heading_posted"`
+	HeadingReversed string `json:"heading_reversed"`
 	Dashboard       string `json:"dashboard"`
 }
 
 type ButtonLabels struct {
 	Add                      string `json:"add"`
-	RecognizeFromExpenditure string `json:"recognizeFromExpenditure"`
-	RecognizeFromContract    string `json:"recognizeFromContract"`
+	RecognizeFromExpenditure string `json:"recognize_from_expenditure"`
+	RecognizeFromContract    string `json:"recognize_from_contract"`
 	Reverse                  string `json:"reverse"`
 }
 
 type ColumnLabels struct {
-	InternalID       string `json:"internalId"`
+	InternalID       string `json:"internal_id"`
 	Name             string `json:"name"`
-	RecognitionDate  string `json:"recognitionDate"`
-	PeriodStart      string `json:"periodStart"`
-	PeriodEnd        string `json:"periodEnd"`
-	CycleDate        string `json:"cycleDate"`
+	RecognitionDate  string `json:"recognition_date"`
+	PeriodStart      string `json:"period_start"`
+	PeriodEnd        string `json:"period_end"`
+	CycleDate        string `json:"cycle_date"`
 	Supplier         string `json:"supplier"`
-	SupplierContract string `json:"supplierContract"`
+	SupplierContract string `json:"supplier_contract"`
 	Expenditure      string `json:"expenditure"`
 	Currency         string `json:"currency"`
-	TotalAmount      string `json:"totalAmount"`
+	TotalAmount      string `json:"total_amount"`
 	Status           string `json:"status"`
 	Source           string `json:"source"`
-	IdempotencyKey   string `json:"idempotencyKey"`
+	IdempotencyKey   string `json:"idempotency_key"`
 }
 
 type TabLabels struct {
@@ -62,43 +62,43 @@ type TabLabels struct {
 }
 
 type DetailLabels struct {
-	PageTitle            string `json:"pageTitle"`
+	PageTitle            string `json:"page_title"`
 	Title                string `json:"title"`
-	InfoSection          string `json:"infoSection"`
-	SourceSection        string `json:"sourceSection"`
-	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditEmptyTitle      string `json:"auditEmptyTitle"`
-	AuditEmptyMessage    string `json:"auditEmptyMessage"`
-	TabAttachments       string `json:"tabAttachments"`
+	InfoSection          string `json:"info_section"`
+	SourceSection        string `json:"source_section"`
+	AuditTrailComingSoon string `json:"audit_trail_coming_soon"`
+	AuditEmptyTitle      string `json:"audit_empty_title"`
+	AuditEmptyMessage    string `json:"audit_empty_message"`
+	TabAttachments       string `json:"tab_attachments"`
 
 	// Info-tab + source-tab field labels (4.4)
 	Notes           string `json:"notes"`
-	SourceContract  string `json:"sourceContract"`
-	SourceBill      string `json:"sourceBill"`
-	DeferredExpense string `json:"deferredExpense"`
-	SourceAccrual   string `json:"sourceAccrual"`
-	ReversalOf      string `json:"reversalOf"`
+	SourceContract  string `json:"source_contract"`
+	SourceBill      string `json:"source_bill"`
+	DeferredExpense string `json:"deferred_expense"`
+	SourceAccrual   string `json:"source_accrual"`
+	ReversalOf      string `json:"reversal_of"`
 }
 
 type LineLabels struct {
 	Description    string `json:"description"`
 	Quantity       string `json:"quantity"`
-	UnitAmount     string `json:"unitAmount"`
+	UnitAmount     string `json:"unit_amount"`
 	Amount         string `json:"amount"`
 	Currency       string `json:"currency"`
 	Product        string `json:"product"`
-	ExpenseAccount string `json:"expenseAccount"`
-	EmptyTitle     string `json:"emptyTitle"`
-	EmptyMessage   string `json:"emptyMessage"`
-	AddLine        string `json:"addLine"`
+	ExpenseAccount string `json:"expense_account"`
+	EmptyTitle     string `json:"empty_title"`
+	EmptyMessage   string `json:"empty_message"`
+	AddLine        string `json:"add_line"`
 
 	// Drawer form labels
-	FormDescription            string `json:"formDescription"`
-	FormDescriptionPlaceholder string `json:"formDescriptionPlaceholder"`
-	FormQuantity               string `json:"formQuantity"`
-	FormUnitAmount             string `json:"formUnitAmount"`
-	FormAmount                 string `json:"formAmount"`
-	FormCurrency               string `json:"formCurrency"`
+	FormDescription            string `json:"form_description"`
+	FormDescriptionPlaceholder string `json:"form_description_placeholder"`
+	FormQuantity               string `json:"form_quantity"`
+	FormUnitAmount             string `json:"form_unit_amount"`
+	FormAmount                 string `json:"form_amount"`
+	FormCurrency               string `json:"form_currency"`
 }
 
 type SourceLabels struct {
@@ -119,35 +119,35 @@ type ActionLabels struct {
 	Edit                     string `json:"edit"`
 	Delete                   string `json:"delete"`
 	Reverse                  string `json:"reverse"`
-	RecognizeFromExpenditure string `json:"recognizeFromExpenditure"`
-	RecognizeFromContract    string `json:"recognizeFromContract"`
-	NoPermission             string `json:"noPermission"`
+	RecognizeFromExpenditure string `json:"recognize_from_expenditure"`
+	RecognizeFromContract    string `json:"recognize_from_contract"`
+	NoPermission             string `json:"no_permission"`
 }
 
 type ConfirmLabels struct {
 	Delete         string `json:"delete"`
-	DeleteMessage  string `json:"deleteMessage"`
+	DeleteMessage  string `json:"delete_message"`
 	Reverse        string `json:"reverse"`
-	ReverseMessage string `json:"reverseMessage"`
+	ReverseMessage string `json:"reverse_message"`
 }
 
 type EmptyLabels struct {
 	Title           string `json:"title"`
 	Message         string `json:"message"`
-	DraftTitle      string `json:"draftTitle"`
-	DraftMessage    string `json:"draftMessage"`
-	PostedTitle     string `json:"postedTitle"`
-	PostedMessage   string `json:"postedMessage"`
-	ReversedTitle   string `json:"reversedTitle"`
-	ReversedMessage string `json:"reversedMessage"`
+	DraftTitle      string `json:"draft_title"`
+	DraftMessage    string `json:"draft_message"`
+	PostedTitle     string `json:"posted_title"`
+	PostedMessage   string `json:"posted_message"`
+	ReversedTitle   string `json:"reversed_title"`
+	ReversedMessage string `json:"reversed_message"`
 }
 
 type ErrorLabels struct {
-	PermissionDenied     string `json:"permissionDenied"`
-	InvalidFormData      string `json:"invalidFormData"`
-	NotFound             string `json:"notFound"`
-	IDRequired           string `json:"idRequired"`
-	NoPermission         string `json:"noPermission"`
+	PermissionDenied     string `json:"permission_denied"`
+	InvalidFormData      string `json:"invalid_form_data"`
+	NotFound             string `json:"not_found"`
+	IDRequired           string `json:"id_required"`
+	NoPermission         string `json:"no_permission"`
 	CreationFailed       string `json:"creation_failed"`
 	UpdateFailed         string `json:"update_failed"`
 	DeletionFailed       string `json:"deletion_failed"`

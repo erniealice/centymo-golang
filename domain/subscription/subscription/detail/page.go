@@ -349,6 +349,18 @@ func subscriptionToMap(ctx context.Context, s *subscriptionpb.Subscription) map[
 		}
 	}
 
+	// Person-name split — populated when the client has a linked user with
+	// name parts (person clients). Company clients leave these empty and the
+	// info tab falls back to the single customer row.
+	clientFirstName := ""
+	clientLastName := ""
+	if c := s.GetClient(); c != nil {
+		if u := c.GetUser(); u != nil {
+			clientFirstName = u.GetFirstName()
+			clientLastName = u.GetLastName()
+		}
+	}
+
 	status := "active"
 	if !s.GetActive() {
 		status = "inactive"
@@ -356,10 +368,24 @@ func subscriptionToMap(ctx context.Context, s *subscriptionpb.Subscription) map[
 
 	tz := types.LocationFromContext(ctx)
 
+	// The postgres adapter populates the epoch-ms DateCreated/DateModified
+	// fields but not their pre-formatted *String twins — format view-side
+	// (like start/end above) when the string is absent.
+	dateCreatedString := s.GetDateCreatedString()
+	if dateCreatedString == "" && s.GetDateCreated() != 0 {
+		dateCreatedString = time.UnixMilli(s.GetDateCreated()).In(tz).Format(types.DateTimeReadable)
+	}
+	dateModifiedString := s.GetDateModifiedString()
+	if dateModifiedString == "" && s.GetDateModified() != 0 {
+		dateModifiedString = time.UnixMilli(s.GetDateModified()).In(tz).Format(types.DateTimeReadable)
+	}
+
 	return map[string]any{
 		"id":                   s.GetId(),
 		"name":                 s.GetName(),
 		"customer":             customer,
+		"client_first_name":    clientFirstName,
+		"client_last_name":     clientLastName,
 		"plan":                 planName,
 		"price_plan_id":        s.GetPricePlanId(),
 		"client_id":            s.GetClientId(),
@@ -367,8 +393,8 @@ func subscriptionToMap(ctx context.Context, s *subscriptionpb.Subscription) map[
 		"date_end_string":      types.FormatTimestampInTZ(s.GetDateTimeEnd(), tz, types.DateTimeReadable),
 		"status":               status,
 		"active":               s.GetActive(),
-		"date_created_string":  s.GetDateCreatedString(),
-		"date_modified_string": s.GetDateModifiedString(),
+		"date_created_string":  dateCreatedString,
+		"date_modified_string": dateModifiedString,
 		"quantity":             s.GetQuantity(),
 		"assigned_count":       s.GetAssignedCount(),
 		"available_count":      s.GetAvailableCount(),
@@ -415,6 +441,7 @@ func NewView(deps *DetailViewDeps) view.View {
 			return view.Error(fmt.Errorf("failed to load subscription: %w", err))
 		}
 		subscription := subscriptionToMap(ctx, sub)
+		subscription["price_schedule"] = resolvePriceScheduleName(ctx, deps, sub)
 		breadcrumbLabel, breadcrumbURL := resolveClientBreadcrumb(ctx, deps, clientIDFromPath, sub)
 		// Price-plan breadcrumb wins when the path values are present —
 		// rate-card → plan → engagement context overrides the client breadcrumb.
@@ -451,10 +478,9 @@ func NewView(deps *DetailViewDeps) view.View {
 			headerSubtitle = l.Detail.PageTitle
 		}
 
-		activeTab := viewCtx.QueryParams["tab"]
-		if activeTab == "" {
-			activeTab = "info"
-		}
+		// Resolve ?tab= through the vertical's route.json overrides: renamed
+		// tokens canonicalize back; hidden or unknown tabs fall back to info.
+		activeTab := resolveTab(deps.Routes, viewCtx.QueryParams["tab"])
 
 		// 2026-04-30 cyclic-subscription-jobs plan §7 — branch the Operations
 		// tab on the subscription's PricePlan billing kind. IsCyclic mirrors
@@ -468,7 +494,10 @@ func NewView(deps *DetailViewDeps) view.View {
 		// render (no flicker when the operator navigates from Operations →
 		// Jobs).
 		allJobs := loadSubscriptionJobs(ctx, deps, id)
-		jobsTabVisible := len(allJobs) > 0
+		// Jobs tab shows when Jobs exist — or unconditionally when the vertical
+		// hides the Operations tab (the flat table is then the only work view;
+		// its empty state covers the zero-jobs case).
+		jobsTabVisible := len(allJobs) > 0 || deps.Routes.TabHidden("operations")
 		tabItems := buildTabItems(l, id, deps.Routes, jobsTabVisible)
 
 		pageData := &PageData{
@@ -504,6 +533,9 @@ func NewView(deps *DetailViewDeps) view.View {
 		// Inject the tab-content URL into the subscription map so the invoices
 		// tab can refresh inline (HX-Trigger refresh-invoices listens here).
 		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
+		// Operations tab refresh target (the template previously pointed this
+		// at the invoices partial — a swap bug on refresh events).
+		subscription["tab_operations_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + deps.Routes.TabKey("operations")
 
 		// perms already resolved at top of handler
 		canRecognize := perms == nil || perms.Can("revenue", "create")
@@ -637,6 +669,24 @@ func resolveClientBreadcrumb(ctx context.Context, deps *DetailViewDeps, clientID
 	return label, href
 }
 
+// resolvePriceScheduleName returns the name of the price schedule (the
+// vertical's rate-card / academic-year era) behind the subscription's price
+// plan; "" when the dep isn't wired or the lookup fails. The info tab's
+// terms section displays this next to Status.
+func resolvePriceScheduleName(ctx context.Context, deps *DetailViewDeps, sub *subscriptionpb.Subscription) string {
+	psID := sub.GetPricePlan().GetPriceScheduleId()
+	if psID == "" || deps.ReadPriceSchedule == nil {
+		return ""
+	}
+	resp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{
+		Data: &priceschedulepb.PriceSchedule{Id: psID},
+	})
+	if err != nil || len(resp.GetData()) == 0 {
+		return ""
+	}
+	return resp.GetData()[0].GetName()
+}
+
 // resolvePricePlanBreadcrumb returns the (label, href) pair for the page-header
 // breadcrumb when the subscription is being viewed under a rate-card → plan
 // context — i.e. the URL is
@@ -685,30 +735,63 @@ func resolvePricePlanBreadcrumb(ctx context.Context, deps *DetailViewDeps, price
 	return label, href
 }
 
+// knownTabs guards ?tab= input: unknown tabs fall back to "info" instead of
+// dispatching to a nonexistent template.
+var knownTabs = map[string]bool{
+	"info": true, "package": true, "operations": true, "jobs": true,
+	"invoices": true, "attachments": true, "audit": true, "audit-history": true,
+}
+
+// resolveTab maps a raw ?tab= / path token to the canonical tab to render:
+// vertical rename overrides canonicalize back, and hidden or unknown tabs
+// fall back to "info".
+func resolveTab(routes subscription.Routes, raw string) string {
+	tab := routes.CanonicalTab(raw)
+	if tab == "" {
+		return "info"
+	}
+	if !knownTabs[tab] || routes.TabHidden(tab) {
+		return "info"
+	}
+	return tab
+}
+
 func buildTabItems(l subscription.Labels, id string, routes subscription.Routes, jobsTabVisible bool) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
+	// URL tokens come from the vertical's route.json "tabs" override (e.g.
+	// education "package" → "program"); TabItem.Key stays canonical because
+	// ActiveTab is canonicalized on parse, so active-state matching holds.
+	href := func(canonical string) string { return base + "?tab=" + routes.TabKey(canonical) }
+	hxGet := func(canonical string) string { return action + routes.TabKey(canonical) }
 	items := []pyeza.TabItem{
-		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
+		{Key: "info", Label: l.Tabs.Info, Href: href("info"), HxGet: hxGet("info"), Icon: "icon-info"},
 		// 2026-04-27 plan-client-scope plan §6.5 — Package tab.
-		{Key: "package", Label: l.Detail.Plan, Href: base + "?tab=package", HxGet: action + "package", Icon: "icon-package"},
+		{Key: "package", Label: l.Detail.Plan, Href: href("package"), HxGet: hxGet("package"), Icon: "icon-package"},
 		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2 — Operations tab.
-		{Key: "operations", Label: l.Tabs.Operations, Href: base + "?tab=operations", HxGet: action + "operations", Icon: "icon-briefcase"},
+		{Key: "operations", Label: l.Tabs.Operations, Href: href("operations"), HxGet: hxGet("operations"), Icon: "icon-briefcase"},
 	}
 	// 2026-04-30 cyclic-subscription-jobs plan §21.3 — flat Jobs tab; hidden
 	// when COUNT(jobs) == 0 (SaaS / advisory subscriptions).
 	if jobsTabVisible {
 		items = append(items, pyeza.TabItem{
-			Key: "jobs", Label: l.Tabs.Jobs, Href: base + "?tab=jobs", HxGet: action + "jobs", Icon: "icon-list",
+			Key: "jobs", Label: l.Tabs.Jobs, Href: href("jobs"), HxGet: hxGet("jobs"), Icon: "icon-list",
 		})
 	}
 	items = append(items,
-		pyeza.TabItem{Key: "invoices", Label: l.Tabs.Invoices, Href: base + "?tab=invoices", HxGet: action + "invoices", Icon: "icon-file-text"},
-		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
-		pyeza.TabItem{Key: "audit", Label: l.Tabs.AuditTrail, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
-		pyeza.TabItem{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
+		pyeza.TabItem{Key: "invoices", Label: l.Tabs.Invoices, Href: href("invoices"), HxGet: hxGet("invoices"), Icon: "icon-file-text"},
+		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: href("attachments"), HxGet: hxGet("attachments"), Icon: "icon-paperclip"},
+		pyeza.TabItem{Key: "audit", Label: l.Tabs.AuditTrail, Href: href("audit"), HxGet: hxGet("audit"), Icon: "icon-clock"},
+		pyeza.TabItem{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: href("audit-history"), HxGet: hxGet("audit-history"), Icon: "icon-clock"},
 	)
-	return items
+	// Drop tabs the vertical suppresses via route.json hidden_tabs.
+	filtered := items[:0]
+	for _, it := range items {
+		if !routes.TabHidden(it.Key) {
+			filtered = append(filtered, it)
+		}
+	}
+	return filtered
 }
 
 // buildPackageTabData populates the per-tab fields used by the Package tab
@@ -1184,10 +1267,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		}
 		_ = perms
 		id := viewCtx.Request.PathValue("id")
-		tab := viewCtx.Request.PathValue("tab")
-		if tab == "" {
-			tab = "info"
-		}
+		// Resolve the tab segment through the vertical's route.json overrides:
+		// renamed tokens canonicalize back; hidden/unknown tabs fall back to info.
+		tab := resolveTab(deps.Routes, viewCtx.Request.PathValue("tab"))
 
 		sub, err := loadSubscriptionWithRelations(ctx, deps, id)
 		if err != nil {
@@ -1195,6 +1277,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			return view.Error(fmt.Errorf("failed to load subscription: %w", err))
 		}
 		subscription := subscriptionToMap(ctx, sub)
+		subscription["price_schedule"] = resolvePriceScheduleName(ctx, deps, sub)
 
 		l := deps.Labels
 
@@ -1202,7 +1285,10 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		// the tab handler shares the same fan-out as the full-page handler.
 		isCyclic := computeIsCyclic(sub)
 		allJobs := loadSubscriptionJobs(ctx, deps, id)
-		jobsTabVisible := len(allJobs) > 0
+		// Jobs tab shows when Jobs exist — or unconditionally when the vertical
+		// hides the Operations tab (the flat table is then the only work view;
+		// its empty state covers the zero-jobs case).
+		jobsTabVisible := len(allJobs) > 0 || deps.Routes.TabHidden("operations")
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -1227,6 +1313,9 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		// Same tab_invoices_url + perms gating as the full-page handler so a
 		// tab-only refresh sees a consistent PrimaryAction state.
 		subscription["tab_invoices_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + "invoices"
+		// Operations tab refresh target (the template previously pointed this
+		// at the invoices partial — a swap bug on refresh events).
+		subscription["tab_operations_url"] = route.ResolveURL(deps.Routes.TabActionURL, "id", id, "tab", "") + deps.Routes.TabKey("operations")
 		// perms already resolved at top of handler
 		canRecognize := perms == nil || perms.Can("revenue", "create")
 		subscriptionActive, _ := subscription["active"].(bool)

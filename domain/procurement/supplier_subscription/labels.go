@@ -25,46 +25,46 @@ type Labels struct {
 
 type PageLabels struct {
 	Heading         string `json:"heading"`
-	HeadingActive   string `json:"headingActive"`
-	HeadingInactive string `json:"headingInactive"`
+	HeadingActive   string `json:"heading_active"`
+	HeadingInactive string `json:"heading_inactive"`
 	Caption         string `json:"caption"`
-	CaptionActive   string `json:"captionActive"`
-	CaptionInactive string `json:"captionInactive"`
-	PageTitle       string `json:"pageTitle"`
+	CaptionActive   string `json:"caption_active"`
+	CaptionInactive string `json:"caption_inactive"`
+	PageTitle       string `json:"page_title"`
 }
 
 type ColumnLabels struct {
 	Name      string `json:"name"`
 	Supplier  string `json:"supplier"`
-	CostPlan  string `json:"costPlan"`
-	StartDate string `json:"startDate"`
-	EndDate   string `json:"endDate"`
+	CostPlan  string `json:"cost_plan"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 	Active    string `json:"active"`
-	AutoRenew string `json:"autoRenew"`
+	AutoRenew string `json:"auto_renew"`
 	Code      string `json:"code"`
 }
 
 type TabLabels struct {
 	Info                 string `json:"info"`
-	CostPlan             string `json:"costPlan"`
-	LinkedExpenditures   string `json:"linkedExpenditures"`
-	LinkedPurchaseOrders string `json:"linkedPurchaseOrders"`
-	LinkedRecognitions   string `json:"linkedRecognitions"`
+	CostPlan             string `json:"cost_plan"`
+	LinkedExpenditures   string `json:"linked_expenditures"`
+	LinkedPurchaseOrders string `json:"linked_purchase_orders"`
+	LinkedRecognitions   string `json:"linked_recognitions"`
 	Activity             string `json:"activity"`
 }
 
 type DetailLabels struct {
-	InfoSection string `json:"infoSection"`
+	InfoSection string `json:"info_section"`
 	Name        string `json:"name"`
 	Supplier    string `json:"supplier"`
-	CostPlan    string `json:"costPlan"`
+	CostPlan    string `json:"cost_plan"`
 	Code        string `json:"code"`
 	Status      string `json:"status"`
-	StartDate   string `json:"startDate"`
-	EndDate     string `json:"endDate"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
 	Active      string `json:"active"`
 	Inactive    string `json:"inactive"`
-	AutoRenew   string `json:"autoRenew"`
+	AutoRenew   string `json:"auto_renew"`
 	Location    string `json:"location"`
 	Notes       string `json:"notes"`
 
@@ -77,42 +77,42 @@ type DetailLabels struct {
 type RecognitionsLabels struct {
 	Name            string `json:"name"`
 	Status          string `json:"status"`
-	RecognitionDate string `json:"recognitionDate"`
+	RecognitionDate string `json:"recognition_date"`
 	Amount          string `json:"amount"`
-	EmptyTitle      string `json:"emptyTitle"`
-	EmptyMessage    string `json:"emptyMessage"`
+	EmptyTitle      string `json:"empty_title"`
+	EmptyMessage    string `json:"empty_message"`
 }
 
 type FormLabels struct {
-	SectionIdentification string `json:"sectionIdentification"`
-	SectionRelationships  string `json:"sectionRelationships"`
-	SectionConfiguration  string `json:"sectionConfiguration"`
-	SectionSchedule       string `json:"sectionSchedule"`
-	SectionNotes          string `json:"sectionNotes"`
+	SectionIdentification string `json:"section_identification"`
+	SectionRelationships  string `json:"section_relationships"`
+	SectionConfiguration  string `json:"section_configuration"`
+	SectionSchedule       string `json:"section_schedule"`
+	SectionNotes          string `json:"section_notes"`
 
 	Name                string `json:"name"`
-	NamePlaceholder     string `json:"namePlaceholder"`
+	NamePlaceholder     string `json:"name_placeholder"`
 	Code                string `json:"code"`
-	CodePlaceholder     string `json:"codePlaceholder"`
+	CodePlaceholder     string `json:"code_placeholder"`
 	Supplier            string `json:"supplier"`
-	SupplierPlaceholder string `json:"supplierPlaceholder"`
-	SupplierSearch      string `json:"supplierSearch"`
-	SupplierNoResults   string `json:"supplierNoResults"`
-	CostPlan            string `json:"costPlan"`
-	CostPlanPlaceholder string `json:"costPlanPlaceholder"`
-	CostPlanSearch      string `json:"costPlanSearch"`
-	CostPlanNoResults   string `json:"costPlanNoResults"`
-	AutoRenew           string `json:"autoRenew"`
+	SupplierPlaceholder string `json:"supplier_placeholder"`
+	SupplierSearch      string `json:"supplier_search"`
+	SupplierNoResults   string `json:"supplier_no_results"`
+	CostPlan            string `json:"cost_plan"`
+	CostPlanPlaceholder string `json:"cost_plan_placeholder"`
+	CostPlanSearch      string `json:"cost_plan_search"`
+	CostPlanNoResults   string `json:"cost_plan_no_results"`
+	AutoRenew           string `json:"auto_renew"`
 	Active              string `json:"active"`
-	StartDate           string `json:"startDate"`
-	StartTime           string `json:"startTime"`
-	EndDate             string `json:"endDate"`
-	EndTime             string `json:"endTime"`
-	TimePlaceholder     string `json:"timePlaceholder"`
+	StartDate           string `json:"start_date"`
+	StartTime           string `json:"start_time"`
+	EndDate             string `json:"end_date"`
+	EndTime             string `json:"end_time"`
+	TimePlaceholder     string `json:"time_placeholder"`
 	Notes               string `json:"notes"`
-	NotesPlaceholder    string `json:"notesPlaceholder"`
-	CurrencyError       string `json:"currencyError"`
-	EditLockedReason    string `json:"editLockedReason"`
+	NotesPlaceholder    string `json:"notes_placeholder"`
+	CurrencyError       string `json:"currency_error"`
+	EditLockedReason    string `json:"edit_locked_reason"`
 }
 
 type ActionLabels struct {
@@ -121,27 +121,27 @@ type ActionLabels struct {
 	Delete       string `json:"delete"`
 	Activate     string `json:"activate"`
 	Deactivate   string `json:"deactivate"`
-	NoPermission string `json:"noPermission"`
+	NoPermission string `json:"no_permission"`
 }
 
 type ConfirmLabels struct {
 	Delete                string `json:"delete"`
-	DeleteMessage         string `json:"deleteMessage"`
+	DeleteMessage         string `json:"delete_message"`
 	Activate              string `json:"activate"`
-	ActivateMessage       string `json:"activateMessage"`
+	ActivateMessage       string `json:"activate_message"`
 	Deactivate            string `json:"deactivate"`
-	DeactivateMessage     string `json:"deactivateMessage"`
-	BulkDelete            string `json:"bulkDelete"`
-	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
-	BulkActivate          string `json:"bulkActivate"`
-	BulkActivateMessage   string `json:"bulkActivateMessage"`
-	BulkDeactivate        string `json:"bulkDeactivate"`
-	BulkDeactivateMessage string `json:"bulkDeactivateMessage"`
+	DeactivateMessage     string `json:"deactivate_message"`
+	BulkDelete            string `json:"bulk_delete"`
+	BulkDeleteMessage     string `json:"bulk_delete_message"`
+	BulkActivate          string `json:"bulk_activate"`
+	BulkActivateMessage   string `json:"bulk_activate_message"`
+	BulkDeactivate        string `json:"bulk_deactivate"`
+	BulkDeactivateMessage string `json:"bulk_deactivate_message"`
 }
 
 type ButtonLabels struct {
-	AddSupplierSubscription string `json:"addSupplierSubscription"`
-	RecognizeExpense        string `json:"recognizeExpense"`
+	AddSupplierSubscription string `json:"add_supplier_subscription"`
+	RecognizeExpense        string `json:"recognize_expense"`
 }
 
 type BulkLabels struct {
@@ -161,14 +161,14 @@ type EmptyLabels struct {
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoPermission     string `json:"noPermission"`
-	InUse            string `json:"inUse"`
-	LoadFailed       string `json:"loadFailed"`
-	NoIDsProvided    string `json:"noIdsProvided"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoPermission     string `json:"no_permission"`
+	InUse            string `json:"in_use"`
+	LoadFailed       string `json:"load_failed"`
+	NoIDsProvided    string `json:"no_ids_provided"`
 }
 
 // DefaultLabels returns English fallback labels for the supplier_subscription module.

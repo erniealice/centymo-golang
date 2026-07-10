@@ -12,16 +12,16 @@ package plan
 // ProductPlanFormLabels holds translatable labels for the ProductPlan add/edit form within a plan.
 type ProductPlanFormLabels struct {
 	Product            string                  `json:"product"`
-	ProductPlaceholder string                  `json:"productPlaceholder"`
-	SelectProduct      string                  `json:"selectProduct"`
+	ProductPlaceholder string                  `json:"product_placeholder"`
+	SelectProduct      string                  `json:"select_product"`
 	Active             string                  `json:"active"`
-	ProductKindLabel   string                  `json:"productKindLabel"`
-	ProductKind        ProductKindOptionLabels `json:"productKind"`
+	ProductKindLabel   string                  `json:"product_kind_label"`
+	ProductKind        ProductKindOptionLabels `json:"product_kind"`
 
 	// Model D — variant picker on the ProductPlan drawer form
-	VariantSelectLabel       string `json:"variantSelectLabel"`
-	VariantSelectPlaceholder string `json:"variantSelectPlaceholder"`
-	VariantSelectInfo        string `json:"variantSelectInfo"`
+	VariantSelectLabel       string `json:"variant_select_label"`
+	VariantSelectPlaceholder string `json:"variant_select_placeholder"`
+	VariantSelectInfo        string `json:"variant_select_info"`
 }
 
 // ProductKindOptionLabels provides translated labels for each product_kind
@@ -29,8 +29,8 @@ type ProductPlanFormLabels struct {
 // to map product_kind values to display labels in table cells.
 type ProductKindOptionLabels struct {
 	Service        string `json:"service"`
-	StockedGood    string `json:"stockedGood"`
-	NonStockedGood string `json:"nonStockedGood"`
+	StockedGood    string `json:"stocked_good"`
+	NonStockedGood string `json:"non_stocked_good"`
 	Consumable     string `json:"consumable"`
 }
 

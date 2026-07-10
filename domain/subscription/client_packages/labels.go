@@ -14,14 +14,14 @@ package client_packages
 //
 // 2026-04-27 plan-client-scope plan §6.3 / §7.
 type Labels struct {
-	TabTitle  string `json:"tabTitle"`
+	TabTitle  string `json:"tab_title"`
 	Empty     string `json:"empty"`
-	AddAction string `json:"addAction"`
+	AddAction string `json:"add_action"`
 
 	// Column headers for the table on the tab.
-	ColumnName          string `json:"columnName"`
-	ColumnSchedule      string `json:"columnSchedule"`
-	ColumnSubscriptions string `json:"columnSubscriptions"`
+	ColumnName          string `json:"column_name"`
+	ColumnSchedule      string `json:"column_schedule"`
+	ColumnSubscriptions string `json:"column_subscriptions"`
 }
 
 // DefaultLabels returns Labels with sensible English

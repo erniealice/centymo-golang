@@ -27,10 +27,10 @@ import (
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 	revenuepaymentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_payment"
 	revenuetaxlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_tax_line"
-	collectionmethodpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	productpriceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/product_price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
+	collectionmethodpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -234,7 +234,7 @@ func NewRevenueModule(deps *RevenueModuleDeps) *RevenueModule {
 	}
 	paymentDeps := &revenuepayment.Deps{
 		Routes:                deps.Routes,
-		Labels:               deps.Labels,
+		Labels:                deps.Labels,
 		CreateRevenuePayment:  deps.CreateRevenuePayment,
 		ReadRevenuePayment:    deps.ReadRevenuePayment,
 		UpdateRevenuePayment:  deps.UpdateRevenuePayment,

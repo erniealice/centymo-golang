@@ -19,8 +19,8 @@ type Labels struct {
 type PageLabels struct {
 	Title         string `json:"title"`
 	Subtitle      string `json:"subtitle"`
-	ActiveTitle   string `json:"activeTitle"`
-	InactiveTitle string `json:"inactiveTitle"`
+	ActiveTitle   string `json:"active_title"`
+	InactiveTitle string `json:"inactive_title"`
 }
 
 type ButtonLabels struct {
@@ -28,19 +28,19 @@ type ButtonLabels struct {
 	Add        string `json:"add"`
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
-	BulkDelete string `json:"bulkDelete"`
+	BulkDelete string `json:"bulk_delete"`
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
 }
 
 type ColumnLabels struct {
-	WorkspaceUser     string `json:"workspaceUser"`
-	SubscriptionGroup string `json:"subscriptionGroup"`
+	WorkspaceUser     string `json:"workspace_user"`
+	SubscriptionGroup string `json:"subscription_group"`
 	Scope             string `json:"scope"`
 	Role              string `json:"role"`
-	IsOwner           string `json:"isOwner"`
+	IsOwner           string `json:"is_owner"`
 	Status            string `json:"status"`
-	DateCreated       string `json:"dateCreated"`
+	DateCreated       string `json:"date_created"`
 	Actions           string `json:"actions"`
 }
 
@@ -52,43 +52,43 @@ type EmptyLabels struct {
 // FormLabels holds the drawer-form field labels for the operator-assignment
 // entity (subscription_group_workspace_user).
 type FormLabels struct {
-	SectionAssignment string `json:"sectionAssignment"`
-	SectionServicing  string `json:"sectionServicing"`
+	SectionAssignment string `json:"section_assignment"`
+	SectionServicing  string `json:"section_servicing"`
 
-	WorkspaceUserId         string `json:"workspaceUserId"`
-	WorkspaceUserIdPH       string `json:"workspaceUserIdPlaceholder"`
-	WorkspaceUserIdInfo     string `json:"workspaceUserIdInfo"`
-	SubscriptionGroupId     string `json:"subscriptionGroupId"`
-	SubscriptionGroupIdPH   string `json:"subscriptionGroupIdPlaceholder"`
-	SubscriptionGroupIdInfo string `json:"subscriptionGroupIdInfo"`
+	WorkspaceUserId         string `json:"workspace_user_id"`
+	WorkspaceUserIdPH       string `json:"workspace_user_id_placeholder"`
+	WorkspaceUserIdInfo     string `json:"workspace_user_id_info"`
+	SubscriptionGroupId     string `json:"subscription_group_id"`
+	SubscriptionGroupIdPH   string `json:"subscription_group_id_placeholder"`
+	SubscriptionGroupIdInfo string `json:"subscription_group_id_info"`
 	Scope                   string `json:"scope"`
-	ScopePlaceholder        string `json:"scopePlaceholder"`
-	ScopeInfo               string `json:"scopeInfo"`
+	ScopePlaceholder        string `json:"scope_placeholder"`
+	ScopeInfo               string `json:"scope_info"`
 	Role                    string `json:"role"`
-	RolePlaceholder         string `json:"rolePlaceholder"`
-	RoleInfo                string `json:"roleInfo"`
-	IsOwner                 string `json:"isOwner"`
-	IsOwnerInfo             string `json:"isOwnerInfo"`
+	RolePlaceholder         string `json:"role_placeholder"`
+	RoleInfo                string `json:"role_info"`
+	IsOwner                 string `json:"is_owner"`
+	IsOwnerInfo             string `json:"is_owner_info"`
 	Active                  string `json:"active"`
-	ActiveInfo              string `json:"activeInfo"`
+	ActiveInfo              string `json:"active_info"`
 }
 
 type BulkLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type ConfirmLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type TabLabels struct {
@@ -97,24 +97,24 @@ type TabLabels struct {
 
 type DetailLabels struct {
 	Title        string `json:"title"`
-	DateCreated  string `json:"dateCreated"`
-	DateModified string `json:"dateModified"`
-	NoGroup      string `json:"noGroup"`
-	NoUser       string `json:"noUser"`
-	NoScope      string `json:"noScope"`
-	NoRole       string `json:"noRole"`
-	OwnerYes     string `json:"ownerYes"`
-	OwnerNo      string `json:"ownerNo"`
+	DateCreated  string `json:"date_created"`
+	DateModified string `json:"date_modified"`
+	NoGroup      string `json:"no_group"`
+	NoUser       string `json:"no_user"`
+	NoScope      string `json:"no_scope"`
+	NoRole       string `json:"no_role"`
+	OwnerYes     string `json:"owner_yes"`
+	OwnerNo      string `json:"owner_no"`
 }
 
 type ErrorLabels struct {
-	NotFound     string `json:"notFound"`
-	LoadFailed   string `json:"loadFailed"`
+	NotFound     string `json:"not_found"`
+	LoadFailed   string `json:"load_failed"`
 	Unauthorized string `json:"unauthorized"`
-	CreateFailed string `json:"createFailed"`
-	UpdateFailed string `json:"updateFailed"`
-	DeleteFailed string `json:"deleteFailed"`
-	InUse        string `json:"inUse"`
+	CreateFailed string `json:"create_failed"`
+	UpdateFailed string `json:"update_failed"`
+	DeleteFailed string `json:"delete_failed"`
+	InUse        string `json:"in_use"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.

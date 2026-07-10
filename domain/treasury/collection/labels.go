@@ -19,7 +19,7 @@ type Labels struct {
 	Empty     EmptyLabels         `json:"empty"`
 	Form      FormLabels          `json:"form"`
 	Actions   ActionLabels        `json:"actions"`
-	Bulk      BulkLabels          `json:"bulkActions"`
+	Bulk      BulkLabels          `json:"bulk_actions"`
 	Detail    DetailLabels        `json:"detail"`
 	Status    StatusLabels        `json:"status"`
 	Confirm   ConfirmLabels       `json:"confirm"`
@@ -33,38 +33,38 @@ type Labels struct {
 type CashDashboardLabels struct {
 	Title              string `json:"title"`
 	Subtitle           string `json:"subtitle"`
-	StatPending        string `json:"statPending"`
-	StatOverdue        string `json:"statOverdue"`
-	StatCollectedToday string `json:"statCollectedToday"`
-	StatCollectedWeek  string `json:"statCollectedWeek"`
-	WidgetDailyTrend   string `json:"widgetDailyTrend"`
-	WidgetByMode       string `json:"widgetByMode"`
-	WidgetRecent       string `json:"widgetRecent"`
-	QuickRecord        string `json:"quickRecord"`
-	QuickReconcile     string `json:"quickReconcile"`
-	QuickAging         string `json:"quickAging"`
-	QuickMarkCleared   string `json:"quickMarkCleared"`
-	ViewAll            string `json:"viewAll"`
-	EmptyRecentTitle   string `json:"emptyRecentTitle"`
-	EmptyRecentDesc    string `json:"emptyRecentDesc"`
-	NewCollection      string `json:"newCollection"`
-	CollectionUpdated  string `json:"collectionUpdated"`
+	StatPending        string `json:"stat_pending"`
+	StatOverdue        string `json:"stat_overdue"`
+	StatCollectedToday string `json:"stat_collected_today"`
+	StatCollectedWeek  string `json:"stat_collected_week"`
+	WidgetDailyTrend   string `json:"widget_daily_trend"`
+	WidgetByMode       string `json:"widget_by_mode"`
+	WidgetRecent       string `json:"widget_recent"`
+	QuickRecord        string `json:"quick_record"`
+	QuickReconcile     string `json:"quick_reconcile"`
+	QuickAging         string `json:"quick_aging"`
+	QuickMarkCleared   string `json:"quick_mark_cleared"`
+	ViewAll            string `json:"view_all"`
+	EmptyRecentTitle   string `json:"empty_recent_title"`
+	EmptyRecentDesc    string `json:"empty_recent_desc"`
+	NewCollection      string `json:"new_collection"`
+	CollectionUpdated  string `json:"collection_updated"`
 }
 
 type PageLabels struct {
 	Heading          string `json:"heading"`
-	HeadingPending   string `json:"headingPending"`
-	HeadingCompleted string `json:"headingCompleted"`
-	HeadingFailed    string `json:"headingFailed"`
+	HeadingPending   string `json:"heading_pending"`
+	HeadingCompleted string `json:"heading_completed"`
+	HeadingFailed    string `json:"heading_failed"`
 	Caption          string `json:"caption"`
-	CaptionPending   string `json:"captionPending"`
-	CaptionCompleted string `json:"captionCompleted"`
-	CaptionFailed    string `json:"captionFailed"`
+	CaptionPending   string `json:"caption_pending"`
+	CaptionCompleted string `json:"caption_completed"`
+	CaptionFailed    string `json:"caption_failed"`
 	Dashboard        string `json:"dashboard"`
 }
 
 type ButtonLabels struct {
-	AddCollection string `json:"addCollection"`
+	AddCollection string `json:"add_collection"`
 }
 
 type ColumnLabels struct {
@@ -77,12 +77,12 @@ type ColumnLabels struct {
 }
 
 type EmptyLabels struct {
-	PendingTitle     string `json:"pendingTitle"`
-	PendingMessage   string `json:"pendingMessage"`
-	CompletedTitle   string `json:"completedTitle"`
-	CompletedMessage string `json:"completedMessage"`
-	FailedTitle      string `json:"failedTitle"`
-	FailedMessage    string `json:"failedMessage"`
+	PendingTitle     string `json:"pending_title"`
+	PendingMessage   string `json:"pending_message"`
+	CompletedTitle   string `json:"completed_title"`
+	CompletedMessage string `json:"completed_message"`
+	FailedTitle      string `json:"failed_title"`
+	FailedMessage    string `json:"failed_message"`
 }
 
 type FormLabels struct {
@@ -91,50 +91,50 @@ type FormLabels struct {
 	Amount                  string `json:"amount"`
 	Currency                string `json:"currency"`
 	Reference               string `json:"reference"`
-	ReferencePlaceholder    string `json:"referencePlaceholder"`
-	PaymentMethod           string `json:"paymentMethod"`
+	ReferencePlaceholder    string `json:"reference_placeholder"`
+	PaymentMethod           string `json:"payment_method"`
 	Status                  string `json:"status"`
 	Notes                   string `json:"notes"`
-	NotesPlaceholder        string `json:"notesPlaceholder"`
-	CustomerNamePlaceholder string `json:"customerNamePlaceholder"`
-	AmountPlaceholder       string `json:"amountPlaceholder"`
-	CurrencyPlaceholder     string `json:"currencyPlaceholder"`
-	MethodCash              string `json:"methodCash"`
-	MethodBankTransfer      string `json:"methodBankTransfer"`
-	MethodCheck             string `json:"methodCheck"`
-	MethodGCash             string `json:"methodGCash"`
-	MethodMaya              string `json:"methodMaya"`
-	MethodCard              string `json:"methodCard"`
-	MethodOther             string `json:"methodOther"`
-	StatusPending           string `json:"statusPending"`
-	StatusCompleted         string `json:"statusCompleted"`
-	StatusFailed            string `json:"statusFailed"`
+	NotesPlaceholder        string `json:"notes_placeholder"`
+	CustomerNamePlaceholder string `json:"customer_name_placeholder"`
+	AmountPlaceholder       string `json:"amount_placeholder"`
+	CurrencyPlaceholder     string `json:"currency_placeholder"`
+	MethodCash              string `json:"method_cash"`
+	MethodBankTransfer      string `json:"method_bank_transfer"`
+	MethodCheck             string `json:"method_check"`
+	MethodGCash             string `json:"method_gcash"`
+	MethodMaya              string `json:"method_maya"`
+	MethodCard              string `json:"method_card"`
+	MethodOther             string `json:"method_other"`
+	StatusPending           string `json:"status_pending"`
+	StatusCompleted         string `json:"status_completed"`
+	StatusFailed            string `json:"status_failed"`
 
 	// Field-level info text surfaced via an info button beside each label.
-	ReferenceInfo     string `json:"referenceInfo"`
-	CustomerInfo      string `json:"customerInfo"`
-	AmountInfo        string `json:"amountInfo"`
-	CurrencyInfo      string `json:"currencyInfo"`
-	PaymentMethodInfo string `json:"paymentMethodInfo"`
-	DateInfo          string `json:"dateInfo"`
-	StatusInfo        string `json:"statusInfo"`
-	NotesInfo         string `json:"notesInfo"`
+	ReferenceInfo     string `json:"reference_info"`
+	CustomerInfo      string `json:"customer_info"`
+	AmountInfo        string `json:"amount_info"`
+	CurrencyInfo      string `json:"currency_info"`
+	PaymentMethodInfo string `json:"payment_method_info"`
+	DateInfo          string `json:"date_info"`
+	StatusInfo        string `json:"status_info"`
+	NotesInfo         string `json:"notes_info"`
 
 	// 20260517-advance-cash-events Plan B Phase 4 — advance metadata fields
 	// rendered conditionally in the collection drawer form. The enum option
 	// labels (None / Time-based / Milestone / Unscheduled / Full tranche /
 	// Day-prorated / Next period start) are sourced from AdvanceEnumLabels
 	// (loaded from advance_kind.json) rather than duplicated here.
-	AdvanceMetadata        string `json:"advanceMetadata"`
-	AdvanceKind            string `json:"advanceKind"`
-	AdvanceProrationPolicy string `json:"advanceProrationPolicy"`
+	AdvanceMetadata        string `json:"advance_metadata"`
+	AdvanceKind            string `json:"advance_kind"`
+	AdvanceProrationPolicy string `json:"advance_proration_policy"`
 }
 
 type ActionLabels struct {
 	View         string `json:"view"`
 	Edit         string `json:"edit"`
 	Delete       string `json:"delete"`
-	MarkComplete string `json:"markComplete"`
+	MarkComplete string `json:"mark_complete"`
 	Reactivate   string `json:"reactivate"`
 }
 
@@ -143,9 +143,9 @@ type BulkLabels struct {
 }
 
 type DetailLabels struct {
-	PageTitle            string `json:"pageTitle"`
-	TitlePrefix          string `json:"titlePrefix"`
-	PaymentInfo          string `json:"paymentInfo"`
+	PageTitle            string `json:"page_title"`
+	TitlePrefix          string `json:"title_prefix"`
+	PaymentInfo          string `json:"payment_info"`
 	Customer             string `json:"customer"`
 	Date                 string `json:"date"`
 	Amount               string `json:"amount"`
@@ -154,16 +154,16 @@ type DetailLabels struct {
 	Method               string `json:"method"`
 	Reference            string `json:"reference"`
 	Notes                string `json:"notes"`
-	TabBasicInfo         string `json:"tabBasicInfo"`
-	TabAttachments       string `json:"tabAttachments"`
-	TabAuditTrail        string `json:"tabAuditTrail"`
-	TabAuditHistory      string `json:"tabAuditHistory"`
-	AuditAction          string `json:"auditAction"`
-	AuditUser            string `json:"auditUser"`
-	AuditEmptyTitle      string `json:"auditEmptyTitle"`
-	AuditEmptyMessage    string `json:"auditEmptyMessage"`
-	AuditTrailComingSoon string `json:"auditTrailComingSoon"`
-	AuditTrailDesc       string `json:"auditTrailDesc"`
+	TabBasicInfo         string `json:"tab_basic_info"`
+	TabAttachments       string `json:"tab_attachments"`
+	TabAuditTrail        string `json:"tab_audit_trail"`
+	TabAuditHistory      string `json:"tab_audit_history"`
+	AuditAction          string `json:"audit_action"`
+	AuditUser            string `json:"audit_user"`
+	AuditEmptyTitle      string `json:"audit_empty_title"`
+	AuditEmptyMessage    string `json:"audit_empty_message"`
+	AuditTrailComingSoon string `json:"audit_trail_coming_soon"`
+	AuditTrailDesc       string `json:"audit_trail_desc"`
 }
 
 type StatusLabels struct {
@@ -173,27 +173,27 @@ type StatusLabels struct {
 }
 
 type ConfirmLabels struct {
-	MarkComplete          string `json:"markComplete"`
-	MarkCompleteMessage   string `json:"markCompleteMessage"`
+	MarkComplete          string `json:"mark_complete"`
+	MarkCompleteMessage   string `json:"mark_complete_message"`
 	Reactivate            string `json:"reactivate"`
-	ReactivateMessage     string `json:"reactivateMessage"`
+	ReactivateMessage     string `json:"reactivate_message"`
 	Delete                string `json:"delete"`
-	DeleteMessage         string `json:"deleteMessage"`
-	BulkComplete          string `json:"bulkComplete"`
-	BulkCompleteMessage   string `json:"bulkCompleteMessage"`
-	BulkReactivate        string `json:"bulkReactivate"`
-	BulkReactivateMessage string `json:"bulkReactivateMessage"`
-	BulkDelete            string `json:"bulkDelete"`
-	BulkDeleteMessage     string `json:"bulkDeleteMessage"`
+	DeleteMessage         string `json:"delete_message"`
+	BulkComplete          string `json:"bulk_complete"`
+	BulkCompleteMessage   string `json:"bulk_complete_message"`
+	BulkReactivate        string `json:"bulk_reactivate"`
+	BulkReactivateMessage string `json:"bulk_reactivate_message"`
+	BulkDelete            string `json:"bulk_delete"`
+	BulkDeleteMessage     string `json:"bulk_delete_message"`
 }
 
 type ErrorLabels struct {
-	PermissionDenied string `json:"permissionDenied"`
-	InvalidFormData  string `json:"invalidFormData"`
-	NotFound         string `json:"notFound"`
-	IDRequired       string `json:"idRequired"`
-	NoIDsProvided    string `json:"noIDsProvided"`
-	InvalidStatus    string `json:"invalidStatus"`
+	PermissionDenied string `json:"permission_denied"`
+	InvalidFormData  string `json:"invalid_form_data"`
+	NotFound         string `json:"not_found"`
+	IDRequired       string `json:"id_required"`
+	NoIDsProvided    string `json:"no_ids_provided"`
+	InvalidStatus    string `json:"invalid_status"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.

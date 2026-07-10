@@ -21,8 +21,8 @@ type Labels struct {
 type PageLabels struct {
 	Title         string `json:"title"`
 	Subtitle      string `json:"subtitle"`
-	ActiveTitle   string `json:"activeTitle"`
-	InactiveTitle string `json:"inactiveTitle"`
+	ActiveTitle   string `json:"active_title"`
+	InactiveTitle string `json:"inactive_title"`
 }
 
 type ButtonLabels struct {
@@ -30,17 +30,17 @@ type ButtonLabels struct {
 	Add        string `json:"add"`
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
-	BulkDelete string `json:"bulkDelete"`
+	BulkDelete string `json:"bulk_delete"`
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
 }
 
 type ColumnLabels struct {
-	SubscriptionGroupId string `json:"subscriptionGroupId"`
-	SubscriptionId      string `json:"subscriptionId"`
-	ClientId            string `json:"clientId"`
+	SubscriptionGroupId string `json:"subscription_group_id"`
+	SubscriptionId      string `json:"subscription_id"`
+	ClientId            string `json:"client_id"`
 	Status              string `json:"status"`
-	DateCreated         string `json:"dateCreated"`
+	DateCreated         string `json:"date_created"`
 	Actions             string `json:"actions"`
 }
 
@@ -51,36 +51,36 @@ type EmptyLabels struct {
 
 // FormLabels holds the drawer-form field labels.
 type FormLabels struct {
-	SectionIdentity       string `json:"sectionIdentity"`
-	SubscriptionGroup     string `json:"subscriptionGroup"`
-	SubscriptionGroupPH   string `json:"subscriptionGroupPlaceholder"`
-	SubscriptionGroupInfo string `json:"subscriptionGroupInfo"`
+	SectionIdentity       string `json:"section_identity"`
+	SubscriptionGroup     string `json:"subscription_group"`
+	SubscriptionGroupPH   string `json:"subscription_group_placeholder"`
+	SubscriptionGroupInfo string `json:"subscription_group_info"`
 	Subscription          string `json:"subscription"`
-	SubscriptionPH        string `json:"subscriptionPlaceholder"`
-	SubscriptionInfo      string `json:"subscriptionInfo"`
+	SubscriptionPH        string `json:"subscription_placeholder"`
+	SubscriptionInfo      string `json:"subscription_info"`
 	Client                string `json:"client"`
-	ClientPH              string `json:"clientPlaceholder"`
-	ClientInfo            string `json:"clientInfo"`
+	ClientPH              string `json:"client_placeholder"`
+	ClientInfo            string `json:"client_info"`
 	Active                string `json:"active"`
-	ActiveInfo            string `json:"activeInfo"`
+	ActiveInfo            string `json:"active_info"`
 }
 
 type BulkLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type ConfirmLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type TabLabels struct {
@@ -89,21 +89,21 @@ type TabLabels struct {
 
 type DetailLabels struct {
 	Title        string `json:"title"`
-	DateCreated  string `json:"dateCreated"`
-	DateModified string `json:"dateModified"`
-	NoGroup      string `json:"noGroup"`
-	NoSub        string `json:"noSub"`
-	NoClient     string `json:"noClient"`
+	DateCreated  string `json:"date_created"`
+	DateModified string `json:"date_modified"`
+	NoGroup      string `json:"no_group"`
+	NoSub        string `json:"no_sub"`
+	NoClient     string `json:"no_client"`
 }
 
 type ErrorLabels struct {
-	NotFound     string `json:"notFound"`
-	LoadFailed   string `json:"loadFailed"`
+	NotFound     string `json:"not_found"`
+	LoadFailed   string `json:"load_failed"`
 	Unauthorized string `json:"unauthorized"`
-	CreateFailed string `json:"createFailed"`
-	UpdateFailed string `json:"updateFailed"`
-	DeleteFailed string `json:"deleteFailed"`
-	InUse        string `json:"inUse"`
+	CreateFailed string `json:"create_failed"`
+	UpdateFailed string `json:"update_failed"`
+	DeleteFailed string `json:"delete_failed"`
+	InUse        string `json:"in_use"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.

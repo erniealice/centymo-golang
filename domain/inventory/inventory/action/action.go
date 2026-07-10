@@ -40,13 +40,13 @@ func formLabels(t func(string) string, f inventory.FormLabels) inventoryform.Lab
 	return inventoryform.Labels{
 		Product:          t("inventory.form.product"),
 		SKU:              t("inventory.form.sku"),
-		SKUPlaceholder:   t("inventory.form.skuPlaceholder"),
-		OnHand:           t("inventory.form.onHand"),
+		SKUPlaceholder:   t("inventory.form.sku_placeholder"),
+		OnHand:           t("inventory.form.on_hand"),
 		Reserved:         t("inventory.form.reserved"),
-		ReorderLevel:     t("inventory.form.reorderLevel"),
-		UnitOfMeasure:    t("inventory.form.unitOfMeasure"),
+		ReorderLevel:     t("inventory.form.reorder_level"),
+		UnitOfMeasure:    t("inventory.form.unit_of_measure"),
 		Notes:            t("inventory.form.notes"),
-		NotesPlaceholder: t("inventory.form.notesPlaceholder"),
+		NotesPlaceholder: t("inventory.form.notes_placeholder"),
 		Active:           t("inventory.form.active"),
 		// Info fields sourced from inventory.FormLabels (populated from lyngua JSON + defaults).
 		ProductInfo:       f.ProductInfo,

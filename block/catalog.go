@@ -17,6 +17,8 @@ package block
 import (
 	"context"
 
+	"github.com/erniealice/hybra-golang/views/attachment"
+
 	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/espyna-golang/consumer/compose"
 
@@ -94,8 +96,6 @@ func InventoryUnit(uc *UseCases, infra *Infra) compose.Unit {
 	u.Mount = func(mc *compose.MountContext) error {
 		r := u.Routes.(*inventorypkg.Routes)
 
-		// Inventory descriptor is partial (no LabelJSON); labels are zero-value
-		// until the compose engine gains a full lyngua overlay for inventory.
 		labels := labelsOrZero[inventorypkg.Labels](&u)
 
 		deps := &inventorydomain.InventoryModuleDeps{
@@ -150,8 +150,6 @@ func RevenueUnit(uc *UseCases, infra *Infra) compose.Unit {
 	u := revenuepkg.Describe()
 	u.Mount = func(mc *compose.MountContext) error {
 		r := u.Routes.(*revenuepkg.Routes)
-		// Revenue descriptor is partial (no LabelJSON); labels are zero-value
-		// until a DefaultLabels factory is added to the revenue entity package.
 		labels := labelsOrZero[revenuepkg.Labels](&u)
 
 		deps := &revenuedomain.RevenueModuleDeps{
@@ -238,8 +236,6 @@ func ProductUnit(uc *UseCases, infra *Infra) compose.Unit {
 	u.Mount = func(mc *compose.MountContext) error {
 		r := u.Routes.(*productpkg.Routes)
 
-		// Product descriptor is partial (no LabelJSON); labels are zero-value
-		// until a DefaultLabels factory is added to the product entity package.
 		productLabels := labelsOrZero[productpkg.Labels](&u)
 
 		var getProductInUseIDs func(context.Context, []string) (map[string]bool, error)
@@ -377,7 +373,12 @@ func PricePlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 		l := u.Labels.(*priceplanpkg.Labels)
 
 		productPricePlanLabels := subscriptiondom.DefaultProductPricePlanLabels()
+		// Cross-unit labels must come from the SIBLING unit's post-overlay
+		// pointer, not DefaultLabels() — defaults skip the lyngua tier overlay.
 		priceScheduleLabels := priceschedulepkg.DefaultLabels()
+		if sl, ok := compose.LabelsOf[*priceschedulepkg.Labels](mc, "subscription.price_schedule"); ok {
+			priceScheduleLabels = *sl
+		}
 
 		var getPricePlanInUseIDs func(context.Context, []string) (map[string]bool, error)
 		if infra.RefChecker != nil {
@@ -432,7 +433,12 @@ func PriceScheduleUnit(uc *UseCases, infra *Infra) compose.Unit {
 		r := u.Routes.(*priceschedulepkg.Routes)
 		l := u.Labels.(*priceschedulepkg.Labels)
 
+		// Cross-unit labels must come from the SIBLING unit's post-overlay
+		// pointer, not DefaultLabels() — defaults skip the lyngua tier overlay.
 		pricePlanLabels := priceplanpkg.DefaultLabels()
+		if pl, ok := compose.LabelsOf[*priceplanpkg.Labels](mc, "subscription.price_plan"); ok {
+			pricePlanLabels = *pl
+		}
 		productPricePlanLabels := subscriptiondom.DefaultProductPricePlanLabels()
 
 		var getPriceScheduleInUseIDs func(context.Context, []string) (map[string]bool, error)
@@ -507,6 +513,19 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra) compose.Unit {
 			// Program (plan) + period (price_schedule) pickers / display lookups.
 			ListPlans:          uc.Plan.ListPlans,
 			ListPriceSchedules: uc.PriceSchedule.ListPriceSchedules,
+			// Subscriptions (roster) tab: members + client/subscription name resolution.
+			ListSubscriptionGroupMembers: uc.SubscriptionGroupMember.ListSubscriptionGroupMembers,
+			ListClients:                  uc.Entity.Client.ListClients,
+			ListSubscriptions:            uc.Subscription.ListSubscriptions,
+			// Attachments tab: Infra carries the ops (mirror PriceScheduleUnit).
+			// Audit tab: no infra.ListAuditHistory hook exists → AuditOps stays nil (renders empty).
+			AttachmentOps: attachment.AttachmentOps{
+				UploadFile:       infra.UploadFile,
+				ListAttachments:  infra.ListAttachments,
+				CreateAttachment: infra.CreateAttachment,
+				DeleteAttachment: infra.DeleteAttachment,
+				NewAttachmentID:  infra.NewAttachmentID,
+			},
 		}
 		subscriptiondom.NewSubscriptionGroupModule(deps).RegisterRoutes(mc.Routes)
 		return nil
@@ -945,7 +964,6 @@ func ExpenditureUnit(uc *UseCases, infra *Infra) compose.Unit {
 	u := expenditurepkg.Describe()
 	u.Mount = func(mc *compose.MountContext) error {
 		r := u.Routes.(*expenditurepkg.Routes)
-		// Expenditure descriptor is partial (no LabelJSON).
 		labels := labelsOrZero[expenditurepkg.Labels](&u)
 
 		var disbursementRoutes treasurydomain.DisbursementRoutes

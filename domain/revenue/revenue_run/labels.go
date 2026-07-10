@@ -9,22 +9,22 @@ package revenuerun
 // D13: naming is revenueRun / revenue_run / RevenueRun / revenue-run everywhere
 // except the user-visible VALUE "Invoice Run" (supplied by lyngua).
 type Labels struct {
-	AppLabel       string            `json:"appLabel"`
+	AppLabel       string            `json:"app_label"`
 	Queue          QueueLabels       `json:"queue"`
 	List           ListLabels        `json:"list"`
 	Detail         DetailLabels      `json:"detail"`
-	StatusBadges   StatusBadgeLabels `json:"statusBadges"`
+	StatusBadges   StatusBadgeLabels `json:"status_badges"`
 	Actions        ActionLabels      `json:"actions"`
-	ScopeKind      ScopeKindLabels   `json:"scopeKind"`
-	AttemptOutcome OutcomeLabels     `json:"attemptOutcome"`
+	ScopeKind      ScopeKindLabels   `json:"scope_kind"`
+	AttemptOutcome OutcomeLabels     `json:"attempt_outcome"`
 	Errors         ErrorLabels       `json:"errors"`
 	// ToastBatchSuccess is the message shown after a Surface B batch-run
 	// submission. Supports the standard {{.Created}}/{{.Skipped}}/{{.Errored}}
 	// placeholders, substituted Go-side before the toast is dispatched.
-	ToastBatchSuccess string `json:"toastBatchSuccess"`
+	ToastBatchSuccess string `json:"toast_batch_success"`
 	// ViewRunLink is the link label used on toasts whose batch produced
 	// exactly one run. Multi-run batches omit the link.
-	ViewRunLink string `json:"viewRunLink"`
+	ViewRunLink string `json:"view_run_link"`
 }
 
 // QueueLabels holds copy for the workspace-queue page (Surface B).
@@ -32,7 +32,7 @@ type QueueLabels struct {
 	Title    string `json:"title"`
 	Subtitle string `json:"subtitle"`
 	// AsOfDateLabel is the label for the AsOfDate date picker above the table.
-	AsOfDateLabel string            `json:"asOfDateLabel"`
+	AsOfDateLabel string            `json:"as_of_date_label"`
 	Columns       QueueColumnLabels `json:"columns"`
 	Empty         QueueEmptyLabels  `json:"empty"`
 	Bulk          QueueBulkLabels   `json:"bulk"`
@@ -41,7 +41,7 @@ type QueueLabels struct {
 type QueueColumnLabels struct {
 	Client         string `json:"client"`
 	Subscriptions  string `json:"subscriptions"`
-	PendingPeriods string `json:"pendingPeriods"`
+	PendingPeriods string `json:"pending_periods"`
 	Total          string `json:"total"`
 	Currency       string `json:"currency"`
 	Actions        string `json:"actions"`
@@ -54,9 +54,9 @@ type QueueEmptyLabels struct {
 }
 
 type QueueBulkLabels struct {
-	RunSelected        string `json:"runSelected"`
-	RunAllMatching     string `json:"runAllMatching"`
-	CapExceededMessage string `json:"capExceededMessage"`
+	RunSelected        string `json:"run_selected"`
+	RunAllMatching     string `json:"run_all_matching"`
+	CapExceededMessage string `json:"cap_exceeded_message"`
 }
 
 // ListLabels holds copy for the run history list page (Surface D).
@@ -65,15 +65,15 @@ type ListLabels struct {
 	Subtitle string           `json:"subtitle"`
 	Columns  ListColumnLabels `json:"columns"`
 	Empty    ListEmptyLabels  `json:"empty"`
-	Filters  ListFilterLabels `json:"filterLabels"`
+	Filters  ListFilterLabels `json:"filter_labels"`
 }
 
 type ListColumnLabels struct {
 	ID          string `json:"id"`
 	Scope       string `json:"scope"`
-	AsOfDate    string `json:"asOfDate"`
+	AsOfDate    string `json:"as_of_date"`
 	Initiator   string `json:"initiator"`
-	InitiatedAt string `json:"initiatedAt"`
+	InitiatedAt string `json:"initiated_at"`
 	Status      string `json:"status"`
 	Created     string `json:"created"`
 	Skipped     string `json:"skipped"`
@@ -111,38 +111,38 @@ type DetailLabels struct {
 // SelectionsTabLabels holds column headers and empty-state copy for
 // the Selections tab on the run detail page.
 type SelectionsTabLabels struct {
-	ColSubscription string `json:"colSubscription"`
-	ColPeriodStart  string `json:"colPeriodStart"`
-	ColPeriodEnd    string `json:"colPeriodEnd"`
-	ColPeriodMarker string `json:"colPeriodMarker"`
-	EmptyTitle      string `json:"emptyTitle"`
-	EmptyMessage    string `json:"emptyMessage"`
+	ColSubscription string `json:"col_subscription"`
+	ColPeriodStart  string `json:"col_period_start"`
+	ColPeriodEnd    string `json:"col_period_end"`
+	ColPeriodMarker string `json:"col_period_marker"`
+	EmptyTitle      string `json:"empty_title"`
+	EmptyMessage    string `json:"empty_message"`
 }
 
 // ResultsTabLabels holds column headers and empty-state copy for
 // the Results tab on the run detail page.
 type ResultsTabLabels struct {
-	ColSubscription string `json:"colSubscription"`
-	ColPeriodStart  string `json:"colPeriodStart"`
-	ColPeriodEnd    string `json:"colPeriodEnd"`
-	ColOutcome      string `json:"colOutcome"`
-	ColErrorCode    string `json:"colErrorCode"`
-	EmptyTitle      string `json:"emptyTitle"`
-	EmptyMessage    string `json:"emptyMessage"`
+	ColSubscription string `json:"col_subscription"`
+	ColPeriodStart  string `json:"col_period_start"`
+	ColPeriodEnd    string `json:"col_period_end"`
+	ColOutcome      string `json:"col_outcome"`
+	ColErrorCode    string `json:"col_error_code"`
+	EmptyTitle      string `json:"empty_title"`
+	EmptyMessage    string `json:"empty_message"`
 }
 
 // InvoicesTabLabels holds column headers and empty-state copy for
 // the Invoices tab on the run detail page. Also holds the coming-soon label
 // for the Audit History tab.
 type InvoicesTabLabels struct {
-	ColReference string `json:"colReference"`
-	ColDate      string `json:"colDate"`
-	ColAmount    string `json:"colAmount"`
-	ColStatus    string `json:"colStatus"`
-	EmptyTitle   string `json:"emptyTitle"`
-	EmptyMessage string `json:"emptyMessage"`
+	ColReference string `json:"col_reference"`
+	ColDate      string `json:"col_date"`
+	ColAmount    string `json:"col_amount"`
+	ColStatus    string `json:"col_status"`
+	EmptyTitle   string `json:"empty_title"`
+	EmptyMessage string `json:"empty_message"`
 	// AuditHistoryComingSoon is the coming-soon message for the Audit History tab.
-	AuditHistoryComingSoon string `json:"auditHistoryComingSoon"`
+	AuditHistoryComingSoon string `json:"audit_history_coming_soon"`
 }
 
 type DetailTabLabels struct {
@@ -150,19 +150,19 @@ type DetailTabLabels struct {
 	Selections   string `json:"selections"`
 	Results      string `json:"results"`
 	Invoices     string `json:"invoices"`
-	AuditHistory string `json:"auditHistory"`
+	AuditHistory string `json:"audit_history"`
 	Attachments  string `json:"attachments"`
 }
 
 type SummaryLabels struct {
 	Scope                   string `json:"scope"`
-	AsOfDate                string `json:"asOfDate"`
+	AsOfDate                string `json:"as_of_date"`
 	Initiator               string `json:"initiator"`
-	InitiatedAt             string `json:"initiatedAt"`
-	CompletedAt             string `json:"completedAt"`
+	InitiatedAt             string `json:"initiated_at"`
+	CompletedAt             string `json:"completed_at"`
 	Status                  string `json:"status"`
 	Totals                  string `json:"totals"`
-	PossiblyInterruptedNote string `json:"possiblyInterruptedNote"`
+	PossiblyInterruptedNote string `json:"possibly_interrupted_note"`
 }
 
 // StatusBadgeLabels holds display labels for each run status value.
@@ -170,17 +170,17 @@ type StatusBadgeLabels struct {
 	Pending             string `json:"pending"`
 	Complete            string `json:"complete"`
 	Failed              string `json:"failed"`
-	PossiblyInterrupted string `json:"possiblyInterrupted"`
+	PossiblyInterrupted string `json:"possibly_interrupted"`
 }
 
 // ActionLabels holds labels for interactive actions on run rows/pages.
 type ActionLabels struct {
 	Run                   string `json:"run"`
-	ReRunFailed           string `json:"reRunFailed"`
-	ReRunFailedComingSoon string `json:"reRunFailedComingSoon"`
-	ViewRun               string `json:"viewRun"`
-	ViewClient            string `json:"viewClient"`
-	ViewSubscription      string `json:"viewSubscription"`
+	ReRunFailed           string `json:"re_run_failed"`
+	ReRunFailedComingSoon string `json:"re_run_failed_coming_soon"`
+	ViewRun               string `json:"view_run"`
+	ViewClient            string `json:"view_client"`
+	ViewSubscription      string `json:"view_subscription"`
 }
 
 // ScopeKindLabels holds display labels for each scope kind value.
@@ -199,17 +199,17 @@ type OutcomeLabels struct {
 
 // ErrorLabels holds error message strings for the revenue-run module.
 type ErrorLabels struct {
-	CapExceeded         string `json:"capExceeded"`
-	PermissionDenied    string `json:"permissionDenied"`
-	UseCaseUnavailable  string `json:"useCaseUnavailable"`
-	InvalidSelection    string `json:"invalidSelection"`
-	IdempotencyConflict string `json:"idempotencyConflict"`
-	ClientMismatch      string `json:"clientMismatch"`
-	WorkspaceMismatch   string `json:"workspaceMismatch"`
-	TamperedPeriod      string `json:"tamperedPeriod"`
+	CapExceeded         string `json:"cap_exceeded"`
+	PermissionDenied    string `json:"permission_denied"`
+	UseCaseUnavailable  string `json:"use_case_unavailable"`
+	InvalidSelection    string `json:"invalid_selection"`
+	IdempotencyConflict string `json:"idempotency_conflict"`
+	ClientMismatch      string `json:"client_mismatch"`
+	WorkspaceMismatch   string `json:"workspace_mismatch"`
+	TamperedPeriod      string `json:"tampered_period"`
 	// RunAllMatchingNotImplemented is shown when the operator attempts
 	// "run for all matching" before FilterToken signing is wired (Wave 3 stub).
-	RunAllMatchingNotImplemented string `json:"runAllMatchingNotImplemented"`
+	RunAllMatchingNotImplemented string `json:"run_all_matching_not_implemented"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.

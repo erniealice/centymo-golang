@@ -21,8 +21,8 @@ type Labels struct {
 type PageLabels struct {
 	Title         string `json:"title"`
 	Subtitle      string `json:"subtitle"`
-	ActiveTitle   string `json:"activeTitle"`
-	InactiveTitle string `json:"inactiveTitle"`
+	ActiveTitle   string `json:"active_title"`
+	InactiveTitle string `json:"inactive_title"`
 }
 
 type ButtonLabels struct {
@@ -30,7 +30,7 @@ type ButtonLabels struct {
 	Add        string `json:"add"`
 	Edit       string `json:"edit"`
 	Delete     string `json:"delete"`
-	BulkDelete string `json:"bulkDelete"`
+	BulkDelete string `json:"bulk_delete"`
 	Activate   string `json:"activate"`
 	Deactivate string `json:"deactivate"`
 }
@@ -39,7 +39,7 @@ type ColumnLabels struct {
 	Name        string `json:"name"`
 	Code        string `json:"code"`
 	Status      string `json:"status"`
-	DateCreated string `json:"dateCreated"`
+	DateCreated string `json:"date_created"`
 	Actions     string `json:"actions"`
 }
 
@@ -51,38 +51,38 @@ type EmptyLabels struct {
 // FormLabels holds the drawer-form field labels. Plan group vocabulary —
 // a plan_group is a stable taxonomy node that groups plans across periods.
 type FormLabels struct {
-	SectionIdentity  string `json:"sectionIdentity"`
-	SectionHierarchy string `json:"sectionHierarchy"`
+	SectionIdentity  string `json:"section_identity"`
+	SectionHierarchy string `json:"section_hierarchy"`
 	Name             string `json:"name"`
-	NamePlaceholder  string `json:"namePlaceholder"`
-	NameInfo         string `json:"nameInfo"`
+	NamePlaceholder  string `json:"name_placeholder"`
+	NameInfo         string `json:"name_info"`
 	Code             string `json:"code"`
-	CodePlaceholder  string `json:"codePlaceholder"`
-	CodeInfo         string `json:"codeInfo"`
-	ParentGroup      string `json:"parentGroup"`
-	ParentGroupPH    string `json:"parentGroupPlaceholder"`
-	ParentGroupSrch  string `json:"parentGroupSearch"`
-	ParentGroupInfo  string `json:"parentGroupInfo"`
+	CodePlaceholder  string `json:"code_placeholder"`
+	CodeInfo         string `json:"code_info"`
+	ParentGroup      string `json:"parent_group"`
+	ParentGroupPH    string `json:"parent_group_placeholder"`
+	ParentGroupSrch  string `json:"parent_group_search"`
+	ParentGroupInfo  string `json:"parent_group_info"`
 	Active           string `json:"active"`
-	ActiveInfo       string `json:"activeInfo"`
+	ActiveInfo       string `json:"active_info"`
 }
 
 type BulkLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type ConfirmLabels struct {
-	DeleteTitle       string `json:"deleteTitle"`
-	DeleteMessage     string `json:"deleteMessage"`
-	ActivateTitle     string `json:"activateTitle"`
-	ActivateMessage   string `json:"activateMessage"`
-	DeactivateTitle   string `json:"deactivateTitle"`
-	DeactivateMessage string `json:"deactivateMessage"`
+	DeleteTitle       string `json:"delete_title"`
+	DeleteMessage     string `json:"delete_message"`
+	ActivateTitle     string `json:"activate_title"`
+	ActivateMessage   string `json:"activate_message"`
+	DeactivateTitle   string `json:"deactivate_title"`
+	DeactivateMessage string `json:"deactivate_message"`
 }
 
 type TabLabels struct {
@@ -91,21 +91,21 @@ type TabLabels struct {
 
 type DetailLabels struct {
 	Title        string `json:"title"`
-	DateCreated  string `json:"dateCreated"`
-	DateModified string `json:"dateModified"`
-	NoParent     string `json:"noParent"`
-	NoCode       string `json:"noCode"`
-	NoSubtitle   string `json:"noSubtitle"`
+	DateCreated  string `json:"date_created"`
+	DateModified string `json:"date_modified"`
+	NoParent     string `json:"no_parent"`
+	NoCode       string `json:"no_code"`
+	NoSubtitle   string `json:"no_subtitle"`
 }
 
 type ErrorLabels struct {
-	NotFound     string `json:"notFound"`
-	LoadFailed   string `json:"loadFailed"`
+	NotFound     string `json:"not_found"`
+	LoadFailed   string `json:"load_failed"`
 	Unauthorized string `json:"unauthorized"`
-	CreateFailed string `json:"createFailed"`
-	UpdateFailed string `json:"updateFailed"`
-	DeleteFailed string `json:"deleteFailed"`
-	InUse        string `json:"inUse"`
+	CreateFailed string `json:"create_failed"`
+	UpdateFailed string `json:"update_failed"`
+	DeleteFailed string `json:"delete_failed"`
+	InUse        string `json:"in_use"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults using plan group

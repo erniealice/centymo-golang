@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	product "github.com/erniealice/centymo-golang/domain/product/product"
 	lineform "github.com/erniealice/centymo-golang/domain/product/line/form"
+	product "github.com/erniealice/centymo-golang/domain/product/product"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 

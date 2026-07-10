@@ -10,7 +10,7 @@ package expense_recognition_run
 // / expense-recognition-run everywhere except the user-visible VALUE
 // "Expense Run" (supplied by lyngua).
 type Labels struct {
-	AppLabel                 string            `json:"appLabel"`
+	AppLabel                 string            `json:"app_label"`
 	Labels                   EntityLabels      `json:"labels"`
 	Page                     PageLabels        `json:"page"`
 	Buttons                  ButtonLabels      `json:"buttons"`
@@ -21,13 +21,13 @@ type Labels struct {
 	List                     ListLabels        `json:"list"`
 	Detail                   DetailLabels      `json:"detail"`
 	Drawer                   DrawerLabels      `json:"drawer"`
-	StatusBadges             StatusBadgeLabels `json:"statusBadges"`
+	StatusBadges             StatusBadgeLabels `json:"status_badges"`
 	Actions                  ActionLabels      `json:"actions"`
-	ScopeKind                ScopeKindLabels   `json:"scopeKind"`
-	SourceKind               SourceKindLabels  `json:"sourceKind"`
-	AttemptOutcome           OutcomeLabels     `json:"attemptOutcome"`
+	ScopeKind                ScopeKindLabels   `json:"scope_kind"`
+	SourceKind               SourceKindLabels  `json:"source_kind"`
+	AttemptOutcome           OutcomeLabels     `json:"attempt_outcome"`
 	Outcome                  OutcomeLabels     `json:"outcome"`
-	LinkedAdvanceSuppression SuppressionLabels `json:"linkedAdvanceSuppression"`
+	LinkedAdvanceSuppression SuppressionLabels `json:"linked_advance_suppression"`
 	Empty                    EmptyLabels       `json:"empty"`
 	Toast                    ToastLabels       `json:"toast"`
 	Errors                   ErrorLabels       `json:"errors"`
@@ -35,33 +35,33 @@ type Labels struct {
 
 // EntityLabels holds entity-level labels.
 type EntityLabels struct {
-	NameSingular string `json:"nameSingular"`
-	NamePlural   string `json:"namePlural"`
-	ModuleTitle  string `json:"moduleTitle"`
+	NameSingular string `json:"name_singular"`
+	NamePlural   string `json:"name_plural"`
+	ModuleTitle  string `json:"module_title"`
 }
 
 // PageLabels holds top-level page titles.
 type PageLabels struct {
-	QueueTitle    string `json:"queueTitle"`
-	QueueSubtitle string `json:"queueSubtitle"`
-	ListTitle     string `json:"listTitle"`
-	ListSubtitle  string `json:"listSubtitle"`
-	DetailTitle   string `json:"detailTitle"`
+	QueueTitle    string `json:"queue_title"`
+	QueueSubtitle string `json:"queue_subtitle"`
+	ListTitle     string `json:"list_title"`
+	ListSubtitle  string `json:"list_subtitle"`
+	DetailTitle   string `json:"detail_title"`
 }
 
 // ButtonLabels holds button copy.
 type ButtonLabels struct {
 	Generate                 string `json:"generate"`
-	RunForSelected           string `json:"runForSelected"`
-	RunForAllMatching        string `json:"runForAllMatching"`
+	RunForSelected           string `json:"run_for_selected"`
+	RunForAllMatching        string `json:"run_for_all_matching"`
 	Cancel                   string `json:"cancel"`
-	ViewAttempts             string `json:"viewAttempts"`
-	ViewRun                  string `json:"viewRun"`
-	ViewSupplier             string `json:"viewSupplier"`
-	ViewSupplierSubscription string `json:"viewSupplierSubscription"`
-	ViewAdvanceDisbursement  string `json:"viewAdvanceDisbursement"`
-	ReRunFailed              string `json:"reRunFailed"`
-	RunRecognitions          string `json:"runRecognitions"`
+	ViewAttempts             string `json:"view_attempts"`
+	ViewRun                  string `json:"view_run"`
+	ViewSupplier             string `json:"view_supplier"`
+	ViewSupplierSubscription string `json:"view_supplier_subscription"`
+	ViewAdvanceDisbursement  string `json:"view_advance_disbursement"`
+	ReRunFailed              string `json:"re_run_failed"`
+	RunRecognitions          string `json:"run_recognitions"`
 }
 
 // SearchLabels holds search-input copy.
@@ -71,7 +71,7 @@ type SearchLabels struct {
 
 // FilterLabels holds filter chip labels.
 type FilterLabels struct {
-	AsOfDate string `json:"asOfDate"`
+	AsOfDate string `json:"as_of_date"`
 	Supplier string `json:"supplier"`
 	Status   string `json:"status"`
 	Pending  string `json:"pending"`
@@ -83,9 +83,9 @@ type FilterLabels struct {
 type ColumnLabels struct {
 	ID          string `json:"id"`
 	Scope       string `json:"scope"`
-	AsOfDate    string `json:"asOfDate"`
+	AsOfDate    string `json:"as_of_date"`
 	Initiator   string `json:"initiator"`
-	InitiatedAt string `json:"initiatedAt"`
+	InitiatedAt string `json:"initiated_at"`
 	Status      string `json:"status"`
 	Created     string `json:"created"`
 	Skipped     string `json:"skipped"`
@@ -98,7 +98,7 @@ type ColumnLabels struct {
 type QueueLabels struct {
 	Title         string            `json:"title"`
 	Subtitle      string            `json:"subtitle"`
-	AsOfDateLabel string            `json:"asOfDateLabel"`
+	AsOfDateLabel string            `json:"as_of_date_label"`
 	Columns       QueueColumnLabels `json:"columns"`
 	Empty         QueueEmptyLabels  `json:"empty"`
 	Bulk          QueueBulkLabels   `json:"bulk"`
@@ -107,8 +107,8 @@ type QueueLabels struct {
 type QueueColumnLabels struct {
 	Supplier             string `json:"supplier"`
 	Subscriptions        string `json:"subscriptions"`
-	AdvanceDisbursements string `json:"advanceDisbursements"`
-	PendingPeriods       string `json:"pendingPeriods"`
+	AdvanceDisbursements string `json:"advance_disbursements"`
+	PendingPeriods       string `json:"pending_periods"`
 	Total                string `json:"total"`
 	Currency             string `json:"currency"`
 	Actions              string `json:"actions"`
@@ -121,9 +121,9 @@ type QueueEmptyLabels struct {
 }
 
 type QueueBulkLabels struct {
-	RunSelected        string `json:"runSelected"`
-	RunAllMatching     string `json:"runAllMatching"`
-	CapExceededMessage string `json:"capExceededMessage"`
+	RunSelected        string `json:"run_selected"`
+	RunAllMatching     string `json:"run_all_matching"`
+	CapExceededMessage string `json:"cap_exceeded_message"`
 }
 
 // ListLabels holds copy for the run history list page
@@ -133,15 +133,15 @@ type ListLabels struct {
 	Subtitle string           `json:"subtitle"`
 	Columns  ListColumnLabels `json:"columns"`
 	Empty    ListEmptyLabels  `json:"empty"`
-	Filters  ListFilterLabels `json:"filterLabels"`
+	Filters  ListFilterLabels `json:"filter_labels"`
 }
 
 type ListColumnLabels struct {
 	ID          string `json:"id"`
 	Scope       string `json:"scope"`
-	AsOfDate    string `json:"asOfDate"`
+	AsOfDate    string `json:"as_of_date"`
 	Initiator   string `json:"initiator"`
-	InitiatedAt string `json:"initiatedAt"`
+	InitiatedAt string `json:"initiated_at"`
 	Status      string `json:"status"`
 	Created     string `json:"created"`
 	Skipped     string `json:"skipped"`
@@ -170,13 +170,13 @@ type ListFilterLabels struct {
 type DetailLabels struct {
 	Title                  string                `json:"title"`
 	Tabs                   DetailTabLabels       `json:"tabs"`
-	TabHints               DetailTabHintLabels   `json:"tabHints"`
+	TabHints               DetailTabHintLabels   `json:"tab_hints"`
 	Summary                SummaryLabels         `json:"summary"`
 	Selections             SelectionsTabLabels   `json:"selections"`
 	Results                ResultsTabLabels      `json:"results"`
 	Bills                  BillsTabLabels        `json:"bills"`
 	Recognitions           RecognitionsTabLabels `json:"recognitions"`
-	AuditHistoryComingSoon string                `json:"auditHistoryComingSoon"`
+	AuditHistoryComingSoon string                `json:"audit_history_coming_soon"`
 }
 
 type DetailTabLabels struct {
@@ -185,67 +185,67 @@ type DetailTabLabels struct {
 	Results      string `json:"results"`
 	Bills        string `json:"bills"`
 	Recognitions string `json:"recognitions"`
-	AuditHistory string `json:"auditHistory"`
+	AuditHistory string `json:"audit_history"`
 	Attachments  string `json:"attachments"`
 }
 
 type DetailTabHintLabels struct {
-	BillsHint        string `json:"billsHint"`
-	RecognitionsHint string `json:"recognitionsHint"`
+	BillsHint        string `json:"bills_hint"`
+	RecognitionsHint string `json:"recognitions_hint"`
 }
 
 type SummaryLabels struct {
 	Scope                   string `json:"scope"`
-	AsOfDate                string `json:"asOfDate"`
+	AsOfDate                string `json:"as_of_date"`
 	Initiator               string `json:"initiator"`
-	InitiatedAt             string `json:"initiatedAt"`
-	CompletedAt             string `json:"completedAt"`
+	InitiatedAt             string `json:"initiated_at"`
+	CompletedAt             string `json:"completed_at"`
 	Status                  string `json:"status"`
 	Totals                  string `json:"totals"`
-	PossiblyInterruptedNote string `json:"possiblyInterruptedNote"`
+	PossiblyInterruptedNote string `json:"possibly_interrupted_note"`
 }
 
 type SelectionsTabLabels struct {
-	ColSource               string `json:"colSource"`
-	ColSupplierSubscription string `json:"colSupplierSubscription"`
-	ColAdvanceDisbursement  string `json:"colAdvanceDisbursement"`
-	ColPeriodStart          string `json:"colPeriodStart"`
-	ColPeriodEnd            string `json:"colPeriodEnd"`
-	ColPeriodMarker         string `json:"colPeriodMarker"`
-	EmptyTitle              string `json:"emptyTitle"`
-	EmptyMessage            string `json:"emptyMessage"`
+	ColSource               string `json:"col_source"`
+	ColSupplierSubscription string `json:"col_supplier_subscription"`
+	ColAdvanceDisbursement  string `json:"col_advance_disbursement"`
+	ColPeriodStart          string `json:"col_period_start"`
+	ColPeriodEnd            string `json:"col_period_end"`
+	ColPeriodMarker         string `json:"col_period_marker"`
+	EmptyTitle              string `json:"empty_title"`
+	EmptyMessage            string `json:"empty_message"`
 }
 
 type ResultsTabLabels struct {
-	ColSource               string `json:"colSource"`
-	ColSupplierSubscription string `json:"colSupplierSubscription"`
-	ColAdvanceDisbursement  string `json:"colAdvanceDisbursement"`
-	ColPeriodStart          string `json:"colPeriodStart"`
-	ColPeriodEnd            string `json:"colPeriodEnd"`
-	ColOutcome              string `json:"colOutcome"`
-	ColErrorCode            string `json:"colErrorCode"`
-	EmptyTitle              string `json:"emptyTitle"`
-	EmptyMessage            string `json:"emptyMessage"`
+	ColSource               string `json:"col_source"`
+	ColSupplierSubscription string `json:"col_supplier_subscription"`
+	ColAdvanceDisbursement  string `json:"col_advance_disbursement"`
+	ColPeriodStart          string `json:"col_period_start"`
+	ColPeriodEnd            string `json:"col_period_end"`
+	ColOutcome              string `json:"col_outcome"`
+	ColErrorCode            string `json:"col_error_code"`
+	EmptyTitle              string `json:"empty_title"`
+	EmptyMessage            string `json:"empty_message"`
 }
 
 type BillsTabLabels struct {
-	ColReference string `json:"colReference"`
-	ColDate      string `json:"colDate"`
-	ColAmount    string `json:"colAmount"`
-	ColStatus    string `json:"colStatus"`
-	EmptyTitle   string `json:"emptyTitle"`
-	EmptyMessage string `json:"emptyMessage"`
+	ColReference string `json:"col_reference"`
+	ColDate      string `json:"col_date"`
+	ColAmount    string `json:"col_amount"`
+	ColStatus    string `json:"col_status"`
+	EmptyTitle   string `json:"empty_title"`
+	EmptyMessage string `json:"empty_message"`
 	Hint         string `json:"hint"`
 }
 
 type RecognitionsTabLabels struct {
-	ColReference  string `json:"colReference"`
-	ColDate       string `json:"colDate"`
-	ColAmount     string `json:"colAmount"`
-	ColSourceKind string `json:"colSourceKind"`
-	ColStatus     string `json:"colStatus"`
-	EmptyTitle    string `json:"emptyTitle"`
-	EmptyMessage  string `json:"emptyMessage"`
+	ColReference  string `json:"col_reference"`
+	ColDate       string `json:"col_date"`
+	ColAmount     string `json:"col_amount"`
+	ColSourceKind string `json:"col_source_kind"`
+	ColStatus     string `json:"col_status"`
+	EmptyTitle    string `json:"empty_title"`
+	EmptyMessage  string `json:"empty_message"`
 	Hint          string `json:"hint"`
 }
 
@@ -260,51 +260,51 @@ type DrawerLabels struct {
 
 type SupplierDrawerLabels struct {
 	Title                           string `json:"title"`
-	SubtitleTemplate                string `json:"subtitleTemplate"`
-	AsOfDateLabel                   string `json:"asOfDateLabel"`
-	AsOfDateHint                    string `json:"asOfDateHint"`
-	ColumnSource                    string `json:"columnSource"`
-	ColumnPeriod                    string `json:"columnPeriod"`
-	ColumnAmount                    string `json:"columnAmount"`
-	ColumnLines                     string `json:"columnLines"`
-	ColumnRemaining                 string `json:"columnRemaining"`
-	GroupSubscriptionCycle          string `json:"groupSubscriptionCycle"`
-	GroupAdvanceDisbursementTranche string `json:"groupAdvanceDisbursementTranche"`
-	GroupNoPending                  string `json:"groupNoPending"`
-	GroupCurrencyMismatch           string `json:"groupCurrencyMismatch"`
-	EmptyTitle                      string `json:"emptyTitle"`
-	EmptyMessage                    string `json:"emptyMessage"`
-	GenerateButton                  string `json:"generateButton"`
-	GenerateButtonCount             string `json:"generateButtonCount"`
-	CancelButton                    string `json:"cancelButton"`
-	ViewRunLink                     string `json:"viewRunLink"`
+	SubtitleTemplate                string `json:"subtitle_template"`
+	AsOfDateLabel                   string `json:"as_of_date_label"`
+	AsOfDateHint                    string `json:"as_of_date_hint"`
+	ColumnSource                    string `json:"column_source"`
+	ColumnPeriod                    string `json:"column_period"`
+	ColumnAmount                    string `json:"column_amount"`
+	ColumnLines                     string `json:"column_lines"`
+	ColumnRemaining                 string `json:"column_remaining"`
+	GroupSubscriptionCycle          string `json:"group_subscription_cycle"`
+	GroupAdvanceDisbursementTranche string `json:"group_advance_disbursement_tranche"`
+	GroupNoPending                  string `json:"group_no_pending"`
+	GroupCurrencyMismatch           string `json:"group_currency_mismatch"`
+	EmptyTitle                      string `json:"empty_title"`
+	EmptyMessage                    string `json:"empty_message"`
+	GenerateButton                  string `json:"generate_button"`
+	GenerateButtonCount             string `json:"generate_button_count"`
+	CancelButton                    string `json:"cancel_button"`
+	ViewRunLink                     string `json:"view_run_link"`
 }
 
 type SubscriptionDrawerLabels struct {
 	Title                        string `json:"title"`
-	SubtitleTemplate             string `json:"subtitleTemplate"`
-	AsOfDateLabel                string `json:"asOfDateLabel"`
-	AsOfDateHint                 string `json:"asOfDateHint"`
-	ColumnPeriod                 string `json:"columnPeriod"`
-	ColumnAmount                 string `json:"columnAmount"`
-	ColumnLines                  string `json:"columnLines"`
-	EmptyTitle                   string `json:"emptyTitle"`
-	EmptyMessage                 string `json:"emptyMessage"`
-	SuppressedByAdvanceTitle     string `json:"suppressedByAdvanceTitle"`
-	SuppressedByAdvanceExplainer string `json:"suppressedByAdvanceExplainer"`
-	ViewAdvanceLink              string `json:"viewAdvanceLink"`
-	GenerateButton               string `json:"generateButton"`
-	GenerateButtonCount          string `json:"generateButtonCount"`
-	CancelButton                 string `json:"cancelButton"`
-	ViewRunLink                  string `json:"viewRunLink"`
+	SubtitleTemplate             string `json:"subtitle_template"`
+	AsOfDateLabel                string `json:"as_of_date_label"`
+	AsOfDateHint                 string `json:"as_of_date_hint"`
+	ColumnPeriod                 string `json:"column_period"`
+	ColumnAmount                 string `json:"column_amount"`
+	ColumnLines                  string `json:"column_lines"`
+	EmptyTitle                   string `json:"empty_title"`
+	EmptyMessage                 string `json:"empty_message"`
+	SuppressedByAdvanceTitle     string `json:"suppressed_by_advance_title"`
+	SuppressedByAdvanceExplainer string `json:"suppressed_by_advance_explainer"`
+	ViewAdvanceLink              string `json:"view_advance_link"`
+	GenerateButton               string `json:"generate_button"`
+	GenerateButtonCount          string `json:"generate_button_count"`
+	CancelButton                 string `json:"cancel_button"`
+	ViewRunLink                  string `json:"view_run_link"`
 }
 
 type ConfirmationLabels struct {
 	Title          string `json:"title"`
-	BodyTemplate   string `json:"bodyTemplate"`
-	NoteIdempotent string `json:"noteIdempotent"`
-	ConfirmButton  string `json:"confirmButton"`
-	CancelButton   string `json:"cancelButton"`
+	BodyTemplate   string `json:"body_template"`
+	NoteIdempotent string `json:"note_idempotent"`
+	ConfirmButton  string `json:"confirm_button"`
+	CancelButton   string `json:"cancel_button"`
 }
 
 // StatusBadgeLabels holds badge copy for each run status.
@@ -312,21 +312,21 @@ type StatusBadgeLabels struct {
 	Pending             string `json:"pending"`
 	Complete            string `json:"complete"`
 	Failed              string `json:"failed"`
-	PossiblyInterrupted string `json:"possiblyInterrupted"`
+	PossiblyInterrupted string `json:"possibly_interrupted"`
 }
 
 // ActionLabels holds labels for interactive actions on
 // run rows / pages / drawer triggers.
 type ActionLabels struct {
 	Run                      string `json:"run"`
-	RunRecognitions          string `json:"runRecognitions"`
-	ReRunFailed              string `json:"reRunFailed"`
-	ReRunFailedComingSoon    string `json:"reRunFailedComingSoon"`
-	ViewRun                  string `json:"viewRun"`
-	ViewSupplier             string `json:"viewSupplier"`
-	ViewSupplierSubscription string `json:"viewSupplierSubscription"`
-	ViewAdvanceDisbursement  string `json:"viewAdvanceDisbursement"`
-	RunAriaLabel             string `json:"runAriaLabel"`
+	RunRecognitions          string `json:"run_recognitions"`
+	ReRunFailed              string `json:"re_run_failed"`
+	ReRunFailedComingSoon    string `json:"re_run_failed_coming_soon"`
+	ViewRun                  string `json:"view_run"`
+	ViewSupplier             string `json:"view_supplier"`
+	ViewSupplierSubscription string `json:"view_supplier_subscription"`
+	ViewAdvanceDisbursement  string `json:"view_advance_disbursement"`
+	RunAriaLabel             string `json:"run_aria_label"`
 }
 
 // ScopeKindLabels holds display labels for each Run
@@ -342,8 +342,8 @@ type ScopeKindLabels struct {
 // candidate source kind on a run attempt: subscription cycle vs advance
 // disbursement tranche.
 type SourceKindLabels struct {
-	SubscriptionCycle   string `json:"subscriptionCycle"`
-	AdvanceDisbursement string `json:"advanceDisbursement"`
+	SubscriptionCycle   string `json:"subscription_cycle"`
+	AdvanceDisbursement string `json:"advance_disbursement"`
 }
 
 // OutcomeLabels holds display labels for per-attempt
@@ -359,57 +359,57 @@ type OutcomeLabels struct {
 // Surface C when a SupplierSubscription cycle is covered by a TIME_BASED
 // advance TreasuryDisbursement (Plan B decision A).
 type SuppressionLabels struct {
-	BannerTitle     string `json:"bannerTitle"`
-	BannerMessage   string `json:"bannerMessage"`
-	RowChip         string `json:"rowChip"`
-	RowExplainer    string `json:"rowExplainer"`
-	ViewAdvanceLink string `json:"viewAdvanceLink"`
-	AriaLabel       string `json:"ariaLabel"`
+	BannerTitle     string `json:"banner_title"`
+	BannerMessage   string `json:"banner_message"`
+	RowChip         string `json:"row_chip"`
+	RowExplainer    string `json:"row_explainer"`
+	ViewAdvanceLink string `json:"view_advance_link"`
+	AriaLabel       string `json:"aria_label"`
 }
 
 // EmptyLabels holds empty-state copy for every surface.
 type EmptyLabels struct {
-	QueueTitle          string `json:"queueTitle"`
-	QueueMessage        string `json:"queueMessage"`
-	ListTitle           string `json:"listTitle"`
-	ListMessage         string `json:"listMessage"`
-	SelectionsTitle     string `json:"selectionsTitle"`
-	SelectionsMessage   string `json:"selectionsMessage"`
-	ResultsTitle        string `json:"resultsTitle"`
-	ResultsMessage      string `json:"resultsMessage"`
-	BillsTitle          string `json:"billsTitle"`
-	BillsMessage        string `json:"billsMessage"`
-	RecognitionsTitle   string `json:"recognitionsTitle"`
-	RecognitionsMessage string `json:"recognitionsMessage"`
+	QueueTitle          string `json:"queue_title"`
+	QueueMessage        string `json:"queue_message"`
+	ListTitle           string `json:"list_title"`
+	ListMessage         string `json:"list_message"`
+	SelectionsTitle     string `json:"selections_title"`
+	SelectionsMessage   string `json:"selections_message"`
+	ResultsTitle        string `json:"results_title"`
+	ResultsMessage      string `json:"results_message"`
+	BillsTitle          string `json:"bills_title"`
+	BillsMessage        string `json:"bills_message"`
+	RecognitionsTitle   string `json:"recognitions_title"`
+	RecognitionsMessage string `json:"recognitions_message"`
 }
 
 // ToastLabels holds toast / notification copy.
 type ToastLabels struct {
 	Success              string `json:"success"`
-	BatchSuccess         string `json:"batchSuccess"`
-	BatchSuccessMultiRun string `json:"batchSuccessMultiRun"`
-	ViewRunLink          string `json:"viewRunLink"`
-	GenerateFailed       string `json:"generateFailed"`
-	PermissionDenied     string `json:"permissionDenied"`
+	BatchSuccess         string `json:"batch_success"`
+	BatchSuccessMultiRun string `json:"batch_success_multi_run"`
+	ViewRunLink          string `json:"view_run_link"`
+	GenerateFailed       string `json:"generate_failed"`
+	PermissionDenied     string `json:"permission_denied"`
 }
 
 // ErrorLabels holds error-message strings for the module.
 type ErrorLabels struct {
-	CapExceeded                  string `json:"capExceeded"`
-	PermissionDenied             string `json:"permissionDenied"`
-	UseCaseUnavailable           string `json:"useCaseUnavailable"`
-	InvalidSelection             string `json:"invalidSelection"`
-	IdempotencyConflict          string `json:"idempotencyConflict"`
-	SupplierMismatch             string `json:"supplierMismatch"`
-	WorkspaceMismatch            string `json:"workspaceMismatch"`
-	TamperedPeriod               string `json:"tamperedPeriod"`
-	RunAllMatchingNotImplemented string `json:"runAllMatchingNotImplemented"`
-	CrossWorkspace               string `json:"crossWorkspace"`
-	MissingCostPlan              string `json:"missingCostPlan"`
-	NoPendingPeriods             string `json:"noPendingPeriods"`
-	CurrencyMismatch             string `json:"currencyMismatch"`
-	GenerationFailed             string `json:"generationFailed"`
-	SuppressedByAdvance          string `json:"suppressedByAdvance"`
+	CapExceeded                  string `json:"cap_exceeded"`
+	PermissionDenied             string `json:"permission_denied"`
+	UseCaseUnavailable           string `json:"use_case_unavailable"`
+	InvalidSelection             string `json:"invalid_selection"`
+	IdempotencyConflict          string `json:"idempotency_conflict"`
+	SupplierMismatch             string `json:"supplier_mismatch"`
+	WorkspaceMismatch            string `json:"workspace_mismatch"`
+	TamperedPeriod               string `json:"tampered_period"`
+	RunAllMatchingNotImplemented string `json:"run_all_matching_not_implemented"`
+	CrossWorkspace               string `json:"cross_workspace"`
+	MissingCostPlan              string `json:"missing_cost_plan"`
+	NoPendingPeriods             string `json:"no_pending_periods"`
+	CurrencyMismatch             string `json:"currency_mismatch"`
+	GenerationFailed             string `json:"generation_failed"`
+	SuppressedByAdvance          string `json:"suppressed_by_advance"`
 }
 
 // DefaultLabels returns Labels with

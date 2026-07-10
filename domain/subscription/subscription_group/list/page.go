@@ -182,8 +182,11 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 func subscriptionGroupColumns(l subscription_group.Labels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name},
-		{Key: "kind", Label: l.Columns.Kind, WidthClass: "col-2xl"},
 		{Key: "capacity", Label: l.Columns.Capacity, NoSort: true, NoFilter: true, WidthClass: "col-2xl"},
+		// price_schedule is a resolved name from a second entity, not an indexable
+		// field on the list request — hence NoSort/NoFilter (see ui-detail-tabs /
+		// code-vertical-slices lookup-column pattern).
+		{Key: "price_schedule", Label: l.Columns.PriceSchedule, NoSort: true, NoFilter: true, WidthClass: "col-2xl"},
 	}
 }
 
@@ -197,18 +200,22 @@ func buildTableRows(groups []*subscriptiongrouppb.SubscriptionGroup, status stri
 
 		id := sg.GetId()
 		name := sg.GetName()
-		kind := sg.GetKind()
-		if kind == "" {
-			kind = l.Detail.NoKind
-		}
 		capacity := formatCapacity(sg, l)
+		scheduleName := l.Detail.NoSchedule
+		if sid := sg.GetPriceScheduleId(); sid != "" {
+			if n := sg.GetPriceSchedule().GetName(); n != "" {
+				scheduleName = n
+			} else {
+				scheduleName = sid
+			}
+		}
 
 		isInUse := inUseIDs[id]
 
 		cells := []types.TableCell{
 			{Type: "text", Value: name},
-			{Type: "text", Value: kind},
 			{Type: "text", Value: capacity},
+			{Type: "text", Value: scheduleName},
 		}
 
 		rows = append(rows, types.TableRow{

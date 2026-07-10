@@ -15,6 +15,12 @@
     <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
         {{if eq .ActiveTab "info"}}
             {{template "subscription-group-tab-info" .}}
+        {{else if eq .ActiveTab "subscriptions"}}
+            {{template "subscription-group-tab-subscriptions" .}}
+        {{else if eq .ActiveTab "attachments"}}
+            {{template "attachment-tab" .}}
+        {{else if eq .ActiveTab "audit"}}
+            {{template "audit-history-tab" .}}
         {{end}}
     </div>
 </div>
@@ -75,5 +81,18 @@
             {{.Labels.Buttons.Edit}}
         </a>
     </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Subscriptions (the section roster)
+     ============================================= */}}
+{{define "subscription-group-tab-subscriptions"}}
+<div class="tab-scroll tab-scroll--table" data-testid="subscription-group-subscriptions-tab">
+    {{if .Subscriptions}}
+        {{template "table-card" .Subscriptions}}
+    {{else}}
+        <p>{{.Labels.Empty.Message}}</p>
+    {{end}}
 </div>
 {{end}}

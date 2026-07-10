@@ -120,8 +120,8 @@ type AdvanceRecognizeMilestoneOutput struct {
 // audit/import UIs can still display historical rows if any ever leak.
 type AdvanceKindLabels struct {
 	None        string `json:"none"`
-	TimeBased   string `json:"timeBased"`
-	BurnDown    string `json:"burnDown"`
+	TimeBased   string `json:"time_based"`
+	BurnDown    string `json:"burn_down"`
 	Milestone   string `json:"milestone"`
 	Unscheduled string `json:"unscheduled"`
 }
@@ -132,11 +132,11 @@ type AdvanceKindLabels struct {
 // states.
 type AdvanceStatusLabels struct {
 	Active           string `json:"active"`
-	FullyRecognized  string `json:"fullyRecognized"`
-	FullyAmortized   string `json:"fullyAmortized"`
-	FullyDrawn       string `json:"fullyDrawn"`
+	FullyRecognized  string `json:"fully_recognized"`
+	FullyAmortized   string `json:"fully_amortized"`
+	FullyDrawn       string `json:"fully_drawn"`
 	Settled          string `json:"settled"`
-	PartiallySettled string `json:"partiallySettled"`
+	PartiallySettled string `json:"partially_settled"`
 	Refunded         string `json:"refunded"`
 	Cancelled        string `json:"cancelled"`
 	Expired          string `json:"expired"`
@@ -146,9 +146,9 @@ type AdvanceStatusLabels struct {
 // values. UNSPECIFIED is normalized to FULL_TRANCHE at the view layer and
 // therefore never rendered (see Decision 13 in the plan).
 type AdvanceProrationPolicyLabels struct {
-	DayProrated     string `json:"dayProrated"`
-	FullTranche     string `json:"fullTranche"`
-	NextPeriodStart string `json:"nextPeriodStart"`
+	DayProrated     string `json:"day_prorated"`
+	FullTranche     string `json:"full_tranche"`
+	NextPeriodStart string `json:"next_period_start"`
 }
 
 // AdvanceEnumLabels bundles the three enum label structs so a view can
@@ -158,7 +158,7 @@ type AdvanceProrationPolicyLabels struct {
 type AdvanceEnumLabels struct {
 	Kind            AdvanceKindLabels            `json:"kind"`
 	Status          AdvanceStatusLabels          `json:"status"`
-	ProrationPolicy AdvanceProrationPolicyLabels `json:"prorationPolicy"`
+	ProrationPolicy AdvanceProrationPolicyLabels `json:"proration_policy"`
 }
 
 // AdvanceKindRootLabels matches the JSON root in advance_kind.json
@@ -178,14 +178,14 @@ type TreasuryAdvanceActionLabels struct {
 	Settle                  string `json:"settle"`
 	Refund                  string `json:"refund"`
 	Cancel                  string `json:"cancel"`
-	SettleConfirm           string `json:"settleConfirm"`
-	RefundConfirm           string `json:"refundConfirm"`
-	CancelConfirm           string `json:"cancelConfirm"`
-	ReasonField             string `json:"reasonField"`
-	AmountField             string `json:"amountField"`
-	TargetAccountField      string `json:"targetAccountField"`
-	RefundMethodField       string `json:"refundMethodField"`
-	DestinationAccountField string `json:"destinationAccountField"`
+	SettleConfirm           string `json:"settle_confirm"`
+	RefundConfirm           string `json:"refund_confirm"`
+	CancelConfirm           string `json:"cancel_confirm"`
+	ReasonField             string `json:"reason_field"`
+	AmountField             string `json:"amount_field"`
+	TargetAccountField      string `json:"target_account_field"`
+	RefundMethodField       string `json:"refund_method_field"`
+	DestinationAccountField string `json:"destination_account_field"`
 }
 
 // TreasuryAdvanceLabels holds the strings rendered inside the "Advance
@@ -196,36 +196,36 @@ type TreasuryAdvanceActionLabels struct {
 // DefaultTreasuryCollectionAdvanceLabels / DefaultTreasuryDisbursementAdvanceLabels.
 type TreasuryAdvanceLabels struct {
 	Tab                  string `json:"tab"`
-	DashboardCard        string `json:"dashboardCard"`
-	TotalLabel           string `json:"totalLabel"`
-	RemainingLabel       string `json:"remainingLabel"`
-	RecognizedLabel      string `json:"recognizedLabel"`
-	StartDate            string `json:"startDate"`
-	EndDate              string `json:"endDate"`
-	PeriodCount          string `json:"periodCount"`
-	PeriodUnit           string `json:"periodUnit"`
+	DashboardCard        string `json:"dashboard_card"`
+	TotalLabel           string `json:"total_label"`
+	RemainingLabel       string `json:"remaining_label"`
+	RecognizedLabel      string `json:"recognized_label"`
+	StartDate            string `json:"start_date"`
+	EndDate              string `json:"end_date"`
+	PeriodCount          string `json:"period_count"`
+	PeriodUnit           string `json:"period_unit"`
 	Tranches             string `json:"tranches"`
-	BalanceAccount       string `json:"balanceAccount"`
-	TargetAccount        string `json:"targetAccount"`
-	KindField            string `json:"kindField"`
-	StatusField          string `json:"statusField"`
-	ProrationPolicyField string `json:"prorationPolicyField"`
+	BalanceAccount       string `json:"balance_account"`
+	TargetAccount        string `json:"target_account"`
+	KindField            string `json:"kind_field"`
+	StatusField          string `json:"status_field"`
+	ProrationPolicyField string `json:"proration_policy_field"`
 	// 20260517 — short metadata-grid labels (vs the longer "Advance kind" /
 	// "Advance status" form labels above) + linked-milestones table + empty
 	// state + actions section heading.
-	KindShort                  string                      `json:"kindShort"`
-	StatusShort                string                      `json:"statusShort"`
-	ActionsSection             string                      `json:"actionsSection"`
-	LinkedMilestones           string                      `json:"linkedMilestones"`
-	TrancheColumn              string                      `json:"trancheColumn"`
-	CurrencyColumn             string                      `json:"currencyColumn"`
-	BillingEventColumn         string                      `json:"billingEventColumn"`
-	SupplierBillingEventColumn string                      `json:"supplierBillingEventColumn"`
-	RevenueColumn              string                      `json:"revenueColumn"`
-	ExpenseRecognitionColumn   string                      `json:"expenseRecognitionColumn"`
-	RecognizeButton            string                      `json:"recognizeButton"`
-	EmptyTranchesTitle         string                      `json:"emptyTranchesTitle"`
-	EmptyTranchesDesc          string                      `json:"emptyTranchesDesc"`
+	KindShort                  string                      `json:"kind_short"`
+	StatusShort                string                      `json:"status_short"`
+	ActionsSection             string                      `json:"actions_section"`
+	LinkedMilestones           string                      `json:"linked_milestones"`
+	TrancheColumn              string                      `json:"tranche_column"`
+	CurrencyColumn             string                      `json:"currency_column"`
+	BillingEventColumn         string                      `json:"billing_event_column"`
+	SupplierBillingEventColumn string                      `json:"supplier_billing_event_column"`
+	RevenueColumn              string                      `json:"revenue_column"`
+	ExpenseRecognitionColumn   string                      `json:"expense_recognition_column"`
+	RecognizeButton            string                      `json:"recognize_button"`
+	EmptyTranchesTitle         string                      `json:"empty_tranches_title"`
+	EmptyTranchesDesc          string                      `json:"empty_tranches_desc"`
 	Actions                    TreasuryAdvanceActionLabels `json:"actions"`
 }
 

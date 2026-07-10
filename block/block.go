@@ -300,7 +300,7 @@ func Block(opts ...BlockOption) consumerapp.AppOption {
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "product_price_plan.json", "product_price_plan", &productPricePlanLabels)
 
 		priceScheduleLabels := subscriptiondom.DefaultPriceScheduleLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_schedule.json", "priceSchedule", &priceScheduleLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "price_schedule.json", "price_schedule", &priceScheduleLabels)
 
 		var priceListLabels productdom.PriceListLabels
 		if err := translations.LoadPath("en", ctx.BusinessType, "pricelist.json", "pricelist", &priceListLabels); err != nil {
@@ -339,12 +339,12 @@ func Block(opts ...BlockOption) consumerapp.AppOption {
 		supplierContractRoutes := expendituredomain.DefaultSupplierContractRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_contract", &supplierContractRoutes)
 		supplierContractLabels := expendituredomain.DefaultSupplierContractLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_contract.json", "supplierContract", &supplierContractLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_contract.json", "supplier_contract", &supplierContractLabels)
 
 		procurementRequestRoutes := expendituredomain.DefaultProcurementRequestRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "procurement_request", &procurementRequestRoutes)
 		procurementRequestLabels := expendituredomain.DefaultProcurementRequestLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "procurement_request.json", "procurementRequest", &procurementRequestLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "procurement_request.json", "procurement_request", &procurementRequestLabels)
 
 		procurementRoutes := procurementdomain.DefaultProcurementRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "procurement", &procurementRoutes)
@@ -358,29 +358,29 @@ func Block(opts ...BlockOption) consumerapp.AppOption {
 		supplierContractPriceScheduleRoutes := expendituredomain.DefaultSupplierContractPriceScheduleRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_contract_price_schedule", &supplierContractPriceScheduleRoutes)
 		supplierContractPriceScheduleLabels := expendituredomain.DefaultSupplierContractPriceScheduleLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_contract_price_schedule.json", "supplierContractPriceSchedule", &supplierContractPriceScheduleLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_contract_price_schedule.json", "supplier_contract_price_schedule", &supplierContractPriceScheduleLabels)
 
 		expenseRecognitionRoutes := expendituredomain.DefaultExpenseRecognitionRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "expense_recognition", &expenseRecognitionRoutes)
 		expenseRecognitionLabels := expendituredomain.DefaultExpenseRecognitionLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expense_recognition.json", "expenseRecognition", &expenseRecognitionLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expense_recognition.json", "expense_recognition", &expenseRecognitionLabels)
 
 		accruedExpenseRoutes := expendituredomain.DefaultAccruedExpenseRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "accrued_expense", &accruedExpenseRoutes)
 		accruedExpenseLabels := expendituredomain.DefaultAccruedExpenseLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "accrued_expense.json", "accruedExpense", &accruedExpenseLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "accrued_expense.json", "accrued_expense", &accruedExpenseLabels)
 
 		// Phase 4 — revenue-run (Surface D).
 		revenueRunRoutes := revenuedomain.DefaultRevenueRunRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "revenue_run", &revenueRunRoutes)
 		revenueRunLabels := revenuedomain.DefaultRevenueRunLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "revenue.json", "revenueRun", &revenueRunLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "revenue.json", "revenue_run", &revenueRunLabels)
 
 		// 20260517-expense-run Plan A Phase 4 — Expense Recognition Run (Surfaces B + D).
 		expenseRecognitionRunRoutes := expendituredomain.DefaultExpenseRecognitionRunRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "expense_recognition_run", &expenseRecognitionRunRoutes)
 		expenseRecognitionRunLabels := expendituredomain.DefaultExpenseRecognitionRunLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expense_recognition_run.json", "expenseRecognitionRun", &expenseRecognitionRunLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "expense_recognition_run.json", "expense_recognition_run", &expenseRecognitionRunLabels)
 
 		// 20260517-advance-cash-events Plan B Phase 3 — Advances Dashboard.
 		// Routes flow from the new TreasuryAdvancesRoutes block; labels load
@@ -390,38 +390,38 @@ func Block(opts ...BlockOption) consumerapp.AppOption {
 		advancesDashboardRoutes := treasurydomain.DefaultTreasuryAdvancesRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "treasury_advances", &advancesDashboardRoutes)
 		advancesDashboardLabels := treasurydomain.DefaultAdvancesDashboardLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advances_dashboard.json", "advancesDashboard", &advancesDashboardLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advances_dashboard.json", "advances_dashboard", &advancesDashboardLabels)
 		advanceEnumLabels := treasurydomain.DefaultAdvanceEnumLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advance_kind.json", "advanceKind.labels", &advanceEnumLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "advance_kind.json", "advance_kind.labels", &advanceEnumLabels)
 
 		// P3 (20260506-supplier-subscriptions) — Routes + Labels for the six new procurement modules.
 		costScheduleRoutes := procurementdomain.DefaultCostScheduleRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "cost_schedule", &costScheduleRoutes)
 		costScheduleLabels := procurementdomain.DefaultCostScheduleLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "cost_schedule.json", "costSchedule", &costScheduleLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "cost_schedule.json", "cost_schedule", &costScheduleLabels)
 
 		supplierPlanRoutes := procurementdomain.DefaultSupplierPlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_plan", &supplierPlanRoutes)
 		supplierPlanLabels := procurementdomain.DefaultSupplierPlanLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_plan.json", "supplierPlan", &supplierPlanLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_plan.json", "supplier_plan", &supplierPlanLabels)
 
 		costPlanRoutes := procurementdomain.DefaultCostPlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "cost_plan", &costPlanRoutes)
 		costPlanLabels := procurementdomain.DefaultCostPlanLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "cost_plan.json", "costPlan", &costPlanLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "cost_plan.json", "cost_plan", &costPlanLabels)
 
 		supplierProductPlanRoutes := procurementdomain.DefaultSupplierProductPlanRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_product_plan", &supplierProductPlanRoutes)
 		supplierProductPlanLabels := procurementdomain.DefaultSupplierProductPlanLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_product_plan.json", "supplierProductPlan", &supplierProductPlanLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_product_plan.json", "supplier_product_plan", &supplierProductPlanLabels)
 
 		supplierProductCostPlanLabels := procurementdomain.DefaultSupplierProductCostPlanLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_product_cost_plan.json", "supplierProductCostPlan", &supplierProductCostPlanLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_product_cost_plan.json", "supplier_product_cost_plan", &supplierProductCostPlanLabels)
 
 		supplierSubscriptionRoutes := procurementdomain.DefaultSupplierSubscriptionRoutes()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "route.json", "supplier_subscription", &supplierSubscriptionRoutes)
 		supplierSubscriptionLabels := procurementdomain.DefaultSupplierSubscriptionLabels()
-		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_subscription.json", "supplierSubscription", &supplierSubscriptionLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "supplier_subscription.json", "supplier_subscription", &supplierSubscriptionLabels)
 
 		// =====================================================================
 		// Inventory module
