@@ -91,9 +91,11 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels,
 
         {{/* 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Plan.job_template_id
              assignment. Only rendered when JobTemplateOptions is populated
-             (deps.ListJobTemplates wired). Empty value saves NULL = advisory
-             plan, spawn use case skips silently. */}}
-        {{if .JobTemplateOptions}}
+             (deps.ListJobTemplates wired) AND the tier labels the field — an
+             empty JobTemplate label is the tier opt-out (education levels are
+             guidance-only; professional's Engagement Template stays). Empty
+             value saves NULL = advisory plan, spawn use case skips silently. */}}
+        {{if and .JobTemplateOptions .Labels.JobTemplate}}
         <div class="form-row single" id="plan-job-template-row">
             <div class="form-group">
                 <label class="form-label" for="plan-job-template-select">

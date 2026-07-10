@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	sib_subscription_price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -75,6 +76,32 @@ type TableDeps struct {
 // sid is the schedule/parent ID (URL param "id") and ppid is the price_plan ID
 // (URL param "ppid"). Both are provided by the caller since they are URL-template
 // inputs owned by the parent.
+// productNamesAllStatuses builds a product id → name map covering BOTH active
+// and inactive products. It labels existing ProductPricePlan rows, so it must be
+// status-agnostic — an inactive product referenced by a live row would otherwise
+// render its raw UUID. See shared.InactiveFilter.
+func productNamesAllStatuses(ctx context.Context, list func(context.Context, *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)) map[string]string {
+	names := map[string]string{}
+	if list == nil {
+		return names
+	}
+	for _, req := range []*productpb.ListProductsRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := list(ctx, req)
+		if err != nil {
+			continue
+		}
+		for _, p := range resp.GetData() {
+			if p != nil {
+				names[p.GetId()] = p.GetName()
+			}
+		}
+	}
+	return names
+}
+
 func BuildTable(ctx context.Context, deps *TableDeps, parent ParentContext) *types.TableConfig {
 	perms := view.GetUserPermissions(ctx)
 	showTreatment := parent.BillingKind != "BILLING_KIND_ONE_TIME"
@@ -98,17 +125,10 @@ func BuildTable(ctx context.Context, deps *TableDeps, parent ParentContext) *typ
 	}
 	columns = append(columns, types.TableColumn{Key: "effective", Label: deps.ColumnEffective, NoSort: true, WidthClass: "col-4xl"})
 
-	productNames := map[string]string{}
-	if deps.ListProducts != nil {
-		prodResp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
-		if err == nil {
-			for _, p := range prodResp.GetData() {
-				if p != nil {
-					productNames[p.GetId()] = p.GetName()
-				}
-			}
-		}
-	}
+	// Product id → name map for display. Status-agnostic: an existing
+	// ProductPricePlan row may reference an inactive product, which the
+	// active-only List default would drop (leaving the raw UUID on screen).
+	productNames := productNamesAllStatuses(ctx, deps.ListProducts)
 
 	// Model D — build product_plan_id → (product_id, variant_id) map so we
 	// resolve row display via the catalog line's FK.

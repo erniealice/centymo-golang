@@ -174,9 +174,13 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	// (education → "enrollments") via ResolveTabSlug. CanonicalizeTab (in NewView /
 	// NewTabAction) maps the slug back so dispatch + template lookups stay canonical.
 	subsSlug := l.Tabs.ResolveTabSlug("subscriptions")
+	// Enrollments (subscriptions) tab count badge — mirrors the roster table's
+	// data source + permission gate exactly so the badge and row counts cannot
+	// drift. 0 renders no badge (unpermitted / unwired / empty section).
+	enrollmentCount := countSectionEnrollments(ctx, deps, id)
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
-		{Key: "subscriptions", Label: l.Tabs.Subscriptions, Href: base + "?tab=" + subsSlug, HxGet: action + subsSlug, Icon: "icon-users"},
+		{Key: "subscriptions", Label: l.Tabs.Subscriptions, Href: base + "?tab=" + subsSlug, HxGet: action + subsSlug, Icon: "icon-users", Count: enrollmentCount},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 	}
@@ -313,6 +317,40 @@ func lookupScheduleName(ctx context.Context, deps *DetailViewDeps, scheduleID st
 	return ""
 }
 
+// sectionMemberFilter scopes a subscription_group_member list to one section.
+// Shared by the roster table body and the enrollments-count badge so the two
+// query identically and their counts can never drift.
+func sectionMemberFilter(groupID string) *commonpb.FilterRequest {
+	return &commonpb.FilterRequest{
+		Filters: []*commonpb.TypedFilter{{
+			Field: "subscription_group_id",
+			FilterType: &commonpb.TypedFilter_StringFilter{
+				StringFilter: &commonpb.StringFilter{Value: groupID, Operator: commonpb.StringOperator_STRING_EQUALS},
+			},
+		}},
+	}
+}
+
+// countSectionEnrollments returns the number of enrollments (subscription_group_
+// member rows) in the section for the Enrollments tab count badge. It mirrors
+// buildSubscriptionsTable's data source and permission gate exactly, so the
+// badge count matches the rendered row count. Returns 0 (no badge) when the
+// roster is not permitted, the dep is unwired, or the section is empty.
+func countSectionEnrollments(ctx context.Context, deps *DetailViewDeps, groupID string) int {
+	perms := view.GetUserPermissions(ctx)
+	if perms == nil || !perms.Can("subscription_group_member", "list") || deps.ListSubscriptionGroupMembers == nil {
+		return 0
+	}
+	resp, err := deps.ListSubscriptionGroupMembers(ctx, &subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest{
+		Filters: sectionMemberFilter(groupID),
+	})
+	if err != nil {
+		log.Printf("Failed to count members for subscription_group %s: %v", groupID, err)
+		return 0
+	}
+	return len(resp.GetData())
+}
+
 // buildSubscriptionsTable renders the section roster: one row per
 // subscription_group_member, resolving client + subscription display names via a
 // single batch fetch each (never per-row). Fail-closed on
@@ -343,14 +381,7 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, groupID 
 	}
 
 	resp, err := deps.ListSubscriptionGroupMembers(ctx, &subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest{
-		Filters: &commonpb.FilterRequest{
-			Filters: []*commonpb.TypedFilter{{
-				Field: "subscription_group_id",
-				FilterType: &commonpb.TypedFilter_StringFilter{
-					StringFilter: &commonpb.StringFilter{Value: groupID, Operator: commonpb.StringOperator_STRING_EQUALS},
-				},
-			}},
-		},
+		Filters: sectionMemberFilter(groupID),
 	})
 	if err != nil {
 		log.Printf("Failed to list members for subscription_group %s: %v", groupID, err)

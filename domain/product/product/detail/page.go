@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	product "github.com/erniealice/centymo-golang/domain/product/product"
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
@@ -443,6 +444,17 @@ func buildLinesTable(ctx context.Context, deps *DetailViewDeps, productID string
 	for _, line := range lineResp.GetData() {
 		if line != nil {
 			lineNameByID[line.GetId()] = line.GetName()
+		}
+	}
+	// Status-agnostic display: a product may still be associated to an inactive
+	// line, which the active-only List default drops — merge inactive lines so
+	// the association row shows the name, not the raw UUID. Non-fatal (active
+	// names already loaded above).
+	if inactiveResp, ierr := deps.ListLines(ctx, &linepb.ListLinesRequest{Filters: shared.InactiveFilter()}); ierr == nil {
+		for _, line := range inactiveResp.GetData() {
+			if line != nil {
+				lineNameByID[line.GetId()] = line.GetName()
+			}
 		}
 	}
 

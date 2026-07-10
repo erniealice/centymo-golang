@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	"github.com/erniealice/espyna-golang/shared/tableparams"
@@ -99,6 +100,56 @@ func NewTableView(deps *ListViewDeps) view.View {
 	})
 }
 
+// planNamesAllStatuses / scheduleNamesAllStatuses build id → name maps covering
+// BOTH active and inactive rows. These label existing price_plan rows, so they
+// must be status-agnostic — an inactive plan/schedule referenced by a live
+// price_plan would otherwise render its raw UUID. See shared.InactiveFilter.
+func planNamesAllStatuses(ctx context.Context, list func(context.Context, *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)) map[string]string {
+	names := map[string]string{}
+	if list == nil {
+		return names
+	}
+	for _, req := range []*planpb.ListPlansRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := list(ctx, req)
+		if err != nil {
+			log.Printf("Failed to list plans for price plan table: %v", err)
+			continue
+		}
+		for _, p := range resp.GetData() {
+			if p != nil {
+				names[p.GetId()] = p.GetName()
+			}
+		}
+	}
+	return names
+}
+
+func scheduleNamesAllStatuses(ctx context.Context, list func(context.Context, *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)) map[string]string {
+	names := map[string]string{}
+	if list == nil {
+		return names
+	}
+	for _, req := range []*priceschedulepb.ListPriceSchedulesRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := list(ctx, req)
+		if err != nil {
+			log.Printf("Failed to list price schedules for price plan table: %v", err)
+			continue
+		}
+		for _, s := range resp.GetData() {
+			if s != nil {
+				names[s.GetId()] = s.GetName()
+			}
+		}
+	}
+	return names
+}
+
 func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, columns []types.TableColumn, p tableparams.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 	listParams := espynahttp.ToListParams(p, pricePlanSearchFields)
@@ -135,31 +186,11 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 		inUseIDs, _ = deps.GetPricePlanInUseIDs(ctx, itemIDs)
 	}
 
-	// Build plan name lookup map
-	planNames := map[string]string{}
-	if deps.ListPlans != nil {
-		planResp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
-		if err != nil {
-			log.Printf("Failed to list plans for price plan table: %v", err)
-		} else {
-			for _, p := range planResp.GetData() {
-				planNames[p.GetId()] = p.GetName()
-			}
-		}
-	}
-
-	// Build schedule name lookup map
-	scheduleNames := map[string]string{}
-	if deps.ListPriceSchedules != nil {
-		schedResp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
-		if err != nil {
-			log.Printf("Failed to list price schedules for price plan table: %v", err)
-		} else {
-			for _, s := range schedResp.GetData() {
-				scheduleNames[s.GetId()] = s.GetName()
-			}
-		}
-	}
+	// Build plan + schedule name lookup maps for display. Status-agnostic: an
+	// active price_plan row may reference an inactive plan/schedule, which the
+	// active-only List default would drop (leaving the raw UUID on screen).
+	planNames := planNamesAllStatuses(ctx, deps.ListPlans)
+	scheduleNames := scheduleNamesAllStatuses(ctx, deps.ListPriceSchedules)
 
 	l := deps.Labels
 	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, planNames, scheduleNames, deps.CommonLabels.DurationUnit)

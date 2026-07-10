@@ -19,6 +19,7 @@ import (
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
 	product "github.com/erniealice/centymo-golang/domain/product/product"
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
 
@@ -209,20 +210,10 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 		inUseIDs, _ = deps.GetInUseIDs(ctx, itemIDs)
 	}
 
-	// Build line name lookup map for the line column.
-	lineNameByID := map[string]string{}
-	if deps.ListLines != nil {
-		lineResp, lerr := deps.ListLines(ctx, &linepb.ListLinesRequest{})
-		if lerr != nil {
-			log.Printf("Failed to list lines for product table: %v", lerr)
-		} else {
-			for _, line := range lineResp.GetData() {
-				if line != nil {
-					lineNameByID[line.GetId()] = line.GetName()
-				}
-			}
-		}
-	}
+	// Build line name lookup map for the line column. Status-agnostic: a product
+	// may still be associated to an inactive line, which the active-only List
+	// default would drop (leaving the raw UUID on screen).
+	lineNameByID := lineNamesAllStatuses(ctx, deps.ListLines)
 
 	l := deps.Labels
 	rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, deps.permEntity(), lineNameByID)
@@ -321,6 +312,33 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 	types.ApplyTableSettings(tableConfig)
 
 	return tableConfig, nil
+}
+
+// lineNamesAllStatuses builds a line id → name map covering BOTH active and
+// inactive lines. It labels existing product rows, so it must be status-agnostic
+// — an inactive line still associated to a product would otherwise render its
+// raw UUID. See shared.InactiveFilter.
+func lineNamesAllStatuses(ctx context.Context, list func(context.Context, *linepb.ListLinesRequest) (*linepb.ListLinesResponse, error)) map[string]string {
+	names := map[string]string{}
+	if list == nil {
+		return names
+	}
+	for _, req := range []*linepb.ListLinesRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := list(ctx, req)
+		if err != nil {
+			log.Printf("Failed to list lines for product table: %v", err)
+			continue
+		}
+		for _, line := range resp.GetData() {
+			if line != nil {
+				names[line.GetId()] = line.GetName()
+			}
+		}
+	}
+	return names
 }
 
 func productColumns(l product.Labels) []types.TableColumn {

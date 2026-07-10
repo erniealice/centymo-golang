@@ -14,7 +14,33 @@
 // below. The remaining LocationResolver typed path is entydad-bound (WL deferral).
 package shared
 
-import "context"
+import (
+	"context"
+
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+)
+
+// InactiveFilter returns a FilterRequest that selects ONLY inactive rows.
+//
+// The postgres List adapter defaults to `WHERE active = true` unless the request
+// carries an explicit `active` BooleanFilter (see espyna PostgresOperations.List).
+// That default is correct for pickers/option lists — you only ever want to offer
+// active choices. But display-name maps for EXISTING rows must be status-agnostic:
+// a row whose FK points at an inactive entity would otherwise fall through to the
+// raw UUID. The API cannot express "both statuses" in one call (the default needs
+// a single explicit value to override it), so the status-agnostic pattern is:
+// one bare call (active default) + one call with InactiveFilter(), merged into
+// the same id→name map.
+func InactiveFilter() *commonpb.FilterRequest {
+	return &commonpb.FilterRequest{
+		Filters: []*commonpb.TypedFilter{{
+			Field: "active",
+			FilterType: &commonpb.TypedFilter_BooleanFilter{
+				BooleanFilter: &commonpb.BooleanFilter{Value: false},
+			},
+		}},
+	}
+}
 
 // LocationResolver maps a location id/slug to a human display name. It is fed at
 // composition time by the typed espyna location use-case (ListLocations →

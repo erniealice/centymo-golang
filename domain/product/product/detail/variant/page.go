@@ -667,6 +667,17 @@ func buildPricingTable(ctx context.Context, deps *DetailViewDeps, productID, var
 			planNameByID[p.GetId()] = p.GetName()
 		}
 	}
+	// Status-agnostic display: a variant's pricing row may reference an inactive
+	// plan (package), which the active-only List default drops — merge inactive
+	// plans (still scoped to the referenced planIDs) so the package name shows
+	// rather than the raw UUID. Non-fatal (active names already loaded above).
+	if inactiveResp, ierr := deps.ListPlans(ctx, &planpb.ListPlansRequest{Filters: shared.InactiveFilter()}); ierr == nil {
+		for _, p := range inactiveResp.GetData() {
+			if p != nil && planIDs[p.GetId()] {
+				planNameByID[p.GetId()] = p.GetName()
+			}
+		}
+	}
 
 	// Step 6: build table rows, one per relevant price_plan.
 	type pricingRow struct {

@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule"
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -130,17 +131,29 @@ func matchesStatus(actual scpspb.SupplierContractPriceScheduleStatus, want strin
 	return actual.String() == want
 }
 
+// loadContractNames builds a supplier_contract id → name map covering BOTH
+// active and inactive contracts. It labels existing schedule rows, so it must be
+// status-agnostic — a schedule may reference a terminated/expired (inactive)
+// contract, which the active-only List default would drop (leaving the raw
+// UUID on screen). See shared.InactiveFilter.
 func loadContractNames(ctx context.Context, deps *ListViewDeps) map[string]string {
 	out := map[string]string{}
 	if deps.ListSupplierContracts == nil {
 		return out
 	}
-	resp, err := deps.ListSupplierContracts(ctx, &suppliercontractpb.ListSupplierContractsRequest{})
-	if err != nil {
-		return out
-	}
-	for _, c := range resp.GetData() {
-		out[c.GetId()] = c.GetName()
+	for _, req := range []*suppliercontractpb.ListSupplierContractsRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := deps.ListSupplierContracts(ctx, req)
+		if err != nil {
+			continue
+		}
+		for _, c := range resp.GetData() {
+			if c != nil {
+				out[c.GetId()] = c.GetName()
+			}
+		}
 	}
 	return out
 }

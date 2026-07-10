@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	sib_subscription_price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	"github.com/erniealice/centymo-golang/domain/subscription/price_plan/form"
 	price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
@@ -329,6 +330,32 @@ func autoSeedProductPricePlans(ctx context.Context, deps *DetailViewDeps, create
 	}
 }
 
+// planNamesAllStatuses builds a plan id → name map covering BOTH active and
+// inactive plans. It provides the fallback display name for existing price_plan
+// rows, so it must be status-agnostic — an inactive plan referenced by a live
+// price_plan would otherwise render its raw UUID. See shared.InactiveFilter.
+func planNamesAllStatuses(ctx context.Context, list func(context.Context, *planpb.ListPlansRequest) (*planpb.ListPlansResponse, error)) map[string]string {
+	names := map[string]string{}
+	if list == nil {
+		return names
+	}
+	for _, req := range []*planpb.ListPlansRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := list(ctx, req)
+		if err != nil {
+			continue
+		}
+		for _, p := range resp.GetData() {
+			if p != nil {
+				names[p.GetId()] = p.GetName()
+			}
+		}
+	}
+	return names
+}
+
 func lookupScheduleNameAndClient(ctx context.Context, deps *DetailViewDeps, scheduleID string) (name, clientID string) {
 	if deps.ReadPriceSchedule == nil {
 		return scheduleID, ""
@@ -560,18 +587,10 @@ func buildPlansTable(ctx context.Context, deps *DetailViewDeps, ps *priceschedul
 				inUseIDs, _ = deps.GetPricePlanInUseIDs(ctx, ppIDs)
 			}
 
-			// Build plan ID → name map for fallback display when price_plan.Name is blank.
-			planNames := map[string]string{}
-			if deps.ListPlans != nil {
-				planResp, err := deps.ListPlans(ctx, &planpb.ListPlansRequest{})
-				if err == nil {
-					for _, p := range planResp.GetData() {
-						if p != nil {
-							planNames[p.GetId()] = p.GetName()
-						}
-					}
-				}
-			}
+			// Build plan ID → name map for fallback display when price_plan.Name is
+			// blank. Status-agnostic: an existing price_plan row may reference an
+			// inactive plan, which the active-only List default would drop.
+			planNames := planNamesAllStatuses(ctx, deps.ListPlans)
 
 			for _, pp := range resp.GetData() {
 				if pp == nil || pp.GetPriceScheduleId() != schedID {

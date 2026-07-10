@@ -56,6 +56,7 @@ import (
 	priceplanpkg "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	priceschedulepkg "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	pricescheduleworkspaceuserpkg "github.com/erniealice/centymo-golang/domain/subscription/price_schedule_workspace_user"
+	productpriceplanpkg "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
 	subscriptionpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	subscriptiongrouppkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
 	subscriptiongroupmemberpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
@@ -372,9 +373,12 @@ func PricePlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 		r := u.Routes.(*priceplanpkg.Routes)
 		l := u.Labels.(*priceplanpkg.Labels)
 
-		productPricePlanLabels := subscriptiondom.DefaultProductPricePlanLabels()
 		// Cross-unit labels must come from the SIBLING unit's post-overlay
 		// pointer, not DefaultLabels() — defaults skip the lyngua tier overlay.
+		productPricePlanLabels := subscriptiondom.DefaultProductPricePlanLabels()
+		if ppl, ok := compose.LabelsOf[*productpriceplanpkg.Labels](mc, "subscription.product_price_plan"); ok {
+			productPricePlanLabels = *ppl
+		}
 		priceScheduleLabels := priceschedulepkg.DefaultLabels()
 		if sl, ok := compose.LabelsOf[*priceschedulepkg.Labels](mc, "subscription.price_schedule"); ok {
 			priceScheduleLabels = *sl
@@ -440,6 +444,9 @@ func PriceScheduleUnit(uc *UseCases, infra *Infra) compose.Unit {
 			pricePlanLabels = *pl
 		}
 		productPricePlanLabels := subscriptiondom.DefaultProductPricePlanLabels()
+		if ppl, ok := compose.LabelsOf[*productpriceplanpkg.Labels](mc, "subscription.product_price_plan"); ok {
+			productPricePlanLabels = *ppl
+		}
 
 		var getPriceScheduleInUseIDs func(context.Context, []string) (map[string]bool, error)
 		var getPricePlanInUseIDs func(context.Context, []string) (map[string]bool, error)
@@ -488,6 +495,22 @@ func PriceScheduleUnit(uc *UseCases, infra *Infra) compose.Unit {
 		return nil
 	}
 	return u
+}
+
+// ---------------------------------------------------------------------------
+// ProductPricePlan (data-only label unit)
+// ---------------------------------------------------------------------------
+
+// ProductPricePlanUnit is a DATA-ONLY unit. ProductPricePlan has no routes or
+// handlers of its own (its actions/pages live in views/price_plan/, and its
+// drawer templates are registered directly in each app's renderer), so the
+// descriptor carries only the Labels pointer + lyngua binding and leaves Mount
+// nil. The unit exists solely so the engine applies the product_price_plan.json
+// tier overlay onto a mounted Labels pointer that PricePlanUnit /
+// PriceScheduleUnit resolve via compose.LabelsOf — closing the gap where the
+// product_price_plan.json tier overrides previously bound nothing.
+func ProductPricePlanUnit(_ *UseCases, _ *Infra) compose.Unit {
+	return productpriceplanpkg.Describe()
 }
 
 // ---------------------------------------------------------------------------
@@ -1549,6 +1572,7 @@ func AllUnits(uc *UseCases, infra *Infra) []compose.Unit {
 		PriceListUnit(uc, infra),
 		PricePlanUnit(uc, infra),
 		PriceScheduleUnit(uc, infra),
+		ProductPricePlanUnit(uc, infra),
 		PriceScheduleWorkspaceUserUnit(uc, infra),
 		SubscriptionGroupUnit(uc, infra),
 		SubscriptionGroupMemberUnit(uc, infra),

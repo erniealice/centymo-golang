@@ -166,7 +166,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 	}
 
 	templateNames := map[string]string{}
-	if deps.ListJobTemplateNames != nil {
+	if deps.ListJobTemplateNames != nil && deps.Labels.Form.JobTemplate != "" {
 		templateNames = deps.ListJobTemplateNames(ctx)
 	}
 
@@ -250,12 +250,19 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 }
 
 func planColumns(l plan.Labels) []types.TableColumn {
-	return []types.TableColumn{
+	cols := []types.TableColumn{
 		{Key: "name", Label: l.Columns.Name},
 		{Key: "price", Label: l.Columns.Price, WidthClass: "col-9xl"},
 		{Key: "client", Label: l.Form.ClientLabel, NoSort: true, WidthClass: "col-3xl"},
-		{Key: "job_template", Label: l.Form.JobTemplate, NoSort: true, WidthClass: "col-3xl"},
 	}
+	// Tier opt-out: an empty JobTemplate label hides the column. The row cell
+	// in buildTableRows gates on the SAME predicate — cells are positional, so
+	// the two must stay in lockstep. (Education blanks the label; professional
+	// keeps its Engagement Template column.)
+	if l.Form.JobTemplate != "" {
+		cols = append(cols, types.TableColumn{Key: "job_template", Label: l.Form.JobTemplate, NoSort: true, WidthClass: "col-3xl"})
+	}
+	return cols
 }
 
 func buildTableRows(plans []*planpb.Plan, status string, l plan.Labels, cl pyeza.CommonLabels, routes plan.Routes, inUseIDs map[string]bool, perms *types.UserPermissions, clientNames map[string]string, templateNames map[string]string) []types.TableRow {
@@ -355,10 +362,12 @@ func buildTableRows(plans []*planpb.Plan, status string, l plan.Labels, cl pyeza
 		} else {
 			cells = append(cells, types.TableCell{Type: "text", Value: ""})
 		}
-		if tplLabel != "" {
-			cells = append(cells, types.TableCell{Type: "badge", Value: tplLabel, Variant: "info"})
-		} else {
-			cells = append(cells, types.TableCell{Type: "text", Value: "—"})
+		if l.Form.JobTemplate != "" { // lockstep with planColumns' tier opt-out
+			if tplLabel != "" {
+				cells = append(cells, types.TableCell{Type: "badge", Value: tplLabel, Variant: "info"})
+			} else {
+				cells = append(cells, types.TableCell{Type: "text", Value: "—"})
+			}
 		}
 
 		rows = append(rows, types.TableRow{

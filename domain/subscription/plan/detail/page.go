@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	plan "github.com/erniealice/centymo-golang/domain/subscription/plan"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
@@ -513,6 +514,33 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 // Price Lists tab table
 // ---------------------------------------------------------------------------
 
+// scheduleNamesAllStatuses builds a price_schedule id → name map covering BOTH
+// active and inactive schedules. It labels existing price_plan rows, so it must
+// be status-agnostic: the List default filters active = true, which would drop
+// an inactive schedule and render its raw UUID. See shared.InactiveFilter.
+func scheduleNamesAllStatuses(ctx context.Context, list func(context.Context, *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)) map[string]string {
+	names := map[string]string{}
+	if list == nil {
+		return names
+	}
+	for _, req := range []*priceschedulepb.ListPriceSchedulesRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := list(ctx, req)
+		if err != nil {
+			log.Printf("Failed to list price schedules for pricelists table: %v", err)
+			continue
+		}
+		for _, s := range resp.GetData() {
+			if s != nil {
+				names[s.GetId()] = s.GetName()
+			}
+		}
+	}
+	return names
+}
+
 func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, planName string) *types.TableConfig {
 	l := deps.Labels
 	perms := view.GetUserPermissions(ctx)
@@ -525,18 +553,10 @@ func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, pla
 		{Key: "status", Label: l.Columns.Status, WidthClass: "col-2xl"},
 	}
 
-	// Build a schedule ID → name map for display.
-	scheduleNames := map[string]string{}
-	if deps.ListPriceSchedules != nil {
-		schedResp, err := deps.ListPriceSchedules(ctx, &priceschedulepb.ListPriceSchedulesRequest{})
-		if err != nil {
-			log.Printf("Failed to list price schedules for pricelists table: %v", err)
-		} else {
-			for _, s := range schedResp.GetData() {
-				scheduleNames[s.GetId()] = s.GetName()
-			}
-		}
-	}
+	// Build a schedule ID → name map for display. Status-agnostic: an existing
+	// price_plan row may reference an inactive schedule, which the active-only
+	// List default would drop (leaving the raw UUID on screen).
+	scheduleNames := scheduleNamesAllStatuses(ctx, deps.ListPriceSchedules)
 
 	rows := []types.TableRow{}
 

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	"github.com/erniealice/espyna-golang/shared/tableparams"
@@ -102,6 +103,33 @@ func NewTableView(deps *ListViewDeps) view.View {
 	})
 }
 
+// locationNamesAllStatuses builds a location id → name map covering BOTH active
+// and inactive locations. It labels existing price_schedule rows, so it must be
+// status-agnostic — an inactive location referenced by a live schedule would
+// otherwise render its raw UUID. See shared.InactiveFilter.
+func locationNamesAllStatuses(ctx context.Context, list func(context.Context, *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)) map[string]string {
+	names := map[string]string{}
+	if list == nil {
+		return names
+	}
+	for _, req := range []*locationpb.ListLocationsRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := list(ctx, req)
+		if err != nil {
+			log.Printf("Failed to list locations for price schedule table: %v", err)
+			continue
+		}
+		for _, loc := range resp.GetData() {
+			if loc != nil {
+				names[loc.GetId()] = loc.GetName()
+			}
+		}
+	}
+	return names
+}
+
 func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, columns []types.TableColumn, p tableparams.TableQueryParams) (*types.TableConfig, error) {
 	perms := view.GetUserPermissions(ctx)
 	listParams := espynahttp.ToListParams(p, priceScheduleSearchFields)
@@ -140,18 +168,10 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 		inUseIDs, _ = deps.GetPriceScheduleInUseIDs(ctx, itemIDs)
 	}
 
-	// Build location name lookup map
-	locationNames := map[string]string{}
-	if deps.ListLocations != nil {
-		locResp, err := deps.ListLocations(ctx, &locationpb.ListLocationsRequest{})
-		if err != nil {
-			log.Printf("Failed to list locations for price schedule table: %v", err)
-		} else {
-			for _, loc := range locResp.GetData() {
-				locationNames[loc.GetId()] = loc.GetName()
-			}
-		}
-	}
+	// Build location name lookup map for display. Status-agnostic: an existing
+	// price_schedule row may reference an inactive location, which the
+	// active-only List default would drop (leaving the raw UUID on screen).
+	locationNames := locationNamesAllStatuses(ctx, deps.ListLocations)
 
 	clientNames := map[string]string{}
 	if deps.ListClientNames != nil {

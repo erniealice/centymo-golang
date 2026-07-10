@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	sib_product_product "github.com/erniealice/centymo-golang/domain/product/product"
+	shared "github.com/erniealice/centymo-golang/domain/shared"
 	sib_subscription_plan "github.com/erniealice/centymo-golang/domain/subscription/plan"
 	price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	sib_subscription_price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
@@ -769,6 +770,33 @@ func buildTabItems(id string, l price_plan.Labels, productPriceCount int, routes
 // Product prices tab table
 // ---------------------------------------------------------------------------
 
+// productNamesAllStatuses builds a product id → name map covering BOTH active
+// and inactive products. It labels existing ProductPricePlan rows, so it must be
+// status-agnostic — an inactive product referenced by a live row would otherwise
+// render its raw UUID. See shared.InactiveFilter. (Note: the drawer PICKER in
+// loadProductPlanOptions deliberately stays active-only.)
+func productNamesAllStatuses(ctx context.Context, list func(context.Context, *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)) map[string]string {
+	names := map[string]string{}
+	if list == nil {
+		return names
+	}
+	for _, req := range []*productpb.ListProductsRequest{
+		{},
+		{Filters: shared.InactiveFilter()},
+	} {
+		resp, err := list(ctx, req)
+		if err != nil {
+			continue
+		}
+		for _, p := range resp.GetData() {
+			if p != nil {
+				names[p.GetId()] = p.GetName()
+			}
+		}
+	}
+	return names
+}
+
 func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePlanID, planID string) *types.TableConfig {
 	l := deps.Labels
 	perms := view.GetUserPermissions(ctx)
@@ -779,18 +807,10 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 		{Key: "price", Label: "Price", WidthClass: "col-4xl"},
 	}
 
-	// Build product ID → name map for display
-	productNames := map[string]string{}
-	if deps.ListProducts != nil {
-		prodResp, err := deps.ListProducts(ctx, &productpb.ListProductsRequest{})
-		if err == nil {
-			for _, p := range prodResp.GetData() {
-				if p != nil {
-					productNames[p.GetId()] = p.GetName()
-				}
-			}
-		}
-	}
+	// Build product ID → name map for display. Status-agnostic: an existing
+	// ProductPricePlan row may reference an inactive product, which the
+	// active-only List default would drop (leaving the raw UUID on screen).
+	productNames := productNamesAllStatuses(ctx, deps.ListProducts)
 
 	// Model D — build product_plan_id → (product_id, variant_id) map so we
 	// can display "Product (SKU)" for rows that reference a catalog line
