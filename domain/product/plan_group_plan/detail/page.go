@@ -39,6 +39,7 @@ type PageData struct {
 	PlanID        string
 	SequenceOrder string
 	Status        string
+	StatusLabel   string
 	StatusVariant string
 	CreatedDate   string
 	ModifiedDate  string
@@ -100,9 +101,12 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	status := "active"
 	statusVariant := "success"
+	// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+	statusLabel := deps.CommonLabels.Status.Active
 	if !rec.GetActive() {
 		status = "inactive"
 		statusVariant = "warning"
+		statusLabel = deps.CommonLabels.Status.Inactive
 	}
 
 	seqOrder := ""
@@ -154,6 +158,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		PlanID:          rec.GetPlanId(),
 		SequenceOrder:   seqOrder,
 		Status:          status,
+		StatusLabel:     statusLabel,
 		StatusVariant:   statusVariant,
 		CreatedDate:     createdDate,
 		ModifiedDate:    modifiedDate,

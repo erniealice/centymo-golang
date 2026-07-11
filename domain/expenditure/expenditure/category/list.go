@@ -42,7 +42,7 @@ func NewView(deps *ListViewDeps) view.View {
 
 		l := deps.Labels.Category
 		columns := categoryColumns(l)
-		rows := buildTableRows(resp.GetData(), l, deps.Routes, perms)
+		rows := buildTableRows(resp.GetData(), l, deps.CommonLabels, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		tableConfig := &types.TableConfig{
@@ -132,6 +132,7 @@ func categoryColumns(l expenditure.CategoryLabels) []types.TableColumn {
 func buildTableRows(
 	categories []*expenditurecategorypb.ExpenditureCategory,
 	l expenditure.CategoryLabels,
+	cl pyeza.CommonLabels,
 	routes expenditure.Routes,
 	perms *types.UserPermissions,
 ) []types.TableRow {
@@ -192,7 +193,7 @@ func buildTableRows(
 				{Type: "text", Value: code},
 				{Type: "text", Value: name},
 				{Type: "text", Value: description},
-				{Type: "badge", Value: statusVal, Variant: statusVariant},
+				{Type: "badge", Value: statusLabel(cl, statusVal), Variant: statusVariant},
 			},
 			DataAttrs: map[string]string{
 				"code":        code,
@@ -204,4 +205,17 @@ func buildTableRows(
 		})
 	}
 	return rows
+}
+
+// statusLabel maps the raw status key to its lyngua display label — the badge
+// cell renders Value verbatim, so passing the raw key would bypass translation.
+func statusLabel(cl pyeza.CommonLabels, status string) string {
+	switch status {
+	case "active":
+		return cl.Status.Active
+	case "inactive":
+		return cl.Status.Inactive
+	default:
+		return status
+	}
 }

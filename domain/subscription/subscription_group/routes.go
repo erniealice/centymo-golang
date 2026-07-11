@@ -45,7 +45,12 @@ type Routes struct {
 // constants defined above.
 func DefaultRoutes() Routes {
 	return Routes{
-		ActiveNav:           "service",
+		// The sidebar mounts subscription groups in the "job" app (both apps,
+		// sidebar_staff.go Operations group, right after Engagements), so
+		// pages must highlight that app — not "service". ActiveSubNav stays a
+		// BARE prefix: the list page composes "<base>-<status>" to match the
+		// sidebar item keys (subscription-groups-active/-inactive).
+		ActiveNav:           "job",
 		ActiveSubNav:        "subscription-groups",
 		DashboardURL:        DashboardURL,
 		ListURL:             ListURL,

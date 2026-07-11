@@ -281,7 +281,7 @@ func buildTableRows(priceLists []*pricelistpb.PriceList, status string, l pricel
 				types.DateTimeCell(dateStart, types.DateReadable),
 				types.DateTimeCell(dateEnd, types.DateReadable),
 				{Type: "text", Value: ""},
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
+				{Type: "badge", Value: statusLabel(cl, recordStatus), Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"name":      name,
@@ -350,5 +350,18 @@ func statusVariant(status string) string {
 		return "warning"
 	default:
 		return "default"
+	}
+}
+
+// statusLabel maps the raw status key to its lyngua display label — the badge
+// cell renders Value verbatim, so passing the raw key would bypass translation.
+func statusLabel(cl pyeza.CommonLabels, status string) string {
+	switch status {
+	case "active":
+		return cl.Status.Active
+	case "inactive":
+		return cl.Status.Inactive
+	default:
+		return status
 	}
 }

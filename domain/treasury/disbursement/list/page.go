@@ -79,7 +79,7 @@ func NewView(deps *ListViewDeps) view.View {
 
 		l := deps.Labels
 		columns := disbursementColumns(l)
-		rows := buildTableRows(filtered, l, deps.Routes, perms)
+		rows := buildTableRows(filtered, l, deps.CommonLabels, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
@@ -147,7 +147,7 @@ func disbursementColumns(l disbursement.Labels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(disbursements []*disbursementpb.Disbursement, l disbursement.Labels, routes disbursement.Routes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(disbursements []*disbursementpb.Disbursement, l disbursement.Labels, cl pyeza.CommonLabels, routes disbursement.Routes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, d := range disbursements {
 		id := d.GetId()
@@ -174,7 +174,7 @@ func buildTableRows(disbursements []*disbursementpb.Disbursement, l disbursement
 				types.MoneyCell(float64(d.GetAmount()), currency, true),
 				{Type: "text", Value: method},
 				types.DateTimeCell(date, types.DateReadable),
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
+				{Type: "badge", Value: statusLabel(cl, recordStatus), Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"reference": refNumber,
@@ -274,6 +274,23 @@ func statusVariant(status string) string {
 		return "danger"
 	default:
 		return "default"
+	}
+}
+
+// statusLabel maps the raw status key to its lyngua display label — the badge
+// cell renders Value verbatim, so passing the raw key would bypass translation.
+// Only draft/pending/approved have a pyeza.StatusLabels field today; the other
+// disbursement states (paid/cancelled/overdue) fall back to the raw key.
+func statusLabel(cl pyeza.CommonLabels, status string) string {
+	switch status {
+	case "draft":
+		return cl.Status.Draft
+	case "pending":
+		return cl.Status.Pending
+	case "approved":
+		return cl.Status.Approved
+	default:
+		return status
 	}
 }
 

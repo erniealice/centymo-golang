@@ -79,6 +79,7 @@ type PageData struct {
 	DateEnd       string
 	LocationName  string
 	Status        string
+	StatusLabel   string
 	StatusVariant string
 	CreatedDate   string
 	ModifiedDate  string
@@ -439,9 +440,12 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	status := "active"
 	statusVariant := "success"
+	// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+	statusLabel := deps.CommonLabels.Status.Active
 	if !ps.GetActive() {
 		status = "inactive"
 		statusVariant = "warning"
+		statusLabel = deps.CommonLabels.Status.Inactive
 	}
 
 	l := deps.Labels
@@ -488,6 +492,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		DateEnd:         types.FormatTimestampInTZ(ps.GetDateTimeEnd(), tz, types.DateTimeReadable),
 		LocationName:    locationName,
 		Status:          status,
+		StatusLabel:     statusLabel,
 		StatusVariant:   statusVariant,
 		CreatedDate:     createdDate,
 		ModifiedDate:    modifiedDate,

@@ -41,8 +41,9 @@ type Routes struct {
 // route constants defined in this file.
 func DefaultRoutes() Routes {
 	return Routes{
-		ActiveNav:        "service",
-		ActiveSubNav:     "resources-active",
+		ActiveNav: "service",
+		// bare prefix — list page composes <base>-<status> to match sidebar item keys
+		ActiveSubNav:     "resources",
 		ListURL:          ListURL,
 		TableURL:         TableURL,
 		DetailURL:        DetailURL,

@@ -61,6 +61,7 @@ type PageData struct {
 	ScheduleName  string
 	Capacity      string
 	Status        string
+	StatusLabel   string
 	StatusVariant string
 	CreatedDate   string
 	ModifiedDate  string
@@ -163,9 +164,12 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	status := "active"
 	statusVariant := "success"
+	// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+	statusLabel := deps.CommonLabels.Status.Active
 	if !sg.GetActive() {
 		status = "inactive"
 		statusVariant = "warning"
+		statusLabel = deps.CommonLabels.Status.Inactive
 	}
 
 	base := route.ResolveURL(deps.Routes.DetailURL, "id", id)
@@ -224,6 +228,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ScheduleName:    scheduleName,
 		Capacity:        formatCapacity(sg, l),
 		Status:          status,
+		StatusLabel:     statusLabel,
 		StatusVariant:   statusVariant,
 		CreatedDate:     createdDate,
 		ModifiedDate:    modifiedDate,
@@ -331,6 +336,48 @@ func sectionMemberFilter(groupID string) *commonpb.FilterRequest {
 	}
 }
 
+// sectionMemberFilterInactive is sectionMemberFilter plus an explicit
+// active=false term — the second half of the status-agnostic two-call pattern
+// (see shared.InactiveFilter).
+func sectionMemberFilterInactive(groupID string) *commonpb.FilterRequest {
+	f := sectionMemberFilter(groupID)
+	f.Logic = commonpb.FilterLogic_AND
+	f.Filters = append(f.Filters, &commonpb.TypedFilter{
+		Field: "active",
+		FilterType: &commonpb.TypedFilter_BooleanFilter{
+			BooleanFilter: &commonpb.BooleanFilter{Value: false},
+		},
+	})
+	return f
+}
+
+// listSectionMembers fetches the section roster STATUS-AGNOSTICALLY: one bare
+// call (the List default filters active=true) + one explicit active=false
+// call, merged by id. An inactive section's historical roster is entirely
+// inactive member rows — the bare call alone renders it empty. Shared by the
+// roster table and the count badge so the two can never drift.
+func listSectionMembers(ctx context.Context, deps *DetailViewDeps, groupID string) ([]*subscriptiongroupmemberpb.SubscriptionGroupMember, error) {
+	var members []*subscriptiongroupmemberpb.SubscriptionGroupMember
+	seen := map[string]bool{}
+	for _, req := range []*subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest{
+		{Filters: sectionMemberFilter(groupID)},
+		{Filters: sectionMemberFilterInactive(groupID)},
+	} {
+		resp, err := deps.ListSubscriptionGroupMembers(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range resp.GetData() {
+			if m == nil || seen[m.GetId()] {
+				continue
+			}
+			seen[m.GetId()] = true
+			members = append(members, m)
+		}
+	}
+	return members, nil
+}
+
 // countSectionEnrollments returns the number of enrollments (subscription_group_
 // member rows) in the section for the Enrollments tab count badge. It mirrors
 // buildSubscriptionsTable's data source and permission gate exactly, so the
@@ -341,14 +388,12 @@ func countSectionEnrollments(ctx context.Context, deps *DetailViewDeps, groupID 
 	if perms == nil || !perms.Can("subscription_group_member", "list") || deps.ListSubscriptionGroupMembers == nil {
 		return 0
 	}
-	resp, err := deps.ListSubscriptionGroupMembers(ctx, &subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest{
-		Filters: sectionMemberFilter(groupID),
-	})
+	members, err := listSectionMembers(ctx, deps, groupID)
 	if err != nil {
 		log.Printf("Failed to count members for subscription_group %s: %v", groupID, err)
 		return 0
 	}
-	return len(resp.GetData())
+	return len(members)
 }
 
 // buildSubscriptionsTable renders the section roster: one row per
@@ -359,8 +404,10 @@ func countSectionEnrollments(ctx context.Context, deps *DetailViewDeps, groupID 
 func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, groupID string, l subscription_group.Labels) *types.TableConfig {
 	perms := view.GetUserPermissions(ctx)
 	columns := []types.TableColumn{
-		{Key: "client", Label: l.Columns.Client, NoSort: true, NoFilter: true},
-		{Key: "subscription", Label: l.Columns.Subscription, NoSort: true, NoFilter: true, WidthClass: "col-2xl"},
+		// Cap the name column at half the table so the subscription column
+		// gets enough room to render "Last, First (AY …)" without wrapping.
+		{Key: "client", Label: l.Columns.Client, NoSort: true, NoFilter: true, Width: "50%"},
+		{Key: "subscription", Label: l.Columns.Subscription, NoSort: true, NoFilter: true},
 		{Key: "status", Label: l.Columns.Status, NoSort: true, NoFilter: true, WidthClass: "col-2xl"},
 	}
 	cfg := &types.TableConfig{
@@ -380,15 +427,12 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, groupID 
 		return cfg
 	}
 
-	resp, err := deps.ListSubscriptionGroupMembers(ctx, &subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest{
-		Filters: sectionMemberFilter(groupID),
-	})
+	members, err := listSectionMembers(ctx, deps, groupID)
 	if err != nil {
 		log.Printf("Failed to list members for subscription_group %s: %v", groupID, err)
 		types.ApplyTableSettings(cfg)
 		return cfg
 	}
-	members := resp.GetData()
 
 	clientNames := resolveClientNames(ctx, deps, members)
 	subCodes := resolveSubscriptionCodes(ctx, deps, members)
@@ -403,9 +447,11 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, groupID 
 		if sub == "" {
 			sub = m.GetSubscriptionId()
 		}
-		st, variant := "active", "success"
+		// Badge Value renders verbatim — use the lyngua status labels, not the
+		// raw status key.
+		st, variant := deps.CommonLabels.Status.Active, "success"
 		if !m.GetActive() {
-			st, variant = "inactive", "warning"
+			st, variant = deps.CommonLabels.Status.Inactive, "warning"
 		}
 		rows = append(rows, types.TableRow{
 			ID: m.GetId(),
@@ -434,8 +480,26 @@ func idListFilter(ids []string) *commonpb.FilterRequest {
 	}}}
 }
 
+// idListFilterInactive is idListFilter plus an explicit active=false term —
+// the second half of the status-agnostic two-call pattern (see
+// shared.InactiveFilter). Roster display-name maps must resolve rows the List
+// default would drop: an inactive section's enrollments reference inactive
+// subscription rows.
+func idListFilterInactive(ids []string) *commonpb.FilterRequest {
+	f := idListFilter(ids)
+	f.Logic = commonpb.FilterLogic_AND
+	f.Filters = append(f.Filters, &commonpb.TypedFilter{
+		Field: "active",
+		FilterType: &commonpb.TypedFilter_BooleanFilter{
+			BooleanFilter: &commonpb.BooleanFilter{Value: false},
+		},
+	})
+	return f
+}
+
 // resolveClientNames maps client_id → display name for exactly the roster's
-// clients (LIST_IN by id), falling back to first+last when the name is blank.
+// clients (LIST_IN by id, both statuses), falling back to first+last when the
+// name is blank.
 func resolveClientNames(ctx context.Context, deps *DetailViewDeps, members []*subscriptiongroupmemberpb.SubscriptionGroupMember) map[string]string {
 	if deps.ListClients == nil {
 		return nil
@@ -451,24 +515,26 @@ func resolveClientNames(ctx context.Context, deps *DetailViewDeps, members []*su
 	if len(ids) == 0 {
 		return nil
 	}
-	resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{Filters: idListFilter(ids)})
-	if err != nil {
-		log.Printf("Failed to list clients for subscription_group roster: %v", err)
-		return nil
-	}
-	m := make(map[string]string, len(resp.GetData()))
-	for _, c := range resp.GetData() {
-		name := strings.TrimSpace(c.GetName())
-		if name == "" {
-			name = strings.TrimSpace(c.GetFirstName() + " " + c.GetLastName())
+	m := make(map[string]string, len(ids))
+	for _, f := range []*commonpb.FilterRequest{idListFilter(ids), idListFilterInactive(ids)} {
+		resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{Filters: f})
+		if err != nil {
+			log.Printf("Failed to list clients for subscription_group roster: %v", err)
+			continue
 		}
-		m[c.GetId()] = name
+		for _, c := range resp.GetData() {
+			name := strings.TrimSpace(c.GetName())
+			if name == "" {
+				name = strings.TrimSpace(c.GetFirstName() + " " + c.GetLastName())
+			}
+			m[c.GetId()] = name
+		}
 	}
 	return m
 }
 
 // resolveSubscriptionCodes maps subscription_id → code for exactly the roster's
-// subscriptions (LIST_IN by id).
+// subscriptions (LIST_IN by id, both statuses).
 func resolveSubscriptionCodes(ctx context.Context, deps *DetailViewDeps, members []*subscriptiongroupmemberpb.SubscriptionGroupMember) map[string]string {
 	if deps.ListSubscriptions == nil {
 		return nil
@@ -484,14 +550,16 @@ func resolveSubscriptionCodes(ctx context.Context, deps *DetailViewDeps, members
 	if len(ids) == 0 {
 		return nil
 	}
-	resp, err := deps.ListSubscriptions(ctx, &subscriptionpb.ListSubscriptionsRequest{Filters: idListFilter(ids)})
-	if err != nil {
-		log.Printf("Failed to list subscriptions for subscription_group roster: %v", err)
-		return nil
-	}
-	m := make(map[string]string, len(resp.GetData()))
-	for _, s := range resp.GetData() {
-		m[s.GetId()] = s.GetCode()
+	m := make(map[string]string, len(ids))
+	for _, f := range []*commonpb.FilterRequest{idListFilter(ids), idListFilterInactive(ids)} {
+		resp, err := deps.ListSubscriptions(ctx, &subscriptionpb.ListSubscriptionsRequest{Filters: f})
+		if err != nil {
+			log.Printf("Failed to list subscriptions for subscription_group roster: %v", err)
+			continue
+		}
+		for _, s := range resp.GetData() {
+			m[s.GetId()] = s.GetCode()
+		}
 	}
 	return m
 }

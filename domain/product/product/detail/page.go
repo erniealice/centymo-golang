@@ -67,19 +67,20 @@ func (d *DetailViewDeps) permEntity() string {
 // PageData holds the data for the product detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate string
-	Product         *productpb.Product
-	Labels          product.Labels
-	ActiveTab       string
-	TabItems        []pyeza.TabItem
-	ID              string
-	ProductName     string
-	ProductDesc     string
-	ProductPrice    string
-	ProductCurrency string
-	ProductStatus   string
-	StatusVariant   string
-	LineName        string // resolved name of the product's primary line (from product.line_id)
+	ContentTemplate    string
+	Product            *productpb.Product
+	Labels             product.Labels
+	ActiveTab          string
+	TabItems           []pyeza.TabItem
+	ID                 string
+	ProductName        string
+	ProductDesc        string
+	ProductPrice       string
+	ProductCurrency    string
+	ProductStatus      string
+	ProductStatusLabel string
+	StatusVariant      string
+	LineName           string // resolved name of the product's primary line (from product.line_id)
 	// Model D — display-formatted unit of measure and variant mode for the Info tab.
 	ProductUnit        string
 	ProductVariantMode string
@@ -241,6 +242,11 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	if productStatus == "inactive" {
 		StatusVariant = "warning"
 	}
+	// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+	productStatusLabel := deps.CommonLabels.Status.Active
+	if productStatus == "inactive" {
+		productStatusLabel = deps.CommonLabels.Status.Inactive
+	}
 
 	// Resolve the product's primary line name from product.line_id.
 	productLineName := ""
@@ -351,6 +357,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ProductPrice:        priceFormatted,
 		ProductCurrency:     currency,
 		ProductStatus:       productStatus,
+		ProductStatusLabel:  productStatusLabel,
 		StatusVariant:       StatusVariant,
 		LineName:            productLineName,
 		ProductUnit:         productUnit,

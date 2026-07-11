@@ -71,11 +71,11 @@ func NewView(deps *ListViewDeps) view.View {
 
 		l := deps.Labels
 		columns := expenditureColumns(l, deps.ExpenditureType)
-		rows := buildTableRows(filtered, l, deps.ExpenditureType)
+		rows := buildTableRows(filtered, l, deps.CommonLabels, deps.ExpenditureType)
 		types.ApplyColumnStyles(columns, rows)
 
 		tableID := "purchases-table"
-		activeNav := "purchases"
+		activeNav := "purchase"
 		heading := statusPageTitle(l, deps.ExpenditureType, status)
 		caption := statusPageCaption(l, deps.ExpenditureType, status)
 		icon := "icon-shopping-bag"
@@ -159,7 +159,7 @@ func expenditureColumns(l expenditure.Labels, expenditureType string) []types.Ta
 	return cols
 }
 
-func buildTableRows(expenditures []*expenditurepb.Expenditure, l expenditure.Labels, expenditureType string) []types.TableRow {
+func buildTableRows(expenditures []*expenditurepb.Expenditure, l expenditure.Labels, cl pyeza.CommonLabels, expenditureType string) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, e := range expenditures {
 		id := e.GetId()
@@ -186,7 +186,7 @@ func buildTableRows(expenditures []*expenditurepb.Expenditure, l expenditure.Lab
 				{Type: "text", Value: secondCol},
 				types.DateTimeCell(date, types.DateReadable),
 				types.MoneyCell(float64(e.GetTotalAmount()), currency, true),
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
+				{Type: "badge", Value: statusLabel(cl, recordStatus), Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"reference": refNumber,
@@ -337,5 +337,22 @@ func statusVariant(status string) string {
 		return "danger"
 	default:
 		return "default"
+	}
+}
+
+// statusLabel maps the raw status key to its lyngua display label — the badge
+// cell renders Value verbatim, so passing the raw key would bypass translation.
+// Only draft/pending/approved have a pyeza.StatusLabels field today; the other
+// expenditure states (paid/cancelled/overdue) fall back to the raw key.
+func statusLabel(cl pyeza.CommonLabels, status string) string {
+	switch status {
+	case "draft":
+		return cl.Status.Draft
+	case "pending":
+		return cl.Status.Pending
+	case "approved":
+		return cl.Status.Approved
+	default:
+		return status
 	}
 }

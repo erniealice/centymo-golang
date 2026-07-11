@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	shared "github.com/erniealice/centymo-golang/domain/shared"
@@ -79,6 +80,7 @@ type PageData struct {
 	PlanName        string
 	PlanDesc        string
 	PlanStatus      string
+	PlanStatusLabel string
 	StatusVariant   string
 	CreatedDate     string
 	ModifiedDate    string
@@ -192,6 +194,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	if planStatus == "inactive" {
 		statusVariant = "warning"
 	}
+	planStatusLabel := statusChipLabel(deps.CommonLabels.Status, planStatus)
 
 	createdDate := plan.GetDateCreatedString()
 	modifiedDate := plan.GetDateModifiedString()
@@ -281,6 +284,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		PlanName:        name,
 		PlanDesc:        description,
 		PlanStatus:      planStatus,
+		PlanStatusLabel: planStatusLabel,
 		StatusVariant:   statusVariant,
 		CreatedDate:     createdDate,
 		ModifiedDate:    modifiedDate,
@@ -465,13 +469,23 @@ func buildProductsTable(ctx context.Context, deps *DetailViewDeps, planID string
 					Cells: []types.TableCell{
 						{Type: "text", Value: name},
 						{Type: "text", Value: kindLabel},
-						{Type: "badge", Value: status, Variant: statusVariant(status)},
+						{Type: "badge", Value: statusChipLabel(deps.CommonLabels.Status, status), Variant: statusVariant(status)},
 					},
-					Actions: rowActions,
+					// The client-side sorter keys off data-<column> row attrs;
+					// without them the toolbar sort compares empty strings.
+					DataAttrs: map[string]string{"name": name},
+					Actions:   rowActions,
 				})
 			}
 		}
 	}
+
+	// List returns rows in insertion order; the DefaultSortColumn attr alone
+	// doesn't reorder the server-rendered HTML, so apply the alphabetical
+	// default here.
+	sort.SliceStable(rows, func(i, j int) bool {
+		return strings.ToLower(rows[i].DataAttrs["name"]) < strings.ToLower(rows[j].DataAttrs["name"])
+	})
 
 	types.ApplyColumnStyles(columns, rows)
 
@@ -641,7 +655,7 @@ func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, pla
 						amountCell,
 						{Type: "text", Value: duration},
 						{Type: "text", Value: scheduleName},
-						{Type: "badge", Value: status, Variant: statusVariant(status)},
+						{Type: "badge", Value: statusChipLabel(deps.CommonLabels.Status, status), Variant: statusVariant(status)},
 					},
 					Actions: rowActions,
 				})
@@ -689,6 +703,19 @@ func buildPricePlansTable(ctx context.Context, deps *DetailViewDeps, planID, pla
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// statusChipLabel maps a status key to its lyngua display label — the badge
+// cell renders Value verbatim, so passing the raw key would bypass translation.
+func statusChipLabel(l pyeza.StatusLabels, status string) string {
+	switch status {
+	case "active":
+		return l.Active
+	case "inactive":
+		return l.Inactive
+	default:
+		return status
+	}
+}
 
 func statusVariant(status string) string {
 	switch status {

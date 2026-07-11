@@ -138,7 +138,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 	}
 
 	l := deps.Labels
-	rows := buildTableRows(resp.GetData(), l, deps.Routes, perms)
+	rows := buildTableRows(resp.GetData(), l, deps.CommonLabels, deps.Routes, perms)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
@@ -241,7 +241,7 @@ func inventoryColumns(l inventory.Labels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(items []*inventoryitempb.InventoryItem, l inventory.Labels, routes inventory.Routes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(items []*inventoryitempb.InventoryItem, l inventory.Labels, cl pyeza.CommonLabels, routes inventory.Routes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, item := range items {
 		id := item.GetId()
@@ -289,7 +289,7 @@ func buildTableRows(items []*inventoryitempb.InventoryItem, l inventory.Labels, 
 				{Type: "text", Value: available},
 				{Type: "text", Value: reorderDisplay},
 				types.DateTimeCell(dateCreated, types.DateReadable),
-				{Type: "badge", Value: status, Variant: statusVariant(status)},
+				{Type: "badge", Value: statusLabel(cl, status), Variant: statusVariant(status)},
 			},
 			DataAttrs: map[string]string{
 				"name":          name,
@@ -345,6 +345,19 @@ func statusVariant(status string) string {
 		return "warning"
 	default:
 		return "default"
+	}
+}
+
+// statusLabel maps the raw status key to its lyngua display label — the badge
+// cell renders Value verbatim, so passing the raw key would bypass translation.
+func statusLabel(cl pyeza.CommonLabels, status string) string {
+	switch status {
+	case "active":
+		return cl.Status.Active
+	case "inactive":
+		return cl.Status.Inactive
+	default:
+		return status
 	}
 }
 

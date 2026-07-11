@@ -38,6 +38,7 @@ type PageData struct {
 	SubscriptionId      string
 	ClientId            string
 	Status              string
+	StatusLabel         string
 	StatusVariant       string
 	CreatedDate         string
 	ModifiedDate        string
@@ -99,9 +100,12 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	status := "active"
 	statusVariant := "success"
+	// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+	statusLabel := deps.CommonLabels.Status.Active
 	if !m.GetActive() {
 		status = "inactive"
 		statusVariant = "warning"
+		statusLabel = deps.CommonLabels.Status.Inactive
 	}
 
 	tabItems := []pyeza.TabItem{
@@ -148,6 +152,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		SubscriptionId:      m.GetSubscriptionId(),
 		ClientId:            m.GetClientId(),
 		Status:              status,
+		StatusLabel:         statusLabel,
 		StatusVariant:       statusVariant,
 		CreatedDate:         createdDate,
 		ModifiedDate:        modifiedDate,

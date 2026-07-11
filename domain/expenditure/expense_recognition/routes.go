@@ -53,7 +53,7 @@ type Routes struct {
 // package-level URL constants.
 func DefaultRoutes() Routes {
 	return Routes{
-		ActiveNav:                   "expense-recognitions",
+		ActiveNav:                   "expense",
 		ActiveSubNav:                "posted",
 		ListURL:                     ListURL,
 		DetailURL:                   DetailURL,

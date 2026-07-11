@@ -59,7 +59,7 @@ func NewView(deps *ListViewDeps) view.View {
 
 		l := deps.Labels
 		columns := purchaseOrderColumns()
-		rows := buildTableRows(filtered, l)
+		rows := buildTableRows(filtered, l, deps.CommonLabels)
 		types.ApplyColumnStyles(columns, rows)
 
 		heading := statusPageTitle(l, status)
@@ -128,7 +128,7 @@ func purchaseOrderColumns() []types.TableColumn {
 	}
 }
 
-func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l sib_expenditure_expenditure.Labels) []types.TableRow {
+func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l sib_expenditure_expenditure.Labels, cl pyeza.CommonLabels) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, po := range orders {
 		id := po.GetId()
@@ -151,7 +151,7 @@ func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l sib_expenditure_e
 			Cells: []types.TableCell{
 				{Type: "text", Value: poNumber},
 				{Type: "text", Value: supplierName},
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
+				{Type: "badge", Value: statusLabel(cl, recordStatus), Variant: statusVariant(recordStatus)},
 				types.MoneyCell(float64(po.GetTotalAmount()), currency, true),
 				types.DateTimeCell(orderDate, types.DateReadable),
 				types.DateTimeCell(expectedDelivery, types.DateReadable),
@@ -244,5 +244,23 @@ func statusVariant(status string) string {
 		return "danger"
 	default:
 		return "default"
+	}
+}
+
+// statusLabel maps the raw status key to its lyngua display label — the badge
+// cell renders Value verbatim, so passing the raw key would bypass translation.
+// Only draft/pending/approved have a pyeza.StatusLabels field today; the other
+// purchase_order states (partially_received/fully_received/closed/cancelled)
+// fall back to the raw key.
+func statusLabel(cl pyeza.CommonLabels, status string) string {
+	switch status {
+	case "draft":
+		return cl.Status.Draft
+	case "pending":
+		return cl.Status.Pending
+	case "approved":
+		return cl.Status.Approved
+	default:
+		return status
 	}
 }

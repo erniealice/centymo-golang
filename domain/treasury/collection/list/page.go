@@ -104,7 +104,7 @@ func NewView(deps *ListViewDeps) view.View {
 		}
 
 		l := deps.Labels
-		rows := buildTableRows(resp.GetData(), status, l, deps.Routes, perms)
+		rows := buildTableRows(resp.GetData(), status, l, deps.CommonLabels, deps.Routes, perms)
 		types.ApplyColumnStyles(columns, rows)
 
 		bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
@@ -172,7 +172,7 @@ func collectionColumns(l collection.Labels) []types.TableColumn {
 	}
 }
 
-func buildTableRows(collections []*collectionpb.Collection, status string, l collection.Labels, routes collection.Routes, perms *types.UserPermissions) []types.TableRow {
+func buildTableRows(collections []*collectionpb.Collection, status string, l collection.Labels, cl pyeza.CommonLabels, routes collection.Routes, perms *types.UserPermissions) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, c := range collections {
 		recordStatus := c.GetStatus()
@@ -241,7 +241,7 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l col
 				types.MoneyCell(float64(c.GetAmount()), currency, true),
 				{Type: "text", Value: method},
 				types.DateTimeCell(date, types.DateReadable),
-				{Type: "badge", Value: recordStatus, Variant: statusVariant(recordStatus)},
+				{Type: "badge", Value: statusLabel(cl, recordStatus), Variant: statusVariant(recordStatus)},
 			},
 			DataAttrs: map[string]string{
 				"reference": refNumber,
@@ -319,6 +319,19 @@ func statusVariant(status string) string {
 		return "danger"
 	default:
 		return "default"
+	}
+}
+
+// statusLabel maps the raw status key to its lyngua display label — the badge
+// cell renders Value verbatim, so passing the raw key would bypass translation.
+// Only "pending" has a pyeza.StatusLabels field today; completed/failed fall
+// back to the raw key.
+func statusLabel(cl pyeza.CommonLabels, status string) string {
+	switch status {
+	case "pending":
+		return cl.Status.Pending
+	default:
+		return status
 	}
 }
 

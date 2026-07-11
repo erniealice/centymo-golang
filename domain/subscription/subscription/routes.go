@@ -200,7 +200,7 @@ func (r Routes) CanonicalTab(param string) string {
 // package-level route constants defined in routes.go.
 func DefaultRoutes() Routes {
 	return Routes{
-		ActiveNav:    "client",
+		ActiveNav:    "job",
 		ActiveSubNav: "subscriptions",
 
 		ListURL:              ListURL,

@@ -201,8 +201,8 @@ type Routes struct {
 // route constants defined in this file.
 func DefaultRoutes() Routes {
 	return Routes{
-		ActiveNav:    "inventory",
-		ActiveSubNav: "masterlist",
+		ActiveNav:    "service",
+		ActiveSubNav: "services-active",
 
 		// Default to the service dashboard URL — only meaningful for the
 		// service-flavoured mount. Inventory/supplies mounts overwrite or
@@ -496,7 +496,7 @@ func DefaultLineRoutes() LineRoutes {
 func DefaultLineInventoryRoutes() LineRoutes {
 	r := DefaultLineRoutes()
 	r.ActiveNav = "inventory"
-	r.ActiveSubNav = "product-lines-active"
+	r.ActiveSubNav = "product-lines"
 	shift := func(s string) string {
 		s = strings.Replace(s, "/app/product-lines/", "/app/inventory/product-lines/", 1)
 		s = strings.Replace(s, "/product-lines/", "/inventory/product-lines/", 1)

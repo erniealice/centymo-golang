@@ -139,7 +139,8 @@ func DefaultRoutes() Routes {
 func DefaultBundleRoutes() Routes {
 	r := DefaultRoutes()
 	r.ActiveNav = "inventory"
-	r.ActiveSubNav = "bundles-active"
+	// bare prefix — list page composes <base>-<status> to match sidebar item keys
+	r.ActiveSubNav = "bundles"
 	// shift matches both pre-P4 (`/app/plans/*`) and post-P4 (`/plans/*`)
 	// constant shapes — see DefaultProductInventoryRoutes shift comment
 	// for the P4 regression context.

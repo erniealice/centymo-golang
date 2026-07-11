@@ -125,6 +125,7 @@ type PageData struct {
 	Currency      string
 	Duration      string
 	Status        string
+	StatusLabel   string
 	StatusVariant string
 	CreatedDate   string
 	ModifiedDate  string
@@ -281,13 +282,28 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 
 	status := "active"
 	statusVariant := "success"
+	// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+	statusLabel := deps.CommonLabels.Status.Active
 	if !pp.GetActive() {
 		status = "inactive"
 		statusVariant = "warning"
+		statusLabel = deps.CommonLabels.Status.Inactive
 	}
 
-	scheduleName := lookupScheduleName(ctx, deps, sid)
-	scheduleBack := route.ResolveURL(deps.Routes.DetailURL, "id", sid) + "?tab=" + deps.ScheduleLabels.Tabs.ResolveTabSlug("pricePlan")
+	// A stale or mistyped {id} URL segment would otherwise echo as a raw UUID
+	// in the breadcrumb (lookupScheduleName falls back to the id): when the
+	// URL's schedule doesn't resolve, fall back to the loaded price plan's own
+	// schedule for both the label and the back link.
+	scheduleID := sid
+	scheduleName := lookupScheduleName(ctx, deps, scheduleID)
+	if scheduleName == scheduleID {
+		if real := pp.GetPriceScheduleId(); real != "" && real != scheduleID {
+			if n := lookupScheduleName(ctx, deps, real); n != real {
+				scheduleID, scheduleName = real, n
+			}
+		}
+	}
+	scheduleBack := route.ResolveURL(deps.Routes.DetailURL, "id", scheduleID) + "?tab=" + deps.ScheduleLabels.Tabs.ResolveTabSlug("pricePlan")
 
 	// Plan-scoped mount overrides — keep the page anchored to Services > Packages
 	// when invoked under /app/plans/detail/{id}/price/{ppid}. The breadcrumb
@@ -417,6 +433,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sid, ppid, activeT
 		Currency:               currency,
 		Duration:               duration,
 		Status:                 status,
+		StatusLabel:            statusLabel,
 		StatusVariant:          statusVariant,
 		CreatedDate:            pp.GetDateCreatedString(),
 		ModifiedDate:           pp.GetDateModifiedString(),

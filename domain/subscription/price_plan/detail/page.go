@@ -100,24 +100,25 @@ type ProductPlanGroup struct {
 // PageData holds the data for the price plan detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate    string
-	PricePlan          *priceplanpb.PricePlan
-	Labels             price_plan.Labels
-	ActiveTab          string
-	TabItems           []pyeza.TabItem
-	ID                 string
-	PricePlanName      string
-	PricePlanDesc      string
-	PricePlanAmount    types.TableCell
-	PricePlanCurrency  string
-	PricePlanLocation  string
-	PricePlanDuration  string
-	PricePlanStatus    string
-	StatusVariant      string
-	CreatedDate        string
-	ModifiedDate       string
-	ProductPricesTable *types.TableConfig
-	AttachmentTable    *types.TableConfig
+	ContentTemplate      string
+	PricePlan            *priceplanpb.PricePlan
+	Labels               price_plan.Labels
+	ActiveTab            string
+	TabItems             []pyeza.TabItem
+	ID                   string
+	PricePlanName        string
+	PricePlanDesc        string
+	PricePlanAmount      types.TableCell
+	PricePlanCurrency    string
+	PricePlanLocation    string
+	PricePlanDuration    string
+	PricePlanStatus      string
+	PricePlanStatusLabel string
+	StatusVariant        string
+	CreatedDate          string
+	ModifiedDate         string
+	ProductPricesTable   *types.TableConfig
+	AttachmentTable      *types.TableConfig
 
 	// EditURL is the resolved URL for the "Edit Package" CTA on the Info tab.
 	// Routed through the plan-tab handler (price_plan.EditURL,
@@ -659,6 +660,11 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	if status == "inactive" {
 		statusVariant = "warning"
 	}
+	// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+	statusLabel := deps.CommonLabels.Status.Active
+	if status == "inactive" {
+		statusLabel = deps.CommonLabels.Status.Inactive
+	}
 
 	l := deps.Labels
 
@@ -709,24 +715,25 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 			HeaderIcon:     "icon-tag",
 			CommonLabels:   deps.CommonLabels,
 		},
-		ContentTemplate:     "price-plan-detail-content",
-		PricePlan:           pp,
-		Labels:              l,
-		ActiveTab:           activeTab,
-		TabItems:            tabItems,
-		ID:                  id,
-		PricePlanName:       name,
-		PricePlanDesc:       description,
-		PricePlanAmount:     amountFormatted,
-		PricePlanCurrency:   currency,
-		PricePlanLocation:   pp.GetPriceScheduleId(),
-		PricePlanDuration:   duration,
-		PricePlanStatus:     status,
-		StatusVariant:       statusVariant,
-		CreatedDate:         pp.GetDateCreatedString(),
-		ModifiedDate:        pp.GetDateModifiedString(),
-		EditURL:             editURL,
-		BillingModelSummary: billingSummary,
+		ContentTemplate:      "price-plan-detail-content",
+		PricePlan:            pp,
+		Labels:               l,
+		ActiveTab:            activeTab,
+		TabItems:             tabItems,
+		ID:                   id,
+		PricePlanName:        name,
+		PricePlanDesc:        description,
+		PricePlanAmount:      amountFormatted,
+		PricePlanCurrency:    currency,
+		PricePlanLocation:    pp.GetPriceScheduleId(),
+		PricePlanDuration:    duration,
+		PricePlanStatus:      status,
+		PricePlanStatusLabel: statusLabel,
+		StatusVariant:        statusVariant,
+		CreatedDate:          pp.GetDateCreatedString(),
+		ModifiedDate:         pp.GetDateModifiedString(),
+		EditURL:              editURL,
+		BillingModelSummary:  billingSummary,
 	}
 
 	// Load tab-specific data

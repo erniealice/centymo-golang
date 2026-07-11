@@ -504,9 +504,14 @@ func wireSubscriptionModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCa
 		}
 		ctx.Routes.GET(w.subscriptionRoutes.DetailURL, subscriptiondetail.NewView(subDetailDeps))
 		ctx.Routes.GET(w.subscriptionRoutes.TabActionURL, subscriptiondetail.NewTabAction(subDetailDeps))
-		// Nested route — same view, breadcrumb activated via path param.
+		// Nested route — same view, breadcrumb activated via path param. A
+		// cloned deps keeps ActiveNav anchored to Client (this view renders
+		// inside the client-detail breadcrumb) instead of inheriting the
+		// flat mount's Job anchor from subscriptionRoutes.ActiveNav.
 		if w.subscriptionRoutes.UnderClientDetailURL != "" {
-			ctx.Routes.GET(w.subscriptionRoutes.UnderClientDetailURL, subscriptiondetail.NewView(subDetailDeps))
+			subDetailUnderClientDeps := *subDetailDeps
+			subDetailUnderClientDeps.ActiveNavOverride = "client"
+			ctx.Routes.GET(w.subscriptionRoutes.UnderClientDetailURL, subscriptiondetail.NewView(&subDetailUnderClientDeps))
 		}
 		// 2026-05-04 — Subscription detail nested under the rate-card → plan
 		// path. Same view; the URL alone activates the schedule + plan

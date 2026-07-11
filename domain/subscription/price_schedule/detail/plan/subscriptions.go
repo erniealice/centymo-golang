@@ -11,6 +11,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
@@ -27,52 +28,93 @@ type SubscriptionRow struct {
 	Plan       string
 	DateStart  string
 	DateEnd    string
+	Active     bool
 }
 
-// countSubscriptionsForPricePlan returns the count of active subscriptions
-// referencing the given PricePlan. The use case is the same one the tab body
-// renders against — so the badge count and row count cannot drift. Returns 0
-// (no badge) when the dep is unwired.
+// subscriptionPageLimit is the adapter's per-page cap (GetSubscriptionListPageData).
+const subscriptionPageLimit = 100
+
+// fetchSubscriptionsForPricePlan pages through the reverse-index use case for
+// ONE status. The adapter's CTE is a hard `s.active = $x` equality — "both
+// statuses" cannot be expressed in a single call (same constraint as
+// shared.InactiveFilter) — and its default page size is 20, so the full set
+// needs the page loop (a level-AY carries 100+ enrollments).
+func fetchSubscriptionsForPricePlan(ctx context.Context, deps *DetailViewDeps, pricePlanID string, activeOnly bool) []*subscriptionpb.Subscription {
+	var out []*subscriptionpb.Subscription
+	for page := int32(1); ; page++ {
+		resp, err := deps.ListSubscriptionsByPricePlan(ctx, &subscriptionpb.ListSubscriptionsByPricePlanRequest{
+			PricePlanId: pricePlanID,
+			ActiveOnly:  &activeOnly,
+			Pagination: &commonpb.PaginationRequest{
+				Limit:  subscriptionPageLimit,
+				Method: &commonpb.PaginationRequest_Offset{Offset: &commonpb.OffsetPagination{Page: page}},
+			},
+		})
+		if err != nil {
+			log.Printf("Failed to load subscriptions for price plan %s (active=%t): %v", pricePlanID, activeOnly, err)
+			return out
+		}
+		batch := resp.GetSubscriptionList()
+		out = append(out, batch...)
+		if len(batch) < subscriptionPageLimit {
+			return out
+		}
+	}
+}
+
+// countSubscriptionsForPricePlan returns the count of subscriptions (both
+// statuses — a previous academic year's enrollments are all inactive rows)
+// referencing the given PricePlan, via TotalItems on a limit-1 probe per
+// status so the badge never materializes the roster. Returns 0 (no badge)
+// when the dep is unwired.
 func countSubscriptionsForPricePlan(ctx context.Context, deps *DetailViewDeps, pricePlanID string) int {
 	if deps.ListSubscriptionsByPricePlan == nil {
 		return 0
 	}
-	activeOnly := true
-	resp, err := deps.ListSubscriptionsByPricePlan(ctx, &subscriptionpb.ListSubscriptionsByPricePlanRequest{
-		PricePlanId: pricePlanID,
-		ActiveOnly:  &activeOnly,
-	})
-	if err != nil {
-		log.Printf("Failed to count subscriptions for price plan %s: %v", pricePlanID, err)
-		return 0
+	total := 0
+	for _, activeOnly := range []bool{true, false} {
+		ao := activeOnly
+		resp, err := deps.ListSubscriptionsByPricePlan(ctx, &subscriptionpb.ListSubscriptionsByPricePlanRequest{
+			PricePlanId: pricePlanID,
+			ActiveOnly:  &ao,
+			Pagination: &commonpb.PaginationRequest{
+				Limit:  1,
+				Method: &commonpb.PaginationRequest_Offset{Offset: &commonpb.OffsetPagination{Page: 1}},
+			},
+		})
+		if err != nil {
+			log.Printf("Failed to count subscriptions for price plan %s (active=%t): %v", pricePlanID, ao, err)
+			continue
+		}
+		total += int(resp.GetPagination().GetTotalItems())
 	}
-	return len(resp.GetSubscriptionList())
+	return total
 }
 
-// loadSubscriptionsForPricePlan fetches active subscriptions for the given
-// PricePlan and shapes them into SubscriptionRow values for the tab table.
-// Hydration of Client + PricePlan + Plan is provided by the espyna use case
-// (single CTE-based JOIN) — the view layer does not chain N+1 lookups.
+// loadSubscriptionsForPricePlan fetches the subscriptions referencing the
+// given PricePlan — BOTH statuses, all pages — and shapes them into
+// SubscriptionRow values for the tab table. Hydration of Client + PricePlan +
+// Plan is provided by the espyna use case (single CTE-based JOIN) — the view
+// layer does not chain N+1 lookups.
 func loadSubscriptionsForPricePlan(ctx context.Context, deps *DetailViewDeps, pricePlanID string) []SubscriptionRow {
 	if deps.ListSubscriptionsByPricePlan == nil {
 		return nil
 	}
-	activeOnly := true
-	resp, err := deps.ListSubscriptionsByPricePlan(ctx, &subscriptionpb.ListSubscriptionsByPricePlanRequest{
-		PricePlanId: pricePlanID,
-		ActiveOnly:  &activeOnly,
-	})
-	if err != nil {
-		log.Printf("Failed to load subscriptions for price plan %s: %v", pricePlanID, err)
-		return nil
+	seen := map[string]bool{}
+	var subs []*subscriptionpb.Subscription
+	for _, activeOnly := range []bool{true, false} {
+		for _, s := range fetchSubscriptionsForPricePlan(ctx, deps, pricePlanID, activeOnly) {
+			if s == nil || seen[s.GetId()] {
+				continue
+			}
+			seen[s.GetId()] = true
+			subs = append(subs, s)
+		}
 	}
 
 	tz := types.LocationFromContext(ctx)
-	rows := make([]SubscriptionRow, 0, len(resp.GetSubscriptionList()))
-	for _, s := range resp.GetSubscriptionList() {
-		if s == nil {
-			continue
-		}
+	rows := make([]SubscriptionRow, 0, len(subs))
+	for _, s := range subs {
 		clientName := ""
 		clientID := s.GetClientId()
 		if c := s.GetClient(); c != nil {
@@ -112,6 +154,7 @@ func loadSubscriptionsForPricePlan(ctx context.Context, deps *DetailViewDeps, pr
 			Plan:       planName,
 			DateStart:  types.FormatTimestampInTZ(s.GetDateTimeStart(), tz, types.DateTimeReadable),
 			DateEnd:    types.FormatTimestampInTZ(s.GetDateTimeEnd(), tz, types.DateTimeReadable),
+			Active:     s.GetActive(),
 		})
 	}
 	return rows
@@ -132,6 +175,9 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 		{Key: "plan", Label: subLabels.ColumnPlan},
 		{Key: "start_date", Label: subLabels.ColumnStartDate, WidthClass: "col-3xl"},
 		{Key: "end_date", Label: subLabels.ColumnEndDate, WidthClass: "col-3xl"},
+		// The tab now lists BOTH statuses (historical academic years are
+		// inactive rows) — the status chip is what tells them apart.
+		{Key: "status", Label: deps.PlanLabels.Columns.Status, WidthClass: "col-2xl"},
 	}
 
 	tableRows := make([]types.TableRow, 0, len(rows))
@@ -163,6 +209,13 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 			})
 		}
 
+		// Badge Value renders verbatim — use the lyngua status labels, not the
+		// raw status key.
+		statusLabel, statusVariant := deps.CommonLabels.Status.Active, "success"
+		if !r.Active {
+			statusLabel, statusVariant = deps.CommonLabels.Status.Inactive, "warning"
+		}
+
 		tableRows = append(tableRows, types.TableRow{
 			ID: r.ID,
 			Cells: []types.TableCell{
@@ -171,6 +224,7 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 				{Type: "text", Value: r.Plan},
 				{Type: "text", Value: r.DateStart},
 				{Type: "text", Value: r.DateEnd},
+				{Type: "badge", Value: statusLabel, Variant: statusVariant},
 			},
 			DataAttrs: map[string]string{
 				"name":   r.Name,

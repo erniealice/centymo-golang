@@ -122,7 +122,8 @@ func DefaultRoutes() Routes {
 func DefaultInventoryRoutes() Routes {
 	r := DefaultRoutes()
 	r.ActiveNav = "inventory"
-	r.ActiveSubNav = "inventory-price-schedules-active"
+	// bare prefix — list page composes <base>-<status> to match sidebar item keys
+	r.ActiveSubNav = "inventory-price-schedules"
 	// shift matches both pre-P4 (`/app/price-schedules/*`) and post-P4
 	// (`/price-schedules/*`) constant shapes — see DefaultProductInventoryRoutes
 	// shift comment for the P4 regression context.

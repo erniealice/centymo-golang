@@ -47,12 +47,13 @@ type VariantPageData struct {
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
 	// Info tab
-	VariantName   string
-	VariantSKU    string
-	VariantPrice  string
-	VariantStatus string
-	StatusVariant string
-	OptionEntries []OptionEntry
+	VariantName        string
+	VariantSKU         string
+	VariantPrice       string
+	VariantStatus      string
+	VariantStatusLabel string
+	StatusVariant      string
+	OptionEntries      []OptionEntry
 	// Stock tab
 	StockTable *types.TableConfig
 	// Pricing tab
@@ -101,6 +102,11 @@ func NewPageView(deps *DetailViewDeps) view.View {
 		variantStatus := "active"
 		if !active {
 			variantStatus = "inactive"
+		}
+		// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+		variantStatusLabel := deps.CommonLabels.Status.Active
+		if !active {
+			variantStatusLabel = deps.CommonLabels.Status.Inactive
 		}
 
 		// Format price override
@@ -155,19 +161,20 @@ func NewPageView(deps *DetailViewDeps) view.View {
 				HeaderIcon:          "icon-layers",
 				CommonLabels:        deps.CommonLabels,
 			},
-			ContentTemplate: "variant-detail-content",
-			Breadcrumbs:     breadcrumbs,
-			ProductID:       id,
-			VariantID:       vid,
-			ActiveTab:       activeTab,
-			TabItems:        tabItems,
-			VariantName:     productName,
-			VariantSKU:      sku,
-			VariantPrice:    variantPrice,
-			VariantStatus:   variantStatus,
-			StatusVariant:   detail.StatusVariant(variantStatus),
-			OptionEntries:   optionEntries,
-			Labels:          l,
+			ContentTemplate:    "variant-detail-content",
+			Breadcrumbs:        breadcrumbs,
+			ProductID:          id,
+			VariantID:          vid,
+			ActiveTab:          activeTab,
+			TabItems:           tabItems,
+			VariantName:        productName,
+			VariantSKU:         sku,
+			VariantPrice:       variantPrice,
+			VariantStatus:      variantStatus,
+			VariantStatusLabel: variantStatusLabel,
+			StatusVariant:      detail.StatusVariant(variantStatus),
+			OptionEntries:      optionEntries,
+			Labels:             l,
 		}
 
 		// Load tab-specific data
@@ -239,6 +246,11 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		if !active {
 			variantStatus = "inactive"
 		}
+		// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+		variantStatusLabel := deps.CommonLabels.Status.Active
+		if !active {
+			variantStatusLabel = deps.CommonLabels.Status.Inactive
+		}
 
 		priceOverride := variant.GetPriceOverride()
 		variantPrice := ""
@@ -249,15 +261,16 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		l := deps.Labels
 
 		pageData := &VariantPageData{
-			ProductID:     id,
-			VariantID:     vid,
-			ActiveTab:     tab,
-			VariantName:   productName,
-			VariantSKU:    sku,
-			VariantPrice:  variantPrice,
-			VariantStatus: variantStatus,
-			StatusVariant: detail.StatusVariant(variantStatus),
-			Labels:        l,
+			ProductID:          id,
+			VariantID:          vid,
+			ActiveTab:          tab,
+			VariantName:        productName,
+			VariantSKU:         sku,
+			VariantPrice:       variantPrice,
+			VariantStatus:      variantStatus,
+			VariantStatusLabel: variantStatusLabel,
+			StatusVariant:      detail.StatusVariant(variantStatus),
+			Labels:             l,
 		}
 
 		// Load tab-specific data

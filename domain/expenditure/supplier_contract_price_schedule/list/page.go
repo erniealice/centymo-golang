@@ -110,7 +110,7 @@ func NewView(deps *ListViewDeps) view.View {
 				Title:          heading,
 				CurrentPath:    viewCtx.CurrentPath,
 				ActiveNav:      deps.Routes.ActiveNav,
-				ActiveSubNav:   status,
+				ActiveSubNav:   "contracts-price-schedules",
 				HeaderTitle:    heading,
 				HeaderSubtitle: l.Page.Caption,
 				HeaderIcon:     "icon-calendar",

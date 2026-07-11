@@ -51,6 +51,7 @@ type StockDetailPageData struct {
 	QuantityReserved    string
 	AvailableQty        string
 	ItemStatus          string
+	ItemStatusLabel     string
 	ItemStatusVariant   string
 	// Serial data
 	SerialTable   *types.TableConfig
@@ -111,6 +112,11 @@ func NewPageView(deps *variant.DetailViewDeps) view.View {
 		if !active {
 			itemStatus = "inactive"
 		}
+		// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+		itemStatusLabel := deps.CommonLabels.Status.Active
+		if !active {
+			itemStatusLabel = deps.CommonLabels.Status.Inactive
+		}
 
 		available := ComputeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
 
@@ -159,6 +165,7 @@ func NewPageView(deps *variant.DetailViewDeps) view.View {
 			QuantityReserved:    fmt.Sprintf("%v", item.GetQuantityReserved()),
 			AvailableQty:        available,
 			ItemStatus:          itemStatus,
+			ItemStatusLabel:     itemStatusLabel,
 			ItemStatusVariant:   detail.StatusVariant(itemStatus),
 			Labels:              l,
 		}
@@ -230,6 +237,11 @@ func NewTabAction(deps *variant.DetailViewDeps) view.View {
 		if !active {
 			itemStatus = "inactive"
 		}
+		// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+		itemStatusLabel := deps.CommonLabels.Status.Active
+		if !active {
+			itemStatusLabel = deps.CommonLabels.Status.Inactive
+		}
 
 		available := ComputeAvailable(item.GetQuantityOnHand(), item.GetQuantityReserved())
 
@@ -250,6 +262,7 @@ func NewTabAction(deps *variant.DetailViewDeps) view.View {
 			QuantityReserved:    fmt.Sprintf("%v", item.GetQuantityReserved()),
 			AvailableQty:        available,
 			ItemStatus:          itemStatus,
+			ItemStatusLabel:     itemStatusLabel,
 			ItemStatusVariant:   detail.StatusVariant(itemStatus),
 			Labels:              l,
 		}

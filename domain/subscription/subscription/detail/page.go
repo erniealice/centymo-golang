@@ -72,6 +72,14 @@ type DetailViewDeps struct {
 	// Empty string disables the breadcrumb link (label still renders).
 	ClientDetailURL string
 
+	// ActiveNavOverride — mount override for the nested "under client detail"
+	// entry point (populated only by the block-wiring clone registered on
+	// UnderClientDetailURL) so the sidebar stays anchored to Client instead of
+	// jumping to Job when this same view renders inside the client-detail
+	// breadcrumb. Empty falls back to Routes.ActiveNav (the flat/price-plan
+	// mounts).
+	ActiveNavOverride string
+
 	// 2026-05-04 — when the subscription detail page is mounted at the nested
 	// rate-card → plan → engagement URL, these absolute path templates power
 	// a 2-segment breadcrumb (PriceSchedule → PricePlan). All three deps are
@@ -500,12 +508,17 @@ func NewView(deps *DetailViewDeps) view.View {
 		jobsTabVisible := len(allJobs) > 0 || deps.Routes.TabHidden("operations")
 		tabItems := buildTabItems(l, id, deps.Routes, jobsTabVisible)
 
+		activeNav := deps.Routes.ActiveNav
+		if deps.ActiveNavOverride != "" {
+			activeNav = deps.ActiveNavOverride
+		}
+
 		pageData := &PageData{
 			PageData: types.PageData{
 				CacheVersion:        viewCtx.CacheVersion,
 				Title:               headerTitle,
 				CurrentPath:         viewCtx.CurrentPath,
-				ActiveNav:           deps.Routes.ActiveNav,
+				ActiveNav:           activeNav,
 				ActiveSubNav:        deps.Routes.ActiveSubNav,
 				HeaderTitle:         headerTitle,
 				HeaderSubtitle:      headerSubtitle,
