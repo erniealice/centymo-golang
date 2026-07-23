@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
-	subscription_group "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
+	"github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/hybra-golang/views/auditlog"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -18,6 +19,7 @@ import (
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	clientattributepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client_attribute"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan_staff"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
@@ -43,6 +45,15 @@ type DetailViewDeps struct {
 	ListSubscriptionGroupMembers func(ctx context.Context, req *subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest) (*subscriptiongroupmemberpb.ListSubscriptionGroupMembersResponse, error)
 	ListClients                  func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
 	ListSubscriptions            func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
+
+	// Roster banding — app-configured via the block's EngineBlock option, generic
+	// "client_attributes.<code>" grammar. A zero Options (or an unresolvable/
+	// unwired code) → today's flat roster, byte-identical (service-admin, which
+	// sets nothing, is unaffected). The two closures are workspace-bound at the
+	// espyna adapter, mirroring fayna's report-cards grid wiring.
+	Options                  subscription_group.Options
+	ListClientAttributes     func(ctx context.Context, req *clientattributepb.ListClientAttributesRequest) (*clientattributepb.ListClientAttributesResponse, error)
+	ResolveAttributeIDByCode func(ctx context.Context, code string) (string, error)
 
 	// Teaching-staff tab (§6.2): the group grid composes these existing List
 	// use cases — offerings (ListProductPlans by plan_id), current assignments
@@ -469,38 +480,85 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, groupID 
 		return cfg
 	}
 
-	clientNames := resolveClientNames(ctx, deps, members)
 	subCodes := resolveSubscriptionCodes(ctx, deps, members)
 
+	// Banding is enabled only when Roster.GroupByField parses to a client-
+	// attribute code. Unset/foreign → today's flat roster, byte-identical.
+	groupCode, banded := deps.Options.Roster.GroupByAttributeCode()
+
+	if !banded {
+		clientNames := resolveClientNames(ctx, deps, members)
+		rows := make([]types.TableRow, 0, len(members))
+		for _, m := range members {
+			client := clientNames[m.GetClientId()]
+			if client == "" {
+				client = m.GetClientId()
+			}
+			rows = append(rows, rosterRow(deps, m, client, subCodes))
+		}
+		cfg.Rows = rows
+		types.ApplyColumnStyles(columns, rows)
+		types.ApplyTableSettings(cfg)
+		return cfg
+	}
+
+	// Optioned path: "Last, First" display, last-name sort within bands, and
+	// value bands via the shared pyeza partition helper. TRAP: a row's ID is the
+	// subscription_group_member id, but attribute values key by CLIENT id — the
+	// value-by-row map is rebuilt to the member identity below.
+	records := resolveClientRecords(ctx, deps, members)
 	rows := make([]types.TableRow, 0, len(members))
 	for _, m := range members {
-		client := clientNames[m.GetClientId()]
+		client := records[m.GetClientId()].listName()
 		if client == "" {
 			client = m.GetClientId()
 		}
-		sub := subCodes[m.GetSubscriptionId()]
-		if sub == "" {
-			sub = m.GetSubscriptionId()
-		}
-		// Badge Value renders verbatim — use the lyngua status labels, not the
-		// raw status key.
-		st, variant := deps.CommonLabels.Status.Active, "success"
-		if !m.GetActive() {
-			st, variant = deps.CommonLabels.Status.Inactive, "warning"
-		}
-		rows = append(rows, types.TableRow{
-			ID: m.GetId(),
-			Cells: []types.TableCell{
-				{Type: "text", Value: client},
-				{Type: "text", Value: sub},
-				{Type: "badge", Value: st, Variant: variant},
-			},
-		})
+		rows = append(rows, rosterRow(deps, m, client, subCodes))
 	}
-	cfg.Rows = rows
+	sortRosterRows(rows, members, records, deps.Options.Roster)
+
+	attrByClient := fetchAttributeValues(ctx, deps, members, records)[groupCode]
+	if len(attrByClient) == 0 {
+		// Sort applied, but no attribute values resolved → flat sorted roster
+		// (the fail-safe: banding degrades, never errors).
+		cfg.Rows = rows
+		types.ApplyColumnStyles(columns, rows)
+		types.ApplyTableSettings(cfg)
+		return cfg
+	}
+	valueByRowID := make(map[string]string, len(members))
+	for _, m := range members {
+		valueByRowID[m.GetId()] = attrByClient[m.GetClientId()]
+	}
+	cfg.Groups = types.GroupRowsByValue(rows, valueByRowID, types.GroupRowsByValueOptions{
+		LeadingOrder: deps.Options.Roster.GroupValueOrder,
+		GroupID:      func(v string) string { return "sg-band-" + slug(v) },
+	})
 	types.ApplyColumnStyles(columns, rows)
 	types.ApplyTableSettings(cfg)
 	return cfg
+}
+
+// rosterRow builds one roster TableRow (client + subscription + status) for a
+// member. ID is the member id; client is the pre-resolved display string.
+func rosterRow(deps *DetailViewDeps, m *subscriptiongroupmemberpb.SubscriptionGroupMember, client string, subCodes map[string]string) types.TableRow {
+	sub := subCodes[m.GetSubscriptionId()]
+	if sub == "" {
+		sub = m.GetSubscriptionId()
+	}
+	// Badge Value renders verbatim — use the lyngua status labels, not the raw key.
+	st, variant := deps.CommonLabels.Status.Active, "success"
+	if !m.GetActive() {
+		st, variant = deps.CommonLabels.Status.Inactive, "warning"
+	}
+	return types.TableRow{
+		ID: m.GetId(),
+		Cells: []types.TableCell{
+			{Type: "text", Value: client},
+			{Type: "text", Value: sub},
+			{Type: "badge", Value: st, Variant: variant},
+		},
+	}
 }
 
 // idListFilter builds an `id IN (…)` filter — resolves EXACTLY the roster's
@@ -530,6 +588,28 @@ func idListFilterInactive(ids []string) *commonpb.FilterRequest {
 		},
 	})
 	return f
+}
+
+// rosterPageLimit chunks id-list hydration reads. The espyna generic list
+// silently defaults to LIMIT 100, and a section roster can hold up to 100 active
+// + 100 inactive members, so unchunked `id IN (…)` reads would drop rows past
+// the first 100 and mis-band them. Mirrors fayna's section-grid pageLimit.
+const rosterPageLimit = 100
+
+// chunkIDs splits ids into batches of at most size (size<=0 → one batch).
+func chunkIDs(ids []string, size int) [][]string {
+	if size <= 0 || len(ids) <= size {
+		return [][]string{ids}
+	}
+	var out [][]string
+	for start := 0; start < len(ids); start += size {
+		end := start + size
+		if end > len(ids) {
+			end = len(ids)
+		}
+		out = append(out, ids[start:end])
+	}
+	return out
 }
 
 // resolveClientNames maps client_id → display name for exactly the roster's
@@ -597,4 +677,251 @@ func resolveSubscriptionCodes(ctx context.Context, deps *DetailViewDeps, members
 		}
 	}
 	return m
+}
+
+// clientRecord is a roster client's structured identity for the optioned path —
+// the display name plus the last/first parts the "Last, First" render and the
+// last-name sort need.
+type clientRecord struct {
+	name      string
+	lastName  string
+	firstName string
+}
+
+// listName renders the class-list name form "{last_name}, {first_name}",
+// falling back to the plain display name when either part is missing.
+func (r clientRecord) listName() string {
+	if r.lastName != "" && r.firstName != "" {
+		return r.lastName + ", " + r.firstName
+	}
+	return r.name
+}
+
+// resolveClientRecords maps client_id → structured name for exactly the roster's
+// clients (LIST_IN by id, both statuses). The optioned counterpart to
+// resolveClientNames; the flat path keeps the plain display string.
+func resolveClientRecords(ctx context.Context, deps *DetailViewDeps, members []*subscriptiongroupmemberpb.SubscriptionGroupMember) map[string]clientRecord {
+	if deps.ListClients == nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	var ids []string
+	for _, m := range members {
+		if id := m.GetClientId(); id != "" && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	out := make(map[string]clientRecord, len(ids))
+	for _, batch := range chunkIDs(ids, rosterPageLimit) {
+		for _, f := range []*commonpb.FilterRequest{idListFilter(batch), idListFilterInactive(batch)} {
+			resp, err := deps.ListClients(ctx, &clientpb.ListClientsRequest{Filters: f})
+			if err != nil {
+				log.Printf("Failed to list clients for subscription_group roster: %v", err)
+				continue
+			}
+			for _, c := range resp.GetData() {
+				out[c.GetId()] = clientRecord{
+					name:      clientDisplayName(c),
+					lastName:  clientLastName(c),
+					firstName: clientFirstName(c),
+				}
+			}
+		}
+	}
+	return out
+}
+
+// clientDisplayName prefers the client's own name column, then first+last, then
+// the embedded User's first+last, then the id.
+func clientDisplayName(c *clientpb.Client) string {
+	if name := strings.TrimSpace(c.GetName()); name != "" {
+		return name
+	}
+	if fn := strings.TrimSpace(c.GetFirstName() + " " + c.GetLastName()); fn != "" {
+		return fn
+	}
+	if u := c.GetUser(); u != nil {
+		if name := strings.TrimSpace(u.GetFirstName() + " " + u.GetLastName()); name != "" {
+			return name
+		}
+	}
+	return c.GetId()
+}
+
+// clientLastName prefers the client's own last_name column, then the embedded
+// User's last name.
+func clientLastName(c *clientpb.Client) string {
+	if ln := strings.TrimSpace(c.GetLastName()); ln != "" {
+		return ln
+	}
+	if u := c.GetUser(); u != nil {
+		if ln := strings.TrimSpace(u.GetLastName()); ln != "" {
+			return ln
+		}
+	}
+	return ""
+}
+
+// clientFirstName mirrors clientLastName for the first-name column.
+func clientFirstName(c *clientpb.Client) string {
+	if fn := strings.TrimSpace(c.GetFirstName()); fn != "" {
+		return fn
+	}
+	if u := c.GetUser(); u != nil {
+		if fn := strings.TrimSpace(u.GetFirstName()); fn != "" {
+			return fn
+		}
+	}
+	return ""
+}
+
+// fetchAttributeValues resolves each Roster-referenced attribute code to its id,
+// then loads the roster clients' values — code → (client_id → value). Nil-safe:
+// an unwired closure or unresolvable code yields no values (the roster then
+// renders sorted-flat, never errors).
+//
+// SECURITY: the client set is the INTERSECTION of the roster's member client_ids
+// with `authorized` — the clients the workspace-scoped resolveClientRecords
+// actually returned. client_attribute is an EAV table with no workspace_id
+// column, so the list wrapper cannot scope it; deriving the client set straight
+// from member.client_id would let a membership carrying a foreign (other-
+// workspace) client_id disclose that client's attribute value. Values are also
+// re-checked against `authorized` before acceptance (defense in depth).
+func fetchAttributeValues(ctx context.Context, deps *DetailViewDeps, members []*subscriptiongroupmemberpb.SubscriptionGroupMember, authorized map[string]clientRecord) map[string]map[string]string {
+	codes := deps.Options.AttributeCodes()
+	if len(codes) == 0 || deps.ListClientAttributes == nil || deps.ResolveAttributeIDByCode == nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	var clientIDs []string
+	for _, m := range members {
+		id := m.GetClientId()
+		if id == "" || seen[id] {
+			continue
+		}
+		if _, ok := authorized[id]; !ok {
+			continue // unresolved / foreign client → never queried, never banded
+		}
+		seen[id] = true
+		clientIDs = append(clientIDs, id)
+	}
+	if len(clientIDs) == 0 {
+		return nil
+	}
+	out := make(map[string]map[string]string, len(codes))
+	for _, code := range codes {
+		attrID, err := deps.ResolveAttributeIDByCode(ctx, code)
+		if err != nil || attrID == "" {
+			log.Printf("subscription_group roster: attribute code %q did not resolve (bands ignored for it): %v", code, err)
+			continue
+		}
+		vals := map[string]string{}
+		for _, batch := range chunkIDs(clientIDs, rosterPageLimit) {
+			resp, err := deps.ListClientAttributes(ctx, &clientattributepb.ListClientAttributesRequest{
+				Filters: attributeValueFilter(attrID, batch),
+			})
+			if err != nil {
+				log.Printf("subscription_group roster: list client attributes for %q: %v", code, err)
+				continue
+			}
+			for _, ca := range resp.GetData() {
+				cid, v := ca.GetClientId(), strings.TrimSpace(ca.GetValue())
+				if cid == "" || v == "" {
+					continue
+				}
+				if _, ok := authorized[cid]; !ok {
+					continue // defense in depth: never surface a non-authorized client's value
+				}
+				vals[cid] = v
+			}
+		}
+		out[code] = vals
+	}
+	return out
+}
+
+// attributeValueFilter scopes a client_attribute list to one attribute across
+// the roster's clients: attribute_id EQ AND client_id IN. LIST_IN → SQL IN, the
+// same resolve-exactly-the-roster idiom as idListFilter.
+func attributeValueFilter(attrID string, clientIDs []string) *commonpb.FilterRequest {
+	return &commonpb.FilterRequest{
+		Logic: commonpb.FilterLogic_AND,
+		Filters: []*commonpb.TypedFilter{
+			{
+				Field: "attribute_id",
+				FilterType: &commonpb.TypedFilter_StringFilter{
+					StringFilter: &commonpb.StringFilter{Value: attrID, Operator: commonpb.StringOperator_STRING_EQUALS},
+				},
+			},
+			{
+				Field: "client_id",
+				FilterType: &commonpb.TypedFilter_ListFilter{
+					ListFilter: &commonpb.ListFilter{Values: clientIDs, Operator: commonpb.ListOperator_LIST_IN},
+				},
+			},
+		},
+	}
+}
+
+// sortRosterRows orders roster rows by the client's last name (the single
+// implemented SortField), direction-aware and stable; ties fall back to the
+// display name then the row id. Rows key by member id, records by client id, so
+// the member→client map bridges the two identities.
+func sortRosterRows(rows []types.TableRow, members []*subscriptiongroupmemberpb.SubscriptionGroupMember, records map[string]clientRecord, opts subscription_group.RowOptions) {
+	if !opts.SortByLastName() {
+		return
+	}
+	clientByMember := make(map[string]string, len(members))
+	for _, m := range members {
+		clientByMember[m.GetId()] = m.GetClientId()
+	}
+	desc := opts.Direction() == "desc"
+	sort.SliceStable(rows, func(i, j int) bool {
+		ri := records[clientByMember[rows[i].ID]]
+		rj := records[clientByMember[rows[j].ID]]
+		a, b := strings.ToLower(ri.lastName), strings.ToLower(rj.lastName)
+		if a == b {
+			// Equal last names → first name (the locked last→first contract),
+			// then display name, then row ID as deterministic tie-breakers.
+			fa, fb := strings.ToLower(ri.firstName), strings.ToLower(rj.firstName)
+			if fa != fb {
+				return fa < fb
+			}
+			an, bn := strings.ToLower(ri.name), strings.ToLower(rj.name)
+			if an != bn {
+				return an < bn
+			}
+			return rows[i].ID < rows[j].ID
+		}
+		// Values present sort before empties regardless of direction.
+		if (a == "") != (b == "") {
+			return a != ""
+		}
+		if desc {
+			return a > b
+		}
+		return a < b
+	})
+}
+
+// slug reduces a band value to a stable id token (lowercase alnum; spaces/
+// dashes/underscores → "-"; empty → "none"). Keeps sg-band-* ids reproducible.
+func slug(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(s) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == ' ' || r == '-' || r == '_':
+			b.WriteByte('-')
+		}
+	}
+	if b.Len() == 0 {
+		return "none"
+	}
+	return b.String()
 }
