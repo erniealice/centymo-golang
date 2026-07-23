@@ -1,6 +1,6 @@
 package form
 
-import expense_recognition "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition"
+import "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition"
 
 // Data is the template data for the recognition line drawer form.
 type Data struct {

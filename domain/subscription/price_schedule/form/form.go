@@ -3,7 +3,7 @@ package form
 import (
 	"strings"
 
-	price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 )
 
 // LocationOption is a location entry for the drawer's location picker.

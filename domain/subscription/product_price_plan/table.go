@@ -6,7 +6,7 @@ import (
 	"log"
 
 	shared "github.com/erniealice/centymo-golang/domain/shared"
-	sib_subscription_price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	sibSubscriptionPricePlan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -64,7 +64,7 @@ type TableDeps struct {
 	ListProductPricePlans func(ctx context.Context, req *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 
 	// Shared labels.
-	PlanLabels             sib_subscription_price_plan.Labels
+	PlanLabels             sibSubscriptionPricePlan.Labels
 	ProductPricePlanLabels Labels
 	TableLabels            types.TableLabels
 }
@@ -252,7 +252,7 @@ func BuildTable(ctx context.Context, deps *TableDeps, parent ParentContext) *typ
 // ---------------------------------------------------------------------------
 
 // FormatBillingKindLabel maps a proto enum string to its translated display label.
-func FormatBillingKindLabel(kind string, l sib_subscription_price_plan.FormLabels) string {
+func FormatBillingKindLabel(kind string, l sibSubscriptionPricePlan.FormLabels) string {
 	switch kind {
 	case "BILLING_KIND_ONE_TIME":
 		return l.BillingKindOneTime
@@ -265,7 +265,7 @@ func FormatBillingKindLabel(kind string, l sib_subscription_price_plan.FormLabel
 }
 
 // FormatAmountBasisLabel maps a proto enum string to its translated display label.
-func FormatAmountBasisLabel(basis string, l sib_subscription_price_plan.FormLabels) string {
+func FormatAmountBasisLabel(basis string, l sibSubscriptionPricePlan.FormLabels) string {
 	switch basis {
 	case "AMOUNT_BASIS_PER_CYCLE":
 		return l.AmountBasisPerCycle

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	shared "github.com/erniealice/centymo-golang/domain/shared"
-	price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	"github.com/erniealice/espyna-golang/shared/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"

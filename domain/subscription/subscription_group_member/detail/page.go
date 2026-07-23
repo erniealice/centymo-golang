@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	subscription_group_member "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
+	"github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"

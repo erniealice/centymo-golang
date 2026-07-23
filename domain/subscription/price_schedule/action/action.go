@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	"github.com/erniealice/pyeza-golang/route"
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"

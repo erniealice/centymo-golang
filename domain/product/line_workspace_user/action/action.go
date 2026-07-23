@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	line_workspace_user "github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
+	"github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
 	"github.com/erniealice/centymo-golang/domain/product/line_workspace_user/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"

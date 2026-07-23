@@ -3,12 +3,12 @@ package subscription
 import (
 	"context"
 
-	sib_subscription_price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	sibSubscriptionPricePlan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	pricescheduleaction "github.com/erniealice/centymo-golang/domain/subscription/price_schedule/action"
 	pricescheduledetail "github.com/erniealice/centymo-golang/domain/subscription/price_schedule/detail"
 	priceschedulePlan "github.com/erniealice/centymo-golang/domain/subscription/price_schedule/detail/plan"
 	priceschedulelist "github.com/erniealice/centymo-golang/domain/subscription/price_schedule/list"
-	sib_subscription_product_price_plan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
+	sibSubscriptionProductPricePlan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -32,8 +32,8 @@ import (
 type PriceScheduleModuleDeps struct {
 	Routes                 epkg.Routes
 	Labels                 epkg.Labels
-	PricePlanLabels        sib_subscription_price_plan.Labels         // used by the schedule-scoped price_plan detail page
-	ProductPricePlanLabels sib_subscription_product_price_plan.Labels // used by the schedule-scoped plan detail product-prices tab
+	PricePlanLabels        sibSubscriptionPricePlan.Labels        // used by the schedule-scoped price_plan detail page
+	ProductPricePlanLabels sibSubscriptionProductPricePlan.Labels // used by the schedule-scoped plan detail product-prices tab
 	CommonLabels           pyeza.CommonLabels
 	TableLabels            types.TableLabels
 
@@ -242,12 +242,12 @@ func NewPriceScheduleModule(deps *PriceScheduleModuleDeps) *PriceScheduleModule 
 // pricePlanLabelsFromDeps returns the caller-supplied PricePlanLabels when set;
 // otherwise falls back to DefaultPricePlanLabels with error strings copied from
 // the parent schedule so HTMX error rendering stays tier-consistent.
-func pricePlanLabelsFromDeps(deps *PriceScheduleModuleDeps) sib_subscription_price_plan.Labels {
+func pricePlanLabelsFromDeps(deps *PriceScheduleModuleDeps) sibSubscriptionPricePlan.Labels {
 	if deps.PricePlanLabels.Detail.Heading != "" || deps.PricePlanLabels.Tabs.Info != "" {
 		return deps.PricePlanLabels
 	}
-	l := sib_subscription_price_plan.DefaultLabels()
-	l.Errors = sib_subscription_price_plan.ErrorLabels{
+	l := sibSubscriptionPricePlan.DefaultLabels()
+	l.Errors = sibSubscriptionPricePlan.ErrorLabels{
 		NotFound:     deps.Labels.Errors.NotFound,
 		LoadFailed:   deps.Labels.Errors.LoadFailed,
 		Unauthorized: deps.Labels.Errors.Unauthorized,

@@ -13,7 +13,7 @@ import (
 
 	"github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event"
 
-	sib_treasury_advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
+	sibTreasuryAdvancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -24,7 +24,7 @@ import (
 
 // DetailViewDeps holds view dependencies.
 type DetailViewDeps struct {
-	Routes       sib_treasury_advancesdashboard.Routes
+	Routes       sibTreasuryAdvancesdashboard.Routes
 	Labels       supplier_billing_event.Labels
 	CommonLabels pyeza.CommonLabels
 
@@ -85,7 +85,7 @@ func NewView(deps *DetailViewDeps) view.View {
 	})
 }
 
-func eventToMap(ev *supplierbillingeventpb.SupplierBillingEvent, l supplier_billing_event.Labels, routes sib_treasury_advancesdashboard.Routes) map[string]any {
+func eventToMap(ev *supplierbillingeventpb.SupplierBillingEvent, l supplier_billing_event.Labels, routes sibTreasuryAdvancesdashboard.Routes) map[string]any {
 	status := ev.GetStatus()
 	statusK := statusKey(status)
 	hasRec := ev.GetExpenseRecognitionId() != ""

@@ -3,7 +3,7 @@ package procurement_request_line
 import (
 	"context"
 
-	sib_expenditure_procurement_request "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request"
+	sibExpenditureProcurementRequest "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request"
 	procurementrequestlineaction "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request_line/action"
 
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
@@ -15,8 +15,8 @@ import (
 
 // ModuleDeps holds all dependencies for the procurement_request_line module.
 type ModuleDeps struct {
-	Routes       sib_expenditure_procurement_request.Routes
-	Labels       sib_expenditure_procurement_request.Labels
+	Routes       sibExpenditureProcurementRequest.Routes
+	Labels       sibExpenditureProcurementRequest.Labels
 	CommonLabels pyeza.CommonLabels
 
 	CreateProcurementRequestLine func(ctx context.Context, req *procurementrequestlinepb.CreateProcurementRequestLineRequest) (*procurementrequestlinepb.CreateProcurementRequestLineResponse, error)
@@ -30,7 +30,7 @@ type ModuleDeps struct {
 
 // Module holds all constructed procurement_request_line views.
 type Module struct {
-	routes     sib_expenditure_procurement_request.Routes
+	routes     sibExpenditureProcurementRequest.Routes
 	Add        view.View
 	Edit       view.View
 	Delete     view.View

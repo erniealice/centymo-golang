@@ -15,14 +15,14 @@ import (
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
 	scpslpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_price_schedule_line"
 
-	sib_expenditure_supplier_contract_price_schedule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule"
+	sibExpenditureSupplierContractPriceSchedule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule"
 	"github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule_line/form"
 )
 
 // Deps holds dependencies for SCPSL action handlers.
 type Deps struct {
-	Routes       sib_expenditure_supplier_contract_price_schedule.Routes
-	Labels       sib_expenditure_supplier_contract_price_schedule.Labels
+	Routes       sibExpenditureSupplierContractPriceSchedule.Routes
+	Labels       sibExpenditureSupplierContractPriceSchedule.Labels
 	CommonLabels pyeza.CommonLabels
 
 	CreateSupplierContractPriceScheduleLine func(ctx context.Context, req *scpslpb.CreateSupplierContractPriceScheduleLineRequest) (*scpslpb.CreateSupplierContractPriceScheduleLineResponse, error)
@@ -254,7 +254,7 @@ func NewDeleteAction(deps *Deps) view.View {
 
 // --- helpers -----------------------------------------------------------------
 
-func buildEmptyLineFormData(ctx context.Context, deps *Deps, l sib_expenditure_supplier_contract_price_schedule.Labels) *form.Data {
+func buildEmptyLineFormData(ctx context.Context, deps *Deps, l sibExpenditureSupplierContractPriceSchedule.Labels) *form.Data {
 	fd := &form.Data{
 		Labels:       l.Lines.LineForm,
 		NounLabels:   l.Lines,

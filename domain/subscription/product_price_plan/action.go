@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	sib_subscription_price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
-	sib_subscription_price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	sibSubscriptionPricePlan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	sibSubscriptionPriceSchedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -46,9 +46,9 @@ type Deps struct {
 	// fields are unused by the handlers themselves (reserved for future use).
 
 	// Labels.
-	PlanLabels             sib_subscription_price_plan.Labels
+	PlanLabels             sibSubscriptionPricePlan.Labels
 	ProductPricePlanLabels Labels
-	ScheduleDetailLabels   sib_subscription_price_schedule.DetailLabels
+	ScheduleDetailLabels   sibSubscriptionPriceSchedule.DetailLabels
 	CommonLabels           pyeza.CommonLabels
 	TableLabels            types.TableLabels
 
@@ -423,7 +423,7 @@ type productPriceFormData struct {
 
 	// Labels.
 	ProductPricePlanLabels FormLabels
-	PriceScheduleLabels    sib_subscription_price_schedule.DetailLabels
+	PriceScheduleLabels    sibSubscriptionPriceSchedule.DetailLabels
 
 	// Pricing lock.
 	PricingLocked       bool
@@ -649,7 +649,7 @@ func formatOptionalCentavos(p *int64) string {
 }
 
 // basisBannerMessage returns a one-line explanation about the parent's amount_basis.
-func basisBannerMessage(amountBasis string, l sib_subscription_price_schedule.DetailLabels) string {
+func basisBannerMessage(amountBasis string, l sibSubscriptionPriceSchedule.DetailLabels) string {
 	switch amountBasis {
 	case "AMOUNT_BASIS_DERIVED_FROM_LINES":
 		return l.BasisBannerDerived

@@ -15,7 +15,7 @@ package expense_recognition_line
 import (
 	"context"
 
-	sib_expenditure_expense_recognition "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition"
+	sibExpenditureExpenseRecognition "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition"
 	expenserecognitionlineaction "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition_line/action"
 
 	expenserecognitionlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_line"
@@ -26,8 +26,8 @@ import (
 
 // ModuleDeps holds all dependencies for the expense_recognition_line module.
 type ModuleDeps struct {
-	Routes       sib_expenditure_expense_recognition.Routes
-	Labels       sib_expenditure_expense_recognition.Labels
+	Routes       sibExpenditureExpenseRecognition.Routes
+	Labels       sibExpenditureExpenseRecognition.Labels
 	CommonLabels pyeza.CommonLabels
 
 	CreateExpenseRecognitionLine func(ctx context.Context, req *expenserecognitionlinepb.CreateExpenseRecognitionLineRequest) (*expenserecognitionlinepb.CreateExpenseRecognitionLineResponse, error)
@@ -38,7 +38,7 @@ type ModuleDeps struct {
 
 // Module holds all constructed line views.
 type Module struct {
-	routes sib_expenditure_expense_recognition.Routes
+	routes sibExpenditureExpenseRecognition.Routes
 	Add    view.View
 	Edit   view.View
 	Delete view.View

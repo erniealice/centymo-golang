@@ -14,7 +14,7 @@ import (
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	sib_revenue_revenue "github.com/erniealice/centymo-golang/domain/revenue/revenue"
+	sibRevenueRevenue "github.com/erniealice/centymo-golang/domain/revenue/revenue"
 	subscription "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	recognizeform "github.com/erniealice/centymo-golang/domain/subscription/subscription/recognize/form"
 
@@ -486,7 +486,7 @@ func applyResponse(
 		if cid := resp.GetConflictingRevenueId(); cid != "" {
 			data.IdempotencyConflict = true
 			data.ConflictingRevenueID = cid
-			data.ConflictingRevenueURL = strings.ReplaceAll(sib_revenue_revenue.DetailURL, "{id}", cid)
+			data.ConflictingRevenueURL = strings.ReplaceAll(sibRevenueRevenue.DetailURL, "{id}", cid)
 		}
 	}
 	if client != nil && pricePlan != nil &&

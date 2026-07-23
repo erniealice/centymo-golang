@@ -11,9 +11,9 @@ import (
 	"time"
 
 	shared "github.com/erniealice/centymo-golang/domain/shared"
-	sib_subscription_price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	sibSubscriptionPricePlan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	"github.com/erniealice/centymo-golang/domain/subscription/price_plan/form"
-	price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -38,7 +38,7 @@ type DetailViewDeps struct {
 	// PricePlanLabels is the authoritative source for the price-plan drawer
 	// form (sourced from lyngua price_plan.json → price_plan.form). Used when
 	// opening the schedule-scoped Add drawer so all Wave 2 fields render.
-	PricePlanLabels sib_subscription_price_plan.Labels
+	PricePlanLabels sibSubscriptionPricePlan.Labels
 	CommonLabels    pyeza.CommonLabels
 	TableLabels     types.TableLabels
 

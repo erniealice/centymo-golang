@@ -15,14 +15,14 @@ import (
 	procurementrequestlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/procurement_request_line"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
-	sib_expenditure_procurement_request "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request"
+	sibExpenditureProcurementRequest "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request"
 	"github.com/erniealice/centymo-golang/domain/expenditure/procurement_request_line/form"
 )
 
 // Deps holds dependencies for procurement request line action handlers.
 type Deps struct {
-	Routes                       sib_expenditure_procurement_request.Routes
-	Labels                       sib_expenditure_procurement_request.Labels
+	Routes                       sibExpenditureProcurementRequest.Routes
+	Labels                       sibExpenditureProcurementRequest.Labels
 	CommonLabels                 pyeza.CommonLabels
 	CreateProcurementRequestLine func(ctx context.Context, req *procurementrequestlinepb.CreateProcurementRequestLineRequest) (*procurementrequestlinepb.CreateProcurementRequestLineResponse, error)
 	ReadProcurementRequestLine   func(ctx context.Context, req *procurementrequestlinepb.ReadProcurementRequestLineRequest) (*procurementrequestlinepb.ReadProcurementRequestLineResponse, error)
@@ -271,7 +271,7 @@ func NewRetrySpawnAction(deps *Deps) view.View {
 
 // --- helpers -----------------------------------------------------------------
 
-func buildEmptyLineFormData(ctx context.Context, deps *Deps, l sib_expenditure_procurement_request.Labels) *form.Data {
+func buildEmptyLineFormData(ctx context.Context, deps *Deps, l sibExpenditureProcurementRequest.Labels) *form.Data {
 	fd := &form.Data{
 		Labels:       l,
 		CommonLabels: deps.CommonLabels,

@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	sib_product_product "github.com/erniealice/centymo-golang/domain/product/product"
+	sibProductProduct "github.com/erniealice/centymo-golang/domain/product/product"
 	shared "github.com/erniealice/centymo-golang/domain/shared"
-	sib_subscription_plan "github.com/erniealice/centymo-golang/domain/subscription/plan"
-	price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
-	sib_subscription_price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
-	sib_subscription_product_price_plan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
+	sibSubscriptionPlan "github.com/erniealice/centymo-golang/domain/subscription/plan"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	sibSubscriptionPriceSchedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	sibSubscriptionProductPricePlan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -42,11 +42,11 @@ import (
 type DetailViewDeps struct {
 	Routes                 price_plan.Routes
 	Labels                 price_plan.Labels
-	ProductPricePlanLabels sib_subscription_product_price_plan.Labels
+	ProductPricePlanLabels sibSubscriptionProductPricePlan.Labels
 	// PriceScheduleDetailLabels supplies the basis-banner strings + PPP table
 	// column labels shared with the schedule-scoped drawer. Optional — when
 	// blank, the basis banner falls back to empty (drawer renders without it).
-	PriceScheduleDetailLabels sib_subscription_price_schedule.DetailLabels
+	PriceScheduleDetailLabels sibSubscriptionPriceSchedule.DetailLabels
 	CommonLabels              pyeza.CommonLabels
 	TableLabels               types.TableLabels
 
@@ -226,7 +226,7 @@ type ProductPricePlanFormData struct {
 	ParentCurrencyDisplay string
 
 	// Wave 2: labels for the new fields (populated from ProductPricePlanLabels).
-	Labels sib_subscription_product_price_plan.FormLabels
+	Labels sibSubscriptionProductPricePlan.FormLabels
 
 	// 2026-04-29 milestone-billing plan §5 / Phase D — optional milestone
 	// (job_template_phase) select. Surfaced when the parent PricePlan has
@@ -690,7 +690,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	// detail page use, ensuring a single edit code path for all three entry
 	// points (avoids the standalone-context branch silently overwriting
 	// fields like billing_kind on Update).
-	editURL := route.ResolveURL(sib_subscription_plan.PricePlanEditURL, "id", pp.GetPlanId(), "ppid", id)
+	editURL := route.ResolveURL(sibSubscriptionPlan.PricePlanEditURL, "id", pp.GetPlanId(), "ppid", id)
 
 	// 2026-04-30 cyclic-subscription-jobs plan §20 — Billing model summary
 	// loads the parent Plan (for visits_per_cycle + job_template_id) so the
@@ -1137,7 +1137,7 @@ func formatAmountBasis(basis string, l price_plan.FormLabels) string {
 // keyed off the parent's amount_basis. We re-source the strings from
 // PriceScheduleDetailLabels so both drawers render identical wording (the keys
 // already exist; standalone callers wire the labels through).
-func basisBannerMessage(amountBasis string, l sib_subscription_price_schedule.DetailLabels) string {
+func basisBannerMessage(amountBasis string, l sibSubscriptionPriceSchedule.DetailLabels) string {
 	switch amountBasis {
 	case "AMOUNT_BASIS_DERIVED_FROM_LINES":
 		return l.BasisBannerDerived
@@ -1378,7 +1378,7 @@ func loadProductPlanOptions(ctx context.Context, deps *DetailViewDeps, planID, p
 			}
 			label = fmt.Sprintf("%s — %s", productName, sku)
 			if values := variantOptionLabels[vid]; len(values) > 0 {
-				label = fmt.Sprintf("%s — %s", label, strings.Join(values, sib_product_product.OptionValueSeparator))
+				label = fmt.Sprintf("%s — %s", label, strings.Join(values, sibProductProduct.OptionValueSeparator))
 			}
 		}
 
@@ -1532,7 +1532,7 @@ func loadTaxClassOptions(ctx context.Context, deps *DetailViewDeps, selectedID s
 	return opts
 }
 
-func loadJobTemplatePhaseOptions(ctx context.Context, deps *DetailViewDeps, parent *priceplanpb.PricePlan, selectedPhaseID string, labels sib_subscription_product_price_plan.FormLabels) (bool, []types.SelectOption) {
+func loadJobTemplatePhaseOptions(ctx context.Context, deps *DetailViewDeps, parent *priceplanpb.PricePlan, selectedPhaseID string, labels sibSubscriptionProductPricePlan.FormLabels) (bool, []types.SelectOption) {
 	if parent == nil || parent.GetBillingKind().String() != "BILLING_KIND_MILESTONE" {
 		return false, nil
 	}

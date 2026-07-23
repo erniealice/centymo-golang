@@ -13,7 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
-	sib_expenditure_expenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
+	sibExpenditureExpenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	receiptform "github.com/erniealice/centymo-golang/domain/expenditure/purchase_order/receipt/form"
 
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
@@ -25,8 +25,8 @@ import (
 
 // Deps holds dependencies for the confirm-receipt action handler.
 type Deps struct {
-	Routes sib_expenditure_expenditure.Routes
-	Labels sib_expenditure_expenditure.Labels
+	Routes sibExpenditureExpenditure.Routes
+	Labels sibExpenditureExpenditure.Labels
 
 	ReadPurchaseOrder           func(ctx context.Context, req *purchaseorderpb.ReadPurchaseOrderRequest) (*purchaseorderpb.ReadPurchaseOrderResponse, error)
 	UpdatePurchaseOrder         func(ctx context.Context, req *purchaseorderpb.UpdatePurchaseOrderRequest) (*purchaseorderpb.UpdatePurchaseOrderResponse, error)

@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/erniealice/centymo-golang/domain/subscription/price_plan/form"
-	price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"

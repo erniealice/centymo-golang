@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	subscription_group_member "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
+	"github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
 	"github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"

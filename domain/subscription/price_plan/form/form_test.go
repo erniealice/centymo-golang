@@ -3,7 +3,7 @@ package form
 import (
 	"testing"
 
-	price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 )
 
 // TestLabelsFromPricePlanAllFieldsPopulated asserts that every field on the

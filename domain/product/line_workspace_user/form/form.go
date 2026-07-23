@@ -1,7 +1,7 @@
 package form
 
 import (
-	line_workspace_user "github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
+	"github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
 )
 
 // Data is the template data for the line_workspace_user drawer form.

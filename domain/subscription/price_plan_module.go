@@ -6,8 +6,8 @@ import (
 	priceplanaction "github.com/erniealice/centymo-golang/domain/subscription/price_plan/action"
 	priceplandetail "github.com/erniealice/centymo-golang/domain/subscription/price_plan/detail"
 	priceplanlist "github.com/erniealice/centymo-golang/domain/subscription/price_plan/list"
-	sib_subscription_price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
-	sib_subscription_product_price_plan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
+	sibSubscriptionPriceSchedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	sibSubscriptionProductPricePlan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -34,8 +34,8 @@ import (
 type PricePlanModuleDeps struct {
 	Routes                    epkg.Routes
 	Labels                    epkg.Labels
-	ProductPricePlanLabels    sib_subscription_product_price_plan.Labels
-	PriceScheduleDetailLabels sib_subscription_price_schedule.DetailLabels // for the PPP drawer's basis banner
+	ProductPricePlanLabels    sibSubscriptionProductPricePlan.Labels
+	PriceScheduleDetailLabels sibSubscriptionPriceSchedule.DetailLabels // for the PPP drawer's basis banner
 	CommonLabels              pyeza.CommonLabels
 	TableLabels               types.TableLabels
 

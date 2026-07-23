@@ -1,7 +1,7 @@
 package form
 
 import (
-	sib_expenditure_accrued_expense "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense"
+	sibExpenditureAccruedExpense "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense"
 	"github.com/erniealice/pyeza-golang/types"
 )
 
@@ -24,5 +24,5 @@ type Data struct {
 	ReversalReason   string
 	Expenditures     []types.SelectOption
 	CommonLabels     any
-	Labels           sib_expenditure_accrued_expense.SettlementLabels
+	Labels           sibExpenditureAccruedExpense.SettlementLabels
 }

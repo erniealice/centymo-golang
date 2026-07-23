@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	line_workspace_user "github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
+	"github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	"github.com/erniealice/espyna-golang/shared/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"

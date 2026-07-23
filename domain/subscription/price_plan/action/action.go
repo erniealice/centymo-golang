@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	"github.com/erniealice/centymo-golang/domain/subscription/price_plan/form"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"

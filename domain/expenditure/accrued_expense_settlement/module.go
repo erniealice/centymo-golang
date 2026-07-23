@@ -15,7 +15,7 @@ package accrued_expense_settlement
 import (
 	"context"
 
-	sib_expenditure_accrued_expense "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense"
+	sibExpenditureAccruedExpense "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense"
 	settlementaction "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense_settlement/action"
 
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
@@ -27,8 +27,8 @@ import (
 
 // ModuleDeps holds all dependencies for the accrued_expense_settlement module.
 type ModuleDeps struct {
-	Routes       sib_expenditure_accrued_expense.Routes
-	Labels       sib_expenditure_accrued_expense.Labels
+	Routes       sibExpenditureAccruedExpense.Routes
+	Labels       sibExpenditureAccruedExpense.Labels
 	CommonLabels pyeza.CommonLabels
 
 	CreateAccruedExpenseSettlement func(ctx context.Context, req *accruedexpensepb.CreateAccruedExpenseSettlementRequest) (*accruedexpensepb.CreateAccruedExpenseSettlementResponse, error)
@@ -40,7 +40,7 @@ type ModuleDeps struct {
 
 // Module holds all constructed settlement views.
 type Module struct {
-	routes sib_expenditure_accrued_expense.Routes
+	routes sibExpenditureAccruedExpense.Routes
 	Add    view.View
 	Edit   view.View
 	Delete view.View

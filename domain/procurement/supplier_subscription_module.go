@@ -3,7 +3,7 @@ package procurement
 import (
 	"context"
 
-	sib_expenditure_expense_recognition_run "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition_run"
+	sibExpenditureExpenseRecognitionRun "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition_run"
 	suppliersubscriptionaction "github.com/erniealice/centymo-golang/domain/procurement/supplier_subscription/action"
 	suppliersubscriptiondetail "github.com/erniealice/centymo-golang/domain/procurement/supplier_subscription/detail"
 	suppliersubscriptionlist "github.com/erniealice/centymo-golang/domain/procurement/supplier_subscription/list"
@@ -28,7 +28,7 @@ type SupplierSubscriptionModuleDeps struct {
 	// ExpenseRecognitionRunLabels supplies the "Run Recognitions" label for the
 	// Linked Recognitions tab CTA when CostPlan.billing_kind is
 	// RECURRING / CONTRACT-with-cycle. Plan A Surface C 20260517-expense-run.
-	ExpenseRecognitionRunLabels sib_expenditure_expense_recognition_run.Labels
+	ExpenseRecognitionRunLabels sibExpenditureExpenseRecognitionRun.Labels
 
 	// ReadCostPlan resolves the supplier subscription's CostPlan so the detail
 	// page can branch the Recognitions CTA on billing_kind. Nil-safe.

@@ -1,7 +1,7 @@
 package form
 
 import (
-	subscription_group_member "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
+	"github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
 )
 
 // Data is the template data for the subscription_group_member drawer form.

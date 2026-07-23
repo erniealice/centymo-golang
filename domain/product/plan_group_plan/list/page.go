@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	plan_group_plan "github.com/erniealice/centymo-golang/domain/product/plan_group_plan"
+	"github.com/erniealice/centymo-golang/domain/product/plan_group_plan"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	"github.com/erniealice/espyna-golang/shared/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"

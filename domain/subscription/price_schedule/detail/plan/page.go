@@ -9,9 +9,9 @@ import (
 	"log"
 	"strings"
 
-	sib_subscription_price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
-	price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
-	sib_subscription_product_price_plan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
+	sibSubscriptionPricePlan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	sibSubscriptionProductPricePlan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -33,8 +33,8 @@ import (
 type DetailViewDeps struct {
 	Routes                 price_schedule.Routes
 	ScheduleLabels         price_schedule.Labels
-	PlanLabels             sib_subscription_price_plan.Labels
-	ProductPricePlanLabels sib_subscription_product_price_plan.Labels
+	PlanLabels             sibSubscriptionPricePlan.Labels
+	ProductPricePlanLabels sibSubscriptionProductPricePlan.Labels
 	CommonLabels           pyeza.CommonLabels
 	TableLabels            types.TableLabels
 
@@ -114,7 +114,7 @@ type PageData struct {
 	ScheduleName    string
 	ScheduleBackURL string
 	PricePlan       *priceplanpb.PricePlan
-	Labels          sib_subscription_price_plan.Labels
+	Labels          sibSubscriptionPricePlan.Labels
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
 

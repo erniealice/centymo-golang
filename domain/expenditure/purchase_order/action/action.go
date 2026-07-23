@@ -8,7 +8,7 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
-	sib_expenditure_expenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
+	sibExpenditureExpenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	poform "github.com/erniealice/centymo-golang/domain/expenditure/purchase_order/form"
 
 	purchaseorderpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order"
@@ -16,8 +16,8 @@ import (
 
 // Deps holds dependencies for purchase order action handlers.
 type Deps struct {
-	Routes sib_expenditure_expenditure.Routes
-	Labels sib_expenditure_expenditure.Labels
+	Routes sibExpenditureExpenditure.Routes
+	Labels sibExpenditureExpenditure.Labels
 
 	// Typed purchase order CRUD operations
 	CreatePurchaseOrder func(ctx context.Context, req *purchaseorderpb.CreatePurchaseOrderRequest) (*purchaseorderpb.CreatePurchaseOrderResponse, error)
@@ -29,7 +29,7 @@ type Deps struct {
 // formLabels maps ExpenditureLabels into the flat Labels struct for the template.
 // Kept in action/ (not deleted) because it performs real transformation:
 // hardcoded "PO Number", "Supplier", "PO Type" strings + draws from two label sources.
-func formLabels(l sib_expenditure_expenditure.Labels) poform.Labels {
+func formLabels(l sibExpenditureExpenditure.Labels) poform.Labels {
 	return poform.Labels{
 		PoNumber:         "PO Number",
 		SupplierID:       "Supplier",

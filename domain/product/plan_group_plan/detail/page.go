@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	plan_group_plan "github.com/erniealice/centymo-golang/domain/product/plan_group_plan"
+	"github.com/erniealice/centymo-golang/domain/product/plan_group_plan"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"

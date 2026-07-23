@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	line_workspace_user "github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
+	"github.com/erniealice/centymo-golang/domain/product/line_workspace_user"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"

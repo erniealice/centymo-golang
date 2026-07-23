@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	subscription_group_member "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
+	"github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
 	"github.com/erniealice/espyna-golang/shared/tableparams"
 	pyeza "github.com/erniealice/pyeza-golang"

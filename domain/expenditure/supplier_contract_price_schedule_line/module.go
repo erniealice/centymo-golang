@@ -20,7 +20,7 @@ package supplier_contract_price_schedule_line
 import (
 	"context"
 
-	sib_expenditure_supplier_contract_price_schedule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule"
+	sibExpenditureSupplierContractPriceSchedule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule"
 	scpslaction "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule_line/action"
 
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
@@ -32,8 +32,8 @@ import (
 
 // ModuleDeps holds all dependencies for the SCPSL module.
 type ModuleDeps struct {
-	Routes       sib_expenditure_supplier_contract_price_schedule.Routes
-	Labels       sib_expenditure_supplier_contract_price_schedule.Labels
+	Routes       sibExpenditureSupplierContractPriceSchedule.Routes
+	Labels       sibExpenditureSupplierContractPriceSchedule.Labels
 	CommonLabels pyeza.CommonLabels
 
 	CreateSupplierContractPriceScheduleLine func(ctx context.Context, req *scpslpb.CreateSupplierContractPriceScheduleLineRequest) (*scpslpb.CreateSupplierContractPriceScheduleLineResponse, error)
@@ -46,7 +46,7 @@ type ModuleDeps struct {
 
 // Module holds all constructed SCPSL views.
 type Module struct {
-	routes sib_expenditure_supplier_contract_price_schedule.Routes
+	routes sibExpenditureSupplierContractPriceSchedule.Routes
 	Add    view.View
 	Edit   view.View
 	Delete view.View

@@ -10,7 +10,7 @@ import (
 	supplierbillingeventaction "github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event/action"
 	supplierbillingeventdetail "github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event/detail"
 	supplierbillingeventlist "github.com/erniealice/centymo-golang/domain/expenditure/supplier_billing_event/list"
-	sib_treasury_advancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
+	sibTreasuryAdvancesdashboard "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -22,7 +22,7 @@ import (
 
 // SupplierBillingEventModuleDeps holds all dependencies for the supplier_billing_event module.
 type SupplierBillingEventModuleDeps struct {
-	Routes       sib_treasury_advancesdashboard.Routes
+	Routes       sibTreasuryAdvancesdashboard.Routes
 	Labels       epkg.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
@@ -38,7 +38,7 @@ type SupplierBillingEventModuleDeps struct {
 
 // SupplierBillingEventModule holds all constructed supplier_billing_event views.
 type SupplierBillingEventModule struct {
-	routes    sib_treasury_advancesdashboard.Routes
+	routes    sibTreasuryAdvancesdashboard.Routes
 	List      view.View
 	Detail    view.View
 	Recognize view.View

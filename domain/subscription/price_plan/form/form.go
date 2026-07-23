@@ -6,7 +6,7 @@
 package form
 
 import (
-	price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	"github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	inventory "github.com/erniealice/centymo-golang/domain/inventory/inventory"
-	sib_product_product "github.com/erniealice/centymo-golang/domain/product/product"
+	sibProductProduct "github.com/erniealice/centymo-golang/domain/product/product"
 	shared "github.com/erniealice/centymo-golang/domain/shared"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -19,7 +19,7 @@ import (
 // ProductDetailDeps holds dependencies for the product-context inventory detail.
 type ProductDetailDeps struct {
 	InventoryRoutes   inventory.Routes
-	ProductRoutes     sib_product_product.Routes
+	ProductRoutes     sibProductProduct.Routes
 	ReadInventoryItem func(ctx context.Context, req *inventoryitempb.ReadInventoryItemRequest) (*inventoryitempb.ReadInventoryItemResponse, error)
 	ReadProduct       func(ctx context.Context, req *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
 	// Delegate to main DetailViewDeps for tab data loading

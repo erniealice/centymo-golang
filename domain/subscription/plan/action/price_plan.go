@@ -11,9 +11,9 @@ import (
 	"time"
 
 	plan "github.com/erniealice/centymo-golang/domain/subscription/plan"
-	sib_subscription_price_plan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	sibSubscriptionPricePlan "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	"github.com/erniealice/centymo-golang/domain/subscription/price_plan/form"
-	sib_subscription_price_schedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
+	sibSubscriptionPriceSchedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	pyezatypes "github.com/erniealice/pyeza-golang/types"
@@ -37,12 +37,12 @@ type PricePlanDeps struct {
 	// live on PricePlanLabels.Form (sourced from lyngua price_plan.json →
 	// price_plan.form, which is the single source for the drawer).
 	Labels          plan.Labels
-	PricePlanLabels sib_subscription_price_plan.Labels
+	PricePlanLabels sibSubscriptionPricePlan.Labels
 	// PriceScheduleLabels surfaces the customClientPriceScheduleLabelSuffix
 	// used to derive the readonly Schedule label when the parent Plan is
 	// client-scoped (plan §6.7). Optional — when zero-value, the helper
 	// falls back to the proto-generic "Price Schedule".
-	PriceScheduleLabels sib_subscription_price_schedule.Labels
+	PriceScheduleLabels sibSubscriptionPriceSchedule.Labels
 	CommonLabels        pyeza.CommonLabels
 	CreatePricePlan     func(ctx context.Context, req *priceplanpb.CreatePricePlanRequest) (*priceplanpb.CreatePricePlanResponse, error)
 	ReadPricePlan       func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
@@ -266,7 +266,7 @@ func resolveScheduleLock(ctx context.Context, deps *PricePlanDeps, plan *planpb.
 // one was found. Empty string when the field is in picker mode (parent Plan
 // is master). Substitutes {{.ClientName}} server-side because html/template
 // doesn't recursively render label values.
-func buildScheduleAutoHint(formLabels sib_subscription_price_plan.FormLabels, mode, scheduleID, clientName string) string {
+func buildScheduleAutoHint(formLabels sibSubscriptionPricePlan.FormLabels, mode, scheduleID, clientName string) string {
 	if mode != "readonly" {
 		return ""
 	}

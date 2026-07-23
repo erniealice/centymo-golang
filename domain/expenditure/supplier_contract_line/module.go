@@ -3,7 +3,7 @@ package supplier_contract_line
 import (
 	"context"
 
-	sib_expenditure_supplier_contract "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
+	sibExpenditureSupplierContract "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
 	suppliercontractlineaction "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_line/action"
 
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
@@ -15,8 +15,8 @@ import (
 
 // ModuleDeps holds all dependencies for the supplier_contract_line module.
 type ModuleDeps struct {
-	Routes       sib_expenditure_supplier_contract.Routes
-	Labels       sib_expenditure_supplier_contract.Labels
+	Routes       sibExpenditureSupplierContract.Routes
+	Labels       sibExpenditureSupplierContract.Labels
 	CommonLabels pyeza.CommonLabels
 
 	CreateSupplierContractLine func(ctx context.Context, req *suppliercontractlinepb.CreateSupplierContractLineRequest) (*suppliercontractlinepb.CreateSupplierContractLineResponse, error)
@@ -30,7 +30,7 @@ type ModuleDeps struct {
 
 // Module holds all constructed supplier_contract_line views.
 type Module struct {
-	routes sib_expenditure_supplier_contract.Routes
+	routes sibExpenditureSupplierContract.Routes
 	Add    view.View
 	Edit   view.View
 	Delete view.View

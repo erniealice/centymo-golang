@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	sib_expenditure_expense_recognition_run "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition_run"
+	sibExpenditureExpenseRecognitionRun "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition_run"
 	"github.com/erniealice/centymo-golang/domain/procurement/supplier_subscription"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -116,7 +116,7 @@ type DetailViewDeps struct {
 	// ExpenseRecognitionRunLabels provides the "Run Recognitions" CTA label for
 	// the Linked Recognitions tab toolbar when CostPlan.billing_kind is
 	// RECURRING or CONTRACT-with-cycle. Plan A Surface C.
-	ExpenseRecognitionRunLabels sib_expenditure_expense_recognition_run.Labels
+	ExpenseRecognitionRunLabels sibExpenditureExpenseRecognitionRun.Labels
 
 	ReadSupplierSubscription            func(ctx context.Context, req *suppliersubscriptionpb.ReadSupplierSubscriptionRequest) (*suppliersubscriptionpb.ReadSupplierSubscriptionResponse, error)
 	GetSupplierSubscriptionItemPageData func(ctx context.Context, req *suppliersubscriptionpb.GetSupplierSubscriptionItemPageDataRequest) (*suppliersubscriptionpb.GetSupplierSubscriptionItemPageDataResponse, error)

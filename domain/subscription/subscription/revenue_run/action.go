@@ -19,7 +19,7 @@ import (
 
 	"github.com/erniealice/espyna-golang/shared/identity"
 
-	sib_revenue_revenue_run "github.com/erniealice/centymo-golang/domain/revenue/revenue_run"
+	sibRevenueRevenueRun "github.com/erniealice/centymo-golang/domain/revenue/revenue_run"
 	subscription "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	revenuerunform "github.com/erniealice/centymo-golang/domain/subscription/subscription/revenue_run/form"
 )
@@ -283,7 +283,7 @@ func submitDrawer(
 	}
 	if result.RunID != "" && l.ViewRunLink != "" {
 		toastPayload["link"] = map[string]any{
-			"url":   route.ResolveURL(sib_revenue_revenue_run.DetailURL, "id", result.RunID),
+			"url":   route.ResolveURL(sibRevenueRevenueRun.DetailURL, "id", result.RunID),
 			"label": l.ViewRunLink,
 		}
 	}

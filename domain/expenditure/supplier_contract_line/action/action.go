@@ -15,14 +15,14 @@ import (
 	suppliercontractlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/supplier_contract_line"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 
-	sib_expenditure_supplier_contract "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
+	sibExpenditureSupplierContract "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
 	"github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_line/form"
 )
 
 // Deps holds dependencies for line item action handlers.
 type Deps struct {
-	Routes                     sib_expenditure_supplier_contract.Routes
-	Labels                     sib_expenditure_supplier_contract.Labels
+	Routes                     sibExpenditureSupplierContract.Routes
+	Labels                     sibExpenditureSupplierContract.Labels
 	CommonLabels               pyeza.CommonLabels
 	CreateSupplierContractLine func(ctx context.Context, req *suppliercontractlinepb.CreateSupplierContractLineRequest) (*suppliercontractlinepb.CreateSupplierContractLineResponse, error)
 	ReadSupplierContractLine   func(ctx context.Context, req *suppliercontractlinepb.ReadSupplierContractLineRequest) (*suppliercontractlinepb.ReadSupplierContractLineResponse, error)
@@ -195,7 +195,7 @@ func NewDeleteAction(deps *Deps) view.View {
 
 // --- helpers -----------------------------------------------------------------
 
-func buildEmptyLineFormData(ctx context.Context, deps *Deps, l sib_expenditure_supplier_contract.Labels) *form.Data {
+func buildEmptyLineFormData(ctx context.Context, deps *Deps, l sibExpenditureSupplierContract.Labels) *form.Data {
 	fd := &form.Data{
 		Labels:       l,
 		CommonLabels: deps.CommonLabels,

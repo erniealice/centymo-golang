@@ -17,7 +17,7 @@ import (
 	expenditurepay "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/pay"
 	purchaseboard "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/purchase_dashboard"
 	expendituresettings "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/settings"
-	sib_treasury_disbursement "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
+	sibTreasuryDisbursement "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	documenttemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/template"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
@@ -83,8 +83,8 @@ type ExpenditureModuleDeps struct {
 	UploadFile             func(ctx context.Context, bucket, key string, content []byte, contentType string) error
 
 	// Disbursement creation (optional — enables Pay action on expense detail)
-	DisbursementRoutes sib_treasury_disbursement.Routes
-	DisbursementLabels sib_treasury_disbursement.Labels
+	DisbursementRoutes sibTreasuryDisbursement.Routes
+	DisbursementLabels sibTreasuryDisbursement.Labels
 	CreateDisbursement func(ctx context.Context, req *disbursementpb.CreateDisbursementRequest) (*disbursementpb.CreateDisbursementResponse, error)
 
 	// Phase 5 — typed replacements for the former raw-SQL closures.

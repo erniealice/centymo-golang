@@ -1,7 +1,7 @@
 package form
 
 import (
-	sib_expenditure_supplier_contract "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
+	sibExpenditureSupplierContract "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 )
@@ -37,6 +37,6 @@ type Data struct {
 	TreatmentOptions []TreatmentOption
 	Products         []types.SelectOption
 
-	Labels       sib_expenditure_supplier_contract.Labels
+	Labels       sibExpenditureSupplierContract.Labels
 	CommonLabels pyeza.CommonLabels
 }

@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/erniealice/centymo-golang/domain/procurement/cost_plan"
-	sib_procurement_supplier_product_cost_plan "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_cost_plan"
+	sibProcurementSupplierProductCostPlan "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_cost_plan"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
@@ -23,7 +23,7 @@ type DetailViewDeps struct {
 	TableLabels  types.TableLabels
 
 	// SupplierProductCostPlan labels for the inline editor.
-	ProductCostLabels sib_procurement_supplier_product_cost_plan.Labels
+	ProductCostLabels sibProcurementSupplierProductCostPlan.Labels
 
 	ReadCostPlan            func(ctx context.Context, req *costplanpb.ReadCostPlanRequest) (*costplanpb.ReadCostPlanResponse, error)
 	GetCostPlanItemPageData func(ctx context.Context, req *costplanpb.GetCostPlanItemPageDataRequest) (*costplanpb.GetCostPlanItemPageDataResponse, error)

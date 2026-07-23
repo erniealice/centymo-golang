@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	plan_group "github.com/erniealice/centymo-golang/domain/product/plan_group"
+	"github.com/erniealice/centymo-golang/domain/product/plan_group"
 	"github.com/erniealice/centymo-golang/domain/product/plan_group/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"

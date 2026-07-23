@@ -1,7 +1,7 @@
 package form
 
 import (
-	sib_expenditure_supplier_contract_price_schedule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule"
+	sibExpenditureSupplierContractPriceSchedule "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract_price_schedule"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 )
@@ -27,7 +27,7 @@ type Data struct {
 	// Options
 	ContractLines []types.SelectOption
 
-	Labels       sib_expenditure_supplier_contract_price_schedule.LineFormLabels
-	NounLabels   sib_expenditure_supplier_contract_price_schedule.LinesLabels
+	Labels       sibExpenditureSupplierContractPriceSchedule.LineFormLabels
+	NounLabels   sibExpenditureSupplierContractPriceSchedule.LinesLabels
 	CommonLabels pyeza.CommonLabels
 }

@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	product_plan_staff "github.com/erniealice/centymo-golang/domain/product/product_plan_staff"
+	"github.com/erniealice/centymo-golang/domain/product/product_plan_staff"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"

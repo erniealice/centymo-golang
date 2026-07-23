@@ -3,8 +3,8 @@ package action
 import (
 	"testing"
 
-	sib_expenditure_expenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
-	sib_expenditure_purchase_order "github.com/erniealice/centymo-golang/domain/expenditure/purchase_order"
+	sibExpenditureExpenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
+	sibExpenditurePurchaseOrder "github.com/erniealice/centymo-golang/domain/expenditure/purchase_order"
 )
 
 // TestFormLabelsFromPurchaseOrderAllFieldsPopulated asserts that every field on
@@ -13,8 +13,8 @@ import (
 // silent-empty-field bug class: if a future field is added to the source or
 // destination and the mapper forgets to copy it, this test fails.
 func TestFormLabelsFromPurchaseOrderAllFieldsPopulated(t *testing.T) {
-	src := sib_expenditure_expenditure.Labels{
-		Form: sib_expenditure_expenditure.FormLabels{
+	src := sibExpenditureExpenditure.Labels{
+		Form: sibExpenditureExpenditure.FormLabels{
 			ExpenditureDate:  "ExpenditureDate",
 			Currency:         "Currency",
 			PaymentTerms:     "PaymentTerms",
@@ -22,8 +22,8 @@ func TestFormLabelsFromPurchaseOrderAllFieldsPopulated(t *testing.T) {
 			NotesPlaceholder: "NotesPlaceholder",
 			Status:           "Status",
 		},
-		PurchaseOrder: sib_expenditure_purchase_order.Labels{
-			Form: sib_expenditure_purchase_order.FormLabels{
+		PurchaseOrder: sibExpenditurePurchaseOrder.Labels{
+			Form: sibExpenditurePurchaseOrder.FormLabels{
 				PONumberInfo:     "PONumberInfo",
 				SupplierInfo:     "SupplierInfo",
 				POTypeInfo:       "POTypeInfo",

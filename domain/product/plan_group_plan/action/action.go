@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	plan_group_plan "github.com/erniealice/centymo-golang/domain/product/plan_group_plan"
+	"github.com/erniealice/centymo-golang/domain/product/plan_group_plan"
 	"github.com/erniealice/centymo-golang/domain/product/plan_group_plan/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"

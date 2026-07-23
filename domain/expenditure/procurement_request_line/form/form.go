@@ -1,7 +1,7 @@
 package form
 
 import (
-	sib_expenditure_procurement_request "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request"
+	sibExpenditureProcurementRequest "github.com/erniealice/centymo-golang/domain/expenditure/procurement_request"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 
@@ -43,7 +43,7 @@ type Data struct {
 	// Options
 	Products []types.SelectOption
 
-	Labels       sib_expenditure_procurement_request.Labels
+	Labels       sibExpenditureProcurementRequest.Labels
 	CommonLabels pyeza.CommonLabels
 }
 

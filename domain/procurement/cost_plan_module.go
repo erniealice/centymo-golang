@@ -6,7 +6,7 @@ import (
 	costplanaction "github.com/erniealice/centymo-golang/domain/procurement/cost_plan/action"
 	costplandetail "github.com/erniealice/centymo-golang/domain/procurement/cost_plan/detail"
 	costplanlist "github.com/erniealice/centymo-golang/domain/procurement/cost_plan/list"
-	sib_procurement_supplier_product_cost_plan "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_cost_plan"
+	sibProcurementSupplierProductCostPlan "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_cost_plan"
 
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
@@ -25,7 +25,7 @@ type CostPlanModuleDeps struct {
 	TableLabels  types.TableLabels
 
 	// SupplierProductCostPlan labels for the inline detail tab editor.
-	ProductCostLabels sib_procurement_supplier_product_cost_plan.Labels
+	ProductCostLabels sibProcurementSupplierProductCostPlan.Labels
 
 	CreateCostPlan          func(ctx context.Context, req *costplanpb.CreateCostPlanRequest) (*costplanpb.CreateCostPlanResponse, error)
 	ReadCostPlan            func(ctx context.Context, req *costplanpb.ReadCostPlanRequest) (*costplanpb.ReadCostPlanResponse, error)

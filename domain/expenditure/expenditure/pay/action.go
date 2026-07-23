@@ -13,7 +13,7 @@ import (
 
 	"github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	payform "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/pay/form"
-	sib_treasury_disbursement "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
+	sibTreasuryDisbursement "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
 
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -25,8 +25,8 @@ import (
 // Deps holds dependencies for the expenditure pay action.
 type Deps struct {
 	ExpenditureRoutes  expenditure.Routes
-	DisbursementRoutes sib_treasury_disbursement.Routes
-	DisbursementLabels sib_treasury_disbursement.Labels
+	DisbursementRoutes sibTreasuryDisbursement.Routes
+	DisbursementLabels sibTreasuryDisbursement.Labels
 	ReadExpenditure    func(ctx context.Context, req *expenditurepb.ReadExpenditureRequest) (*expenditurepb.ReadExpenditureResponse, error)
 	CreateDisbursement func(ctx context.Context, req *disbursementpb.CreateDisbursementRequest) (*disbursementpb.CreateDisbursementResponse, error)
 }

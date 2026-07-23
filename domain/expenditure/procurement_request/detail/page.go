@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strings"
 
-	sib_expenditure_expenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
+	sibExpenditureExpenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	"github.com/erniealice/centymo-golang/domain/expenditure/procurement_request"
-	sib_expenditure_supplier_contract "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
+	sibExpenditureSupplierContract "github.com/erniealice/centymo-golang/domain/expenditure/supplier_contract"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
@@ -639,13 +639,13 @@ func buildLineTable(ctx context.Context, deps *DetailViewDeps, requestID string,
 func buildSpawnedCellHTML(line *procurementrequestlinepb.ProcurementRequestLine, l procurement_request.Labels, requestID string, routes procurement_request.Routes, poDetailURLTmpl, contractDetailURLTmpl, expenditureDetailURLTmpl string) types.TableCell {
 	// Default URL templates when callers have not yet migrated to RouteResult injection.
 	if poDetailURLTmpl == "" {
-		poDetailURLTmpl = sib_expenditure_expenditure.PurchaseOrderDetailURL
+		poDetailURLTmpl = sibExpenditureExpenditure.PurchaseOrderDetailURL
 	}
 	if contractDetailURLTmpl == "" {
-		contractDetailURLTmpl = sib_expenditure_supplier_contract.DetailURL
+		contractDetailURLTmpl = sibExpenditureSupplierContract.DetailURL
 	}
 	if expenditureDetailURLTmpl == "" {
-		expenditureDetailURLTmpl = sib_expenditure_expenditure.ExpenseDetailURL
+		expenditureDetailURLTmpl = sibExpenditureExpenditure.ExpenseDetailURL
 	}
 	poDetailBase := strings.Split(poDetailURLTmpl, "{id}")[0]
 	contractDetailBase := strings.Split(contractDetailURLTmpl, "{id}")[0]

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	sib_revenue_revenue "github.com/erniealice/centymo-golang/domain/revenue/revenue"
+	sibRevenueRevenue "github.com/erniealice/centymo-golang/domain/revenue/revenue"
 
 	subscription "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	"github.com/erniealice/hybra-golang/views/attachment"
@@ -576,7 +576,7 @@ func NewView(deps *DetailViewDeps) view.View {
 			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
 				sub.GetPricePlan(), deps.Routes, l, id)
 			pageData.Invoices = buildInvoicesTable(
-				revenues, l, deps.TableLabels, sib_revenue_revenue.DetailURL,
+				revenues, l, deps.TableLabels, sibRevenueRevenue.DetailURL,
 				invoicesPrimaryAction,
 				canRecognize, subscriptionActive,
 				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
@@ -901,7 +901,7 @@ func loadMilestoneRows(ctx context.Context, deps *DetailViewDeps, subscriptionID
 			row.ShowRevenueLink = true
 			row.RevenueID = ev.GetRevenueId()
 			if row.RevenueID != "" {
-				row.RevenueURL = strings.ReplaceAll(sib_revenue_revenue.DetailURL, "{id}", row.RevenueID)
+				row.RevenueURL = strings.ReplaceAll(sibRevenueRevenue.DetailURL, "{id}", row.RevenueID)
 			}
 			totalInvoiced += ev.GetBillableAmount()
 		}
@@ -1202,7 +1202,7 @@ func buildInvoicesTable(
 				Type:           "mail",
 				Label:          l.Invoices.RowActions.SendEmail,
 				Action:         "send-email",
-				URL:            route.ResolveURL(sib_revenue_revenue.EmailURL, "id", id),
+				URL:            route.ResolveURL(sibRevenueRevenue.EmailURL, "id", id),
 				ItemName:       refNumber,
 				ConfirmTitle:   l.Invoices.RowActions.SendEmail,
 				ConfirmMessage: refNumber,
@@ -1213,7 +1213,7 @@ func buildInvoicesTable(
 				Type:        "edit",
 				Label:       l.Invoices.RowActions.Edit,
 				Action:      "edit",
-				URL:         route.ResolveURL(sib_revenue_revenue.EditURL, "id", id),
+				URL:         route.ResolveURL(sibRevenueRevenue.EditURL, "id", id),
 				DrawerTitle: l.Invoices.RowActions.Edit,
 			})
 		}
@@ -1355,7 +1355,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
 				sub.GetPricePlan(), deps.Routes, l, id)
 			pageData.Invoices = buildInvoicesTable(
-				revenues, l, deps.TableLabels, sib_revenue_revenue.DetailURL,
+				revenues, l, deps.TableLabels, sibRevenueRevenue.DetailURL,
 				invoicesPrimaryAction,
 				canRecognize, subscriptionActive,
 				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),

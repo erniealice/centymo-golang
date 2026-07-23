@@ -28,14 +28,14 @@ import (
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	sib_expenditure_accrued_expense "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense"
+	sibExpenditureAccruedExpense "github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense"
 	"github.com/erniealice/centymo-golang/domain/expenditure/accrued_expense_settlement/form"
 )
 
 // Deps holds dependencies for settlement action handlers.
 type Deps struct {
-	Routes       sib_expenditure_accrued_expense.Routes
-	Labels       sib_expenditure_accrued_expense.Labels
+	Routes       sibExpenditureAccruedExpense.Routes
+	Labels       sibExpenditureAccruedExpense.Labels
 	CommonLabels pyeza.CommonLabels
 
 	CreateAccruedExpenseSettlement func(ctx context.Context, req *accruedexpensepb.CreateAccruedExpenseSettlementRequest) (*accruedexpensepb.CreateAccruedExpenseSettlementResponse, error)
@@ -198,7 +198,7 @@ func NewDeleteAction(deps *Deps) view.View {
 
 // --- form helpers ------------------------------------------------------------
 
-func buildEmptyFormData(ctx context.Context, deps *Deps, l sib_expenditure_accrued_expense.SettlementLabels) *form.Data {
+func buildEmptyFormData(ctx context.Context, deps *Deps, l sibExpenditureAccruedExpense.SettlementLabels) *form.Data {
 	fd := &form.Data{
 		Labels:       l,
 		CommonLabels: deps.CommonLabels,

@@ -1,7 +1,7 @@
 package inventory
 
 import (
-	sib_product_product "github.com/erniealice/centymo-golang/domain/product/product"
+	sibProductProduct "github.com/erniealice/centymo-golang/domain/product/product"
 )
 
 // ---------------------------------------------------------------------------
@@ -10,25 +10,25 @@ import (
 
 // Labels holds all translatable strings for the inventory module.
 type Labels struct {
-	Page         PageLabels                             `json:"page"`
-	Buttons      ButtonLabels                           `json:"buttons"`
-	Columns      ColumnLabels                           `json:"columns"`
-	Empty        EmptyLabels                            `json:"empty"`
-	Form         FormLabels                             `json:"form"`
-	Actions      ActionLabels                           `json:"actions"`
-	Bulk         BulkLabels                             `json:"bulk_actions"`
-	Detail       DetailLabels                           `json:"detail"`
-	Tabs         TabLabels                              `json:"tabs"`
-	TrackingMode sib_product_product.TrackingModeLabels `json:"tracking_mode"`
-	Status       StatusLabels                           `json:"status"`
-	Serial       SerialLabels                           `json:"serial"`
-	Transaction  TransactionLabels                      `json:"transaction"`
-	Depreciation DepreciationLabels                     `json:"depreciation"`
-	Dashboard    DashboardLabels                        `json:"dashboard"`
-	Movements    MovementsLabels                        `json:"movements"`
-	Confirm      ConfirmLabels                          `json:"confirm"`
-	Errors       ErrorLabels                            `json:"errors"`
-	Breadcrumb   BreadcrumbLabels                       `json:"breadcrumb"`
+	Page         PageLabels                           `json:"page"`
+	Buttons      ButtonLabels                         `json:"buttons"`
+	Columns      ColumnLabels                         `json:"columns"`
+	Empty        EmptyLabels                          `json:"empty"`
+	Form         FormLabels                           `json:"form"`
+	Actions      ActionLabels                         `json:"actions"`
+	Bulk         BulkLabels                           `json:"bulk_actions"`
+	Detail       DetailLabels                         `json:"detail"`
+	Tabs         TabLabels                            `json:"tabs"`
+	TrackingMode sibProductProduct.TrackingModeLabels `json:"tracking_mode"`
+	Status       StatusLabels                         `json:"status"`
+	Serial       SerialLabels                         `json:"serial"`
+	Transaction  TransactionLabels                    `json:"transaction"`
+	Depreciation DepreciationLabels                   `json:"depreciation"`
+	Dashboard    DashboardLabels                      `json:"dashboard"`
+	Movements    MovementsLabels                      `json:"movements"`
+	Confirm      ConfirmLabels                        `json:"confirm"`
+	Errors       ErrorLabels                          `json:"errors"`
+	Breadcrumb   BreadcrumbLabels                     `json:"breadcrumb"`
 }
 
 type PageLabels struct {

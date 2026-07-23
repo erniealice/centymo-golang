@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	sib_expenditure_expenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
+	sibExpenditureExpenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	"github.com/erniealice/hybra-golang/views/attachment"
 
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -20,8 +20,8 @@ import (
 
 // LineItemDeps holds dependencies for the PO line item table view.
 type LineItemDeps struct {
-	Routes      sib_expenditure_expenditure.Routes
-	Labels      sib_expenditure_expenditure.Labels
+	Routes      sibExpenditureExpenditure.Routes
+	Labels      sibExpenditureExpenditure.Labels
 	TableLabels types.TableLabels
 
 	ReadPurchaseOrder          func(ctx context.Context, req *purchaseorderpb.ReadPurchaseOrderRequest) (*purchaseorderpb.ReadPurchaseOrderResponse, error)
@@ -30,8 +30,8 @@ type LineItemDeps struct {
 
 // DetailViewDeps holds view dependencies for the purchase order detail page.
 type DetailViewDeps struct {
-	Routes       sib_expenditure_expenditure.Routes
-	Labels       sib_expenditure_expenditure.Labels
+	Routes       sibExpenditureExpenditure.Routes
+	Labels       sibExpenditureExpenditure.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
@@ -46,7 +46,7 @@ type PageData struct {
 	types.PageData
 	ContentTemplate   string
 	PurchaseOrder     map[string]any
-	Labels            sib_expenditure_expenditure.Labels
+	Labels            sibExpenditureExpenditure.Labels
 	ActiveTab         string
 	TabItems          []pyeza.TabItem
 	LineItemTable     *types.TableConfig
@@ -101,7 +101,7 @@ func purchaseOrderToMap(po *purchaseorderpb.PurchaseOrder) map[string]any {
 }
 
 // buildTabItems builds the tab navigation for the purchase order detail page.
-func buildTabItems(l sib_expenditure_expenditure.Labels, id string, routes sib_expenditure_expenditure.Routes) []pyeza.TabItem {
+func buildTabItems(l sibExpenditureExpenditure.Labels, id string, routes sibExpenditureExpenditure.Routes) []pyeza.TabItem {
 	base := route.ResolveURL(routes.PurchaseOrderDetailURL, "id", id)
 	action := route.ResolveURL(routes.PurchaseOrderTabActionURL, "id", id, "tab", "")
 	tabDetails := l.PurchaseOrder.Detail.TabBasicInfo
@@ -124,7 +124,7 @@ func buildTabItems(l sib_expenditure_expenditure.Labels, id string, routes sib_e
 }
 
 // buildLineItemTable builds the line items table config for a purchase order.
-func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, currency string, purchaseOrderID string, routes sib_expenditure_expenditure.Routes, isDraft bool, perms *types.UserPermissions) *types.TableConfig {
+func buildLineItemTable(items []map[string]any, tableLabels types.TableLabels, currency string, purchaseOrderID string, routes sibExpenditureExpenditure.Routes, isDraft bool, perms *types.UserPermissions) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "line_number", Label: "Line #", NoSort: true, WidthClass: "col-md"},
 		{Key: "description", Label: "Description", NoSort: true},

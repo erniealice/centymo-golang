@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	sib_expenditure_expenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
+	sibExpenditureExpenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
@@ -18,7 +18,7 @@ type ListViewDeps struct {
 	ListPurchaseOrders func(ctx context.Context, req *purchaseorderpb.ListPurchaseOrdersRequest) (*purchaseorderpb.ListPurchaseOrdersResponse, error)
 	RefreshURL         string
 	AddURL             string // action URL for the add drawer
-	Labels             sib_expenditure_expenditure.Labels
+	Labels             sibExpenditureExpenditure.Labels
 	CommonLabels       pyeza.CommonLabels
 	TableLabels        types.TableLabels
 }
@@ -128,7 +128,7 @@ func purchaseOrderColumns() []types.TableColumn {
 	}
 }
 
-func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l sib_expenditure_expenditure.Labels, cl pyeza.CommonLabels) []types.TableRow {
+func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l sibExpenditureExpenditure.Labels, cl pyeza.CommonLabels) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, po := range orders {
 		id := po.GetId()
@@ -169,7 +169,7 @@ func buildTableRows(orders []*purchaseorderpb.PurchaseOrder, l sib_expenditure_e
 	return rows
 }
 
-func statusPageTitle(l sib_expenditure_expenditure.Labels, status string) string {
+func statusPageTitle(l sibExpenditureExpenditure.Labels, status string) string {
 	switch status {
 	case "draft":
 		return l.Page.PurchaseHeadingDraft
@@ -188,7 +188,7 @@ func statusPageTitle(l sib_expenditure_expenditure.Labels, status string) string
 	}
 }
 
-func statusEmptyTitle(l sib_expenditure_expenditure.Labels, status string) string {
+func statusEmptyTitle(l sibExpenditureExpenditure.Labels, status string) string {
 	switch status {
 	case "draft":
 		return l.Empty.PurchaseDraftTitle
@@ -207,7 +207,7 @@ func statusEmptyTitle(l sib_expenditure_expenditure.Labels, status string) strin
 	}
 }
 
-func statusEmptyMessage(l sib_expenditure_expenditure.Labels, status string) string {
+func statusEmptyMessage(l sibExpenditureExpenditure.Labels, status string) string {
 	switch status {
 	case "draft":
 		return l.Empty.PurchaseDraftMessage

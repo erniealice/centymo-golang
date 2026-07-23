@@ -1,7 +1,7 @@
 package form
 
 import (
-	plan_group "github.com/erniealice/centymo-golang/domain/product/plan_group"
+	"github.com/erniealice/centymo-golang/domain/product/plan_group"
 )
 
 // Data is the template data for the plan_group drawer form.

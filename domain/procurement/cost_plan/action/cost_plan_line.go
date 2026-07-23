@@ -16,7 +16,7 @@ import (
 
 	"github.com/erniealice/centymo-golang/domain/procurement/cost_plan"
 	costplanlineform "github.com/erniealice/centymo-golang/domain/procurement/cost_plan/form"
-	sib_procurement_supplier_product_cost_plan "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_cost_plan"
+	sibProcurementSupplierProductCostPlan "github.com/erniealice/centymo-golang/domain/procurement/supplier_product_cost_plan"
 	pyeza "github.com/erniealice/pyeza-golang"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -31,7 +31,7 @@ type CostPlanLineDeps struct {
 	// scoped under /cost-plan/{id}/... via ProductCostAddURL, ProductCostEditURL,
 	// ProductCostDeleteURL.
 	CostPlanRoutes cost_plan.Routes
-	Labels         sib_procurement_supplier_product_cost_plan.Labels
+	Labels         sibProcurementSupplierProductCostPlan.Labels
 	CommonLabels   pyeza.CommonLabels
 
 	CreateSupplierProductCostPlan          func(ctx context.Context, req *supplierproductcostplanpb.CreateSupplierProductCostPlanRequest) (*supplierproductcostplanpb.CreateSupplierProductCostPlanResponse, error)
@@ -46,7 +46,7 @@ type CostPlanLineDeps struct {
 
 // buildCostPlanLineFormLabels converts sib_procurement_supplier_product_cost_plan.Labels
 // into costplanlineform.CostPlanLineLabels.
-func buildCostPlanLineFormLabels(l sib_procurement_supplier_product_cost_plan.Labels) costplanlineform.CostPlanLineLabels {
+func buildCostPlanLineFormLabels(l sibProcurementSupplierProductCostPlan.Labels) costplanlineform.CostPlanLineLabels {
 	return costplanlineform.CostPlanLineLabels{
 		SectionIdentification:          l.Form.SectionIdentification,
 		SectionRelationships:           l.Form.SectionRelationships,

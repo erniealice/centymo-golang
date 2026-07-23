@@ -17,14 +17,14 @@ import (
 
 	expenserecognitionlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition_line"
 
-	sib_expenditure_expense_recognition "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition"
+	sibExpenditureExpenseRecognition "github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition"
 	"github.com/erniealice/centymo-golang/domain/expenditure/expense_recognition_line/form"
 )
 
 // Deps holds dependencies for line action handlers.
 type Deps struct {
-	Routes       sib_expenditure_expense_recognition.Routes
-	Labels       sib_expenditure_expense_recognition.Labels
+	Routes       sibExpenditureExpenseRecognition.Routes
+	Labels       sibExpenditureExpenseRecognition.Labels
 	CommonLabels pyeza.CommonLabels
 
 	CreateExpenseRecognitionLine func(ctx context.Context, req *expenserecognitionlinepb.CreateExpenseRecognitionLineRequest) (*expenserecognitionlinepb.CreateExpenseRecognitionLineResponse, error)

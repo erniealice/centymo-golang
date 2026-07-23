@@ -12,7 +12,7 @@ import (
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
 	inventorymovementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/inventory_movement"
 
-	sib_expenditure_expenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
+	sibExpenditureExpenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	purchaseorderaction "github.com/erniealice/centymo-golang/domain/expenditure/purchase_order/action"
 	purchaseorderdetail "github.com/erniealice/centymo-golang/domain/expenditure/purchase_order/detail"
 	purchaseorderlineitem "github.com/erniealice/centymo-golang/domain/expenditure/purchase_order/line_item"
@@ -22,8 +22,8 @@ import (
 
 // PurchaseOrderModuleDeps holds all dependencies for the purchase order module.
 type PurchaseOrderModuleDeps struct {
-	Routes       sib_expenditure_expenditure.Routes
-	Labels       sib_expenditure_expenditure.Labels
+	Routes       sibExpenditureExpenditure.Routes
+	Labels       sibExpenditureExpenditure.Labels
 	CommonLabels pyeza.CommonLabels
 	TableLabels  types.TableLabels
 
@@ -56,7 +56,7 @@ type PurchaseOrderModuleDeps struct {
 
 // PurchaseOrderModule holds all constructed purchase order views.
 type PurchaseOrderModule struct {
-	routes                      sib_expenditure_expenditure.Routes
+	routes                      sibExpenditureExpenditure.Routes
 	PurchaseOrderList           view.View
 	PurchaseOrderAdd            view.View
 	PurchaseOrderEdit           view.View

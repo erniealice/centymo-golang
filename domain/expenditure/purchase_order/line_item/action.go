@@ -13,7 +13,7 @@ import (
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
 
-	sib_expenditure_expenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
+	sibExpenditureExpenditure "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	lineitemform "github.com/erniealice/centymo-golang/domain/expenditure/purchase_order/line_item/form"
 
 	purchaseorderlineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/purchase_order_line_item"
@@ -21,8 +21,8 @@ import (
 
 // Deps holds dependencies for PO line item action handlers.
 type Deps struct {
-	Routes sib_expenditure_expenditure.Routes
-	Labels sib_expenditure_expenditure.Labels
+	Routes sibExpenditureExpenditure.Routes
+	Labels sibExpenditureExpenditure.Labels
 
 	CreatePurchaseOrderLineItem func(ctx context.Context, req *purchaseorderlineitempb.CreatePurchaseOrderLineItemRequest) (*purchaseorderlineitempb.CreatePurchaseOrderLineItemResponse, error)
 	ReadPurchaseOrderLineItem   func(ctx context.Context, req *purchaseorderlineitempb.ReadPurchaseOrderLineItemRequest) (*purchaseorderlineitempb.ReadPurchaseOrderLineItemResponse, error)
