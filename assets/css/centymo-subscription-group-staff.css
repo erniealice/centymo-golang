@@ -1,0 +1,46 @@
+/* centymo — subscription_group "Teaching Staff" assignment tab (§6.1)
+ *
+ * The offering × servicer assignments now render through the shared pyeza
+ * table-card (one row per offering; a per-row action opens the assign drawer,
+ * which inherits pyeza form styling). This file carries only the few LAYOUT
+ * survivors the table-card does not own: the tab header that pairs the section
+ * title with the coverage badge, the empty-pool gate link, and the empty/
+ * unauthorized note. Vocabulary is lyngua-only; built entirely from design
+ * tokens (no literal colors, no hex). .tab-scroll / .detail-section-title /
+ * .badge / .table-card are provided by pyeza.
+ */
+
+/* Tab header — section title on the left, coverage badge on the right. */
+.centymo-sgstaff-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+.centymo-sgstaff-coverage {
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+}
+
+/* Empty-pool gate link — rendered inside the teacher cell when an offering has
+ * no eligible staff (points to the eligibility-management surface). */
+.centymo-sgstaff-gate {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--text-sm);
+    color: var(--status-warning);
+    text-decoration: none;
+}
+.centymo-sgstaff-gate:hover {
+    text-decoration: underline;
+}
+
+/* Empty / unauthorized note — shown when there are no offerings to assign or
+ * the operator lacks read permission on the class-edge. */
+.centymo-sgstaff-empty {
+    color: var(--text-secondary);
+    padding: var(--spacing-lg) 0;
+}

@@ -143,6 +143,14 @@ func NewAddAction(deps *Deps) view.View {
 			spawnCtx = context.WithValue(ctx, "spawn_jobs_override", &v)
 		}
 
+		// Require-spawn-success toggle (Q-GSE-8) — sibling of the Spawn Jobs
+		// toggle above, but a direct proto field on CreateSubscriptionRequest
+		// (not a context override): espyna reads req.RequireSpawnSuccess
+		// directly. Default unchecked -> false pointer -> byte-identical to
+		// the legacy best-effort path when the operator leaves it alone.
+		requireSpawnRaw := strings.ToLower(strings.TrimSpace(r.FormValue("require_spawn_success")))
+		requireSpawnSuccess := requireSpawnRaw == "true" || requireSpawnRaw == "on" || requireSpawnRaw == "1" || requireSpawnRaw == "yes"
+
 		resp, err := deps.CreateSubscription(spawnCtx, &subscriptionpb.CreateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
 				Name:          name,
@@ -153,6 +161,7 @@ func NewAddAction(deps *Deps) view.View {
 				DateTimeEnd:   dateTimeEnd,
 				Active:        true,
 			},
+			RequireSpawnSuccess: &requireSpawnSuccess,
 		})
 		if err != nil {
 			log.Printf("Failed to create subscription: %v", err)

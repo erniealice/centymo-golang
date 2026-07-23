@@ -8,16 +8,17 @@ import "strings"
 
 // Labels holds all labels for the subscription_group module.
 type Labels struct {
-	Page    PageLabels    `json:"page"`
-	Buttons ButtonLabels  `json:"buttons"`
-	Columns ColumnLabels  `json:"columns"`
-	Empty   EmptyLabels   `json:"empty"`
-	Form    FormLabels    `json:"form"`
-	Bulk    BulkLabels    `json:"bulk"`
-	Confirm ConfirmLabels `json:"confirm"`
-	Tabs    TabLabels     `json:"tabs"`
-	Detail  DetailLabels  `json:"detail"`
-	Errors  ErrorLabels   `json:"errors"`
+	Page    PageLabels     `json:"page"`
+	Buttons ButtonLabels   `json:"buttons"`
+	Columns ColumnLabels   `json:"columns"`
+	Empty   EmptyLabels    `json:"empty"`
+	Form    FormLabels     `json:"form"`
+	Bulk    BulkLabels     `json:"bulk"`
+	Confirm ConfirmLabels  `json:"confirm"`
+	Tabs    TabLabels      `json:"tabs"`
+	Staff   StaffTabLabels `json:"staff"`
+	Detail  DetailLabels   `json:"detail"`
+	Errors  ErrorLabels    `json:"errors"`
 }
 
 type PageLabels struct {
@@ -113,8 +114,32 @@ type TabLabels struct {
 	Info              string `json:"info"`
 	Subscriptions     string `json:"subscriptions"`      // label — education: "Enrollments"; general: "Subscriptions"
 	SubscriptionsSlug string `json:"subscriptions_slug"` // URL slug — education: "enrollments"; general (empty) → "subscriptions"
+	Staff             string `json:"staff"`              // tab button — general: "Staff"; education: "Teaching Staff"
 	Audit             string `json:"audit"`
 	Attachments       string `json:"attachments"`
+}
+
+// StaffTabLabels holds the "Teaching Staff" assignment-grid labels (§6.1). The
+// grid assigns an eligible servicer to each offering (product_plan) of a cohort
+// (subscription_group). Generic Go field names; vertical vocabulary (subject/
+// teacher) enters only via the lyngua overrides.
+type StaffTabLabels struct {
+	ColumnSubject      string `json:"column_subject"`      // offering column — general "Offering"; education "Subject"; also the drawer offering field label
+	ColumnServicer     string `json:"column_servicer"`     // servicer column — general "Staff"; education "Teacher"; also the drawer teacher field label
+	ColumnRole         string `json:"column_role"`         // role column; also the drawer role field label
+	ColumnState        string `json:"column_state"`        // assignment-state column header (Saved / Unassigned)
+	EmptyPool          string `json:"empty_pool"`          // empty-pool gate link text (one row's eligible pool is empty)
+	EmptyTitle         string `json:"empty_title"`         // tab empty-state title — the section has zero offerings to staff
+	EmptyMessage       string `json:"empty_message"`       // tab empty-state message — the section has zero offerings to staff
+	Saved              string `json:"saved"`               // assigned-row state
+	Unassigned         string `json:"unassigned"`          // unassigned-row state
+	AssignAction       string `json:"assign_action"`       // per-row action tooltip + assign-drawer title
+	RolePrimary        string `json:"role_primary"`        // role enum label — teacher-of-record
+	RoleAccess         string `json:"role_access"`         // role enum label — visibility-only access
+	TeacherPlaceholder string `json:"teacher_placeholder"` // drawer teacher autocomplete placeholder
+	TeacherSearch      string `json:"teacher_search"`      // drawer teacher autocomplete filter placeholder
+	ClearAction        string `json:"clear_action"`        // drawer Clear control — soft-deletes the active edge (§6.1 "Clear")
+	Unauthorized       string `json:"unauthorized"`        // read-only / no-permission note
 }
 
 // ResolveTabSlug returns the URL slug for a canonical tab key. The "subscriptions"
@@ -248,8 +273,27 @@ func DefaultLabels() Labels {
 		Tabs: TabLabels{
 			Info:          "Info",
 			Subscriptions: "Subscriptions",
+			Staff:         "Staff",
 			Audit:         "Audit",
 			Attachments:   "Attachments",
+		},
+		Staff: StaffTabLabels{
+			ColumnSubject:      "Offering",
+			ColumnServicer:     "Staff",
+			ColumnRole:         "Role",
+			ColumnState:        "State",
+			EmptyPool:          "No eligible staff — set eligibility first",
+			EmptyTitle:         "No offerings",
+			EmptyMessage:       "This section has no offerings to staff yet.",
+			Saved:              "Saved",
+			Unassigned:         "Unassigned",
+			AssignAction:       "Assign",
+			RolePrimary:        "Primary",
+			RoleAccess:         "Access",
+			TeacherPlaceholder: "Select staff...",
+			TeacherSearch:      "Filter...",
+			ClearAction:        "Clear",
+			Unauthorized:       "You do not have permission to view staff assignments",
 		},
 		Detail: DetailLabels{
 			Title:          "Section",

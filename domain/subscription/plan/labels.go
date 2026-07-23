@@ -317,6 +317,8 @@ func DefaultLabels() Labels {
 			ClientScopeLocked: "Cannot change this plan's client while it has active subscriptions.",
 		},
 		ProductPlanForm: ProductPlanFormLabels{
+			Name:               "Name",
+			NamePlaceholder:    "Defaults to the selected product's name",
 			Product:            "Product",
 			ProductPlaceholder: "Select an item...",
 			SelectProduct:      "— Select a product —",

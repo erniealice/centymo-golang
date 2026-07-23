@@ -55,6 +55,12 @@ type Labels struct {
 	SpawnJobsHelpText     string
 	SpawnJobsSummary      string // {{.JobCount}} / {{.TemplateNames}} / {{.PhaseCount}} / {{.TaskCount}}
 	SpawnJobsNone         string
+
+	// Require-spawn-success toggle — opts the create request into the
+	// fail-closed strict path (Q-GSE-8): an empty or failed spawn rolls the
+	// whole subscription create back instead of saving with zero jobs.
+	RequireSpawnToggle string
+	RequireSpawnHint   string
 }
 
 // Data is the template data for the subscription drawer form.

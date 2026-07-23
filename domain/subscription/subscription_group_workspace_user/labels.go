@@ -57,9 +57,11 @@ type FormLabels struct {
 
 	WorkspaceUserId         string `json:"workspace_user_id"`
 	WorkspaceUserIdPH       string `json:"workspace_user_id_placeholder"`
+	WorkspaceUserSearch     string `json:"workspace_user_search"`
 	WorkspaceUserIdInfo     string `json:"workspace_user_id_info"`
 	SubscriptionGroupId     string `json:"subscription_group_id"`
 	SubscriptionGroupIdPH   string `json:"subscription_group_id_placeholder"`
+	SubscriptionGroupSearch string `json:"subscription_group_search"`
 	SubscriptionGroupIdInfo string `json:"subscription_group_id_info"`
 	Scope                   string `json:"scope"`
 	ScopePlaceholder        string `json:"scope_placeholder"`
@@ -153,10 +155,12 @@ func DefaultLabels() Labels {
 			SectionAssignment:       "Assignment",
 			SectionServicing:        "Servicing",
 			WorkspaceUserId:         "Workspace User",
-			WorkspaceUserIdPH:       "Enter workspace user ID",
+			WorkspaceUserIdPH:       "Select a workspace user...",
+			WorkspaceUserSearch:     "Filter...",
 			WorkspaceUserIdInfo:     "The operator (workspace user) being assigned to this group.",
 			SubscriptionGroupId:     "Subscription Group",
-			SubscriptionGroupIdPH:   "Enter group ID",
+			SubscriptionGroupIdPH:   "Select a group...",
+			SubscriptionGroupSearch: "Filter...",
 			SubscriptionGroupIdInfo: "The subscription group (cohort) this operator is assigned to.",
 			Scope:                   "Scope",
 			ScopePlaceholder:        "e.g. coordinator",

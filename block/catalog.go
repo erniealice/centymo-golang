@@ -47,6 +47,7 @@ import (
 	pricelistpkg "github.com/erniealice/centymo-golang/domain/product/price_list"
 	productpkg "github.com/erniealice/centymo-golang/domain/product/product"
 	productplanstaffpkg "github.com/erniealice/centymo-golang/domain/product/product_plan_staff"
+	productplanstaffform "github.com/erniealice/centymo-golang/domain/product/product_plan_staff/form"
 	resourcepkg "github.com/erniealice/centymo-golang/domain/product/resource"
 	revenuedomain "github.com/erniealice/centymo-golang/domain/revenue"
 	revenuepkg "github.com/erniealice/centymo-golang/domain/revenue/revenue"
@@ -61,7 +62,9 @@ import (
 	subscriptiongrouppkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
 	subscriptiongroupmemberpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
 	subscriptiongroupproductplanstaffpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_product_plan_staff"
+	sgppsform "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_product_plan_staff/form"
 	subscriptiongroupworkspaceuserpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_workspace_user"
+	sgwuform "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_workspace_user/form"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 	collectionpkg "github.com/erniealice/centymo-golang/domain/treasury/collection"
 	disbursementpkg "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
@@ -517,7 +520,7 @@ func ProductPricePlanUnit(_ *UseCases, _ *Infra) compose.Unit {
 // SubscriptionGroup (education "section / cohort" cohort)
 // ---------------------------------------------------------------------------
 
-func SubscriptionGroupUnit(uc *UseCases, infra *Infra) compose.Unit {
+func SubscriptionGroupUnit(uc *UseCases, infra *Infra, options subscriptiongrouppkg.Options) compose.Unit {
 	u := subscriptiongrouppkg.Describe()
 	u.Mount = func(mc *compose.MountContext) error {
 		r := u.Routes.(*subscriptiongrouppkg.Routes)
@@ -540,6 +543,29 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra) compose.Unit {
 			ListSubscriptionGroupMembers: uc.SubscriptionGroupMember.ListSubscriptionGroupMembers,
 			ListClients:                  uc.Entity.Client.ListClients,
 			ListSubscriptions:            uc.Subscription.ListSubscriptions,
+			// Roster banding (app-configured gender bands): the generic
+			// "client_attributes.<code>" option + its workspace-bound attribute
+			// closures. Zero-valued apps (service-admin) keep the flat roster.
+			Options:                  options,
+			ListClientAttributes:     uc.Entity.ClientAttribute.ListClientAttributes,
+			ResolveAttributeIDByCode: uc.Entity.ClientAttribute.ResolveAttributeIDByCode,
+			// Teaching-staff tab (§6.1–§6.3): the section assignment grid composes
+			// these existing List use cases + the §6.3 assign upsert. The staff
+			// id→name batch reuses the fk_options staff producer; the assign closure
+			// is the espyna consumer pass-through (workspace read from ctx there).
+			ListProductPlans:                       uc.Product.ListProductPlans,
+			ListSubscriptionGroupProductPlanStaffs: uc.SubscriptionGroupProductPlanStaff.ListSubscriptionGroupProductPlanStaffs,
+			ListProductPlanStaffs:                  uc.ProductPlanStaff.ListProductPlanStaffs,
+			ListStaffNames: func(ctx context.Context) map[string]string {
+				pairs := staffOptionPairs(ctx, uc.Entity.Staff.GetStaffListPageData)
+				names := make(map[string]string, len(pairs))
+				for _, p := range pairs {
+					names[p.ID] = p.Label
+				}
+				return names
+			},
+			AssignGroupServicer:     uc.SubscriptionGroupProductPlanStaff.AssignSubscriptionGroupProductPlanStaff,
+			ProductPlanStaffListURL: productplanstaffpkg.ListURL,
 			// Attachments tab: Infra carries the ops (mirror PriceScheduleUnit).
 			// Audit tab: no infra.ListAuditHistory hook exists → AuditOps stays nil (renders empty).
 			AttachmentOps: attachment.AttachmentOps{
@@ -603,6 +629,17 @@ func SubscriptionGroupWorkspaceUserUnit(uc *UseCases, infra *Infra) compose.Unit
 			CreateSubscriptionGroupWorkspaceUser: uc.SubscriptionGroupWorkspaceUser.CreateSubscriptionGroupWorkspaceUser,
 			UpdateSubscriptionGroupWorkspaceUser: uc.SubscriptionGroupWorkspaceUser.UpdateSubscriptionGroupWorkspaceUser,
 			DeleteSubscriptionGroupWorkspaceUser: uc.SubscriptionGroupWorkspaceUser.DeleteSubscriptionGroupWorkspaceUser,
+
+			// FK-picker option loaders (fk_options.go). Workspace-user + group
+			// pickers replace the raw-UUID text inputs.
+			ListWorkspaceUserOptions: func(ctx context.Context) []sgwuform.Pair {
+				return pairsInto(workspaceUserOptionPairs(ctx, uc.Entity.WorkspaceUser.ListWorkspaceUsers),
+					func(id, label string) sgwuform.Pair { return sgwuform.Pair{ID: id, Label: label} })
+			},
+			ListSubscriptionGroupOptions: func(ctx context.Context) []sgwuform.Pair {
+				return pairsInto(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
+					func(id, label string) sgwuform.Pair { return sgwuform.Pair{ID: id, Label: label} })
+			},
 		}
 		subscriptiondom.NewSubscriptionGroupWorkspaceUserModule(deps).RegisterRoutes(mc.Routes)
 		return nil
@@ -630,6 +667,21 @@ func SubscriptionGroupProductPlanStaffUnit(uc *UseCases, infra *Infra) compose.U
 			CreateSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.CreateSubscriptionGroupProductPlanStaff,
 			UpdateSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.UpdateSubscriptionGroupProductPlanStaff,
 			DeleteSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.DeleteSubscriptionGroupProductPlanStaff,
+
+			// FK-picker option loaders (fk_options.go). Section + subject +
+			// staff-member pickers replace the raw-UUID free-text fallback.
+			ListSubscriptionGroupOptions: func(ctx context.Context) []sgppsform.Pair {
+				return pairsInto(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
+					func(id, label string) sgppsform.Pair { return sgppsform.Pair{ID: id, Label: label} })
+			},
+			ListProductPlanOptions: func(ctx context.Context) []sgppsform.Pair {
+				return pairsInto(productPlanOptionPairs(ctx, uc.Product.ListProductPlans),
+					func(id, label string) sgppsform.Pair { return sgppsform.Pair{ID: id, Label: label} })
+			},
+			ListStaffOptions: func(ctx context.Context) []sgppsform.Pair {
+				return pairsInto(staffOptionPairs(ctx, uc.Entity.Staff.GetStaffListPageData),
+					func(id, label string) sgppsform.Pair { return sgppsform.Pair{ID: id, Label: label} })
+			},
 		}
 		subscriptiondom.NewSubscriptionGroupProductPlanStaffModule(deps).RegisterRoutes(mc.Routes)
 		return nil
@@ -738,6 +790,21 @@ func ProductPlanStaffUnit(uc *UseCases, infra *Infra) compose.Unit {
 			CreateProductPlanStaff: uc.ProductPlanStaff.CreateProductPlanStaff,
 			UpdateProductPlanStaff: uc.ProductPlanStaff.UpdateProductPlanStaff,
 			DeleteProductPlanStaff: uc.ProductPlanStaff.DeleteProductPlanStaff,
+
+			// FK-picker option loaders (fk_options.go). Staff-member + product-plan
+			// pickers replace the raw-UUID text inputs.
+			ListStaffOptions: func(ctx context.Context) []productplanstaffform.Pair {
+				return pairsInto(staffOptionPairs(ctx, uc.Entity.Staff.GetStaffListPageData),
+					func(id, label string) productplanstaffform.Pair {
+						return productplanstaffform.Pair{ID: id, Label: label}
+					})
+			},
+			ListProductPlanOptions: func(ctx context.Context) []productplanstaffform.Pair {
+				return pairsInto(productPlanOptionPairs(ctx, uc.Product.ListProductPlans),
+					func(id, label string) productplanstaffform.Pair {
+						return productplanstaffform.Pair{ID: id, Label: label}
+					})
+			},
 		}
 		productdom.NewProductPlanStaffModule(deps).RegisterRoutes(mc.Routes)
 		return nil
@@ -1559,7 +1626,11 @@ func SupplierBillingEventUnit(uc *UseCases, _ *Infra) compose.Unit {
 
 // AllUnits returns the complete curated unit list for all centymo commerce
 // domains, in the same registration order as Block().
-func AllUnits(uc *UseCases, infra *Infra) []compose.Unit {
+func AllUnits(uc *UseCases, infra *Infra, opts ...EngineOption) []compose.Unit {
+	cfg := engineConfig{}
+	for _, o := range opts {
+		o(&cfg)
+	}
 	return []compose.Unit{
 		InventoryUnit(uc, infra),
 		RevenueUnit(uc, infra),
@@ -1574,7 +1645,7 @@ func AllUnits(uc *UseCases, infra *Infra) []compose.Unit {
 		PriceScheduleUnit(uc, infra),
 		ProductPricePlanUnit(uc, infra),
 		PriceScheduleWorkspaceUserUnit(uc, infra),
-		SubscriptionGroupUnit(uc, infra),
+		SubscriptionGroupUnit(uc, infra, cfg.subscriptionGroupOptions),
 		SubscriptionGroupMemberUnit(uc, infra),
 		SubscriptionGroupWorkspaceUserUnit(uc, infra),
 		SubscriptionGroupProductPlanStaffUnit(uc, infra),

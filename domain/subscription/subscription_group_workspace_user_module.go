@@ -12,6 +12,7 @@ import (
 	view "github.com/erniealice/pyeza-golang/view"
 
 	epkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_workspace_user"
+	"github.com/erniealice/centymo-golang/domain/subscription/subscription_group_workspace_user/form"
 	sgwupb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_workspace_user"
 )
 
@@ -28,6 +29,10 @@ type SubscriptionGroupWorkspaceUserModuleDeps struct {
 	CreateSubscriptionGroupWorkspaceUser func(ctx context.Context, req *sgwupb.CreateSubscriptionGroupWorkspaceUserRequest) (*sgwupb.CreateSubscriptionGroupWorkspaceUserResponse, error)
 	UpdateSubscriptionGroupWorkspaceUser func(ctx context.Context, req *sgwupb.UpdateSubscriptionGroupWorkspaceUserRequest) (*sgwupb.UpdateSubscriptionGroupWorkspaceUserResponse, error)
 	DeleteSubscriptionGroupWorkspaceUser func(ctx context.Context, req *sgwupb.DeleteSubscriptionGroupWorkspaceUserRequest) (*sgwupb.DeleteSubscriptionGroupWorkspaceUserResponse, error)
+
+	// Optional FK picker loaders — nil disables the picker.
+	ListWorkspaceUserOptions     func(ctx context.Context) []form.Pair
+	ListSubscriptionGroupOptions func(ctx context.Context) []form.Pair
 
 	// Optional reference checker; nil disables delete gating.
 	GetSubscriptionGroupWorkspaceUserInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
@@ -59,6 +64,8 @@ func NewSubscriptionGroupWorkspaceUserModule(deps *SubscriptionGroupWorkspaceUse
 		UpdateSubscriptionGroupWorkspaceUser:      deps.UpdateSubscriptionGroupWorkspaceUser,
 		DeleteSubscriptionGroupWorkspaceUser:      deps.DeleteSubscriptionGroupWorkspaceUser,
 		GetSubscriptionGroupWorkspaceUserInUseIDs: deps.GetSubscriptionGroupWorkspaceUserInUseIDs,
+		ListWorkspaceUserOptions:                  deps.ListWorkspaceUserOptions,
+		ListSubscriptionGroupOptions:              deps.ListSubscriptionGroupOptions,
 	}
 
 	listDeps := &sgwulist.ListViewDeps{

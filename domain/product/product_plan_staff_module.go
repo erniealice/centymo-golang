@@ -12,6 +12,7 @@ import (
 	view "github.com/erniealice/pyeza-golang/view"
 
 	epkg "github.com/erniealice/centymo-golang/domain/product/product_plan_staff"
+	"github.com/erniealice/centymo-golang/domain/product/product_plan_staff/form"
 	productplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan_staff"
 )
 
@@ -28,6 +29,10 @@ type ProductPlanStaffModuleDeps struct {
 	CreateProductPlanStaff func(ctx context.Context, req *productplanstaffpb.CreateProductPlanStaffRequest) (*productplanstaffpb.CreateProductPlanStaffResponse, error)
 	UpdateProductPlanStaff func(ctx context.Context, req *productplanstaffpb.UpdateProductPlanStaffRequest) (*productplanstaffpb.UpdateProductPlanStaffResponse, error)
 	DeleteProductPlanStaff func(ctx context.Context, req *productplanstaffpb.DeleteProductPlanStaffRequest) (*productplanstaffpb.DeleteProductPlanStaffResponse, error)
+
+	// Optional FK picker loaders — nil disables the picker.
+	ListStaffOptions       func(ctx context.Context) []form.Pair
+	ListProductPlanOptions func(ctx context.Context) []form.Pair
 
 	// Optional reference checker; nil disables delete gating.
 	GetProductPlanStaffInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
@@ -60,6 +65,8 @@ func NewProductPlanStaffModule(deps *ProductPlanStaffModuleDeps) *ProductPlanSta
 		UpdateProductPlanStaff:      deps.UpdateProductPlanStaff,
 		DeleteProductPlanStaff:      deps.DeleteProductPlanStaff,
 		GetProductPlanStaffInUseIDs: deps.GetProductPlanStaffInUseIDs,
+		ListStaffOptions:            deps.ListStaffOptions,
+		ListProductPlanOptions:      deps.ListProductPlanOptions,
 	}
 
 	listDeps := &productplanstafflist.ListViewDeps{

@@ -18,11 +18,14 @@ import (
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan_staff"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
 	subscriptiongroupmemberpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_member"
+	sgppspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
 )
 
 // DetailViewDeps holds view dependencies for the subscription group detail page.
@@ -40,6 +43,22 @@ type DetailViewDeps struct {
 	ListSubscriptionGroupMembers func(ctx context.Context, req *subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest) (*subscriptiongroupmemberpb.ListSubscriptionGroupMembersResponse, error)
 	ListClients                  func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
 	ListSubscriptions            func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
+
+	// Teaching-staff tab (§6.2): the group grid composes these existing List
+	// use cases — offerings (ListProductPlans by plan_id), current assignments
+	// (ListSubscriptionGroupProductPlanStaffs by group), eligible pools
+	// (ListProductPlanStaffs by product_plan_id) — plus a staff id→name batch.
+	// AssignGroupServicer is the §6.3 upsert (workspace read from ctx by the
+	// espyna consumer seam; group id from the signed path). All nil-safe: an
+	// unwired dep degrades the grid to empty, never an error.
+	ListProductPlans                       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListSubscriptionGroupProductPlanStaffs func(ctx context.Context, req *sgppspb.ListSubscriptionGroupProductPlanStaffsRequest) (*sgppspb.ListSubscriptionGroupProductPlanStaffsResponse, error)
+	ListProductPlanStaffs                  func(ctx context.Context, req *productplanstaffpb.ListProductPlanStaffsRequest) (*productplanstaffpb.ListProductPlanStaffsResponse, error)
+	ListStaffNames                         func(ctx context.Context) map[string]string
+	AssignGroupServicer                    func(ctx context.Context, subscriptionGroupID, productPlanID, staffID, role string) (string, error)
+	// ProductPlanStaffListURL is the eligibility-management list route (with a
+	// {status} placeholder) the empty-pool gate links to; "" hides the link.
+	ProductPlanStaffListURL string
 
 	attachment.AttachmentOps // attachments tab
 	auditlog.AuditOps        // audit tab (ListAuditHistory is nil in centymo today — renders empty)
@@ -68,6 +87,8 @@ type PageData struct {
 
 	// Subscriptions tab (the section roster)
 	Subscriptions *types.TableConfig
+	// Teaching-staff tab (the section assignment grid)
+	Staff *SectionStaffTabData
 	// Attachments tab
 	AttachmentTable *types.TableConfig
 	// Audit tab
@@ -104,6 +125,12 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
 		id := viewCtx.Request.PathValue("id")
 		tab := deps.Labels.Tabs.CanonicalizeTab(viewCtx.Request.PathValue("tab"))
+		// The Teaching-staff assign drawer rides this already-registered GET route
+		// under the reserved staff-assign token (no new route): the per-row action
+		// GETs it into #sheetContent. Dispatch before the tab-body path.
+		if tab == staffAssignTab {
+			return renderAssignDrawer(ctx, deps, viewCtx, id)
+		}
 		if tab == "" {
 			tab = "info"
 		}
@@ -182,9 +209,15 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	// data source + permission gate exactly so the badge and row counts cannot
 	// drift. 0 renders no badge (unpermitted / unwired / empty section).
 	enrollmentCount := countSectionEnrollments(ctx, deps, id)
+	// Teaching-staff tab count badge — the number of offering rows the staff table
+	// lists (active product_plans of the program), mirroring its row source + read
+	// gate exactly (see countSectionOfferings) so the badge and row counts cannot
+	// drift. 0 renders no badge (unpermitted / unwired / no program).
+	offeringCount := countSectionOfferings(ctx, deps, sg)
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "subscriptions", Label: l.Tabs.Subscriptions, Href: base + "?tab=" + subsSlug, HxGet: action + subsSlug, Icon: "icon-users", Count: enrollmentCount},
+		{Key: "staff", Label: l.Tabs.Staff, Href: base + "?tab=staff", HxGet: action + "staff", Icon: "icon-user-check", Count: offeringCount},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
 	}
@@ -238,6 +271,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	switch activeTab {
 	case "subscriptions":
 		pageData.Subscriptions = buildSubscriptionsTable(ctx, deps, id, l)
+	case "staff":
+		pageData.Staff = buildStaffTabData(ctx, deps, sg, l)
 	case "attachments":
 		if deps.ListAttachments != nil {
 			cfg := attachmentConfig(deps)

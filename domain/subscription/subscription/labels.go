@@ -169,6 +169,11 @@ type FormLabels struct {
 	SpawnJobsHelpText     string `json:"spawn_jobs_help_text"`
 	SpawnJobsSummary      string `json:"spawn_jobs_summary"`
 	SpawnJobsNone         string `json:"spawn_jobs_none"`
+
+	// Require-spawn-success toggle — sibling of the Spawn Jobs toggle, opts
+	// the create request into the fail-closed strict path.
+	RequireSpawnToggle string `json:"require_spawn_toggle"`
+	RequireSpawnHint   string `json:"require_spawn_hint"`
 }
 
 type DetailLabels struct {
@@ -513,6 +518,11 @@ type SpawnLabels struct {
 	Confirm           string `json:"confirm"`
 	SuccessToast      string `json:"success_toast"`
 	Skipped           string `json:"skipped"`
+
+	// Blocked is the retroactive-spawn guard message — shown as a blocking
+	// GET-drawer banner and returned as the POST rejection error when the
+	// subscription's resolved price_schedule is closed or inactive.
+	Blocked string `json:"blocked"`
 }
 
 type ConfirmLabels struct {
@@ -602,6 +612,8 @@ func DefaultLabels() Labels {
 			SpawnJobsHelpText:     "Disable to start without operational tracking (e.g., advisory retainers).",
 			SpawnJobsSummary:      "Spawning {{.JobCount}} Job(s) from {{.TemplateNames}} — includes {{.PhaseCount}} phases, {{.TaskCount}} tasks.",
 			SpawnJobsNone:         "No JobTemplate is configured for this Plan. The engagement will start without operational tracking.",
+			RequireSpawnToggle:    "Require successful job spawn",
+			RequireSpawnHint:      "If spawning jobs fails or produces none, the whole subscription create is cancelled instead of saving without jobs.",
 		},
 		Actions: ActionLabels{
 			View:       "View Subscription",
@@ -840,6 +852,7 @@ func DefaultLabels() Labels {
 			Confirm:           "Spawn Jobs",
 			SuccessToast:      "Spawned {{.JobCount}} Job(s).",
 			Skipped:           "Nothing to spawn — no JobTemplate is linked to this Plan.",
+			Blocked:           "Job spawn is blocked — the price schedule for this subscription's plan is closed or inactive.",
 		},
 		Confirm: ConfirmLabels{
 			Cancel:                "Cancel Subscription",

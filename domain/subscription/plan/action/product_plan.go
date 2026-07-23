@@ -11,7 +11,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
-	sib_product_product "github.com/erniealice/centymo-golang/domain/product/product"
+	sibProductProduct "github.com/erniealice/centymo-golang/domain/product/product"
 	plan "github.com/erniealice/centymo-golang/domain/subscription/plan"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -30,6 +30,8 @@ type ProductOption struct {
 
 // ProductPlanFormLabels holds i18n labels for the product plan drawer form template.
 type ProductPlanFormLabels struct {
+	Name               string
+	NamePlaceholder    string
 	Product            string
 	ProductPlaceholder string
 	SelectProduct      string
@@ -102,6 +104,8 @@ type ProductPlanDeps struct {
 // productPlanFormLabels converts plan.ProductPlanFormLabels into the local type.
 func productPlanFormLabels(l plan.ProductPlanFormLabels) ProductPlanFormLabels {
 	return ProductPlanFormLabels{
+		Name:                     l.Name,
+		NamePlaceholder:          l.NamePlaceholder,
 		Product:                  l.Product,
 		ProductPlaceholder:       l.ProductPlaceholder,
 		SelectProduct:            l.SelectProduct,
@@ -301,7 +305,7 @@ func loadVariantOptions(ctx context.Context, deps *ProductPlanDeps, productID, s
 		}
 		label := sku
 		if parts := variantOptionLabels[v.GetId()]; len(parts) > 0 {
-			label = sku + " — " + strings.Join(parts, sib_product_product.OptionValueSeparator)
+			label = sku + " — " + strings.Join(parts, sibProductProduct.OptionValueSeparator)
 		}
 		options = append(options, types.SelectOption{
 			Value:    v.GetId(),

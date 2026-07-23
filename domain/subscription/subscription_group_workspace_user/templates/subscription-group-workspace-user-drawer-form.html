@@ -10,10 +10,30 @@
         {{template "form-section" (dict "Title" .Labels.SectionAssignment)}}
 
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "workspace_user_id" "Label" .Labels.WorkspaceUserId "Value" .WorkspaceUserId "Required" true "Placeholder" .Labels.WorkspaceUserIdPH "Info" .Labels.WorkspaceUserIdInfo)}}
+            {{template "auto-complete" (dict
+                "ID" "sgwu-user-select"
+                "Name" "workspace_user_id"
+                "Label" .Labels.WorkspaceUserId
+                "Placeholder" .Labels.WorkspaceUserIdPH
+                "SearchPlaceholder" .Labels.WorkspaceUserSearch
+                "Options" .WorkspaceUserOpts
+                "Value" .WorkspaceUserId
+                "SelectedLabel" .WorkspaceUserLabel
+                "Info" .Labels.WorkspaceUserIdInfo
+            )}}
         </div>
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "subscription_group_id" "Label" .Labels.SubscriptionGroupId "Value" .SubscriptionGroupId "Required" true "Placeholder" .Labels.SubscriptionGroupIdPH "Info" .Labels.SubscriptionGroupIdInfo)}}
+            {{template "auto-complete" (dict
+                "ID" "sgwu-group-select"
+                "Name" "subscription_group_id"
+                "Label" .Labels.SubscriptionGroupId
+                "Placeholder" .Labels.SubscriptionGroupIdPH
+                "SearchPlaceholder" .Labels.SubscriptionGroupSearch
+                "Options" .SubscriptionGroupOpts
+                "Value" .SubscriptionGroupId
+                "SelectedLabel" .SubscriptionGroupLabel
+                "Info" .Labels.SubscriptionGroupIdInfo
+            )}}
         </div>
 
         {{/* ================================================================ */}}

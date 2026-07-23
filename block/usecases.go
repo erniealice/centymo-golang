@@ -19,11 +19,12 @@ import (
 	"testing"
 
 	commonv1pb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
-	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	paymenttermpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/payment_term"
+	staffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/staff"
 	supplierpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/supplier"
 	workspacepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace"
+	workspaceuserpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace_user"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
@@ -215,11 +216,30 @@ type CommonUseCases struct {
 // -- Entity ------------------------------------------------------------------
 
 type EntityUseCases struct {
-	Client      ClientUseCases
-	Location    LocationUseCases
-	PaymentTerm PaymentTermUseCases
-	Supplier    SupplierUseCases
-	Workspace   WorkspaceUseCases
+	Client          ClientUseCases
+	ClientAttribute ClientAttributeUseCases
+	Location        LocationUseCases
+	PaymentTerm     PaymentTermUseCases
+	Staff           StaffUseCases
+	Supplier        SupplierUseCases
+	Workspace       WorkspaceUseCases
+	WorkspaceUser   WorkspaceUserUseCases
+}
+
+// StaffUseCases groups the typed staff read the FK-option pickers need. The
+// staff→person label requires the joined user (first/last name), so the picker
+// is fed by GetStaffListPageData — the list variant whose CTE hydrates the
+// nested user — not the bare ListStaffs (which leaves Staff.User nil). Nil-safe:
+// the picker renders empty (free-text fallback) when unwired.
+type StaffUseCases struct {
+	GetStaffListPageData func(context.Context, *staffpb.GetStaffListPageDataRequest) (*staffpb.GetStaffListPageDataResponse, error)
+}
+
+// WorkspaceUserUseCases groups the typed workspace_user read the FK-option
+// pickers need. ListWorkspaceUsers hydrates the nested user (first/last name)
+// for the human label. Nil-safe: the picker renders empty when unwired.
+type WorkspaceUserUseCases struct {
+	ListWorkspaceUsers func(context.Context, *workspaceuserpb.ListWorkspaceUsersRequest) (*workspaceuserpb.ListWorkspaceUsersResponse, error)
 }
 
 // PaymentTermUseCases groups the typed payment_term reads the revenue
@@ -233,11 +253,8 @@ type PaymentTermUseCases struct {
 	ListPaymentTerms func(context.Context, *paymenttermpb.ListPaymentTermsRequest) (*paymenttermpb.ListPaymentTermsResponse, error)
 }
 
-type ClientUseCases struct {
-	ListClients         func(context.Context, *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
-	ReadClient          func(context.Context, *clientpb.ReadClientRequest) (*clientpb.ReadClientResponse, error)
-	SearchClientsByName func(context.Context, *clientpb.SearchClientsByNameRequest) (*clientpb.SearchClientsByNameResponse, error)
-}
+// ClientUseCases + ClientAttributeUseCases (client-entity use-case groups) live
+// in client.go, kept out of this file for the god-file budget.
 
 type LocationUseCases struct {
 	ListLocations func(context.Context, *locationpb.ListLocationsRequest) (*locationpb.ListLocationsResponse, error)
@@ -500,6 +517,13 @@ type SubscriptionGroupProductPlanStaffUseCases struct {
 	CreateSubscriptionGroupProductPlanStaff func(context.Context, *subscriptiongroupproductplanstaffpb.CreateSubscriptionGroupProductPlanStaffRequest) (*subscriptiongroupproductplanstaffpb.CreateSubscriptionGroupProductPlanStaffResponse, error)
 	UpdateSubscriptionGroupProductPlanStaff func(context.Context, *subscriptiongroupproductplanstaffpb.UpdateSubscriptionGroupProductPlanStaffRequest) (*subscriptiongroupproductplanstaffpb.UpdateSubscriptionGroupProductPlanStaffResponse, error)
 	DeleteSubscriptionGroupProductPlanStaff func(context.Context, *subscriptiongroupproductplanstaffpb.DeleteSubscriptionGroupProductPlanStaffRequest) (*subscriptiongroupproductplanstaffpb.DeleteSubscriptionGroupProductPlanStaffResponse, error)
+	// AssignSubscriptionGroupProductPlanStaff is the group-centric upsert
+	// (§6.3): it returns the branch taken ("created"|"updated"|"cleared"|"noop").
+	// The group id is authoritative from the caller's signed path; the
+	// workspace id is read from ctx by the espyna consumer seam, never a body
+	// value. Bound from the espyna consumer.AssignGroupServicer pass-through
+	// (the internal request type is not nameable across the module boundary).
+	AssignSubscriptionGroupProductPlanStaff func(ctx context.Context, subscriptionGroupID, productPlanID, staffID, role string) (string, error)
 }
 
 // -- PriceScheduleWorkspaceUser ----------------------------------------------

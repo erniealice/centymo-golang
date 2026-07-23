@@ -12,13 +12,50 @@ type Data struct {
 	IsEdit      bool
 	ID          string
 
-	WorkspaceUserId     string
-	SubscriptionGroupId string
-	Scope               string
-	Role                string
-	IsOwner             bool
-	Active              bool
+	// FK pickers. Each carries the selected id, the selected human label, and
+	// the auto-complete option list.
+	WorkspaceUserId       string
+	WorkspaceUserLabel    string
+	WorkspaceUserOpts     []map[string]any
+	SubscriptionGroupId   string
+	SubscriptionGroupLabel string
+	SubscriptionGroupOpts []map[string]any
+
+	Scope   string
+	Role    string
+	IsOwner bool
+	Active  bool
 
 	Labels       sgwu.FormLabels
 	CommonLabels any
+}
+
+// Pair is a simple id/label option for FK pickers.
+type Pair struct {
+	ID    string
+	Label string
+}
+
+// BuildAutoCompleteOptions converts pairs into the map shape expected by the
+// auto-complete component.
+func BuildAutoCompleteOptions(pairs []Pair, selectedID string) []map[string]any {
+	opts := make([]map[string]any, 0, len(pairs))
+	for _, p := range pairs {
+		opts = append(opts, map[string]any{
+			"Value":    p.ID,
+			"Label":    p.Label,
+			"Selected": p.ID == selectedID,
+		})
+	}
+	return opts
+}
+
+// FindLabel returns the label of the pair with the given ID, or "" if absent.
+func FindLabel(pairs []Pair, id string) string {
+	for _, p := range pairs {
+		if p.ID == id {
+			return p.Label
+		}
+	}
+	return ""
 }

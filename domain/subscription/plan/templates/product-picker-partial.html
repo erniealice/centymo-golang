@@ -1,10 +1,11 @@
 {{/*
 Product picker partial — returned by NewProductPlanPickerAction via HTMX swap.
-Renders the auto-complete + hidden name input + optional variant picker for
-the #product-picker-wrapper div. Swapping this partial resets product_id and
-product_name to empty (fresh selection) when no product_id is in the query,
-or keeps the current selection + adds the variant picker when a configurable
-product is chosen.
+Renders the auto-complete + optional variant picker for the
+#product-picker-wrapper div. Swapping this partial resets product_id to empty
+(fresh selection) when no product_id is in the query, or keeps the current
+selection + adds the variant picker when a configurable product is chosen. The
+offering "name" field is rendered OUTSIDE this wrapper by the parent drawer
+form, so swaps here never clobber a user-entered name (D-R2-1).
 Data: .ProductOptions, .SelectedKind, .PlanID, .Name, .SelectedProductID,
       .SelectedProductLabel, .VariantConfigurable, .VariantOptions,
       .VariantSelectLabel, .VariantSelectPlaceholder
@@ -20,8 +21,10 @@ Data: .ProductOptions, .SelectedKind, .PlanID, .Name, .SelectedProductID,
     "Value" .SelectedProductID
     "SelectedLabel" .SelectedProductLabel
 )}}
-{{/* Hidden name field — reset to empty on kind-switch so a fresh item must be picked */}}
-<input type="hidden" name="name" value="">
+
+{{/* D-R2-1 — the offering "name" field now lives OUTSIDE this swap wrapper in
+     product-plan-drawer-form.html, so picker re-renders no longer clobber a
+     user-entered name. No hidden name field is emitted here. */}}
 
 {{/* Model D — variant sub-picker appears only for variant_mode=configurable products. */}}
 {{if .VariantConfigurable}}

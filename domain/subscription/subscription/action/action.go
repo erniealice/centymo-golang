@@ -49,6 +49,10 @@ type Deps struct {
 	ListPricePlans              func(ctx context.Context, req *priceplanpb.ListPricePlansRequest) (*priceplanpb.ListPricePlansResponse, error)
 	ReadPricePlan               func(ctx context.Context, req *priceplanpb.ReadPricePlanRequest) (*priceplanpb.ReadPricePlanResponse, error)
 	ListPriceSchedules          func(ctx context.Context, req *priceschedulepb.ListPriceSchedulesRequest) (*priceschedulepb.ListPriceSchedulesResponse, error)
+	// ReadPriceSchedule resolves a single PriceSchedule by ID. Used by the
+	// retroactive Spawn Jobs guard (resolveSpawnGuard) to check whether the
+	// subscription's resolved AY window is closed or inactive.
+	ReadPriceSchedule func(ctx context.Context, req *priceschedulepb.ReadPriceScheduleRequest) (*priceschedulepb.ReadPriceScheduleResponse, error)
 
 	// SetSubscriptionActive performs a raw DB update of the active field.
 	// Required for set-status and bulk-set-status handlers.
@@ -291,6 +295,8 @@ func buildFormLabels(l subscription.Labels) form.Labels {
 		SpawnJobsHelpText:         l.Form.SpawnJobsHelpText,
 		SpawnJobsSummary:          l.Form.SpawnJobsSummary,
 		SpawnJobsNone:             l.Form.SpawnJobsNone,
+		RequireSpawnToggle:        l.Form.RequireSpawnToggle,
+		RequireSpawnHint:          l.Form.RequireSpawnHint,
 	}
 }
 
@@ -592,6 +598,69 @@ func detectSpawnJobs(ctx context.Context, deps *Deps, pricePlanID string) SpawnJ
 
 	out.Available = out.JobCount > 0
 	return out
+}
+
+// SpawnGuardResult reports whether a retroactive Spawn Jobs action is
+// blocked by the subscription's resolved price_schedule window. Reason is
+// one of "closed" (schedule's date_time_end has passed), "inactive"
+// (schedule.active == false), "unverifiable" (a dep is unwired, a read
+// failed, or a referenced record could not be found), or "" (not blocked).
+type SpawnGuardResult struct {
+	Blocked bool
+	Reason  string
+}
+
+// resolveSpawnGuard walks Subscription -> PricePlan -> PriceSchedule to
+// decide whether a retroactive Spawn Jobs action is safe to run. A PricePlan
+// with no price_schedule_id (a master/non-scheduled plan) has no AY window
+// to close, so it is a genuine pass-through, not a failure. Every other gap
+// in the chain (nil deps, read errors, dangling references) FAILS CLOSED —
+// mirrors the create-path require_spawn_success fail-closed contract in
+// espyna's planDeclaresRootTemplate (never silently downgrade to "allowed"
+// on an unverifiable read).
+func resolveSpawnGuard(ctx context.Context, deps *Deps, subscriptionID string) SpawnGuardResult {
+	if deps == nil || deps.ReadSubscription == nil || deps.ReadPricePlan == nil {
+		return SpawnGuardResult{Blocked: true, Reason: "unverifiable"}
+	}
+	subResp, err := deps.ReadSubscription(ctx, &subscriptionpb.ReadSubscriptionRequest{
+		Data: &subscriptionpb.Subscription{Id: subscriptionID},
+	})
+	if err != nil || subResp == nil || len(subResp.GetData()) == 0 {
+		return SpawnGuardResult{Blocked: true, Reason: "unverifiable"}
+	}
+	pricePlanID := subResp.GetData()[0].GetPricePlanId()
+	if pricePlanID == "" {
+		// No plan reference at all -> nothing to check.
+		return SpawnGuardResult{}
+	}
+	ppResp, err := deps.ReadPricePlan(ctx, &priceplanpb.ReadPricePlanRequest{
+		Data: &priceplanpb.PricePlan{Id: pricePlanID},
+	})
+	if err != nil || ppResp == nil || len(ppResp.GetData()) == 0 {
+		return SpawnGuardResult{Blocked: true, Reason: "unverifiable"}
+	}
+	scheduleID := ppResp.GetData()[0].GetPriceScheduleId()
+	if scheduleID == "" {
+		// Master / non-scheduled plan -> no AY window to close.
+		return SpawnGuardResult{}
+	}
+	if deps.ReadPriceSchedule == nil {
+		return SpawnGuardResult{Blocked: true, Reason: "unverifiable"}
+	}
+	schedResp, err := deps.ReadPriceSchedule(ctx, &priceschedulepb.ReadPriceScheduleRequest{
+		Data: &priceschedulepb.PriceSchedule{Id: scheduleID},
+	})
+	if err != nil || schedResp == nil || len(schedResp.GetData()) == 0 {
+		return SpawnGuardResult{Blocked: true, Reason: "unverifiable"}
+	}
+	sched := schedResp.GetData()[0]
+	if !sched.GetActive() {
+		return SpawnGuardResult{Blocked: true, Reason: "inactive"}
+	}
+	if end := sched.GetDateTimeEnd(); end != nil && end.IsValid() && end.AsTime().Before(time.Now().UTC()) {
+		return SpawnGuardResult{Blocked: true, Reason: "closed"}
+	}
+	return SpawnGuardResult{}
 }
 
 // resolveSpawnJobsSummary renders the SpawnJobsSummary template

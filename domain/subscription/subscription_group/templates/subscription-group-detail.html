@@ -5,7 +5,7 @@
 
 {{/* Content-only partial — for HTMX navigation */}}
 {{define "subscription-group-detail-content"}}
-<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.Title}}">
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.Title}}" data-page-css="/assets/css/centymo/centymo-subscription-group-staff.css?v={{.CacheVersion}}">
     {{/* --- Tab Buttons --- */}}
     <div class="detail-tabs">
         {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "subscription-group-detail-tabs")}}
@@ -17,6 +17,8 @@
             {{template "subscription-group-tab-info" .}}
         {{else if eq .ActiveTab "subscriptions"}}
             {{template "subscription-group-tab-subscriptions" .}}
+        {{else if eq .ActiveTab "staff"}}
+            {{template "subscription-group-tab-staff" .}}
         {{else if eq .ActiveTab "attachments"}}
             {{template "attachment-tab" .}}
         {{else if eq .ActiveTab "audit"}}
@@ -95,4 +97,109 @@
         <p>{{.Labels.Empty.Message}}</p>
     {{end}}
 </div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Teaching Staff (section assignment table, §6.1)
+     One row per offering (product_plan) of the section's program, rendered via
+     the shared table-card: subject / current teacher / role / state. No in-panel
+     header — the tab-strip chip already names the tab + count, and the Status
+     column's Saved/Unassigned chips carry the coverage gap signal (W2g: this
+     matches the Subscriptions tab, which renders its table with no header). A
+     per-row action opens the assign drawer; empty-pool rows link to the
+     eligibility surface (rendered inside the teacher cell by the page-data). The
+     root carries id + data-refresh-url so an assign POST's refreshTable(staffTabID)
+     re-GETs and outerHTML-swaps this whole panel.
+     ============================================= */}}
+{{define "subscription-group-tab-staff"}}
+<div id="subscription-group-staff-tab" class="tab-scroll tab-scroll--table"
+     data-testid="subscription-group-staff-tab"
+     {{if .Staff.RefreshURL}}data-refresh-url="{{.Staff.RefreshURL}}"{{end}}>
+    {{if .Staff.Authorized}}
+        {{if .Staff.Table}}
+            {{template "table-card" .Staff.Table}}
+        {{else}}
+            <p class="centymo-sgstaff-empty">{{.Labels.Staff.EmptyMessage}}</p>
+        {{end}}
+    {{else}}
+        <p class="centymo-sgstaff-empty" data-testid="subscription-group-staff-unauthorized">{{.Labels.Staff.Unauthorized}}</p>
+    {{end}}
+</div>
+{{end}}
+
+{{/* =============================================
+     DRAWER: per-offering assign (GET → #sheetContent, opened by the table row
+     action). Offering is read-only context; Teacher is an eligible-only
+     autocomplete (options straight from the page-data); Role is the bounded
+     {primary, access} select (default primary). Submitting POSTs
+     {product_plan_id, staff_id, role} to the existing assign action; the
+     header-only response closes the drawer + refreshes the staff tab. Clearing
+     the assignment: the explicit Clear button (footer, shown only when assigned)
+     submits clear=1 → the soft-delete path. The dialog chrome (role=dialog,
+     aria-modal, labelled title) is provided by the sheet panel that hosts
+     #sheetContent.
+     ============================================= */}}
+{{define "subscription-group-staff-assign-drawer"}}
+<form hx-post="{{.AssignActionURL}}" hx-swap="none" data-hx-on="sheet-response"
+      data-testid="sg-staff-assign-form">
+    {{actionForm .AssignActionURL .WorkspaceID}}
+    <input type="hidden" name="product_plan_id" value="{{.ProductPlanID}}">
+
+    <div class="sheet-body">
+        {{template "form-section" (dict "Title" .Labels.Staff.AssignAction)}}
+
+        {{/* Offering — read-only context (identity rides product_plan_id above). */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "ID" "sg-staff-offering-input"
+                "Label" .Labels.Staff.ColumnSubject
+                "Value" .OfferingLabel
+                "Readonly" true
+                "TestId" "sg-staff-offering"
+            )}}
+        </div>
+
+        {{/* Teacher — eligible-only autocomplete; the clear button blanks
+             staff_id (→ clear path). Value/SelectedLabel carry the page-data's
+             pre-selection (current servicer, or the sole-primary auto-default). */}}
+        <div class="form-row single" data-testid="sg-staff-teacher-field">
+            {{template "auto-complete" (dict
+                "ID" "sg-staff-teacher-select"
+                "Name" "staff_id"
+                "Label" .Labels.Staff.ColumnServicer
+                "Placeholder" .Labels.Staff.TeacherPlaceholder
+                "SearchPlaceholder" .Labels.Staff.TeacherSearch
+                "Options" .TeacherOptions
+                "Value" .CurrentStaffID
+                "SelectedLabel" .CurrentStaffLabel
+            )}}
+        </div>
+
+        {{/* Role — bounded {primary, access}; default primary (page-data). */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "ID" "sg-staff-role-select"
+                "Name" "role"
+                "Label" .Labels.Staff.ColumnRole
+                "Options" .RoleOptions
+                "TestId" "sg-staff-role"
+            )}}
+        </div>
+    </div>
+
+    {{/* Footer — Clear (§6.1) shows only when an active edge exists; it submits
+         clear=1 so NewAssignAction soft-deletes the assignment (empty staff →
+         :delete branch), overriding the hidden staff_id. Cancel + Save mirror the
+         shared sheet-form-footer; every control is a native, focusable button. */}}
+    <div class="sheet-footer">
+        {{if .Assigned}}
+        <button type="submit" name="clear" value="1" class="btn btn-secondary"
+                data-testid="sg-staff-clear">{{.Labels.Staff.ClearAction}}</button>
+        {{end}}
+        <button type="button" class="btn btn-secondary" data-lf-action="sheet-close">{{.CommonLabels.Buttons.Cancel}}</button>
+        <button type="submit" class="btn btn-primary">{{if .Assigned}}{{.CommonLabels.Buttons.Update}}{{else}}{{.CommonLabels.Buttons.Save}}{{end}}</button>
+    </div>
+</form>
 {{end}}

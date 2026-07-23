@@ -11,6 +11,11 @@ package plan
 
 // ProductPlanFormLabels holds translatable labels for the ProductPlan add/edit form within a plan.
 type ProductPlanFormLabels struct {
+	// Name is the offering-name field label (D-R2-1). Generic in code; tiers
+	// override the vocabulary via lyngua (e.g. "Name"). Empty user input still
+	// falls back to the product name in the action handler.
+	Name               string                  `json:"name"`
+	NamePlaceholder    string                  `json:"name_placeholder"`
 	Product            string                  `json:"product"`
 	ProductPlaceholder string                  `json:"product_placeholder"`
 	SelectProduct      string                  `json:"select_product"`

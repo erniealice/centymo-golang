@@ -27,6 +27,13 @@ type Deps struct {
 	// DetectSpawnJobs resolves PricePlan → Plan → JobTemplate for the drawer.
 	// Provided by the action package since it requires full action.Deps.
 	DetectSpawnJobs func(ctx context.Context, pricePlanID string) DetectionResult
+
+	// ResolveSpawnGuard checks whether the subscription's resolved
+	// price_schedule (via price_plan) is closed or inactive, blocking a
+	// retroactive spawn. Provided by the action package since it requires
+	// full action.Deps (ReadSubscription, ReadPricePlan, ReadPriceSchedule).
+	// nil-safe — when unwired the guard never blocks (unchanged behavior).
+	ResolveSpawnGuard func(ctx context.Context, subscriptionID string) SpawnGuardResult
 }
 
 // DetectionResult carries the spawn-jobs detection outcome.
@@ -36,6 +43,14 @@ type DetectionResult struct {
 	JobCount      int
 	PhaseCount    int
 	TaskCount     int
+}
+
+// SpawnGuardResult mirrors action.SpawnGuardResult — kept as a local type so
+// this sub-package does not import the parent action package (avoids an
+// import cycle; action already imports spawn_jobs).
+type SpawnGuardResult struct {
+	Blocked bool
+	Reason  string
 }
 
 // NewAction handles GET /action/subscription/{subscriptionId}/spawn-jobs
@@ -54,6 +69,15 @@ func NewAction(deps *Deps) view.View {
 
 		formAction := strings.ReplaceAll(deps.Routes.SpawnJobsURL, "{subscriptionId}", subscriptionID)
 
+		// Retroactive-spawn guard (fail-closed for closed/inactive AY
+		// windows) — checked before both the GET drawer render and the POST
+		// commit. nil ResolveSpawnGuard -> never blocks (unwired = unchanged
+		// legacy behavior).
+		guard := SpawnGuardResult{}
+		if deps.ResolveSpawnGuard != nil {
+			guard = deps.ResolveSpawnGuard(ctx, subscriptionID)
+		}
+
 		if viewCtx.Request.Method == http.MethodGet {
 			det, rows, rootName := detectDrawer(ctx, deps, subscriptionID)
 			subLabel := resolveSubscriptionLabel(ctx, deps, subscriptionID)
@@ -64,6 +88,7 @@ func NewAction(deps *Deps) view.View {
 				Cancel:            deps.Labels.Spawn.Cancel,
 				Confirm:           deps.Labels.Spawn.Confirm,
 				Skipped:           deps.Labels.Spawn.Skipped,
+				Blocked:           deps.Labels.Spawn.Blocked,
 			}
 			return view.OK("subscription-spawn-jobs-drawer-form", &spawnform.Data{
 				FormAction:        formAction,
@@ -72,9 +97,15 @@ func NewAction(deps *Deps) view.View {
 				Templates:         rows,
 				RootName:          rootName,
 				HasContent:        det.Available,
+				Blocked:           guard.Blocked,
 				Labels:            drawerLabels,
 				CommonLabels:      nil,
 			})
+		}
+
+		// POST — reject before invoking the use case when the guard blocks.
+		if guard.Blocked {
+			return view.HTMXError(deps.Labels.Spawn.Blocked)
 		}
 
 		// POST — invoke the use case.

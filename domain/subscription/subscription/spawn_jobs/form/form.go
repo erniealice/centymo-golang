@@ -21,6 +21,9 @@ type Labels struct {
 	Cancel            string
 	Confirm           string
 	Skipped           string
+	// Blocked is the retroactive-spawn guard message, shown when the
+	// resolved price_schedule is closed or inactive.
+	Blocked string
 }
 
 // Data is the template shape for subscription-spawn-jobs-drawer-form.html.
@@ -36,6 +39,11 @@ type Data struct {
 	Templates  []TemplateRow
 	RootName   string
 	HasContent bool
+	// Blocked is true when the retroactive-spawn guard rejects this
+	// subscription's resolved price_schedule (closed or inactive). Takes
+	// visual precedence over HasContent — the drawer renders the blocking
+	// warning instead of the template list, with no Confirm button.
+	Blocked bool
 
 	// Resolved labels for the drawer (avoid label drift across tiers).
 	Labels Labels

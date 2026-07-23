@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	product_plan_staff "github.com/erniealice/centymo-golang/domain/product/product_plan_staff"
+	"github.com/erniealice/centymo-golang/domain/product/product_plan_staff"
 	"github.com/erniealice/centymo-golang/domain/product/product_plan_staff/form"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/view"
@@ -22,6 +22,24 @@ type Deps struct {
 	UpdateProductPlanStaff      func(ctx context.Context, req *productplanstaffpb.UpdateProductPlanStaffRequest) (*productplanstaffpb.UpdateProductPlanStaffResponse, error)
 	DeleteProductPlanStaff      func(ctx context.Context, req *productplanstaffpb.DeleteProductPlanStaffRequest) (*productplanstaffpb.DeleteProductPlanStaffResponse, error)
 	GetProductPlanStaffInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// Optional FK pickers — nil disables the picker (field shows free-text).
+	ListStaffOptions       func(ctx context.Context) []form.Pair
+	ListProductPlanOptions func(ctx context.Context) []form.Pair
+}
+
+func loadStaffOpts(ctx context.Context, deps *Deps) []form.Pair {
+	if deps.ListStaffOptions == nil {
+		return nil
+	}
+	return deps.ListStaffOptions(ctx)
+}
+
+func loadPlanOpts(ctx context.Context, deps *Deps) []form.Pair {
+	if deps.ListProductPlanOptions == nil {
+		return nil
+	}
+	return deps.ListProductPlanOptions(ctx)
 }
 
 // applyFormToData writes the POST body onto a ProductPlanStaff. Shared by
@@ -43,10 +61,14 @@ func NewAddAction(deps *Deps) view.View {
 			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if viewCtx.Request.Method == http.MethodGet {
+			staffPairs := loadStaffOpts(ctx, deps)
+			planPairs := loadPlanOpts(ctx, deps)
 			return view.OK("product-plan-staff-drawer-form", &form.Data{
-				FormAction: deps.Routes.AddURL,
-				Active:     true,
-				Labels:     deps.Labels.Form,
+				FormAction:      deps.Routes.AddURL,
+				Active:          true,
+				StaffOpts:       form.BuildAutoCompleteOptions(staffPairs, ""),
+				ProductPlanOpts: form.BuildAutoCompleteOptions(planPairs, ""),
+				Labels:          deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -89,15 +111,24 @@ func NewEditAction(deps *Deps) view.View {
 				formID = ""
 			}
 
+			staffPairs := loadStaffOpts(ctx, deps)
+			planPairs := loadPlanOpts(ctx, deps)
+			selectedStaffID := record.GetStaffId()
+			selectedPlanID := record.GetProductPlanId()
+
 			return view.OK("product-plan-staff-drawer-form", &form.Data{
-				FormAction:    formAction,
-				IsEdit:        !isClone,
-				ID:            formID,
-				StaffID:       record.GetStaffId(),
-				ProductPlanID: record.GetProductPlanId(),
-				Role:          record.GetRole(),
-				Active:        record.GetActive(),
-				Labels:        deps.Labels.Form,
+				FormAction:       formAction,
+				IsEdit:           !isClone,
+				ID:               formID,
+				StaffID:          selectedStaffID,
+				StaffLabel:       form.FindLabel(staffPairs, selectedStaffID),
+				StaffOpts:        form.BuildAutoCompleteOptions(staffPairs, selectedStaffID),
+				ProductPlanID:    selectedPlanID,
+				ProductPlanLabel: form.FindLabel(planPairs, selectedPlanID),
+				ProductPlanOpts:  form.BuildAutoCompleteOptions(planPairs, selectedPlanID),
+				Role:             record.GetRole(),
+				Active:           record.GetActive(),
+				Labels:           deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {

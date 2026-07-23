@@ -25,9 +25,11 @@ import (
 	treasurydashpb "github.com/erniealice/esqyma/pkg/schema/v1/service/dashboard/treasury"
 )
 
+// The EngineOption / WithSubscriptionGroupOptions surface lives in subscription_group_options.go.
+
 // centymoEngineBlock returns a consumerapp.AppOption that registers all centymo
 // domain modules via the compose engine (replaces legacy centymoBlock).
-func EngineBlock() consumerapp.AppOption {
+func EngineBlock(opts ...EngineOption) consumerapp.AppOption {
 	return func(ctx *consumerapp.AppContext) error {
 		uc, err := consumerapp.RequireUseCases(ctx, "centymoEngineBlock")
 		if err != nil {
@@ -53,7 +55,7 @@ func EngineBlock() consumerapp.AppOption {
 			}
 		}
 
-		units := AllUnits(adapted, infra)
+		units := AllUnits(adapted, infra, opts...)
 		return consumerapp.AssembleEngineBlock("centymo", units, ctx)
 	}
 }
@@ -181,14 +183,29 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 			result.Entity.Client.ReadClient = uc.Entity.Client.ReadClient.Execute
 			result.Entity.Client.SearchClientsByName = uc.Entity.Client.SearchClientsByName.Execute
 		}
+		// Client-attribute banding backing the roster's generic
+		// "client_attributes.<code>" option (subscription_group enrollments tab).
+		// Wiring (incl. the ambiguity-safe code resolver) lives in
+		// subscription_group_options.go for the god-file budget.
+		bindClientAttributeUseCases(result, uc)
 		if uc.Entity.Location != nil {
 			result.Entity.Location.ListLocations = uc.Entity.Location.ListLocations.Execute
+		}
+		// Staff + WorkspaceUser feed the FK-option pickers on the
+		// assignment/servicing drawers (fk_options.go). Staff uses the page-data
+		// list variant because only its CTE hydrates the nested user for a
+		// human-readable label.
+		if uc.Entity.Staff != nil {
+			result.Entity.Staff.GetStaffListPageData = uc.Entity.Staff.GetStaffListPageData.Execute
 		}
 		if uc.Entity.Supplier != nil {
 			result.Entity.Supplier.ListSuppliers = uc.Entity.Supplier.ListSuppliers.Execute
 		}
 		if uc.Entity.Workspace != nil {
 			result.Entity.Workspace.ReadWorkspace = uc.Entity.Workspace.ReadWorkspace.Execute
+		}
+		if uc.Entity.WorkspaceUser != nil {
+			result.Entity.WorkspaceUser.ListWorkspaceUsers = uc.Entity.WorkspaceUser.ListWorkspaceUsers.Execute
 		}
 	}
 
@@ -495,6 +512,13 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 			result.SubscriptionGroupProductPlanStaff.CreateSubscriptionGroupProductPlanStaff = uc.Subscription.SubscriptionGroupProductPlanStaff.CreateSubscriptionGroupProductPlanStaff.Execute
 			result.SubscriptionGroupProductPlanStaff.UpdateSubscriptionGroupProductPlanStaff = uc.Subscription.SubscriptionGroupProductPlanStaff.UpdateSubscriptionGroupProductPlanStaff.Execute
 			result.SubscriptionGroupProductPlanStaff.DeleteSubscriptionGroupProductPlanStaff = uc.Subscription.SubscriptionGroupProductPlanStaff.DeleteSubscriptionGroupProductPlanStaff.Execute
+			// The section-centric upsert (§6.3) is surfaced via the espyna consumer
+			// pass-through: its internal request type is not nameable across the
+			// module boundary, so it cannot be bound as a bare .Execute like the
+			// proto-typed CRUD closures above.
+			result.SubscriptionGroupProductPlanStaff.AssignSubscriptionGroupProductPlanStaff = func(ctx context.Context, subscriptionGroupID, productPlanID, staffID, role string) (string, error) {
+				return consumer.AssignGroupServicer(ctx, uc, subscriptionGroupID, productPlanID, staffID, role)
+			}
 		}
 
 		// -- PriceScheduleWorkspaceUser (top-level on centymo UseCases) --

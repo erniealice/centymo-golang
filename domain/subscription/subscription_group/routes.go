@@ -17,6 +17,14 @@ const (
 	BulkSetStatusURL = "/action/subscription-group/bulk-set-status"
 	TabActionURL     = "/action/subscription-group/{id}/tab/{tab}"
 
+	// Teaching-staff tab (detail) — the section-centric class-edge upsert.
+	// {id} is the section (subscription_group); it is authoritative from the
+	// signed path, never a request body (no cross-tenant IDOR). The upsert
+	// branches create/update/clear on the (section, product_plan) active edge.
+	// Verb-first like edit/{id} — a "{id}/assign" shape is ambiguous with
+	// "edit/{id}" under ServeMux precedence and panics at route registration.
+	AssignURL = "/action/subscription-group/assign/{id}"
+
 	// Attachments tab (detail) — upload/delete handlers behind the drawer.
 	AttachmentUploadURL = "/action/subscription-group/detail/{id}/attachments/upload"
 	AttachmentDeleteURL = "/action/subscription-group/detail/{id}/attachments/delete"
@@ -37,6 +45,7 @@ type Routes struct {
 	SetStatusURL        string `json:"set_status_url"`
 	BulkSetStatusURL    string `json:"bulk_set_status_url"`
 	TabActionURL        string `json:"tab_action_url"`
+	AssignURL           string `json:"assign_url"`
 	AttachmentUploadURL string `json:"attachment_upload_url"`
 	AttachmentDeleteURL string `json:"attachment_delete_url"`
 }
@@ -63,6 +72,7 @@ func DefaultRoutes() Routes {
 		SetStatusURL:        SetStatusURL,
 		BulkSetStatusURL:    BulkSetStatusURL,
 		TabActionURL:        TabActionURL,
+		AssignURL:           AssignURL,
 		AttachmentUploadURL: AttachmentUploadURL,
 		AttachmentDeleteURL: AttachmentDeleteURL,
 	}
@@ -83,6 +93,7 @@ func (r Routes) RouteMap() map[string]string {
 		"subscription_group.set_status":        r.SetStatusURL,
 		"subscription_group.bulk_set_status":   r.BulkSetStatusURL,
 		"subscription_group.tab_action":        r.TabActionURL,
+		"subscription_group.assign":            r.AssignURL,
 		"subscription_group.attachment.upload": r.AttachmentUploadURL,
 		"subscription_group.attachment.delete": r.AttachmentDeleteURL,
 	}

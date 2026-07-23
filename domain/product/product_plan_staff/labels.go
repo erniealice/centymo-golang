@@ -57,9 +57,11 @@ type FormLabels struct {
 	SectionAssignment  string `json:"section_assignment"`
 	StaffID            string `json:"staff_id"`
 	StaffIDPlaceholder string `json:"staff_id_placeholder"`
+	StaffSearch        string `json:"staff_search"`
 	StaffIDInfo        string `json:"staff_id_info"`
 	ProductPlanID      string `json:"product_plan_id"`
 	ProductPlanPH      string `json:"product_plan_placeholder"`
+	ProductPlanSearch  string `json:"product_plan_search"`
 	ProductPlanInfo    string `json:"product_plan_info"`
 	Role               string `json:"role"`
 	RolePlaceholder    string `json:"role_placeholder"`
@@ -143,11 +145,13 @@ func DefaultLabels() Labels {
 		Form: FormLabels{
 			SectionStaff:       "Staff member",
 			SectionAssignment:  "Plan assignment",
-			StaffID:            "Staff ID",
-			StaffIDPlaceholder: "Enter staff ID",
-			StaffIDInfo:        "The workspace_user ID of the eligible staff member.",
+			StaffID:            "Staff member",
+			StaffIDPlaceholder: "Select a staff member...",
+			StaffSearch:        "Filter...",
+			StaffIDInfo:        "The eligible staff member.",
 			ProductPlanID:      "Product Plan",
-			ProductPlanPH:      "Enter product plan ID",
+			ProductPlanPH:      "Select a product plan...",
+			ProductPlanSearch:  "Filter...",
 			ProductPlanInfo:    "The product_plan this staff member is eligible for.",
 			Role:               "Role",
 			RolePlaceholder:    "e.g. eligible, primary, assistant",

@@ -124,6 +124,12 @@ func wireSubscriptionModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCa
 		if useCases.PriceSchedule.ListPriceSchedules != nil {
 			subActionDeps.ListPriceSchedules = useCases.PriceSchedule.ListPriceSchedules
 		}
+		// Retroactive Spawn Jobs guard (resolveSpawnGuard) — resolves the
+		// subscription's price_plan -> price_schedule to detect a closed or
+		// inactive AY window before allowing a retroactive spawn.
+		if useCases.PriceSchedule.ReadPriceSchedule != nil {
+			subActionDeps.ReadPriceSchedule = useCases.PriceSchedule.ReadPriceSchedule
+		}
 		// Wire the espyna recognize-revenue use case so the new
 		// drawer + the existing manual-revenue-add auto-populate
 		// path share one source of truth.

@@ -32,5 +32,15 @@ func NewSpawnJobsAction(deps *Deps) view.View {
 				TaskCount:     det.TaskCount,
 			}
 		},
+		// Retroactive-spawn guard — closes over action.Deps (ReadSubscription,
+		// ReadPricePlan, ReadPriceSchedule) so the sub-package stays decoupled
+		// from the full dep graph.
+		ResolveSpawnGuard: func(ctx context.Context, subscriptionID string) spawnjobspkg.SpawnGuardResult {
+			g := resolveSpawnGuard(ctx, deps, subscriptionID)
+			return spawnjobspkg.SpawnGuardResult{
+				Blocked: g.Blocked,
+				Reason:  g.Reason,
+			}
+		},
 	})
 }

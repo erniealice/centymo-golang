@@ -48,8 +48,6 @@ Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
                     "Value" .SelectedProductID
                     "SelectedLabel" .SelectedProductLabel
                 )}}
-                {{/* Hidden name field — populated on form submit via product name */}}
-                <input type="hidden" name="name" value="{{.Name}}">
 
                 {{/* Variant sub-picker — rendered only when the selected product
                      is variant-configurable. Hidden entirely otherwise. */}}
@@ -85,6 +83,22 @@ Data: .SelectedProductID, .Active, .PlanID, .ID, .Mode,
                 </div>
                 {{end}}
             </div>
+        </div>
+
+        {{/* --- Offering name (D-R2-1) — visible, editable, and OUTSIDE the
+             #product-picker-wrapper so it survives the HTMX picker swaps on
+             kind/product change. Left blank, the action handler falls back to
+             the selected product's name (name -> product_name -> product label). --- */}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "name"
+                "ID" "product-plan-name"
+                "Label" .Labels.Name
+                "Value" .Name
+                "Placeholder" .Labels.NamePlaceholder
+                "TestId" "product-plan-name-input"
+            )}}
         </div>
 
         {{/* --- Active toggle --- */}}

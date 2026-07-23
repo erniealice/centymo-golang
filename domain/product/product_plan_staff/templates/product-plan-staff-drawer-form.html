@@ -10,7 +10,17 @@
         {{template "form-section" (dict "Title" .Labels.SectionStaff)}}
 
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "staff_id" "Label" .Labels.StaffID "Value" .StaffID "Required" true "Placeholder" .Labels.StaffIDPlaceholder "Info" .Labels.StaffIDInfo)}}
+            {{template "auto-complete" (dict
+                "ID" "product-plan-staff-staff-select"
+                "Name" "staff_id"
+                "Label" .Labels.StaffID
+                "Placeholder" .Labels.StaffIDPlaceholder
+                "SearchPlaceholder" .Labels.StaffSearch
+                "Options" .StaffOpts
+                "Value" .StaffID
+                "SelectedLabel" .StaffLabel
+                "Info" .Labels.StaffIDInfo
+            )}}
         </div>
 
         {{/* ================================================================ */}}
@@ -19,7 +29,17 @@
         {{template "form-section" (dict "Title" .Labels.SectionAssignment)}}
 
         <div class="form-row single">
-            {{template "form-group" (dict "Type" "text" "Name" "product_plan_id" "Label" .Labels.ProductPlanID "Value" .ProductPlanID "Required" true "Placeholder" .Labels.ProductPlanPH "Info" .Labels.ProductPlanInfo)}}
+            {{template "auto-complete" (dict
+                "ID" "product-plan-staff-plan-select"
+                "Name" "product_plan_id"
+                "Label" .Labels.ProductPlanID
+                "Placeholder" .Labels.ProductPlanPH
+                "SearchPlaceholder" .Labels.ProductPlanSearch
+                "Options" .ProductPlanOpts
+                "Value" .ProductPlanID
+                "SelectedLabel" .ProductPlanLabel
+                "Info" .Labels.ProductPlanInfo
+            )}}
         </div>
 
         <div class="form-row single">

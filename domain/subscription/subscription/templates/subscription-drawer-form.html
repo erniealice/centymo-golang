@@ -233,6 +233,20 @@ Data: .Code, .ClientID, .PricePlanID,
                 <p data-testid="subscription-spawn-jobs-summary" class="form-info">{{.SpawnJobsSummary}}</p>
                 {{end}}
                 <p class="form-help">{{.Labels.SpawnJobsHelpText}}</p>
+
+                {{/* Require-spawn-success — sibling toggle, always unchecked
+                     by default to preserve the legacy best-effort behavior. */}}
+                <div class="form-row single">
+                    <label class="form-toggle">
+                        <input type="checkbox"
+                               name="require_spawn_success"
+                               id="require-spawn-success"
+                               data-testid="subscription-require-spawn-toggle"
+                               value="true">
+                        <span>{{.Labels.RequireSpawnToggle}}</span>
+                    </label>
+                </div>
+                <p class="form-help">{{.Labels.RequireSpawnHint}}</p>
             </section>
             {{else}}
             {{/* Section omitted entirely — input absent → POST defaults to no spawn override. */}}

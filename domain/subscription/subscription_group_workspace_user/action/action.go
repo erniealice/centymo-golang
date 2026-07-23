@@ -23,6 +23,24 @@ type Deps struct {
 	UpdateSubscriptionGroupWorkspaceUser      func(ctx context.Context, req *sgwupb.UpdateSubscriptionGroupWorkspaceUserRequest) (*sgwupb.UpdateSubscriptionGroupWorkspaceUserResponse, error)
 	DeleteSubscriptionGroupWorkspaceUser      func(ctx context.Context, req *sgwupb.DeleteSubscriptionGroupWorkspaceUserRequest) (*sgwupb.DeleteSubscriptionGroupWorkspaceUserResponse, error)
 	GetSubscriptionGroupWorkspaceUserInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// Optional FK pickers — nil disables the picker (field shows free-text).
+	ListWorkspaceUserOptions     func(ctx context.Context) []form.Pair
+	ListSubscriptionGroupOptions func(ctx context.Context) []form.Pair
+}
+
+func loadWorkspaceUserOpts(ctx context.Context, deps *Deps) []form.Pair {
+	if deps.ListWorkspaceUserOptions == nil {
+		return nil
+	}
+	return deps.ListWorkspaceUserOptions(ctx)
+}
+
+func loadGroupOpts(ctx context.Context, deps *Deps) []form.Pair {
+	if deps.ListSubscriptionGroupOptions == nil {
+		return nil
+	}
+	return deps.ListSubscriptionGroupOptions(ctx)
 }
 
 // applyFormToData maps POST body fields onto a SubscriptionGroupWorkspaceUser.
@@ -51,10 +69,14 @@ func NewAddAction(deps *Deps) view.View {
 			return view.HTMXError(deps.Labels.Errors.Unauthorized)
 		}
 		if viewCtx.Request.Method == http.MethodGet {
+			userPairs := loadWorkspaceUserOpts(ctx, deps)
+			groupPairs := loadGroupOpts(ctx, deps)
 			return view.OK("subscription-group-workspace-user-drawer-form", &form.Data{
-				FormAction: deps.Routes.AddURL,
-				Active:     true,
-				Labels:     deps.Labels.Form,
+				FormAction:            deps.Routes.AddURL,
+				Active:                true,
+				WorkspaceUserOpts:     form.BuildAutoCompleteOptions(userPairs, ""),
+				SubscriptionGroupOpts: form.BuildAutoCompleteOptions(groupPairs, ""),
+				Labels:                deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -99,17 +121,26 @@ func NewEditAction(deps *Deps) view.View {
 				formID = ""
 			}
 
+			userPairs := loadWorkspaceUserOpts(ctx, deps)
+			groupPairs := loadGroupOpts(ctx, deps)
+			selectedUserID := record.GetWorkspaceUserId()
+			selectedGroupID := record.GetSubscriptionGroupId()
+
 			return view.OK("subscription-group-workspace-user-drawer-form", &form.Data{
-				FormAction:          formAction,
-				IsEdit:              !isClone,
-				ID:                  formID,
-				WorkspaceUserId:     record.GetWorkspaceUserId(),
-				SubscriptionGroupId: record.GetSubscriptionGroupId(),
-				Scope:               record.GetScope(),
-				Role:                record.GetRole(),
-				IsOwner:             record.GetIsOwner(),
-				Active:              record.GetActive(),
-				Labels:              deps.Labels.Form,
+				FormAction:             formAction,
+				IsEdit:                 !isClone,
+				ID:                     formID,
+				WorkspaceUserId:        selectedUserID,
+				WorkspaceUserLabel:     form.FindLabel(userPairs, selectedUserID),
+				WorkspaceUserOpts:      form.BuildAutoCompleteOptions(userPairs, selectedUserID),
+				SubscriptionGroupId:    selectedGroupID,
+				SubscriptionGroupLabel: form.FindLabel(groupPairs, selectedGroupID),
+				SubscriptionGroupOpts:  form.BuildAutoCompleteOptions(groupPairs, selectedGroupID),
+				Scope:                  record.GetScope(),
+				Role:                   record.GetRole(),
+				IsOwner:                record.GetIsOwner(),
+				Active:                 record.GetActive(),
+				Labels:                 deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {

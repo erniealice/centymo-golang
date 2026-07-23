@@ -15,11 +15,15 @@ import (
 
 	epkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	clientattributepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client_attribute"
+	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
+	productplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan_staff"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
 	subscriptiongroupmemberpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_member"
+	sgppspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
 )
 
 // SubscriptionGroupModuleDeps holds all dependencies for the
@@ -45,6 +49,21 @@ type SubscriptionGroupModuleDeps struct {
 	ListClients                  func(ctx context.Context, req *clientpb.ListClientsRequest) (*clientpb.ListClientsResponse, error)
 	ListSubscriptions            func(ctx context.Context, req *subscriptionpb.ListSubscriptionsRequest) (*subscriptionpb.ListSubscriptionsResponse, error)
 
+	// Roster banding (app-configured gender bands): generic
+	// "client_attributes.<code>" option + its workspace-bound attribute closures.
+	// Zero value → flat roster (service-admin unaffected).
+	Options                  epkg.Options
+	ListClientAttributes     func(ctx context.Context, req *clientattributepb.ListClientAttributesRequest) (*clientattributepb.ListClientAttributesResponse, error)
+	ResolveAttributeIDByCode func(ctx context.Context, code string) (string, error)
+
+	// Teaching-staff tab (§6.1–§6.3): the section assignment grid + inline upsert.
+	ListProductPlans                       func(ctx context.Context, req *productplanpb.ListProductPlansRequest) (*productplanpb.ListProductPlansResponse, error)
+	ListSubscriptionGroupProductPlanStaffs func(ctx context.Context, req *sgppspb.ListSubscriptionGroupProductPlanStaffsRequest) (*sgppspb.ListSubscriptionGroupProductPlanStaffsResponse, error)
+	ListProductPlanStaffs                  func(ctx context.Context, req *productplanstaffpb.ListProductPlanStaffsRequest) (*productplanstaffpb.ListProductPlanStaffsResponse, error)
+	ListStaffNames                         func(ctx context.Context) map[string]string
+	AssignGroupServicer                    func(ctx context.Context, subscriptionGroupID, productPlanID, staffID, role string) (string, error)
+	ProductPlanStaffListURL                string
+
 	attachment.AttachmentOps // attachments tab
 	auditlog.AuditOps        // audit tab (nil today → renders empty)
 
@@ -67,6 +86,7 @@ type SubscriptionGroupModule struct {
 	BulkSetStatus    view.View
 	Detail           view.View
 	TabAction        view.View
+	Assign           view.View
 	AttachmentUpload view.View
 	AttachmentDelete view.View
 }
@@ -108,8 +128,19 @@ func NewSubscriptionGroupModule(deps *SubscriptionGroupModuleDeps) *Subscription
 		ListSubscriptionGroupMembers: deps.ListSubscriptionGroupMembers,
 		ListClients:                  deps.ListClients,
 		ListSubscriptions:            deps.ListSubscriptions,
-		AttachmentOps:                deps.AttachmentOps,
-		AuditOps:                     deps.AuditOps,
+		Options:                      deps.Options,
+		ListClientAttributes:         deps.ListClientAttributes,
+		ResolveAttributeIDByCode:     deps.ResolveAttributeIDByCode,
+
+		ListProductPlans:                       deps.ListProductPlans,
+		ListSubscriptionGroupProductPlanStaffs: deps.ListSubscriptionGroupProductPlanStaffs,
+		ListProductPlanStaffs:                  deps.ListProductPlanStaffs,
+		ListStaffNames:                         deps.ListStaffNames,
+		AssignGroupServicer:                    deps.AssignGroupServicer,
+		ProductPlanStaffListURL:                deps.ProductPlanStaffListURL,
+
+		AttachmentOps: deps.AttachmentOps,
+		AuditOps:      deps.AuditOps,
 	}
 
 	return &SubscriptionGroupModule{
@@ -125,6 +156,7 @@ func NewSubscriptionGroupModule(deps *SubscriptionGroupModuleDeps) *Subscription
 		BulkSetStatus:    subscriptiongroupaction.NewBulkSetStatusAction(actionDeps),
 		Detail:           subscriptiongroupdetail.NewView(detailDeps),
 		TabAction:        subscriptiongroupdetail.NewTabAction(detailDeps),
+		Assign:           subscriptiongroupdetail.NewAssignAction(detailDeps),
 		AttachmentUpload: subscriptiongroupdetail.NewAttachmentUploadAction(detailDeps),
 		AttachmentDelete: subscriptiongroupdetail.NewAttachmentDeleteAction(detailDeps),
 	}
@@ -149,6 +181,9 @@ func (m *SubscriptionGroupModule) RegisterRoutes(r view.RouteRegistrar) {
 	}
 	if m.TabAction != nil && m.routes.TabActionURL != "" {
 		r.GET(m.routes.TabActionURL, m.TabAction)
+	}
+	if m.Assign != nil && m.routes.AssignURL != "" {
+		r.POST(m.routes.AssignURL, m.Assign)
 	}
 	if m.AttachmentUpload != nil && m.routes.AttachmentUploadURL != "" {
 		r.GET(m.routes.AttachmentUploadURL, m.AttachmentUpload)
