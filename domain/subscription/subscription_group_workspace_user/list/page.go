@@ -35,7 +35,7 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var sgwuSearchFields = []string{"scope", "role"}
+var sgwuSearchFields = []string{"capacity"}
 
 // NewView creates the full-page list view.
 func NewView(deps *ListViewDeps) view.View {
@@ -49,7 +49,7 @@ func NewView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 		columns := sgwuColumns(deps.Labels)
-		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "scope", "asc")
+		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "workspace_user_id", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
@@ -86,7 +86,7 @@ func NewTableView(deps *ListViewDeps) view.View {
 			status = "active"
 		}
 		columns := sgwuColumns(deps.Labels)
-		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "scope", "asc")
+		p, err := espynahttp.ParseTableParamsWithFilters(viewCtx.Request, types.SortableKeys(columns), types.FilterableKeys(columns), "workspace_user_id", "asc")
 		if err != nil {
 			return view.Error(err)
 		}
@@ -168,7 +168,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 		ShowExport:           true,
 		ShowDensity:          true,
 		ShowEntries:          true,
-		DefaultSortColumn:    "scope",
+		DefaultSortColumn:    "workspace_user_id",
 		DefaultSortDirection: "asc",
 		Labels:               deps.TableLabels,
 		EmptyState: types.TableEmptyState{
@@ -186,8 +186,7 @@ func sgwuColumns(l sgwu.Labels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "workspace_user_id", Label: l.Columns.WorkspaceUser},
 		{Key: "subscription_group_id", Label: l.Columns.SubscriptionGroup, WidthClass: "col-2xl"},
-		{Key: "scope", Label: l.Columns.Scope, WidthClass: "col-2xl"},
-		{Key: "role", Label: l.Columns.Role, WidthClass: "col-xl"},
+		{Key: "capacity", Label: l.Columns.Capacity, WidthClass: "col-2xl"},
 		{Key: "is_owner", Label: l.Columns.IsOwner, NoSort: true, NoFilter: true, WidthClass: "col-xl"},
 	}
 }
@@ -203,14 +202,7 @@ func buildTableRows(items []*sgwupb.SubscriptionGroupWorkspaceUser, status strin
 		id := item.GetId()
 		workspaceUserID := item.GetWorkspaceUserId()
 		subscriptionGroupID := item.GetSubscriptionGroupId()
-		scopeVal := item.GetScope()
-		if scopeVal == "" {
-			scopeVal = l.Detail.NoScope
-		}
-		roleVal := item.GetRole()
-		if roleVal == "" {
-			roleVal = l.Detail.NoRole
-		}
+		capacityLabel := sgwu.CapacityLabel(l.Form, item.GetCapacity())
 		ownerLabel := l.Detail.OwnerNo
 		if item.GetIsOwner() {
 			ownerLabel = l.Detail.OwnerYes
@@ -227,8 +219,7 @@ func buildTableRows(items []*sgwupb.SubscriptionGroupWorkspaceUser, status strin
 		cells := []types.TableCell{
 			{Type: "text", Value: workspaceUserID},
 			{Type: "text", Value: subscriptionGroupID},
-			{Type: "text", Value: scopeVal},
-			{Type: "text", Value: roleVal},
+			{Type: "text", Value: capacityLabel},
 			{Type: "text", Value: ownerLabel},
 		}
 

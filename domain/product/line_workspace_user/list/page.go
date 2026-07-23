@@ -36,7 +36,7 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var lineWorkspaceUserSearchFields = []string{"workspace_user_id", "line_id", "scope", "role"}
+var lineWorkspaceUserSearchFields = []string{"workspace_user_id", "line_id", "capacity"}
 
 // NewView creates the line_workspace_user list view (full page).
 func NewView(deps *ListViewDeps) view.View {
@@ -187,8 +187,7 @@ func lineWorkspaceUserColumns(l line_workspace_user.Labels) []types.TableColumn 
 	return []types.TableColumn{
 		{Key: "workspace_user_id", Label: l.Columns.WorkspaceUserId},
 		{Key: "line_id", Label: l.Columns.LineId, WidthClass: "col-2xl"},
-		{Key: "scope", Label: l.Columns.Scope, WidthClass: "col-2xl"},
-		{Key: "role", Label: l.Columns.Role, WidthClass: "col-2xl"},
+		{Key: "capacity", Label: l.Columns.Capacity, WidthClass: "col-2xl"},
 	}
 }
 
@@ -203,16 +202,14 @@ func buildTableRows(items []*lineworkspaceuserpb.LineWorkspaceUser, status strin
 		id := item.GetId()
 		workspaceUserId := item.GetWorkspaceUserId()
 		lineId := item.GetLineId()
-		scope := item.GetScope()
-		role := item.GetRole()
+		capacityLabel := line_workspace_user.CapacityLabel(l.Form, item.GetCapacity())
 
 		isInUse := inUseIDs[id]
 
 		cells := []types.TableCell{
 			{Type: "text", Value: workspaceUserId},
 			{Type: "text", Value: lineId},
-			{Type: "text", Value: scope},
-			{Type: "text", Value: role},
+			{Type: "text", Value: capacityLabel},
 		}
 
 		rows = append(rows, types.TableRow{

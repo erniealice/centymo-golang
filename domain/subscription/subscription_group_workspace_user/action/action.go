@@ -43,15 +43,24 @@ func loadGroupOpts(ctx context.Context, deps *Deps) []form.Pair {
 	return deps.ListSubscriptionGroupOptions(ctx)
 }
 
+// normalizeCapacity coerces the posted capacity onto the closed generic domain
+// {primary, access}, flooring anything else (incl. "") to the least-privilege
+// access value so a row is never written outside the DB CHECK domain.
+func normalizeCapacity(v string) string {
+	if strings.TrimSpace(v) == "primary" {
+		return "primary"
+	}
+	return "access"
+}
+
 // applyFormToData maps POST body fields onto a SubscriptionGroupWorkspaceUser.
 // workspace_user_id and subscription_group_id are set only when non-empty so
-// unset optional FKs stay null on the wire. scope and role are free-text strings.
+// unset optional FKs stay null on the wire. capacity is a closed generic code.
 func applyFormToData(r *http.Request) *sgwupb.SubscriptionGroupWorkspaceUser {
 	data := &sgwupb.SubscriptionGroupWorkspaceUser{
-		Scope:   strings.TrimSpace(r.FormValue("scope")),
-		Role:    strings.TrimSpace(r.FormValue("role")),
-		IsOwner: r.FormValue("is_owner") == "true",
-		Active:  r.FormValue("active") == "true",
+		Capacity: normalizeCapacity(r.FormValue("capacity")),
+		IsOwner:  r.FormValue("is_owner") == "true",
+		Active:   r.FormValue("active") == "true",
 	}
 	if v := strings.TrimSpace(r.FormValue("workspace_user_id")); v != "" {
 		data.WorkspaceUserId = v
@@ -76,6 +85,8 @@ func NewAddAction(deps *Deps) view.View {
 				Active:                true,
 				WorkspaceUserOpts:     form.BuildAutoCompleteOptions(userPairs, ""),
 				SubscriptionGroupOpts: form.BuildAutoCompleteOptions(groupPairs, ""),
+				Capacity:              "access",
+				CapacityOptions:       form.BuildCapacityOptions(deps.Labels.Form, "access"),
 				Labels:                deps.Labels.Form,
 			})
 		}
@@ -136,8 +147,8 @@ func NewEditAction(deps *Deps) view.View {
 				SubscriptionGroupId:    selectedGroupID,
 				SubscriptionGroupLabel: form.FindLabel(groupPairs, selectedGroupID),
 				SubscriptionGroupOpts:  form.BuildAutoCompleteOptions(groupPairs, selectedGroupID),
-				Scope:                  record.GetScope(),
-				Role:                   record.GetRole(),
+				Capacity:               record.GetCapacity(),
+				CapacityOptions:        form.BuildCapacityOptions(deps.Labels.Form, record.GetCapacity()),
 				IsOwner:                record.GetIsOwner(),
 				Active:                 record.GetActive(),
 				Labels:                 deps.Labels.Form,
@@ -256,8 +267,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				Id:                  id,
 				WorkspaceUserId:     record.GetWorkspaceUserId(),
 				SubscriptionGroupId: record.GetSubscriptionGroupId(),
-				Scope:               record.GetScope(),
-				Role:                record.GetRole(),
+				Capacity:            record.GetCapacity(),
 				IsOwner:             record.GetIsOwner(),
 				Active:              status == "active",
 			},
@@ -294,8 +304,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 					Id:                  id,
 					WorkspaceUserId:     record.GetWorkspaceUserId(),
 					SubscriptionGroupId: record.GetSubscriptionGroupId(),
-					Scope:               record.GetScope(),
-					Role:                record.GetRole(),
+					Capacity:            record.GetCapacity(),
 					IsOwner:             record.GetIsOwner(),
 					Active:              status == "active",
 				},

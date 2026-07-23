@@ -24,16 +24,26 @@ type Deps struct {
 	GetPriceScheduleWorkspaceUserInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
+// normalizeCapacity coerces the posted capacity onto the closed generic domain
+// {primary, access}, flooring anything else (incl. "") to the least-privilege
+// access value so a row is never written outside the DB CHECK domain.
+func normalizeCapacity(v string) string {
+	if strings.TrimSpace(v) == "primary" {
+		return "primary"
+	}
+	return "access"
+}
+
 // applyFormToData writes the POST body onto a PriceScheduleWorkspaceUser.
 // Shared by Add (no id) and Edit (id set by caller). FK fields are required
 // scalars on the proto — always set them from the form value (empty string is
-// allowed to clear, consistent with proto zero value).
+// allowed to clear, consistent with proto zero value). capacity is a closed
+// generic code.
 func applyFormToData(r *http.Request) *pswupb.PriceScheduleWorkspaceUser {
 	data := &pswupb.PriceScheduleWorkspaceUser{
 		PriceScheduleId: strings.TrimSpace(r.FormValue("price_schedule_id")),
 		WorkspaceUserId: strings.TrimSpace(r.FormValue("workspace_user_id")),
-		Scope:           strings.TrimSpace(r.FormValue("scope")),
-		Role:            strings.TrimSpace(r.FormValue("role")),
+		Capacity:        normalizeCapacity(r.FormValue("capacity")),
 		IsOwner:         r.FormValue("is_owner") == "true",
 		Active:          r.FormValue("active") == "true",
 	}
@@ -48,9 +58,11 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("price-schedule-workspace-user-drawer-form", &form.Data{
-				FormAction: deps.Routes.AddURL,
-				Active:     true,
-				Labels:     deps.Labels.Form,
+				FormAction:      deps.Routes.AddURL,
+				Active:          true,
+				Capacity:        "access",
+				CapacityOptions: form.BuildCapacityOptions(deps.Labels.Form, "access"),
+				Labels:          deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -87,8 +99,8 @@ func NewEditAction(deps *Deps) view.View {
 				ID:              id,
 				PriceScheduleId: record.GetPriceScheduleId(),
 				WorkspaceUserId: record.GetWorkspaceUserId(),
-				Scope:           record.GetScope(),
-				Role:            record.GetRole(),
+				Capacity:        record.GetCapacity(),
+				CapacityOptions: form.BuildCapacityOptions(deps.Labels.Form, record.GetCapacity()),
 				IsOwner:         record.GetIsOwner(),
 				Active:          record.GetActive(),
 				Labels:          deps.Labels.Form,
@@ -201,8 +213,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				Id:              id,
 				PriceScheduleId: record.GetPriceScheduleId(),
 				WorkspaceUserId: record.GetWorkspaceUserId(),
-				Scope:           record.GetScope(),
-				Role:            record.GetRole(),
+				Capacity:        record.GetCapacity(),
 				IsOwner:         record.GetIsOwner(),
 				Active:          status == "active",
 			},
@@ -237,8 +248,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 					Id:              id,
 					PriceScheduleId: record.GetPriceScheduleId(),
 					WorkspaceUserId: record.GetWorkspaceUserId(),
-					Scope:           record.GetScope(),
-					Role:            record.GetRole(),
+					Capacity:        record.GetCapacity(),
 					IsOwner:         record.GetIsOwner(),
 					Active:          status == "active",
 				},

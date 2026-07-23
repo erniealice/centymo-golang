@@ -1,7 +1,7 @@
 package price_schedule_workspace_user
 
 // ---------------------------------------------------------------------------
-// PriceScheduleWorkspaceUser labels — "year coordinator" access records
+// PriceScheduleWorkspaceUser labels — operator access records at period nodes
 // ---------------------------------------------------------------------------
 
 // Labels holds all labels for the price_schedule_workspace_user module.
@@ -15,6 +15,7 @@ type Labels struct {
 	Confirm ConfirmLabels `json:"confirm"`
 	Tabs    TabLabels     `json:"tabs"`
 	Detail  DetailLabels  `json:"detail"`
+	Title   TitleLabels   `json:"title"`
 	Errors  ErrorLabels   `json:"errors"`
 }
 
@@ -38,8 +39,7 @@ type ButtonLabels struct {
 type ColumnLabels struct {
 	PriceScheduleId string `json:"price_schedule_id"`
 	WorkspaceUserId string `json:"workspace_user_id"`
-	Scope           string `json:"scope"`
-	Role            string `json:"role"`
+	Capacity        string `json:"capacity"`
 	IsOwner         string `json:"is_owner"`
 	Status          string `json:"status"`
 	DateCreated     string `json:"date_created"`
@@ -51,8 +51,8 @@ type EmptyLabels struct {
 	Message string `json:"message"`
 }
 
-// FormLabels holds the drawer-form field labels. Year-coordinator vocabulary —
-// a price_schedule_workspace_user pins an operator at a period node.
+// FormLabels holds the drawer-form field labels. A price_schedule_workspace_user
+// pins an operator at a period node.
 type FormLabels struct {
 	SectionCoordinator  string `json:"section_coordinator"`
 	SectionAccess       string `json:"section_access"`
@@ -62,12 +62,10 @@ type FormLabels struct {
 	WorkspaceUserId     string `json:"workspace_user_id"`
 	WorkspaceUserIdPH   string `json:"workspace_user_id_placeholder"`
 	WorkspaceUserIdInfo string `json:"workspace_user_id_info"`
-	Scope               string `json:"scope"`
-	ScopePH             string `json:"scope_placeholder"`
-	ScopeInfo           string `json:"scope_info"`
-	Role                string `json:"role"`
-	RolePH              string `json:"role_placeholder"`
-	RoleInfo            string `json:"role_info"`
+	Capacity            string `json:"capacity"`
+	CapacityInfo        string `json:"capacity_info"`
+	CapacityPrimary     string `json:"capacity_primary"`
+	CapacityAccess      string `json:"capacity_access"`
 	IsOwner             string `json:"is_owner"`
 	IsOwnerInfo         string `json:"is_owner_info"`
 	Active              string `json:"active"`
@@ -104,6 +102,17 @@ type DetailLabels struct {
 	NoUser       string `json:"no_user"`
 }
 
+// TitleLabels holds the servicing-title strings derived from the generic
+// (capacity, is_owner) axes. Label is the field/row caption; the other three
+// map to the generic keys {primary_owner, primary, access}. Vertical titles
+// are supplied only by the lyngua businessType overlay, never by this code.
+type TitleLabels struct {
+	Label        string `json:"label"`
+	PrimaryOwner string `json:"primary_owner"`
+	Primary      string `json:"primary"`
+	Access       string `json:"access"`
+}
+
 type ErrorLabels struct {
 	NotFound     string `json:"not_found"`
 	LoadFailed   string `json:"load_failed"`
@@ -114,8 +123,7 @@ type ErrorLabels struct {
 	InUse        string `json:"in_use"`
 }
 
-// DefaultLabels returns Labels with sensible English defaults using the
-// year-coordinator vocabulary.
+// DefaultLabels returns Labels with sensible English defaults.
 func DefaultLabels() Labels {
 	return Labels{
 		Page: PageLabels{
@@ -136,8 +144,7 @@ func DefaultLabels() Labels {
 		Columns: ColumnLabels{
 			PriceScheduleId: "Period",
 			WorkspaceUserId: "Operator",
-			Scope:           "Scope",
-			Role:            "Role",
+			Capacity:        "Capacity",
 			IsOwner:         "Owner",
 			Status:          "Status",
 			DateCreated:     "Date Created",
@@ -156,12 +163,10 @@ func DefaultLabels() Labels {
 			WorkspaceUserId:     "Operator",
 			WorkspaceUserIdPH:   "Enter operator ID",
 			WorkspaceUserIdInfo: "The workspace user who acts as coordinator for this period.",
-			Scope:               "Scope",
-			ScopePH:             "e.g. academic_year",
-			ScopeInfo:           "Optional scope tag narrowing the coordinator's visibility within the period.",
-			Role:                "Role",
-			RolePH:              "e.g. coordinator",
-			RoleInfo:            "Role label for this coordinator (free-text).",
+			Capacity:            "Capacity",
+			CapacityInfo:        "Whether this operator services the node (Primary) or only has view access (Access).",
+			CapacityPrimary:     "Primary (servicer)",
+			CapacityAccess:      "Access (view-only)",
 			IsOwner:             "Owner",
 			IsOwnerInfo:         "Mark this operator as the primary owner of the period.",
 			Active:              "Active",
@@ -193,6 +198,12 @@ func DefaultLabels() Labels {
 			NoSchedule:   "No period",
 			NoUser:       "No operator",
 		},
+		Title: TitleLabels{
+			Label:        "Title",
+			PrimaryOwner: "Owner",
+			Primary:      "Servicer",
+			Access:       "Member",
+		},
 		Errors: ErrorLabels{
 			NotFound:     "Coordinator record not found",
 			LoadFailed:   "Failed to load coordinator record",
@@ -203,4 +214,27 @@ func DefaultLabels() Labels {
 			InUse:        "This coordinator record is in use and cannot be deleted.",
 		},
 	}
+}
+
+// CapacityLabel returns the human-readable label for a generic capacity token.
+// The domain is closed ({primary, access}); any other value (incl. "") floors
+// to the least-privilege access label.
+func CapacityLabel(l FormLabels, capacity string) string {
+	if capacity == "primary" {
+		return l.CapacityPrimary
+	}
+	return l.CapacityAccess
+}
+
+// DeriveTitle maps the generic (capacity, is_owner) axes to a servicing title.
+// The key is generic ({primary_owner, primary, access}); the vertical wording
+// is supplied by the lyngua overlay, never by this code.
+func DeriveTitle(l TitleLabels, capacity string, isOwner bool) string {
+	if capacity == "primary" {
+		if isOwner {
+			return l.PrimaryOwner
+		}
+		return l.Primary
+	}
+	return l.Access
 }

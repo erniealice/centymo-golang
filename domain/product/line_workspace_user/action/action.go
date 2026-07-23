@@ -25,15 +25,24 @@ type Deps struct {
 	GetLineWorkspaceUserInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 }
 
+// normalizeCapacity coerces the posted capacity onto the closed generic domain
+// {primary, access}, flooring anything else (incl. "") to the least-privilege
+// access value so a row is never written outside the DB CHECK domain.
+func normalizeCapacity(v string) string {
+	if strings.TrimSpace(v) == "primary" {
+		return "primary"
+	}
+	return "access"
+}
+
 // applyFormToData writes the POST body onto a LineWorkspaceUser. Shared by
 // Add (no id) and Edit (id set by caller). Optional FK strings are set only
-// when present so unset fields stay null.
+// when present so unset fields stay null. capacity is a closed generic code.
 func applyFormToData(r *http.Request) *lineworkspaceuserpb.LineWorkspaceUser {
 	data := &lineworkspaceuserpb.LineWorkspaceUser{
-		Scope:   strings.TrimSpace(r.FormValue("scope")),
-		Role:    strings.TrimSpace(r.FormValue("role")),
-		IsOwner: r.FormValue("is_owner") == "true",
-		Active:  r.FormValue("active") == "true",
+		Capacity: normalizeCapacity(r.FormValue("capacity")),
+		IsOwner:  r.FormValue("is_owner") == "true",
+		Active:   r.FormValue("active") == "true",
 	}
 	if v := strings.TrimSpace(r.FormValue("workspace_user_id")); v != "" {
 		data.WorkspaceUserId = v
@@ -53,9 +62,11 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if viewCtx.Request.Method == http.MethodGet {
 			return view.OK("line-workspace-user-drawer-form", &form.Data{
-				FormAction: deps.Routes.AddURL,
-				Active:     true,
-				Labels:     deps.Labels.Form,
+				FormAction:      deps.Routes.AddURL,
+				Active:          true,
+				Capacity:        "access",
+				CapacityOptions: form.BuildCapacityOptions(deps.Labels.Form, "access"),
+				Labels:          deps.Labels.Form,
 			})
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -107,8 +118,8 @@ func NewEditAction(deps *Deps) view.View {
 				ID:              formID,
 				WorkspaceUserId: record.GetWorkspaceUserId(),
 				LineId:          record.GetLineId(),
-				Scope:           record.GetScope(),
-				Role:            record.GetRole(),
+				Capacity:        record.GetCapacity(),
+				CapacityOptions: form.BuildCapacityOptions(deps.Labels.Form, record.GetCapacity()),
 				IsOwner:         record.GetIsOwner(),
 				Active:          record.GetActive(),
 				Labels:          deps.Labels.Form,
@@ -230,8 +241,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 				Id:              id,
 				WorkspaceUserId: record.GetWorkspaceUserId(),
 				LineId:          record.GetLineId(),
-				Scope:           record.GetScope(),
-				Role:            record.GetRole(),
+				Capacity:        record.GetCapacity(),
 				IsOwner:         record.GetIsOwner(),
 				Active:          status == "active",
 			},
@@ -269,8 +279,7 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 					Id:              id,
 					WorkspaceUserId: record.GetWorkspaceUserId(),
 					LineId:          record.GetLineId(),
-					Scope:           record.GetScope(),
-					Role:            record.GetRole(),
+					Capacity:        record.GetCapacity(),
 					IsOwner:         record.GetIsOwner(),
 					Active:          status == "active",
 				},

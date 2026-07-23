@@ -36,8 +36,8 @@ type PageData struct {
 	ID              string
 	WorkspaceUserId string
 	LineId          string
-	Scope           string
-	Role            string
+	Capacity        string
+	Title           string
 	IsOwner         bool
 	Status          string
 	StatusLabel     string
@@ -152,8 +152,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ID:              id,
 		WorkspaceUserId: record.GetWorkspaceUserId(),
 		LineId:          record.GetLineId(),
-		Scope:           record.GetScope(),
-		Role:            record.GetRole(),
+		Capacity:        line_workspace_user.CapacityLabel(l.Form, record.GetCapacity()),
+		Title:           line_workspace_user.DeriveTitle(l.Title, record.GetCapacity(), record.GetIsOwner()),
 		IsOwner:         record.GetIsOwner(),
 		Status:          status,
 		StatusLabel:     statusLabel,

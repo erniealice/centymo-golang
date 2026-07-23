@@ -41,9 +41,15 @@
         {{/* ================================================================ */}}
         {{template "form-section" (dict "Title" .Labels.SectionServicing)}}
 
-        <div class="form-row">
-            {{template "form-group" (dict "Type" "text" "Name" "scope" "Label" .Labels.Scope "Value" .Scope "Placeholder" .Labels.ScopePlaceholder "Info" .Labels.ScopeInfo)}}
-            {{template "form-group" (dict "Type" "text" "Name" "role" "Label" .Labels.Role "Value" .Role "Placeholder" .Labels.RolePlaceholder "Info" .Labels.RoleInfo)}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "capacity"
+                "Label" .Labels.Capacity
+                "Value" .Capacity
+                "Options" .CapacityOptions
+                "Info" .Labels.CapacityInfo
+            )}}
         </div>
 
         <div class="form-row single">

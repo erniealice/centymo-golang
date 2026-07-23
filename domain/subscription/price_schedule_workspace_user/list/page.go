@@ -34,7 +34,7 @@ type PageData struct {
 	Table           *types.TableConfig
 }
 
-var pswuSearchFields = []string{"price_schedule_id", "workspace_user_id", "scope", "role"}
+var pswuSearchFields = []string{"price_schedule_id", "workspace_user_id", "capacity"}
 
 func NewView(deps *ListViewDeps) view.View {
 	return view.ViewFunc(func(ctx context.Context, viewCtx *view.ViewContext) view.ViewResult {
@@ -183,8 +183,7 @@ func pswuColumns(l pswu.Labels) []types.TableColumn {
 	return []types.TableColumn{
 		{Key: "price_schedule_id", Label: l.Columns.PriceScheduleId},
 		{Key: "workspace_user_id", Label: l.Columns.WorkspaceUserId},
-		{Key: "scope", Label: l.Columns.Scope, WidthClass: "col-2xl"},
-		{Key: "role", Label: l.Columns.Role, WidthClass: "col-2xl"},
+		{Key: "capacity", Label: l.Columns.Capacity, WidthClass: "col-2xl"},
 	}
 }
 
@@ -199,16 +198,14 @@ func buildTableRows(items []*pswupb.PriceScheduleWorkspaceUser, status string, l
 		id := item.GetId()
 		scheduleID := item.GetPriceScheduleId()
 		userID := item.GetWorkspaceUserId()
-		scope := item.GetScope()
-		role := item.GetRole()
+		capacityLabel := pswu.CapacityLabel(l.Form, item.GetCapacity())
 
 		isInUse := inUseIDs[id]
 
 		cells := []types.TableCell{
 			{Type: "text", Value: scheduleID},
 			{Type: "text", Value: userID},
-			{Type: "text", Value: scope},
-			{Type: "text", Value: role},
+			{Type: "text", Value: capacityLabel},
 		}
 
 		rows = append(rows, types.TableRow{

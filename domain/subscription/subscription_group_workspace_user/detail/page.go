@@ -36,8 +36,8 @@ type PageData struct {
 	ID                  string
 	WorkspaceUserId     string
 	SubscriptionGroupId string
-	Scope               string
-	Role                string
+	Capacity            string
+	Title               string
 	IsOwner             string
 	Status              string
 	StatusLabel         string
@@ -100,14 +100,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	l := deps.Labels
 
-	scopeVal := rec.GetScope()
-	if scopeVal == "" {
-		scopeVal = l.Detail.NoScope
-	}
-	roleVal := rec.GetRole()
-	if roleVal == "" {
-		roleVal = l.Detail.NoRole
-	}
+	capacityLabel := sgwu.CapacityLabel(l.Form, rec.GetCapacity())
+	titleLabel := sgwu.DeriveTitle(l.Title, rec.GetCapacity(), rec.GetIsOwner())
 	isOwnerLabel := l.Detail.OwnerNo
 	if rec.GetIsOwner() {
 		isOwnerLabel = l.Detail.OwnerYes
@@ -170,8 +164,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ID:                  id,
 		WorkspaceUserId:     rec.GetWorkspaceUserId(),
 		SubscriptionGroupId: rec.GetSubscriptionGroupId(),
-		Scope:               scopeVal,
-		Role:                roleVal,
+		Capacity:            capacityLabel,
+		Title:               titleLabel,
 		IsOwner:             isOwnerLabel,
 		Status:              status,
 		StatusLabel:         statusLabel,

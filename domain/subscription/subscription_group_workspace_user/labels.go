@@ -2,7 +2,7 @@ package subscription_group_workspace_user
 
 // Labels holds all labels for the subscription_group_workspace_user module.
 // Vocabulary: an assignment of a workspace user (operator) to a subscription
-// group (cohort) with a servicing scope and role.
+// group (cohort) with a servicing capacity.
 type Labels struct {
 	Page    PageLabels    `json:"page"`
 	Buttons ButtonLabels  `json:"buttons"`
@@ -13,6 +13,7 @@ type Labels struct {
 	Confirm ConfirmLabels `json:"confirm"`
 	Tabs    TabLabels     `json:"tabs"`
 	Detail  DetailLabels  `json:"detail"`
+	Title   TitleLabels   `json:"title"`
 	Errors  ErrorLabels   `json:"errors"`
 }
 
@@ -36,8 +37,7 @@ type ButtonLabels struct {
 type ColumnLabels struct {
 	WorkspaceUser     string `json:"workspace_user"`
 	SubscriptionGroup string `json:"subscription_group"`
-	Scope             string `json:"scope"`
-	Role              string `json:"role"`
+	Capacity          string `json:"capacity"`
 	IsOwner           string `json:"is_owner"`
 	Status            string `json:"status"`
 	DateCreated       string `json:"date_created"`
@@ -63,12 +63,10 @@ type FormLabels struct {
 	SubscriptionGroupIdPH   string `json:"subscription_group_id_placeholder"`
 	SubscriptionGroupSearch string `json:"subscription_group_search"`
 	SubscriptionGroupIdInfo string `json:"subscription_group_id_info"`
-	Scope                   string `json:"scope"`
-	ScopePlaceholder        string `json:"scope_placeholder"`
-	ScopeInfo               string `json:"scope_info"`
-	Role                    string `json:"role"`
-	RolePlaceholder         string `json:"role_placeholder"`
-	RoleInfo                string `json:"role_info"`
+	Capacity                string `json:"capacity"`
+	CapacityInfo            string `json:"capacity_info"`
+	CapacityPrimary         string `json:"capacity_primary"`
+	CapacityAccess          string `json:"capacity_access"`
 	IsOwner                 string `json:"is_owner"`
 	IsOwnerInfo             string `json:"is_owner_info"`
 	Active                  string `json:"active"`
@@ -103,10 +101,19 @@ type DetailLabels struct {
 	DateModified string `json:"date_modified"`
 	NoGroup      string `json:"no_group"`
 	NoUser       string `json:"no_user"`
-	NoScope      string `json:"no_scope"`
-	NoRole       string `json:"no_role"`
 	OwnerYes     string `json:"owner_yes"`
 	OwnerNo      string `json:"owner_no"`
+}
+
+// TitleLabels holds the servicing-title strings derived from the generic
+// (capacity, is_owner) axes. Label is the field/row caption; the other three
+// map to the generic keys {primary_owner, primary, access}. Vertical titles
+// are supplied only by the lyngua businessType overlay, never by this code.
+type TitleLabels struct {
+	Label        string `json:"label"`
+	PrimaryOwner string `json:"primary_owner"`
+	Primary      string `json:"primary"`
+	Access       string `json:"access"`
 }
 
 type ErrorLabels struct {
@@ -140,8 +147,7 @@ func DefaultLabels() Labels {
 		Columns: ColumnLabels{
 			WorkspaceUser:     "Workspace User",
 			SubscriptionGroup: "Group",
-			Scope:             "Scope",
-			Role:              "Role",
+			Capacity:          "Capacity",
 			IsOwner:           "Owner",
 			Status:            "Status",
 			DateCreated:       "Date Created",
@@ -162,12 +168,10 @@ func DefaultLabels() Labels {
 			SubscriptionGroupIdPH:   "Select a group...",
 			SubscriptionGroupSearch: "Filter...",
 			SubscriptionGroupIdInfo: "The subscription group (cohort) this operator is assigned to.",
-			Scope:                   "Scope",
-			ScopePlaceholder:        "e.g. coordinator",
-			ScopeInfo:               "The servicing scope of this assignment (e.g. coordinator, adviser).",
-			Role:                    "Role",
-			RolePlaceholder:         "e.g. lead",
-			RoleInfo:                "The role within the assigned scope.",
+			Capacity:                "Capacity",
+			CapacityInfo:            "Whether this operator services the node (Primary) or only has view access (Access).",
+			CapacityPrimary:         "Primary (servicer)",
+			CapacityAccess:          "Access (view-only)",
 			IsOwner:                 "Owner",
 			IsOwnerInfo:             "Marks this operator as the group owner.",
 			Active:                  "Active",
@@ -198,10 +202,14 @@ func DefaultLabels() Labels {
 			DateModified: "Date Modified",
 			NoGroup:      "No group",
 			NoUser:       "No user",
-			NoScope:      "—",
-			NoRole:       "—",
 			OwnerYes:     "Yes",
 			OwnerNo:      "No",
+		},
+		Title: TitleLabels{
+			Label:        "Title",
+			PrimaryOwner: "Owner",
+			Primary:      "Servicer",
+			Access:       "Member",
 		},
 		Errors: ErrorLabels{
 			NotFound:     "Assignment not found",
@@ -213,4 +221,27 @@ func DefaultLabels() Labels {
 			InUse:        "This assignment is in use and cannot be deleted.",
 		},
 	}
+}
+
+// CapacityLabel returns the human-readable label for a generic capacity token.
+// The domain is closed ({primary, access}); any other value (incl. "") floors
+// to the least-privilege access label.
+func CapacityLabel(l FormLabels, capacity string) string {
+	if capacity == "primary" {
+		return l.CapacityPrimary
+	}
+	return l.CapacityAccess
+}
+
+// DeriveTitle maps the generic (capacity, is_owner) axes to a servicing title.
+// The key is generic ({primary_owner, primary, access}); the vertical wording
+// is supplied by the lyngua overlay, never by this code.
+func DeriveTitle(l TitleLabels, capacity string, isOwner bool) string {
+	if capacity == "primary" {
+		if isOwner {
+			return l.PrimaryOwner
+		}
+		return l.Primary
+	}
+	return l.Access
 }
