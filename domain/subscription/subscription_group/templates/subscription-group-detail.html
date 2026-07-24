@@ -100,16 +100,16 @@
 {{end}}
 
 {{/* =============================================
-     TAB PARTIAL: Teaching Staff (section assignment table, §6.1)
-     One row per offering (product_plan) of the section's program, rendered via
-     the shared table-card: subject / current teacher / role / state. No in-panel
-     header — the tab-strip chip already names the tab + count, and the Status
-     column's Saved/Unassigned chips carry the coverage gap signal (W2g: this
-     matches the Subscriptions tab, which renders its table with no header). A
-     per-row action opens the assign drawer; empty-pool rows link to the
-     eligibility surface (rendered inside the teacher cell by the page-data). The
-     root carries id + data-refresh-url so an assign POST's refreshTable(staffTabID)
-     re-GETs and outerHTML-swaps this whole panel.
+     TAB PARTIAL: Teaching Staff / Subjects (M4 row-source flip, centymo.md §3)
+     Lists the section's active subscription_group_product_plan (class) rows via
+     the shared table-card: offering (+ variant badge + exception-only exclude
+     tag) / Teachers (ALL assignments comma-separated, phase-labeled). No
+     in-panel header — the tab-strip chip already names the tab + count; the
+     table-card's own toolbar carries the "+ Add offerings" primary action
+     (opens the S2 picker). A zero-row section falls back to today's derived
+     offering rows with every action disabled (data-status="unmaterialized").
+     The root carries id + data-refresh-url so a picker/assign/exclude/restore/
+     remove POST's refreshTable re-GETs and outerHTML-swaps this whole panel.
      ============================================= */}}
 {{define "subscription-group-tab-staff"}}
 <div id="subscription-group-staff-tab" class="tab-scroll tab-scroll--table"

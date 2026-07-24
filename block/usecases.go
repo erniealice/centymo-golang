@@ -89,6 +89,7 @@ import (
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
 	subscriptiongroupmemberpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_member"
+	subscriptiongroupproductplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan"
 	subscriptiongroupproductplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
 	subscriptiongroupworkspaceuserpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_workspace_user"
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
@@ -159,6 +160,7 @@ type UseCases struct {
 	SubscriptionGroup SubscriptionGroupUseCases
 
 	SubscriptionGroupMember           SubscriptionGroupMemberUseCases
+	SubscriptionGroupProductPlan      SubscriptionGroupProductPlanUseCases
 	SubscriptionGroupProductPlanStaff SubscriptionGroupProductPlanStaffUseCases
 	SubscriptionGroupWorkspaceUser    SubscriptionGroupWorkspaceUserUseCases
 
@@ -504,6 +506,23 @@ type SubscriptionGroupWorkspaceUserUseCases struct {
 	CreateSubscriptionGroupWorkspaceUser func(context.Context, *subscriptiongroupworkspaceuserpb.CreateSubscriptionGroupWorkspaceUserRequest) (*subscriptiongroupworkspaceuserpb.CreateSubscriptionGroupWorkspaceUserResponse, error)
 	UpdateSubscriptionGroupWorkspaceUser func(context.Context, *subscriptiongroupworkspaceuserpb.UpdateSubscriptionGroupWorkspaceUserRequest) (*subscriptiongroupworkspaceuserpb.UpdateSubscriptionGroupWorkspaceUserResponse, error)
 	DeleteSubscriptionGroupWorkspaceUser func(context.Context, *subscriptiongroupworkspaceuserpb.DeleteSubscriptionGroupWorkspaceUserRequest) (*subscriptiongroupworkspaceuserpb.DeleteSubscriptionGroupWorkspaceUserResponse, error)
+}
+
+// -- SubscriptionGroupProductPlan (THE CLASS) --------------------------------
+//
+// docs/plan/20260724-section-assignment-merged. Single-aggregate CRUD + List;
+// binds to uc.Subscription.SubscriptionGroupProductPlan.*. The in-use guard
+// (GetSubscriptionGroupProductPlanInUseIDs) is NOT here — like every other
+// entity's in-use checker (GetProductInUseIDs, GetPricePlanInUseIDs, …) it is
+// wired directly from infra.RefChecker at the catalog.go Unit Mount site, not
+// threaded through this espyna-sourced bundle.
+
+type SubscriptionGroupProductPlanUseCases struct {
+	ListSubscriptionGroupProductPlans  func(context.Context, *subscriptiongroupproductplanpb.ListSubscriptionGroupProductPlansRequest) (*subscriptiongroupproductplanpb.ListSubscriptionGroupProductPlansResponse, error)
+	ReadSubscriptionGroupProductPlan   func(context.Context, *subscriptiongroupproductplanpb.ReadSubscriptionGroupProductPlanRequest) (*subscriptiongroupproductplanpb.ReadSubscriptionGroupProductPlanResponse, error)
+	CreateSubscriptionGroupProductPlan func(context.Context, *subscriptiongroupproductplanpb.CreateSubscriptionGroupProductPlanRequest) (*subscriptiongroupproductplanpb.CreateSubscriptionGroupProductPlanResponse, error)
+	UpdateSubscriptionGroupProductPlan func(context.Context, *subscriptiongroupproductplanpb.UpdateSubscriptionGroupProductPlanRequest) (*subscriptiongroupproductplanpb.UpdateSubscriptionGroupProductPlanResponse, error)
+	DeleteSubscriptionGroupProductPlan func(context.Context, *subscriptiongroupproductplanpb.DeleteSubscriptionGroupProductPlanRequest) (*subscriptiongroupproductplanpb.DeleteSubscriptionGroupProductPlanResponse, error)
 }
 
 // -- SubscriptionGroupProductPlanStaff ---------------------------------------
@@ -969,6 +988,12 @@ type JobTemplateUseCases struct {
 
 type JobTemplatePhaseUseCases struct {
 	ListByJobTemplate func(context.Context, *jobtemplatedepb.ListByJobTemplateRequest) (*jobtemplatedepb.ListByJobTemplateResponse, error)
+	// ListJobTemplatePhases is the generic FilterRequest-shaped List (distinct
+	// from ListByJobTemplate's narrow single-template call) — the subscription_
+	// group_product_plan module's phase-anchor batch read (espyna.md §1b call
+	// #4: job_template_id IN (…), active=true) needs the generic filter shape
+	// to resolve phases across MULTIPLE classes' templates in one LIST_IN call.
+	ListJobTemplatePhases func(context.Context, *jobtemplatedepb.ListJobTemplatePhasesRequest) (*jobtemplatedepb.ListJobTemplatePhasesResponse, error)
 }
 
 type JobTemplateTaskUseCases struct {

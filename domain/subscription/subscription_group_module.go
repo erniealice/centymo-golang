@@ -16,13 +16,16 @@ import (
 	epkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	clientattributepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client_attribute"
+	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan_staff"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
 	subscriptiongroupmemberpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_member"
+	sgpppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan"
 	sgppspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
 )
 
@@ -63,6 +66,18 @@ type SubscriptionGroupModuleDeps struct {
 	ListStaffNames                         func(ctx context.Context) map[string]string
 	AssignGroupServicer                    func(ctx context.Context, subscriptionGroupID, productPlanID, staffID, role string) (string, error)
 	ProductPlanStaffListURL                string
+
+	// M4 row-source flip (plan.md §2, centymo.md §3): the tab's primary row
+	// source — active subscription_group_product_plan (class) rows.
+	ListSubscriptionGroupProductPlans       func(ctx context.Context, req *sgpppb.ListSubscriptionGroupProductPlansRequest) (*sgpppb.ListSubscriptionGroupProductPlansResponse, error)
+	ListProductVariants                     func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ListJobTemplatePhases                   func(ctx context.Context, req *jobtemplatephasepb.ListJobTemplatePhasesRequest) (*jobtemplatephasepb.ListJobTemplatePhasesResponse, error)
+	GetSubscriptionGroupProductPlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+	SGPPDetailURL                           func(sectionID, sgppID string) string
+	SGPPAssignURL                           func(sgppID string) string
+	SGPPSetStatusURL                        func(sgppID, status string) string
+	SGPPPickerURL                           func(sectionID string) string
+	SGPPDeleteURL                           string
 
 	attachment.AttachmentOps // attachments tab
 	auditlog.AuditOps        // audit tab (nil today → renders empty)
@@ -138,6 +153,16 @@ func NewSubscriptionGroupModule(deps *SubscriptionGroupModuleDeps) *Subscription
 		ListStaffNames:                         deps.ListStaffNames,
 		AssignGroupServicer:                    deps.AssignGroupServicer,
 		ProductPlanStaffListURL:                deps.ProductPlanStaffListURL,
+
+		ListSubscriptionGroupProductPlans:       deps.ListSubscriptionGroupProductPlans,
+		ListProductVariants:                     deps.ListProductVariants,
+		ListJobTemplatePhases:                   deps.ListJobTemplatePhases,
+		GetSubscriptionGroupProductPlanInUseIDs: deps.GetSubscriptionGroupProductPlanInUseIDs,
+		SGPPDetailURL:                           deps.SGPPDetailURL,
+		SGPPAssignURL:                           deps.SGPPAssignURL,
+		SGPPSetStatusURL:                        deps.SGPPSetStatusURL,
+		SGPPPickerURL:                           deps.SGPPPickerURL,
+		SGPPDeleteURL:                           deps.SGPPDeleteURL,
 
 		AttachmentOps: deps.AttachmentOps,
 		AuditOps:      deps.AuditOps,

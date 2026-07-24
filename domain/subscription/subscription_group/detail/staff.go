@@ -1,19 +1,34 @@
 package detail
 
-// staff.go — the "Teaching Staff" tab (§6.1–§6.3): a section-centric table that
-// assigns an ELIGIBLE servicer to every offering (product_plan) of the section's
-// program (plan). The tab renders the shared pyeza table-card (one row per
-// offering: subject / current teacher / role / state) with NO in-panel header —
-// the tab-strip chip names the tab + count and the Status column's Saved/Unassigned
-// chips carry the coverage gap signal (W2g); a per-row action opens an assign
-// DRAWER (offering read-only + eligible-only teacher autocomplete + primary/access
-// role). The drawer POSTs the
-// existing assign upsert (§6.3) and the response closes the drawer + refreshes the
-// tab. All page-data is assembled from existing List use cases (§6.2, no new
-// proto/DB). All vertical vocabulary (subject / teacher) lives in lyngua only.
+// staff.go — the section's "Teaching Staff"/"Subjects" tab.
+//
+// M4 ROW-SOURCE FLIP (plan.md §2, centymo.md §3): the LIVE tab lists active
+// subscription_group_product_plan (class) rows — SectionSGPPRow /
+// SectionSGPPTabData / buildSGPPTabData / countSectionSGPPs, below the
+// "M4 row-source flip" banner. Two columns (offering + Teachers, ALL
+// assignments comma-separated with phase labels); row actions View / Assign /
+// Exclude / Restore / Remove wired to the subscription_group_product_plan
+// module's own routes (cross-domain closures on DetailViewDeps). A section
+// with ZERO class rows (pre-M3-backfill) falls back to today's DERIVED
+// offering rows with every action disabled + a "not yet set up" hint.
+//
+// LEGACY (§6.1–§6.3, kept byte-identical, no longer surfaced): the original
+// per-offering table that assigns an eligible servicer to every product_plan
+// of the section's plan — SectionAssignmentRow / SectionStaffTabData /
+// buildStaffTabData / countSectionOfferings / renderAssignDrawer /
+// NewAssignAction. NewAssignAction stays REGISTERED (the year-grain upsert
+// route still resolves) but no row action opens it anymore; the functions
+// below are retained for their existing unit coverage (staff_test.go) and as
+// the fallback row source's data provider (listPlanOfferings, offeringLabel).
+//
+// All vertical vocabulary (subject / teacher / class) lives in lyngua only —
+// code identifiers below use "sgpp" (the entity's own short form, matching
+// the sibling subscription_group_product_plan package's own convention) for
+// consistency across the feature, per that package's own labels.go precedent.
 
 import (
 	"context"
+	"fmt"
 	"html/template"
 	"log"
 	"sort"
@@ -21,17 +36,30 @@ import (
 	"strings"
 
 	"github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
+	"github.com/erniealice/espyna-golang/consumer"
 	pyeza "github.com/erniealice/pyeza-golang"
+	"github.com/erniealice/pyeza-golang/render"
 	"github.com/erniealice/pyeza-golang/route"
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan_staff"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
+	sgpppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan"
 	sgppspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
 )
+
+// sgppEntity is the permission entity for the class row itself
+// (subscription_group_product_plan) — distinct from sgppsEntity, which
+// governs the assignment edge (plan.md §5 D-5).
+const sgppEntity = "subscription_group_product_plan"
+
+// sgppTableID is the M4 table-card id (the refresh-target token).
+const sgppTableID = "subscription-group-sgpp-table"
 
 // sgppsEntity is the permission entity for the class-edge (subscription_group_
 // product_plan_staff). The table reads with :list and the drawer writes with
@@ -683,4 +711,659 @@ func findRow(rows []SectionAssignmentRow, productPlanID string) (SectionAssignme
 		}
 	}
 	return SectionAssignmentRow{}, false
+}
+
+// =============================================================================
+// M4 row-source flip (plan.md §2, centymo.md §3) — everything below reads
+// active subscription_group_product_plan (class) rows instead of deriving
+// offering rows from the plan. See the package doc comment at the top of this
+// file for the legacy/live split.
+// =============================================================================
+
+// SectionSGPPRow is one row of the M4 section tab: an offering (a class, once
+// materialized) with its variant badge, exception-only exclude tag, and ALL of
+// its active assignments rendered comma-separated with phase labels
+// (centymo.md §3 — "nothing is hidden, first-wins retired"). Materialized is
+// false only for the transitional-fallback rows a zero-class section renders
+// (derived from the plan universe, no sgpp row exists yet); every row action
+// is disabled on those rows.
+type SectionSGPPRow struct {
+	ID              string // subscription_group_product_plan id; "" on a fallback row
+	ProductPlanID   string
+	OfferingLabel   string // product_plan.name (data, not a lyngua label)
+	VariantLabel    string // "" when the offering carries no variant (umbrella)
+	Excluded        bool   // sgpp.status == EXCLUDED
+	Materialized    bool   // false ⇒ transitional fallback row
+	AssignmentsText string // comma-separated "Name (Phase)"; "" when unstaffed
+	InUse           bool   // gates the guarded Remove action
+}
+
+// SectionSGPPTabData is the whole M4 tab payload.
+type SectionSGPPTabData struct {
+	SubscriptionGroupID string
+	PickerURL           string // primary action + empty-state CTA (the S2 add-offerings picker)
+	RefreshURL          string // tab-action GET for tab=staff, refreshes this panel
+	Rows                []SectionSGPPRow
+	Table               *types.TableConfig
+	Authorized          bool // false ⇒ render the read-only "no permission" note
+	Labels              subscription_group.Labels
+}
+
+// buildSGPPTabData assembles the M4 tab for one section: active class rows
+// (or, transitionally, the derived offering universe when none exist yet).
+// Fail-closed on sgppEntity:list INSIDE the tab body (a note, never a
+// full-page Forbidden — which would be wrong for an HTMX tab swap).
+func buildSGPPTabData(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup, l subscription_group.Labels) *SectionSGPPTabData {
+	groupID := sg.GetId()
+	data := &SectionSGPPTabData{
+		SubscriptionGroupID: groupID,
+		RefreshURL:          route.ResolveURL(deps.Routes.TabActionURL, "id", groupID, "tab", "staff"),
+		Labels:              l,
+	}
+	if deps.SGPPPickerURL != nil {
+		data.PickerURL = deps.SGPPPickerURL(groupID)
+	}
+
+	perms := view.GetUserPermissions(ctx)
+	if perms == nil || !perms.Can(sgppEntity, "list") {
+		return data
+	}
+	data.Authorized = true
+
+	data.Rows = listSGPPRows(ctx, deps, sg, l)
+	data.Table = buildSGPPTable(deps, data, perms, l)
+	// Stamp WorkspaceID/Nonce directly: the generic pipeline injector
+	// (pyeza render.Pipeline.InjectPageData -> injectTableConfigContext) only
+	// recurses into ANONYMOUS embedded struct fields when hunting for a
+	// nested *types.TableConfig — it does NOT recurse through a NAMED field
+	// like PageData.Staff (*SectionSGPPTabData). Table therefore never
+	// received its WorkspaceID/Nonce via that generic pass (verified live:
+	// the rendered tab's table-card carried neither data-ws-id nor
+	// data-action-tokens), which left {{rowActionTokens}} signing an empty
+	// map and every row action needing a POST (Exclude/Restore/Remove)
+	// failing the action_workspace_guard with 409 "Workspace context missing
+	// from form; please reload" — a real, user-facing break, not a test
+	// artifact. Every OTHER working table-card in this app has its
+	// *types.TableConfig as a TOP-LEVEL field of the struct passed to
+	// view.OK, where the generic injector's direct type-match already
+	// applies; this class table is the first one nested two levels deep
+	// (PageData.Staff.Table), so it needs this explicit stamp.
+	if data.Table != nil {
+		if data.Table.WorkspaceID == "" {
+			data.Table.WorkspaceID = consumer.GetWorkspaceIDFromContext(ctx)
+		}
+		if data.Table.Nonce == "" {
+			data.Table.Nonce = render.NonceFromContext(ctx)
+		}
+	}
+	return data
+}
+
+// countSectionSGPPs returns the section tab's M4 count badge: non-excluded
+// class rows, or (transitionally) the derived offering count when the section
+// has no class rows yet. Mirrors buildSGPPTabData's row source + read gate
+// exactly so the badge can never drift from the rendered rows. CHEAP by
+// design — never a full buildSGPPTabData run.
+func countSectionSGPPs(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup) int {
+	perms := view.GetUserPermissions(ctx)
+	if perms == nil || !perms.Can(sgppEntity, "list") {
+		return 0
+	}
+	sgpps := listActiveSGPPs(ctx, deps, sg.GetId())
+	if len(sgpps) > 0 {
+		count := 0
+		for _, c := range sgpps {
+			if c.GetStatus() != sgpppb.SubscriptionGroupProductPlanStatus_SUBSCRIPTION_GROUP_PRODUCT_PLAN_STATUS_EXCLUDED {
+				count++
+			}
+		}
+		return count
+	}
+	planID := sg.GetPlanId()
+	if planID == "" || deps.ListProductPlans == nil {
+		return 0
+	}
+	return len(listPlanOfferings(ctx, deps, planID))
+}
+
+// listActiveSGPPs returns the section's active class rows (both ACTIVE and
+// EXCLUDED status — EXCLUDED rows stay visible so they can be restored,
+// centymo.md §3).
+func listActiveSGPPs(ctx context.Context, deps *DetailViewDeps, groupID string) []*sgpppb.SubscriptionGroupProductPlan {
+	if deps.ListSubscriptionGroupProductPlans == nil || groupID == "" {
+		return nil
+	}
+	resp, err := deps.ListSubscriptionGroupProductPlans(ctx, &sgpppb.ListSubscriptionGroupProductPlansRequest{
+		Filters: andFilters(stringEqFilter("subscription_group_id", groupID), boolEqFilter("active", true)),
+	})
+	if err != nil {
+		log.Printf("class tab: list sgpps for section %s: %v", groupID, err)
+		return nil
+	}
+	out := make([]*sgpppb.SubscriptionGroupProductPlan, 0, len(resp.GetData()))
+	for _, c := range resp.GetData() {
+		if c != nil && c.GetActive() && c.GetSubscriptionGroupId() == groupID {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// listSGPPRows builds the tab's row set: active class rows resolved to
+// display form, or the transitional fallback when none exist yet.
+func listSGPPRows(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup, l subscription_group.Labels) []SectionSGPPRow {
+	groupID := sg.GetId()
+	sgpps := listActiveSGPPs(ctx, deps, groupID)
+	if len(sgpps) == 0 {
+		return fallbackSGPPRows(ctx, deps, sg)
+	}
+
+	planIDs := make([]string, 0, len(sgpps))
+	sgppIDs := make([]string, 0, len(sgpps))
+	templateIDs := make([]string, 0, len(sgpps))
+	for _, c := range sgpps {
+		planIDs = append(planIDs, c.GetProductPlanId())
+		sgppIDs = append(sgppIDs, c.GetId())
+		if tid := c.GetJobTemplateId(); tid != "" {
+			templateIDs = append(templateIDs, tid)
+		}
+	}
+
+	plans := resolveProductPlansByID(ctx, deps, planIDs)
+	variantIDs := make([]string, 0, len(plans))
+	for _, pp := range plans {
+		if v := pp.GetProductVariantId(); v != "" {
+			variantIDs = append(variantIDs, v)
+		}
+	}
+	variantNames := resolveVariantNames(ctx, deps, variantIDs)
+	phasesByID := resolveSGPPPhases(ctx, deps, templateIDs)
+	names := staffNames(ctx, deps)
+	assignments := listSGPPAssignments(ctx, deps, sgppIDs, phasesByID, names)
+
+	var inUseIDs map[string]bool
+	if deps.GetSubscriptionGroupProductPlanInUseIDs != nil {
+		inUseIDs, _ = deps.GetSubscriptionGroupProductPlanInUseIDs(ctx, sgppIDs)
+	}
+
+	rows := make([]SectionSGPPRow, 0, len(sgpps))
+	for _, c := range sgpps {
+		pp := plans[c.GetProductPlanId()]
+		row := SectionSGPPRow{
+			ID:            c.GetId(),
+			ProductPlanID: c.GetProductPlanId(),
+			OfferingLabel: offeringLabelFromPlan(pp, c.GetProductPlanId()),
+			VariantLabel:  variantNames[pp.GetProductVariantId()],
+			Excluded:      c.GetStatus() == sgpppb.SubscriptionGroupProductPlanStatus_SUBSCRIPTION_GROUP_PRODUCT_PLAN_STATUS_EXCLUDED,
+			Materialized:  true,
+			InUse:         inUseIDs[c.GetId()],
+		}
+		row.AssignmentsText = joinAssignments(assignments[c.GetId()], l)
+		rows = append(rows, row)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		a, b := strings.ToLower(rows[i].OfferingLabel), strings.ToLower(rows[j].OfferingLabel)
+		if a == b {
+			return rows[i].ID < rows[j].ID
+		}
+		return a < b
+	})
+	return rows
+}
+
+// fallbackSGPPRows renders the TRANSITIONAL fallback (plan.md §2 row-source
+// fallback, pre-M3-backfill): today's derived plan-offering universe, with
+// every action disabled + a "not yet set up" hint. Reuses the legacy
+// listPlanOfferings/offeringLabel helpers verbatim — zero duplicate logic.
+func fallbackSGPPRows(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup) []SectionSGPPRow {
+	planID := sg.GetPlanId()
+	if planID == "" || deps.ListProductPlans == nil {
+		return nil
+	}
+	plans := listPlanOfferings(ctx, deps, planID)
+	rows := make([]SectionSGPPRow, 0, len(plans))
+	for _, pp := range plans {
+		rows = append(rows, SectionSGPPRow{
+			ProductPlanID: pp.GetId(),
+			OfferingLabel: offeringLabel(pp),
+			Materialized:  false,
+		})
+	}
+	return rows
+}
+
+// resolveProductPlansByID resolves exactly the referenced offerings (LIST_IN
+// by id), keyed by id.
+func resolveProductPlansByID(ctx context.Context, deps *DetailViewDeps, ids []string) map[string]*productplanpb.ProductPlan {
+	out := map[string]*productplanpb.ProductPlan{}
+	if len(ids) == 0 || deps.ListProductPlans == nil {
+		return out
+	}
+	resp, err := deps.ListProductPlans(ctx, &productplanpb.ListProductPlansRequest{Filters: stringInFilter("id", ids)})
+	if err != nil {
+		log.Printf("class tab: list offerings: %v", err)
+		return out
+	}
+	for _, pp := range resp.GetData() {
+		if pp != nil {
+			out[pp.GetId()] = pp
+		}
+	}
+	return out
+}
+
+// resolveVariantNames resolves exactly the referenced variants (LIST_IN by
+// id), keyed by id. Label = SKU, falling back to the id.
+func resolveVariantNames(ctx context.Context, deps *DetailViewDeps, variantIDs []string) map[string]string {
+	out := map[string]string{}
+	if len(variantIDs) == 0 || deps.ListProductVariants == nil {
+		return out
+	}
+	resp, err := deps.ListProductVariants(ctx, &productvariantpb.ListProductVariantsRequest{Filters: stringInFilter("id", variantIDs)})
+	if err != nil {
+		log.Printf("class tab: list variants: %v", err)
+		return out
+	}
+	for _, v := range resp.GetData() {
+		if v == nil {
+			continue
+		}
+		label := v.GetSku()
+		if label == "" {
+			label = v.GetId()
+		}
+		out[v.GetId()] = label
+	}
+	return out
+}
+
+// sgppPhase is a job_template_phase's display projection (id -> name/order).
+type sgppPhase struct {
+	Name  string
+	Order int32
+}
+
+// resolveSGPPPhases resolves exactly the referenced templates' active phases
+// (LIST_IN by job_template_id), keyed by phase id — the same source the sgpp
+// module's own coverage.go reads (job-sampling ban, plan.md §2.5: never a
+// member job).
+func resolveSGPPPhases(ctx context.Context, deps *DetailViewDeps, templateIDs []string) map[string]sgppPhase {
+	out := map[string]sgppPhase{}
+	if len(templateIDs) == 0 || deps.ListJobTemplatePhases == nil {
+		return out
+	}
+	resp, err := deps.ListJobTemplatePhases(ctx, &jobtemplatephasepb.ListJobTemplatePhasesRequest{
+		Filters: andFilters(stringInFilter("job_template_id", templateIDs), boolEqFilter("active", true)),
+	})
+	if err != nil {
+		log.Printf("class tab: list phases: %v", err)
+		return out
+	}
+	for _, p := range resp.GetData() {
+		if p != nil {
+			out[p.GetId()] = sgppPhase{Name: p.GetName(), Order: p.GetPhaseOrder()}
+		}
+	}
+	return out
+}
+
+// sgppAssignmentDisplay is one resolved assignment entry ready to join into
+// a row's comma-separated Teachers text.
+type sgppAssignmentDisplay struct {
+	staffName  string
+	phaseLabel string // "" for a phase-NULL (whole-coverage) assignment — no parenthetical rendered
+	order      int32
+}
+
+// listSGPPAssignments resolves ALL active assignments for the given sgpps
+// (filtered on the v2 FK f12, espyna.md §1b), keyed by class id. Staff names
+// resolve via f13 (product_plan_staff_id) -> pps.staff_id -> name — NEVER
+// legacy f10, so the view survives M7.
+func listSGPPAssignments(ctx context.Context, deps *DetailViewDeps, sgppIDs []string, phasesByID map[string]sgppPhase, names map[string]string) map[string][]sgppAssignmentDisplay {
+	out := map[string][]sgppAssignmentDisplay{}
+	if len(sgppIDs) == 0 || deps.ListSubscriptionGroupProductPlanStaffs == nil {
+		return out
+	}
+	resp, err := deps.ListSubscriptionGroupProductPlanStaffs(ctx, &sgppspb.ListSubscriptionGroupProductPlanStaffsRequest{
+		Filters: andFilters(stringInFilter("subscription_group_product_plan_id", sgppIDs), boolEqFilter("active", true)),
+	})
+	if err != nil {
+		log.Printf("class tab: list assignments: %v", err)
+		return out
+	}
+	data := resp.GetData()
+
+	ppsIDs := make([]string, 0, len(data))
+	seen := map[string]bool{}
+	for _, a := range data {
+		if a == nil {
+			continue
+		}
+		if id := a.GetProductPlanStaffId(); id != "" && !seen[id] {
+			seen[id] = true
+			ppsIDs = append(ppsIDs, id)
+		}
+	}
+	ppsStaffByID := resolvePPSStaffIDs(ctx, deps, ppsIDs)
+
+	for _, a := range data {
+		if a == nil || !a.GetActive() {
+			continue
+		}
+		sgppID := a.GetSubscriptionGroupProductPlanId()
+		if sgppID == "" {
+			continue
+		}
+		staffID := ppsStaffByID[a.GetProductPlanStaffId()]
+		staffName := names[staffID]
+		if staffName == "" {
+			staffName = staffID
+		}
+		if staffName == "" {
+			staffName = a.GetProductPlanStaffId()
+		}
+
+		phaseLabel, order := "", int32(-1)
+		if pid := a.GetJobTemplatePhaseId(); pid != "" {
+			if p, ok := phasesByID[pid]; ok {
+				phaseLabel, order = p.Name, p.Order
+			} else {
+				phaseLabel = pid
+			}
+		}
+		out[sgppID] = append(out[sgppID], sgppAssignmentDisplay{staffName: staffName, phaseLabel: phaseLabel, order: order})
+	}
+	return out
+}
+
+// resolvePPSStaffIDs resolves exactly the referenced eligibility rows
+// (LIST_IN by id — espyna.md §1b call #6), keyed by pps id -> staff id.
+func resolvePPSStaffIDs(ctx context.Context, deps *DetailViewDeps, ppsIDs []string) map[string]string {
+	out := map[string]string{}
+	if len(ppsIDs) == 0 || deps.ListProductPlanStaffs == nil {
+		return out
+	}
+	resp, err := deps.ListProductPlanStaffs(ctx, &productplanstaffpb.ListProductPlanStaffsRequest{Filters: stringInFilter("id", ppsIDs)})
+	if err != nil {
+		log.Printf("class tab: resolve eligibility rows: %v", err)
+		return out
+	}
+	for _, pps := range resp.GetData() {
+		if pps != nil {
+			out[pps.GetId()] = pps.GetStaffId()
+		}
+	}
+	return out
+}
+
+// joinAssignments renders a class's assignments as the comma-separated
+// Teachers text (centymo.md §3 — phase-scoped entries carry a parenthetical,
+// phase-NULL entries render bare). Sorted by phase order (phase-NULL first),
+// then staff name.
+func joinAssignments(entries []sgppAssignmentDisplay, l subscription_group.Labels) string {
+	if len(entries) == 0 {
+		return ""
+	}
+	sort.SliceStable(entries, func(i, j int) bool {
+		if entries[i].order != entries[j].order {
+			return entries[i].order < entries[j].order
+		}
+		return strings.ToLower(entries[i].staffName) < strings.ToLower(entries[j].staffName)
+	})
+	sep := l.Staff.ListSeparator
+	if sep == "" {
+		sep = ", "
+	}
+	parts := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if e.phaseLabel != "" {
+			parts = append(parts, e.staffName+" ("+e.phaseLabel+")")
+		} else {
+			parts = append(parts, e.staffName)
+		}
+	}
+	return strings.Join(parts, sep)
+}
+
+// offeringLabelFromPlan mirrors offeringLabel but tolerates a nil plan (an
+// unresolved product_plan id), falling back to the raw id.
+func offeringLabelFromPlan(pp *productplanpb.ProductPlan, fallbackID string) string {
+	if pp == nil {
+		return fallbackID
+	}
+	return offeringLabel(pp)
+}
+
+// buildSGPPTable maps the M4 rows into the shared table-card config: two
+// columns (Subject, Teachers), the S2 picker as the toolbar primary action,
+// and per-row View/Assign/Exclude-Restore/Remove actions.
+func buildSGPPTable(deps *DetailViewDeps, data *SectionSGPPTabData, perms *types.UserPermissions, l subscription_group.Labels) *types.TableConfig {
+	columns := []types.TableColumn{
+		{Key: "subject", Label: l.Staff.ColumnSubject, NoSort: true, NoFilter: true, Width: "40%"},
+		{Key: "assignments", Label: l.Staff.ColumnServicer, NoSort: true, NoFilter: true},
+	}
+	rows := make([]types.TableRow, 0, len(data.Rows))
+	for _, r := range data.Rows {
+		rows = append(rows, sgppTableRow(deps, data.SubscriptionGroupID, r, perms, l))
+	}
+	cfg := &types.TableConfig{
+		ID:          sgppTableID,
+		Columns:     columns,
+		Rows:        rows,
+		Labels:      deps.TableLabels,
+		EmptyState:  types.TableEmptyState{Title: l.Staff.EmptyTitle, Message: l.Staff.EmptyMessage},
+		ShowSearch:  true,
+		ShowColumns: true,
+		ShowDensity: true,
+		ShowEntries: true,
+		ShowActions: true,
+	}
+	if data.PickerURL != "" {
+		cfg.PrimaryAction = &types.PrimaryAction{
+			Label:           l.Staff.AddAction,
+			ActionURL:       data.PickerURL,
+			Icon:            "icon-plus",
+			Disabled:        !perms.Can(sgppEntity, "create"),
+			DisabledTooltip: l.Staff.Unauthorized,
+		}
+	}
+	types.ApplyColumnStyles(columns, rows)
+	types.ApplyTableSettings(cfg)
+	return cfg
+}
+
+// sgppSubjectCell renders the Subject column: offering name + variant badge
+// (strand only) + the exception-only signal — either the EXCLUDED tag or the
+// transitional-fallback "not yet set up" hint (never both; centymo.md §3 —
+// default-state badges are noise). Every interpolated value is a trusted
+// composed label (offering/variant names, lyngua labels) and HTML-escaped.
+func sgppSubjectCell(r SectionSGPPRow, l subscription_group.Labels) types.TableCell {
+	var b strings.Builder
+	b.WriteString(`<span class="centymo-sgpp-subject-name">`)
+	b.WriteString(template.HTMLEscapeString(r.OfferingLabel))
+	b.WriteString(`</span>`)
+	if r.VariantLabel != "" {
+		b.WriteString(` <span class="badge badge--muted">`)
+		b.WriteString(template.HTMLEscapeString(r.VariantLabel))
+		b.WriteString(`</span>`)
+	}
+	switch {
+	case !r.Materialized:
+		b.WriteString(` <span class="text-muted centymo-sgpp-unmaterialized-hint" data-testid="sgpp-unmaterialized-` + template.HTMLEscapeString(r.ProductPlanID) + `" title="`)
+		b.WriteString(template.HTMLEscapeString(l.Staff.NotMaterializedHint))
+		b.WriteString(`">`)
+		b.WriteString(template.HTMLEscapeString(l.Staff.NotMaterializedHint))
+		b.WriteString(`</span>`)
+	case r.Excluded:
+		b.WriteString(` <span class="badge badge--warning" data-testid="sgpp-excluded-tag-` + template.HTMLEscapeString(r.ID) + `">`)
+		b.WriteString(template.HTMLEscapeString(l.Staff.ExcludedTag))
+		b.WriteString(`</span>`)
+	}
+	return types.TableCell{Type: "html", HTML: template.HTML(b.String()), Value: r.OfferingLabel}
+}
+
+// sgppAssignmentsCell renders the Teachers column: the comma-separated
+// assignment text with an aria-label carrying the full list (I-1 display
+// truth), the unstaffed placeholder, or an em-dash on a fallback row.
+func sgppAssignmentsCell(r SectionSGPPRow, l subscription_group.Labels) types.TableCell {
+	if !r.Materialized {
+		return types.TableCell{Type: "text", Value: emDash}
+	}
+	if r.AssignmentsText == "" {
+		return types.TableCell{Type: "text", Value: l.Staff.Unstaffed}
+	}
+	aria := strings.ReplaceAll(l.Staff.ListAria, "{{names}}", r.AssignmentsText)
+	var b strings.Builder
+	b.WriteString(`<span data-testid="sgpp-row-assignments-`)
+	b.WriteString(template.HTMLEscapeString(r.ID))
+	b.WriteString(`" aria-label="`)
+	b.WriteString(template.HTMLEscapeString(aria))
+	b.WriteString(`">`)
+	b.WriteString(template.HTMLEscapeString(r.AssignmentsText))
+	b.WriteString(`</span>`)
+	return types.TableCell{Type: "html", HTML: template.HTML(b.String()), Value: r.AssignmentsText}
+}
+
+// sgppRowKey returns the row's stable identity for test ids / the table row
+// ID — the class id when materialized, else the offering id (fallback rows
+// have no class id yet).
+func sgppRowKey(r SectionSGPPRow) string {
+	if r.ID != "" {
+		return r.ID
+	}
+	return r.ProductPlanID
+}
+
+// sgppTableRow builds one M4 table row. Fallback (not-yet-materialized) rows
+// render both actions disabled with the not-yet-materialized hint as the
+// tooltip (centymo.md §3 — "actions disabled + a subtle not-yet-materialized
+// hint"). Materialized rows wire View (navigate to S4) / Assign (opens the S3
+// quick drawer) inline, and Exclude-or-Restore / Remove into the row's
+// overflow (⋮) menu.
+func sgppTableRow(deps *DetailViewDeps, groupID string, r SectionSGPPRow, perms *types.UserPermissions, l subscription_group.Labels) types.TableRow {
+	key := sgppRowKey(r)
+	row := types.TableRow{
+		ID: key,
+		DataAttrs: map[string]string{
+			"testid": "sgpp-row-" + key,
+			"status": sgppRowStatus(r),
+		},
+		Cells: []types.TableCell{sgppSubjectCell(r, l), sgppAssignmentsCell(r, l)},
+	}
+
+	if !r.Materialized {
+		row.Actions = []types.TableAction{
+			{Type: "view", Action: "view", Label: l.Staff.ViewAction, Disabled: true, DisabledTooltip: l.Staff.NotMaterializedHint, TestID: "sgpp-view-" + key},
+			{Type: "edit", Action: "edit", Label: l.Staff.AssignAction, DrawerTitle: l.Staff.AssignAction, Disabled: true, DisabledTooltip: l.Staff.NotMaterializedHint, TestID: "sgpp-assign-" + key},
+		}
+		return row
+	}
+
+	canAssign := perms.CanAny(sgppsEntity+":create", sgppsEntity+":update")
+	canManage := perms.Can(sgppEntity, "update")
+	canDelete := perms.Can(sgppEntity, "delete")
+
+	viewAction := types.TableAction{Type: "view", Action: "view", Label: l.Staff.ViewAction, TestID: "sgpp-view-" + r.ID}
+	if deps.SGPPDetailURL != nil {
+		viewAction.Href = deps.SGPPDetailURL(groupID, r.ID)
+	} else {
+		viewAction.Disabled = true
+	}
+
+	assignAction := types.TableAction{
+		Type: "edit", Action: "edit", Label: l.Staff.AssignAction, DrawerTitle: l.Staff.AssignAction,
+		TestID: "sgpp-assign-" + r.ID, Disabled: !canAssign, DisabledTooltip: l.Staff.Unauthorized,
+	}
+	if deps.SGPPAssignURL != nil {
+		assignAction.URL = deps.SGPPAssignURL(r.ID)
+	} else {
+		assignAction.Disabled = true
+	}
+
+	row.Actions = append(row.Actions, viewAction, assignAction)
+
+	if r.Excluded {
+		restoreAction := types.TableAction{
+			Type: "activate", Action: "activate", Label: l.Staff.RestoreAction, Overflow: true,
+			ItemName: r.OfferingLabel, ConfirmTitle: l.Staff.RestoreConfirmTitle,
+			ConfirmMessage:  fmt.Sprintf(l.Staff.RestoreConfirmMessage, r.OfferingLabel),
+			TestID:          "sgpp-restore-" + r.ID,
+			Disabled:        !canManage,
+			DisabledTooltip: l.Staff.Unauthorized,
+		}
+		if deps.SGPPSetStatusURL != nil {
+			restoreAction.URL = deps.SGPPSetStatusURL(r.ID, "active")
+		} else {
+			restoreAction.Disabled = true
+		}
+		row.Actions = append(row.Actions, restoreAction)
+	} else {
+		excludeAction := types.TableAction{
+			Type: "deactivate", Action: "deactivate", Label: l.Staff.ExcludeAction, Overflow: true,
+			ItemName: r.OfferingLabel, ConfirmTitle: l.Staff.ExcludeConfirmTitle,
+			ConfirmMessage:  fmt.Sprintf(l.Staff.ExcludeConfirmMessage, r.OfferingLabel),
+			TestID:          "sgpp-exclude-" + r.ID,
+			Disabled:        !canManage,
+			DisabledTooltip: l.Staff.Unauthorized,
+		}
+		if deps.SGPPSetStatusURL != nil {
+			excludeAction.URL = deps.SGPPSetStatusURL(r.ID, "excluded")
+		} else {
+			excludeAction.Disabled = true
+		}
+		row.Actions = append(row.Actions, excludeAction)
+	}
+
+	removeAction := types.TableAction{
+		Type: "delete", Action: "delete", Label: l.Staff.RemoveAction, Overflow: true,
+		URL: deps.SGPPDeleteURL, ItemName: r.OfferingLabel,
+		ConfirmTitle: l.Staff.RemoveConfirmTitle, ConfirmMessage: fmt.Sprintf(l.Staff.RemoveConfirmMessage, r.OfferingLabel),
+		TestID: "sgpp-remove-" + r.ID,
+	}
+	switch {
+	case r.InUse:
+		removeAction.Disabled = true
+		removeAction.DisabledTooltip = l.Staff.RemoveBlockedInUse
+	case !canDelete:
+		removeAction.Disabled = true
+		removeAction.DisabledTooltip = l.Staff.Unauthorized
+	case deps.SGPPDeleteURL == "":
+		removeAction.Disabled = true
+	}
+	row.Actions = append(row.Actions, removeAction)
+
+	return row
+}
+
+// sgppRowStatus renders the row's data-status attribute: "unmaterialized"
+// for a fallback row, else the sgpp status token.
+func sgppRowStatus(r SectionSGPPRow) string {
+	if !r.Materialized {
+		return "unmaterialized"
+	}
+	if r.Excluded {
+		return "excluded"
+	}
+	return "active"
+}
+
+// boolEqFilter builds a single field == value boolean FilterRequest.
+func boolEqFilter(field string, value bool) *commonpb.FilterRequest {
+	return &commonpb.FilterRequest{Filters: []*commonpb.TypedFilter{{
+		Field:      field,
+		FilterType: &commonpb.TypedFilter_BooleanFilter{BooleanFilter: &commonpb.BooleanFilter{Value: value}},
+	}}}
+}
+
+// andFilters merges filter requests into one (all conditions AND-ed — mirrors
+// how the postgres adapter treats a Filters slice).
+func andFilters(reqs ...*commonpb.FilterRequest) *commonpb.FilterRequest {
+	out := &commonpb.FilterRequest{}
+	for _, r := range reqs {
+		if r == nil {
+			continue
+		}
+		out.Filters = append(out.Filters, r.Filters...)
+	}
+	return out
 }

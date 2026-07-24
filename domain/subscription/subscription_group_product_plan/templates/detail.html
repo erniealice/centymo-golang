@@ -1,0 +1,126 @@
+{{/* Full page — for direct access / non-HTMX */}}
+{{define "sgpp-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — for HTMX navigation */}}
+{{define "sgpp-detail-content"}}
+<div class="page-content detail-layout" data-page-title="{{.Labels.Detail.Title}}">
+    {{/* --- Tab Buttons --- */}}
+    <div class="detail-tabs">
+        {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "sgpp-detail-tabs")}}
+    </div>
+
+    {{/* --- Tab Content Area --- */}}
+    <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+        {{if eq .ActiveTab "info"}}
+            {{template "sgpp-tab-info" .}}
+        {{else if eq .ActiveTab "staff"}}
+            {{template "sgpp-tab-staff" .}}
+        {{end}}
+    </div>
+</div>
+{{template "centymo-lf-delegation" .}}
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Info
+     ============================================= */}}
+{{define "sgpp-tab-info"}}
+<div class="tab-scroll" data-testid="sgpp-info-tab" id="sgpp-info-tab">
+    <h4 class="detail-section-title">{{.Labels.Tabs.Info}}</h4>
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Section}}</span>
+            <span class="detail-info-value">
+                {{if .SectionURL}}<a href="{{.SectionURL}}">{{.SectionName}}</a>{{else}}{{.SectionName}}{{end}}
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Offering}}</span>
+            <span class="detail-info-value">{{.OfferingName}}{{if .VariantLabel}} <span class="badge badge--muted">{{.VariantLabel}}</span>{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Plan}}</span>
+            <span class="detail-info-value">{{.PlanName}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Period}}</span>
+            <span class="detail-info-value">{{if .PeriodName}}{{.PeriodName}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Curriculum}}</span>
+            <span class="detail-info-value">
+                {{.CurriculumName}}
+                {{if .GradeSheetURL}} · <a href="{{.GradeSheetURL}}" data-testid="sgpp-grade-sheet-link">{{.Labels.Detail.GradeSheetLink}} →</a>{{end}}
+            </span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.Status}}</span>
+            <span><span class="badge badge--{{.StatusVariant}}">{{.StatusLabel}}</span></span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.AssignmentsCount}}</span>
+            <span class="detail-info-value">{{.AssignmentsCount}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.DateCreated}}</span>
+            <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.DateModified}}</span>
+            <span class="detail-info-value">{{if .ModifiedDate}}{{.ModifiedDate}}{{else}}—{{end}}</span>
+        </div>
+    </div>
+
+    <div class="detail-actions detail-actions--spaced" style="margin-top: var(--spacing-xl);">
+        <a class="btn btn-primary"
+           hx-get="{{.EditURL}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Buttons.Edit}}"
+           data-testid="sgpp-edit">
+            {{.Labels.Buttons.Edit}}
+        </a>
+        {{/* S6 guarded actions — the same generic .action-btn contract every
+             list row action uses (table-actions.js delegates from `document`,
+             not a table root, so it works unmodified here). */}}
+        {{range .InfoActions}}
+        <button type="button" class="action-btn {{.Action}}{{if .Disabled}} disabled{{end}}"
+                data-action="{{.Action}}"
+                data-id="{{$.ID}}"
+                {{if eq .Action "delete"}}data-delete-url="{{.URL}}"{{else if eq .Action "deactivate"}}data-deactivate-url="{{.URL}}"{{else if eq .Action "activate"}}data-activate-url="{{.URL}}"{{end}}
+                {{if .ItemName}}data-item-name="{{.ItemName}}"{{end}}
+                {{if .ConfirmTitle}}data-confirm-title="{{.ConfirmTitle}}"{{end}}
+                {{if .ConfirmMessage}}data-confirm-message="{{.ConfirmMessage}}"{{end}}
+                {{if .Disabled}}aria-disabled="true" title="{{.DisabledTooltip}}"{{else}}title="{{.Label}}"{{end}}
+                data-testid="{{.TestID}}">
+            {{.Label}}
+        </button>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Teachers (the S5 multi-staff surface)
+     ============================================= */}}
+{{define "sgpp-tab-staff"}}
+<div id="sgpp-staff-tab" class="tab-scroll tab-scroll--table" data-testid="sgpp-staff-tab">
+    <div class="detail-actions detail-actions--spaced" style="margin-bottom: var(--spacing-md);">
+        <a class="btn btn-primary"
+           hx-get="{{.AddURL}}"
+           hx-target="#sheetContent"
+           hx-swap="innerHTML"
+           data-lf-sheet="open" data-lf-sheet-title="{{.Labels.Roster.AddAction}}"
+           data-testid="sgpp-assignment-add">
+            {{.Labels.Roster.AddAction}}
+        </a>
+    </div>
+    {{if .Assignments}}
+        {{template "table-card" .Assignments}}
+    {{else}}
+        <p>{{.Labels.Roster.EmptyMessage}}</p>
+    {{end}}
+</div>
+{{end}}

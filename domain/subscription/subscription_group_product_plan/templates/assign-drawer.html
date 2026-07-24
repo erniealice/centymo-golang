@@ -1,0 +1,83 @@
+{{/*
+S3/S5 shared assign drawer (centymo.md §5/§7). Context block (section +
+offering + curriculum, read-only) + the Current list (every active
+assignment, each with its own inline Clear form — the sgpps Clear idiom) +
+one Teacher/Role/Semester form that either creates a fresh (class, pps,
+phase-or-whole) row or — when opened via ?edit=<rowID> — updates that row's
+role/phase with the teacher shown read-only (teacher is immutable on edit;
+changing the teacher means Clear + re-Add). Multiple staff per phase is
+inherent: a distinct pps id never collides with an existing occupant's row.
+*/}}
+{{define "sgpp-assign-drawer"}}
+<div class="sgpp-assign-wrapper">
+    <div class="sheet-body sgpp-assign-context" data-testid="sgpp-assign-context">
+        <div class="form-row single"><strong>{{.Labels.Assign.SectionContext}}:</strong> {{.SectionName}}</div>
+        <div class="form-row single"><strong>{{.Labels.Assign.SubjectContext}}:</strong> {{.OfferingName}} &nbsp; <strong>{{.Labels.Assign.CurriculumContext}}:</strong> {{.CurriculumName}}</div>
+    </div>
+
+    {{if .Current}}
+    <div class="sheet-body sgpp-assign-current" data-testid="sgpp-assign-current">
+        <h4 class="form-section-title">{{.Labels.Assign.CurrentHeading}}</h4>
+        {{range .Current}}
+        <div class="sgpp-assign-current-row" data-testid="sgpp-assign-current-row-{{.ID}}">
+            <span>{{.StaffName}} · {{.RoleLabel}} · {{.PhaseLabel}}</span>
+            <form hx-post="{{$.FormAction}}" hx-swap="none" data-hx-on="sheet-response" class="sgpp-assign-clear-form">
+                {{actionForm $.FormAction $.WorkspaceID}}
+                <input type="hidden" name="clear" value="1">
+                <input type="hidden" name="id" value="{{.ID}}">
+                <button type="submit" class="btn btn-secondary btn-sm" data-testid="sgpp-assign-clear-{{.ID}}">{{$.Labels.Assign.ClearAction}}</button>
+            </form>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="sheet-body sgpp-assign-empty" data-testid="sgpp-assign-empty">{{.Labels.Assign.EmptyCurrent}}</p>
+    {{end}}
+
+    <form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="sgpp-assign-form">
+        {{actionForm .FormAction .WorkspaceID}}
+        {{if .IsEdit}}<input type="hidden" name="row_id" value="{{.EditRowID}}">{{end}}
+
+        <div class="sheet-body">
+            {{template "form-section" (dict "Title" .Labels.Assign.Title)}}
+
+            {{if .IsEdit}}
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "text" "ID" "sgpp-assign-staff-readonly"
+                    "Label" .Labels.Assign.Staff "Value" .EditStaffLabel
+                    "Readonly" true "TestId" "sgpp-assign-staff-readonly"
+                )}}
+            </div>
+            {{else}}
+            <div class="form-row single" data-testid="sgpp-assign-staff-field">
+                {{template "auto-complete" (dict
+                    "ID" "sgpp-assign-staff-select"
+                    "Name" "product_plan_staff_id"
+                    "Label" .Labels.Assign.Staff
+                    "Placeholder" .Labels.Assign.StaffPH
+                    "SearchPlaceholder" .Labels.Assign.StaffSearch
+                    "Options" .StaffOptions
+                )}}
+            </div>
+            {{end}}
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select" "ID" "sgpp-assign-role-select" "Name" "role"
+                    "Label" .Labels.Assign.Role "Options" .RoleOptions "TestId" "sgpp-assign-role"
+                )}}
+            </div>
+
+            <div class="form-row single">
+                {{template "form-group" (dict
+                    "Type" "select" "ID" "sgpp-assign-phase-select" "Name" "job_template_phase_id"
+                    "Label" .Labels.Assign.ModePer "Options" .PhaseOptions "TestId" "sgpp-assign-phase"
+                )}}
+            </div>
+        </div>
+
+        {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+    </form>
+</div>
+{{end}}

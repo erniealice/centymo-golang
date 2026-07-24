@@ -505,6 +505,15 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 			result.SubscriptionGroupWorkspaceUser.DeleteSubscriptionGroupWorkspaceUser = uc.Subscription.SubscriptionGroupWorkspaceUser.DeleteSubscriptionGroupWorkspaceUser.Execute
 		}
 
+		// -- SubscriptionGroupProductPlan (top-level on centymo UseCases) — THE CLASS --
+		if uc.Subscription.SubscriptionGroupProductPlan != nil {
+			result.SubscriptionGroupProductPlan.ListSubscriptionGroupProductPlans = uc.Subscription.SubscriptionGroupProductPlan.ListSubscriptionGroupProductPlans.Execute
+			result.SubscriptionGroupProductPlan.ReadSubscriptionGroupProductPlan = uc.Subscription.SubscriptionGroupProductPlan.ReadSubscriptionGroupProductPlan.Execute
+			result.SubscriptionGroupProductPlan.CreateSubscriptionGroupProductPlan = uc.Subscription.SubscriptionGroupProductPlan.CreateSubscriptionGroupProductPlan.Execute
+			result.SubscriptionGroupProductPlan.UpdateSubscriptionGroupProductPlan = uc.Subscription.SubscriptionGroupProductPlan.UpdateSubscriptionGroupProductPlan.Execute
+			result.SubscriptionGroupProductPlan.DeleteSubscriptionGroupProductPlan = uc.Subscription.SubscriptionGroupProductPlan.DeleteSubscriptionGroupProductPlan.Execute
+		}
+
 		// -- SubscriptionGroupProductPlanStaff (top-level on centymo UseCases) --
 		if uc.Subscription.SubscriptionGroupProductPlanStaff != nil {
 			result.SubscriptionGroupProductPlanStaff.ListSubscriptionGroupProductPlanStaffs = uc.Subscription.SubscriptionGroupProductPlanStaff.ListSubscriptionGroupProductPlanStaffs.Execute
@@ -1089,6 +1098,9 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 		}
 		if uc.Operation.JobTemplatePhase != nil {
 			result.Operation.JobTemplatePhase.ListByJobTemplate = uc.Operation.JobTemplatePhase.ListByJobTemplate.Execute
+			if uc.Operation.JobTemplatePhase.ListJobTemplatePhases != nil {
+				result.Operation.JobTemplatePhase.ListJobTemplatePhases = uc.Operation.JobTemplatePhase.ListJobTemplatePhases.Execute
+			}
 		}
 		if uc.Operation.JobTemplateTask != nil {
 			result.Operation.JobTemplateTask.ListByPhase = uc.Operation.JobTemplateTask.ListByPhase.Execute

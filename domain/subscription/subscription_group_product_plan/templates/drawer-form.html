@@ -1,0 +1,87 @@
+{{/* S7 admin add/edit drawer — the class row (centymo.md §1). */}}
+{{define "sgpp-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="sgpp-admin-form">
+    {{actionForm .FormAction .WorkspaceID}}
+    {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
+
+    <div class="sheet-body">
+        {{template "form-section" (dict "Title" .Labels.SectionIdentity)}}
+
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "sgpp-group-select"
+                "Name" "subscription_group_id"
+                "Label" .Labels.SubscriptionGroupId
+                "Placeholder" .Labels.SubscriptionGroupPH
+                "SearchPlaceholder" .Labels.SubscriptionGroupSr
+                "Options" .SubscriptionGroupOpts
+                "Value" .SubscriptionGroupID
+                "SelectedLabel" .SubscriptionGroupLabel
+                "Info" .Labels.SubscriptionGroupIn
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "sgpp-plan-select"
+                "Name" "product_plan_id"
+                "Label" .Labels.ProductPlanId
+                "Placeholder" .Labels.ProductPlanPH
+                "SearchPlaceholder" .Labels.ProductPlanSr
+                "Options" .ProductPlanOpts
+                "Value" .ProductPlanID
+                "SelectedLabel" .ProductPlanLabel
+                "Info" .Labels.ProductPlanIn
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "sgpp-template-select"
+                "Name" "job_template_id"
+                "Label" .Labels.JobTemplateId
+                "Placeholder" .Labels.JobTemplatePH
+                "SearchPlaceholder" .Labels.JobTemplateSr
+                "Options" .JobTemplateOpts
+                "Value" .JobTemplateID
+                "SelectedLabel" .JobTemplateLabel
+                "Info" .Labels.JobTemplateIn
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "ID" "sgpp-status-select"
+                "Name" "status"
+                "Label" .Labels.Status
+                "Info" .Labels.StatusInfo
+                "Options" (list
+                    (dict "Value" "active" "Label" .Labels.StatusActive "Selected" (not .StatusExcluded))
+                    (dict "Value" "excluded" "Label" .Labels.StatusExcluded "Selected" .StatusExcluded)
+                )
+                "TestId" "sgpp-status"
+            )}}
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group form-group-toggle">
+                <label class="form-label" for="active">
+                    {{.Labels.Active}}
+                    {{if .Labels.ActiveInfo}}
+                    <span class="form-label-info" data-popover data-popover-trigger="hover click" data-popover-position="top">
+                        <button type="button" class="popover-trigger form-label-info-btn" aria-label="More info" tabindex="0">
+                            {{template "icon-info"}}
+                        </button>
+                        <div class="popover-panel form-label-info-panel" role="tooltip">
+                            <div class="popover-arrow"></div>
+                            {{.Labels.ActiveInfo}}
+                        </div>
+                    </span>
+                    {{end}}
+                </label>
+                {{template "toggle" (dict "Name" "active" "Checked" .Active "Value" "true")}}
+            </div>
+        </div>
+    </div>
+
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}
+</form>
+{{end}}

@@ -114,7 +114,8 @@ type TabLabels struct {
 	Info              string `json:"info"`
 	Subscriptions     string `json:"subscriptions"`      // label — education: "Enrollments"; general: "Subscriptions"
 	SubscriptionsSlug string `json:"subscriptions_slug"` // URL slug — education: "enrollments"; general (empty) → "subscriptions"
-	Staff             string `json:"staff"`              // tab button — general: "Staff"; education: "Teaching Staff"
+	Staff             string `json:"staff"`              // tab button — general: "Staff"; education: "Subjects" (M4 row-source flip)
+	StaffSlug         string `json:"staff_slug"`         // URL slug — education: "subjects"; general (empty) → "staff"
 	Audit             string `json:"audit"`
 	Attachments       string `json:"attachments"`
 }
@@ -140,13 +141,43 @@ type StaffTabLabels struct {
 	TeacherSearch      string `json:"teacher_search"`      // drawer teacher autocomplete filter placeholder
 	ClearAction        string `json:"clear_action"`        // drawer Clear control — soft-deletes the active edge (§6.1 "Clear")
 	Unauthorized       string `json:"unauthorized"`        // read-only / no-permission note
+
+	// -- M4 row-source flip (plan.md §2 / centymo.md §3): the tab now lists
+	// active subscription_group_product_plan (class) rows instead of deriving
+	// offering rows from the plan. Fields above this line stay in place for
+	// the legacy derived-row builder (dead code, still unit-tested); fields
+	// below are the new class-row surface's own copy.
+	ListSeparator         string `json:"list_separator"`        // joins a row's comma-separated assignments; default ", "
+	ListAria              string `json:"list_aria"`             // aria-label template for the Teachers cell; "{{names}}" placeholder
+	Unstaffed             string `json:"unstaffed"`             // Teachers-cell placeholder for a class with zero assignments
+	AddAction             string `json:"add_action"`            // primary action + empty-state CTA — opens the S2 add-offerings picker
+	NotMaterializedHint   string `json:"not_materialized_hint"` // transitional-fallback row hint (no class row exists yet)
+	ExcludedTag           string `json:"excluded_tag"`          // inline tag on an EXCLUDED class row (exception-only signaling)
+	ViewAction            string `json:"view_action"`           // row action — opens the class detail page (S4)
+	ExcludeAction         string `json:"exclude_action"`        // overflow row action — sgpp.status ACTIVE -> EXCLUDED
+	RestoreAction         string `json:"restore_action"`        // overflow row action — sgpp.status EXCLUDED -> ACTIVE
+	RemoveAction          string `json:"remove_action"`         // overflow row action — guarded delete
+	ExcludeConfirmTitle   string `json:"exclude_confirm_title"`
+	ExcludeConfirmMessage string `json:"exclude_confirm_message"` // %s = offering name
+	RestoreConfirmTitle   string `json:"restore_confirm_title"`
+	RestoreConfirmMessage string `json:"restore_confirm_message"` // %s = offering name
+	RemoveConfirmTitle    string `json:"remove_confirm_title"`
+	RemoveConfirmMessage  string `json:"remove_confirm_message"` // %s = offering name
+	RemoveBlockedInUse    string `json:"remove_blocked_in_use"`
 }
 
-// ResolveTabSlug returns the URL slug for a canonical tab key. The "subscriptions"
-// tab re-slugs per tier (education ships "enrollments"); other tabs pass through.
+// ResolveTabSlug returns the URL slug for a canonical tab key. The
+// "subscriptions" tab re-slugs per tier (education ships "enrollments"); the
+// "staff" tab re-slugs too (education ships "subjects", plan.md M4 §3); other
+// tabs pass through.
 func (t TabLabels) ResolveTabSlug(canonical string) string {
-	if canonical == "subscriptions" {
+	switch canonical {
+	case "subscriptions":
 		if s := strings.TrimSpace(t.SubscriptionsSlug); s != "" {
+			return s
+		}
+	case "staff":
+		if s := strings.TrimSpace(t.StaffSlug); s != "" {
 			return s
 		}
 	}
@@ -161,6 +192,9 @@ func (t TabLabels) CanonicalizeTab(slug string) string {
 	}
 	if s := strings.TrimSpace(t.SubscriptionsSlug); s != "" && slug == s {
 		return "subscriptions"
+	}
+	if s := strings.TrimSpace(t.StaffSlug); s != "" && slug == s {
+		return "staff"
 	}
 	return slug
 }
@@ -294,6 +328,24 @@ func DefaultLabels() Labels {
 			TeacherSearch:      "Filter...",
 			ClearAction:        "Clear",
 			Unauthorized:       "You do not have permission to view staff assignments",
+
+			ListSeparator:         ", ",
+			ListAria:              "Staff: {{names}}",
+			Unstaffed:             "— Assign staff",
+			AddAction:             "Add offerings",
+			NotMaterializedHint:   "Not yet set up",
+			ExcludedTag:           "Not offered",
+			ViewAction:            "View",
+			ExcludeAction:         "Exclude",
+			RestoreAction:         "Restore",
+			RemoveAction:          "Remove",
+			ExcludeConfirmTitle:   "Exclude Offering",
+			ExcludeConfirmMessage: "Exclude %s from this section?",
+			RestoreConfirmTitle:   "Restore Offering",
+			RestoreConfirmMessage: "Restore %s on this section?",
+			RemoveConfirmTitle:    "Remove Offering",
+			RemoveConfirmMessage:  "Remove %s from this section? This cannot be undone.",
+			RemoveBlockedInUse:    "This offering has active staff or a live grade sheet and cannot be removed.",
 		},
 		Detail: DetailLabels{
 			Title:          "Section",

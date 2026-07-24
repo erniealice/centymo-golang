@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
+	"github.com/erniealice/pyeza-golang/route"
 
 	consumerapp "github.com/erniealice/espyna-golang/consumer/app"
 	"github.com/erniealice/espyna-golang/consumer/compose"
@@ -61,6 +62,8 @@ import (
 	subscriptionpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	subscriptiongrouppkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
 	subscriptiongroupmemberpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_member"
+	sgpppkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_product_plan"
+	sgppform "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_product_plan/form"
 	subscriptiongroupproductplanstaffpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_product_plan_staff"
 	sgppsform "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_product_plan_staff/form"
 	subscriptiongroupworkspaceuserpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_workspace_user"
@@ -69,7 +72,10 @@ import (
 	collectionpkg "github.com/erniealice/centymo-golang/domain/treasury/collection"
 	disbursementpkg "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
 	advancesdashboardpkg "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
+	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	expenserecognitionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expense_recognition"
+	jobtemplaterelationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_relation"
+	sgppspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
 )
 
 // allEnabledConfig returns a blockConfig with all modules enabled, used by
@@ -526,6 +532,27 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra, options subscriptiongroup
 		r := u.Routes.(*subscriptiongrouppkg.Routes)
 		l := u.Labels.(*subscriptiongrouppkg.Labels)
 
+		// M4 row-source flip (plan.md §2, centymo.md §3) cross-domain URL
+		// closures: the section tab's View/Assign/Exclude/Restore/Remove row
+		// actions resolve the subscription_group_product_plan (class) module's
+		// OWN routes via compose.RoutesOf — never hardcoded (plan.md §1.1b).
+		// Both units mount inside this SAME centymo engine, so the sibling's
+		// post-overlay Routes are already resolved by Phase 2 regardless of
+		// AllUnits() list order. sgppRoutesOK false (module absent/miswired)
+		// leaves every closure nil — degrades to disabled row actions, never a
+		// boot error.
+		sgppRoutesPtr, sgppRoutesFound := compose.RoutesOf[*sgpppkg.Routes](mc, "subscription.subscription_group_product_plan")
+		var sgppRoutes sgpppkg.Routes
+		sgppRoutesOK := sgppRoutesFound && sgppRoutesPtr != nil
+		if sgppRoutesOK {
+			sgppRoutes = *sgppRoutesPtr
+		}
+
+		var getSGPPInUseIDs func(context.Context, []string) (map[string]bool, error)
+		if infra.RefChecker != nil {
+			getSGPPInUseIDs = infra.RefChecker.GetSubscriptionGroupProductPlanInUseIDs
+		}
+
 		deps := &subscriptiondom.SubscriptionGroupModuleDeps{
 			Routes:                  *r,
 			Labels:                  *l,
@@ -566,6 +593,19 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra, options subscriptiongroup
 			},
 			AssignGroupServicer:     uc.SubscriptionGroupProductPlanStaff.AssignSubscriptionGroupProductPlanStaff,
 			ProductPlanStaffListURL: productplanstaffpkg.ListURL,
+			// M4 row-source flip (plan.md §2, centymo.md §3): the tab's PRIMARY
+			// row source. ListSubscriptionGroupProductPlanStaffs / ListProductPlanStaffs
+			// above are reused as-is (v2 reads simply filter on the new FKs). The
+			// remaining two reads (phase labels, variant badges) are new.
+			ListSubscriptionGroupProductPlans:       uc.SubscriptionGroupProductPlan.ListSubscriptionGroupProductPlans,
+			ListProductVariants:                     uc.Product.ListProductVariants,
+			ListJobTemplatePhases:                   uc.Operation.JobTemplatePhase.ListJobTemplatePhases,
+			GetSubscriptionGroupProductPlanInUseIDs: getSGPPInUseIDs,
+			SGPPPickerURL:                           sgppPickerURLFunc(sgppRoutes, sgppRoutesOK),
+			SGPPAssignURL:                           sgppAssignURLFunc(sgppRoutes, sgppRoutesOK),
+			SGPPSetStatusURL:                        sgppSetStatusURLFunc(sgppRoutes, sgppRoutesOK),
+			SGPPDetailURL:                           sgppDetailURLFunc(sgppRoutes, sgppRoutesOK),
+			SGPPDeleteURL:                           sgppDeleteURL(sgppRoutes, sgppRoutesOK),
 			// Attachments tab: Infra carries the ops (mirror PriceScheduleUnit).
 			// Audit tab: no infra.ListAuditHistory hook exists → AuditOps stays nil (renders empty).
 			AttachmentOps: attachment.AttachmentOps{
@@ -580,6 +620,52 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra, options subscriptiongroup
 		return nil
 	}
 	return u
+}
+
+// -- M4 row-source flip cross-domain URL closures ---------------------------
+//
+// The section tab's row actions resolve the subscription_group_product_plan
+// (class) module's OWN routes (plan.md §1.1b — never hardcoded). Each
+// closure degrades to nil (disabling its row action) when the sibling unit's
+// Routes were not resolved (ok=false) — never a boot error.
+
+func sgppPickerURLFunc(r sgpppkg.Routes, ok bool) func(sectionID string) string {
+	if !ok || r.PickerURL == "" {
+		return nil
+	}
+	return func(sectionID string) string { return route.ResolveURL(r.PickerURL, "id", sectionID) }
+}
+
+func sgppAssignURLFunc(r sgpppkg.Routes, ok bool) func(sgppID string) string {
+	if !ok || r.AssignURL == "" {
+		return nil
+	}
+	return func(sgppID string) string { return route.ResolveURL(r.AssignURL, "sgppId", sgppID) }
+}
+
+func sgppSetStatusURLFunc(r sgpppkg.Routes, ok bool) func(sgppID, status string) string {
+	if !ok || r.SetStatusURL == "" {
+		return nil
+	}
+	return func(sgppID, status string) string {
+		return route.ResolveURL(r.SetStatusURL, "sgppId", sgppID) + "?status=" + status
+	}
+}
+
+func sgppDetailURLFunc(r sgpppkg.Routes, ok bool) func(sectionID, sgppID string) string {
+	if !ok || r.DetailURL == "" {
+		return nil
+	}
+	return func(sectionID, sgppID string) string {
+		return route.ResolveURL(r.DetailURL, "id", sectionID, "sgppId", sgppID)
+	}
+}
+
+func sgppDeleteURL(r sgpppkg.Routes, ok bool) string {
+	if !ok {
+		return ""
+	}
+	return r.DeleteURL
 }
 
 // ---------------------------------------------------------------------------
@@ -687,6 +773,196 @@ func SubscriptionGroupProductPlanStaffUnit(uc *UseCases, infra *Infra) compose.U
 		return nil
 	}
 	return u
+}
+
+// ---------------------------------------------------------------------------
+// SubscriptionGroupProductPlan (THE CLASS — docs/plan/20260724-section-assignment-merged)
+// ---------------------------------------------------------------------------
+
+func SubscriptionGroupProductPlanUnit(uc *UseCases, infra *Infra) compose.Unit {
+	u := sgpppkg.Describe()
+	u.Mount = func(mc *compose.MountContext) error {
+		r := u.Routes.(*sgpppkg.Routes)
+		l := u.Labels.(*sgpppkg.Labels)
+
+		var getSGPPInUseIDs func(context.Context, []string) (map[string]bool, error)
+		if infra.RefChecker != nil {
+			getSGPPInUseIDs = infra.RefChecker.GetSubscriptionGroupProductPlanInUseIDs
+		}
+
+		// Cross-domain link BACK to the section (same centymo engine — the S4
+		// class page's Info tab "→ link back", plan.md §1.1b RouteMap
+		// convention). GradeSheetURL (the fayna outcome_matrix cross-PACKAGE
+		// link) is intentionally left unwired here: it needs the app-level
+		// composeResult (only available after ALL blocks, incl. fayna, mount —
+		// see apps/*/internal/composition/grade_sheet_redirect.go for the
+		// pattern) and is out of scope for this wiring pass; the S4 page
+		// degrades to no grade-sheet link (nil-safe) until a follow-up wires it.
+		sectionRoutesPtr, sectionRoutesFound := compose.RoutesOf[*subscriptiongrouppkg.Routes](mc, "subscription.subscription_group")
+		var sectionDetailURL func(context.Context, string) string
+		if sectionRoutesFound && sectionRoutesPtr != nil && sectionRoutesPtr.DetailURL != "" {
+			detailURL := sectionRoutesPtr.DetailURL
+			sectionDetailURL = func(_ context.Context, sectionID string) string {
+				return route.ResolveURL(detailURL, "id", sectionID)
+			}
+		}
+
+		deps := &subscriptiondom.SubscriptionGroupProductPlanModuleDeps{
+			Routes:       *r,
+			Labels:       *l,
+			CommonLabels: mc.Common,
+			TableLabels:  mc.Table,
+
+			// Core CRUD (sgpp).
+			ListSubscriptionGroupProductPlans:       uc.SubscriptionGroupProductPlan.ListSubscriptionGroupProductPlans,
+			ReadSubscriptionGroupProductPlan:        uc.SubscriptionGroupProductPlan.ReadSubscriptionGroupProductPlan,
+			CreateSubscriptionGroupProductPlan:      uc.SubscriptionGroupProductPlan.CreateSubscriptionGroupProductPlan,
+			UpdateSubscriptionGroupProductPlan:      uc.SubscriptionGroupProductPlan.UpdateSubscriptionGroupProductPlan,
+			DeleteSubscriptionGroupProductPlan:      uc.SubscriptionGroupProductPlan.DeleteSubscriptionGroupProductPlan,
+			GetSubscriptionGroupProductPlanInUseIDs: getSGPPInUseIDs,
+
+			// Assignment edge (sgpps).
+			ReadSubscriptionGroupProductPlanStaff:   uc.SubscriptionGroupProductPlanStaff.ReadSubscriptionGroupProductPlanStaff,
+			ListSubscriptionGroupProductPlanStaffs:  uc.SubscriptionGroupProductPlanStaff.ListSubscriptionGroupProductPlanStaffs,
+			CreateSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.CreateSubscriptionGroupProductPlanStaff,
+			UpdateSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.UpdateSubscriptionGroupProductPlanStaff,
+			DeleteSubscriptionGroupProductPlanStaff: uc.SubscriptionGroupProductPlanStaff.DeleteSubscriptionGroupProductPlanStaff,
+
+			// Cross-entity reads (espyna.md §1b batch plan).
+			ReadSubscriptionGroup:    uc.SubscriptionGroup.ReadSubscriptionGroup,
+			ListPlans:                uc.Plan.ListPlans,
+			ListPriceSchedules:       uc.PriceSchedule.ListPriceSchedules,
+			ListProductPlans:         uc.Product.ListProductPlans,
+			ListProductVariants:      uc.Product.ListProductVariants,
+			ListProductPlanStaffs:    uc.ProductPlanStaff.ListProductPlanStaffs,
+			ListJobTemplates:         uc.Operation.JobTemplate.ListJobTemplates,
+			ListJobTemplatePhases:    uc.Operation.JobTemplatePhase.ListJobTemplatePhases,
+			ListJobTemplateRelations: adaptListJobTemplateRelationsByParent(uc.Operation.JobTemplateRelation.ListByParent),
+			ListStaffNames: func(ctx context.Context) map[string]string {
+				return pairsToNames(staffOptionPairs(ctx, uc.Entity.Staff.GetStaffListPageData))
+			},
+
+			// S7 admin list name-resolution batches + Teachers-count batch.
+			ListSubscriptionGroupNames: func(ctx context.Context) map[string]string {
+				return pairsToNames(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups))
+			},
+			ListProductPlanNames: func(ctx context.Context) map[string]string {
+				return pairsToNames(productPlanOptionPairs(ctx, uc.Product.ListProductPlans))
+			},
+			ListJobTemplateNames: func(ctx context.Context) map[string]string {
+				return pairsToNames(jobTemplateOptionPairs(ctx, uc.Operation.JobTemplate.ListJobTemplates))
+			},
+			CountAssignmentsBySGPPID: countAssignmentsBySGPPIDClosure(uc.SubscriptionGroupProductPlanStaff.ListSubscriptionGroupProductPlanStaffs),
+
+			// S7 admin add/edit drawer FK pickers.
+			ListSubscriptionGroupOptions: func(ctx context.Context) []sgppform.Pair {
+				return pairsInto(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
+					func(id, label string) sgppform.Pair { return sgppform.Pair{ID: id, Label: label} })
+			},
+			ListProductPlanOptions: func(ctx context.Context) []sgppform.Pair {
+				return pairsInto(productPlanOptionPairs(ctx, uc.Product.ListProductPlans),
+					func(id, label string) sgppform.Pair { return sgppform.Pair{ID: id, Label: label} })
+			},
+			ListJobTemplateOptions: func(ctx context.Context) []sgppform.Pair {
+				return pairsInto(jobTemplateOptionPairs(ctx, uc.Operation.JobTemplate.ListJobTemplates),
+					func(id, label string) sgppform.Pair { return sgppform.Pair{ID: id, Label: label} })
+			},
+
+			// RouteMap cross-links (plan.md §1.1b — never hardcoded).
+			SectionDetailURL: sectionDetailURL,
+			GradeSheetURL:    nil,
+		}
+		subscriptiondom.NewSubscriptionGroupProductPlanModule(deps).RegisterRoutes(mc.Routes)
+		return nil
+	}
+	return u
+}
+
+// adaptListJobTemplateRelationsByParent adapts the espyna ListByParent use
+// case (narrow: {ParentTemplateId} -> {JobTemplateRelations}) onto the
+// generic FilterRequest-shaped signature the subscription_group_product_plan
+// module's S2 picker resolver expects — no generic ListJobTemplateRelations
+// use case exists at the espyna layer yet (only ListByParent). The picker's
+// own resolveTemplateCandidates already re-validates ParentTemplateId/Active
+// client-side on every returned row, so extracting just parent_template_id
+// from the incoming filter (ignoring the accompanying active=true term) is
+// sufficient — never silently wrong, only ever a superset the caller narrows.
+func adaptListJobTemplateRelationsByParent(
+	byParent func(context.Context, *jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest) (*jobtemplaterelationpb.ListJobTemplateRelationsByParentResponse, error),
+) func(context.Context, *jobtemplaterelationpb.ListJobTemplateRelationsRequest) (*jobtemplaterelationpb.ListJobTemplateRelationsResponse, error) {
+	if byParent == nil {
+		return nil
+	}
+	return func(ctx context.Context, req *jobtemplaterelationpb.ListJobTemplateRelationsRequest) (*jobtemplaterelationpb.ListJobTemplateRelationsResponse, error) {
+		parentID := filterStringEq(req.GetFilters(), "parent_template_id")
+		resp, err := byParent(ctx, &jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest{ParentTemplateId: parentID})
+		if err != nil {
+			return nil, err
+		}
+		return &jobtemplaterelationpb.ListJobTemplateRelationsResponse{Data: resp.GetJobTemplateRelations()}, nil
+	}
+}
+
+// filterStringEq extracts one field's STRING_EQUALS filter value from a
+// generic FilterRequest. Used only to adapt a generic List call onto a
+// narrower, single-argument espyna use case (adaptListJobTemplateRelationsByParent)
+// when no generic list use case exists at the espyna layer yet.
+func filterStringEq(fr *commonpb.FilterRequest, field string) string {
+	if fr == nil {
+		return ""
+	}
+	for _, tf := range fr.GetFilters() {
+		if tf == nil || tf.GetField() != field {
+			continue
+		}
+		if sf := tf.GetStringFilter(); sf != nil {
+			return sf.GetValue()
+		}
+	}
+	return ""
+}
+
+// countAssignmentsBySGPPIDClosure batches the S7 admin list's Teachers column +
+// the section tab's Remove-guard companion into one LIST_IN call (filtered on
+// the v2 FK f12, active=true), grouping active-assignment counts by class id.
+func countAssignmentsBySGPPIDClosure(
+	list func(context.Context, *sgppspb.ListSubscriptionGroupProductPlanStaffsRequest) (*sgppspb.ListSubscriptionGroupProductPlanStaffsResponse, error),
+) func(context.Context, []string) (map[string]int, error) {
+	if list == nil {
+		return nil
+	}
+	return func(ctx context.Context, sgppIDs []string) (map[string]int, error) {
+		if len(sgppIDs) == 0 {
+			return nil, nil
+		}
+		resp, err := list(ctx, &sgppspb.ListSubscriptionGroupProductPlanStaffsRequest{
+			Filters: &commonpb.FilterRequest{
+				Logic: commonpb.FilterLogic_AND,
+				Filters: []*commonpb.TypedFilter{
+					{
+						Field: "subscription_group_product_plan_id",
+						FilterType: &commonpb.TypedFilter_ListFilter{
+							ListFilter: &commonpb.ListFilter{Values: sgppIDs, Operator: commonpb.ListOperator_LIST_IN},
+						},
+					},
+					{
+						Field:      "active",
+						FilterType: &commonpb.TypedFilter_BooleanFilter{BooleanFilter: &commonpb.BooleanFilter{Value: true}},
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		counts := make(map[string]int, len(sgppIDs))
+		for _, a := range resp.GetData() {
+			if a != nil && a.GetActive() {
+				counts[a.GetSubscriptionGroupProductPlanId()]++
+			}
+		}
+		return counts, nil
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -1648,6 +1924,7 @@ func AllUnits(uc *UseCases, infra *Infra, opts ...EngineOption) []compose.Unit {
 		SubscriptionGroupUnit(uc, infra, cfg.subscriptionGroupOptions),
 		SubscriptionGroupMemberUnit(uc, infra),
 		SubscriptionGroupWorkspaceUserUnit(uc, infra),
+		SubscriptionGroupProductPlanUnit(uc, infra),
 		SubscriptionGroupProductPlanStaffUnit(uc, infra),
 		PlanUnit(uc, infra),
 		SubscriptionUnit(uc, infra),

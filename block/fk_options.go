@@ -28,6 +28,7 @@ import (
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	staffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/staff"
 	workspaceuserpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace_user"
+	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
 )
@@ -174,4 +175,35 @@ func workspaceUserPersonName(w *workspaceuserpb.WorkspaceUser) string {
 		name = strings.TrimSpace(u.GetEmailAddress())
 	}
 	return name
+}
+
+// jobTemplateOptionPairs lists the workspace's job templates (curricula) as
+// id/name pairs — the subscription_group_product_plan S7 admin form's
+// curriculum picker. Label = template name. Nil-safe.
+func jobTemplateOptionPairs(
+	ctx context.Context,
+	list func(context.Context, *jobtemplatepb.ListJobTemplatesRequest) (*jobtemplatepb.ListJobTemplatesResponse, error),
+) []optionPair {
+	if list == nil {
+		return nil
+	}
+	resp, err := list(ctx, &jobtemplatepb.ListJobTemplatesRequest{})
+	if err != nil || resp == nil {
+		return nil
+	}
+	return buildOptionPairs(resp.GetData(),
+		(*jobtemplatepb.JobTemplate).GetId,
+		(*jobtemplatepb.JobTemplate).GetName)
+}
+
+// pairsToNames adapts block-neutral option pairs into an id -> label map —
+// the shape the subscription_group_product_plan S7 list's name-resolution
+// batches (ListSubscriptionGroupNames / ListProductPlanNames /
+// ListJobTemplateNames) need.
+func pairsToNames(pairs []optionPair) map[string]string {
+	out := make(map[string]string, len(pairs))
+	for _, p := range pairs {
+		out[p.ID] = p.Label
+	}
+	return out
 }

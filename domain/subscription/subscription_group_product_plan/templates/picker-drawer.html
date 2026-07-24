@@ -1,0 +1,74 @@
+{{/*
+S2 add-offerings picker drawer (centymo.md §4). Shows the section name +
+plan/period context, one checkbox row per candidate offering (an active plan
+offering with no active class row on this section) with its resolved
+curriculum shown inline — a constrained <select> when more than one template
+candidate resolves (never silent). POST creates one ACTIVE, unstaffed class
+row per checked candidate.
+*/}}
+{{define "sgpp-picker-drawer"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="sgpp-picker-form">
+    {{actionForm .FormAction .WorkspaceID}}
+    <div class="sheet-body">
+        <div class="sgpp-picker-context" data-testid="sgpp-picker-context">
+            <div class="form-row single"><strong>{{.Labels.Picker.SectionContext}}:</strong> {{.SectionName}}</div>
+            <div class="form-row single"><strong>{{.Labels.Picker.PlanContext}}:</strong> {{.PlanName}} &nbsp; <strong>{{.Labels.Picker.PeriodContext}}:</strong> {{.PeriodName}}</div>
+        </div>
+
+        {{if .Rows}}
+        <div class="form-row single">
+            <label class="sgpp-picker-select-all-label">
+                <input type="checkbox" id="sgpp-picker-select-all" data-testid="sgpp-picker-select-all" {{if .SelectAllChecked}}checked{{end}}>
+                {{.Labels.Picker.SelectAll}}
+            </label>
+        </div>
+        <div class="sgpp-picker-rows" data-testid="sgpp-picker-rows">
+            {{range .Rows}}
+            <div class="sgpp-picker-row" data-testid="sgpp-picker-row-{{.ProductPlanID}}">
+                <label class="sgpp-picker-row-label">
+                    <input type="checkbox" class="sgpp-picker-checkbox" name="product_plan_id" value="{{.ProductPlanID}}"
+                           data-testid="sgpp-pick-{{.ProductPlanID}}" {{if .Checked}}checked{{end}}>
+                    <span>{{.Label}}{{if .VariantLabel}} <span class="badge badge--muted">{{.VariantLabel}}</span>{{end}}</span>
+                </label>
+                <span class="sgpp-picker-curriculum">
+                    {{if .Ambiguous}}
+                        {{$.Labels.Picker.CurriculumPrefix}}
+                        <select name="template_id_{{.ProductPlanID}}" class="form-select" data-testid="sgpp-picker-template-{{.ProductPlanID}}">
+                            {{range .TemplateCandidates}}
+                            <option value="{{.ID}}">{{.Label}}</option>
+                            {{end}}
+                        </select>
+                        <span class="sgpp-picker-ambiguous-hint">{{$.Labels.Picker.Ambiguous}}</span>
+                    {{else if .CurriculumLabel}}
+                        <span class="sgpp-picker-curriculum-label">{{$.Labels.Picker.CurriculumPrefix}}{{.CurriculumLabel}}</span>
+                    {{end}}
+                </span>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <div class="sgpp-picker-empty" data-testid="sgpp-picker-empty">
+            <p><strong>{{.Labels.Picker.EmptyTitle}}</strong></p>
+            <p>{{.Labels.Picker.EmptyMessage}}</p>
+        </div>
+        {{end}}
+    </div>
+
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" data-lf-action="sheet-close">{{.CommonLabels.Buttons.Cancel}}</button>
+        <button type="submit" class="btn btn-primary" data-testid="sgpp-picker-submit"{{if not .Rows}} disabled{{end}}>
+            {{.CommonLabels.Buttons.Save}}
+        </button>
+    </div>
+</form>
+
+<script nonce="{{.Nonce}}">
+(function() {
+    var selectAll = document.getElementById('sgpp-picker-select-all');
+    if (!selectAll) return;
+    selectAll.addEventListener('change', function() {
+        document.querySelectorAll('.sgpp-picker-checkbox').forEach(function(cb) { cb.checked = selectAll.checked; });
+    });
+})();
+</script>
+{{end}}

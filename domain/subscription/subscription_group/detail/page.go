@@ -20,13 +20,16 @@ import (
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	clientattributepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client_attribute"
+	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan_staff"
+	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_schedule"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 	subscriptiongrouppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group"
 	subscriptiongroupmemberpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_member"
+	sgpppb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan"
 	sgppspb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
 )
 
@@ -71,6 +74,27 @@ type DetailViewDeps struct {
 	// {status} placeholder) the empty-pool gate links to; "" hides the link.
 	ProductPlanStaffListURL string
 
+	// -- M4 row-source flip (plan.md §2 / centymo.md §3): the tab's primary row
+	// source becomes active subscription_group_product_plan (class) rows. Every
+	// read is a batched LIST_IN call (espyna.md §1b); a nil closure degrades
+	// gracefully (empty rows / disabled actions), never an error. The legacy
+	// fields above stay wired for the transitional fallback (zero class rows ⇒
+	// the section renders today's derived offering rows, actions disabled).
+	ListSubscriptionGroupProductPlans       func(ctx context.Context, req *sgpppb.ListSubscriptionGroupProductPlansRequest) (*sgpppb.ListSubscriptionGroupProductPlansResponse, error)
+	ListProductVariants                     func(ctx context.Context, req *productvariantpb.ListProductVariantsRequest) (*productvariantpb.ListProductVariantsResponse, error)
+	ListJobTemplatePhases                   func(ctx context.Context, req *jobtemplatephasepb.ListJobTemplatePhasesRequest) (*jobtemplatephasepb.ListJobTemplatePhasesResponse, error)
+	GetSubscriptionGroupProductPlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
+
+	// Cross-domain URL closures for the subscription_group_product_plan (class)
+	// module's own routes — resolved by the container via compose.RoutesOf,
+	// never hardcoded (plan.md §1.1b). Nil-safe: an unwired closure disables
+	// the corresponding row action instead of erroring.
+	SGPPDetailURL    func(sectionID, sgppID string) string
+	SGPPAssignURL    func(sgppID string) string
+	SGPPSetStatusURL func(sgppID, status string) string
+	SGPPPickerURL    func(sectionID string) string
+	SGPPDeleteURL    string
+
 	attachment.AttachmentOps // attachments tab
 	auditlog.AuditOps        // audit tab (ListAuditHistory is nil in centymo today — renders empty)
 }
@@ -98,8 +122,8 @@ type PageData struct {
 
 	// Subscriptions tab (the section roster)
 	Subscriptions *types.TableConfig
-	// Teaching-staff tab (the section assignment grid)
-	Staff *SectionStaffTabData
+	// Teaching-staff tab (M4: the class-row list, plan.md §2 row-source flip)
+	Staff *SectionSGPPTabData
 	// Attachments tab
 	AttachmentTable *types.TableConfig
 	// Audit tab
@@ -220,11 +244,11 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	// data source + permission gate exactly so the badge and row counts cannot
 	// drift. 0 renders no badge (unpermitted / unwired / empty section).
 	enrollmentCount := countSectionEnrollments(ctx, deps, id)
-	// Teaching-staff tab count badge — the number of offering rows the staff table
-	// lists (active product_plans of the program), mirroring its row source + read
-	// gate exactly (see countSectionOfferings) so the badge and row counts cannot
-	// drift. 0 renders no badge (unpermitted / unwired / no program).
-	offeringCount := countSectionOfferings(ctx, deps, sg)
+	// Teaching-staff tab count badge — the number of non-excluded class rows
+	// (M4 row-source flip), mirroring the tab's own row source + read gate
+	// exactly (see countSectionSGPPs) so the badge and row counts cannot
+	// drift. 0 renders no badge (unpermitted / unwired / no classes yet).
+	offeringCount := countSectionSGPPs(ctx, deps, sg)
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "subscriptions", Label: l.Tabs.Subscriptions, Href: base + "?tab=" + subsSlug, HxGet: action + subsSlug, Icon: "icon-users", Count: enrollmentCount},
@@ -283,7 +307,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	case "subscriptions":
 		pageData.Subscriptions = buildSubscriptionsTable(ctx, deps, id, l)
 	case "staff":
-		pageData.Staff = buildStaffTabData(ctx, deps, sg, l)
+		pageData.Staff = buildSGPPTabData(ctx, deps, sg, l)
 	case "attachments":
 		if deps.ListAttachments != nil {
 			cfg := attachmentConfig(deps)

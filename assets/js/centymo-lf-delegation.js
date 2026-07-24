@@ -33,11 +33,40 @@
 //   data-lf-pricelist-product (change)                     -> lf.centymo.pricelist.PriceProductForm.onProductChange(el)
 (function () {
     window.lf = window.lf || {};
-    if (typeof lf.ns !== 'function' || typeof lf.on !== 'function') { return; }
-    lf.ns('centymo');
-    // Idempotent: bind the document-level delegated handlers exactly once.
-    if (lf.centymo.__delegationInstalled) { return; }
-    lf.centymo.__delegationInstalled = true;
+
+    // install() does the actual registration; called immediately below, and
+    // retried on DOMContentLoaded if lf.on/lf.ns are not yet defined.
+    //
+    // LIVE-FOUND (checkpoint C2, S4 class-detail page, 2026-07-24): this
+    // script's <script src> tag is embedded via the page's own content
+    // partial (near the top of body, e.g. class-detail.html's trailing
+    // {{template "centymo-lf-delegation" .}}), which on a FRESH FULL PAGE
+    // LOAD executes BEFORE pyeza's lf-on.js (defines lf.on/lf.ns), loaded
+    // much later in the shell's own script list — the immediate-execution
+    // guard below then silently `return`s and NO delegated handler ever
+    // installs for that page load. Confirmed live: `data-lf-sheet="open"`
+    // (the Edit / Add-staff buttons) never opened the sheet chrome (content
+    // loaded via hx-get into #sheetContent, but the `.sheet` wrapper never
+    // gained its `active open` classes) on a direct page.goto() navigation,
+    // while a manual `lf.ui.Sheet.open(...)` call worked fine — proving the
+    // open() function itself was never the problem, only that the click
+    // delegation was never registered in time. Ordinary click-through
+    // navigation (HTMX swap re-includes this same <script src>, by which
+    // point lf.on/lf.ns are already global from the FIRST full page load of
+    // any page in the session) masked this — only a direct/fresh full-page
+    // load onto a page whose FIRST occurrence of this script precedes
+    // lf-on.js in that page's own script order hits it. Retrying at
+    // DOMContentLoaded is safe and sufficient: lf.on binds a delegated
+    // listener on `document` (matches by selector at CLICK time, not at
+    // registration time), and every earlier synchronous <script src> —
+    // including lf-on.js further down the same body — has already executed
+    // by the time DOMContentLoaded fires (script tags block parsing).
+    function install() {
+        if (typeof lf.ns !== 'function' || typeof lf.on !== 'function') { return false; }
+        lf.ns('centymo');
+        // Idempotent: bind the document-level delegated handlers exactly once.
+        if (lf.centymo.__delegationInstalled) { return true; }
+        lf.centymo.__delegationInstalled = true;
 
     // --- Sheet open / close ------------------------------------------------
     // NOTE: do NOT preventDefault — the original onclick= did not, and these
@@ -116,4 +145,10 @@
             ns.onProductChange(this);
         }
     });
+        return true;
+    }
+
+    if (!install() && document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', install, { once: true });
+    }
 })();
