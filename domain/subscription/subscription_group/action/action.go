@@ -232,7 +232,11 @@ func NewDeleteAction(deps *Deps) view.View {
 			}
 		}
 		if _, err := deps.DeleteSubscriptionGroup(ctx, &subscriptiongrouppb.DeleteSubscriptionGroupRequest{Data: &subscriptiongrouppb.SubscriptionGroup{Id: id}}); err != nil {
-			return view.HTMXError(err.Error())
+			// The espyna referential guard fails closed with a vertical-neutral
+			// enumerating message (NoOp Translator). Re-render it here with the
+			// business-type nouns from lyngua (education: enrolled students /
+			// teachers); any other error passes through verbatim.
+			return view.HTMXError(mapDeleteError(err, viewCtx.T))
 		}
 		return view.HTMXSuccess("subscription-groups-table")
 	})
@@ -268,6 +272,13 @@ func NewBulkDeleteAction(deps *Deps) view.View {
 				continue
 			}
 			if _, err := deps.DeleteSubscriptionGroup(ctx, &subscriptiongrouppb.DeleteSubscriptionGroupRequest{Data: &subscriptiongrouppb.SubscriptionGroup{Id: id}}); err != nil {
+				// A referenced section (espyna referential guard) is in-use, not a
+				// failure — count it as blocked so the aggregate surfaces the
+				// "in use" message instead of the generic delete-failed one.
+				if _, isBlocked := parseBlockedDependents(err.Error()); isBlocked {
+					blocked++
+					continue
+				}
 				log.Printf("Failed to delete subscription group %s during bulk: %v", id, err)
 				failed++
 				continue
