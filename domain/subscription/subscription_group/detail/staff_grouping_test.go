@@ -14,8 +14,9 @@ package detail
 //  3. Grouping is by product identity, deterministic regardless of input
 //     order, and never merges rows whose product did not resolve.
 //  4. The grouped row: chips in deterministic order, per-variant EXCLUDED
-//     signalling, merged Teachers text via joinAssignments, one direct View
-//     per member class (ActionVariant-labeled), and a whole-product Remove
+//     signalling, merged Teachers text via joinAssignments, exactly ONE View
+//     (the lead member's class page — post-strand-collapse a product has one
+//     class, so the per-member View fan is gone), and a whole-product Remove
 //     that submits every member id exactly once via the bulk-delete route.
 
 import (
@@ -294,19 +295,12 @@ func TestSGPPGroupTableRow_ChipsTeachersAndActions(t *testing.T) {
 		t.Errorf("teachers cell missing the lead-keyed testid: %q", html)
 	}
 
-	if len(row.Actions) != 3 {
-		t.Fatalf("grouped row actions = %d, want 2 View + 1 Remove: %+v", len(row.Actions), row.Actions)
+	if len(row.Actions) != 2 {
+		t.Fatalf("grouped row actions = %d, want 1 View + 1 Remove: %+v", len(row.Actions), row.Actions)
 	}
-	v1, v2, remove := row.Actions[0], row.Actions[1], row.Actions[2]
-	wantLabel := func(variant string) string {
-		s := strings.ReplaceAll(l.Staff.ActionVariant, "{{action}}", l.Staff.ViewAction)
-		return strings.ReplaceAll(s, "{{variant}}", variant)
-	}
-	if v1.Label != wantLabel("One") || v1.Href != "/detail/sec1/c1" || v1.TestID != "sgpp-view-c1" || v1.Disabled {
-		t.Errorf("first View action wrong: %+v", v1)
-	}
-	if v2.Label != wantLabel("Two") || v2.Href != "/detail/sec1/c2" || v2.TestID != "sgpp-view-c2" || v2.Disabled {
-		t.Errorf("second View action wrong: %+v", v2)
+	v, remove := row.Actions[0], row.Actions[1]
+	if v.Label != l.Staff.ViewAction || v.Href != "/detail/sec1/c1" || v.TestID != "sgpp-view-c1" || v.Disabled {
+		t.Errorf("single View action must open the lead member's class page: %+v", v)
 	}
 	if remove.Action != "delete" || !remove.Overflow || remove.Disabled {
 		t.Errorf("Remove action wrong: %+v", remove)
@@ -410,26 +404,5 @@ func TestSGPPGroupRemoveURL(t *testing.T) {
 	}
 	if got := sgppGroupRemoveURL("/bulk-delete", members[:1]); got != "" {
 		t.Errorf("a single-member group never builds a bulk URL, got %q", got)
-	}
-}
-
-// TestSGPPVariantActionLabel: the ActionVariant template fills both
-// placeholders; an un-varianted member falls back to its offering label; an
-// empty template degrades to the bare action label.
-func TestSGPPVariantActionLabel(t *testing.T) {
-	l := subscription_group.DefaultLabels()
-	m := SectionSGPPRow{VariantLabel: "One", OfferingLabel: "Course R: One"}
-	want := strings.ReplaceAll(strings.ReplaceAll(l.Staff.ActionVariant, "{{action}}", l.Staff.ViewAction), "{{variant}}", "One")
-	if got := sgppVariantActionLabel(l, l.Staff.ViewAction, m); got != want {
-		t.Errorf("variant action label = %q, want %q", got, want)
-	}
-	m2 := SectionSGPPRow{OfferingLabel: "Course R: Two"}
-	want2 := strings.ReplaceAll(strings.ReplaceAll(l.Staff.ActionVariant, "{{action}}", l.Staff.ViewAction), "{{variant}}", "Course R: Two")
-	if got := sgppVariantActionLabel(l, l.Staff.ViewAction, m2); got != want2 {
-		t.Errorf("un-varianted member label = %q, want offering-label fallback %q", got, want2)
-	}
-	l.Staff.ActionVariant = ""
-	if got := sgppVariantActionLabel(l, l.Staff.ViewAction, m); got != l.Staff.ViewAction {
-		t.Errorf("empty template must degrade to the bare action label, got %q", got)
 	}
 }

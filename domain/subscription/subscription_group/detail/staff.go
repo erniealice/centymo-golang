@@ -1190,8 +1190,8 @@ func offeringLabelFromPlan(pp *productplanpb.ProductPlan, fallbackID string) str
 // sgppTableRow untouched — byte-identical to the ungrouped tab, so every
 // single-offering product (and all of a plan whose offerings are un-varianted)
 // is a strict no-op. Only a multi-offering product collapses into the grouped
-// row (sgppGroupTableRow): one chip per variant, merged Teachers text, a
-// direct View per member class, and a whole-product Remove.
+// row (sgppGroupTableRow): one chip per variant, merged Teachers text, ONE
+// View (the lead member's class page), and a whole-product Remove.
 func buildSGPPTable(deps *DetailViewDeps, data *SectionSGPPTabData, perms *types.UserPermissions, l subscription_group.Labels) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "subject", Label: l.Staff.ColumnSubject, NoSort: true, NoFilter: true, Width: "40%"},

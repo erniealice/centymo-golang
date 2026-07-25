@@ -18,9 +18,16 @@ import (
 // =============================================================================
 // Umbrella grouping — one rendered row per PRODUCT (owner call, 2026-07-25).
 // A product whose plan carries several variant offerings (each its own class
-// row) collapses into ONE row: chips per variant, merged Teachers text, a
-// direct View per member class, a whole-product Remove. A group of one is a
-// strict no-op (sgppTableRow renders it untouched).
+// row) collapses into ONE row: chips per variant, merged Teachers text, ONE
+// View (the lead member's class page), a whole-product Remove. A group of one
+// is a strict no-op (sgppTableRow renders it untouched).
+//
+// Since the strand collapse (docs/plan/20260725-arts-design-strand-collapse)
+// every product carries exactly one class per section, so multi-member groups
+// are the defensive path, not the steady state — which is why the grouped row
+// renders a single View: with one class per product the per-member View fan
+// (and its per-variant action labels) is dead machinery. The strand signal on
+// a collapsed class is the Teachers column's phase parentheticals.
 // =============================================================================
 
 // sgppGroup is one rendered row of the grouped tab: the display label plus
@@ -125,9 +132,10 @@ func productDisplayLabel(members []SectionSGPPRow) string {
 }
 
 // sgppGroupTableRow renders one MULTI-member group. Row identity = the lead
-// member's class id (deterministic, sgpp-row-{leadId} testid). Direct actions:
-// one View per member class — each opens ITS class detail page, labeled via
-// the ActionVariant template so the target is never ambiguous. Overflow:
+// member's class id (deterministic, sgpp-row-{leadId} testid). Direct action:
+// exactly ONE View, opening the LEAD member's class detail page (post-collapse
+// a product has one class, so one View is the truthful shape; on a residual
+// multi-member group the lead is the deterministic representative). Overflow:
 // Remove, the whole-product delete ("remove the class rows" — nothing more),
 // POSTed once through the bulk-delete route (non-lead ids ride the URL query;
 // the shared table JS appends the lead id from data-id, so every member id is
@@ -169,19 +177,17 @@ func sgppGroupTableRow(deps *DetailViewDeps, groupID string, g sgppGroup, perms 
 		Cells: []types.TableCell{sgppGroupSubjectCell(g, l), sgppAssignmentsCell(display, l)},
 	}
 
-	for _, m := range g.Members {
-		viewAction := types.TableAction{
-			Type: "view", Action: "view",
-			Label:  sgppVariantActionLabel(l, l.Staff.ViewAction, m),
-			TestID: "sgpp-view-" + m.ID,
-		}
-		if deps.SGPPDetailURL != nil {
-			viewAction.Href = deps.SGPPDetailURL(groupID, m.ID)
-		} else {
-			viewAction.Disabled = true
-		}
-		row.Actions = append(row.Actions, viewAction)
+	viewAction := types.TableAction{
+		Type: "view", Action: "view",
+		Label:  l.Staff.ViewAction,
+		TestID: "sgpp-view-" + lead.ID,
 	}
+	if deps.SGPPDetailURL != nil {
+		viewAction.Href = deps.SGPPDetailURL(groupID, lead.ID)
+	} else {
+		viewAction.Disabled = true
+	}
+	row.Actions = append(row.Actions, viewAction)
 
 	removeAction := types.TableAction{
 		Type: "delete", Action: "delete", Label: l.Staff.RemoveAction, Overflow: true,
@@ -232,23 +238,6 @@ func sgppGroupSubjectCell(g sgppGroup, l subscription_group.Labels) types.TableC
 		}
 	}
 	return types.TableCell{Type: "html", HTML: template.HTML(b.String()), Value: g.Label}
-}
-
-// sgppVariantActionLabel fills the ActionVariant lyngua template ("{{action}}
-// — {{variant}}") for one member's action label; the member's variant name
-// disambiguates, falling back to its offering label when un-varianted. An
-// empty template degrades to the bare action label — never an empty button.
-func sgppVariantActionLabel(l subscription_group.Labels, actionLabel string, m SectionSGPPRow) string {
-	variant := m.VariantLabel
-	if variant == "" {
-		variant = m.OfferingLabel
-	}
-	tpl := l.Staff.ActionVariant
-	if strings.TrimSpace(tpl) == "" || variant == "" {
-		return actionLabel
-	}
-	out := strings.ReplaceAll(tpl, "{{action}}", actionLabel)
-	return strings.ReplaceAll(out, "{{variant}}", variant)
 }
 
 // sgppGroupRemoveURL builds the grouped Remove's POST target on the
