@@ -153,7 +153,7 @@ type PickerLabels struct {
 
 // AssignLabels — the S3/S5 shared assign drawer (D-2 toggle form).
 type AssignLabels struct {
-	Title             string `json:"title"` // "Assign teacher — {{offering}}"
+	Title             string `json:"title"` // "Assign teacher" — NO {{token}}: nothing expands it (see below)
 	SectionContext    string `json:"section_context"`
 	SubjectContext    string `json:"subject_context"`
 	CurriculumContext string `json:"curriculum_context"`
@@ -306,7 +306,7 @@ func DefaultLabels() Labels {
 			SubmitMany:       "Add {{count}} classes",
 		},
 		Assign: AssignLabels{
-			Title:             "Assign staff — {{offering}}",
+			Title:             "Assign staff",
 			SectionContext:    "Section",
 			SubjectContext:    "Offering",
 			CurriculumContext: "Curriculum",
