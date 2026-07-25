@@ -164,6 +164,15 @@ type StaffTabLabels struct {
 	RemoveConfirmTitle    string `json:"remove_confirm_title"`
 	RemoveConfirmMessage  string `json:"remove_confirm_message"` // %s = offering name
 	RemoveBlockedInUse    string `json:"remove_blocked_in_use"`
+
+	// -- Umbrella grouping: when one PRODUCT carries several variant offerings
+	// on the same section (a rotation subject's strands), the tab renders ONE
+	// row for the product with one chip per variant. A product with a single
+	// offering is untouched — a group of one is a no-op. Both templates use
+	// "{{...}}" placeholders (the ListAria convention), never a %s verb, so a
+	// tier that mis-edits them degrades to a literal instead of a format panic.
+	VariantExcludedTag string `json:"variant_excluded_tag"` // grouped-row variant chip when THAT variant is EXCLUDED; "{{variant}}" placeholder
+	ActionVariant      string `json:"action_variant"`       // grouped-row action label — "{{action}}" and "{{variant}}" placeholders
 }
 
 // ResolveTabSlug returns the URL slug for a canonical tab key. The
@@ -346,6 +355,8 @@ func DefaultLabels() Labels {
 			RemoveConfirmTitle:    "Remove Offering",
 			RemoveConfirmMessage:  "Remove %s from this section? This cannot be undone.",
 			RemoveBlockedInUse:    "This offering has active staff or a live grade sheet and cannot be removed.",
+			VariantExcludedTag:    "{{variant}} — Not offered",
+			ActionVariant:         "{{action}} — {{variant}}",
 		},
 		Detail: DetailLabels{
 			Title:          "Section",

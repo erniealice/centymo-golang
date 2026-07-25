@@ -78,6 +78,7 @@ type SubscriptionGroupModuleDeps struct {
 	SGPPSetStatusURL                        func(sgppID, status string) string
 	SGPPPickerURL                           func(sectionID string) string
 	SGPPDeleteURL                           string
+	SGPPBulkDeleteURL                       string
 
 	attachment.AttachmentOps // attachments tab
 	auditlog.AuditOps        // audit tab (nil today → renders empty)
@@ -163,6 +164,7 @@ func NewSubscriptionGroupModule(deps *SubscriptionGroupModuleDeps) *Subscription
 		SGPPSetStatusURL:                        deps.SGPPSetStatusURL,
 		SGPPPickerURL:                           deps.SGPPPickerURL,
 		SGPPDeleteURL:                           deps.SGPPDeleteURL,
+		SGPPBulkDeleteURL:                       deps.SGPPBulkDeleteURL,
 
 		AttachmentOps: deps.AttachmentOps,
 		AuditOps:      deps.AuditOps,

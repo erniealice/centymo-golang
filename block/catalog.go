@@ -606,6 +606,7 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra, options subscriptiongroup
 			SGPPSetStatusURL:                        sgppSetStatusURLFunc(sgppRoutes, sgppRoutesOK),
 			SGPPDetailURL:                           sgppDetailURLFunc(sgppRoutes, sgppRoutesOK),
 			SGPPDeleteURL:                           sgppDeleteURL(sgppRoutes, sgppRoutesOK),
+			SGPPBulkDeleteURL:                       sgppBulkDeleteURL(sgppRoutes, sgppRoutesOK),
 			// Attachments tab: Infra carries the ops (mirror PriceScheduleUnit).
 			// Audit tab: no infra.ListAuditHistory hook exists → AuditOps stays nil (renders empty).
 			AttachmentOps: attachment.AttachmentOps{
@@ -666,6 +667,13 @@ func sgppDeleteURL(r sgpppkg.Routes, ok bool) string {
 		return ""
 	}
 	return r.DeleteURL
+}
+
+func sgppBulkDeleteURL(r sgpppkg.Routes, ok bool) string {
+	if !ok {
+		return ""
+	}
+	return r.BulkDeleteURL
 }
 
 // ---------------------------------------------------------------------------

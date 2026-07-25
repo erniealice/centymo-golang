@@ -736,6 +736,22 @@ type SectionSGPPRow struct {
 	Materialized    bool   // false ⇒ transitional fallback row
 	AssignmentsText string // comma-separated "Name (Phase)"; "" when unstaffed
 	InUse           bool   // gates the guarded Remove action
+
+	// -- Umbrella grouping (the owner's "one row for Arts, one for Design"):
+	// product identity is what lets two strand offerings of the SAME product
+	// collapse into one rendered row with a chip per variant. ProductID is the
+	// grouping key (product_plan.product_id); ProductLabel is the umbrella's
+	// own name IF the adapter hydrated product_plan.product (it does not
+	// today), otherwise "" and the label is derived from the members' offering
+	// names — see productDisplayLabel.
+	ProductID    string
+	ProductLabel string
+
+	// assignments is the row's resolved assignment entries, kept so a grouped
+	// row can merge its members' teachers through the SAME joinAssignments
+	// composer (one joiner, one lyngua separator) instead of re-splitting the
+	// already-joined AssignmentsText.
+	assignments []sgppAssignmentDisplay
 }
 
 // SectionSGPPTabData is the whole M4 tab payload.
@@ -811,10 +827,18 @@ func countSectionSGPPs(ctx context.Context, deps *DetailViewDeps, sg *subscripti
 	}
 	sgpps := listActiveSGPPs(ctx, deps, sg.GetId())
 	if len(sgpps) > 0 {
+		// Count RENDERED rows, not class rows: two strands of one umbrella
+		// product collapse into a single row, so the badge must count groups.
+		// Shares sgppDisplayRows + groupSGPPRows with the table so the badge
+		// cannot drift from what is on screen; still cheap (two batched
+		// LIST_IN calls, no assignment/phase/name/in-use fan-out).
 		count := 0
-		for _, c := range sgpps {
-			if c.GetStatus() != sgpppb.SubscriptionGroupProductPlanStatus_SUBSCRIPTION_GROUP_PRODUCT_PLAN_STATUS_EXCLUDED {
-				count++
+		for _, g := range groupSGPPRows(sgppDisplayRows(ctx, deps, sgpps)) {
+			for _, m := range g.Members {
+				if !m.Excluded {
+					count++
+					break
+				}
 			}
 		}
 		return count
@@ -850,7 +874,9 @@ func listActiveSGPPs(ctx context.Context, deps *DetailViewDeps, groupID string) 
 }
 
 // listSGPPRows builds the tab's row set: active class rows resolved to
-// display form, or the transitional fallback when none exist yet.
+// display form, or the transitional fallback when none exist yet. The base
+// display projection (sgppDisplayRows) is shared with the count badge; only
+// the table path pays for the assignment/phase/name/in-use fan-out below.
 func listSGPPRows(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup, l subscription_group.Labels) []SectionSGPPRow {
 	groupID := sg.GetId()
 	sgpps := listActiveSGPPs(ctx, deps, groupID)
@@ -858,25 +884,17 @@ func listSGPPRows(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongro
 		return fallbackSGPPRows(ctx, deps, sg)
 	}
 
-	planIDs := make([]string, 0, len(sgpps))
+	rows := sgppDisplayRows(ctx, deps, sgpps)
+
 	sgppIDs := make([]string, 0, len(sgpps))
 	templateIDs := make([]string, 0, len(sgpps))
 	for _, c := range sgpps {
-		planIDs = append(planIDs, c.GetProductPlanId())
 		sgppIDs = append(sgppIDs, c.GetId())
 		if tid := c.GetJobTemplateId(); tid != "" {
 			templateIDs = append(templateIDs, tid)
 		}
 	}
 
-	plans := resolveProductPlansByID(ctx, deps, planIDs)
-	variantIDs := make([]string, 0, len(plans))
-	for _, pp := range plans {
-		if v := pp.GetProductVariantId(); v != "" {
-			variantIDs = append(variantIDs, v)
-		}
-	}
-	variantNames := resolveVariantNames(ctx, deps, variantIDs)
 	phasesByID := resolveSGPPPhases(ctx, deps, templateIDs)
 	names := staffNames(ctx, deps)
 	assignments := listSGPPAssignments(ctx, deps, sgppIDs, phasesByID, names)
@@ -886,20 +904,11 @@ func listSGPPRows(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongro
 		inUseIDs, _ = deps.GetSubscriptionGroupProductPlanInUseIDs(ctx, sgppIDs)
 	}
 
-	rows := make([]SectionSGPPRow, 0, len(sgpps))
-	for _, c := range sgpps {
-		pp := plans[c.GetProductPlanId()]
-		row := SectionSGPPRow{
-			ID:            c.GetId(),
-			ProductPlanID: c.GetProductPlanId(),
-			OfferingLabel: offeringLabelFromPlan(pp, c.GetProductPlanId()),
-			VariantLabel:  variantNames[pp.GetProductVariantId()],
-			Excluded:      c.GetStatus() == sgpppb.SubscriptionGroupProductPlanStatus_SUBSCRIPTION_GROUP_PRODUCT_PLAN_STATUS_EXCLUDED,
-			Materialized:  true,
-			InUse:         inUseIDs[c.GetId()],
-		}
-		row.AssignmentsText = joinAssignments(assignments[c.GetId()], l)
-		rows = append(rows, row)
+	for i := range rows {
+		r := &rows[i]
+		r.assignments = assignments[r.ID]
+		r.AssignmentsText = joinAssignments(r.assignments, l)
+		r.InUse = inUseIDs[r.ID]
 	}
 	sort.SliceStable(rows, func(i, j int) bool {
 		a, b := strings.ToLower(rows[i].OfferingLabel), strings.ToLower(rows[j].OfferingLabel)
@@ -908,6 +917,42 @@ func listSGPPRows(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongro
 		}
 		return a < b
 	})
+	return rows
+}
+
+// sgppDisplayRows is the CHEAP base projection of a section's class rows —
+// exactly two batched LIST_IN calls (offerings, variants), no assignment/
+// phase/name/in-use fan-out — shared by the table builder (listSGPPRows
+// enriches it) and the count badge (countSectionSGPPs groups it as-is), so
+// the two can never drift.
+func sgppDisplayRows(ctx context.Context, deps *DetailViewDeps, sgpps []*sgpppb.SubscriptionGroupProductPlan) []SectionSGPPRow {
+	planIDs := make([]string, 0, len(sgpps))
+	for _, c := range sgpps {
+		planIDs = append(planIDs, c.GetProductPlanId())
+	}
+	plans := resolveProductPlansByID(ctx, deps, planIDs)
+	variantIDs := make([]string, 0, len(plans))
+	for _, pp := range plans {
+		if v := pp.GetProductVariantId(); v != "" {
+			variantIDs = append(variantIDs, v)
+		}
+	}
+	variantNames := resolveVariantNames(ctx, deps, variantIDs)
+
+	rows := make([]SectionSGPPRow, 0, len(sgpps))
+	for _, c := range sgpps {
+		pp := plans[c.GetProductPlanId()]
+		rows = append(rows, SectionSGPPRow{
+			ID:            c.GetId(),
+			ProductPlanID: c.GetProductPlanId(),
+			OfferingLabel: offeringLabelFromPlan(pp, c.GetProductPlanId()),
+			VariantLabel:  variantNames[pp.GetProductVariantId()],
+			Excluded:      c.GetStatus() == sgpppb.SubscriptionGroupProductPlanStatus_SUBSCRIPTION_GROUP_PRODUCT_PLAN_STATUS_EXCLUDED,
+			Materialized:  true,
+			ProductID:     pp.GetProductId(),
+			ProductLabel:  strings.TrimSpace(pp.GetProduct().GetName()),
+		})
+	}
 	return rows
 }
 
@@ -927,6 +972,8 @@ func fallbackSGPPRows(ctx context.Context, deps *DetailViewDeps, sg *subscriptio
 			ProductPlanID: pp.GetId(),
 			OfferingLabel: offeringLabel(pp),
 			Materialized:  false,
+			ProductID:     pp.GetProductId(),
+			ProductLabel:  strings.TrimSpace(pp.GetProduct().GetName()),
 		})
 	}
 	return rows
@@ -1137,14 +1184,27 @@ func offeringLabelFromPlan(pp *productplanpb.ProductPlan, fallbackID string) str
 // buildSGPPTable maps the M4 rows into the shared table-card config: two
 // columns (Subject, Teachers), the S2 picker as the toolbar primary action,
 // and per-row View/Assign/Exclude-Restore/Remove actions.
+//
+// Umbrella grouping (the owner's "one row per product"): class rows are first
+// grouped by product identity (groupSGPPRows). A group of ONE renders through
+// sgppTableRow untouched — byte-identical to the ungrouped tab, so every
+// single-offering product (and all of a plan whose offerings are un-varianted)
+// is a strict no-op. Only a multi-offering product collapses into the grouped
+// row (sgppGroupTableRow): one chip per variant, merged Teachers text, a
+// direct View per member class, and a whole-product Remove.
 func buildSGPPTable(deps *DetailViewDeps, data *SectionSGPPTabData, perms *types.UserPermissions, l subscription_group.Labels) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "subject", Label: l.Staff.ColumnSubject, NoSort: true, NoFilter: true, Width: "40%"},
 		{Key: "assignments", Label: l.Staff.ColumnServicer, NoSort: true, NoFilter: true},
 	}
-	rows := make([]types.TableRow, 0, len(data.Rows))
-	for _, r := range data.Rows {
-		rows = append(rows, sgppTableRow(deps, data.SubscriptionGroupID, r, perms, l))
+	groups := groupSGPPRows(data.Rows)
+	rows := make([]types.TableRow, 0, len(groups))
+	for _, g := range groups {
+		if len(g.Members) == 1 {
+			rows = append(rows, sgppTableRow(deps, data.SubscriptionGroupID, g.Members[0], perms, l))
+			continue
+		}
+		rows = append(rows, sgppGroupTableRow(deps, data.SubscriptionGroupID, g, perms, l))
 	}
 	cfg := &types.TableConfig{
 		ID:          sgppTableID,

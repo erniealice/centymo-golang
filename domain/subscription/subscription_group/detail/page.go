@@ -94,6 +94,10 @@ type DetailViewDeps struct {
 	SGPPSetStatusURL func(sgppID, status string) string
 	SGPPPickerURL    func(sectionID string) string
 	SGPPDeleteURL    string
+	// SGPPBulkDeleteURL is the class module's bulk-delete route — the grouped
+	// row's whole-product Remove POSTs every member class id to it in one
+	// request. "" disables that action (never an error).
+	SGPPBulkDeleteURL string
 
 	attachment.AttachmentOps // attachments tab
 	auditlog.AuditOps        // audit tab (ListAuditHistory is nil in centymo today — renders empty)
