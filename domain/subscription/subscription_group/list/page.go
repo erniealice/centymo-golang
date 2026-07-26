@@ -99,16 +99,30 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 	perms := view.GetUserPermissions(ctx)
 	listParams := espynahttp.ToListParams(p, subscriptionGroupSearchFields)
 
-	activeValue := status != "inactive"
 	if listParams.Filters == nil {
 		listParams.Filters = &commonpb.FilterRequest{}
 	}
-	listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
-		Field: "active",
-		FilterType: &commonpb.TypedFilter_BooleanFilter{
-			BooleanFilter: &commonpb.BooleanFilter{Value: activeValue},
-		},
-	})
+	// The {status} URL segment carries two axes. The lifecycle categories
+	// (current/completed/draft — the sidebar split) filter the free-text
+	// status column; the generic list core's default active=true gate keeps
+	// deactivated rows hidden within every category. The legacy visibility
+	// segments (active/inactive) keep filtering the active bool directly.
+	switch status {
+	case "current", "completed", "draft":
+		listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+			Field: "status",
+			FilterType: &commonpb.TypedFilter_StringFilter{
+				StringFilter: &commonpb.StringFilter{Value: status, Operator: commonpb.StringOperator_STRING_EQUALS},
+			},
+		})
+	default:
+		listParams.Filters.Filters = append(listParams.Filters.Filters, &commonpb.TypedFilter{
+			Field: "active",
+			FilterType: &commonpb.TypedFilter_BooleanFilter{
+				BooleanFilter: &commonpb.BooleanFilter{Value: status != "inactive"},
+			},
+		})
+	}
 
 	resp, err := deps.ListSubscriptionGroups(ctx, &subscriptiongrouppb.ListSubscriptionGroupsRequest{
 		Search:     listParams.Search,
@@ -142,7 +156,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, status string, co
 	refreshURL := route.ResolveURL(deps.Routes.TableURL, "status", status)
 
 	var primaryAction *types.PrimaryAction
-	if status == "active" {
+	if status == "active" || status == "current" {
 		primaryAction = &types.PrimaryAction{
 			Label:           l.Buttons.Add,
 			ActionURL:       deps.Routes.AddURL,
@@ -304,18 +318,10 @@ func buildRowActions(id, name string, active, isInUse bool, l subscription_group
 func buildBulkActions(l subscription_group.Labels, cl pyeza.CommonLabels, status string, routes subscription_group.Routes) []types.BulkAction {
 	actions := []types.BulkAction{}
 
+	// Visibility bulk toggle: the inactive list offers Activate; every other
+	// segment (active plus the current/completed/draft status categories,
+	// whose rows are all visible) offers Deactivate.
 	switch status {
-	case "active":
-		actions = append(actions, types.BulkAction{
-			Key:             "deactivate",
-			Label:           cl.Bulk.Deactivate,
-			Icon:            "icon-pause",
-			Variant:         "warning",
-			Endpoint:        routes.BulkSetStatusURL,
-			ConfirmTitle:    l.Bulk.DeactivateTitle,
-			ConfirmMessage:  l.Bulk.DeactivateMessage,
-			ExtraParamsJSON: `{"target_status":"inactive"}`,
-		})
 	case "inactive":
 		actions = append(actions, types.BulkAction{
 			Key:             "activate",
@@ -326,6 +332,17 @@ func buildBulkActions(l subscription_group.Labels, cl pyeza.CommonLabels, status
 			ConfirmTitle:    l.Bulk.ActivateTitle,
 			ConfirmMessage:  l.Bulk.ActivateMessage,
 			ExtraParamsJSON: `{"target_status":"active"}`,
+		})
+	default:
+		actions = append(actions, types.BulkAction{
+			Key:             "deactivate",
+			Label:           cl.Bulk.Deactivate,
+			Icon:            "icon-pause",
+			Variant:         "warning",
+			Endpoint:        routes.BulkSetStatusURL,
+			ConfirmTitle:    l.Bulk.DeactivateTitle,
+			ConfirmMessage:  l.Bulk.DeactivateMessage,
+			ExtraParamsJSON: `{"target_status":"inactive"}`,
 		})
 	}
 
@@ -349,6 +366,12 @@ func statusPageTitle(l subscription_group.Labels, status string) string {
 		return l.Page.ActiveTitle
 	case "inactive":
 		return l.Page.InactiveTitle
+	case "current":
+		return l.Page.CurrentTitle
+	case "completed":
+		return l.Page.CompletedTitle
+	case "draft":
+		return l.Page.DraftTitle
 	default:
 		return l.Page.Title
 	}

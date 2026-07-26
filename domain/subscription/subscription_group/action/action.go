@@ -82,6 +82,9 @@ func applyFormToData(r *http.Request) *subscriptiongrouppb.SubscriptionGroup {
 		Kind:   r.FormValue("kind"),
 		Active: r.FormValue("active") == "true",
 	}
+	if v := strings.TrimSpace(r.FormValue("status")); v != "" {
+		data.Status = &v
+	}
 	if v := strings.TrimSpace(r.FormValue("plan_id")); v != "" {
 		data.PlanId = &v
 	}
@@ -117,8 +120,10 @@ func NewAddAction(deps *Deps) view.View {
 				FormAction:           deps.Routes.AddURL,
 				Active:               true,
 				Kind:                 "cohort",
+				Status:               "current",
 				CapacityMode:         "CAPACITY_MODE_UNLIMITED",
 				KindOptions:          form.BuildKindOptions(deps.Labels.Form, "cohort"),
+				StatusOptions:        form.BuildStatusOptions(deps.Labels.Form, "current"),
 				CapacityModeOptions:  form.BuildCapacityModeOptions(deps.Labels.Form, "CAPACITY_MODE_UNLIMITED"),
 				PlanOptions:          form.BuildAutoCompleteOptions(planPairs, ""),
 				PriceScheduleOptions: form.BuildAutoCompleteOptions(schedulePairs, ""),
@@ -186,6 +191,8 @@ func NewEditAction(deps *Deps) view.View {
 				ID:                   formID,
 				Name:                 name,
 				Kind:                 record.GetKind(),
+				Status:               record.GetStatus(),
+				StatusOptions:        form.BuildStatusOptions(deps.Labels.Form, record.GetStatus()),
 				PlanID:               selectedPlanID,
 				PlanLabel:            form.FindLabel(planPairs, selectedPlanID),
 				PlanOptions:          form.BuildAutoCompleteOptions(planPairs, selectedPlanID),

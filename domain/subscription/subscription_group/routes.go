@@ -58,7 +58,7 @@ func DefaultRoutes() Routes {
 		// sidebar_staff.go Operations group, right after Engagements), so
 		// pages must highlight that app — not "service". ActiveSubNav stays a
 		// BARE prefix: the list page composes "<base>-<status>" to match the
-		// sidebar item keys (subscription-groups-active/-inactive).
+		// sidebar item keys (subscription-groups-current/-completed/-draft).
 		ActiveNav:           "job",
 		ActiveSubNav:        "subscription-groups",
 		DashboardURL:        DashboardURL,

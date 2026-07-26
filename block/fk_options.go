@@ -11,9 +11,10 @@ package block
 //
 //   - one generic pair-builder (buildOptionPairs) — a single map loop reused by
 //     every producer, no per-entity duplication;
-//   - one generic adapter (pairsInto) — turns the block-neutral pairs into each
-//     module's own form.Pair type at the wiring site, so the block layer never
-//     imports a drawer module's form package;
+//   - two generic adapters (pairsInto, pairsIntoDisabled) — turn the
+//     block-neutral pairs into each module's own form.Pair type at the wiring
+//     site, so the block layer never imports a drawer module's form package;
+//     the second variant also carries the not-selectable marker;
 //   - the four per-entity producers (subscription_group, product_plan, staff,
 //     workspace_user), each wrapping a List use case reachable on the centymo
 //     UseCases and mapping every row to an id + human label.
@@ -45,9 +46,15 @@ const staffOptionPickerLimit = 100
 // Each drawer module maps it to that module's own form.Pair via pairsInto at the
 // catalog.go wiring site, so the block layer stays free of any drawer module's
 // form package.
+//
+// Disabled marks an option that must render but must not be selectable (the
+// auto-complete component greys it out and skips it in keyboard nav). Producers
+// that have no lifecycle axis leave it false, so every existing picker keeps all
+// of its options selectable.
 type optionPair struct {
-	ID    string
-	Label string
+	ID       string
+	Label    string
+	Disabled bool
 }
 
 // buildOptionPairs is the single reusable pair-builder: one map loop over a list
@@ -73,7 +80,8 @@ func buildOptionPairs[T any](rows []T, id func(T) string, label func(T) string) 
 
 // pairsInto adapts block-neutral option pairs into a module-specific pair slice
 // via the module's own constructor. Keeps each producer wiring in catalog.go to
-// a single expression with no hand-rolled conversion loop.
+// a single expression with no hand-rolled conversion loop. Drops the Disabled
+// flag — for pickers whose options are all selectable.
 func pairsInto[P any](src []optionPair, mk func(id, label string) P) []P {
 	out := make([]P, 0, len(src))
 	for _, p := range src {
@@ -82,8 +90,30 @@ func pairsInto[P any](src []optionPair, mk func(id, label string) P) []P {
 	return out
 }
 
+// pairsIntoDisabled is the pairsInto sibling that carries the Disabled flag
+// through to the module pair. Used only by the pickers whose producer marks
+// non-selectable rows (subscription group).
+func pairsIntoDisabled[P any](src []optionPair, mk func(id, label string, disabled bool) P) []P {
+	out := make([]P, 0, len(src))
+	for _, p := range src {
+		out = append(out, mk(p.ID, p.Label, p.Disabled))
+	}
+	return out
+}
+
+// subscriptionGroupStatusCurrent is the one subscription_group lifecycle status
+// whose rows are selectable in a picker. "completed" / "draft" rows still
+// render, greyed out.
+const subscriptionGroupStatusCurrent = "current"
+
 // subscriptionGroupOptionPairs lists the workspace's subscription groups as
 // id/name pairs. Label = group name. Nil-safe.
+//
+// The lifecycle status is MARKED, never filtered: a group that is not "current"
+// comes back as a Disabled pair so the picker still shows it (an existing row
+// pointing at a completed cohort keeps a readable label) while refusing new
+// selections. Consumers that only resolve names (pairsToNames) ignore the flag
+// and stay status-agnostic.
 func subscriptionGroupOptionPairs(
 	ctx context.Context,
 	list func(context.Context, *subscriptiongrouppb.ListSubscriptionGroupsRequest) (*subscriptiongrouppb.ListSubscriptionGroupsResponse, error),
@@ -95,9 +125,24 @@ func subscriptionGroupOptionPairs(
 	if err != nil || resp == nil {
 		return nil
 	}
-	return buildOptionPairs(resp.GetData(),
-		(*subscriptiongrouppb.SubscriptionGroup).GetId,
-		(*subscriptiongrouppb.SubscriptionGroup).GetName)
+	groups := resp.GetData()
+	pairs := make([]optionPair, 0, len(groups))
+	for _, g := range groups {
+		id := g.GetId()
+		if id == "" {
+			continue
+		}
+		label := g.GetName()
+		if label == "" {
+			label = id
+		}
+		pairs = append(pairs, optionPair{
+			ID:       id,
+			Label:    label,
+			Disabled: g.GetStatus() != subscriptionGroupStatusCurrent,
+		})
+	}
+	return pairs
 }
 
 // productPlanOptionPairs lists the workspace's product plans as id/name pairs.

@@ -34,10 +34,14 @@ type Data struct {
 	CommonLabels any
 }
 
-// Pair is a simple id/label option for FK pickers.
+// Pair is a simple id/label option for FK pickers. Disabled renders the option
+// greyed out and unselectable — used for FK rows that must stay visible (a
+// saved reference keeps its label) but must not be picked anew. Pair lists that
+// have no such axis leave it false, keeping every option selectable.
 type Pair struct {
-	ID    string
-	Label string
+	ID       string
+	Label    string
+	Disabled bool
 }
 
 // BuildAutoCompleteOptions converts pairs into the map shape expected by the
@@ -49,6 +53,7 @@ func BuildAutoCompleteOptions(pairs []Pair, selectedID string) []map[string]any 
 			"Value":    p.ID,
 			"Label":    p.Label,
 			"Selected": p.ID == selectedID,
+			"Disabled": p.Disabled,
 		})
 	}
 	return opts

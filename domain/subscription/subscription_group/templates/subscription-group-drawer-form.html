@@ -23,6 +23,16 @@
                 "Info" .Labels.KindInfo
             )}}
         </div>
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "status"
+                "Label" .Labels.Status
+                "Value" .Status
+                "Options" .StatusOptions
+                "Info" .Labels.StatusInfo
+            )}}
+        </div>
 
         {{/* ================================================================ */}}
         {{/* Section: Program & period                                        */}}

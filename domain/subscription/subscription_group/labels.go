@@ -26,6 +26,11 @@ type PageLabels struct {
 	Subtitle      string `json:"subtitle"`
 	ActiveTitle   string `json:"active_title"`
 	InactiveTitle string `json:"inactive_title"`
+	// Per-status-category list titles (the sidebar splits sections by the
+	// lifecycle status column: current / completed / draft).
+	CurrentTitle   string `json:"current_title"`
+	CompletedTitle string `json:"completed_title"`
+	DraftTitle     string `json:"draft_title"`
 }
 
 type ButtonLabels struct {
@@ -72,6 +77,11 @@ type FormLabels struct {
 	KindRoster        string `json:"kind_roster"`
 	KindPanel         string `json:"kind_panel"`
 	KindProjectTeam   string `json:"kind_project_team"`
+	Status            string `json:"status"`
+	StatusInfo        string `json:"status_info"`
+	StatusCurrent     string `json:"status_current"`
+	StatusCompleted   string `json:"status_completed"`
+	StatusDraft       string `json:"status_draft"`
 	Plan              string `json:"plan"`
 	PlanPlaceholder   string `json:"plan_placeholder"`
 	PlanSearch        string `json:"plan_search"`
@@ -235,10 +245,13 @@ type ErrorLabels struct {
 func DefaultLabels() Labels {
 	return Labels{
 		Page: PageLabels{
-			Title:         "Sections",
-			Subtitle:      "Manage your sections and cohorts",
-			ActiveTitle:   "Active Sections",
-			InactiveTitle: "Inactive Sections",
+			Title:          "Sections",
+			Subtitle:       "Manage your sections and cohorts",
+			ActiveTitle:    "Active Sections",
+			InactiveTitle:  "Inactive Sections",
+			CurrentTitle:   "Current Sections",
+			CompletedTitle: "Completed Sections",
+			DraftTitle:     "Draft Sections",
 		},
 		Buttons: ButtonLabels{
 			View:       "View",
@@ -278,6 +291,11 @@ func DefaultLabels() Labels {
 			KindRoster:        "Roster",
 			KindPanel:         "Panel",
 			KindProjectTeam:   "Project team",
+			Status:            "Status",
+			StatusInfo:        "Current sections are selectable in pickers. Completed and Draft sections remain visible but appear disabled in pickers.",
+			StatusCurrent:     "Current",
+			StatusCompleted:   "Completed",
+			StatusDraft:       "Draft",
 			Plan:              "Program",
 			PlanPlaceholder:   "Select a program...",
 			PlanSearch:        "Filter...",

@@ -23,6 +23,8 @@ type Data struct {
 	PriceScheduleLabel   string
 	PriceScheduleOptions []map[string]any
 	KindOptions          []map[string]any
+	Status               string // lifecycle status, free-text: "current" | "completed" | "draft"
+	StatusOptions        []map[string]any
 	CapacityMode         string // proto enum string, e.g. "CAPACITY_MODE_CAPPED"
 	CapacityModeOptions  []map[string]any
 	MaxCapacity          string // rendered as a number input; "" when unset
@@ -41,6 +43,28 @@ func BuildKindOptions(l subscription_group.FormLabels, selected string) []map[st
 		{"roster", l.KindRoster},
 		{"panel", l.KindPanel},
 		{"project_team", l.KindProjectTeam},
+	}
+	opts := make([]map[string]any, 0, len(defs))
+	for _, d := range defs {
+		opts = append(opts, map[string]any{
+			"Value":    d.Value,
+			"Label":    d.Label,
+			"Selected": d.Value == selected,
+		})
+	}
+	return opts
+}
+
+// BuildStatusOptions returns the status <select> options. status is a
+// free-text lifecycle column (legacy convention — see
+// proto-entity-status-conventions.md): "current" is the only selectable
+// value in fk pickers elsewhere, but all three values are valid here since
+// this is the section's own status, not a picker referencing it.
+func BuildStatusOptions(l subscription_group.FormLabels, selected string) []map[string]any {
+	defs := []struct{ Value, Label string }{
+		{"current", l.StatusCurrent},
+		{"completed", l.StatusCompleted},
+		{"draft", l.StatusDraft},
 	}
 	opts := make([]map[string]any, 0, len(defs))
 	for _, d := range defs {

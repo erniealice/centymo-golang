@@ -549,8 +549,10 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra, options subscriptiongroup
 		}
 
 		var getSGPPInUseIDs func(context.Context, []string) (map[string]bool, error)
+		var getSGInUseIDs func(context.Context, []string) (map[string]bool, error)
 		if infra.RefChecker != nil {
 			getSGPPInUseIDs = infra.RefChecker.GetSubscriptionGroupProductPlanInUseIDs
+			getSGInUseIDs = infra.RefChecker.GetSubscriptionGroupInUseIDs
 		}
 
 		deps := &subscriptiondom.SubscriptionGroupModuleDeps{
@@ -563,6 +565,9 @@ func SubscriptionGroupUnit(uc *UseCases, infra *Infra, options subscriptiongroup
 			CreateSubscriptionGroup: uc.SubscriptionGroup.CreateSubscriptionGroup,
 			UpdateSubscriptionGroup: uc.SubscriptionGroup.UpdateSubscriptionGroup,
 			DeleteSubscriptionGroup: uc.SubscriptionGroup.DeleteSubscriptionGroup,
+			// Row-level Delete guard (UI leg of the dual guard — the delete use
+			// case re-counts the same four FK dependents server-side).
+			GetSubscriptionGroupInUseIDs: getSGInUseIDs,
 			// Program (plan) + period (price_schedule) pickers / display lookups.
 			ListPlans:          uc.Plan.ListPlans,
 			ListPriceSchedules: uc.PriceSchedule.ListPriceSchedules,
@@ -731,8 +736,10 @@ func SubscriptionGroupWorkspaceUserUnit(uc *UseCases, infra *Infra) compose.Unit
 					func(id, label string) sgwuform.Pair { return sgwuform.Pair{ID: id, Label: label} })
 			},
 			ListSubscriptionGroupOptions: func(ctx context.Context) []sgwuform.Pair {
-				return pairsInto(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
-					func(id, label string) sgwuform.Pair { return sgwuform.Pair{ID: id, Label: label} })
+				return pairsIntoDisabled(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
+					func(id, label string, disabled bool) sgwuform.Pair {
+						return sgwuform.Pair{ID: id, Label: label, Disabled: disabled}
+					})
 			},
 		}
 		subscriptiondom.NewSubscriptionGroupWorkspaceUserModule(deps).RegisterRoutes(mc.Routes)
@@ -765,8 +772,10 @@ func SubscriptionGroupProductPlanStaffUnit(uc *UseCases, infra *Infra) compose.U
 			// FK-picker option loaders (fk_options.go). Section + subject +
 			// staff-member pickers replace the raw-UUID free-text fallback.
 			ListSubscriptionGroupOptions: func(ctx context.Context) []sgppsform.Pair {
-				return pairsInto(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
-					func(id, label string) sgppsform.Pair { return sgppsform.Pair{ID: id, Label: label} })
+				return pairsIntoDisabled(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
+					func(id, label string, disabled bool) sgppsform.Pair {
+						return sgppsform.Pair{ID: id, Label: label, Disabled: disabled}
+					})
 			},
 			ListProductPlanOptions: func(ctx context.Context) []sgppsform.Pair {
 				return pairsInto(productPlanOptionPairs(ctx, uc.Product.ListProductPlans),
@@ -864,8 +873,10 @@ func SubscriptionGroupProductPlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 
 			// S7 admin add/edit drawer FK pickers.
 			ListSubscriptionGroupOptions: func(ctx context.Context) []sgppform.Pair {
-				return pairsInto(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
-					func(id, label string) sgppform.Pair { return sgppform.Pair{ID: id, Label: label} })
+				return pairsIntoDisabled(subscriptionGroupOptionPairs(ctx, uc.SubscriptionGroup.ListSubscriptionGroups),
+					func(id, label string, disabled bool) sgppform.Pair {
+						return sgppform.Pair{ID: id, Label: label, Disabled: disabled}
+					})
 			},
 			ListProductPlanOptions: func(ctx context.Context) []sgppform.Pair {
 				return pairsInto(productPlanOptionPairs(ctx, uc.Product.ListProductPlans),
