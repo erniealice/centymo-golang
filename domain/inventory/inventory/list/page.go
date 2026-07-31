@@ -177,7 +177,13 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 	refreshURL := deps.Routes.TableURL
 
 	// Build ServerPagination
-	totalRows := len(rows) // TODO: migrate to GetInventoryItemListPageData (CTE variant) to get resp.GetPagination().GetTotalItems(); ListInventoryItemsResponse has no pagination field
+	//
+	// totalRows counts the rows on this page only — ListInventoryItemsResponse
+	// carries no pagination field. A real total must be sourced from this same
+	// ListInventoryItems -> dbOps.List path: the workspace decorator scopes that
+	// path by the inventory_item.workspace_id column, so a count taken anywhere
+	// else would be a count of every workspace's rows.
+	totalRows := len(rows)
 	sp := &types.ServerPagination{
 		Enabled:       true,
 		Mode:          "offset",
