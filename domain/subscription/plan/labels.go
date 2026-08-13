@@ -85,6 +85,13 @@ type FormLabels struct {
 	JobTemplateNone string `json:"job_template_none"`
 	JobTemplateHint string `json:"job_template_hint"`
 
+	// Execution strategy (new): how downstream systems interpret this Plan.
+	ExecutionStrategy                string `json:"execution_strategy"`
+	ExecutionStrategyTemplateDriven  string `json:"execution_strategy_template_driven"`
+	ExecutionStrategyManualOrTask     string `json:"execution_strategy_manual_or_task_driven"`
+	ExecutionStrategySeatOrTask       string `json:"execution_strategy_seat_or_assignment_driven"`
+	ExecutionStrategyHint             string `json:"execution_strategy_hint"`
+
 	// 2026-04-30 cyclic-subscription-jobs plan §9.3 — visits_per_cycle field.
 	// Number of cycle Job instances spawned per billing cycle (default 1).
 	VisitsPerCycleLabel       string `json:"visits_per_cycle_label"`
@@ -244,6 +251,11 @@ func DefaultLabels() Labels {
 			JobTemplate:             "Job Template",
 			JobTemplateNone:         "(none — engagement has no operational tracking)",
 			JobTemplateHint:         "Select the operational template that defines the work for this engagement. Leave empty for advisory-only plans.",
+			ExecutionStrategy:                "Delivery model",
+			ExecutionStrategyTemplateDriven:  "Template workflow",
+			ExecutionStrategyManualOrTask:     "Task list workflow",
+			ExecutionStrategySeatOrTask:       "Assignment workflow",
+			ExecutionStrategyHint:             "Choose how this plan creates and tracks work.",
 			// 2026-04-30 cyclic-subscription-jobs plan §9.3.
 			VisitsPerCycleLabel:       "Visits per billing cycle",
 			VisitsPerCyclePlaceholder: "1",

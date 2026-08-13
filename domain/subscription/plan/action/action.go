@@ -30,6 +30,12 @@ const (
 	ClientFieldModeLocked   = form.ClientFieldModeLocked
 )
 
+const (
+	executionStrategyTemplateDriven      = "template_driven"
+	executionStrategyManualOrTaskDriven  = "manual_or_task_driven"
+	executionStrategySeatOrAssignmentDrv = "seat_or_assignment_driven"
+)
+
 var clientNameSort = &commonpb.SortRequest{
 	Fields: []*commonpb.SortField{{Field: "name", Direction: commonpb.SortDirection_ASC}},
 }
@@ -52,6 +58,31 @@ func parseVisitsPerCycle(raw string) int32 {
 		n = 100
 	}
 	return int32(n)
+}
+
+func parseExecutionStrategy(raw string) string {
+	switch strings.TrimSpace(raw) {
+	case executionStrategyManualOrTaskDriven, executionStrategySeatOrAssignmentDrv:
+		return raw
+	case executionStrategyTemplateDriven, "":
+		return executionStrategyTemplateDriven
+	default:
+		return executionStrategyTemplateDriven
+	}
+}
+
+func buildExecutionStrategyOptions(labels plan.FormLabels) []form.ExecutionStrategyOption {
+	labelOrDefault := func(value, fallback string) string {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+		return fallback
+	}
+	return []form.ExecutionStrategyOption{
+		{Value: executionStrategyTemplateDriven, Label: labelOrDefault(labels.ExecutionStrategyTemplateDriven, "Template-driven")},
+		{Value: executionStrategyManualOrTaskDriven, Label: labelOrDefault(labels.ExecutionStrategyManualOrTask, "Manual / task-driven")},
+		{Value: executionStrategySeatOrAssignmentDrv, Label: labelOrDefault(labels.ExecutionStrategySeatOrTask, "Seat / assignment-driven")},
+	}
 }
 
 // Deps holds dependencies for plan action handlers.
@@ -112,6 +143,11 @@ func buildFormLabels(l plan.Labels) form.Labels {
 		JobTemplate:     l.Form.JobTemplate,
 		JobTemplateNone: l.Form.JobTemplateNone,
 		JobTemplateHint: l.Form.JobTemplateHint,
+		ExecutionStrategy:                l.Form.ExecutionStrategy,
+		ExecutionStrategyTemplateDriven:  l.Form.ExecutionStrategyTemplateDriven,
+		ExecutionStrategyManualOrTask:     l.Form.ExecutionStrategyManualOrTask,
+		ExecutionStrategySeatOrTask:       l.Form.ExecutionStrategySeatOrTask,
+		ExecutionStrategyHint:            l.Form.ExecutionStrategyHint,
 		// 2026-04-30 cyclic-subscription-jobs plan §9.3.
 		VisitsPerCycleLabel:       l.Form.VisitsPerCycleLabel,
 		VisitsPerCyclePlaceholder: l.Form.VisitsPerCyclePlaceholder,
@@ -241,6 +277,8 @@ func NewAddAction(deps *Deps) view.View {
 				ClientLabel:        clientLabel,
 				ClientOptions:      loadClientOptions(ctx, deps.ListClients, pinnedClientID),
 				SearchClientURL:    deps.SearchClientsURL,
+				ExecutionStrategy:  executionStrategyTemplateDriven,
+				ExecutionStrategyOptions: buildExecutionStrategyOptions(deps.Labels.Form),
 				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
 				Labels:             buildFormLabels(deps.Labels),
 				CommonLabels:       nil, // injected by ViewAdapter
@@ -256,11 +294,13 @@ func NewAddAction(deps *Deps) view.View {
 		active := r.FormValue("active") == "true"
 		clientID := strings.TrimSpace(r.FormValue("client_id"))
 		jobTemplateID := strings.TrimSpace(r.FormValue("job_template_id"))
+		executionStrategy := parseExecutionStrategy(r.FormValue("execution_strategy"))
 
 		planData := &planpb.Plan{
-			Name:        r.FormValue("name"),
-			Description: strPtr(r.FormValue("description")),
-			Active:      active,
+			Name:              r.FormValue("name"),
+			Description:       strPtr(r.FormValue("description")),
+			Active:            active,
+			ExecutionStrategy: &executionStrategy,
 		}
 		if clientID != "" {
 			planData.ClientId = strPtr(clientID)
@@ -377,6 +417,8 @@ func NewEditAction(deps *Deps) view.View {
 				ClientOptions:      loadClientOptions(ctx, deps.ListClients, clientID),
 				SearchClientURL:    deps.SearchClientsURL,
 				JobTemplateID:      record.GetJobTemplateId(),
+				ExecutionStrategy:  parseExecutionStrategy(record.GetExecutionStrategy()),
+				ExecutionStrategyOptions: buildExecutionStrategyOptions(deps.Labels.Form),
 				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
 				// 2026-04-30 cyclic-subscription-jobs plan §7.3.
 				VisitsPerCycle: record.GetVisitsPerCycle(),
@@ -394,11 +436,13 @@ func NewEditAction(deps *Deps) view.View {
 		active := r.FormValue("active") == "true"
 		clientID := strings.TrimSpace(r.FormValue("client_id"))
 		jobTemplateID := strings.TrimSpace(r.FormValue("job_template_id"))
+		executionStrategy := parseExecutionStrategy(r.FormValue("execution_strategy"))
 
 		updateData := &planpb.Plan{
-			Id:          &id,
-			Name:        r.FormValue("name"),
-			Description: strPtr(r.FormValue("description")),
+			Id:                &id,
+			Name:              r.FormValue("name"),
+			Description:       strPtr(r.FormValue("description")),
+			ExecutionStrategy: &executionStrategy,
 		}
 		// 2026-04-30 cyclic-subscription-jobs plan §7.3 — visits_per_cycle.
 		if vpc := parseVisitsPerCycle(r.FormValue("visits_per_cycle")); jobTemplateID != "" && vpc > 0 {

@@ -89,6 +89,27 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels,
             )}}
         </div>
 
+        {{if .ExecutionStrategyOptions}}
+        <div class="form-row single" id="plan-execution-strategy-row">
+            <div class="form-group">
+                <label class="form-label" for="plan-execution-strategy-select">
+                    {{.Labels.ExecutionStrategy}}
+                </label>
+                <select name="execution_strategy"
+                        id="plan-execution-strategy-select"
+                        class="form-select"
+                        data-testid="plan-execution-strategy-select">
+                    {{range .ExecutionStrategyOptions}}
+                    <option value="{{.Value}}" {{if eq .Value $.ExecutionStrategy}}selected{{end}}>{{.Label}}</option>
+                    {{end}}
+                </select>
+                {{if .Labels.ExecutionStrategyHint}}
+                <p class="form-hint">{{.Labels.ExecutionStrategyHint}}</p>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+
         {{/* 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Plan.job_template_id
              assignment. Only rendered when JobTemplateOptions is populated
              (deps.ListJobTemplates wired) AND the tier labels the field — an

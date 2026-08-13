@@ -31,6 +31,14 @@ type Labels struct {
 	JobTemplateNone string
 	JobTemplateHint string
 
+	// Plan execution strategy controls how downstream adapters should interpret this
+	// plan's operational contract.
+	ExecutionStrategy               string
+	ExecutionStrategyTemplateDriven string
+	ExecutionStrategyManualOrTask    string
+	ExecutionStrategySeatOrTask      string
+	ExecutionStrategyHint            string
+
 	// 2026-04-30 cyclic-subscription-jobs plan §9.3 — visits_per_cycle field.
 	VisitsPerCycleLabel       string
 	VisitsPerCyclePlaceholder string
@@ -62,6 +70,12 @@ type JobTemplateOption struct {
 	Label string
 }
 
+// ExecutionStrategyOption is a {value,label} pair for the execution strategy.
+type ExecutionStrategyOption struct {
+	Value string
+	Label string
+}
+
 // Data is the template data for the plan drawer form.
 type Data struct {
 	FormAction  string
@@ -86,6 +100,8 @@ type Data struct {
 	// drawer's <select>.
 	JobTemplateID      string
 	JobTemplateOptions []JobTemplateOption
+	ExecutionStrategy  string
+	ExecutionStrategyOptions []ExecutionStrategyOption
 
 	// 2026-04-30 cyclic-subscription-jobs plan §7.3 / §9.3 — Plan.visits_per_cycle.
 	// Number of cycle Job instances spawned per billing cycle. Default 1
