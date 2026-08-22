@@ -33,6 +33,47 @@ type Labels struct {
 	Errors          ErrorLabels           `json:"errors"`
 	ProductPlanForm ProductPlanFormLabels `json:"product_plan_form"`
 	Filters         FilterLabels          `json:"filters"`
+	Composition     PlanJobTemplateLabels `json:"composition"`
+}
+
+type PlanJobTemplatePageLabels struct {
+	Heading         string `json:"heading"`
+	Caption         string `json:"caption"`
+	HeadingActive   string `json:"heading_active"`
+	HeadingInactive string `json:"heading_inactive"`
+}
+type PlanJobTemplateButtonLabels struct {
+	AddEntry string `json:"add_entry"`
+	MoveUp   string `json:"move_up"`
+	MoveDown string `json:"move_down"`
+	Remove   string `json:"remove"`
+}
+type PlanJobTemplateColumnLabels struct {
+	JobTemplateID           string `json:"job_template_id"`
+	SequenceOrder           string `json:"sequence_order"`
+	CompositionEntryPattern string `json:"composition_entry_pattern"`
+	Status                  string `json:"status"`
+}
+type PlanJobTemplateFormLabels struct {
+	JobTemplateID           string `json:"job_template_id"`
+	SequenceOrder           string `json:"sequence_order"`
+	CompositionEntryPattern string `json:"composition_entry_pattern"`
+}
+type PlanJobTemplateEmptyLabels struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+type PlanJobTemplatePatternLabels struct {
+	BundleEntry     string `json:"bundle_entry"`
+	StandaloneEntry string `json:"standalone_entry"`
+}
+type PlanJobTemplateLabels struct {
+	Page     PlanJobTemplatePageLabels    `json:"page"`
+	Buttons  PlanJobTemplateButtonLabels  `json:"buttons"`
+	Columns  PlanJobTemplateColumnLabels  `json:"columns"`
+	Form     PlanJobTemplateFormLabels    `json:"form"`
+	Empty    PlanJobTemplateEmptyLabels   `json:"empty"`
+	Patterns PlanJobTemplatePatternLabels `json:"patterns"`
 }
 
 // ---------------------------------------------------------------------------
@@ -86,11 +127,11 @@ type FormLabels struct {
 	JobTemplateHint string `json:"job_template_hint"`
 
 	// Execution strategy (new): how downstream systems interpret this Plan.
-	ExecutionStrategy                string `json:"execution_strategy"`
-	ExecutionStrategyTemplateDriven  string `json:"execution_strategy_template_driven"`
-	ExecutionStrategyManualOrTask     string `json:"execution_strategy_manual_or_task_driven"`
-	ExecutionStrategySeatOrTask       string `json:"execution_strategy_seat_or_assignment_driven"`
-	ExecutionStrategyHint             string `json:"execution_strategy_hint"`
+	ExecutionStrategy               string `json:"execution_strategy"`
+	ExecutionStrategyTemplateDriven string `json:"execution_strategy_template_driven"`
+	ExecutionStrategyManualOrTask   string `json:"execution_strategy_manual_or_task_driven"`
+	ExecutionStrategySeatOrTask     string `json:"execution_strategy_seat_or_assignment_driven"`
+	ExecutionStrategyHint           string `json:"execution_strategy_hint"`
 
 	// 2026-04-30 cyclic-subscription-jobs plan §9.3 — visits_per_cycle field.
 	// Number of cycle Job instances spawned per billing cycle (default 1).
@@ -240,22 +281,22 @@ func DefaultLabels() Labels {
 			DescriptionInfo: "Optional notes about this plan. Visible on detail pages.",
 			ActiveInfo:      "Inactive plans are hidden from new subscriptions.",
 			// Client-scope fields (2026-04-27 plan-client-scope plan §7).
-			ClientLabel:             "Client",
-			ClientHelp:              "Leave blank to make this package available for any client. Set a client to make it a custom package for that client only.",
-			ClientPlaceholder:       "Leave blank for a general package",
-			ClientSearchPlaceholder: "Search clients...",
-			ClientNoResults:         "No clients found",
-			ClientLockedTooltip:     "Locked — this plan has active subscriptions. Detach them or create a new plan.",
-			ClientForLabel:          "For {{.ClientName}}",
-			ClientInfo:              "Optional. When set, this plan only appears for engagements with that client.",
-			JobTemplate:             "Job Template",
-			JobTemplateNone:         "(none — engagement has no operational tracking)",
-			JobTemplateHint:         "Select the operational template that defines the work for this engagement. Leave empty for advisory-only plans.",
-			ExecutionStrategy:                "Delivery model",
-			ExecutionStrategyTemplateDriven:  "Template workflow",
-			ExecutionStrategyManualOrTask:     "Task list workflow",
-			ExecutionStrategySeatOrTask:       "Assignment workflow",
-			ExecutionStrategyHint:             "Choose how this plan creates and tracks work.",
+			ClientLabel:                     "Client",
+			ClientHelp:                      "Leave blank to make this package available for any client. Set a client to make it a custom package for that client only.",
+			ClientPlaceholder:               "Leave blank for a general package",
+			ClientSearchPlaceholder:         "Search clients...",
+			ClientNoResults:                 "No clients found",
+			ClientLockedTooltip:             "Locked — this plan has active subscriptions. Detach them or create a new plan.",
+			ClientForLabel:                  "For {{.ClientName}}",
+			ClientInfo:                      "Optional. When set, this plan only appears for engagements with that client.",
+			JobTemplate:                     "Job Template",
+			JobTemplateNone:                 "(none — engagement has no operational tracking)",
+			JobTemplateHint:                 "Select the operational template that defines the work for this engagement. Leave empty for advisory-only plans.",
+			ExecutionStrategy:               "Delivery model",
+			ExecutionStrategyTemplateDriven: "Template workflow",
+			ExecutionStrategyManualOrTask:   "Task list workflow",
+			ExecutionStrategySeatOrTask:     "Assignment workflow",
+			ExecutionStrategyHint:           "Choose how this plan creates and tracks work.",
 			// 2026-04-30 cyclic-subscription-jobs plan §9.3.
 			VisitsPerCycleLabel:       "Visits per billing cycle",
 			VisitsPerCyclePlaceholder: "1",
@@ -352,6 +393,14 @@ func DefaultLabels() Labels {
 			ScopeMaster:    "Master",
 			ScopeClient:    "Client-specific",
 			ScopeAll:       "All",
+		},
+		Composition: PlanJobTemplateLabels{
+			Page:     PlanJobTemplatePageLabels{Heading: "Plan Composition", Caption: "Ordered operational templates for this plan"},
+			Buttons:  PlanJobTemplateButtonLabels{AddEntry: "Add Template", MoveUp: "Move up", MoveDown: "Move down", Remove: "Remove"},
+			Columns:  PlanJobTemplateColumnLabels{JobTemplateID: "Template", SequenceOrder: "Order", CompositionEntryPattern: "Composition Entry Pattern", Status: "Status"},
+			Form:     PlanJobTemplateFormLabels{JobTemplateID: "Template", SequenceOrder: "Order", CompositionEntryPattern: "Composition Entry Pattern"},
+			Empty:    PlanJobTemplateEmptyLabels{Title: "No composition entries", Message: "Add an operational template to this plan."},
+			Patterns: PlanJobTemplatePatternLabels{BundleEntry: "Bundle entry", StandaloneEntry: "Standalone entry"},
 		},
 	}
 }

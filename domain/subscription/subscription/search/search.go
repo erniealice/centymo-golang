@@ -7,7 +7,8 @@ package search
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"log"
 	"net/http"
@@ -428,7 +429,7 @@ func searchPlansLegacy(ctx context.Context, w http.ResponseWriter, query string,
 
 func writeJSON(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(data); err != nil {
+	if err := json.MarshalEncode(jsontext.NewEncoder(w), data); err != nil {
 		log.Printf("search: failed to encode JSON response: %v", err)
 	}
 }

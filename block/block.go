@@ -325,6 +325,7 @@ func Block(opts ...BlockOption) consumerapp.AppOption {
 
 		planLabels := subscriptiondom.DefaultPlanLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "plan.json", "plan", &planLabels)
+		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "plan_job_template.json", "plan_job_template", &planLabels.Composition)
 
 		subscriptionLabels := subscriptiondom.DefaultSubscriptionLabels()
 		_ = translations.LoadPathIfExists("en", ctx.BusinessType, "subscription.json", "subscription", &subscriptionLabels)

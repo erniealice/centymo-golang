@@ -24,6 +24,7 @@ import (
 	enums "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/enums"
 	jobpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job"
 	jobphasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_phase"
+	planjobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/plan_job_template"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
@@ -44,8 +45,9 @@ type DetailViewDeps struct {
 
 	// 2026-04-29 auto-spawn-jobs-from-subscription Phase D — Operations tab
 	// data ops. nil-safe; tab degrades to empty state.
-	GetJobsByOrigin    func(ctx context.Context, req *jobpb.GetJobsByOriginRequest) (*jobpb.GetJobsByOriginResponse, error)
-	ListJobPhasesByJob func(ctx context.Context, req *jobphasepb.ListJobPhasesByJobRequest) (*jobphasepb.ListJobPhasesByJobResponse, error)
+	GetJobsByOrigin            func(ctx context.Context, req *jobpb.GetJobsByOriginRequest) (*jobpb.GetJobsByOriginResponse, error)
+	ListJobPhasesByJob         func(ctx context.Context, req *jobphasepb.ListJobPhasesByJobRequest) (*jobphasepb.ListJobPhasesByJobResponse, error)
+	ListPlanJobTemplatesByPlan func(ctx context.Context, req *planjobtemplatepb.ListPlanJobTemplatesByPlanRequest) (*planjobtemplatepb.ListPlanJobTemplatesByPlanResponse, error)
 	// JobDetailURL is the absolute URL pattern (e.g. /app/jobs/detail/{id})
 	// used to deep-link to fayna's Job detail page from the Operations tab.
 	// Empty means no link.
@@ -270,6 +272,7 @@ type SubscriptionJobsTabData struct {
 // SubscriptionJobRow is one row in the flat Jobs tab table.
 type SubscriptionJobRow struct {
 	JobID         string
+	JobTemplateID string
 	JobName       string
 	JobType       string // shell | cycle | onboarding | visit (derived from parent_job_id + cycle_index)
 	JobTypeLabel  string // lyngua-resolved
@@ -286,6 +289,7 @@ type SubscriptionJobRow struct {
 // 2026-04-29 auto-spawn-jobs-from-subscription plan §5.2.
 type OperationsJobRow struct {
 	JobID            string
+	JobTemplateID    string
 	JobName          string
 	IsRoot           bool
 	StatusKey        string // lowercase status, e.g. "planned"
@@ -570,7 +574,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		case "operations":
 			applyOperationsTabData(ctx, deps, pageData, id, sub, allJobs, isCyclic)
 		case "jobs":
-			applyJobsTabData(ctx, deps, pageData, allJobs)
+			applyJobsTabData(ctx, deps, pageData, allJobs, loadCompositionOrder(ctx, deps, sub))
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
@@ -1349,7 +1353,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 		case "operations":
 			applyOperationsTabData(ctx, deps, pageData, id, sub, allJobs, isCyclic)
 		case "jobs":
-			applyJobsTabData(ctx, deps, pageData, allJobs)
+			applyJobsTabData(ctx, deps, pageData, allJobs, loadCompositionOrder(ctx, deps, sub))
 		case "invoices":
 			revenues := loadSubscriptionInvoices(ctx, deps, id)
 			invoicesPrimaryAction := resolveInvoicesPrimaryAction(
@@ -1500,7 +1504,7 @@ func applyOperationsTabData(
 	if len(jobs) == 0 {
 		return
 	}
-	rows := buildOperationsRows(ctx, deps, jobs)
+	rows := buildOperationsRows(ctx, deps, jobs, loadCompositionOrder(ctx, deps, sub))
 	pageData.OperationsHasJobs = len(rows) > 0
 	pageData.OperationsRootJobs = rows
 }
@@ -1770,6 +1774,7 @@ func applyJobsTabData(
 	deps *DetailViewDeps,
 	pageData *PageData,
 	jobs []*jobpb.Job,
+	compositionOrder map[string]int32,
 ) {
 	if pageData.Jobs == nil {
 		pageData.Jobs = &SubscriptionJobsTabData{
@@ -1780,6 +1785,13 @@ func applyJobsTabData(
 	}
 	if len(jobs) == 0 {
 		return
+	}
+	compositionBacked := len(compositionOrder) > 0
+	for _, job := range jobs {
+		if job.GetParentJobId() != "" {
+			compositionBacked = false
+			break
+		}
 	}
 	l := deps.Labels.Jobs
 	rows := make([]SubscriptionJobRow, 0, len(jobs))
@@ -1794,6 +1806,7 @@ func applyJobsTabData(
 		}
 		row := SubscriptionJobRow{
 			JobID:         j.GetId(),
+			JobTemplateID: j.GetJobTemplateId(),
 			JobName:       j.GetName(),
 			JobType:       jobType,
 			JobTypeLabel:  typeLabel,
@@ -1810,10 +1823,20 @@ func applyJobsTabData(
 		pageData.Jobs.StatusCounts[statusKey]++
 		pageData.Jobs.TypeCounts[jobType]++
 	}
-	// Sort by cycle_index descending (engagement first, then most-recent
-	// cycles); ties broken by name. Engagement shell has cycle_index=0 and
-	// parent_job_id="" — pin it to top by giving it a sentinel.
+	// Composition-backed bundles are co-equal root Jobs, so the visible flat
+	// Jobs/Classes tab follows the same plan sequence as the operations tree.
+	// Other plans retain the existing cycle/name ordering.
 	sort.SliceStable(rows, func(i, jj int) bool {
+		if compositionBacked {
+			left, lok := compositionOrder[rows[i].JobTemplateID]
+			right, rok := compositionOrder[rows[jj].JobTemplateID]
+			if lok != rok {
+				return lok
+			}
+			if lok && left != right {
+				return left < right
+			}
+		}
 		if rows[i].JobType == "shell" {
 			return true
 		}
@@ -1878,7 +1901,7 @@ func statusLabelForJobStatus(s enums.JobStatus, l subscription.OperationsLabels)
 // buildOperationsRows converts a flat Job slice into a parent-child tree
 // suitable for the Operations tab template. Each row carries its phase
 // summary string already rendered.
-func buildOperationsRows(ctx context.Context, deps *DetailViewDeps, jobs []*jobpb.Job) []OperationsJobRow {
+func buildOperationsRows(ctx context.Context, deps *DetailViewDeps, jobs []*jobpb.Job, compositionOrder map[string]int32) []OperationsJobRow {
 	byID := map[string]*OperationsJobRow{}
 	roots := make([]OperationsJobRow, 0)
 	// First pass: build node map.
@@ -1913,13 +1936,48 @@ func buildOperationsRows(ctx context.Context, deps *DetailViewDeps, jobs []*jobp
 			roots[i].Children = updated.Children
 		}
 	}
+	if len(compositionOrder) > 0 {
+		sort.SliceStable(roots, func(i, j int) bool {
+			left, lok := compositionOrder[roots[i].JobTemplateID]
+			right, rok := compositionOrder[roots[j].JobTemplateID]
+			if lok != rok {
+				return lok
+			}
+			if lok && left != right {
+				return left < right
+			}
+			return false
+		})
+	}
 	return roots
+}
+
+func loadCompositionOrder(ctx context.Context, deps *DetailViewDeps, sub *subscriptionpb.Subscription) map[string]int32 {
+	if deps.ListPlanJobTemplatesByPlan == nil || sub == nil || sub.GetPricePlan() == nil {
+		return nil
+	}
+	planID := sub.GetPricePlan().GetPlanId()
+	if planID == "" {
+		return nil
+	}
+	resp, err := deps.ListPlanJobTemplatesByPlan(ctx, &planjobtemplatepb.ListPlanJobTemplatesByPlanRequest{PlanId: planID})
+	if err != nil || resp == nil {
+		return nil
+	}
+	out := map[string]int32{}
+	for _, row := range resp.GetPlanJobTemplates() {
+		if row != nil && row.GetActive() {
+			out[row.GetJobTemplateId()] = row.GetSequenceOrder()
+		}
+	}
+	return out
 }
 
 func jobToOperationsRow(ctx context.Context, deps *DetailViewDeps, j *jobpb.Job) OperationsJobRow {
 	statusKey, statusVariant := operationsJobStatusInfo(j.GetStatus())
 	row := OperationsJobRow{
 		JobID:          j.GetId(),
+		JobTemplateID:  j.GetJobTemplateId(),
 		JobName:        j.GetName(),
 		IsRoot:         j.GetParentJobId() == "",
 		StatusKey:      statusKey,

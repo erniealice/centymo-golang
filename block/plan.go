@@ -403,11 +403,26 @@ func wirePlanModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *Us
 		if useCases.Plan.ListPlans != nil {
 			planListDeps.ListPlans = useCases.Plan.ListPlans
 		}
+		if useCases.Operation.PlanJobTemplate != nil && useCases.Operation.PlanJobTemplate.ListByPlan != nil {
+			planListDeps.ListPlanJobTemplatesByPlan = useCases.Operation.PlanJobTemplate.ListByPlan
+		}
 		if w.refChecker != nil {
 			planListDeps.GetInUseIDs = w.refChecker.GetPlanInUseIDs
 		}
 		ctx.Routes.GET(w.planRoutes.ListURL, planlist.NewView(planListDeps))
 		ctx.Routes.GET(w.planRoutes.TableURL, planlist.NewTableView(planListDeps))
+
+		var planJobTemplateDeps *planaction.PlanJobTemplateDeps
+		if useCases.Operation.PlanJobTemplate != nil && useCases.Operation.PlanJobTemplate.ListByPlan != nil {
+			planJobTemplateDeps = &planaction.PlanJobTemplateDeps{
+				Routes: w.planRoutes, Labels: w.planLabels,
+				Create: useCases.Operation.PlanJobTemplate.Create,
+				Update: useCases.Operation.PlanJobTemplate.Update,
+				Delete: useCases.Operation.PlanJobTemplate.Delete,
+				ListByPlan: useCases.Operation.PlanJobTemplate.ListByPlan,
+			}
+			if useCases.Operation.JobTemplate.ListJobTemplates != nil { planJobTemplateDeps.ListJobTemplates = useCases.Operation.JobTemplate.ListJobTemplates }
+		}
 
 		// Plan CRUD actions
 		if useCases.Plan.CreatePlan != nil {
@@ -421,6 +436,7 @@ func wirePlanModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *Us
 				// SetPlanActive: narrow typed SetActive closure (proto3 omits false
 				// booleans, so the typed proto Update can't clear `active`).
 				SetPlanActive: setActiveClosure(useCases, "plan"),
+				PlanJobTemplate: planJobTemplateDeps,
 			}
 			// 2026-04-27 plan-client-scope plan §6.2 — Client picker support
 			// + reference-checker lock state.
@@ -446,6 +462,13 @@ func wirePlanModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *Us
 			ctx.Routes.POST(w.planRoutes.BulkDeleteURL, planaction.NewBulkDeleteAction(planActionDeps))
 			ctx.Routes.POST(w.planRoutes.SetStatusURL, planaction.NewSetStatusAction(planActionDeps))
 			ctx.Routes.POST(w.planRoutes.BulkSetStatusURL, planaction.NewBulkSetStatusAction(planActionDeps))
+			if planJobTemplateDeps != nil && planJobTemplateDeps.Create != nil {
+				ctx.Routes.GET(w.planRoutes.PlanJobTemplateAddURL, planaction.NewPlanJobTemplateAddAction(planJobTemplateDeps))
+				ctx.Routes.POST(w.planRoutes.PlanJobTemplateAddURL, planaction.NewPlanJobTemplateAddAction(planJobTemplateDeps))
+				ctx.Routes.POST(w.planRoutes.PlanJobTemplateEditURL, planaction.NewPlanJobTemplateEditAction(planJobTemplateDeps))
+				ctx.Routes.POST(w.planRoutes.PlanJobTemplateDeleteURL, planaction.NewPlanJobTemplateDeleteAction(planJobTemplateDeps))
+				ctx.Routes.GET(w.planRoutes.PlanJobTemplatePickerURL, planaction.NewPlanJobTemplatePickerAction(planJobTemplateDeps))
+			}
 		}
 
 		// Plan detail page + tab action
@@ -496,6 +519,9 @@ func wirePlanModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *Us
 			// tab JobTemplate row resolution.
 			if useCases.Operation.JobTemplate.ReadJobTemplate != nil {
 				planDetailDeps.ReadJobTemplate = useCases.Operation.JobTemplate.ReadJobTemplate
+			}
+			if useCases.Operation.PlanJobTemplate != nil && useCases.Operation.PlanJobTemplate.ListByPlan != nil {
+				planDetailDeps.ListPlanJobTemplatesByPlan = useCases.Operation.PlanJobTemplate.ListByPlan
 			}
 			ctx.Routes.GET(w.planRoutes.DetailURL, plandetail.NewView(planDetailDeps))
 			ctx.Routes.GET(w.planRoutes.TabActionURL, plandetail.NewTabAction(planDetailDeps))

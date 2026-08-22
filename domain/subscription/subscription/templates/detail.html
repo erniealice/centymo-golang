@@ -285,7 +285,7 @@
 
 {{/* Recursive render helper for parent + child Jobs in the Operations tab. */}}
 {{define "subscription-operations-job-row"}}
-<li data-testid="operations-job-row"
+<li data-testid="operations-job-row" data-job-id="{{.Row.JobID}}" data-job-template-id="{{.Row.JobTemplateID}}"
     data-job-id="{{.Row.JobID}}"
     {{if not .Row.IsRoot}}data-job-child="true"{{end}}
     class="operations-job-row{{if not .Row.IsRoot}} operations-job-row--child{{end}}">

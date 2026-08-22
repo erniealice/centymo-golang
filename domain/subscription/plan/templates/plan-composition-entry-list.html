@@ -1,0 +1,49 @@
+{{define "plan-composition-entry-list"}}
+<div id="plan-composition-entry-list" data-testid="plan-composition-entry-list">
+    <header class="form-section__header">
+        <h4>{{.Labels.Heading}}</h4>
+        {{if .Labels.Caption}}<p class="form-hint">{{.Labels.Caption}}</p>{{end}}
+    </header>
+
+    {{if .Entries}}
+    <div class="table-scroll">
+        <table class="data-table">
+            <tbody>
+            {{range .Entries}}
+            <tr data-testid="plan-composition-entry-{{.ID}}" data-entry-id="{{.ID}}" data-template-id="{{.JobTemplateID}}" data-sequence-order="{{.SequenceOrder}}">
+                <td><strong>{{.JobTemplateName}}</strong><br><span class="form-hint">{{.PatternLabel}}</span></td>
+                <td class="cell-actions">
+                    <button type="button" class="btn btn--ghost btn--sm" title="{{$.Labels.MoveUp}}" data-testid="plan-composition-move-up-{{.ID}}" hx-post="{{.MoveUpURL}}" hx-vals='{"direction":"up"}' hx-target="#plan-composition-entry-list" hx-swap="outerHTML" {{if not .CanMoveUp}}disabled{{end}}>{{$.Labels.MoveUp}}</button>
+                    <button type="button" class="btn btn--ghost btn--sm" title="{{$.Labels.MoveDown}}" data-testid="plan-composition-move-down-{{.ID}}" hx-post="{{.MoveDownURL}}" hx-vals='{"direction":"down"}' hx-target="#plan-composition-entry-list" hx-swap="outerHTML" {{if not .CanMoveDown}}disabled{{end}}>{{$.Labels.MoveDown}}</button>
+                    <button type="button" class="btn btn--ghost btn--sm" title="{{$.Labels.Remove}}" data-testid="plan-composition-delete-{{.ID}}" hx-post="{{.DeleteURL}}" hx-vals='{"entry_id":"{{.ID}}"}' hx-target="#plan-composition-entry-list" hx-swap="outerHTML">{{$.Labels.Remove}}</button>
+                </td>
+            </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <div class="empty-state" data-testid="plan-composition-empty">
+        <strong>{{.Labels.EmptyTitle}}</strong>
+        <p>{{.Labels.EmptyMessage}}</p>
+    </div>
+    {{end}}
+
+    <div class="form-row" data-testid="plan-composition-add-controls">
+        <div class="form-group">
+            <label class="form-label" for="plan-composition-template-select">{{.Labels.Template}}</label>
+            <select id="plan-composition-template-select" name="composition_job_template_id" class="form-select" data-testid="plan-composition-template-select">
+                <option value=""></option>
+                {{range .TemplateOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="plan-composition-pattern-select">{{.Labels.Pattern}}</label>
+            <select id="plan-composition-pattern-select" name="composition_entry_pattern" class="form-select" data-testid="plan-composition-pattern-select">
+                {{range .PatternOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}
+            </select>
+        </div>
+        <button type="button" class="btn btn--secondary" data-testid="plan-composition-add" hx-post="{{.AddURL}}" hx-include="#plan-composition-template-select,#plan-composition-pattern-select" hx-target="#plan-composition-entry-list" hx-swap="outerHTML">{{.Labels.AddEntry}}</button>
+    </div>
+</div>
+{{end}}

@@ -11,7 +11,8 @@ package action
 //	{"found": true, "price": 1500, "currency": "USD", "price_list_id": "...", "price_product_id": "..."}
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,7 +24,7 @@ import (
 // writeJSON marshals data as JSON and writes it to the response writer.
 func writeJSON(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(data); err != nil {
+	if err := json.MarshalEncode(jsontext.NewEncoder(w), data); err != nil {
 		log.Printf("action: failed to encode JSON response: %v", err)
 	}
 }

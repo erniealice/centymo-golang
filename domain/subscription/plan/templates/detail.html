@@ -83,6 +83,16 @@
             </span>
         </div>
         {{end}}
+		{{if .CompositionEntries}}
+		<div class="detail-info-row" data-testid="plan-detail-composition">
+			<span class="detail-info-label">{{.Labels.Composition.Page.Heading}}</span>
+			<div class="detail-info-value">
+				{{range .CompositionEntries}}
+				<span class="badge badge--info" data-testid="plan-detail-composition-entry" data-template-id="{{.JobTemplateID}}" data-sequence-order="{{.SequenceOrder}}">{{.JobTemplateName}} - {{.PatternLabel}}</span>
+				{{end}}
+			</div>
+		</div>
+		{{end}}
         <div class="detail-info-item">
             <span class="detail-info-label">{{.Labels.Detail.CreatedDate}}</span>
             <span class="detail-info-value">{{if .CreatedDate}}{{.CreatedDate}}{{else}}—{{end}}</span>

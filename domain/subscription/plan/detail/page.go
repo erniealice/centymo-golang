@@ -21,6 +21,7 @@ import (
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	jobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template"
+	planjobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/plan_job_template"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_plan"
 	productvariantpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant"
@@ -62,7 +63,8 @@ type DetailViewDeps struct {
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — Info tab Job
 	// Template row. Resolves Plan.job_template_id to a display name. Optional
 	// — when nil, the Info tab simply omits the row.
-	ReadJobTemplate func(ctx context.Context, req *jobtemplatepb.ReadJobTemplateRequest) (*jobtemplatepb.ReadJobTemplateResponse, error)
+	ReadJobTemplate            func(ctx context.Context, req *jobtemplatepb.ReadJobTemplateRequest) (*jobtemplatepb.ReadJobTemplateResponse, error)
+	ListPlanJobTemplatesByPlan func(ctx context.Context, req *planjobtemplatepb.ListPlanJobTemplatesByPlanRequest) (*planjobtemplatepb.ListPlanJobTemplatesByPlanResponse, error)
 
 	attachment.AttachmentOps
 	auditlog.AuditOps
@@ -99,16 +101,22 @@ type PageData struct {
 	// Template row. JobTemplateID is the raw FK; JobTemplateName is the
 	// resolved display label (falls back to ID when ReadJobTemplate is nil
 	// or the template is missing). Empty JobTemplateID = advisory-only plan.
-	JobTemplateID   string
-	JobTemplateName string
-	ProductsTable   *types.TableConfig
-	PricePlansTable *types.TableConfig
-	AttachmentTable *types.TableConfig
+	JobTemplateID      string
+	JobTemplateName    string
+	CompositionEntries []PlanCompositionRow
+	ProductsTable      *types.TableConfig
+	PricePlansTable    *types.TableConfig
+	AttachmentTable    *types.TableConfig
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
 	AuditHasNext    bool
 	AuditNextCursor string
 	AuditHistoryURL string
+}
+
+type PlanCompositionRow struct {
+	JobTemplateID, JobTemplateName, PatternLabel string
+	SequenceOrder                                int32
 }
 
 // NewView creates the plan detail view (full page).
@@ -223,6 +231,21 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	if jobTemplateID != "" {
 		jobTemplateName = resolveJobTemplateName(ctx, jobTemplateID, deps.ReadJobTemplate)
 	}
+	var compositionEntries []PlanCompositionRow
+	if deps.ListPlanJobTemplatesByPlan != nil {
+		if resp, err := deps.ListPlanJobTemplatesByPlan(ctx, &planjobtemplatepb.ListPlanJobTemplatesByPlanRequest{PlanId: id}); err == nil && resp != nil {
+			for _, row := range resp.GetPlanJobTemplates() {
+				if row == nil || !row.GetActive() {
+					continue
+				}
+				pattern := deps.Labels.Composition.Patterns.BundleEntry
+				if row.GetCompositionEntryPattern() == planjobtemplatepb.PlanJobTemplateCompositionEntryPattern_PLAN_JOB_TEMPLATE_COMPOSITION_ENTRY_PATTERN_STANDALONE_ENTRY {
+					pattern = deps.Labels.Composition.Patterns.StandaloneEntry
+				}
+				compositionEntries = append(compositionEntries, PlanCompositionRow{JobTemplateID: row.GetJobTemplateId(), JobTemplateName: resolveJobTemplateName(ctx, row.GetJobTemplateId(), deps.ReadJobTemplate), PatternLabel: pattern, SequenceOrder: row.GetSequenceOrder()})
+			}
+		}
+	}
 
 	// Get counts for tab badges — filter by plan_id so only this plan's products are counted
 	productCount := 0
@@ -275,25 +298,26 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 			HeaderIcon:     "icon-layers",
 			CommonLabels:   deps.CommonLabels,
 		},
-		ContentTemplate: "plan-detail-content",
-		Plan:            plan,
-		Labels:          l,
-		ActiveTab:       activeTab,
-		TabItems:        tabItems,
-		ID:              id,
-		PlanName:        name,
-		PlanDesc:        description,
-		PlanStatus:      planStatus,
-		PlanStatusLabel: planStatusLabel,
-		StatusVariant:   statusVariant,
-		CreatedDate:     createdDate,
-		ModifiedDate:    modifiedDate,
-		IsCustomPlan:    isCustom,
-		ClientID:        clientID,
-		ClientName:      clientName,
-		ClientHref:      clientHref,
-		JobTemplateID:   jobTemplateID,
-		JobTemplateName: jobTemplateName,
+		ContentTemplate:    "plan-detail-content",
+		Plan:               plan,
+		Labels:             l,
+		ActiveTab:          activeTab,
+		TabItems:           tabItems,
+		ID:                 id,
+		PlanName:           name,
+		PlanDesc:           description,
+		PlanStatus:         planStatus,
+		PlanStatusLabel:    planStatusLabel,
+		StatusVariant:      statusVariant,
+		CreatedDate:        createdDate,
+		ModifiedDate:       modifiedDate,
+		IsCustomPlan:       isCustom,
+		ClientID:           clientID,
+		ClientName:         clientName,
+		ClientHref:         clientHref,
+		JobTemplateID:      jobTemplateID,
+		JobTemplateName:    jobTemplateName,
+		CompositionEntries: compositionEntries,
 	}
 
 	// Load tab-specific data

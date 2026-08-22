@@ -7,14 +7,16 @@ package search
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
+	"log"
+	"net/http"
+	"strings"
+
 	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	locationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/location"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
-	"log"
-	"net/http"
-	"strings"
 )
 
 // searchOption is the JSON shape returned by the search handlers.
@@ -301,7 +303,7 @@ func NewSearchProductsAction(deps *Deps) http.HandlerFunc {
 // writeJSON marshals data as JSON and writes it to the response writer.
 func writeJSON(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(data); err != nil {
+	if err := json.MarshalEncode(jsontext.NewEncoder(w), data); err != nil {
 		log.Printf("search: failed to encode JSON response: %v", err)
 	}
 }

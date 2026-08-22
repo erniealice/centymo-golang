@@ -35,9 +35,9 @@ type Labels struct {
 	// plan's operational contract.
 	ExecutionStrategy               string
 	ExecutionStrategyTemplateDriven string
-	ExecutionStrategyManualOrTask    string
-	ExecutionStrategySeatOrTask      string
-	ExecutionStrategyHint            string
+	ExecutionStrategyManualOrTask   string
+	ExecutionStrategySeatOrTask     string
+	ExecutionStrategyHint           string
 
 	// 2026-04-30 cyclic-subscription-jobs plan §9.3 — visits_per_cycle field.
 	VisitsPerCycleLabel       string
@@ -76,6 +76,24 @@ type ExecutionStrategyOption struct {
 	Label string
 }
 
+type PlanCompositionOption struct{ Value, Label string }
+type PlanCompositionEntry struct {
+	ID, JobTemplateID, JobTemplateName, Pattern, PatternLabel string
+	SequenceOrder                                             int32
+	MoveUpURL, MoveDownURL, DeleteURL                         string
+	CanMoveUp, CanMoveDown                                    bool
+}
+type PlanCompositionLabels struct {
+	Heading, Caption, AddEntry, MoveUp, MoveDown, Remove, Template, Pattern, EmptyTitle, EmptyMessage string
+}
+type PlanCompositionData struct {
+	PlanID, AddURL, PickerURL string
+	Entries                   []PlanCompositionEntry
+	TemplateOptions           []JobTemplateOption
+	PatternOptions            []PlanCompositionOption
+	Labels                    PlanCompositionLabels
+}
+
 // Data is the template data for the plan drawer form.
 type Data struct {
 	FormAction  string
@@ -98,9 +116,9 @@ type Data struct {
 	// assignment. JobTemplateID is the currently-assigned id (empty on add /
 	// when unset); JobTemplateOptions enumerates active JobTemplates for the
 	// drawer's <select>.
-	JobTemplateID      string
-	JobTemplateOptions []JobTemplateOption
-	ExecutionStrategy  string
+	JobTemplateID            string
+	JobTemplateOptions       []JobTemplateOption
+	ExecutionStrategy        string
 	ExecutionStrategyOptions []ExecutionStrategyOption
 
 	// 2026-04-30 cyclic-subscription-jobs plan §7.3 / §9.3 — Plan.visits_per_cycle.
@@ -108,6 +126,7 @@ type Data struct {
 	// when unset; the drawer template renders 1 in the input either way.
 	// Visible only when JobTemplateID is set (template-side JS gate).
 	VisitsPerCycle int32
+	Composition    *PlanCompositionData
 
 	Labels       Labels
 	CommonLabels any

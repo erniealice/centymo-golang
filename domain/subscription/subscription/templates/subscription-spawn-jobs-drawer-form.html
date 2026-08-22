@@ -85,6 +85,7 @@ Data: SubscriptionID, SubscriptionLabel, FormAction,
 {{if .SpawnJobsAvailable}}
 <section data-testid="subscription-spawn-jobs-section" class="form-section">
     <h3 class="form-section-title">{{.Labels.SpawnJobsSectionTitle}}</h3>
+    <input type="hidden" name="spawn_jobs_field_present" value="1">
     <div class="form-row single">
         <label class="form-toggle">
             <input type="checkbox"

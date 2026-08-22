@@ -40,6 +40,11 @@ const (
 	ProductPlanEditURL   = "/action/plan/{id}/products/edit/{ppid}"
 	ProductPlanDeleteURL = "/action/plan/{id}/products/delete"
 	ProductPlanPickerURL = "/action/plan/{id}/products/picker"
+
+	PlanJobTemplateAddURL    = "/action/plan/{id}/composition/add"
+	PlanJobTemplateEditURL   = "/action/plan/{id}/composition/edit/{pjtid}"
+	PlanJobTemplateDeleteURL = "/action/plan/{id}/composition/delete"
+	PlanJobTemplatePickerURL = "/action/plan/{id}/composition/picker"
 )
 
 type Routes struct {
@@ -82,6 +87,11 @@ type Routes struct {
 	ProductPlanEditURL   string `json:"product_plan_edit_url"`
 	ProductPlanDeleteURL string `json:"product_plan_delete_url"`
 	ProductPlanPickerURL string `json:"product_plan_picker_url"`
+
+	PlanJobTemplateAddURL    string `json:"plan_job_template_add_url"`
+	PlanJobTemplateEditURL   string `json:"plan_job_template_edit_url"`
+	PlanJobTemplateDeleteURL string `json:"plan_job_template_delete_url"`
+	PlanJobTemplatePickerURL string `json:"plan_job_template_picker_url"`
 }
 
 // DefaultRoutes returns a Routes populated from the package-level
@@ -119,6 +129,11 @@ func DefaultRoutes() Routes {
 		ProductPlanEditURL:   ProductPlanEditURL,
 		ProductPlanDeleteURL: ProductPlanDeleteURL,
 		ProductPlanPickerURL: ProductPlanPickerURL,
+
+		PlanJobTemplateAddURL:    PlanJobTemplateAddURL,
+		PlanJobTemplateEditURL:   PlanJobTemplateEditURL,
+		PlanJobTemplateDeleteURL: PlanJobTemplateDeleteURL,
+		PlanJobTemplatePickerURL: PlanJobTemplatePickerURL,
 	}
 }
 
@@ -174,6 +189,10 @@ func DefaultBundleRoutes() Routes {
 	r.ProductPlanEditURL = shift(r.ProductPlanEditURL)
 	r.ProductPlanDeleteURL = shift(r.ProductPlanDeleteURL)
 	r.ProductPlanPickerURL = shift(r.ProductPlanPickerURL)
+	r.PlanJobTemplateAddURL = shift(r.PlanJobTemplateAddURL)
+	r.PlanJobTemplateEditURL = shift(r.PlanJobTemplateEditURL)
+	r.PlanJobTemplateDeleteURL = shift(r.PlanJobTemplateDeleteURL)
+	r.PlanJobTemplatePickerURL = shift(r.PlanJobTemplatePickerURL)
 	return r
 }
 
@@ -209,5 +228,10 @@ func (r Routes) RouteMap() map[string]string {
 		"plan.product_plan.edit":   r.ProductPlanEditURL,
 		"plan.product_plan.delete": r.ProductPlanDeleteURL,
 		"plan.product_plan.picker": r.ProductPlanPickerURL,
+
+		"plan.plan_job_template.add":    r.PlanJobTemplateAddURL,
+		"plan.plan_job_template.edit":   r.PlanJobTemplateEditURL,
+		"plan.plan_job_template.delete": r.PlanJobTemplateDeleteURL,
+		"plan.plan_job_template.picker": r.PlanJobTemplatePickerURL,
 	}
 }

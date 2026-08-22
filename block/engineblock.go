@@ -1110,6 +1110,16 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 		if uc.Operation.JobTemplateRelation != nil && uc.Operation.JobTemplateRelation.ListByParent != nil {
 			result.Operation.JobTemplateRelation.ListByParent = uc.Operation.JobTemplateRelation.ListByParent.Execute
 		}
+		if uc.Operation.PlanJobTemplate != nil {
+			result.Operation.PlanJobTemplate = &PlanJobTemplateUseCases{
+				Create:     uc.Operation.PlanJobTemplate.Create,
+				Read:       uc.Operation.PlanJobTemplate.Read,
+				Update:     uc.Operation.PlanJobTemplate.Update,
+				Delete:     uc.Operation.PlanJobTemplate.Delete,
+				List:       uc.Operation.PlanJobTemplate.List,
+				ListByPlan: uc.Operation.PlanJobTemplate.ListByPlan,
+			}
+		}
 		if uc.Operation.Job != nil {
 			result.Operation.Job.GetJobsByOrigin = uc.Operation.Job.GetJobsByOrigin.Execute
 		}
@@ -1195,7 +1205,7 @@ func advanceStatusTail(s advancekindpb.AdvanceStatus) string {
 
 // paymentTermInt32 coerces a generic ListSimple() map value (whatever numeric
 // type the underlying postgres scan produced for an integer column — int64 in
-// practice, but float64 / int / int32 / json.Number are tolerated) into an
+// practice, but float64 / int / int32 / jsontext.Value are tolerated) into an
 // int32 for the proto PaymentTerm.NetDays field. Returns ok=false for nil /
 // unrecognized types so the caller leaves the proto field at its zero value.
 // 20260612-datasource-typed-path W7 (payment_term dropdown fallback).

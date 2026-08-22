@@ -17,6 +17,7 @@ import (
 	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	jobtemplaterelationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_relation"
 	jobtemplatetaskpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_task"
+	planjobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/plan_job_template"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
@@ -91,16 +92,17 @@ type Deps struct {
 	SetBillingEventStatus           func(ctx context.Context, req *billingeventpb.SetBillingEventStatusRequest) (*billingeventpb.SetBillingEventStatusResponse, error)
 
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 / Phase D —
-	// JobTemplate read deps used by:
+	// Plan composition and JobTemplate read deps used by:
 	//   1. The Spawn Jobs section detection on the create form (resolves
-	//      Plan.job_template_id → JobTemplate + JobTemplateRelation rows
-	//      → phase + task counts).
+	//      active PlanJobTemplate rows first, with Plan.job_template_id as a
+	//      legacy fallback, then resolves phase + task counts).
 	//   2. The retroactive spawn drawer (lists detected templates).
 	// All are nil-safe — when unwired, the section/drawer hide.
-	ReadJobTemplate          func(ctx context.Context, req *jobtemplatepb.ReadJobTemplateRequest) (*jobtemplatepb.ReadJobTemplateResponse, error)
-	ListJobTemplatePhases    func(ctx context.Context, req *jobtemplatephasepb.ListByJobTemplateRequest) (*jobtemplatephasepb.ListByJobTemplateResponse, error)
-	ListJobTemplateTasks     func(ctx context.Context, req *jobtemplatetaskpb.ListJobTemplateTasksByPhaseRequest) (*jobtemplatetaskpb.ListJobTemplateTasksByPhaseResponse, error)
-	ListJobTemplateRelations func(ctx context.Context, req *jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest) (*jobtemplaterelationpb.ListJobTemplateRelationsByParentResponse, error)
+	ReadJobTemplate            func(ctx context.Context, req *jobtemplatepb.ReadJobTemplateRequest) (*jobtemplatepb.ReadJobTemplateResponse, error)
+	ListPlanJobTemplatesByPlan func(ctx context.Context, req *planjobtemplatepb.ListPlanJobTemplatesByPlanRequest) (*planjobtemplatepb.ListPlanJobTemplatesByPlanResponse, error)
+	ListJobTemplatePhases      func(ctx context.Context, req *jobtemplatephasepb.ListByJobTemplateRequest) (*jobtemplatephasepb.ListByJobTemplateResponse, error)
+	ListJobTemplateTasks       func(ctx context.Context, req *jobtemplatetaskpb.ListJobTemplateTasksByPhaseRequest) (*jobtemplatetaskpb.ListJobTemplateTasksByPhaseResponse, error)
+	ListJobTemplateRelations   func(ctx context.Context, req *jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest) (*jobtemplaterelationpb.ListJobTemplateRelationsByParentResponse, error)
 
 	// MaterializeJobsForSubscription is the espyna use case wired through
 	// the subscription block. Used by the retroactive spawn handler. nil-safe.
@@ -513,10 +515,10 @@ type SpawnJobsDetection struct {
 	TaskCount     int
 }
 
-// detectSpawnJobs walks PricePlan → Plan → JobTemplate (+ relations) for the
-// drawer's Spawn Jobs section. Returns Available=false when any link is
-// missing or any read dep is unwired. Reads are best-effort — errors are
-// swallowed and surface as Available=false (the section is hidden).
+// detectSpawnJobs walks PricePlan → Plan → active PlanJobTemplate composition
+// entries for the drawer's Spawn Jobs section. An empty or unavailable
+// composition falls back to the legacy Plan.job_template_id (+ relations)
+// shape. Reads are best-effort; unresolved templates are omitted.
 func detectSpawnJobs(ctx context.Context, deps *Deps, pricePlanID string) SpawnJobsDetection {
 	out := SpawnJobsDetection{}
 	if deps == nil || pricePlanID == "" || deps.ReadPricePlan == nil || deps.ReadPlan == nil || deps.ReadJobTemplate == nil {
@@ -536,28 +538,30 @@ func detectSpawnJobs(ctx context.Context, deps *Deps, pricePlanID string) SpawnJ
 	if err != nil || planResp == nil || len(planResp.GetData()) == 0 {
 		return out
 	}
-	rootTemplateID := planResp.GetData()[0].GetJobTemplateId()
-	if rootTemplateID == "" {
-		return out
-	}
-
-	// Collect root + active children via JobTemplateRelation.
-	templateIDs := []string{rootTemplateID}
-	if deps.ListJobTemplateRelations != nil {
-		relResp, err := deps.ListJobTemplateRelations(ctx, &jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest{
-			ParentTemplateId: rootTemplateID,
-		})
-		if err == nil && relResp != nil {
-			for _, rel := range relResp.GetJobTemplateRelations() {
-				if !rel.GetActive() {
+	plan := planResp.GetData()[0]
+	templateIDs := make([]string, 0)
+	if deps.ListPlanJobTemplatesByPlan != nil {
+		compositionResp, compositionErr := deps.ListPlanJobTemplatesByPlan(ctx, &planjobtemplatepb.ListPlanJobTemplatesByPlanRequest{PlanId: planID})
+		if compositionErr == nil && compositionResp != nil {
+			for _, entry := range compositionResp.GetPlanJobTemplates() {
+				if entry == nil || !entry.GetActive() || entry.GetJobTemplateId() == "" {
 					continue
 				}
-				cid := rel.GetChildTemplateId()
-				if cid != "" && cid != rootTemplateID {
-					templateIDs = append(templateIDs, cid)
+				templateIDs = append(templateIDs, entry.GetJobTemplateId())
+				if entry.GetCompositionEntryPattern() == planjobtemplatepb.PlanJobTemplateCompositionEntryPattern_PLAN_JOB_TEMPLATE_COMPOSITION_ENTRY_PATTERN_STANDALONE_ENTRY {
+					templateIDs = append(templateIDs, activeChildTemplateIDs(ctx, deps, entry.GetJobTemplateId())...)
 				}
 			}
 		}
+	}
+
+	if len(templateIDs) == 0 {
+		rootTemplateID := plan.GetJobTemplateId()
+		if rootTemplateID == "" {
+			return out
+		}
+		templateIDs = append(templateIDs, rootTemplateID)
+		templateIDs = append(templateIDs, activeChildTemplateIDs(ctx, deps, rootTemplateID)...)
 	}
 
 	for _, tid := range templateIDs {
@@ -598,6 +602,29 @@ func detectSpawnJobs(ctx context.Context, deps *Deps, pricePlanID string) SpawnJ
 
 	out.Available = out.JobCount > 0
 	return out
+}
+
+func activeChildTemplateIDs(ctx context.Context, deps *Deps, parentTemplateID string) []string {
+	if deps == nil || deps.ListJobTemplateRelations == nil || parentTemplateID == "" {
+		return nil
+	}
+	relResp, err := deps.ListJobTemplateRelations(ctx, &jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest{
+		ParentTemplateId: parentTemplateID,
+	})
+	if err != nil || relResp == nil {
+		return nil
+	}
+	children := make([]string, 0, len(relResp.GetJobTemplateRelations()))
+	for _, rel := range relResp.GetJobTemplateRelations() {
+		if rel == nil || !rel.GetActive() {
+			continue
+		}
+		childID := rel.GetChildTemplateId()
+		if childID != "" && childID != parentTemplateID {
+			children = append(children, childID)
+		}
+	}
+	return children
 }
 
 // SpawnGuardResult reports whether a retroactive Spawn Jobs action is

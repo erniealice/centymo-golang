@@ -62,6 +62,7 @@ Data: PageData with .Jobs == *SubscriptionJobsTabData and .Labels for i18n.
             {{range .Jobs.Rows}}
             <tr data-testid="subscription-jobs-row"
                 data-job-id="{{.JobID}}"
+				data-job-template-id="{{.JobTemplateID}}"
                 data-job-type="{{.JobType}}"
                 data-job-status="{{.Status}}">
                 <td>

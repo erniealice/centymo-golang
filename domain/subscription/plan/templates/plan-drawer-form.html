@@ -180,10 +180,16 @@ Data: .Name, .Description, .ID, .FormAction, .IsEdit, .CommonLabels, .Labels,
             if (jtSel) jtSel.addEventListener('change', applyVisibility);
             applyVisibility();
         })();
-        </script>
-        {{end}}
+		</script>
+		{{end}}
 
-        <div class="form-row single">
+		{{if .Composition}}
+		<section class="form-section" data-testid="plan-composition-section">
+			{{template "plan-composition-entry-list" .Composition}}
+		</section>
+		{{end}}
+
+		<div class="form-row single">
             <div class="form-group form-group-toggle">
                 <label class="form-label" for="active">
                     {{.Labels.Active}}

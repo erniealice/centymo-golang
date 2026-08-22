@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	plan "github.com/erniealice/centymo-golang/domain/subscription/plan"
 	espynahttp "github.com/erniealice/espyna-golang/contrib/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/erniealice/pyeza-golang/view"
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
+	planjobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/plan_job_template"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 )
 
@@ -38,7 +40,8 @@ type ListViewDeps struct {
 	// 2026-04-29 auto-spawn-jobs-from-subscription plan §5 — surfaces the
 	// configured workflow on the Plan list so operators can see at a glance
 	// which Plans will spawn jobs on subscription activation.
-	ListJobTemplateNames func(ctx context.Context) map[string]string
+	ListJobTemplateNames       func(ctx context.Context) map[string]string
+	ListPlanJobTemplatesByPlan func(ctx context.Context, req *planjobtemplatepb.ListPlanJobTemplatesByPlanRequest) (*planjobtemplatepb.ListPlanJobTemplatesByPlanResponse, error)
 }
 
 // PageData holds the data for the plan list page.
@@ -171,7 +174,7 @@ func buildTableConfig(ctx context.Context, deps *ListViewDeps, columns []types.T
 	}
 
 	l := deps.Labels
-	rows := buildTableRows(items, status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, clientNames, templateNames)
+	rows := buildTableRows(ctx, deps, items, status, l, deps.CommonLabels, deps.Routes, inUseIDs, perms, clientNames, templateNames)
 	types.ApplyColumnStyles(columns, rows)
 
 	bulkCfg := pyeza.MapBulkConfig(deps.CommonLabels)
@@ -265,7 +268,7 @@ func planColumns(l plan.Labels) []types.TableColumn {
 	return cols
 }
 
-func buildTableRows(plans []*planpb.Plan, status string, l plan.Labels, cl pyeza.CommonLabels, routes plan.Routes, inUseIDs map[string]bool, perms *types.UserPermissions, clientNames map[string]string, templateNames map[string]string) []types.TableRow {
+func buildTableRows(ctx context.Context, deps *ListViewDeps, plans []*planpb.Plan, status string, l plan.Labels, cl pyeza.CommonLabels, routes plan.Routes, inUseIDs map[string]bool, perms *types.UserPermissions, clientNames map[string]string, templateNames map[string]string) []types.TableRow {
 	rows := []types.TableRow{}
 	for _, p := range plans {
 		active := p.GetActive()
@@ -293,6 +296,22 @@ func buildTableRows(plans []*planpb.Plan, status string, l plan.Labels, cl pyeza
 				tplLabel = n
 			} else {
 				tplLabel = tid
+			}
+		}
+		if tplLabel == "" && deps.ListPlanJobTemplatesByPlan != nil {
+			if resp, err := deps.ListPlanJobTemplatesByPlan(ctx, &planjobtemplatepb.ListPlanJobTemplatesByPlanRequest{PlanId: id}); err == nil && resp != nil {
+				labels := make([]string, 0, len(resp.GetPlanJobTemplates()))
+				for _, entry := range resp.GetPlanJobTemplates() {
+					if entry == nil || !entry.GetActive() {
+						continue
+					}
+					label := templateNames[entry.GetJobTemplateId()]
+					if label == "" {
+						label = entry.GetJobTemplateId()
+					}
+					labels = append(labels, label)
+				}
+				tplLabel = strings.Join(labels, ", ")
 			}
 		}
 

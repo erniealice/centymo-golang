@@ -114,6 +114,7 @@ type Deps struct {
 	// on the Plan drawer. Optional: when nil the drawer hides the select and
 	// Plan.job_template_id is left untouched.
 	ListJobTemplates func(ctx context.Context, req *jobtemplatepb.ListJobTemplatesRequest) (*jobtemplatepb.ListJobTemplatesResponse, error)
+	PlanJobTemplate  *PlanJobTemplateDeps
 }
 
 // buildFormLabels maps plan.Labels fields to form.Labels.
@@ -140,14 +141,14 @@ func buildFormLabels(l plan.Labels) form.Labels {
 		ClientForLabel:          l.Form.ClientForLabel,
 		ClientInfo:              l.Form.ClientInfo,
 		// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.
-		JobTemplate:     l.Form.JobTemplate,
-		JobTemplateNone: l.Form.JobTemplateNone,
-		JobTemplateHint: l.Form.JobTemplateHint,
-		ExecutionStrategy:                l.Form.ExecutionStrategy,
-		ExecutionStrategyTemplateDriven:  l.Form.ExecutionStrategyTemplateDriven,
-		ExecutionStrategyManualOrTask:     l.Form.ExecutionStrategyManualOrTask,
-		ExecutionStrategySeatOrTask:       l.Form.ExecutionStrategySeatOrTask,
-		ExecutionStrategyHint:            l.Form.ExecutionStrategyHint,
+		JobTemplate:                     l.Form.JobTemplate,
+		JobTemplateNone:                 l.Form.JobTemplateNone,
+		JobTemplateHint:                 l.Form.JobTemplateHint,
+		ExecutionStrategy:               l.Form.ExecutionStrategy,
+		ExecutionStrategyTemplateDriven: l.Form.ExecutionStrategyTemplateDriven,
+		ExecutionStrategyManualOrTask:   l.Form.ExecutionStrategyManualOrTask,
+		ExecutionStrategySeatOrTask:     l.Form.ExecutionStrategySeatOrTask,
+		ExecutionStrategyHint:           l.Form.ExecutionStrategyHint,
 		// 2026-04-30 cyclic-subscription-jobs plan §9.3.
 		VisitsPerCycleLabel:       l.Form.VisitsPerCycleLabel,
 		VisitsPerCyclePlaceholder: l.Form.VisitsPerCyclePlaceholder,
@@ -270,18 +271,18 @@ func NewAddAction(deps *Deps) view.View {
 				clientLabel = resolveClientLabel(ctx, pinnedClientID, deps.ListClients)
 			}
 			return view.OK("plan-drawer-form", &form.Data{
-				FormAction:         deps.Routes.AddURL,
-				Active:             true,
-				ClientFieldMode:    fieldMode,
-				ClientID:           pinnedClientID,
-				ClientLabel:        clientLabel,
-				ClientOptions:      loadClientOptions(ctx, deps.ListClients, pinnedClientID),
-				SearchClientURL:    deps.SearchClientsURL,
-				ExecutionStrategy:  executionStrategyTemplateDriven,
+				FormAction:               deps.Routes.AddURL,
+				Active:                   true,
+				ClientFieldMode:          fieldMode,
+				ClientID:                 pinnedClientID,
+				ClientLabel:              clientLabel,
+				ClientOptions:            loadClientOptions(ctx, deps.ListClients, pinnedClientID),
+				SearchClientURL:          deps.SearchClientsURL,
+				ExecutionStrategy:        executionStrategyTemplateDriven,
 				ExecutionStrategyOptions: buildExecutionStrategyOptions(deps.Labels.Form),
-				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
-				Labels:             buildFormLabels(deps.Labels),
-				CommonLabels:       nil, // injected by ViewAdapter
+				JobTemplateOptions:       loadJobTemplateOptions(ctx, deps.ListJobTemplates),
+				Labels:                   buildFormLabels(deps.Labels),
+				CommonLabels:             nil, // injected by ViewAdapter
 			})
 		}
 
@@ -405,23 +406,24 @@ func NewEditAction(deps *Deps) view.View {
 			}
 
 			return view.OK("plan-drawer-form", &form.Data{
-				FormAction:         formAction,
-				IsEdit:             !isClone,
-				ID:                 formID,
-				Name:               name,
-				Description:        record.GetDescription(),
-				Active:             record.GetActive(),
-				ClientFieldMode:    fieldMode,
-				ClientID:           clientID,
-				ClientLabel:        clientLabel,
-				ClientOptions:      loadClientOptions(ctx, deps.ListClients, clientID),
-				SearchClientURL:    deps.SearchClientsURL,
-				JobTemplateID:      record.GetJobTemplateId(),
-				ExecutionStrategy:  parseExecutionStrategy(record.GetExecutionStrategy()),
+				FormAction:               formAction,
+				IsEdit:                   !isClone,
+				ID:                       formID,
+				Name:                     name,
+				Description:              record.GetDescription(),
+				Active:                   record.GetActive(),
+				ClientFieldMode:          fieldMode,
+				ClientID:                 clientID,
+				ClientLabel:              clientLabel,
+				ClientOptions:            loadClientOptions(ctx, deps.ListClients, clientID),
+				SearchClientURL:          deps.SearchClientsURL,
+				JobTemplateID:            record.GetJobTemplateId(),
+				ExecutionStrategy:        parseExecutionStrategy(record.GetExecutionStrategy()),
 				ExecutionStrategyOptions: buildExecutionStrategyOptions(deps.Labels.Form),
-				JobTemplateOptions: loadJobTemplateOptions(ctx, deps.ListJobTemplates),
+				JobTemplateOptions:       loadJobTemplateOptions(ctx, deps.ListJobTemplates),
 				// 2026-04-30 cyclic-subscription-jobs plan §7.3.
 				VisitsPerCycle: record.GetVisitsPerCycle(),
+				Composition:    loadPlanCompositionData(ctx, deps.PlanJobTemplate, id),
 				Labels:         buildFormLabels(deps.Labels),
 				CommonLabels:   nil, // injected by ViewAdapter
 			})

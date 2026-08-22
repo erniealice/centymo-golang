@@ -305,6 +305,9 @@ func wireSubscriptionModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCa
 		if useCases.Operation.JobTemplateRelation.ListByParent != nil {
 			subActionDeps.ListJobTemplateRelations = useCases.Operation.JobTemplateRelation.ListByParent
 		}
+		if useCases.Operation.PlanJobTemplate != nil && useCases.Operation.PlanJobTemplate.ListByPlan != nil {
+			subActionDeps.ListPlanJobTemplatesByPlan = useCases.Operation.PlanJobTemplate.ListByPlan
+		}
 		if useCases.Subscription.MaterializeJobsForSubscription != nil {
 			materializeUC := useCases.Subscription.MaterializeJobsForSubscription
 			subActionDeps.MaterializeJobsForSubscription = func(fctx context.Context, subID string, spawn bool) (int, string, error) {
@@ -495,6 +498,9 @@ func wireSubscriptionModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCa
 		}
 		if useCases.Operation.JobPhase.ListByJob != nil {
 			subDetailDeps.ListJobPhasesByJob = useCases.Operation.JobPhase.ListByJob
+		}
+		if useCases.Operation.PlanJobTemplate != nil && useCases.Operation.PlanJobTemplate.ListByPlan != nil {
+			subDetailDeps.ListPlanJobTemplatesByPlan = useCases.Operation.PlanJobTemplate.ListByPlan
 		}
 		subDetailDeps.SpawnJobsURL = w.subscriptionRoutes.SpawnJobsURL
 		subDetailDeps.JobDetailURL = cfg.jobDetailURL

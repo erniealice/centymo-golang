@@ -127,7 +127,7 @@ func TestBuildTableRows_PermissionMatrix(t *testing.T) {
 			t.Parallel()
 
 			perms := types.NewUserPermissions(tc.perms)
-			rows := buildTableRows(plans, "active", l, cl, routes, map[string]bool{}, perms, map[string]string{}, map[string]string{})
+			rows := buildTableRows(context.Background(), &ListViewDeps{}, plans, "active", l, cl, routes, map[string]bool{}, perms, map[string]string{}, map[string]string{})
 
 			if len(rows) != 1 {
 				t.Fatalf("rows = %d, want 1", len(rows))
@@ -192,7 +192,7 @@ func TestBuildTableRows_InactiveRow_ActivateInsteadOfDeactivate(t *testing.T) {
 	routes := testPlanRoutes()
 
 	perms := types.NewUserPermissions([]string{"plan:list", "plan:read"})
-	rows := buildTableRows(plans, "inactive", l, cl, routes, nil, perms, nil, nil)
+	rows := buildTableRows(context.Background(), &ListViewDeps{}, plans, "inactive", l, cl, routes, nil, perms, nil, nil)
 
 	if len(rows) != 1 {
 		t.Fatalf("rows = %d, want 1", len(rows))
@@ -232,7 +232,7 @@ func TestBuildTableRows_InUse_DeletionBlocked(t *testing.T) {
 	// Admin perms — but in-use blocks delete.
 	perms := types.NewUserPermissions([]string{"plan:list", "plan:read", "plan:create", "plan:update", "plan:delete"})
 
-	rows := buildTableRows(plans, "active", l, cl, routes, inUse, perms, nil, nil)
+	rows := buildTableRows(context.Background(), &ListViewDeps{}, plans, "active", l, cl, routes, inUse, perms, nil, nil)
 	del := findAction(rows[0].Actions, "delete")
 	if del == nil {
 		t.Fatalf("delete action missing")

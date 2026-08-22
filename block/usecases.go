@@ -52,6 +52,7 @@ import (
 	jobtemplatedepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	jobtemplaterelationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_relation"
 	jobttemplatetaskpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_task"
+	planjobtemplatepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/plan_job_template"
 	costplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/cost_plan"
 	costschedulepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/cost_schedule"
 	supplierplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/procurement/supplier_plan"
@@ -976,6 +977,7 @@ type OperationUseCases struct {
 	JobTemplatePhase    JobTemplatePhaseUseCases
 	JobTemplateTask     JobTemplateTaskUseCases
 	JobTemplateRelation JobTemplateRelationUseCases
+	PlanJobTemplate     *PlanJobTemplateUseCases
 	Job                 JobUseCases
 	JobPhase            JobPhaseUseCases
 	JobActivity         JobActivityUseCases
@@ -1006,6 +1008,15 @@ type JobTemplateTaskUseCases struct {
 // domain server method has the exact same signature).
 type JobTemplateRelationUseCases struct {
 	ListByParent func(context.Context, *jobtemplaterelationpb.ListJobTemplateRelationsByParentRequest) (*jobtemplaterelationpb.ListJobTemplateRelationsByParentResponse, error)
+}
+
+type PlanJobTemplateUseCases struct {
+	Create     func(context.Context, *planjobtemplatepb.CreatePlanJobTemplateRequest) (*planjobtemplatepb.CreatePlanJobTemplateResponse, error)
+	Read       func(context.Context, *planjobtemplatepb.ReadPlanJobTemplateRequest) (*planjobtemplatepb.ReadPlanJobTemplateResponse, error)
+	Update     func(context.Context, *planjobtemplatepb.UpdatePlanJobTemplateRequest) (*planjobtemplatepb.UpdatePlanJobTemplateResponse, error)
+	Delete     func(context.Context, *planjobtemplatepb.DeletePlanJobTemplateRequest) (*planjobtemplatepb.DeletePlanJobTemplateResponse, error)
+	List       func(context.Context, *planjobtemplatepb.ListPlanJobTemplatesRequest) (*planjobtemplatepb.ListPlanJobTemplatesResponse, error)
+	ListByPlan func(context.Context, *planjobtemplatepb.ListPlanJobTemplatesByPlanRequest) (*planjobtemplatepb.ListPlanJobTemplatesByPlanResponse, error)
 }
 
 type JobUseCases struct {
