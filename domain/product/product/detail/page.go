@@ -2,6 +2,7 @@ package detail
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	assetpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/asset/asset"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	linepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/line"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
@@ -46,6 +48,9 @@ type DetailViewDeps struct {
 	UpdateProductLine         func(ctx context.Context, req *productlinepb.UpdateProductLineRequest) (*productlinepb.UpdateProductLineResponse, error)
 	DeleteProductLine         func(ctx context.Context, req *productlinepb.DeleteProductLineRequest) (*productlinepb.DeleteProductLineResponse, error)
 	ListProductVariantOptions func(ctx context.Context, req *productvariantoptionpb.ListProductVariantOptionsRequest) (*productvariantoptionpb.ListProductVariantOptionsResponse, error)
+	ListProductAssets         func(ctx context.Context, productID string) ([]*assetpb.Asset, error)
+	ListAssignableAssets      func(ctx context.Context, productID string) ([]*assetpb.Asset, error)
+	AssignProductAsset        func(ctx context.Context, productID, assetID string) error
 
 	// PermissionEntity is the first argument to perms.Can(entity, action) for
 	// the detail-page action buttons (edit, delete, variant assign). Defaults
@@ -92,6 +97,7 @@ type PageData struct {
 	VariantsTable       *types.TableConfig
 	OptionsTable        *types.TableConfig
 	LinesTable          *types.TableConfig
+	AssetsTable         *types.TableConfig
 	AttachmentTable     *types.TableConfig
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
@@ -119,6 +125,16 @@ type ProductLineFormData struct {
 	Active       bool
 	LineOptions  []types.SelectOption
 	Labels       ProductLineFormLabels
+	CommonLabels pyeza.CommonLabels
+}
+
+type ProductAssetFormData struct {
+	FormAction   string
+	WorkspaceID  string
+	ProductID    string
+	ProductName  string
+	AssetOptions []types.SelectOption
+	Labels       product.AssetAssignmentLabels
 	CommonLabels pyeza.CommonLabels
 }
 
@@ -179,6 +195,14 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				return handleProductLineAssociationEdit(ctx, deps, viewCtx, id)
 			case "delete":
 				return handleProductLineAssociationDelete(ctx, deps, viewCtx, id)
+			}
+		}
+		if tab == "assets" {
+			if !assetTabEnabled(deps) || !perms.Can("asset", "read") {
+				return view.Forbidden("asset:read")
+			}
+			if viewCtx.Request.URL.Query().Get("mode") == "add" {
+				return handleProductAssetAdd(ctx, deps, viewCtx, id)
 			}
 		}
 
@@ -276,6 +300,19 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 
 	optionCount := getOptionCountTyped(ctx, deps, id)
 	lineCount, linesTable := buildLinesTable(ctx, deps, id)
+	assetCount := 0
+	var assetsTable *types.TableConfig
+	perms := view.GetUserPermissions(ctx)
+	if activeTab == "assets" && assetTabEnabled(deps) {
+		if !perms.Can("asset", "read") {
+			return nil, fmt.Errorf("asset:read permission required")
+		}
+		var assetErr error
+		assetCount, assetsTable, assetErr = buildAssetsTable(ctx, deps, id)
+		if assetErr != nil {
+			return nil, assetErr
+		}
+	}
 
 	// Model D — Info tab display strings for unit + variant mode.
 	// Falls back to English when lyngua hasn't overlaid the keys yet.
@@ -320,7 +357,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	// would otherwise lose access to their existing configuration. Show the
 	// tabs when the product is configurable OR has any existing options/variants.
 	showVariantTabs := product.GetVariantMode() == "configurable" || optionCount > 0 || variantCount > 0
-	tabItems := buildTabItems(id, l, variantCount, optionCount, lineCount, deps.Routes, showVariantTabs)
+	tabItems := buildTabItems(id, l, variantCount, optionCount, lineCount, assetCount, deps.Routes, showVariantTabs, assetTabEnabled(deps) && perms.Can("asset", "read"))
 
 	// Header subtitle: use the product description, or fall back to the
 	// "No description provided" lyngua label. Without this fallback the
@@ -360,6 +397,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		ProductStatusLabel:  productStatusLabel,
 		StatusVariant:       StatusVariant,
 		LineName:            productLineName,
+		AssetsTable:         assetsTable,
 		ProductUnit:         productUnit,
 		ProductVariantMode:  productVariantModeDisplay,
 		UnitRowLabel:        unitRowLabel,
@@ -367,7 +405,6 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	}
 
 	// Load tab-specific data
-	perms := view.GetUserPermissions(ctx)
 	switch activeTab {
 	case "variants":
 		tableConfig := BuildVariantsTable(ctx, deps, id, perms)
@@ -377,6 +414,8 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		pageData.OptionsTable = tableConfig
 	case "lines":
 		pageData.LinesTable = linesTable
+	case "assets":
+		pageData.AssetsTable = assetsTable
 	case "attachments":
 		if deps.ListAttachments != nil {
 			cfg := attachmentConfig(deps)
@@ -414,7 +453,116 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	return pageData, nil
 }
 
-func buildTabItems(id string, l product.Labels, variantCount, optionCount, lineCount int, routes product.Routes, showVariantTabs bool) []pyeza.TabItem {
+func assetTabEnabled(deps *DetailViewDeps) bool {
+	return deps != nil && deps.ListProductAssets != nil && deps.ListAssignableAssets != nil && deps.AssignProductAsset != nil
+}
+
+func buildAssetsTable(ctx context.Context, deps *DetailViewDeps, productID string) (int, *types.TableConfig, error) {
+	assets, err := deps.ListProductAssets(ctx, productID)
+	if err != nil {
+		log.Printf("failed to load product assets for product %s: %v", productID, err)
+		return 0, nil, errors.New(deps.Labels.AssetAssignment.Failed)
+	}
+	perms := view.GetUserPermissions(ctx)
+	rows := make([]types.TableRow, 0, len(assets))
+	for _, asset := range assets {
+		if asset == nil {
+			continue
+		}
+		location := ""
+		if asset.GetLocation() != nil {
+			location = asset.GetLocation().GetName()
+		}
+		if location == "" && asset.GetLocationId() != "" {
+			location = asset.GetLocationId()
+		}
+		rows = append(rows, types.TableRow{ID: asset.GetId(), Cells: []types.TableCell{
+			{Type: "text", Value: asset.GetName()},
+			{Type: "text", Value: asset.GetAssetNumber()},
+			{Type: "text", Value: location},
+		}})
+	}
+	columns := []types.TableColumn{
+		{Key: "name", Label: deps.Labels.AssetAssignment.Name, NoSort: true},
+		{Key: "number", Label: deps.Labels.AssetAssignment.Number, NoSort: true},
+		{Key: "location", Label: deps.Labels.AssetAssignment.Location, NoSort: true},
+	}
+	table := &types.TableConfig{
+		ID: "product-assets-table", Columns: columns, Rows: rows,
+		RefreshURL:  route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "assets"),
+		ShowActions: false, ShowEntries: true,
+		EmptyState: types.TableEmptyState{
+			Title: deps.Labels.AssetAssignment.EmptyTitle, Message: deps.Labels.AssetAssignment.EmptyMessage,
+		},
+		PrimaryAction: &types.PrimaryAction{
+			Label:     deps.Labels.AssetAssignment.Add,
+			ActionURL: route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "assets") + "?mode=add",
+			Icon:      "icon-plus", Disabled: !perms.Can("asset", "update"),
+			DisabledTooltip: deps.Labels.Errors.PermissionDenied,
+		},
+	}
+	types.ApplyColumnStyles(columns, rows)
+	types.ApplyTableSettings(table)
+	return len(rows), table, nil
+}
+
+func handleProductAssetAdd(ctx context.Context, deps *DetailViewDeps, viewCtx *view.ViewContext, productID string) view.ViewResult {
+	perms := view.GetUserPermissions(ctx)
+	if !perms.Can("product", "read") || !perms.Can("asset", "read") || !perms.Can("asset", "update") {
+		return view.HTMXError(deps.Labels.Errors.PermissionDenied)
+	}
+	if !assetTabEnabled(deps) {
+		return view.HTMXError(deps.Labels.AssetAssignment.Unavailable)
+	}
+	formAction := route.ResolveURL(deps.Routes.TabActionURL, "id", productID, "tab", "assets")
+	if viewCtx.Request.Method == http.MethodGet {
+		if deps.ReadProduct == nil {
+			return view.HTMXError(deps.Labels.AssetAssignment.Unavailable)
+		}
+		productResp, err := deps.ReadProduct(ctx, &productpb.ReadProductRequest{Data: &productpb.Product{Id: productID}})
+		if err != nil {
+			log.Printf("failed to validate product %s before asset assignment: %v", productID, err)
+			return view.HTMXError(deps.Labels.AssetAssignment.Failed)
+		}
+		if productResp == nil || len(productResp.GetData()) == 0 {
+			return view.HTMXError(deps.Labels.AssetAssignment.Failed)
+		}
+		assets, err := deps.ListAssignableAssets(ctx, productID)
+		if err != nil {
+			log.Printf("failed to list assignable assets for product %s: %v", productID, err)
+			return view.HTMXError(deps.Labels.AssetAssignment.Failed)
+		}
+		options := make([]types.SelectOption, 0, len(assets))
+		for _, asset := range assets {
+			if asset == nil {
+				continue
+			}
+			label := asset.GetName()
+			if number := asset.GetAssetNumber(); number != "" {
+				if label != "" {
+					label += " — "
+				}
+				label += number
+			}
+			options = append(options, types.SelectOption{Value: asset.GetId(), Label: label})
+		}
+		return view.OK("product-asset-assignment-drawer-form", &ProductAssetFormData{FormAction: formAction, ProductID: productID, ProductName: productResp.GetData()[0].GetName(), AssetOptions: options, Labels: deps.Labels.AssetAssignment, CommonLabels: deps.CommonLabels})
+	}
+	if err := viewCtx.Request.ParseForm(); err != nil {
+		return view.HTMXError(deps.Labels.Errors.InvalidFormData)
+	}
+	assetID := viewCtx.Request.FormValue("asset_id")
+	if assetID == "" {
+		return view.HTMXError(deps.Labels.AssetAssignment.Required)
+	}
+	if err := deps.AssignProductAsset(ctx, productID, assetID); err != nil {
+		log.Printf("failed to assign asset %s to product %s: %v", assetID, productID, err)
+		return view.HTMXError(deps.Labels.AssetAssignment.Failed)
+	}
+	return view.HTMXSuccess("product-assets-table")
+}
+
+func buildTabItems(id string, l product.Labels, variantCount, optionCount, lineCount, assetCount int, routes product.Routes, showVariantTabs, showAssets bool) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	items := []pyeza.TabItem{
@@ -431,6 +579,13 @@ func buildTabItems(id string, l product.Labels, variantCount, optionCount, lineC
 	}
 	items = append(items,
 		pyeza.TabItem{Key: "lines", Label: l.Tabs.Lines, Href: base + "?tab=lines", HxGet: action + "lines", Icon: "icon-layers", Count: lineCount, Disabled: false},
+	)
+	if showAssets {
+		items = append(items,
+			pyeza.TabItem{Key: "assets", Label: l.AssetAssignment.Assets, Href: base + "?tab=assets", HxGet: action + "assets", Icon: "icon-package", Count: assetCount, Disabled: false},
+		)
+	}
+	items = append(items,
 		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip", Count: 0, Disabled: false},
 		pyeza.TabItem{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: base + "?tab=audit-history", HxGet: action + "audit-history", Icon: "icon-clock"},
 	)

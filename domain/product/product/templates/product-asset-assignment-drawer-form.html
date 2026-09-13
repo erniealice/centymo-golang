@@ -1,0 +1,28 @@
+{{/* Single existing asset assignment drawer. */}}
+{{define "product-asset-assignment-drawer-form"}}
+<form id="product-asset-assignment-form" hx-post="{{.FormAction}}?mode=add" hx-swap="none" data-hx-on="sheet-response">
+    {{actionForm .FormAction .WorkspaceID}}
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "product_name"
+                "Label" .Labels.ProductLabel
+                "Value" .ProductName
+                "Readonly" true
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "asset_id"
+                "Label" .Labels.Asset
+                "Required" true
+                "Placeholder" .Labels.SelectAsset
+                "Options" .AssetOptions
+            )}}
+        </div>
+    </div>
+    {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" false)}}
+</form>
+{{end}}

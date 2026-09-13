@@ -242,7 +242,10 @@ func wireRevenueDeps(deps *revenuedomain.RevenueModuleDeps, uc *UseCases) {
 // ---------------------------------------------------------------------------
 
 func ProductUnit(uc *UseCases, infra *Infra) compose.Unit {
-	u := productpkg.Describe()
+	return productCatalogUnit(uc, infra, productpkg.Describe(), "service", nil, "", "")
+}
+
+func productCatalogUnit(uc *UseCases, infra *Infra, u compose.Unit, mode string, kinds []string, delivery, tracking string) compose.Unit {
 	u.Mount = func(mc *compose.MountContext) error {
 		r := u.Routes.(*productpkg.Routes)
 
@@ -256,7 +259,7 @@ func ProductUnit(uc *UseCases, infra *Infra) compose.Unit {
 		deps := &productdom.ProductModuleDeps{
 			Routes:           *r,
 			Labels:           productLabels,
-			Mode:             "service",
+			Mode:             mode,
 			CommonLabels:     mc.Common,
 			TableLabels:      mc.Table,
 			GetInUseIDs:      getProductInUseIDs,
@@ -271,7 +274,22 @@ func ProductUnit(uc *UseCases, infra *Infra) compose.Unit {
 			DeleteAttachment: infra.DeleteAttachment,
 			NewID:            infra.NewAttachmentID,
 		}
+		if len(kinds) > 0 {
+			deps.AllowedProductKinds = kinds
+			deps.DefaultProductKind = kinds[0]
+			deps.DefaultDeliveryMode = delivery
+			deps.DefaultTrackingMode = tracking
+			deps.PermissionEntity = "product"
+			if mode == "supplies" {
+				deps.PermissionEntity = "supplies"
+			}
+		}
 		wireProductDeps(deps, uc)
+		if mode == "service" {
+			deps.ListProductAssets = uc.Product.ListProductAssets
+			deps.ListAssignableAssets = uc.Product.ListAssignableAssets
+			deps.AssignProductAsset = uc.Product.AssignProductAsset
+		}
 		wireServiceDashboard(deps, uc)
 		deps.LocationName = buildLocationResolver(uc)
 		productdom.NewProductModule(deps).RegisterRoutes(mc.Routes)
@@ -441,7 +459,10 @@ func PricePlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 // ---------------------------------------------------------------------------
 
 func PriceScheduleUnit(uc *UseCases, infra *Infra) compose.Unit {
-	u := priceschedulepkg.Describe()
+	return priceScheduleCatalogUnit(uc, infra, priceschedulepkg.Describe())
+}
+
+func priceScheduleCatalogUnit(uc *UseCases, infra *Infra, u compose.Unit) compose.Unit {
 	u.Mount = func(mc *compose.MountContext) error {
 		r := u.Routes.(*priceschedulepkg.Routes)
 		l := u.Labels.(*priceschedulepkg.Labels)
@@ -1926,7 +1947,7 @@ func AllUnits(uc *UseCases, infra *Infra, opts ...EngineOption) []compose.Unit {
 	for _, o := range opts {
 		o(&cfg)
 	}
-	return []compose.Unit{
+	units := []compose.Unit{
 		InventoryUnit(uc, infra),
 		RevenueUnit(uc, infra),
 		ProductUnit(uc, infra),
@@ -1966,4 +1987,8 @@ func AllUnits(uc *UseCases, infra *Infra, opts ...EngineOption) []compose.Unit {
 		SupplierSubscriptionUnit(uc, infra),
 		ProcurementDashboardUnit(uc, infra),
 	}
+	if cfg.inventoryCatalogMounts {
+		units = append(units, ProductInventoryUnit(uc, infra), ProductSuppliesUnit(uc, infra), PriceScheduleInventoryUnit(uc, infra))
+	}
+	return units
 }

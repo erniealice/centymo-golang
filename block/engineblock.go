@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	expenseboard "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/expense_dashboard"
@@ -23,6 +24,7 @@ import (
 	expendituredashpb "github.com/erniealice/esqyma/pkg/schema/v1/service/dashboard/expenditure"
 	productdashpb "github.com/erniealice/esqyma/pkg/schema/v1/service/dashboard/product"
 	treasurydashpb "github.com/erniealice/esqyma/pkg/schema/v1/service/dashboard/treasury"
+	lynguaV1 "github.com/erniealice/lyngua/golang/v1"
 )
 
 // The EngineOption / WithSubscriptionGroupOptions surface lives in subscription_group_options.go.
@@ -36,6 +38,13 @@ func EngineBlock(opts ...EngineOption) consumerapp.AppOption {
 			return err
 		}
 		adapted := buildCentymoUseCases(uc, ctx.DB)
+		assetConfig := &engineConfig{}
+		for _, opt := range opts {
+			opt(assetConfig)
+		}
+		if assetConfig.productAssets {
+			bindProductAssets(adapted, uc)
+		}
 
 		infra := &Infra{}
 		infra.UploadFile, _ = ctx.UploadFile.(func(context.Context, string, string, []byte, string) error)
@@ -56,6 +65,17 @@ func EngineBlock(opts ...EngineOption) consumerapp.AppOption {
 		}
 
 		units := AllUnits(adapted, infra, opts...)
+		// Inventory labels are sparse overlays. Seed them from the generic
+		// product vocabulary, not the vertical's service/space vocabulary.
+		if translations, ok := ctx.Translations.(*lynguaV1.TranslationProvider); ok && translations != nil {
+			for _, u := range units {
+				if u.Key == "product.product_inventory" || u.Key == "product.product_supplies" {
+					if err := translations.LoadPathIfExists("en", "general", "product.json", "product", u.Labels); err != nil {
+						return fmt.Errorf("%s base labels: %w", u.Key, err)
+					}
+				}
+			}
+		}
 		return consumerapp.AssembleEngineBlock("centymo", units, ctx)
 	}
 }

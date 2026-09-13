@@ -30,6 +30,8 @@
     {{template "product-tab-options" .}}
 {{else if eq .ActiveTab "lines"}}
     {{template "product-tab-lines" .}}
+{{else if eq .ActiveTab "assets"}}
+    {{template "product-tab-assets" .}}
 {{else if eq .ActiveTab "attachments"}}
     {{template "attachment-tab" .}}
 {{else if eq .ActiveTab "audit-history"}}
@@ -147,6 +149,22 @@
         <div class="coming-soon-panel">
             <div class="coming-soon-title">Lines</div>
             <p class="coming-soon-text">Assign one or more lines to this product.</p>
+        </div>
+    {{end}}
+</div>
+{{end}}
+
+{{/* =============================================
+     TAB PARTIAL: Assets
+     ============================================= */}}
+{{define "product-tab-assets"}}
+<div class="tab-scroll tab-scroll--table">
+    {{if .AssetsTable}}
+        {{template "table-card" .AssetsTable}}
+    {{else}}
+        <div class="coming-soon-panel">
+            <div class="coming-soon-title">{{.Labels.AssetAssignment.EmptyTitle}}</div>
+            <p class="coming-soon-text">{{.Labels.AssetAssignment.EmptyMessage}}</p>
         </div>
     {{end}}
 </div>

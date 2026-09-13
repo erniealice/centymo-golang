@@ -65,6 +65,25 @@ type Labels struct {
 
 	// Phase 5 — service dashboard (product_kind=service surface).
 	ServiceDashboard ServiceDashboardLabels `json:"service_dashboard"`
+	AssetAssignment  AssetAssignmentLabels  `json:"asset_assignment"`
+}
+
+// AssetAssignmentLabels holds labels for the product detail Assets tab and
+// its single-asset assignment drawer.
+type AssetAssignmentLabels struct {
+	Assets       string `json:"assets"`
+	Add          string `json:"add"`
+	Asset        string `json:"asset"`
+	ProductLabel string `json:"product_label"`
+	SelectAsset  string `json:"select_asset"`
+	Name         string `json:"name"`
+	Number       string `json:"number"`
+	Location     string `json:"location"`
+	EmptyTitle   string `json:"empty_title"`
+	EmptyMessage string `json:"empty_message"`
+	Required     string `json:"required"`
+	Unavailable  string `json:"unavailable"`
+	Failed       string `json:"failed"`
 }
 
 // ServiceDashboardLabels holds translatable strings for the service

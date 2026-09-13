@@ -13,6 +13,7 @@ import (
 	variantitemserial "github.com/erniealice/centymo-golang/domain/product/product/detail/variant/item/serial"
 	productlist "github.com/erniealice/centymo-golang/domain/product/product/list"
 	shared "github.com/erniealice/centymo-golang/domain/shared"
+	assetpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/asset/asset"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
 	inventoryitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_item"
@@ -125,6 +126,11 @@ type ProductModuleDeps struct {
 	UpdateProductLine func(ctx context.Context, req *productlinepb.UpdateProductLineRequest) (*productlinepb.UpdateProductLineResponse, error)
 	DeleteProductLine func(ctx context.Context, req *productlinepb.DeleteProductLineRequest) (*productlinepb.DeleteProductLineResponse, error)
 
+	// Product asset assignment (scalar asset.product_id association).
+	ListProductAssets    func(ctx context.Context, productID string) ([]*assetpb.Asset, error)
+	ListAssignableAssets func(ctx context.Context, productID string) ([]*assetpb.Asset, error)
+	AssignProductAsset   func(ctx context.Context, productID, assetID string) error
+
 	// Product Option Value CRUD
 	ListProductOptionValues  func(ctx context.Context, req *productoptionvaluepb.ListProductOptionValuesRequest) (*productoptionvaluepb.ListProductOptionValuesResponse, error)
 	ReadProductOptionValue   func(ctx context.Context, req *productoptionvaluepb.ReadProductOptionValueRequest) (*productoptionvaluepb.ReadProductOptionValueResponse, error)
@@ -187,22 +193,23 @@ type ProductModuleDeps struct {
 
 // ProductModule holds all constructed product views.
 type ProductModule struct {
-	routes        epkg.Routes
-	Dashboard     view.View
-	List          view.View
-	Table         view.View
-	Detail        view.View
-	TabAction     view.View
-	Add           view.View
-	Edit          view.View
-	Delete        view.View
-	BulkDelete    view.View
-	SetStatus     view.View
-	BulkSetStatus view.View
-	VariantTable  view.View
-	VariantAssign view.View
-	VariantEdit   view.View
-	VariantRemove view.View
+	routes             epkg.Routes
+	assetAssignEnabled bool
+	Dashboard          view.View
+	List               view.View
+	Table              view.View
+	Detail             view.View
+	TabAction          view.View
+	Add                view.View
+	Edit               view.View
+	Delete             view.View
+	BulkDelete         view.View
+	SetStatus          view.View
+	BulkSetStatus      view.View
+	VariantTable       view.View
+	VariantAssign      view.View
+	VariantEdit        view.View
+	VariantRemove      view.View
 	// Option detail page (option values management)
 	OptionPage view.View
 	// Variant detail page + tab action
@@ -270,6 +277,9 @@ func NewProductModule(deps *ProductModuleDeps) *ProductModule {
 		CreateProductLine:         deps.CreateProductLine,
 		UpdateProductLine:         deps.UpdateProductLine,
 		DeleteProductLine:         deps.DeleteProductLine,
+		ListProductAssets:         deps.ListProductAssets,
+		ListAssignableAssets:      deps.ListAssignableAssets,
+		AssignProductAsset:        deps.AssignProductAsset,
 		ListProductVariantOptions: deps.ListProductVariantOptions,
 		PermissionEntity:          deps.PermissionEntity,
 		AttachmentOps: attachment.AttachmentOps{
@@ -380,6 +390,7 @@ func NewProductModule(deps *ProductModuleDeps) *ProductModule {
 
 	return &ProductModule{
 		routes:                       deps.Routes,
+		assetAssignEnabled:           deps.ListProductAssets != nil && deps.ListAssignableAssets != nil && deps.AssignProductAsset != nil,
 		Dashboard:                    dashboardView,
 		List:                         productlist.NewView(listDeps),
 		Table:                        productlist.NewTableView(listDeps),
@@ -433,6 +444,9 @@ func (m *ProductModule) RegisterRoutes(r view.RouteRegistrar) {
 	r.GET(m.routes.TableURL, m.Table)
 	r.GET(m.routes.DetailURL, m.Detail)
 	r.GET(m.routes.TabActionURL, m.TabAction)
+	if m.assetAssignEnabled {
+		r.POST(m.routes.TabActionURL, m.TabAction)
+	}
 	r.GET(m.routes.AddURL, m.Add)
 	r.POST(m.routes.AddURL, m.Add)
 	r.GET(m.routes.EditURL, m.Edit)

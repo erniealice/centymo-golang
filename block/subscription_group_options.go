@@ -22,6 +22,8 @@ type EngineOption func(*engineConfig)
 
 // engineConfig collects the per-unit view options an app may set.
 type engineConfig struct {
+	productAssets            bool
+	inventoryCatalogMounts   bool
 	subscriptionGroupOptions subscriptiongrouppkg.Options
 }
 
@@ -90,3 +92,6 @@ func unambiguousAttributeResolver(
 		return id, nil
 	}
 }
+
+// WithProductAssets enables product-to-asset assignment for the main catalog.
+func WithProductAssets() EngineOption { return func(c *engineConfig) { c.productAssets = true } }

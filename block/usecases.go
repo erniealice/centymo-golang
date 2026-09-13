@@ -14,6 +14,7 @@ package block
 import (
 	"context"
 	"fmt"
+	assetpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/asset/asset"
 	"log"
 	"os"
 	"testing"
@@ -346,6 +347,10 @@ type RevenueRunUseCases struct {
 // -- Product -----------------------------------------------------------------
 
 type ProductUseCases struct {
+	ListProductAssets    func(context.Context, string) ([]*assetpb.Asset, error)
+	ListAssignableAssets func(context.Context, string) ([]*assetpb.Asset, error)
+	AssignProductAsset   func(context.Context, string, string) error
+
 	// Product CRUD
 	ListProducts  func(context.Context, *productpb.ListProductsRequest) (*productpb.ListProductsResponse, error)
 	ReadProduct   func(context.Context, *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error)
