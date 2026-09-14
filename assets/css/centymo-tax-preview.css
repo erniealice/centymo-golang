@@ -86,16 +86,3 @@
     gap: var(--spacing-sm);
     margin-top: var(--spacing-sm);
 }
-
-/* ─── Fieldset reset ─── */
-
-/* Replaces inline style="border:0;padding:0;margin:0;min-width:0;" on
- * the subscription-drawer-form fieldset (used for the edit-locked disabled
- * wrapper that wraps all inputs in read-only mode).
- * Only centymo-internal — class is not promoted to pyeza. */
-.fieldset-reset {
-    border: 0;
-    padding: 0;
-    margin: 0;
-    min-width: 0;
-}
