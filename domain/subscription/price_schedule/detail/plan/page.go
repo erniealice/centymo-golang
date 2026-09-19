@@ -57,6 +57,12 @@ type DetailViewDeps struct {
 	// When a plan is in use, Pricing fields in the Edit drawer are read-only.
 	GetPricePlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
 
+	// ListClientNames returns client_id -> display name. Used to resolve the
+	// locked Client field's display label on the "Add Subscription" drawer
+	// opened from the subscriptions tab (the drawer receives client_id via
+	// query param only; it has no hydrated Client record to read a name from).
+	ListClientNames func(ctx context.Context) map[string]string
+
 	// Mount overrides — populated only by the plan-scoped entry points
 	// (NewPlanScopedView / NewPlanScopedTabAction) so the same render path
 	// can be served under /app/plans/detail/{id}/price/{ppid} with the
@@ -93,7 +99,8 @@ type DetailViewDeps struct {
 	// price-plan-locked mode via ?price_plan_id=&plan_label=&client_id=...
 	// query params, mirroring how the client-detail subscriptions tab opens
 	// the same drawer in client-locked mode.
-	SubscriptionAddURL string
+	SubscriptionAddURL   string
+	SubscriptionAddLabel string
 	// PlanSubscriptionDetailURL is the schedule-scoped subscription URL template
 	// /app/price-schedules/detail/{id}/plan/{ppid}/subscription/{eid}. When
 	// set, the row's "View" action targets this nested URL so the

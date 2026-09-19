@@ -466,6 +466,9 @@ func NewPricePlanAddAction(deps *PricePlanDeps) view.View {
 			pp.PriceScheduleId = &schedID
 		}
 		applyBillingFields(pp, r)
+		if err := form.ApplyDefaultEscalation(pp, r.PostForm); err != nil {
+			return view.HTMXError(deps.PricePlanLabels.Form.EscalationInvalid)
+		}
 
 		// Plumb the lyngua-resolved suffix through context so espyna's
 		// applyClientScopedScheduleRule can name an auto-created schedule
@@ -568,7 +571,7 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			editLabels.ScheduleLockedTooltip = applyScheduleLockTooltip(editLabels.ScheduleLockedTooltip, editScheduleLockClient)
 			editScheduleAutoHint := buildScheduleAutoHint(formLabels, editScheduleMode, editScheduleLockID, editScheduleLockClient)
 
-			return view.OK("price-plan-drawer-form", &form.Data{
+			formData := &form.Data{
 				FormAction:        route.ResolveURL(deps.Routes.PricePlanEditURL, "id", planID, "ppid", ppID),
 				IsEdit:            true,
 				Context:           form.ContextPlan,
@@ -615,7 +618,9 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 				ParentPlanIsCyclic: parentPlan != nil && parentPlan.GetVisitsPerCycle() > 1,
 				Labels:             editLabels,
 				CommonLabels:       deps.CommonLabels,
-			})
+			}
+			form.PopulateDefaultEscalation(formData, pp)
+			return view.OK("price-plan-drawer-form", formData)
 		}
 
 		// POST — update price plan
@@ -658,6 +663,9 @@ func NewPricePlanEditAction(deps *PricePlanDeps) view.View {
 			pp.PriceScheduleId = &schedID
 		}
 		applyBillingFields(pp, r)
+		if err := form.ApplyDefaultEscalation(pp, r.PostForm); err != nil {
+			return view.HTMXError(deps.PricePlanLabels.Form.EscalationInvalid)
+		}
 
 		// Plumb the lyngua-resolved suffix through context — see comment
 		// in NewPricePlanAddAction. The update path also routes through

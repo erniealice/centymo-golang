@@ -315,6 +315,19 @@ func DefaultLabels() Labels {
 			TermLabel:                   "Term",
 			TermPlaceholder:             "e.g. 12 months",
 			TermOpenEndedHelp:           "Leave empty for open-ended / no expiration",
+			EscalationSection:           "Price escalation",
+			EscalationMode:              "Escalation",
+			EscalationNone:              "No escalation",
+			EscalationFixedPercentage:   "Fixed percentage",
+			EscalationScope:             "Applies",
+			EscalationWithinAgreement:   "During the subscription",
+			EscalationOnRenewal:         "On renewal",
+			EscalationRate:              "Increase (%)",
+			EscalationFirstAfterMonths:  "First increase after (months)",
+			EscalationEveryMonths:       "Repeat every (months)",
+			EscalationNotRecorded:       "Not recorded",
+			EscalationRecordOnly:        "Recorded clause only; billing is not adjusted automatically.",
+			EscalationInvalid:           "Check the escalation mode, percentage, application and interval.",
 			// Field-level info popovers — use proto-generic wording; business-type
 			// tiers override via lyngua (e.g. "plan" → "package" / "rate card").
 			PlanInfo:         "The plan this price plan belongs to. Locked from the parent page.",
@@ -551,6 +564,19 @@ type FormLabels struct {
 	TermLabel                       string `json:"term_label"`
 	TermPlaceholder                 string `json:"term_placeholder"`
 	TermOpenEndedHelp               string `json:"term_open_ended_help"`
+	EscalationSection               string `json:"escalation_section"`
+	EscalationMode                  string `json:"escalation_mode"`
+	EscalationNone                  string `json:"escalation_none"`
+	EscalationFixedPercentage       string `json:"escalation_fixed_percentage"`
+	EscalationScope                 string `json:"escalation_scope"`
+	EscalationWithinAgreement       string `json:"escalation_within_agreement"`
+	EscalationOnRenewal             string `json:"escalation_on_renewal"`
+	EscalationRate                  string `json:"escalation_rate"`
+	EscalationFirstAfterMonths      string `json:"escalation_first_after_months"`
+	EscalationEveryMonths           string `json:"escalation_every_months"`
+	EscalationNotRecorded           string `json:"escalation_not_recorded"`
+	EscalationRecordOnly            string `json:"escalation_record_only"`
+	EscalationInvalid               string `json:"escalation_invalid"`
 
 	// Field-level info text surfaced via an info button beside each label.
 	PlanInfo         string `json:"plan_info"`

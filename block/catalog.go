@@ -16,6 +16,8 @@ package block
 
 import (
 	"context"
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
+	"strings"
 
 	"github.com/erniealice/hybra-golang/views/attachment"
 	"github.com/erniealice/pyeza-golang/route"
@@ -521,6 +523,33 @@ func priceScheduleCatalogUnit(uc *UseCases, infra *Infra, u compose.Unit) compos
 			DeleteAttachment:             infra.DeleteAttachment,
 			NewAttachmentID:              infra.NewAttachmentID,
 		}
+		if listClients := uc.Entity.Client.ListClients; listClients != nil {
+			deps.ListClientNames = func(ctx context.Context) map[string]string {
+				names := map[string]string{}
+				resp, err := listClients(ctx, &clientpb.ListClientsRequest{})
+				if err != nil {
+					return names
+				}
+				for _, client := range resp.GetData() {
+					name := strings.TrimSpace(client.GetName())
+					if name == "" && client.GetUser() != nil {
+						name = strings.TrimSpace(client.GetUser().GetFirstName() + " " + client.GetUser().GetLastName())
+					}
+					if name != "" {
+						names[client.GetId()] = name
+					}
+				}
+				return names
+			}
+		}
+
+		if sr, ok := compose.RoutesOf[*subscriptionpkg.Routes](mc, "subscription.subscription"); ok {
+			deps.SubscriptionAddURL = sr.AddURL
+		}
+		if sl, ok := compose.LabelsOf[*subscriptionpkg.Labels](mc, "subscription.subscription"); ok {
+			deps.SubscriptionAddLabel = sl.Buttons.AddSubscription
+		}
+
 		subscriptiondom.NewPriceScheduleModule(deps).RegisterRoutes(mc.Routes)
 		return nil
 	}
@@ -1236,7 +1265,12 @@ func PlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 // wireSubscriptionModule helper (same helper Block() uses). This avoids
 // duplicating the 540-line sub-package registration logic; catalog.go is in
 // the block package so the private helpers are accessible directly.
-func SubscriptionUnit(uc *UseCases, infra *Infra) compose.Unit {
+// Create options are optional; when supplied repeatedly, the last value wins.
+func SubscriptionUnit(uc *UseCases, infra *Infra, options ...subscriptionpkg.CreateOptions) compose.Unit {
+	var createOptions subscriptionpkg.CreateOptions
+	for _, option := range options {
+		createOptions = option
+	}
 	u := subscriptionpkg.Describe()
 	u.Mount = func(mc *compose.MountContext) error {
 		r := u.Routes.(*subscriptionpkg.Routes)
@@ -1260,6 +1294,7 @@ func SubscriptionUnit(uc *UseCases, infra *Infra) compose.Unit {
 		}
 
 		wireSubscriptionModule(minCtx, allEnabledConfig(), uc, subscriptionWiring{
+			createOptions:       createOptions,
 			refChecker:          infra.RefChecker,
 			uploadFile:          infra.UploadFile,
 			downloadFile:        infra.DownloadFile,
@@ -1967,7 +2002,7 @@ func AllUnits(uc *UseCases, infra *Infra, opts ...EngineOption) []compose.Unit {
 		SubscriptionGroupProductPlanUnit(uc, infra),
 		SubscriptionGroupProductPlanStaffUnit(uc, infra),
 		PlanUnit(uc, infra),
-		SubscriptionUnit(uc, infra),
+		SubscriptionUnit(uc, infra, cfg.subscriptionCreateOptions),
 		CollectionUnit(uc, infra),
 		DisbursementUnit(uc, infra),
 		ExpenditureUnit(uc, infra),

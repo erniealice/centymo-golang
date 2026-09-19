@@ -74,6 +74,43 @@
         </div>
     </div>
 
+    <h4 class="detail-section-title">{{.Labels.Form.EscalationSection}}</h4>
+    <div class="detail-info-grid" data-testid="price-plan-escalation-summary">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.EscalationMode}}</span>
+            <span class="detail-info-value">
+                {{if eq .EscalationMode "ESCALATION_MODE_NONE"}}
+                    {{.Labels.Form.EscalationNone}}
+                {{else if eq .EscalationMode "ESCALATION_MODE_FIXED_PERCENTAGE"}}
+                    {{.Labels.Form.EscalationFixedPercentage}}
+                {{else}}
+                    {{.Labels.Form.EscalationNotRecorded}}
+                {{end}}
+            </span>
+        </div>
+        {{if eq .EscalationMode "ESCALATION_MODE_FIXED_PERCENTAGE"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.EscalationRate}}</span>
+            <span class="detail-info-value">{{.EscalationRate}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.EscalationScope}}</span>
+            <span class="detail-info-value">{{if eq .EscalationScope "ESCALATION_SCOPE_WITHIN_AGREEMENT"}}{{.Labels.Form.EscalationWithinAgreement}}{{else}}{{.Labels.Form.EscalationOnRenewal}}{{end}}</span>
+        </div>
+        {{if eq .EscalationScope "ESCALATION_SCOPE_WITHIN_AGREEMENT"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.EscalationFirstAfterMonths}}</span>
+            <span class="detail-info-value">{{.EscalationFirstAfterMonths}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Form.EscalationEveryMonths}}</span>
+            <span class="detail-info-value">{{.EscalationEveryMonths}}</span>
+        </div>
+        {{end}}
+        {{end}}
+    </div>
+    <p class="form-help">{{.Labels.Form.EscalationRecordOnly}}</p>
+
     <div class="detail-actions detail-actions--spaced">
         {{/* Edit Package CTA — routes through the plan-tab handler
              (/action/plan/{id}/price-plans/edit/{ppid}) so the drawer opens

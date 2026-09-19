@@ -104,7 +104,7 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 			// schedule-add drawer: client-scoped schedule shows only matching
 			// client's plans, master schedule shows only master plans.
 			planOpts := buildPlanOptions(ctx, deps, pp.GetPlanId(), scheduleClientID)
-			return view.OK("price-plan-drawer-form", &form.Data{
+			formData := &form.Data{
 				FormAction:             route.ResolveURL(deps.Routes.PlanEditURL, "id", sid, "ppid", ppid),
 				IsEdit:                 true,
 				Context:                form.ContextSchedule,
@@ -135,7 +135,9 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 				LockMessage:         pricingLockedReason,
 				Labels:              form.LabelsFromPricePlan(formLabels),
 				CommonLabels:        deps.CommonLabels,
-			})
+			}
+			form.PopulateDefaultEscalation(formData, pp)
+			return view.OK("price-plan-drawer-form", formData)
 		}
 
 		if err := viewCtx.Request.ParseForm(); err != nil {
@@ -242,6 +244,9 @@ func NewEditAction(deps *DetailViewDeps) view.View {
 		}
 		if dtu != "" {
 			req.Data.DefaultTermUnit = &dtu
+		}
+		if err := form.ApplyDefaultEscalation(req.Data, r.PostForm); err != nil {
+			return view.HTMXError(deps.PlanLabels.Form.EscalationInvalid)
 		}
 		if _, err := deps.UpdatePricePlan(ctx, req); err != nil {
 			log.Printf("Failed to update price plan %s under schedule %s: %v", ppid, sid, err)

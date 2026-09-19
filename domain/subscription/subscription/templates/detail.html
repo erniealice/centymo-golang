@@ -527,6 +527,43 @@
         </div>
     </div>
 
+    <h4 class="detail-section-title">{{.Labels.Detail.SectionEscalation}}</h4>
+    <div class="detail-info-grid" data-testid="subscription-escalation-summary">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.EscalationMode}}</span>
+            <span class="detail-info-value">
+                {{if eq (index .Subscription "escalation_mode") "ESCALATION_MODE_NONE"}}
+                    {{.Labels.Detail.EscalationNone}}
+                {{else if eq (index .Subscription "escalation_mode") "ESCALATION_MODE_FIXED_PERCENTAGE"}}
+                    {{.Labels.Detail.EscalationFixedPercentage}}
+                {{else}}
+                    {{.Labels.Detail.EscalationNotRecorded}}
+                {{end}}
+            </span>
+        </div>
+        {{if eq (index .Subscription "escalation_mode") "ESCALATION_MODE_FIXED_PERCENTAGE"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.EscalationRate}}</span>
+            <span class="detail-info-value">{{index .Subscription "escalation_rate"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.EscalationScope}}</span>
+            <span class="detail-info-value">{{if eq (index .Subscription "escalation_scope") "ESCALATION_SCOPE_WITHIN_AGREEMENT"}}{{.Labels.Detail.EscalationWithinAgreement}}{{else}}{{.Labels.Detail.EscalationOnRenewal}}{{end}}</span>
+        </div>
+        {{if eq (index .Subscription "escalation_scope") "ESCALATION_SCOPE_WITHIN_AGREEMENT"}}
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.EscalationFirstAfterMonths}}</span>
+            <span class="detail-info-value">{{index .Subscription "escalation_first_after_months"}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Detail.EscalationEveryMonths}}</span>
+            <span class="detail-info-value">{{index .Subscription "escalation_every_months"}}</span>
+        </div>
+        {{end}}
+        {{end}}
+    </div>
+    <p class="form-help">{{.Labels.Detail.EscalationRecordOnlyNotice}}</p>
+
     <h4 class="detail-section-title">{{.Labels.Detail.SectionLogs}}</h4>
     <div class="detail-info-grid">
         <div class="detail-info-item">

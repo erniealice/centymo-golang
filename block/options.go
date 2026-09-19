@@ -8,6 +8,8 @@
 // by design so a reader can scan every option in one screen.
 package block
 
+import subscriptionpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription"
+
 // ---------------------------------------------------------------------------
 // BlockOption — per-module granular selection
 // ---------------------------------------------------------------------------
@@ -16,21 +18,22 @@ package block
 type BlockOption func(*blockConfig)
 
 type blockConfig struct {
-	enableAll     bool
-	useCases      *UseCases
-	inventory     bool
-	revenue       bool
-	product       bool
-	productLine   bool
-	pricePlan     bool
-	priceSchedule bool
-	priceList     bool
-	plan          bool
-	subscription  bool
-	collection    bool
-	disbursement  bool
-	expenditure   bool
-	resource      bool
+	subscriptionCreateOptions subscriptionpkg.CreateOptions
+	enableAll                 bool
+	useCases                  *UseCases
+	inventory                 bool
+	revenue                   bool
+	product                   bool
+	productLine               bool
+	pricePlan                 bool
+	priceSchedule             bool
+	priceList                 bool
+	plan                      bool
+	subscription              bool
+	collection                bool
+	disbursement              bool
+	expenditure               bool
+	resource                  bool
 	// 20260427-supplier-commitments P3a/P3b — five new modules wired by Block.
 	supplierContract       bool
 	supplierContractLine   bool

@@ -108,36 +108,73 @@ Data: .Code, .ClientID, .PricePlanID,
         </div>
         {{end}}
 
-        {{/* --- End Date+Time --- */}}
-        <div class="form-row">
-            {{template "form-group" (dict
-                "Type" "date"
-                "Name" "date_end_date"
-                "Label" .Labels.EndDate
-                "Value" .DateEndDate
-                "Info" .Labels.EndDateInfo
-            )}}
-            {{template "form-group" (dict
-                "Type" "time"
-                "Name" "date_end_time"
-                "Label" .Labels.EndTime
-                "Value" .DateEndTime
-                "Placeholder" .Labels.TimePlaceholder
-                "Info" .Labels.EndTimeInfo
-            )}}
+        <div id="subscription-pricing-fields" {{if .SuggestPlanTerm}}
+             hx-get="{{.FormAction}}?pricing_preview=1"
+             hx-trigger="auto-complete-change from:#client-search, change from:[name='date_start_date'], change from:[name='date_start_time']"
+             hx-include="closest form" hx-target="this" hx-swap="innerHTML" hx-sync="closest form:replace"{{end}}>
+            {{template "subscription-pricing-fields" .}}
         </div>
-        {{/* 2026-05-03 — Row-level hint clarifying that the end date+time
-             determines when recurring invoicing stops. Same alert-info style
-             as the start-date row hint and client-scope notice. */}}
-        {{if .Labels.EndDateRowHelp}}
-        <div class="form-row single form-row-hint">
-            {{template "alert" (dict
-                "Message" .Labels.EndDateRowHelp
-                "State" "info"
-                "ID" "subscription-end-date-row-hint"
-            )}}
-        </div>
-        {{end}}
+
+		<section data-testid="subscription-escalation-section" class="form-section">
+			<h3 class="form-section-title">{{.Labels.EscalationSectionTitle}}</h3>
+			<div class="form-row single">
+				<label class="form-label" for="subscription-escalation-mode">{{.Labels.EscalationMode}}</label>
+				<select id="subscription-escalation-mode" name="escalation_mode" data-testid="subscription-escalation-mode" class="form-select">
+					<option value="">{{if .IsEdit}}{{.Labels.EscalationNotRecorded}}{{else}}{{.Labels.EscalationUsePlanDefault}}{{end}}</option>
+					<option value="ESCALATION_MODE_NONE" {{if eq .EscalationMode "ESCALATION_MODE_NONE"}}selected{{end}}>{{.Labels.EscalationNone}}</option>
+					<option value="ESCALATION_MODE_FIXED_PERCENTAGE" {{if eq .EscalationMode "ESCALATION_MODE_FIXED_PERCENTAGE"}}selected{{end}}>{{.Labels.EscalationFixedPercentage}}</option>
+				</select>
+			</div>
+			{{if not .IsEdit}}<p class="form-help">{{.Labels.EscalationCopyNotice}}</p>{{end}}
+
+			<div data-escalation-fixed-fields>
+				<div class="form-row">
+					<div class="form-group">
+						<label class="form-label" for="subscription-escalation-scope">{{.Labels.EscalationScope}}</label>
+						<select id="subscription-escalation-scope" name="escalation_scope" data-testid="subscription-escalation-scope" class="form-select">
+							<option value="ESCALATION_SCOPE_WITHIN_AGREEMENT" {{if eq .EscalationScope "ESCALATION_SCOPE_WITHIN_AGREEMENT"}}selected{{end}}>{{.Labels.EscalationWithinAgreement}}</option>
+							<option value="ESCALATION_SCOPE_ON_RENEWAL" {{if eq .EscalationScope "ESCALATION_SCOPE_ON_RENEWAL"}}selected{{end}}>{{.Labels.EscalationOnRenewal}}</option>
+						</select>
+					</div>
+					{{template "form-group" (dict
+						"Type" "number"
+						"Name" "escalation_rate"
+						"Label" .Labels.EscalationRate
+						"Value" .EscalationRate
+						"Min" "0.01"
+						"Max" "100"
+						"Step" "0.01"
+						"Required" true
+						"TestId" "subscription-escalation-rate"
+					)}}
+				</div>
+				<div class="form-row" data-escalation-interval-fields>
+					{{template "form-group" (dict
+						"Type" "number"
+						"Name" "escalation_first_after_months"
+						"Label" .Labels.EscalationFirstAfterMonths
+						"Value" .EscalationFirstAfterMonths
+						"Min" "1"
+						"Max" "1200"
+						"Required" true
+						"TestId" "subscription-escalation-first-after-months"
+					)}}
+					{{template "form-group" (dict
+						"Type" "number"
+						"Name" "escalation_every_months"
+						"Label" .Labels.EscalationEveryMonths
+						"Value" .EscalationEveryMonths
+						"Min" "1"
+						"Max" "1200"
+						"Required" true
+						"TestId" "subscription-escalation-every-months"
+					)}}
+				</div>
+			</div>
+			<div class="form-row single form-row-hint">
+				{{template "alert" (dict "Message" .Labels.EscalationRecordOnlyNotice "State" "info" "ID" "subscription-escalation-record-only-notice")}}
+			</div>
+		</section>
 
         {{/* --- Active TZ label --- */}}
         <div class="form-row single">
@@ -147,43 +184,6 @@ Data: .Code, .ClientID, .PricePlanID,
         {{/* Hidden RFC3339 fields populated by JS — backend prefers these. */}}
         <input type="hidden" name="date_time_start_iso" value="{{.DateStartISO}}">
         <input type="hidden" name="date_time_end_iso"   value="{{.DateEndISO}}">
-
-        {{/* --- Price Plan ---
-             Action-mode auto-complete: server-side client/general grouping is
-             handled by the search endpoint, so the dropdown fetches on first
-             open via SearchURL — no inline pre-render.
-             When PricePlanLocked (drawer opened from a price-plan detail page),
-             render a readonly text field + hidden id input instead — mirror of
-             the ClientLocked branch above. */}}
-        {{if .PricePlanLocked}}
-        <div class="form-row single">
-            <input type="hidden" name="price_plan_id" value="{{.PricePlanID}}">
-            {{template "form-group" (dict
-                "Type" "text"
-                "Name" "plan_display"
-                "Label" .Labels.Plan
-                "Value" .PlanLabel
-                "Readonly" true
-                "Info" .Labels.PlanInfo
-            )}}
-        </div>
-        {{else}}
-        <div class="form-row single">
-            {{template "auto-complete" (dict
-                "ID" "plan-search"
-                "Name" "price_plan_id"
-                "Label" .Labels.Plan
-                "Placeholder" .Labels.PlanPlaceholder
-                "SearchPlaceholder" .Labels.PlanSearchPlaceholder
-                "SearchURL" .SearchPlanURL
-                "Value" .PricePlanID
-                "SelectedLabel" .PlanLabel
-                "Required" true
-                "NoResults" .Labels.PlanNoResults
-                "Info" .Labels.PlanInfo
-            )}}
-        </div>
-        {{end}}
 
         {{/* --- Engagement Code --- */}}
         <div class="form-row single">
@@ -205,7 +205,7 @@ Data: .Code, .ClientID, .PricePlanID,
              selection. */}}
         <div id="spawn-jobs-wrapper"
              hx-get="{{.SpawnJobsPartialURL}}"
-             hx-trigger="auto-complete-change from:#plan-search"
+             hx-trigger="load, auto-complete-change from:#plan-search"
              hx-include="[name='price_plan_id']"
              hx-target="this"
              hx-swap="innerHTML">
@@ -279,6 +279,33 @@ Data: .Code, .ClientID, .PricePlanID,
     {{end}}
 </form>
 
+<script nonce="{{$.Nonce}}">
+(function () {
+	var script = document.currentScript;
+	var form = script ? script.previousElementSibling : null;
+	while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
+	if (!form) { return; }
+	var mode = form.querySelector('[name="escalation_mode"]');
+	var scope = form.querySelector('[name="escalation_scope"]');
+	var fixed = form.querySelector('[data-escalation-fixed-fields]');
+	var intervals = form.querySelector('[data-escalation-interval-fields]');
+	if (!mode || !scope || !fixed || !intervals) { return; }
+	function setEnabled(container, enabled) {
+		container.hidden = !enabled;
+		container.querySelectorAll('input, select').forEach(function (input) { input.disabled = !enabled; });
+	}
+	function refreshEscalation() {
+		var isFixed = mode.value === 'ESCALATION_MODE_FIXED_PERCENTAGE';
+		setEnabled(fixed, isFixed);
+		setEnabled(intervals, isFixed && scope.value === 'ESCALATION_SCOPE_WITHIN_AGREEMENT');
+	}
+	mode.addEventListener('change', refreshEscalation);
+	scope.addEventListener('change', refreshEscalation);
+	refreshEscalation();
+}());
+</script>
+
+{{if not .SuggestPlanTerm}}
 <script nonce="{{$.Nonce}}">
 (function () {
     var form = document.currentScript.previousElementSibling;
@@ -441,5 +468,90 @@ Data: .Code, .ClientID, .PricePlanID,
     if (tzLabel) { tzLabel.textContent = '{{.Labels.Timezone}}: ' + defaultTZ; }
 }());
 </script>
+{{end}}
 {{template "centymo-lf-delegation" .}}
+{{end}}
+
+{{define "subscription-term-end-fields"}}
+
+
+        <div class="form-row">
+            {{template "form-group" (dict
+                "Type" "date"
+                "Name" "date_end_date"
+                "Label" .Labels.EndDate
+                "Value" .DateEndDate
+                "Info" .Labels.EndDateInfo
+            )}}
+            {{template "form-group" (dict
+                "Type" "time"
+                "Name" "date_end_time"
+                "Label" .Labels.EndTime
+                "Value" .DateEndTime
+                "Placeholder" .Labels.TimePlaceholder
+                "Info" .Labels.EndTimeInfo
+            )}}
+        </div>
+        {{/* 2026-05-03 — Row-level hint clarifying that the end date+time
+             determines when recurring invoicing stops. Same alert-info style
+             as the start-date row hint and client-scope notice. */}}
+        {{if .Labels.EndDateRowHelp}}
+        <div class="form-row single form-row-hint">
+            {{template "alert" (dict
+                "Message" .Labels.EndDateRowHelp
+                "State" "info"
+                "ID" "subscription-end-date-row-hint"
+            )}}
+        </div>
+        {{end}}
+
+
+{{end}}
+
+
+{{define "subscription-pricing-fields"}}
+        {{/* --- Price Plan ---
+             Action-mode auto-complete: server-side client/general grouping is
+             handled by the search endpoint, so the dropdown fetches on first
+             open via SearchURL — no inline pre-render.
+             When PricePlanLocked (drawer opened from a price-plan detail page),
+             render a readonly text field + hidden id input instead — mirror of
+             the ClientLocked branch above. */}}
+        {{if .PricePlanLocked}}
+        <div class="form-row single">
+            <input type="hidden" name="price_plan_id" value="{{.PricePlanID}}">
+            {{template "form-group" (dict
+                "Type" "text"
+                "Name" "plan_display"
+                "Label" .Labels.Plan
+                "Value" .PlanLabel
+                "Readonly" true
+                "Info" .Labels.PlanInfo
+            )}}
+        </div>
+        {{else}}
+        <div class="form-row single">
+            {{template "auto-complete" (dict
+                "ID" "plan-search"
+                "Name" "price_plan_id"
+                "Label" .Labels.Plan
+                "Placeholder" .Labels.PlanPlaceholder
+                "SearchPlaceholder" .Labels.PlanSearchPlaceholder
+                "SearchURL" .SearchPlanURL
+                "Value" .PricePlanID
+                "SelectedLabel" .PlanLabel
+                "Required" true
+                "NoResults" .Labels.PlanNoResults
+                "Info" .Labels.PlanInfo
+            )}}
+        </div>
+        {{end}}
+
+
+        <div id="subscription-end-fields" {{if .SuggestPlanTerm}}
+             hx-get="{{.FormAction}}?term_preview=1"
+             hx-trigger="load, auto-complete-change from:#plan-search"
+             hx-include="closest form" hx-target="this" hx-swap="innerHTML" hx-sync="closest form:replace"{{end}}>
+            {{template "subscription-term-end-fields" .}}
+        </div>
 {{end}}

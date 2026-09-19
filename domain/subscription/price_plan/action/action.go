@@ -299,6 +299,9 @@ func NewAddAction(deps *Deps) view.View {
 		if dtu != "" {
 			req.Data.DefaultTermUnit = &dtu
 		}
+		if err := form.ApplyDefaultEscalation(req.Data, r.PostForm); err != nil {
+			return view.HTMXError(deps.Labels.Form.EscalationInvalid)
+		}
 		if _, err := deps.CreatePricePlan(ctx, req); err != nil {
 			log.Printf("Failed to create price plan: %v", err)
 			return view.HTMXError(err.Error())
@@ -343,7 +346,7 @@ func NewEditAction(deps *Deps) view.View {
 			}
 			formLabels := deps.Labels.Form
 			parentScheduleClientID, parentScheduleClientName := resolveParentScheduleClient(ctx, deps, selectedScheduleID)
-			return view.OK("price-plan-drawer-form", &form.Data{
+			formData := &form.Data{
 				FormAction:               route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                   true,
 				Context:                  form.ContextStandalone,
@@ -377,7 +380,9 @@ func NewEditAction(deps *Deps) view.View {
 				LockMessage:           lockMsg,
 				Labels:                form.LabelsFromPricePlan(formLabels),
 				CommonLabels:          deps.CommonLabels,
-			})
+			}
+			form.PopulateDefaultEscalation(formData, record)
+			return view.OK("price-plan-drawer-form", formData)
 		}
 		if err := viewCtx.Request.ParseForm(); err != nil {
 			return view.HTMXError(deps.Labels.Errors.UpdateFailed)
@@ -454,6 +459,9 @@ func NewEditAction(deps *Deps) view.View {
 		}
 		if dtu != "" {
 			req.Data.DefaultTermUnit = &dtu
+		}
+		if err := form.ApplyDefaultEscalation(req.Data, r.PostForm); err != nil {
+			return view.HTMXError(deps.Labels.Form.EscalationInvalid)
 		}
 		if _, err := deps.UpdatePricePlan(ctx, req); err != nil {
 			return view.HTMXError(err.Error())

@@ -648,6 +648,7 @@ func Block(opts ...BlockOption) consumerapp.AppOption {
 		// =====================================================================
 
 		wireSubscriptionModule(ctx, cfg, useCases, subscriptionWiring{
+			createOptions:       cfg.subscriptionCreateOptions,
 			refChecker:          refChecker,
 			uploadFile:          uploadFile,
 			downloadFile:        downloadFile,

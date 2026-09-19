@@ -245,7 +245,7 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 	// the Plan picker. When the price plan is client-scoped, we also pass
 	// client_id and billing_currency so the Customer field locks too.
 	var primaryAction *types.PrimaryAction
-	if deps.SubscriptionAddURL != "" && perms.Can("subscription", "create") && pp != nil {
+	if deps.SubscriptionAddURL != "" && pp != nil {
 		q := url.Values{}
 		q.Set("price_plan_id", ppid)
 		if planLabel != "" {
@@ -253,27 +253,35 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, sid, ppi
 		}
 		if cid := pp.GetClientId(); cid != "" {
 			q.Set("client_id", cid)
+			// The drawer's GET handler only receives client_id/client_name as
+			// query params (no hydrated Client record) — without the name the
+			// locked Client field renders blank even though the id is correct.
+			if deps.ListClientNames != nil {
+				if name := deps.ListClientNames(ctx)[cid]; name != "" {
+					q.Set("client_name", name)
+				}
+			}
 		}
 		if cur := pp.GetBillingCurrency(); cur != "" {
 			q.Set("billing_currency", cur)
 		}
 		actionURL := deps.SubscriptionAddURL + "?" + q.Encode()
 
-		label := deps.CommonLabels.Buttons.Add
+		label := deps.SubscriptionAddLabel
 		if label == "" {
-			label = "Add"
-		}
-		// Compose "Add <Subscription>" using whatever the tier label calls
-		// engagements (subscriptionsLabel resolution lives in the page builder).
-		if subscriptionsLabel := deps.ScheduleLabels.Tabs.Subscriptions; subscriptionsLabel != "" {
-			label = label + " " + subscriptionsLabel
-		} else if deps.PlanLabels.Tabs.Subscriptions != "" {
-			label = label + " " + deps.PlanLabels.Tabs.Subscriptions
+			label = deps.CommonLabels.Buttons.Add
+			if subscriptionsLabel := deps.ScheduleLabels.Tabs.Subscriptions; subscriptionsLabel != "" {
+				label += " " + subscriptionsLabel
+			} else if deps.PlanLabels.Tabs.Subscriptions != "" {
+				label += " " + deps.PlanLabels.Tabs.Subscriptions
+			}
 		}
 		primaryAction = &types.PrimaryAction{
-			Label:     label,
-			Icon:      "icon-plus",
-			ActionURL: actionURL,
+			Label:           label,
+			Icon:            "icon-plus",
+			ActionURL:       actionURL,
+			Disabled:        !perms.Can("subscription", "create"),
+			DisabledTooltip: fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "subscription:create"),
 		}
 	}
 

@@ -173,7 +173,7 @@ type TabLabels struct {
 	ProductPricesSlug string `json:"product_prices_slug"`
 	// 2026-05-04 — Subscriptions/Engagements tab on the schedule-scoped
 	// price_plan detail. Professional tier overrides the label to
-	// "Engagements"; URL slug stays "subscriptions" across tiers.
+	// "Engagements"; each tier may override the URL slug independently.
 	Subscriptions     string `json:"subscriptions"`
 	SubscriptionsSlug string `json:"subscriptions_slug"`
 }

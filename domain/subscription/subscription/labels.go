@@ -174,6 +174,22 @@ type FormLabels struct {
 	// the create request into the fail-closed strict path.
 	RequireSpawnToggle string `json:"require_spawn_toggle"`
 	RequireSpawnHint   string `json:"require_spawn_hint"`
+
+	EscalationSectionTitle     string `json:"escalation_section_title"`
+	EscalationMode             string `json:"escalation_mode"`
+	EscalationUsePlanDefault   string `json:"escalation_use_plan_default"`
+	EscalationNotRecorded      string `json:"escalation_not_recorded"`
+	EscalationNone             string `json:"escalation_none"`
+	EscalationFixedPercentage  string `json:"escalation_fixed_percentage"`
+	EscalationScope            string `json:"escalation_scope"`
+	EscalationWithinAgreement  string `json:"escalation_within_agreement"`
+	EscalationOnRenewal        string `json:"escalation_on_renewal"`
+	EscalationRate             string `json:"escalation_rate"`
+	EscalationFirstAfterMonths string `json:"escalation_first_after_months"`
+	EscalationEveryMonths      string `json:"escalation_every_months"`
+	EscalationCopyNotice       string `json:"escalation_copy_notice"`
+	EscalationRecordOnlyNotice string `json:"escalation_record_only_notice"`
+	EscalationInvalid          string `json:"escalation_invalid"`
 }
 
 type DetailLabels struct {
@@ -191,9 +207,21 @@ type DetailLabels struct {
 
 	// Info-tab section headers — the info grid renders as three sections:
 	// who the subscription is for, the subscription terms, and record logs.
-	SectionClient string `json:"section_client"`
-	SectionTerms  string `json:"section_terms"`
-	SectionLogs   string `json:"section_logs"`
+	SectionClient              string `json:"section_client"`
+	SectionTerms               string `json:"section_terms"`
+	SectionLogs                string `json:"section_logs"`
+	SectionEscalation          string `json:"section_escalation"`
+	EscalationMode             string `json:"escalation_mode"`
+	EscalationScope            string `json:"escalation_scope"`
+	EscalationRate             string `json:"escalation_rate"`
+	EscalationFirstAfterMonths string `json:"escalation_first_after_months"`
+	EscalationEveryMonths      string `json:"escalation_every_months"`
+	EscalationNone             string `json:"escalation_none"`
+	EscalationFixedPercentage  string `json:"escalation_fixed_percentage"`
+	EscalationWithinAgreement  string `json:"escalation_within_agreement"`
+	EscalationOnRenewal        string `json:"escalation_on_renewal"`
+	EscalationNotRecorded      string `json:"escalation_not_recorded"`
+	EscalationRecordOnlyNotice string `json:"escalation_record_only_notice"`
 
 	// Person-name split for the customer section. Rendered instead of the
 	// single Customer row when the client has a linked user with name parts.
@@ -607,13 +635,28 @@ func DefaultLabels() Labels {
 			EditLockedReason:      "This subscription has revenue records and cannot be edited. Reassigning the plan would break the audit trail.",
 			// 2026-04-29 auto-spawn-jobs-from-subscription plan §5.1 / §9 —
 			// Spawn Jobs toggle on subscription create drawer.
-			SpawnJobsSectionTitle: "Operations",
-			SpawnJobsToggle:       "Spawn Job(s) on Create",
-			SpawnJobsHelpText:     "Disable to start without operational tracking (e.g., advisory retainers).",
-			SpawnJobsSummary:      "Spawning {{.JobCount}} Job(s) from {{.TemplateNames}} — includes {{.PhaseCount}} phases, {{.TaskCount}} tasks.",
-			SpawnJobsNone:         "No JobTemplate is configured for this Plan. The engagement will start without operational tracking.",
-			RequireSpawnToggle:    "Require successful job spawn",
-			RequireSpawnHint:      "If spawning jobs fails or produces none, the whole subscription create is cancelled instead of saving without jobs.",
+			SpawnJobsSectionTitle:      "Operations",
+			SpawnJobsToggle:            "Spawn Job(s) on Create",
+			SpawnJobsHelpText:          "Disable to start without operational tracking (e.g., advisory retainers).",
+			SpawnJobsSummary:           "Spawning {{.JobCount}} Job(s) from {{.TemplateNames}} — includes {{.PhaseCount}} phases, {{.TaskCount}} tasks.",
+			SpawnJobsNone:              "No JobTemplate is configured for this Plan. The engagement will start without operational tracking.",
+			RequireSpawnToggle:         "Require successful job spawn",
+			RequireSpawnHint:           "If spawning jobs fails or produces none, the whole subscription create is cancelled instead of saving without jobs.",
+			EscalationSectionTitle:     "Price Escalation",
+			EscalationMode:             "Escalation",
+			EscalationUsePlanDefault:   "Use Price Plan default",
+			EscalationNotRecorded:      "Not recorded",
+			EscalationNone:             "No escalation",
+			EscalationFixedPercentage:  "Fixed percentage",
+			EscalationScope:            "Applies",
+			EscalationWithinAgreement:  "During this agreement",
+			EscalationOnRenewal:        "On renewal",
+			EscalationRate:             "Increase (%)",
+			EscalationFirstAfterMonths: "First increase after (months)",
+			EscalationEveryMonths:      "Repeat every (months)",
+			EscalationCopyNotice:       "Leave unchanged to copy the selected Price Plan default into this agreement when it is created.",
+			EscalationRecordOnlyNotice: "This records the agreed clause only. It does not automatically change billing amounts.",
+			EscalationInvalid:          "Check the escalation mode, percentage, application and interval.",
 		},
 		Actions: ActionLabels{
 			View:       "View Subscription",
@@ -635,23 +678,35 @@ func DefaultLabels() Labels {
 			Deactivate: "Deactivate",
 		},
 		Detail: DetailLabels{
-			PageTitle:            "Subscription Details",
-			Customer:             "Customer",
-			Plan:                 "Plan",
-			PriceSchedule:        "Price Schedule",
-			StartDate:            "Start Date",
-			EndDate:              "End Date",
-			Status:               "Status",
-			CreatedDate:          "Created",
-			ModifiedDate:         "Last Modified",
-			AuditTrailComingSoon: "Audit trail coming soon.",
-			AuditTrailDesc:       "Audit trail for subscription changes is coming soon.",
-			SectionClient:        "Client",
-			SectionTerms:         "Subscription",
-			SectionLogs:          "Logs",
-			FirstName:            "First Name",
-			LastName:             "Last Name",
-			PackageEmpty:         "No package details available.",
+			PageTitle:                  "Subscription Details",
+			Customer:                   "Customer",
+			Plan:                       "Plan",
+			PriceSchedule:              "Price Schedule",
+			StartDate:                  "Start Date",
+			EndDate:                    "End Date",
+			Status:                     "Status",
+			CreatedDate:                "Created",
+			ModifiedDate:               "Last Modified",
+			AuditTrailComingSoon:       "Audit trail coming soon.",
+			AuditTrailDesc:             "Audit trail for subscription changes is coming soon.",
+			SectionClient:              "Client",
+			SectionTerms:               "Subscription",
+			SectionLogs:                "Logs",
+			SectionEscalation:          "Price Escalation",
+			EscalationMode:             "Escalation",
+			EscalationScope:            "Applies",
+			EscalationRate:             "Increase",
+			EscalationFirstAfterMonths: "First increase after",
+			EscalationEveryMonths:      "Repeats every",
+			EscalationNone:             "No escalation",
+			EscalationFixedPercentage:  "Fixed percentage",
+			EscalationWithinAgreement:  "During this agreement",
+			EscalationOnRenewal:        "On renewal",
+			EscalationNotRecorded:      "Not recorded",
+			EscalationRecordOnlyNotice: "Recorded clause only; billing amounts are not changed automatically.",
+			FirstName:                  "First Name",
+			LastName:                   "Last Name",
+			PackageEmpty:               "No package details available.",
 		},
 		Tabs: TabLabels{
 			Info:       "Information",

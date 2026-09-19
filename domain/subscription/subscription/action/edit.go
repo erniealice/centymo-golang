@@ -102,7 +102,7 @@ func NewEditAction(deps *Deps) view.View {
 
 			labels := buildFormLabels(deps.Labels)
 			labels.PlanClientScopeNotice = resolvePlanClientScopeNotice(labels.PlanClientScopeNotice, clientBillingCurrency)
-			return view.OK("subscription-drawer-form", &form.Data{
+			data := &form.Data{
 				FormAction:            route.ResolveURL(deps.Routes.EditURL, "id", id),
 				IsEdit:                true,
 				ID:                    id,
@@ -134,7 +134,9 @@ func NewEditAction(deps *Deps) view.View {
 				SpawnJobsPartialURL: deps.Routes.SpawnJobsPartialURL,
 				Labels:              labels,
 				CommonLabels:        nil, // injected by ViewAdapter
-			})
+			}
+			form.PopulateEscalation(data, record)
+			return view.OK("subscription-drawer-form", data)
 		}
 
 		// POST — update subscription. Server-side defense for the in-use
@@ -191,7 +193,7 @@ func NewEditAction(deps *Deps) view.View {
 			name = planName + " [" + code + "]"
 		}
 
-		_, err := deps.UpdateSubscription(ctx, &subscriptionpb.UpdateSubscriptionRequest{
+		request := &subscriptionpb.UpdateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
 				Id:            id,
 				Name:          name,
@@ -201,7 +203,12 @@ func NewEditAction(deps *Deps) view.View {
 				DateTimeStart: dateTimeStart,
 				DateTimeEnd:   dateTimeEnd,
 			},
-		})
+		}
+		if err := form.ApplyEscalation(request.Data, r.PostForm, true); err != nil {
+			return view.HTMXError(deps.Labels.Form.EscalationInvalid)
+		}
+
+		_, err := deps.UpdateSubscription(ctx, request)
 		if err != nil {
 			log.Printf("Failed to update subscription %s: %v", id, err)
 			return view.HTMXError(err.Error())

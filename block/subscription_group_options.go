@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 
+	subscriptionpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	subscriptiongrouppkg "github.com/erniealice/centymo-golang/domain/subscription/subscription_group"
 	"github.com/erniealice/espyna-golang/consumer"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
@@ -22,9 +23,10 @@ type EngineOption func(*engineConfig)
 
 // engineConfig collects the per-unit view options an app may set.
 type engineConfig struct {
-	productAssets            bool
-	inventoryCatalogMounts   bool
-	subscriptionGroupOptions subscriptiongrouppkg.Options
+	subscriptionCreateOptions subscriptionpkg.CreateOptions
+	productAssets             bool
+	inventoryCatalogMounts    bool
+	subscriptionGroupOptions  subscriptiongrouppkg.Options
 }
 
 // WithSubscriptionGroupOptions sets the subscription_group roster (enrollments

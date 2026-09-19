@@ -220,6 +220,9 @@ func NewPlanAddAction(deps *DetailViewDeps) view.View {
 			pp.DurationUnit = &du
 		}
 		applyBillingFieldsFromRequest(pp, r)
+		if err := form.ApplyDefaultEscalation(pp, r.PostForm); err != nil {
+			return view.HTMXError(deps.PricePlanLabels.Form.EscalationInvalid)
+		}
 
 		createResp, err := deps.CreatePricePlan(ctx, &priceplanpb.CreatePricePlanRequest{Data: pp})
 		if err != nil {

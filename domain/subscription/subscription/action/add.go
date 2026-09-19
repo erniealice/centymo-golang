@@ -12,6 +12,7 @@ import (
 
 	"github.com/erniealice/centymo-golang/domain/subscription/subscription/form"
 
+	clientpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/client"
 	subscriptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription"
 )
 
@@ -25,6 +26,36 @@ func NewAddAction(deps *Deps) view.View {
 
 		if viewCtx.Request.Method == http.MethodGet {
 			q := viewCtx.Request.URL.Query()
+			if deps.CreateOptions.CommencementPricing && q.Get("client_id") != "" && deps.ReadClient != nil {
+				clients, err := deps.ReadClient(ctx, &clientpb.ReadClientRequest{Data: &clientpb.Client{Id: q.Get("client_id")}})
+				if err != nil {
+					return view.HTMXError(deps.Labels.Errors.InvalidFormData)
+				}
+				q.Set("billing_currency", "")
+				for _, c := range clients.GetData() {
+					if c.GetId() == q.Get("client_id") {
+						q.Set("billing_currency", c.GetBillingCurrency())
+						break
+					}
+				}
+			}
+			if deps.CreateOptions.CommencementPricing && (q.Get("term_preview") == "1" || q.Get("pricing_preview") == "1") {
+				tz := pyezatypes.LocationFromContext(ctx)
+				data := &form.Data{Labels: buildFormLabels(deps.Labels), FormAction: deps.Routes.AddURL, SuggestPlanTerm: true,
+					SearchPlanURL: commencementSearchURL(deps.Routes.SearchPlanURL, q, tz)}
+				if q.Get("pricing_preview") == "1" {
+					return view.OK("subscription-pricing-fields", data)
+				}
+				start := parseFormDateTime(q.Get("date_start_date"), q.Get("date_start_time"), "", tz, false)
+				end, _, err := suggestedPlanExpiry(ctx, deps, q.Get("price_plan_id"), start, tz)
+				if err != nil {
+					return view.HTMXError(deps.Labels.Errors.InvalidFormData)
+				}
+				if end != nil {
+					data.DateEndDate = end.AsTime().In(tz).Format("2006-01-02")
+				}
+				return view.OK("subscription-term-end-fields", data)
+			}
 			clientID := q.Get("client_id")
 			clientName := q.Get("client_name")
 			clientBillingCurrency := q.Get("billing_currency")
@@ -42,6 +73,11 @@ func NewAddAction(deps *Deps) view.View {
 			today := time.Now().In(tz)
 			defaultDate := today.Format(pyezatypes.DateInputLayout)
 			defaultISO := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz).Format(time.RFC3339)
+			searchURL := deps.Routes.SearchPlanURL
+			if deps.CreateOptions.CommencementPricing {
+				q.Set("date_start_date", defaultDate)
+				searchURL = commencementSearchURL(searchURL, q, tz)
+			}
 			labels := buildFormLabels(deps.Labels)
 			// 2026-05-03 — Substitute {{.Currency}} placeholder in the
 			// PlanClientScopeNotice with the client's billing currency code so
@@ -50,9 +86,10 @@ func NewAddAction(deps *Deps) view.View {
 			// client has no billing currency set.
 			labels.PlanClientScopeNotice = resolvePlanClientScopeNotice(labels.PlanClientScopeNotice, clientBillingCurrency)
 			return view.OK("subscription-drawer-form", &form.Data{
+				SuggestPlanTerm:       deps.CreateOptions.CommencementPricing,
 				FormAction:            deps.Routes.AddURL,
 				SearchClientURL:       deps.Routes.SearchClientURL,
-				SearchPlanURL:         deps.Routes.SearchPlanURL,
+				SearchPlanURL:         searchURL,
 				ClientID:              clientID,
 				ClientLabel:           clientName,
 				ClientLocked:          clientLocked,
@@ -102,6 +139,20 @@ func NewAddAction(deps *Deps) view.View {
 		)
 
 		pricePlanID := r.FormValue("price_plan_id")
+		if deps.CreateOptions.CommencementPricing {
+			// Visible inputs remain authoritative when optional inline timezone JS is unavailable.
+			dateTimeStart = parseFormDateTime(r.FormValue("date_start_date"), r.FormValue("date_start_time"), "", tz, false)
+			dateTimeEnd = parseFormDateTime(r.FormValue("date_end_date"), r.FormValue("date_end_time"), "", tz, true)
+			if dateTimeStart == nil || (r.FormValue("date_end_date") != "" && dateTimeEnd == nil) ||
+				(dateTimeEnd != nil && dateTimeEnd.AsTime().Before(dateTimeStart.AsTime())) {
+				return view.HTMXError(deps.Labels.Errors.InvalidFormData)
+			}
+			if err := validateCommencementPricing(ctx, deps, pricePlanID, r.FormValue("client_id"), dateTimeStart); err != nil {
+				log.Printf("subscription commencement validation: %v", err)
+				return view.HTMXError(deps.Labels.Errors.InvalidFormData)
+			}
+
+		}
 
 		code := r.FormValue("code")
 		if code == "" {
@@ -151,7 +202,7 @@ func NewAddAction(deps *Deps) view.View {
 		requireSpawnRaw := strings.ToLower(strings.TrimSpace(r.FormValue("require_spawn_success")))
 		requireSpawnSuccess := requireSpawnRaw == "true" || requireSpawnRaw == "on" || requireSpawnRaw == "1" || requireSpawnRaw == "yes"
 
-		resp, err := deps.CreateSubscription(spawnCtx, &subscriptionpb.CreateSubscriptionRequest{
+		request := &subscriptionpb.CreateSubscriptionRequest{
 			Data: &subscriptionpb.Subscription{
 				Name:          name,
 				ClientId:      r.FormValue("client_id"),
@@ -162,7 +213,12 @@ func NewAddAction(deps *Deps) view.View {
 				Active:        true,
 			},
 			RequireSpawnSuccess: &requireSpawnSuccess,
-		})
+		}
+		if err := form.ApplyEscalation(request.Data, r.PostForm, false); err != nil {
+			return view.HTMXError(deps.Labels.Form.EscalationInvalid)
+		}
+
+		resp, err := deps.CreateSubscription(spawnCtx, request)
 		if err != nil {
 			log.Printf("Failed to create subscription: %v", err)
 			return view.HTMXError(err.Error())

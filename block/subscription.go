@@ -24,6 +24,7 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 
 	subscriptiondom "github.com/erniealice/centymo-golang/domain/subscription"
+	subscriptionpkg "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	subscriptionaction "github.com/erniealice/centymo-golang/domain/subscription/subscription/action"
 	subscriptiondetail "github.com/erniealice/centymo-golang/domain/subscription/subscription/detail"
 	subscriptionlist "github.com/erniealice/centymo-golang/domain/subscription/subscription/list"
@@ -33,7 +34,8 @@ import (
 // surrounding Block() scope. More than 6 fields → struct.
 // Kept private; never re-exported.
 type subscriptionWiring struct {
-	refChecker ports.Checker
+	createOptions subscriptionpkg.CreateOptions
+	refChecker    ports.Checker
 	// Attachment ops
 	uploadFile       func(context.Context, string, string, []byte, string) error
 	downloadFile     func(context.Context, string, string) ([]byte, error)
@@ -83,6 +85,7 @@ func wireSubscriptionModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCa
 	// Subscription CRUD actions
 	if useCases.Subscription.CreateSubscription != nil {
 		subActionDeps := &subscriptionaction.Deps{
+			CreateOptions:      w.createOptions,
 			Routes:             w.subscriptionRoutes,
 			Labels:             w.subscriptionLabels,
 			CommonLabels:       ctx.Common,
@@ -100,6 +103,7 @@ func wireSubscriptionModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCa
 		if useCases.Subscription.GetSubscriptionItemPageData != nil {
 			subActionDeps.GetSubscriptionItemPageData = useCases.Subscription.GetSubscriptionItemPageData
 		}
+		subActionDeps.ReadClient = useCases.Entity.Client.ReadClient
 		if useCases.Entity.Client.ListClients != nil {
 			subActionDeps.ListClients = useCases.Entity.Client.ListClients
 		}

@@ -61,18 +61,35 @@ type Labels struct {
 	// whole subscription create back instead of saving with zero jobs.
 	RequireSpawnToggle string
 	RequireSpawnHint   string
+
+	EscalationSectionTitle     string
+	EscalationMode             string
+	EscalationUsePlanDefault   string
+	EscalationNotRecorded      string
+	EscalationNone             string
+	EscalationFixedPercentage  string
+	EscalationScope            string
+	EscalationWithinAgreement  string
+	EscalationOnRenewal        string
+	EscalationRate             string
+	EscalationFirstAfterMonths string
+	EscalationEveryMonths      string
+	EscalationCopyNotice       string
+	EscalationRecordOnlyNotice string
+	EscalationInvalid          string
 }
 
 // Data is the template data for the subscription drawer form.
 type Data struct {
-	FormAction  string
-	WorkspaceID string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
-	Nonce       string // CSP nonce; populated by ViewAdapter.injectPageData (NonceFromContext) for inline <script nonce>
-	IsEdit      bool
-	ID          string
-	Code        string
-	ClientID    string
-	PricePlanID string
+	SuggestPlanTerm bool
+	FormAction      string
+	WorkspaceID     string // injected by C1: populated by ViewAdapter.injectWorkspaceID for action_workspace_guard
+	Nonce           string // CSP nonce; populated by ViewAdapter.injectPageData (NonceFromContext) for inline <script nonce>
+	IsEdit          bool
+	ID              string
+	Code            string
+	ClientID        string
+	PricePlanID     string
 	// Date/Time form values, split for the two-row date+time grid.
 	// Stored in the operator's display TZ (DefaultTZ) for the date/time inputs;
 	// JS recombines + converts to UTC RFC 3339 for the hidden field.
@@ -87,6 +104,12 @@ type Data struct {
 	// data-default-tz on the form for client-side recombination.
 	DefaultTZ string
 	Notes     string
+
+	EscalationMode             string
+	EscalationScope            string
+	EscalationRate             string
+	EscalationFirstAfterMonths string
+	EscalationEveryMonths      string
 
 	Clients         []map[string]string
 	PricePlans      []map[string]string

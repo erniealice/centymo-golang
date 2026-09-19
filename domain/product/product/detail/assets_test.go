@@ -121,7 +121,7 @@ func TestHandleProductAssetAdd_GETValidatesProductBeforeListing(t *testing.T) {
 func TestHandleProductAssetAdd_GETIncludesValidatedProductAndPathOnlyAction(t *testing.T) {
 	deps := assetTestDeps()
 	deps.ReadProduct = func(context.Context, *productpb.ReadProductRequest) (*productpb.ReadProductResponse, error) {
-		return &productpb.ReadProductResponse{Data: []*productpb.Product{{Id: "p1", Name: "Leasing Space"}}}, nil
+		return &productpb.ReadProductResponse{Data: []*productpb.Product{{Id: "p1", Name: "Sample Product"}}}, nil
 	}
 	deps.ListProductAssets = func(context.Context, string) ([]*assetpb.Asset, error) { return nil, nil }
 	deps.ListAssignableAssets = func(context.Context, string) ([]*assetpb.Asset, error) { return nil, nil }
@@ -134,8 +134,8 @@ func TestHandleProductAssetAdd_GETIncludesValidatedProductAndPathOnlyAction(t *t
 	if !ok {
 		t.Fatalf("data type = %T, want *ProductAssetFormData", result.Data)
 	}
-	if data.ProductName != "Leasing Space" {
-		t.Fatalf("product name = %q, want %q", data.ProductName, "Leasing Space")
+	if data.ProductName != "Sample Product" {
+		t.Fatalf("product name = %q, want %q", data.ProductName, "Sample Product")
 	}
 	if strings.Contains(data.FormAction, "?") {
 		t.Fatalf("form action = %q, want path-only action", data.FormAction)

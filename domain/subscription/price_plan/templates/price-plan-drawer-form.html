@@ -406,6 +406,67 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
             )}}
         </div>
 
+        <div class="form-section-header">{{.Labels.EscalationSection}}</div>
+        {{if .Labels.EscalationRecordOnly}}
+        <div class="form-row single">
+            {{template "alert" (dict "Message" .Labels.EscalationRecordOnly "State" "info" "ID" "price-plan-escalation-record-only")}}
+        </div>
+        {{end}}
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label" for="default_escalation_mode">{{.Labels.EscalationMode}}</label>
+                <select id="default_escalation_mode" name="default_escalation_mode" class="form-select" data-testid="price-plan-escalation-mode">
+                    <option value="" {{if eq .DefaultEscalationMode ""}}selected{{end}}>{{.Labels.EscalationNotRecorded}}</option>
+                    <option value="ESCALATION_MODE_NONE" {{if eq .DefaultEscalationMode "ESCALATION_MODE_NONE"}}selected{{end}}>{{.Labels.EscalationNone}}</option>
+                    <option value="ESCALATION_MODE_FIXED_PERCENTAGE" {{if eq .DefaultEscalationMode "ESCALATION_MODE_FIXED_PERCENTAGE"}}selected{{end}}>{{.Labels.EscalationFixedPercentage}}</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row single" id="default-escalation-scope-row">
+            <div class="form-group">
+                <label class="form-label" for="default_escalation_scope">{{.Labels.EscalationScope}}</label>
+                <select id="default_escalation_scope" name="default_escalation_scope" class="form-select" data-testid="price-plan-escalation-scope">
+                    <option value=""></option>
+                    <option value="ESCALATION_SCOPE_WITHIN_AGREEMENT" {{if eq .DefaultEscalationScope "ESCALATION_SCOPE_WITHIN_AGREEMENT"}}selected{{end}}>{{.Labels.EscalationWithinAgreement}}</option>
+                    <option value="ESCALATION_SCOPE_ON_RENEWAL" {{if eq .DefaultEscalationScope "ESCALATION_SCOPE_ON_RENEWAL"}}selected{{end}}>{{.Labels.EscalationOnRenewal}}</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row single" id="default-escalation-rate-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "default_escalation_rate"
+                "TestId" "price-plan-escalation-rate"
+                "Label" .Labels.EscalationRate
+                "Value" .DefaultEscalationRate
+                "Min" "0.01"
+                "Max" "100"
+                "Step" "0.01"
+            )}}
+        </div>
+        <div class="form-row" id="default-escalation-interval-row">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "default_escalation_first_after_months"
+                "TestId" "price-plan-escalation-first-after-months"
+                "Label" .Labels.EscalationFirstAfterMonths
+                "Value" .DefaultEscalationFirstAfterMonths
+                "Min" "1"
+                "Max" "1200"
+                "Step" "1"
+            )}}
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "default_escalation_every_months"
+                "TestId" "price-plan-escalation-every-months"
+                "Label" .Labels.EscalationEveryMonths
+                "Value" .DefaultEscalationEveryMonths
+                "Min" "1"
+                "Max" "1200"
+                "Step" "1"
+            )}}
+        </div>
+
         {{/* Legacy dual-write (Phase 1) — derived from billing_cycle, hidden from user */}}
         <input type="hidden" name="duration_value" value="{{.BillingCycleValue}}">
         <input type="hidden" name="duration_unit" value="{{.BillingCycleUnit}}">
@@ -450,6 +511,11 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     var amountInput = document.querySelector('input[name="amount"]');
     var legacyDurationValue = document.querySelector('input[name="duration_value"][type="hidden"]');
     var legacyDurationUnit = document.querySelector('input[name="duration_unit"][type="hidden"]');
+    var escalationMode = document.getElementById('default_escalation_mode');
+    var escalationScope = document.getElementById('default_escalation_scope');
+    var escalationScopeRow = document.getElementById('default-escalation-scope-row');
+    var escalationRateRow = document.getElementById('default-escalation-rate-row');
+    var escalationIntervalRow = document.getElementById('default-escalation-interval-row');
 
     // Hidden rows must POST as null, not stale typed values. Clearing on hide
     // keeps the rev-rec algorithm correct: e.g. switching basis from PER_CYCLE
@@ -469,6 +535,33 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
                 el.value = '';
             }
         });
+    }
+
+    function setEscalationRow(row, visible) {
+        if (!row) return;
+        row.style.display = visible ? '' : 'none';
+        row.querySelectorAll('input, select').forEach(function(el) {
+            el.disabled = !visible;
+            if (!visible) el.value = '';
+        });
+    }
+
+    function applyEscalation() {
+        if (!escalationMode) return;
+        var kind = kindSel ? kindSel.value : '';
+        var basis = basisSel ? basisSel.value : '';
+        var fixedAllowed = (kind === 'BILLING_KIND_RECURRING' || kind === 'BILLING_KIND_CONTRACT') &&
+            basis === 'AMOUNT_BASIS_PER_CYCLE';
+        var fixedOption = escalationMode.querySelector('option[value="ESCALATION_MODE_FIXED_PERCENTAGE"]');
+        if (fixedOption) fixedOption.disabled = !fixedAllowed;
+        if (!fixedAllowed && escalationMode.value === 'ESCALATION_MODE_FIXED_PERCENTAGE') {
+            escalationMode.value = '';
+        }
+        var fixed = escalationMode.value === 'ESCALATION_MODE_FIXED_PERCENTAGE';
+        setEscalationRow(escalationScopeRow, fixed);
+        setEscalationRow(escalationRateRow, fixed);
+        var within = fixed && escalationScope && escalationScope.value === 'ESCALATION_SCOPE_WITHIN_AGREEMENT';
+        setEscalationRow(escalationIntervalRow, within);
     }
 
     function apply() {
@@ -632,12 +725,16 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     if (kindSel) kindSel.addEventListener('change', function() {
         applyBasisOptionGuards();
         apply();
+        applyEscalation();
         applySelectHints();
     });
     if (basisSel) basisSel.addEventListener('change', function() {
         apply();
+        applyEscalation();
         applySelectHints();
     });
+    if (escalationMode) escalationMode.addEventListener('change', applyEscalation);
+    if (escalationScope) escalationScope.addEventListener('change', applyEscalation);
     // Keep legacy duration_* inputs in sync when the user types in the cycle field.
     if (cycleRow) {
         cycleRow.addEventListener('input', apply);
@@ -645,6 +742,7 @@ Data: PricePlanFormData — see centymo-golang/views/price_plan/form_data.go
     }
     applyBasisOptionGuards();
     apply();
+    applyEscalation();
     applySelectHints();
 })();
 </script>

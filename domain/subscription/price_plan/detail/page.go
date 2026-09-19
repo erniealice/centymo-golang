@@ -13,6 +13,7 @@ import (
 	shared "github.com/erniealice/centymo-golang/domain/shared"
 	sibSubscriptionPlan "github.com/erniealice/centymo-golang/domain/subscription/plan"
 	"github.com/erniealice/centymo-golang/domain/subscription/price_plan"
+	priceplanform "github.com/erniealice/centymo-golang/domain/subscription/price_plan/form"
 	sibSubscriptionPriceSchedule "github.com/erniealice/centymo-golang/domain/subscription/price_schedule"
 	sibSubscriptionProductPricePlan "github.com/erniealice/centymo-golang/domain/subscription/product_price_plan"
 	"github.com/erniealice/hybra-golang/views/attachment"
@@ -100,25 +101,30 @@ type ProductPlanGroup struct {
 // PageData holds the data for the price plan detail page.
 type PageData struct {
 	types.PageData
-	ContentTemplate      string
-	PricePlan            *priceplanpb.PricePlan
-	Labels               price_plan.Labels
-	ActiveTab            string
-	TabItems             []pyeza.TabItem
-	ID                   string
-	PricePlanName        string
-	PricePlanDesc        string
-	PricePlanAmount      types.TableCell
-	PricePlanCurrency    string
-	PricePlanLocation    string
-	PricePlanDuration    string
-	PricePlanStatus      string
-	PricePlanStatusLabel string
-	StatusVariant        string
-	CreatedDate          string
-	ModifiedDate         string
-	ProductPricesTable   *types.TableConfig
-	AttachmentTable      *types.TableConfig
+	ContentTemplate            string
+	PricePlan                  *priceplanpb.PricePlan
+	Labels                     price_plan.Labels
+	ActiveTab                  string
+	TabItems                   []pyeza.TabItem
+	ID                         string
+	PricePlanName              string
+	PricePlanDesc              string
+	PricePlanAmount            types.TableCell
+	PricePlanCurrency          string
+	PricePlanLocation          string
+	PricePlanDuration          string
+	PricePlanStatus            string
+	PricePlanStatusLabel       string
+	StatusVariant              string
+	CreatedDate                string
+	ModifiedDate               string
+	EscalationMode             string
+	EscalationScope            string
+	EscalationRate             string
+	EscalationFirstAfterMonths int32
+	EscalationEveryMonths      int32
+	ProductPricesTable         *types.TableConfig
+	AttachmentTable            *types.TableConfig
 
 	// EditURL is the resolved URL for the "Edit Package" CTA on the Info tab.
 	// Routed through the plan-tab handler (price_plan.EditURL,
@@ -702,6 +708,18 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 		}
 	}
 	billingSummary := buildBillingModelSummary(pp, parentPlan, deps.Labels.Detail, currency, duration)
+	escalationMode := ""
+	escalationScope := ""
+	escalationRate := ""
+	if pp.DefaultEscalationMode != nil {
+		escalationMode = pp.GetDefaultEscalationMode().String()
+	}
+	if pp.DefaultEscalationScope != nil {
+		escalationScope = pp.GetDefaultEscalationScope().String()
+	}
+	if pp.DefaultEscalationRateBps != nil {
+		escalationRate = priceplanform.FormatEscalationPercentBPS(pp.GetDefaultEscalationRateBps()) + "%"
+	}
 
 	pageData := &PageData{
 		PageData: types.PageData{
@@ -715,25 +733,30 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 			HeaderIcon:     "icon-tag",
 			CommonLabels:   deps.CommonLabels,
 		},
-		ContentTemplate:      "price-plan-detail-content",
-		PricePlan:            pp,
-		Labels:               l,
-		ActiveTab:            activeTab,
-		TabItems:             tabItems,
-		ID:                   id,
-		PricePlanName:        name,
-		PricePlanDesc:        description,
-		PricePlanAmount:      amountFormatted,
-		PricePlanCurrency:    currency,
-		PricePlanLocation:    pp.GetPriceScheduleId(),
-		PricePlanDuration:    duration,
-		PricePlanStatus:      status,
-		PricePlanStatusLabel: statusLabel,
-		StatusVariant:        statusVariant,
-		CreatedDate:          pp.GetDateCreatedString(),
-		ModifiedDate:         pp.GetDateModifiedString(),
-		EditURL:              editURL,
-		BillingModelSummary:  billingSummary,
+		ContentTemplate:            "price-plan-detail-content",
+		PricePlan:                  pp,
+		Labels:                     l,
+		ActiveTab:                  activeTab,
+		TabItems:                   tabItems,
+		ID:                         id,
+		PricePlanName:              name,
+		PricePlanDesc:              description,
+		PricePlanAmount:            amountFormatted,
+		PricePlanCurrency:          currency,
+		PricePlanLocation:          pp.GetPriceScheduleId(),
+		PricePlanDuration:          duration,
+		PricePlanStatus:            status,
+		PricePlanStatusLabel:       statusLabel,
+		StatusVariant:              statusVariant,
+		CreatedDate:                pp.GetDateCreatedString(),
+		ModifiedDate:               pp.GetDateModifiedString(),
+		EscalationMode:             escalationMode,
+		EscalationScope:            escalationScope,
+		EscalationRate:             escalationRate,
+		EscalationFirstAfterMonths: pp.GetDefaultEscalationFirstAfterMonths(),
+		EscalationEveryMonths:      pp.GetDefaultEscalationEveryMonths(),
+		EditURL:                    editURL,
+		BillingModelSummary:        billingSummary,
 	}
 
 	// Load tab-specific data

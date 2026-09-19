@@ -170,6 +170,14 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 		tz := pyezatypes.LocationFromContext(ctx)
 		reqStart, hasStart := parseRFC3339(startISO)
 		reqEnd, hasEnd := parseRFC3339(endISO)
+		commencementOnly := r.URL.Query().Get("commencement_only") == "1"
+		if commencementOnly {
+			if !hasStart {
+				writeJSON(w, []groupedResult{})
+				return
+			}
+			reqEnd, hasEnd = reqStart, true
+		}
 		hasDateFilter := hasStart || hasEnd
 		if hasDateFilter {
 			if !hasStart {
@@ -300,6 +308,9 @@ func NewSearchPlansAction(deps *Deps) http.HandlerFunc {
 				}
 			}
 
+			if commencementOnly && (sched == nil || !sched.GetActive()) {
+				continue
+			}
 			// Apply date filter.
 			if hasDateFilter {
 				if schedID == "" {

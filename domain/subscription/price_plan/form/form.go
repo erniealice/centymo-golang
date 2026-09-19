@@ -74,6 +74,12 @@ type Data struct {
 	// kind/basis change so leftover values can't leak.
 	EntitledOccurrences string
 
+	DefaultEscalationMode             string
+	DefaultEscalationScope            string
+	DefaultEscalationRate             string
+	DefaultEscalationFirstAfterMonths string
+	DefaultEscalationEveryMonths      string
+
 	// Auto-complete option lists. Each entry is {Value, Label, Selected?}.
 	// PlanOptions is consumed in Schedule + Standalone contexts;
 	// ScheduleOptions in Plan + Standalone contexts.
@@ -164,13 +170,26 @@ type Labels struct {
 	LocationHintPrefix     string
 
 	// Wave 2: new billing semantics labels.
-	BillingKindLabel        string
-	AmountBasisLabel        string
-	BillingCycleLabel       string
-	BillingCyclePlaceholder string
-	TermLabel               string
-	TermPlaceholder         string
-	TermOpenEndedHelp       string
+	BillingKindLabel           string
+	AmountBasisLabel           string
+	BillingCycleLabel          string
+	BillingCyclePlaceholder    string
+	TermLabel                  string
+	TermPlaceholder            string
+	TermOpenEndedHelp          string
+	EscalationSection          string
+	EscalationMode             string
+	EscalationNone             string
+	EscalationFixedPercentage  string
+	EscalationScope            string
+	EscalationWithinAgreement  string
+	EscalationOnRenewal        string
+	EscalationRate             string
+	EscalationFirstAfterMonths string
+	EscalationEveryMonths      string
+	EscalationNotRecorded      string
+	EscalationRecordOnly       string
+	EscalationInvalid          string
 
 	// 2026-04-30 enum-select-canonicalize — per-option labels for the
 	// hardcoded BillingKind / AmountBasis <option> tags rendered directly
@@ -275,13 +294,26 @@ func LabelsFromPricePlan(pp price_plan.FormLabels) Labels {
 		ScheduleSearch:         pp.ScheduleSearch,
 		LocationHintPrefix:     pp.LocationHintPrefix,
 		// Wave 2 new fields
-		BillingKindLabel:        pp.BillingKindLabel,
-		AmountBasisLabel:        pp.AmountBasisLabel,
-		BillingCycleLabel:       pp.BillingCycleLabel,
-		BillingCyclePlaceholder: pp.BillingCyclePlaceholder,
-		TermLabel:               pp.TermLabel,
-		TermPlaceholder:         pp.TermPlaceholder,
-		TermOpenEndedHelp:       pp.TermOpenEndedHelp,
+		BillingKindLabel:           pp.BillingKindLabel,
+		AmountBasisLabel:           pp.AmountBasisLabel,
+		BillingCycleLabel:          pp.BillingCycleLabel,
+		BillingCyclePlaceholder:    pp.BillingCyclePlaceholder,
+		TermLabel:                  pp.TermLabel,
+		TermPlaceholder:            pp.TermPlaceholder,
+		TermOpenEndedHelp:          pp.TermOpenEndedHelp,
+		EscalationSection:          pp.EscalationSection,
+		EscalationMode:             pp.EscalationMode,
+		EscalationNone:             pp.EscalationNone,
+		EscalationFixedPercentage:  pp.EscalationFixedPercentage,
+		EscalationScope:            pp.EscalationScope,
+		EscalationWithinAgreement:  pp.EscalationWithinAgreement,
+		EscalationOnRenewal:        pp.EscalationOnRenewal,
+		EscalationRate:             pp.EscalationRate,
+		EscalationFirstAfterMonths: pp.EscalationFirstAfterMonths,
+		EscalationEveryMonths:      pp.EscalationEveryMonths,
+		EscalationNotRecorded:      pp.EscalationNotRecorded,
+		EscalationRecordOnly:       pp.EscalationRecordOnly,
+		EscalationInvalid:          pp.EscalationInvalid,
 		// 2026-04-30 enum-select-canonicalize — pass through the per-option
 		// labels so the inline <option> tags in price-plan-drawer-form.html
 		// can read them directly.

@@ -78,7 +78,8 @@ type PriceScheduleModuleDeps struct {
 	SubscriptionDeleteURL        string
 	// 2026-05-11 — primary "Add Subscription" CTA on the engagements tab.
 	// Drawer is opened in price-plan-locked mode via query params.
-	SubscriptionAddURL string
+	SubscriptionAddURL   string
+	SubscriptionAddLabel string
 
 	// Attachment operations (price_schedule detail + nested plan detail)
 	UploadFile       func(ctx context.Context, bucket, key string, content []byte, contentType string) error
@@ -194,6 +195,8 @@ func NewPriceScheduleModule(deps *PriceScheduleModuleDeps) *PriceScheduleModule 
 		SubscriptionEditURL:          deps.SubscriptionEditURL,
 		SubscriptionDeleteURL:        deps.SubscriptionDeleteURL,
 		SubscriptionAddURL:           deps.SubscriptionAddURL,
+		SubscriptionAddLabel:         deps.SubscriptionAddLabel,
+		ListClientNames:              deps.ListClientNames,
 	}
 	detailDeps.UploadFile = deps.UploadFile
 	detailDeps.ListAttachments = deps.ListAttachments

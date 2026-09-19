@@ -9,6 +9,7 @@ import (
 	"time"
 
 	sibRevenueRevenue "github.com/erniealice/centymo-golang/domain/revenue/revenue"
+	priceplanform "github.com/erniealice/centymo-golang/domain/subscription/price_plan/form"
 
 	subscription "github.com/erniealice/centymo-golang/domain/subscription/subscription"
 	"github.com/erniealice/hybra-golang/views/attachment"
@@ -392,24 +393,50 @@ func subscriptionToMap(ctx context.Context, s *subscriptionpb.Subscription) map[
 		dateModifiedString = time.UnixMilli(s.GetDateModified()).In(tz).Format(types.DateTimeReadable)
 	}
 
+	escalationMode := ""
+	escalationScope := ""
+	escalationRate := ""
+	var escalationFirstAfterMonths int32
+	var escalationEveryMonths int32
+	if s.EscalationMode != nil {
+		escalationMode = s.GetEscalationMode().String()
+	}
+	if s.EscalationScope != nil {
+		escalationScope = s.GetEscalationScope().String()
+	}
+	if s.EscalationRateBps != nil {
+		escalationRate = priceplanform.FormatEscalationPercentBPS(s.GetEscalationRateBps()) + "%"
+	}
+	if s.EscalationFirstAfterMonths != nil {
+		escalationFirstAfterMonths = s.GetEscalationFirstAfterMonths()
+	}
+	if s.EscalationEveryMonths != nil {
+		escalationEveryMonths = s.GetEscalationEveryMonths()
+	}
+
 	return map[string]any{
-		"id":                   s.GetId(),
-		"name":                 s.GetName(),
-		"customer":             customer,
-		"client_first_name":    clientFirstName,
-		"client_last_name":     clientLastName,
-		"plan":                 planName,
-		"price_plan_id":        s.GetPricePlanId(),
-		"client_id":            s.GetClientId(),
-		"date_start_string":    types.FormatTimestampInTZ(s.GetDateTimeStart(), tz, types.DateTimeReadable),
-		"date_end_string":      types.FormatTimestampInTZ(s.GetDateTimeEnd(), tz, types.DateTimeReadable),
-		"status":               status,
-		"active":               s.GetActive(),
-		"date_created_string":  dateCreatedString,
-		"date_modified_string": dateModifiedString,
-		"quantity":             s.GetQuantity(),
-		"assigned_count":       s.GetAssignedCount(),
-		"available_count":      s.GetAvailableCount(),
+		"id":                            s.GetId(),
+		"name":                          s.GetName(),
+		"customer":                      customer,
+		"client_first_name":             clientFirstName,
+		"client_last_name":              clientLastName,
+		"plan":                          planName,
+		"price_plan_id":                 s.GetPricePlanId(),
+		"client_id":                     s.GetClientId(),
+		"date_start_string":             types.FormatTimestampInTZ(s.GetDateTimeStart(), tz, types.DateTimeReadable),
+		"date_end_string":               types.FormatTimestampInTZ(s.GetDateTimeEnd(), tz, types.DateTimeReadable),
+		"status":                        status,
+		"active":                        s.GetActive(),
+		"date_created_string":           dateCreatedString,
+		"date_modified_string":          dateModifiedString,
+		"quantity":                      s.GetQuantity(),
+		"assigned_count":                s.GetAssignedCount(),
+		"available_count":               s.GetAvailableCount(),
+		"escalation_mode":               escalationMode,
+		"escalation_scope":              escalationScope,
+		"escalation_rate":               escalationRate,
+		"escalation_first_after_months": escalationFirstAfterMonths,
+		"escalation_every_months":       escalationEveryMonths,
 	}
 }
 
