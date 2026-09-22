@@ -35,7 +35,7 @@ const (
 // DetailViewDeps holds view dependencies for the S4 class detail page (Info +
 // Teachers tabs, centymo.md §6/§7). Every read is a single batched call
 // scoped to this one class (espyna.md §1b); RouteMap cross-links
-// (SectionDetailURL, GradeSheetURL) are nil-safe closures the container
+// (SubscriptionGroupDetailURL, GradeSheetURL) are nil-safe closures the container
 // resolves — never a hardcoded path (plan.md §1.1b).
 type DetailViewDeps struct {
 	Routes       sgpp.Routes
@@ -59,8 +59,8 @@ type DetailViewDeps struct {
 	// action (plan.md §2 in-use guard; server-side guard is the hard
 	// backstop, this is the UI hint).
 	GetSubscriptionGroupProductPlanInUseIDs func(ctx context.Context, ids []string) (map[string]bool, error)
-	// SectionDetailURL resolves the "→ link back" to the section page.
-	SectionDetailURL func(ctx context.Context, sectionID string) string
+	// SubscriptionGroupDetailURL resolves the "→ link back" to the subscription_group page.
+	SubscriptionGroupDetailURL func(ctx context.Context, subscriptionGroupID string) string
 	// GradeSheetURL resolves fayna's grade-sheet route for this class's
 	// curriculum (RouteMap cross-link — plan.md §6.1 "no new route").
 	GradeSheetURL func(ctx context.Context, jobTemplateID string) string
@@ -91,23 +91,23 @@ type PageData struct {
 	ActiveTab       string
 	TabItems        []pyeza.TabItem
 
-	ID                string
-	SectionID         string
-	SectionName       string
-	SectionURL        string
-	OfferingName      string
-	OfferingVariantID string // raw product_variant_id — the §2.5 coverage-rule key, never displayed
-	VariantLabel      string // resolved display name ("" when the offering is an umbrella)
-	CurriculumName    string
-	PlanName          string
-	PeriodName        string
-	Status            string
-	StatusLabel       string
-	StatusVariant     string
-	AssignmentsCount  int
-	CreatedDate       string
-	ModifiedDate      string
-	GradeSheetURL     string
+	ID                    string
+	SubscriptionGroupID   string
+	SubscriptionGroupName string
+	SubscriptionGroupURL  string
+	OfferingName          string
+	OfferingVariantID     string // raw product_variant_id — the §2.5 coverage-rule key, never displayed
+	VariantLabel          string // resolved display name ("" when the offering is an umbrella)
+	CurriculumName        string
+	PlanName              string
+	PeriodName            string
+	Status                string
+	StatusLabel           string
+	StatusVariant         string
+	AssignmentsCount      int
+	CreatedDate           string
+	ModifiedDate          string
+	GradeSheetURL         string
 
 	EditURL     string
 	InfoActions []InfoAction
@@ -137,7 +137,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		// IDOR guard: the path's {id} (section) must match the class's own
 		// section — a forged/mismatched section id in the URL 404s rather than
 		// silently rendering a foreign class (plan.md §5).
-		if pathSectionID := viewCtx.Request.PathValue("id"); pathSectionID != "" && pathSectionID != pageData.SectionID {
+		if pathSubscriptionGroupID := viewCtx.Request.PathValue("id"); pathSubscriptionGroupID != "" && pathSubscriptionGroupID != pageData.SubscriptionGroupID {
 			return view.Error(fmt.Errorf("%s", deps.Labels.Errors.NotFound))
 		}
 		return view.OK("sgpp-detail", pageData)
@@ -176,15 +176,15 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sgppID, activeTab 
 	record := data[0]
 	l := deps.Labels
 
-	sectionID := record.GetSubscriptionGroupId()
-	sectionName := sectionID
+	subscriptionGroupID := record.GetSubscriptionGroupId()
+	subscriptionGroupName := subscriptionGroupID
 	var planID, priceScheduleID string
-	if deps.ReadSubscriptionGroup != nil && sectionID != "" {
+	if deps.ReadSubscriptionGroup != nil && subscriptionGroupID != "" {
 		if sgResp, err := deps.ReadSubscriptionGroup(ctx, &subscriptiongrouppb.ReadSubscriptionGroupRequest{
-			Data: &subscriptiongrouppb.SubscriptionGroup{Id: sectionID},
+			Data: &subscriptiongrouppb.SubscriptionGroup{Id: subscriptionGroupID},
 		}); err == nil && sgResp != nil && len(sgResp.GetData()) > 0 {
 			sg := sgResp.GetData()[0]
-			sectionName = sg.GetName()
+			subscriptionGroupName = sg.GetName()
 			planID = sg.GetPlanId()
 			priceScheduleID = sg.GetPriceScheduleId()
 		}
@@ -280,9 +280,9 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sgppID, activeTab 
 	if deps.GradeSheetURL != nil && record.GetJobTemplateId() != "" {
 		gradeSheetURL = deps.GradeSheetURL(ctx, record.GetJobTemplateId())
 	}
-	sectionURL := ""
-	if deps.SectionDetailURL != nil {
-		sectionURL = deps.SectionDetailURL(ctx, sectionID)
+	subscriptionGroupURL := ""
+	if deps.SubscriptionGroupDetailURL != nil {
+		subscriptionGroupURL = deps.SubscriptionGroupDetailURL(ctx, subscriptionGroupID)
 	}
 
 	tz := types.LocationFromContext(ctx)
@@ -295,7 +295,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sgppID, activeTab 
 		modifiedDate = types.FormatInTZ(time.UnixMilli(ms), tz, types.DateTimeReadable)
 	}
 
-	base := route.ResolveURL(deps.Routes.DetailURL, "id", sectionID, "sgppId", sgppID)
+	base := route.ResolveURL(deps.Routes.DetailURL, "id", subscriptionGroupID, "sgppId", sgppID)
 	action := route.ResolveURL(deps.Routes.TabActionURL, "sgppId", sgppID, "tab", "")
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
@@ -304,7 +304,7 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sgppID, activeTab 
 
 	perms := view.GetUserPermissions(ctx)
 	editURL := route.ResolveURL(deps.Routes.EditURL, "id", sgppID)
-	infoActions := buildInfoActions(deps, sgppID, offeringName, sectionName, status, inUse, perms)
+	infoActions := buildInfoActions(deps, sgppID, offeringName, subscriptionGroupName, status, inUse, perms)
 
 	pageData := &PageData{
 		PageData: types.PageData{
@@ -314,34 +314,34 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sgppID, activeTab 
 			ActiveNav:      deps.Routes.ActiveNav,
 			ActiveSubNav:   deps.Routes.ActiveSubNav,
 			HeaderTitle:    offeringName,
-			HeaderSubtitle: sectionName,
+			HeaderSubtitle: subscriptionGroupName,
 			HeaderIcon:     "icon-book-open",
 			CommonLabels:   deps.CommonLabels,
 		},
-		ContentTemplate:   "sgpp-detail-content",
-		Labels:            l,
-		ActiveTab:         activeTab,
-		TabItems:          tabItems,
-		ID:                sgppID,
-		SectionID:         sectionID,
-		SectionName:       sectionName,
-		SectionURL:        sectionURL,
-		OfferingName:      offeringName,
-		OfferingVariantID: offeringVariantID,
-		VariantLabel:      variantLabel,
-		CurriculumName:    curriculumName,
-		PlanName:          planName,
-		PeriodName:        periodName,
-		Status:            status,
-		StatusLabel:       statusLabel,
-		StatusVariant:     statusVariant,
-		AssignmentsCount:  assignmentsCount,
-		CreatedDate:       createdDate,
-		ModifiedDate:      modifiedDate,
-		GradeSheetURL:     gradeSheetURL,
-		EditURL:           editURL,
-		InfoActions:       infoActions,
-		AddURL:            route.ResolveURL(deps.Routes.AssignURL, "sgppId", sgppID),
+		ContentTemplate:       "sgpp-detail-content",
+		Labels:                l,
+		ActiveTab:             activeTab,
+		TabItems:              tabItems,
+		ID:                    sgppID,
+		SubscriptionGroupID:   subscriptionGroupID,
+		SubscriptionGroupName: subscriptionGroupName,
+		SubscriptionGroupURL:  subscriptionGroupURL,
+		OfferingName:          offeringName,
+		OfferingVariantID:     offeringVariantID,
+		VariantLabel:          variantLabel,
+		CurriculumName:        curriculumName,
+		PlanName:              planName,
+		PeriodName:            periodName,
+		Status:                status,
+		StatusLabel:           statusLabel,
+		StatusVariant:         statusVariant,
+		AssignmentsCount:      assignmentsCount,
+		CreatedDate:           createdDate,
+		ModifiedDate:          modifiedDate,
+		GradeSheetURL:         gradeSheetURL,
+		EditURL:               editURL,
+		InfoActions:           infoActions,
+		AddURL:                route.ResolveURL(deps.Routes.AssignURL, "sgppId", sgppID),
 	}
 
 	if activeTab == "staff" {
@@ -358,13 +358,13 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, sgppID, activeTab 
 // Confirm messages carry {{offering}}/{{section}} placeholders (lyngua.md
 // convention) resolved here via strings.ReplaceAll — never re-templated —
 // mirroring subscription_group_member's {{name}} substitution precedent.
-func buildInfoActions(deps *DetailViewDeps, sgppID, offeringName, sectionName, status string, inUse bool, perms *types.UserPermissions) []InfoAction {
+func buildInfoActions(deps *DetailViewDeps, sgppID, offeringName, subscriptionGroupName, status string, inUse bool, perms *types.UserPermissions) []InfoAction {
 	l := deps.Labels
 	canUpdate := perms.Can(sgppEntity, "update")
 	canDelete := perms.Can(sgppEntity, "delete")
 	tmpl := func(s string) string {
 		s = strings.ReplaceAll(s, "{{offering}}", offeringName)
-		s = strings.ReplaceAll(s, "{{section}}", sectionName)
+		s = strings.ReplaceAll(s, "{{section}}", subscriptionGroupName)
 		return s
 	}
 	var actions []InfoAction

@@ -81,8 +81,8 @@ type SubscriptionGroupProductPlanModuleDeps struct {
 	ListJobTemplateOptions       func(ctx context.Context) []form.Pair
 
 	// RouteMap cross-links (plan.md §1.1b — never hardcoded).
-	SectionDetailURL func(ctx context.Context, sectionID string) string
-	GradeSheetURL    func(ctx context.Context, jobTemplateID string) string
+	SubscriptionGroupDetailURL func(ctx context.Context, subscriptionGroupID string) string
+	GradeSheetURL              func(ctx context.Context, jobTemplateID string) string
 }
 
 // SubscriptionGroupProductPlanModule holds all constructed views.
@@ -191,7 +191,7 @@ func NewSubscriptionGroupProductPlanModule(deps *SubscriptionGroupProductPlanMod
 		ListStaffNames:                          deps.ListStaffNames,
 		ListSubscriptionGroupProductPlanStaffs:  deps.ListSubscriptionGroupProductPlanStaffs,
 		GetSubscriptionGroupProductPlanInUseIDs: deps.GetSubscriptionGroupProductPlanInUseIDs,
-		SectionDetailURL:                        deps.SectionDetailURL,
+		SubscriptionGroupDetailURL:              deps.SubscriptionGroupDetailURL,
 		GradeSheetURL:                           deps.GradeSheetURL,
 	}
 

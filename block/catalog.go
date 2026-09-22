@@ -866,11 +866,11 @@ func SubscriptionGroupProductPlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 		// pattern) and is out of scope for this wiring pass; the S4 page
 		// degrades to no grade-sheet link (nil-safe) until a follow-up wires it.
 		sectionRoutesPtr, sectionRoutesFound := compose.RoutesOf[*subscriptiongrouppkg.Routes](mc, "subscription.subscription_group")
-		var sectionDetailURL func(context.Context, string) string
+		var subscriptionGroupDetailURL func(context.Context, string) string
 		if sectionRoutesFound && sectionRoutesPtr != nil && sectionRoutesPtr.DetailURL != "" {
 			detailURL := sectionRoutesPtr.DetailURL
-			sectionDetailURL = func(_ context.Context, sectionID string) string {
-				return route.ResolveURL(detailURL, "id", sectionID)
+			subscriptionGroupDetailURL = func(_ context.Context, subscriptionGroupID string) string {
+				return route.ResolveURL(detailURL, "id", subscriptionGroupID)
 			}
 		}
 
@@ -938,8 +938,8 @@ func SubscriptionGroupProductPlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 			},
 
 			// RouteMap cross-links (plan.md §1.1b — never hardcoded).
-			SectionDetailURL: sectionDetailURL,
-			GradeSheetURL:    nil,
+			SubscriptionGroupDetailURL: subscriptionGroupDetailURL,
+			GradeSheetURL:              nil,
 		}
 		subscriptiondom.NewSubscriptionGroupProductPlanModule(deps).RegisterRoutes(mc.Routes)
 		return nil
