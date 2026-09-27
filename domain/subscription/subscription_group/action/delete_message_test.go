@@ -16,8 +16,7 @@ func tierT(msgs map[string]string) func(string) string {
 	}
 }
 
-// generalMessages mirrors packages/lyngua/translations/en/general/
-// subscription_group.json (validation block) — the vertical-neutral tier.
+// generalMessages supplies generic test labels for the formatter.
 func generalMessages() map[string]string {
 	return map[string]string{
 		"subscription_group.validation.delete_blocked_references":     "Cannot delete this section while it still has active references: {dependents}. Remove them first.",
@@ -30,15 +29,13 @@ func generalMessages() map[string]string {
 	}
 }
 
-// educationMessages mirrors the general → education cascade: education overrides
-// only the member + teaching-staff nouns; the template and access-grant nouns
-// are inherited from general (education/subscription_group.json sets neither).
-func educationMessages() map[string]string {
+// customMessages checks that supplied nouns replace the generic fixture values.
+func customMessages() map[string]string {
 	m := generalMessages()
-	m["subscription_group.validation.dependent_member_one"] = "enrolled student"
-	m["subscription_group.validation.dependent_member_many"] = "enrolled students"
-	m["subscription_group.validation.dependent_teaching_staff_one"] = "teacher"
-	m["subscription_group.validation.dependent_teaching_staff_many"] = "teachers"
+	m["subscription_group.validation.dependent_member_one"] = "participant"
+	m["subscription_group.validation.dependent_member_many"] = "participants"
+	m["subscription_group.validation.dependent_teaching_staff_one"] = "mentor"
+	m["subscription_group.validation.dependent_teaching_staff_many"] = "mentors"
 	return m
 }
 
@@ -97,25 +94,24 @@ func TestFormatBlockedDependents_GeneralTier(t *testing.T) {
 	}
 }
 
-func TestFormatBlockedDependents_EducationTier(t *testing.T) {
-	t2 := tierT(educationMessages())
+func TestFormatBlockedDependents_CustomLabels(t *testing.T) {
+	t2 := tierT(customMessages())
 
-	// Plural, all three dimensions. member/staff use the education overrides;
-	// access grant is inherited from general; the template is inherited too.
+	// Plural, all three dimensions; two nouns are overridden by the caller.
 	got, ok := formatBlockedDependents(dependentCounts{3, 2, 1}, t2)
 	if !ok {
 		t.Fatal("ok = false, want true")
 	}
-	want := "Cannot delete this section while it still has active references: 3 enrolled students, 2 teachers, 1 access grant. Remove them first."
+	want := "Cannot delete this section while it still has active references: 3 participants, 2 mentors, 1 access grant. Remove them first."
 	if got != want {
-		t.Fatalf("education tier =\n  %q\nwant\n  %q", got, want)
+		t.Fatalf("custom labels =\n  %q\nwant\n  %q", got, want)
 	}
 
 	// Singular of each dimension.
 	got, _ = formatBlockedDependents(dependentCounts{1, 1, 1}, t2)
-	want = "Cannot delete this section while it still has active references: 1 enrolled student, 1 teacher, 1 access grant. Remove them first."
+	want = "Cannot delete this section while it still has active references: 1 participant, 1 mentor, 1 access grant. Remove them first."
 	if got != want {
-		t.Fatalf("education singular =\n  %q\nwant\n  %q", got, want)
+		t.Fatalf("custom singular =\n  %q\nwant\n  %q", got, want)
 	}
 }
 
@@ -128,18 +124,18 @@ func TestFormatBlockedDependents_MessagesNotWired(t *testing.T) {
 }
 
 func TestMapDeleteError(t *testing.T) {
-	eduT := tierT(educationMessages())
+	customT := tierT(customMessages())
 
-	// Referential-block error → re-rendered with education nouns.
+	// Referential-block error → re-rendered with caller-provided nouns.
 	blockErr := errors.New(espynaGeneric("3 members, 2 staff assignments, 1 access grant"))
-	got := mapDeleteError(blockErr, eduT)
-	want := "Cannot delete this section while it still has active references: 3 enrolled students, 2 teachers, 1 access grant. Remove them first."
+	got := mapDeleteError(blockErr, customT)
+	want := "Cannot delete this section while it still has active references: 3 participants, 2 mentors, 1 access grant. Remove them first."
 	if got != want {
 		t.Fatalf("mapped =\n  %q\nwant\n  %q", got, want)
 	}
 
 	// Non-guard error passes through verbatim.
-	if got := mapDeleteError(errors.New("boom"), eduT); got != "boom" {
+	if got := mapDeleteError(errors.New("boom"), customT); got != "boom" {
 		t.Fatalf("passthrough = %q, want %q", got, "boom")
 	}
 

@@ -84,21 +84,21 @@ func TestBlockLoadsRouteOverridesForSelectedModules(t *testing.T) {
 		name        string
 		option      BlockOption
 		useCases    *UseCases
-		expectPath  string
+		routeKey    string
 		defaultPath string
 	}{
 		{
 			name:        "subscription routes use service override",
 			option:      WithSubscription(),
 			useCases:    newSubscriptionUseCases(),
-			expectPath:  "/app/memberships/list/{status}",
+			routeKey:    "subscription",
 			defaultPath: subscriptiondom.SubscriptionListURL,
 		},
 		{
 			name:        "plan routes use service override",
 			option:      WithPlan(),
 			useCases:    newPlanUseCases(),
-			expectPath:  "/app/packages/list/{status}",
+			routeKey:    "plan",
 			defaultPath: subscriptiondom.PlanListURL,
 		},
 	}
@@ -108,12 +108,23 @@ func TestBlockLoadsRouteOverridesForSelectedModules(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			translations := lynguaV1.NewTranslationProviderFromFS(lyngua.TranslationsFS)
+			var expected struct {
+				ListURL string `json:"list_url"`
+			}
+			if err := translations.LoadPath("en", "service", "route.json", tc.routeKey, &expected); err != nil {
+				t.Fatal(err)
+			}
+			if expected.ListURL == "" {
+				t.Fatalf("service %s list route is empty", tc.routeKey)
+			}
+
 			routes := newTestRouteRegistrar()
 			ctx := &consumerapp.AppContext{
 				Routes:       routes,
 				Common:       pyeza.CommonLabels{},
 				BusinessType: "service",
-				Translations: lynguaV1.NewTranslationProviderFromFS(lyngua.TranslationsFS),
+				Translations: translations,
 				// ctx.DB intentionally unset — the centymo DataSource duck was
 				// deleted (20260612-datasource-typed-path W6); Block() no longer
 				// reads ctx.DB.
@@ -123,13 +134,13 @@ func TestBlockLoadsRouteOverridesForSelectedModules(t *testing.T) {
 				t.Fatalf("Block() returned error: %v", err)
 			}
 
-			if _, ok := routes.getPaths[tc.expectPath]; !ok {
-				t.Fatalf("expected route %q to be registered, got %v", tc.expectPath, keys(routes.getPaths))
+			if _, ok := routes.getPaths[expected.ListURL]; !ok {
+				t.Fatalf("expected route %q to be registered, got %v", expected.ListURL, keys(routes.getPaths))
 			}
 
-			if tc.defaultPath != tc.expectPath {
+			if tc.defaultPath != expected.ListURL {
 				if _, ok := routes.getPaths[tc.defaultPath]; ok {
-					t.Fatalf("default route %q should not be registered when override %q exists", tc.defaultPath, tc.expectPath)
+					t.Fatalf("default route %q should not be registered when override %q exists", tc.defaultPath, expected.ListURL)
 				}
 			}
 		})
