@@ -247,15 +247,15 @@ func buildPageData(ctx context.Context, deps *DetailViewDeps, id, activeTab stri
 	// Enrollments (subscriptions) tab count badge — mirrors the roster table's
 	// data source + permission gate exactly so the badge and row counts cannot
 	// drift. 0 renders no badge (unpermitted / unwired / empty section).
-	enrollmentCount := countSectionEnrollments(ctx, deps, id)
+	memberCount := countSubscriptionGroupMembers(ctx, deps, id)
 	// Teaching-staff tab count badge — the number of non-excluded class rows
 	// (M4 row-source flip), mirroring the tab's own row source + read gate
-	// exactly (see countSectionSGPPs) so the badge and row counts cannot
+	// exactly (see countGroupSGPPs) so the badge and row counts cannot
 	// drift. 0 renders no badge (unpermitted / unwired / no classes yet).
-	offeringCount := countSectionSGPPs(ctx, deps, sg)
+	offeringCount := countGroupSGPPs(ctx, deps, sg)
 	tabItems := []pyeza.TabItem{
 		{Key: "info", Label: l.Tabs.Info, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
-		{Key: "subscriptions", Label: l.Tabs.Subscriptions, Href: base + "?tab=" + subsSlug, HxGet: action + subsSlug, Icon: "icon-users", Count: enrollmentCount},
+		{Key: "subscriptions", Label: l.Tabs.Subscriptions, Href: base + "?tab=" + subsSlug, HxGet: action + subsSlug, Icon: "icon-users", Count: memberCount},
 		{Key: "staff", Label: l.Tabs.Staff, Href: base + "?tab=staff", HxGet: action + "staff", Icon: "icon-user-check", Count: offeringCount},
 		{Key: "attachments", Label: l.Tabs.Attachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 		{Key: "audit", Label: l.Tabs.Audit, Href: base + "?tab=audit", HxGet: action + "audit", Icon: "icon-clock"},
@@ -425,12 +425,12 @@ func sectionMemberFilterInactive(groupID string) *commonpb.FilterRequest {
 	return f
 }
 
-// listSectionMembers fetches the section roster STATUS-AGNOSTICALLY: one bare
+// listGroupMembers fetches the section roster STATUS-AGNOSTICALLY: one bare
 // call (the List default filters active=true) + one explicit active=false
 // call, merged by id. An inactive section's historical roster is entirely
 // inactive member rows — the bare call alone renders it empty. Shared by the
 // roster table and the count badge so the two can never drift.
-func listSectionMembers(ctx context.Context, deps *DetailViewDeps, groupID string) ([]*subscriptiongroupmemberpb.SubscriptionGroupMember, error) {
+func listGroupMembers(ctx context.Context, deps *DetailViewDeps, groupID string) ([]*subscriptiongroupmemberpb.SubscriptionGroupMember, error) {
 	var members []*subscriptiongroupmemberpb.SubscriptionGroupMember
 	seen := map[string]bool{}
 	for _, req := range []*subscriptiongroupmemberpb.ListSubscriptionGroupMembersRequest{
@@ -452,17 +452,17 @@ func listSectionMembers(ctx context.Context, deps *DetailViewDeps, groupID strin
 	return members, nil
 }
 
-// countSectionEnrollments returns the number of enrollments (subscription_group_
-// member rows) in the section for the Enrollments tab count badge. It mirrors
+// countSubscriptionGroupMembers returns the number of subscription_group_member
+// rows in the group for the subscriptions tab count badge. It mirrors
 // buildSubscriptionsTable's data source and permission gate exactly, so the
 // badge count matches the rendered row count. Returns 0 (no badge) when the
 // roster is not permitted, the dep is unwired, or the section is empty.
-func countSectionEnrollments(ctx context.Context, deps *DetailViewDeps, groupID string) int {
+func countSubscriptionGroupMembers(ctx context.Context, deps *DetailViewDeps, groupID string) int {
 	perms := view.GetUserPermissions(ctx)
 	if perms == nil || !perms.Can("subscription_group_member", "list") || deps.ListSubscriptionGroupMembers == nil {
 		return 0
 	}
-	members, err := listSectionMembers(ctx, deps, groupID)
+	members, err := listGroupMembers(ctx, deps, groupID)
 	if err != nil {
 		log.Printf("Failed to count members for subscription_group %s: %v", groupID, err)
 		return 0
@@ -501,7 +501,7 @@ func buildSubscriptionsTable(ctx context.Context, deps *DetailViewDeps, groupID 
 		return cfg
 	}
 
-	members, err := listSectionMembers(ctx, deps, groupID)
+	members, err := listGroupMembers(ctx, deps, groupID)
 	if err != nil {
 		log.Printf("Failed to list members for subscription_group %s: %v", groupID, err)
 		types.ApplyTableSettings(cfg)

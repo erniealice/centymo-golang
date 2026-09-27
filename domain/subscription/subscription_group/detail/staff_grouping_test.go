@@ -256,8 +256,8 @@ func groupedFixture() sgppGroup {
 	return sgppGroup{Key: "product:prod-r", Label: "Course R", Members: []SectionSGPPRow{m1, m2}}
 }
 
-// TestSGPPGroupTableRow_ChipsTeachersAndActions is pin #4's happy path.
-func TestSGPPGroupTableRow_ChipsTeachersAndActions(t *testing.T) {
+// TestSGPPGroupTableRow_ChipsStaffAndActions is pin #4's happy path.
+func TestSGPPGroupTableRow_ChipsStaffAndActions(t *testing.T) {
 	deps := groupingDeps()
 	l := deps.Labels
 	g := groupedFixture()

@@ -162,7 +162,7 @@ func DefaultLabels() Labels {
 			StaffSearch:             "Filter...",
 			StaffInfo:               "The staff member delivering this subject in this section.",
 			Role:                    "Role",
-			RolePlaceholder:         "e.g. teacher, co-teacher, tutor",
+			RolePlaceholder:         "e.g. lead, assistant",
 			RoleInfo:                "The role this staff member holds in this class assignment.",
 			Active:                  "Active",
 			ActiveInfo:              "Inactive assignments are excluded from grade-sheet scoping.",

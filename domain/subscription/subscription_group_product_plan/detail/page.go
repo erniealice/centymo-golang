@@ -418,7 +418,7 @@ func buildInfoActions(deps *DetailViewDeps, sgppID, offeringName, subscriptionGr
 // countAssignments returns the number of active assignment rows on this class
 // (the Teachers tab's count badge — mirrors the tab's own row source and
 // read gate exactly, subscription_group/detail/staff.go's
-// countSectionOfferings precedent, so the badge can never drift from the
+// countGroupPlanOfferings precedent, so the badge can never drift from the
 // rendered rows).
 func countAssignments(ctx context.Context, deps *DetailViewDeps, sgppID string) int {
 	perms := view.GetUserPermissions(ctx)

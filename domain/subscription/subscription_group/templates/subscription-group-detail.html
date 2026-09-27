@@ -163,14 +163,14 @@
         {{/* Teacher — eligible-only autocomplete; the clear button blanks
              staff_id (→ clear path). Value/SelectedLabel carry the page-data's
              pre-selection (current servicer, or the sole-primary auto-default). */}}
-        <div class="form-row single" data-testid="sg-staff-teacher-field">
+        <div class="form-row single" data-testid="sg-staff-assignee-field">
             {{template "auto-complete" (dict
-                "ID" "sg-staff-teacher-select"
+                "ID" "sg-staff-assignee-select"
                 "Name" "staff_id"
                 "Label" .Labels.Staff.ColumnServicer
-                "Placeholder" .Labels.Staff.TeacherPlaceholder
-                "SearchPlaceholder" .Labels.Staff.TeacherSearch
-                "Options" .TeacherOptions
+                "Placeholder" .Labels.Staff.StaffPlaceholder
+                "SearchPlaceholder" .Labels.Staff.StaffSearch
+                "Options" .StaffOptions
                 "Value" .CurrentStaffID
                 "SelectedLabel" .CurrentStaffLabel
             )}}

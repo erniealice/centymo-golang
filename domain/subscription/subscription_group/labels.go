@@ -135,22 +135,22 @@ type TabLabels struct {
 // (subscription_group). Generic Go field names; vertical vocabulary (subject/
 // teacher) enters only via the lyngua overrides.
 type StaffTabLabels struct {
-	ColumnSubject      string `json:"column_subject"`      // offering column — general "Offering"; education "Subject"; also the drawer offering field label
-	ColumnServicer     string `json:"column_servicer"`     // servicer column — general "Staff"; education "Teacher"; also the drawer teacher field label
-	ColumnRole         string `json:"column_role"`         // role column; also the drawer role field label
-	ColumnState        string `json:"column_state"`        // assignment-state column header (Saved / Unassigned)
-	EmptyPool          string `json:"empty_pool"`          // empty-pool gate link text (one row's eligible pool is empty)
-	EmptyTitle         string `json:"empty_title"`         // tab empty-state title — the section has zero offerings to staff
-	EmptyMessage       string `json:"empty_message"`       // tab empty-state message — the section has zero offerings to staff
-	Saved              string `json:"saved"`               // assigned-row state
-	Unassigned         string `json:"unassigned"`          // unassigned-row state
-	AssignAction       string `json:"assign_action"`       // per-row action tooltip + assign-drawer title
-	RolePrimary        string `json:"role_primary"`        // role enum label — teacher-of-record
-	RoleAccess         string `json:"role_access"`         // role enum label — visibility-only access
-	TeacherPlaceholder string `json:"teacher_placeholder"` // drawer teacher autocomplete placeholder
-	TeacherSearch      string `json:"teacher_search"`      // drawer teacher autocomplete filter placeholder
-	ClearAction        string `json:"clear_action"`        // drawer Clear control — soft-deletes the active edge (§6.1 "Clear")
-	Unauthorized       string `json:"unauthorized"`        // read-only / no-permission note
+	ColumnSubject    string `json:"column_subject"`    // offering column — general "Offering"; education "Subject"; also the drawer offering field label
+	ColumnServicer   string `json:"column_servicer"`   // servicer column — general "Staff"; education "Teacher"; also the drawer teacher field label
+	ColumnRole       string `json:"column_role"`       // role column; also the drawer role field label
+	ColumnState      string `json:"column_state"`      // assignment-state column header (Saved / Unassigned)
+	EmptyPool        string `json:"empty_pool"`        // empty-pool gate link text (one row's eligible pool is empty)
+	EmptyTitle       string `json:"empty_title"`       // tab empty-state title — the section has zero offerings to staff
+	EmptyMessage     string `json:"empty_message"`     // tab empty-state message — the section has zero offerings to staff
+	Saved            string `json:"saved"`             // assigned-row state
+	Unassigned       string `json:"unassigned"`        // unassigned-row state
+	AssignAction     string `json:"assign_action"`     // per-row action tooltip + assign-drawer title
+	RolePrimary      string `json:"role_primary"`      // role enum label — teacher-of-record
+	RoleAccess       string `json:"role_access"`       // role enum label — visibility-only access
+	StaffPlaceholder string `json:"staff_placeholder"` // drawer teacher autocomplete placeholder
+	StaffSearch      string `json:"staff_search"`      // drawer teacher autocomplete filter placeholder
+	ClearAction      string `json:"clear_action"`      // drawer Clear control — soft-deletes the active edge (§6.1 "Clear")
+	Unauthorized     string `json:"unauthorized"`      // read-only / no-permission note
 
 	// -- M4 row-source flip (plan.md §2 / centymo.md §3): the tab now lists
 	// active subscription_group_product_plan (class) rows instead of deriving
@@ -313,7 +313,7 @@ func DefaultLabels() Labels {
 			MaxCapacityPH:     "e.g. 30",
 			MaxCapacityInfo:   "Read only when the capacity mode is Capped.",
 			Active:            "Active",
-			ActiveInfo:        "Inactive sections are hidden from new enrollments.",
+			ActiveInfo:        "Inactive groups are hidden from new subscriptions.",
 		},
 		Bulk: BulkLabels{
 			DeleteTitle:       "Delete Sections",
@@ -339,22 +339,22 @@ func DefaultLabels() Labels {
 			Attachments:   "Attachments",
 		},
 		Staff: StaffTabLabels{
-			ColumnSubject:      "Offering",
-			ColumnServicer:     "Staff",
-			ColumnRole:         "Role",
-			ColumnState:        "State",
-			EmptyPool:          "No eligible staff — set eligibility first",
-			EmptyTitle:         "No offerings",
-			EmptyMessage:       "This section has no offerings to staff yet.",
-			Saved:              "Saved",
-			Unassigned:         "Unassigned",
-			AssignAction:       "Assign",
-			RolePrimary:        "Primary",
-			RoleAccess:         "Access",
-			TeacherPlaceholder: "Select staff...",
-			TeacherSearch:      "Filter...",
-			ClearAction:        "Clear",
-			Unauthorized:       "You do not have permission to view staff assignments",
+			ColumnSubject:    "Offering",
+			ColumnServicer:   "Staff",
+			ColumnRole:       "Role",
+			ColumnState:      "State",
+			EmptyPool:        "No eligible staff — set eligibility first",
+			EmptyTitle:       "No offerings",
+			EmptyMessage:     "This section has no offerings to staff yet.",
+			Saved:            "Saved",
+			Unassigned:       "Unassigned",
+			AssignAction:     "Assign",
+			RolePrimary:      "Primary",
+			RoleAccess:       "Access",
+			StaffPlaceholder: "Select staff...",
+			StaffSearch:      "Filter...",
+			ClearAction:      "Clear",
+			Unauthorized:     "You do not have permission to view staff assignments",
 
 			ListSeparator:         ", ",
 			ListAria:              "Staff: {{names}}",

@@ -4,7 +4,7 @@ package detail
 //
 // M4 ROW-SOURCE FLIP (plan.md §2, centymo.md §3): the LIVE tab lists active
 // subscription_group_product_plan (class) rows — SectionSGPPRow /
-// SectionSGPPTabData / buildSGPPTabData / countSectionSGPPs, below the
+// SectionSGPPTabData / buildSGPPTabData / countGroupSGPPs, below the
 // "M4 row-source flip" banner. Two columns (offering + Teachers, ALL
 // assignments comma-separated with phase labels); row actions View / Assign /
 // Exclude / Restore / Remove wired to the subscription_group_product_plan
@@ -15,7 +15,7 @@ package detail
 // LEGACY (§6.1–§6.3, kept byte-identical, no longer surfaced): the original
 // per-offering table that assigns an eligible servicer to every product_plan
 // of the section's plan — SectionAssignmentRow / SectionStaffTabData /
-// buildStaffTabData / countSectionOfferings / renderAssignDrawer /
+// buildStaffTabData / countGroupPlanOfferings / renderAssignDrawer /
 // NewAssignAction. NewAssignAction stays REGISTERED (the year-grain upsert
 // route still resolves) but no row action opens it anymore; the functions
 // below are retained for their existing unit coverage (staff_test.go) and as
@@ -133,7 +133,7 @@ type staffAssignDrawer struct {
 	CurrentStaffID    string
 	CurrentStaffLabel string
 	Assigned          bool
-	TeacherOptions    []types.SelectOption
+	StaffOptions      []types.SelectOption
 	RoleOptions       []types.SelectOption
 	Labels            subscription_group.Labels
 	CommonLabels      pyeza.CommonLabels
@@ -210,7 +210,7 @@ func buildStaffTabData(ctx context.Context, deps *DetailViewDeps, sg *subscripti
 	return data
 }
 
-// countSectionOfferings returns the number of offering rows (active product_plan
+// countGroupPlanOfferings returns the number of offering rows (active product_plan
 // rows of the section's program) for the Teaching-Staff tab count badge. It
 // mirrors the tab's row source (listPlanOfferings) and read gate (sgppsEntity:list)
 // exactly, so the badge count matches the rendered row count and cannot drift.
@@ -219,7 +219,7 @@ func buildStaffTabData(ctx context.Context, deps *DetailViewDeps, sg *subscripti
 // assignments + names + eligible pools). Returns 0 (no badge — the tabs component
 // renders nothing for a zero Count) when the table is not permitted, the program
 // is unset, or the dep is unwired.
-func countSectionOfferings(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup) int {
+func countGroupPlanOfferings(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup) int {
 	perms := view.GetUserPermissions(ctx)
 	if perms == nil || !perms.Can(sgppsEntity, "list") {
 		return 0
@@ -246,7 +246,7 @@ func countSectionOfferings(ctx context.Context, deps *DetailViewDeps, sg *subscr
 func buildStaffTable(deps *DetailViewDeps, data *SectionStaffTabData, l subscription_group.Labels) *types.TableConfig {
 	columns := []types.TableColumn{
 		{Key: "subject", Label: l.Staff.ColumnSubject, NoSort: true, NoFilter: true, Width: "36%"},
-		{Key: "teacher", Label: l.Staff.ColumnServicer, NoSort: true, NoFilter: true},
+		{Key: "staff", Label: l.Staff.ColumnServicer, NoSort: true, NoFilter: true},
 		{Key: "role", Label: l.Staff.ColumnRole, NoSort: true, NoFilter: true, WidthClass: "col-md"},
 		{Key: "state", Label: l.Staff.ColumnState, NoSort: true, NoFilter: true, WidthClass: "col-md"},
 	}
@@ -281,14 +281,14 @@ func staffTableRow(deps *DetailViewDeps, data *SectionStaffTabData, r SectionAss
 
 	subjectCell := types.TableCell{Type: "text", Value: r.SubjectLabel}
 
-	var teacherCell types.TableCell
+	var staffCell types.TableCell
 	switch {
 	case emptyPool:
-		teacherCell = gateCell(r, l)
+		staffCell = gateCell(r, l)
 	case r.Assigned:
-		teacherCell = types.TableCell{Type: "text", Value: r.CurrentStaffName}
+		staffCell = types.TableCell{Type: "text", Value: r.CurrentStaffName}
 	default:
-		teacherCell = types.TableCell{Type: "text", Value: emDash}
+		staffCell = types.TableCell{Type: "text", Value: emDash}
 	}
 
 	roleValue := emDash
@@ -337,7 +337,7 @@ func staffTableRow(deps *DetailViewDeps, data *SectionStaffTabData, r SectionAss
 			"assigned": strconv.FormatBool(r.Assigned),
 			"testid":   "sg-staff-row-" + r.ProductPlanID,
 		},
-		Cells:   []types.TableCell{subjectCell, teacherCell, roleCell, stateCell},
+		Cells:   []types.TableCell{subjectCell, staffCell, roleCell, stateCell},
 		Actions: []types.TableAction{action},
 	}
 }
@@ -627,10 +627,10 @@ func renderAssignDrawer(ctx context.Context, deps *DetailViewDeps, viewCtx *view
 	// (NOT the options' Selected flag), so surface the pre-selected teacher the
 	// page-data already resolved: the current servicer when assigned, or the
 	// sole-primary auto-default when unassigned (eligibleOptions marks it).
-	teacherValue, teacherLabel := row.CurrentStaffID, row.CurrentStaffName
+	staffValue, staffLabel := row.CurrentStaffID, row.CurrentStaffName
 	for _, o := range row.Eligible {
 		if o.Selected {
-			teacherValue, teacherLabel = o.Value, o.Label
+			staffValue, staffLabel = o.Value, o.Label
 			break
 		}
 	}
@@ -638,10 +638,10 @@ func renderAssignDrawer(ctx context.Context, deps *DetailViewDeps, viewCtx *view
 		AssignActionURL:   tab.AssignActionURL,
 		ProductPlanID:     productPlanID,
 		OfferingLabel:     row.SubjectLabel,
-		CurrentStaffID:    teacherValue,
-		CurrentStaffLabel: teacherLabel,
+		CurrentStaffID:    staffValue,
+		CurrentStaffLabel: staffLabel,
 		Assigned:          row.Assigned,
-		TeacherOptions:    row.Eligible,
+		StaffOptions:      row.Eligible,
 		RoleOptions:       buildRoleOptions(deps.Labels, row.CurrentRole),
 		Labels:            deps.Labels,
 		CommonLabels:      deps.CommonLabels,
@@ -815,12 +815,12 @@ func buildSGPPTabData(ctx context.Context, deps *DetailViewDeps, sg *subscriptio
 	return data
 }
 
-// countSectionSGPPs returns the section tab's M4 count badge: non-excluded
+// countGroupSGPPs returns the section tab's M4 count badge: non-excluded
 // class rows, or (transitionally) the derived offering count when the section
 // has no class rows yet. Mirrors buildSGPPTabData's row source + read gate
 // exactly so the badge can never drift from the rendered rows. CHEAP by
 // design — never a full buildSGPPTabData run.
-func countSectionSGPPs(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup) int {
+func countGroupSGPPs(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongrouppb.SubscriptionGroup) int {
 	perms := view.GetUserPermissions(ctx)
 	if perms == nil || !perms.Can(sgppEntity, "list") {
 		return 0
@@ -923,7 +923,7 @@ func listSGPPRows(ctx context.Context, deps *DetailViewDeps, sg *subscriptiongro
 // sgppDisplayRows is the CHEAP base projection of a section's class rows —
 // exactly two batched LIST_IN calls (offerings, variants), no assignment/
 // phase/name/in-use fan-out — shared by the table builder (listSGPPRows
-// enriches it) and the count badge (countSectionSGPPs groups it as-is), so
+// enriches it) and the count badge (countGroupSGPPs groups it as-is), so
 // the two can never drift.
 func sgppDisplayRows(ctx context.Context, deps *DetailViewDeps, sgpps []*sgpppb.SubscriptionGroupProductPlan) []SectionSGPPRow {
 	planIDs := make([]string, 0, len(sgpps))
