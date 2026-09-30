@@ -127,7 +127,11 @@ Data: .Code, .ClientID, .PricePlanID,
 			</div>
 			{{if not .IsEdit}}<p class="form-help">{{.Labels.EscalationCopyNotice}}</p>{{end}}
 
-			<div data-escalation-fixed-fields>
+			{{/* Shown only for a fixed-percentage escalation: the pyeza data-lf-show-when helper hides the
+			     section AND disables its inputs, so their `required` no longer blocks submitting an agreement
+			     with no escalation (plan default / NONE). Precedent: product-price-plan-drawer-form.html
+			     #ppp-charge-policy-section. */}}
+			<div data-escalation-fixed-fields data-testid="subscription-escalation-fixed-fields" data-lf-show-when="subscription-escalation-mode" data-lf-show-values="ESCALATION_MODE_FIXED_PERCENTAGE"{{if ne .EscalationMode "ESCALATION_MODE_FIXED_PERCENTAGE"}} hidden{{end}}>
 				<div class="form-row">
 					<div class="form-group">
 						<label class="form-label" for="subscription-escalation-scope">{{.Labels.EscalationScope}}</label>

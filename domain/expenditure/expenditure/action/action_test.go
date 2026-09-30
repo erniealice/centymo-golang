@@ -100,3 +100,14 @@ func TestFormLabelsFromExpenditureAllFieldsPopulated(t *testing.T) {
 		}
 	}
 }
+
+// A blank optional FK form value must become nil (NULL), not "" — "" violates
+// expenditure_purchase_order_id_fkey et al. on create (W5 E2E, leasing drawer).
+func TestOptionalStringBlankIsNil(t *testing.T) {
+	if got := optionalString(""); got != nil {
+		t.Fatalf("optionalString(\"\") = %q, want nil", *got)
+	}
+	if got := optionalString("po-1"); got == nil || *got != "po-1" {
+		t.Fatalf("optionalString(\"po-1\") = %v, want po-1", got)
+	}
+}

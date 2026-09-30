@@ -1,0 +1,38 @@
+{{/*
+Adjust billable charge drawer (sheet). Data: .FormAction .WorkspaceID .Labels
+.ID .Client .CurrentAmount .NewAmount .Currency .Reason .CommonLabels
+
+The original charge stays unchanged; a correction is created and appears on
+the Open tab to be issued as a credit document.
+*/}}
+{{define "billable-charge-adjust-drawer"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="billable-charge-adjust-form">
+  {{actionForm .FormAction .WorkspaceID}}
+  <input type="hidden" name="id" value="{{.ID}}">
+
+  <div class="sheet-body">
+    <div class="form-row">
+      {{template "form-group" (dict "Type" "text" "Name" "client_display" "ID" "billable-charge-adjust-client"
+        "Label" .Labels.Columns.Client "Value" .Client "Readonly" true "TestId" "billable-charge-adjust-client-group")}}
+      {{template "form-group" (dict "Type" "text" "Name" "current_display" "ID" "billable-charge-adjust-current"
+        "Label" .Labels.Detail.CurrentAmount "Value" .CurrentAmount "Readonly" true "TestId" "billable-charge-adjust-current-group")}}
+    </div>
+    <div class="form-row single">
+      {{template "form-group" (dict "Type" "number" "Name" "new_amount" "ID" "billable-charge-new-amount"
+        "Label" .Labels.Form.NewAmountLabel "Value" .NewAmount "Required" true "Step" "0.01" "Min" "0"
+        "TestId" "billable-charge-new-amount-group")}}
+    </div>
+    <div class="form-row single">
+      {{template "form-group" (dict "Type" "textarea" "Name" "reason" "ID" "billable-charge-reason"
+        "Label" .Labels.Form.ReasonLabel "Value" .Reason "Required" true "Placeholder" .Labels.Form.ReasonPlaceholder
+        "TestId" "billable-charge-reason-group")}}
+    </div>
+    <p class="form-info">{{.Labels.Confirm.AdjustMsg}}</p>
+  </div>
+
+  <div class="sheet-footer">
+    <button type="button" class="btn btn-secondary" data-lf-action="sheet-close" data-testid="billable-charge-adjust-cancel">{{.CommonLabels.Buttons.Cancel}}</button>
+    <button type="submit" class="btn btn-primary" data-testid="billable-charge-adjust-submit">{{.Labels.Buttons.Adjust}}</button>
+  </div>
+</form>
+{{end}}

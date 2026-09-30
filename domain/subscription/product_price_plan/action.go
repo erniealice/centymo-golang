@@ -151,11 +151,11 @@ func NewAddAction(deps *Deps) view.View {
 			billingTreatment = ""
 		}
 		// Advertised rate band (optional). Reject malformed/negative; allow blank.
-		bandMin, okMin := parseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_min"))
+		bandMin, okMin := ParseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_min"))
 		if !okMin {
 			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
 		}
-		bandMax, okMax := parseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_max"))
+		bandMax, okMax := ParseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_max"))
 		if !okMax {
 			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
 		}
@@ -181,7 +181,7 @@ func NewAddAction(deps *Deps) view.View {
 		}
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{Data: record}); err != nil {
 			log.Printf("Failed to create product price plan for plan %s (parent %s): %v", ppid, sid, err)
-			return view.HTMXError(err.Error())
+			return view.HTMXError(deps.ProductPricePlanLabels.GuardErrorMessage(err))
 		}
 		return view.HTMXSuccess(deps.RefreshTableID)
 	})
@@ -205,7 +205,7 @@ func NewEditAction(deps *Deps) view.View {
 
 		existing, err := findProductPricePlan(ctx, deps, pppid)
 		if err != nil {
-			return view.HTMXError(err.Error())
+			return view.HTMXError(deps.ProductPricePlanLabels.GuardErrorMessage(err))
 		}
 
 		pplLabels := deps.ProductPricePlanLabels.Form
@@ -241,8 +241,8 @@ func NewEditAction(deps *Deps) view.View {
 				PricePlanID:         ppid,
 				ProductPlanID:       existingProductPlanID,
 				Price:               fmt.Sprintf("%.2f", float64(existing.GetBillingAmount())/100.0),
-				BillingAmountMin:    formatOptionalCentavos(existing.BillingAmountMin),
-				BillingAmountMax:    formatOptionalCentavos(existing.BillingAmountMax),
+				BillingAmountMin:    FormatOptionalCentavos(existing.BillingAmountMin),
+				BillingAmountMax:    FormatOptionalCentavos(existing.BillingAmountMax),
 				Currency:            currency,
 				CommonLabels:        deps.CommonLabels,
 				PlanName:            planName,
@@ -303,11 +303,11 @@ func NewEditAction(deps *Deps) view.View {
 			billingTreatment = ""
 		}
 		// Advertised rate band (optional). Reject malformed/negative; allow blank.
-		bandMin, okMin := parseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_min"))
+		bandMin, okMin := ParseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_min"))
 		if !okMin {
 			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
 		}
-		bandMax, okMax := parseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_max"))
+		bandMax, okMax := ParseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_max"))
 		if !okMax {
 			return view.HTMXError(deps.PlanLabels.Messages.InvalidPrice)
 		}
@@ -334,7 +334,7 @@ func NewEditAction(deps *Deps) view.View {
 		}
 		if _, err := deps.UpdateProductPricePlan(ctx, &productpriceplanpb.UpdateProductPricePlanRequest{Data: updated}); err != nil {
 			log.Printf("Failed to update product price plan %s: %v", pppid, err)
-			return view.HTMXError(err.Error())
+			return view.HTMXError(deps.ProductPricePlanLabels.GuardErrorMessage(err))
 		}
 		return view.HTMXSuccess(deps.RefreshTableID)
 	})
@@ -362,7 +362,7 @@ func NewDeleteAction(deps *Deps) view.View {
 			Data: &productpriceplanpb.ProductPricePlan{Id: pppid},
 		}); err != nil {
 			log.Printf("Failed to delete product price plan %s: %v", pppid, err)
-			return view.HTMXError(err.Error())
+			return view.HTMXError(deps.ProductPricePlanLabels.GuardErrorMessage(err))
 		}
 		return view.HTMXSuccess(deps.RefreshTableID)
 	})
@@ -391,7 +391,7 @@ type productPriceFormData struct {
 	// 20260604-performance-evaluation Phase A — advertised rate band
 	// (billing_amount_min/max, proto fields 22/23). Decimal-formatted for the
 	// form (e.g. "30000.00"); empty string means "unset" (the proto field is
-	// optional / *int64). Converted to/from centavos via parseOptionalCentavos.
+	// optional / *int64). Converted to/from centavos via ParseOptionalCentavos.
 	BillingAmountMin string
 	BillingAmountMax string
 
@@ -621,27 +621,26 @@ func parsePriceCentavos(s string) (int64, bool) {
 	return int64(math.Round(f * 100)), true
 }
 
-// parseOptionalCentavos parses a decimal amount string for an OPTIONAL band
+// ParseOptionalCentavos (exported: the price_plan detail drawer shares this one helper) parses a decimal amount string for an OPTIONAL band
 // field (billing_amount_min/max). A blank/whitespace value yields (nil, true)
 // — the proto field stays unset. A present value is converted to centavos and
-// returned as a *int64. A malformed or negative value yields (nil, false).
-func parseOptionalCentavos(s string) (*int64, bool) {
+// returned as a *int64. A malformed (incl. Inf/NaN), fractional-cent or negative value yields (nil, false).
+func ParseOptionalCentavos(s string) (*int64, bool) {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return nil, true
 	}
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil || f < 0 {
+	c, err := types.ParseCentavos(s)
+	if err != nil || c < 0 {
 		return nil, false
 	}
-	c := int64(math.Round(f * 100))
 	return &c, true
 }
 
-// formatOptionalCentavos renders an optional centavos pointer as a decimal
+// FormatOptionalCentavos (exported, shared with the price_plan detail drawer) renders an optional centavos pointer as a decimal
 // string for the drawer form (e.g. 3000000 → "30000.00"). A nil pointer
 // (unset band bound) renders as the empty string so the input stays blank.
-func formatOptionalCentavos(p *int64) string {
+func FormatOptionalCentavos(p *int64) string {
 	if p == nil {
 		return ""
 	}

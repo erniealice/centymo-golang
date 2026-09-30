@@ -20,7 +20,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Value" .ReferenceNumber
                 "Required" true
                 "Placeholder" .Labels.ReferencePlaceholder
-                "Info" .Labels.Form.ReferenceInfo
+                "Info" .Labels.ReferenceInfo
             )}}
         </div>
 
@@ -32,8 +32,8 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Customer
                 "Value" .Customer
                 "Required" true
-                "Placeholder" .Labels.Form.CustomerNamePlaceholder
-                "Info" .Labels.Form.CustomerInfo
+                "Placeholder" .Labels.CustomerNamePlaceholder
+                "Info" .Labels.CustomerInfo
             )}}
         </div>
 
@@ -45,8 +45,8 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Amount
                 "Value" .Amount
                 "Required" true
-                "Placeholder" .Labels.Form.AmountPlaceholder
-                "Info" .Labels.Form.AmountInfo
+                "Placeholder" .Labels.AmountPlaceholder
+                "Info" .Labels.AmountInfo
             )}}
             {{template "form-group" (dict
                 "Type" "select"
@@ -54,7 +54,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Currency
                 "Value" .Currency
                 "Options" .CommonLabels.Currency.Options
-                "Info" .Labels.Form.CurrencyInfo
+                "Info" .Labels.CurrencyInfo
             )}}
         </div>
 
@@ -66,15 +66,15 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.PaymentMethod
                 "Value" .CollectionMethod
                 "Options" (list
-                    (dict "Value" "cash" "Label" .Labels.Form.MethodCash)
-                    (dict "Value" "bank_transfer" "Label" .Labels.Form.MethodBankTransfer)
-                    (dict "Value" "check" "Label" .Labels.Form.MethodCheck)
-                    (dict "Value" "gcash" "Label" .Labels.Form.MethodGCash)
-                    (dict "Value" "maya" "Label" .Labels.Form.MethodMaya)
-                    (dict "Value" "card" "Label" .Labels.Form.MethodCard)
-                    (dict "Value" "other" "Label" .Labels.Form.MethodOther)
+                    (dict "Value" "cash" "Label" .Labels.MethodCash)
+                    (dict "Value" "bank_transfer" "Label" .Labels.MethodBankTransfer)
+                    (dict "Value" "check" "Label" .Labels.MethodCheck)
+                    (dict "Value" "gcash" "Label" .Labels.MethodGCash)
+                    (dict "Value" "maya" "Label" .Labels.MethodMaya)
+                    (dict "Value" "card" "Label" .Labels.MethodCard)
+                    (dict "Value" "other" "Label" .Labels.MethodOther)
                 )
-                "Info" .Labels.Form.PaymentMethodInfo
+                "Info" .Labels.PaymentMethodInfo
             )}}
             {{template "form-group" (dict
                 "Type" "date"
@@ -82,7 +82,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Date
                 "Value" .Date
                 "Required" true
-                "Info" .Labels.Form.DateInfo
+                "Info" .Labels.DateInfo
             )}}
         </div>
 
@@ -94,11 +94,11 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Status
                 "Value" .Status
                 "Options" (list
-                    (dict "Value" "pending" "Label" .Labels.Form.StatusPending)
-                    (dict "Value" "completed" "Label" .Labels.Form.StatusCompleted)
-                    (dict "Value" "failed" "Label" .Labels.Form.StatusFailed)
+                    (dict "Value" "pending" "Label" .Labels.StatusPending)
+                    (dict "Value" "completed" "Label" .Labels.StatusCompleted)
+                    (dict "Value" "failed" "Label" .Labels.StatusFailed)
                 )
-                "Info" .Labels.Form.StatusInfo
+                "Info" .Labels.StatusInfo
             )}}
         </div>
 
@@ -157,7 +157,7 @@ Data: .Customer, .ReferenceNumber, .Amount, .Currency, .CollectionMethod, .Date,
                 "Label" .Labels.Notes
                 "Value" .Notes
                 "Placeholder" .Labels.NotesPlaceholder
-                "Info" .Labels.Form.NotesInfo
+                "Info" .Labels.NotesInfo
             )}}
         </div>
     </div>

@@ -196,6 +196,17 @@ func strPtr(s string) *string {
 	return &s
 }
 
+// optionalString returns nil for a blank form value so optional foreign keys
+// (supplier, category, payment term, purchase order) are stored as NULL rather
+// than ” — which violates their FK constraints. Precedent:
+// accrued_expense/action/action.go optionalString.
+func optionalString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 // parseAmount converts a form string amount (decimal) to int64 centavos.
 func parseAmount(s string) int64 {
 	f, err := strconv.ParseFloat(s, 64)
@@ -240,16 +251,16 @@ func NewAddAction(deps *Deps) view.View {
 			Data: &expenditurepb.Expenditure{
 				Name:                  r.FormValue("name"),
 				ExpenditureType:       r.FormValue("expenditure_type"),
-				ExpenditureCategoryId: strPtr(r.FormValue("expenditure_category_id")),
-				SupplierId:            strPtr(r.FormValue("supplier_id")),
+				ExpenditureCategoryId: optionalString(r.FormValue("expenditure_category_id")),
+				SupplierId:            optionalString(r.FormValue("supplier_id")),
 				ExpenditureDateString: strPtr(r.FormValue("expenditure_date_string")),
 				TotalAmount:           parseAmount(r.FormValue("total_amount")),
 				Currency:              r.FormValue("currency"),
 				Status:                r.FormValue("status"),
 				ReferenceNumber:       strPtr(r.FormValue("reference_number")),
 				Notes:                 strPtr(r.FormValue("notes")),
-				PaymentTermId:         strPtr(r.FormValue("payment_term_id")),
-				PurchaseOrderId:       strPtr(r.FormValue("purchase_order_id")),
+				PaymentTermId:         optionalString(r.FormValue("payment_term_id")),
+				PurchaseOrderId:       optionalString(r.FormValue("purchase_order_id")),
 			},
 		})
 		if err != nil {
@@ -338,16 +349,16 @@ func NewEditAction(deps *Deps) view.View {
 				Id:                    id,
 				Name:                  r.FormValue("name"),
 				ExpenditureType:       r.FormValue("expenditure_type"),
-				ExpenditureCategoryId: strPtr(r.FormValue("expenditure_category_id")),
-				SupplierId:            strPtr(r.FormValue("supplier_id")),
+				ExpenditureCategoryId: optionalString(r.FormValue("expenditure_category_id")),
+				SupplierId:            optionalString(r.FormValue("supplier_id")),
 				ExpenditureDateString: strPtr(r.FormValue("expenditure_date_string")),
 				TotalAmount:           parseAmount(r.FormValue("total_amount")),
 				Currency:              r.FormValue("currency"),
 				Status:                r.FormValue("status"),
 				ReferenceNumber:       strPtr(r.FormValue("reference_number")),
 				Notes:                 strPtr(r.FormValue("notes")),
-				PaymentTermId:         strPtr(r.FormValue("payment_term_id")),
-				PurchaseOrderId:       strPtr(r.FormValue("purchase_order_id")),
+				PaymentTermId:         optionalString(r.FormValue("payment_term_id")),
+				PurchaseOrderId:       optionalString(r.FormValue("purchase_order_id")),
 			},
 		})
 		if err != nil {

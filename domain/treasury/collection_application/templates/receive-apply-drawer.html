@@ -1,0 +1,64 @@
+{{/*
+Receive and apply drawer (sheet). Data: .FormAction .WorkspaceID .PreviewURL .Labels
+.SearchURL .ClientID .ClientLabel (async client search) or .ClientOptions (fallback select) .MethodOptions (SelectOption lists) .Amount .Currency .PaymentDate
+.Reference .CommonLabels
+
+"Preview" loads the application plan (oldest due date first; same date: invoices
+before recovery documents) into #receive-apply-preview through a GET that
+includes the form fields; "Apply" commits it.
+*/}}
+{{define "receive-apply-drawer"}}
+<form id="receive-apply-form" hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="receive-apply-form">
+  {{actionForm .FormAction .WorkspaceID}}
+
+  <div class="sheet-body">
+    <p class="form-info">{{.Labels.Page.Subtitle}}</p>
+
+    <div class="form-row single">
+      {{if .SearchURL}}
+      {{template "auto-complete" (dict "ID" "receive-apply-client" "Name" "client_id"
+        "Label" .Labels.Form.ClientLabel "Placeholder" .Labels.Form.ClientPlaceholder
+        "SearchPlaceholder" .Labels.Form.ClientPlaceholder "SearchURL" .SearchURL
+        "Value" .ClientID "SelectedLabel" .ClientLabel "Required" true "TestId" "receive-apply-client-group")}}
+      {{else}}
+      {{template "form-group" (dict "Type" "select" "Name" "client_id" "ID" "receive-apply-client"
+        "Label" .Labels.Form.ClientLabel "Placeholder" .Labels.Form.ClientPlaceholder
+        "Options" .ClientOptions "Required" true "TestId" "receive-apply-client-group")}}
+      {{end}}
+    </div>
+    <div class="form-row">
+      {{template "form-group" (dict "Type" "number" "Name" "amount" "ID" "receive-apply-amount"
+        "Label" .Labels.Form.AmountLabel "Value" .Amount "Required" true "Step" "0.01" "Min" "0"
+        "TestId" "receive-apply-amount-group")}}
+      {{template "form-group" (dict "Type" "select" "Name" "currency" "ID" "receive-apply-currency"
+        "Label" .Labels.Form.CurrencyLabel "Value" .Currency "Options" .CommonLabels.Currency.Options
+        "TestId" "receive-apply-currency-group")}}
+    </div>
+    <div class="form-row">
+      {{template "form-group" (dict "Type" "date" "Name" "payment_date" "ID" "receive-apply-date"
+        "Label" .Labels.Form.DateLabel "Value" .PaymentDate "Required" true "TestId" "receive-apply-date-group")}}
+      {{if .MethodOptions}}
+      {{template "form-group" (dict "Type" "select" "Name" "collection_method_id" "ID" "receive-apply-method"
+        "Label" .Labels.Form.MethodLabel "Placeholder" .Labels.Form.MethodPlaceholder
+        "Options" .MethodOptions "TestId" "receive-apply-method-group")}}
+      {{end}}
+    </div>
+    <div class="form-row single">
+      {{template "form-group" (dict "Type" "text" "Name" "reference_number" "ID" "receive-apply-reference"
+        "Label" .Labels.Form.ReferenceLabel "Value" .Reference "Placeholder" .Labels.Form.ReferencePlaceholder
+        "TestId" "receive-apply-reference-group")}}
+    </div>
+
+    <div class="form-row single">
+      <button type="button" class="btn btn-secondary" id="receive-apply-preview-button" data-testid="receive-apply-preview-button"
+              hx-get="{{.PreviewURL}}" hx-include="#receive-apply-form" hx-target="#receive-apply-preview" hx-swap="innerHTML">{{.Labels.Buttons.Preview}}</button>
+    </div>
+    <div id="receive-apply-preview" data-testid="receive-apply-preview" aria-live="polite"></div>
+  </div>
+
+  <div class="sheet-footer">
+    <button type="button" class="btn btn-secondary" data-lf-action="sheet-close" data-testid="receive-apply-cancel">{{.CommonLabels.Buttons.Cancel}}</button>
+    <button type="submit" class="btn btn-primary" data-testid="receive-apply-submit">{{.Labels.Buttons.Apply}}</button>
+  </div>
+</form>
+{{end}}

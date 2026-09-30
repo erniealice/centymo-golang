@@ -1,0 +1,118 @@
+{{/* Recovery document detail — full page (direct access / non-HTMX). */}}
+{{define "recovery-document-detail"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — HTMX navigation. */}}
+{{define "recovery-document-detail-content"}}
+<div class="page-content detail-layout" data-testid="recovery-document-detail" data-document-id="{{.ID}}">
+  <div class="detail-actions detail-actions--spaced">
+    <span class="badge badge--{{.StatusVariant}}" data-testid="recovery-document-status">{{.StatusLabel}}</span>
+
+    {{if .ApplyPaymentURL}}
+      {{if .CanApplyPayment}}
+      <a class="btn btn-primary" data-testid="recovery-document-apply-payment"
+         hx-get="{{.ApplyPaymentURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+         data-hx-on="sheet-open">{{.ApplyPaymentText}}</a>
+      {{else}}
+      <button type="button" class="btn btn-primary" data-testid="recovery-document-apply-payment" disabled aria-disabled="true" title="{{.MissingPermApply}}">{{.ApplyPaymentText}}</button>
+      {{end}}
+    {{end}}
+
+    {{if .CanVoid}}
+    <a class="btn btn-secondary" data-testid="recovery-document-void"
+       hx-get="{{.VoidURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+       data-hx-on="sheet-open">{{.Labels.Buttons.Void}}</a>
+    {{else}}
+    <button type="button" class="btn btn-secondary" data-testid="recovery-document-void" disabled aria-disabled="true" title="{{.VoidDisabledTip}}">{{.Labels.Buttons.Void}}</button>
+    {{end}}
+  </div>
+
+  <div class="detail-tabs">
+    {{template "tabs" (dict "Items" .TabItems "ActiveTab" .ActiveTab "Variant" "default" "ID" "recovery-document-detail-tabs")}}
+  </div>
+
+  <div id="tabContent" class="detail-body" role="tabpanel" aria-labelledby="tab-{{.ActiveTab}}">
+    {{if eq .ActiveTab "info"}}
+      {{template "recovery-document-tab-info" .}}
+    {{else if eq .ActiveTab "lines"}}
+      {{template "recovery-document-tab-lines" .}}
+    {{else if eq .ActiveTab "applications"}}
+      {{template "recovery-document-tab-applications" .}}
+    {{else if eq .ActiveTab "credit-notes"}}
+      {{template "recovery-document-tab-credit-notes" .}}
+    {{end}}
+  </div>
+</div>
+{{end}}
+
+{{/* ---- Info ---- */}}
+{{define "recovery-document-tab-info"}}
+<div class="tab-scroll">
+  <h4 class="detail-section-title">{{.Labels.Tabs.Info}}</h4>
+  {{if .IsVoid}}
+  <p class="detail-info-value" data-testid="recovery-document-void-notice">{{.Labels.Detail.VoidNotice}}{{if .VoidReason}} — {{.VoidReason}}{{end}}</p>
+  {{end}}
+  <div class="detail-info-grid">
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.Labels.Columns.DocumentNumber}}</span>
+      <span class="detail-info-value" data-testid="recovery-document-info-number">{{.Number}}</span>
+    </div>
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.Labels.Columns.DocumentType}}</span>
+      <span class="detail-info-value" data-testid="recovery-document-info-type">{{.TypeLabel}}</span>
+    </div>
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.Labels.Columns.Client}}</span>
+      <span class="detail-info-value" data-testid="recovery-document-info-client">{{.Client}}</span>
+    </div>
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.Labels.Columns.IssueDate}}</span>
+      <span class="detail-info-value">{{if .IssueDate}}{{.IssueDate}}{{else}}—{{end}}</span>
+    </div>
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.Labels.Columns.DueDate}}</span>
+      <span class="detail-info-value">{{if .DueDate}}{{.DueDate}}{{else}}—{{end}}</span>
+    </div>
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.Labels.Columns.Total}}</span>
+      <span class="detail-info-value" data-testid="recovery-document-info-total">{{.Total}}</span>
+    </div>
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.Labels.Columns.Paid}}</span>
+      <span class="detail-info-value" data-testid="recovery-document-info-applied">{{.Applied}}</span>
+    </div>
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.BalanceLabel}}</span>
+      <span class="detail-info-value" data-testid="recovery-document-info-balance">{{.Balance}}</span>
+    </div>
+    {{if .CorrectsURL}}
+    <div class="detail-info-item">
+      <span class="detail-info-label">{{.Labels.Columns.Corrects}}</span>
+      <span class="detail-info-value"><a href="{{.CorrectsURL}}" data-testid="recovery-document-info-corrects">{{.CorrectsNumber}}</a></span>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
+
+{{/* ---- Lines ---- */}}
+{{define "recovery-document-tab-lines"}}
+<div class="tab-scroll tab-scroll--table" data-testid="recovery-document-lines">
+  {{template "table-card" .LinesTable}}
+</div>
+{{end}}
+
+{{/* ---- Payments applied ---- */}}
+{{define "recovery-document-tab-applications"}}
+<div class="tab-scroll tab-scroll--table" data-testid="recovery-document-applications">
+  {{template "table-card" .ApplicationsTable}}
+</div>
+{{end}}
+
+{{/* ---- Credit notes ---- */}}
+{{define "recovery-document-tab-credit-notes"}}
+<div class="tab-scroll tab-scroll--table" data-testid="recovery-document-credit-notes">
+  {{template "table-card" .CreditNotesTable}}
+</div>
+{{end}}

@@ -1,0 +1,15 @@
+{{/* Recovery documents list — full page (direct access / non-HTMX). */}}
+{{define "recovery-document-list"}}
+{{template "app-shell" .}}
+{{end}}
+
+{{/* Content-only partial — HTMX navigation. Status tabs are link tabs
+     (Issued · Void); the table card follows. */}}
+{{define "recovery-document-list-content"}}
+<div class="page-content page-content--table" data-testid="recovery-document-list" data-status="{{.ActiveStatus}}">
+  <div class="detail-tabs" data-testid="recovery-document-status-tabs">
+    {{template "tabs" (dict "Items" .StatusTabs "ActiveTab" .ActiveStatus "Variant" "category" "ID" "recovery-document-status-tabs")}}
+  </div>
+  {{template "table-card" .Table}}
+</div>
+{{end}}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	sibRevenueRevenue "github.com/erniealice/centymo-golang/domain/revenue/revenue"
+	agreementlineterm "github.com/erniealice/centymo-golang/domain/subscription/agreement_line_term"
 	priceplanform "github.com/erniealice/centymo-golang/domain/subscription/price_plan/form"
 
 	subscription "github.com/erniealice/centymo-golang/domain/subscription/subscription"
@@ -103,6 +104,11 @@ type DetailViewDeps struct {
 	// the Recognize button + linked-advance badge.
 	ListCollectionBillingEvents func(ctx context.Context, req *junctionpb.ListCollectionBillingEventsRequest) (*junctionpb.ListCollectionBillingEventsResponse, error)
 
+	// Usage-and-pass-through S1 — the opt-in read-only "Charge terms" tab. ChargeTerms is nil
+	// unless the app opted in (block.WithKnownCostRecovery); the tab is then absent.
+	ChargeTerms      *agreementlineterm.UseCases
+	ChargeTermLabels agreementlineterm.Labels
+
 	attachment.AttachmentOps
 	auditlog.AuditOps
 }
@@ -146,6 +152,8 @@ type PageData struct {
 	// Invoices tab
 	Invoices        *types.TableConfig
 	AttachmentTable *types.TableConfig
+	// Charge terms tab (opt-in, read-only)
+	ChargeTerms *agreementlineterm.TabData
 	// Audit history tab
 	AuditEntries    []auditlog.AuditEntryView
 	AuditHasNext    bool
@@ -537,7 +545,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		// hides the Operations tab (the flat table is then the only work view;
 		// its empty state covers the zero-jobs case).
 		jobsTabVisible := len(allJobs) > 0 || deps.Routes.TabHidden("operations")
-		tabItems := buildTabItems(l, id, deps.Routes, jobsTabVisible)
+		tabItems := buildTabItems(l, id, deps.Routes, jobsTabVisible, chargeTermsEnabled(deps))
 
 		activeNav := deps.Routes.ActiveNav
 		if deps.ActiveNavOverride != "" {
@@ -612,6 +620,8 @@ func NewView(deps *DetailViewDeps) view.View {
 				canRecognize, subscriptionActive,
 				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
 			)
+		case "charge-terms":
+			applyChargeTermsTabData(ctx, deps, pageData, id, sub)
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := attachmentConfig(deps)
@@ -784,6 +794,7 @@ func resolvePricePlanBreadcrumb(ctx context.Context, deps *DetailViewDeps, price
 var knownTabs = map[string]bool{
 	"info": true, "package": true, "operations": true, "jobs": true,
 	"invoices": true, "attachments": true, "audit": true, "audit-history": true,
+	"charge-terms": true,
 }
 
 // resolveTab maps a raw ?tab= / path token to the canonical tab to render:
@@ -800,7 +811,7 @@ func resolveTab(routes subscription.Routes, raw string) string {
 	return tab
 }
 
-func buildTabItems(l subscription.Labels, id string, routes subscription.Routes, jobsTabVisible bool) []pyeza.TabItem {
+func buildTabItems(l subscription.Labels, id string, routes subscription.Routes, jobsTabVisible, chargeTermsTab bool) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	// URL tokens come from the vertical's route.json "tabs" override (e.g.
@@ -824,6 +835,12 @@ func buildTabItems(l subscription.Labels, id string, routes subscription.Routes,
 	}
 	items = append(items,
 		pyeza.TabItem{Key: "invoices", Label: l.Tabs.Invoices, Href: href("invoices"), HxGet: hxGet("invoices"), Icon: "icon-file-text"},
+	)
+	// Usage-and-pass-through S1 — opt-in read-only Charge terms tab.
+	if chargeTermsTab {
+		items = append(items, pyeza.TabItem{Key: "charge-terms", Label: chargeTermsTabLabel(l), Href: href("charge-terms"), HxGet: hxGet("charge-terms"), Icon: "icon-shield-check"})
+	}
+	items = append(items,
 		pyeza.TabItem{Key: "attachments", Label: l.Tabs.Attachments, Href: href("attachments"), HxGet: hxGet("attachments"), Icon: "icon-paperclip"},
 		pyeza.TabItem{Key: "audit", Label: l.Tabs.AuditTrail, Href: href("audit"), HxGet: hxGet("audit"), Icon: "icon-clock"},
 		pyeza.TabItem{Key: "audit-history", Label: l.Tabs.AuditHistory, Href: href("audit-history"), HxGet: hxGet("audit-history"), Icon: "icon-clock"},
@@ -1342,7 +1359,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			Subscription: subscription,
 			Labels:       l,
 			ActiveTab:    tab,
-			TabItems:     buildTabItems(l, id, deps.Routes, jobsTabVisible),
+			TabItems:     buildTabItems(l, id, deps.Routes, jobsTabVisible, chargeTermsEnabled(deps)),
 			IsCyclic:     isCyclic,
 			SpawnCycleJobsURL: strings.ReplaceAll(
 				deps.Routes.SpawnCycleJobsURL, "{subscriptionId}", id),
@@ -1391,6 +1408,8 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 				canRecognize, subscriptionActive,
 				resolveRecognizeDisabledTooltip(canRecognize, subscriptionActive, l),
 			)
+		case "charge-terms":
+			applyChargeTermsTabData(ctx, deps, pageData, id, sub)
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := attachmentConfig(deps)

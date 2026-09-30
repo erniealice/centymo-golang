@@ -65,6 +65,7 @@ type PageLabels struct {
 
 type ButtonLabels struct {
 	AddCollection string `json:"add_collection"`
+	ReceiveApply  string `json:"receive_apply"`
 }
 
 type ColumnLabels struct {
@@ -194,6 +195,9 @@ type ErrorLabels struct {
 	IDRequired       string `json:"id_required"`
 	NoIDsProvided    string `json:"no_ids_provided"`
 	InvalidStatus    string `json:"invalid_status"`
+	// ReceiptHasApplications is the refusal (and the disabled-action tooltip) for a
+	// receipt that active collection applications reference.
+	ReceiptHasApplications string `json:"receipt_has_applications"`
 }
 
 // DefaultLabels returns Labels with sensible English defaults.
@@ -212,6 +216,7 @@ func DefaultLabels() Labels {
 		},
 		Buttons: ButtonLabels{
 			AddCollection: "Add Collection",
+			ReceiveApply:  "Receive and apply",
 		},
 		Columns: ColumnLabels{
 			Reference: "Reference",
@@ -327,6 +332,8 @@ func DefaultLabels() Labels {
 			IDRequired:       "Collection ID is required",
 			NoIDsProvided:    "No collection IDs provided",
 			InvalidStatus:    "Invalid status",
+
+			ReceiptHasApplications: "This payment has been applied. Reverse its applications first.",
 		},
 		Dashboard: CashDashboardLabels{
 			Title:              "Cash",

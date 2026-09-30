@@ -1,5 +1,7 @@
 package product_price_plan
 
+import "errors"
+
 // ---------------------------------------------------------------------------
 // ProductPricePlan labels
 // ---------------------------------------------------------------------------
@@ -8,6 +10,61 @@ package product_price_plan
 // Wave 2 addition: billing treatment + product/price/currency/date fields.
 type Labels struct {
 	Form FormLabels `json:"form"`
+	// Columns holds the package-lines table column headers sourced from
+	// lyngua product_price_plan.json -> product_price_plan.columns.
+	Columns ColumnLabels `json:"columns"`
+	// Errors holds the localized package-line charge-policy guard refusals, keyed by the stable
+	// guard code (lyngua product_price_plan.errors.<code>).
+	Errors ErrorLabels `json:"errors"`
+}
+
+// ErrorLabels holds the localized charge-policy guard refusals. Field json tags equal the stable
+// codes the use case exposes through `ErrorCode() string`.
+type ErrorLabels struct {
+	ChargePolicyNotUsageBased    string `json:"charge_policy_not_usage_based"`
+	ChargePolicyBillingKind      string `json:"charge_policy_billing_kind"`
+	ChargePolicyUnavailable      string `json:"charge_policy_unavailable"`
+	ChargePolicyNotFound         string `json:"charge_policy_not_found"`
+	ChargePolicyMarkupNotAllowed string `json:"charge_policy_markup_not_allowed"`
+	ChargePolicyUnverifiable     string `json:"charge_policy_unverifiable"`
+}
+
+// GuardMessage returns the localized label for a guard refusal code, or "" when the code is
+// unknown or unlabeled (callers fall back to the raw error text).
+func (l Labels) GuardMessage(code string) string {
+	switch code {
+	case "charge_policy_not_usage_based":
+		return l.Errors.ChargePolicyNotUsageBased
+	case "charge_policy_billing_kind":
+		return l.Errors.ChargePolicyBillingKind
+	case "charge_policy_unavailable":
+		return l.Errors.ChargePolicyUnavailable
+	case "charge_policy_not_found":
+		return l.Errors.ChargePolicyNotFound
+	case "charge_policy_markup_not_allowed":
+		return l.Errors.ChargePolicyMarkupNotAllowed
+	case "charge_policy_unverifiable":
+		return l.Errors.ChargePolicyUnverifiable
+	}
+	return ""
+}
+
+// GuardErrorMessage maps an error returned by the product_price_plan use cases to its localized
+// label using the stable ErrorCode() contract (no espyna import). Falls back to err.Error().
+func (l Labels) GuardErrorMessage(err error) string {
+	var ce interface{ ErrorCode() string }
+	if errors.As(err, &ce) {
+		if m := l.GuardMessage(ce.ErrorCode()); m != "" {
+			return m
+		}
+	}
+	return err.Error()
+}
+
+// ColumnLabels holds the package-lines table column headers owned by this
+// package. ChargePolicy labels the usage-and-pass-through S1 override column.
+type ColumnLabels struct {
+	ChargePolicy string `json:"charge_policy"`
 }
 
 // FormLabels holds translatable labels for the ProductPricePlan
@@ -78,6 +135,18 @@ type FormLabels struct {
 	WithholdingClassPlaceholder string `json:"withholding_class_placeholder"`
 	WithholdingClassInfo        string `json:"withholding_class_info"`
 
+	// Charge policy section (usage-and-pass-through S1) — shown only for
+	// billing_treatment = USAGE_BASED on a RECURRING/CONTRACT package.
+	// MarkupBlockedHint explains why the markup input is read-only (S1 is
+	// at-cost recovery only; markup_bps must be null/0).
+	SectionChargePolicy     string `json:"section_charge_policy"`
+	ChargePolicyNone        string `json:"charge_policy_none"`
+	// ChargePolicyUnavailable labels a stored policy the picker can no longer list (retired, or
+	// the picker is unreadable) so a raw id is never shown.
+	ChargePolicyUnavailable string `json:"charge_policy_unavailable"`
+	MarkupLabel             string `json:"markup_label"`
+	MarkupBlockedHint       string `json:"markup_blocked_hint"`
+
 	// Read-only parent-PricePlan context block rendered above the editable
 	// fields (ppp-parent-context.html). Shared across the PPP drawer and the
 	// price-schedule-scoped product-price drawer.
@@ -101,7 +170,21 @@ type PricePlanParentContextLabels struct {
 // DefaultLabels returns Labels with sensible English defaults.
 func DefaultLabels() Labels {
 	return Labels{
+		Columns: ColumnLabels{ChargePolicy: "Charge policy"},
+		Errors: ErrorLabels{
+			ChargePolicyNotUsageBased:    "A charge policy can only be set when the billing treatment is \"On use\".",
+			ChargePolicyBillingKind:      "A charge policy can only be set on a recurring or contract rate card, and not on a total-package one.",
+			ChargePolicyUnavailable:      "That charge policy is not active or has no approved version.",
+			ChargePolicyNotFound:         "That charge policy could not be found.",
+			ChargePolicyMarkupNotAllowed: "Markup is not allowed here. Charges are recovered at cost only.",
+			ChargePolicyUnverifiable:     "The charge policy could not be verified right now.",
+		},
 		Form: FormLabels{
+			SectionChargePolicy:                "Charge policy",
+			ChargePolicyNone:                   "None",
+			ChargePolicyUnavailable:            "Unavailable charge policy",
+			MarkupLabel:                        "Markup (%)",
+			MarkupBlockedHint:                  "Markup is not allowed for this service",
 			BillingTreatmentLabel:              "Billing treatment",
 			BillingTreatmentRecurring:          "Every cycle",
 			BillingTreatmentRecurringHelp:      "Charge this line every billing cycle",

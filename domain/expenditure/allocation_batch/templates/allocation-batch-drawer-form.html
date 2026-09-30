@@ -1,0 +1,140 @@
+{{/* Allocation drawer (participants + weights, preview, save draft, publish). Data: form.Data.
+     Two sibling forms so each request is owned by a form (the pyeza sheet-response hook only
+     handles requests whose element is the form itself): the weights form (Save draft) and the
+     publish form (confirm dialog), which re-posts the weights through hx-include. Preview is a
+     plain button request that swaps the preview panel (a 200 fragment, errors included). */}}
+{{define "allocation-batch-drawer-form"}}
+<form id="allocation-weights-form" hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="allocation-form">
+    {{actionForm .FormAction .WorkspaceID}}
+
+    <div class="sheet-body">
+        <div class="detail-info-grid">
+            <div class="detail-info-item">
+                <span class="detail-info-label">{{.Labels.Detail.SourceAmount}}</span>
+                <span class="detail-info-value mono" data-testid="allocation-source-amount">{{.Currency}} {{.SourceAmount}}</span>
+            </div>
+            <div class="detail-info-item">
+                <span class="detail-info-label">{{.ComponentLabel}}</span>
+                <span class="detail-info-value" data-testid="allocation-service-period">{{.ServicePeriod}}</span>
+            </div>
+            {{if .HasDraft}}
+            <div class="detail-info-item">
+                <span class="detail-info-label">{{.Labels.Enums.StatusDraft}}</span>
+                <span class="detail-info-value" data-testid="allocation-revision">{{.Revision}}</span>
+            </div>
+            {{end}}
+        </div>
+
+        {{if .Rows}}
+        <div data-testid="allocation-participants">
+            {{range .Rows}}
+            <div class="form-row single" data-testid="allocation-row-{{.Slug}}">
+                <input type="hidden" name="share_kind" value="{{.Kind}}">
+                <input type="hidden" name="subscription_id" value="{{.SubscriptionID}}">
+                <input type="hidden" name="client_id" value="{{.ClientID}}">
+                <input type="hidden" name="row_label" value="{{.Name}}">
+                {{template "form-group" (dict "Type" "number" "Name" "numerator" "ID" (printf "allocation-numerator-%s" .Slug) "Label" (printf "%s — %s" .KindLabel .Name) "Value" .Numerator "Min" "0" "Step" "1" "Placeholder" $.Labels.Form.NumeratorPlaceholder "TestId" (printf "allocation-numerator-%s" .Slug))}}
+            </div>
+            {{end}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "number" "Name" "denominator" "ID" "allocation-denominator" "Label" .Labels.Form.DenominatorLabel "Value" .Denominator "Min" "1" "Step" "1" "Hint" .Labels.Detail.RemainderNote "TestId" "allocation-denominator-group")}}
+        </div>
+        {{else}}
+        <div class="empty-state" data-testid="allocation-no-participants">
+            <h3 class="empty-state-title">{{.Labels.Empty.SharesTitle}}</h3>
+            <p class="empty-state-message">{{.Labels.Empty.SharesMessage}}</p>
+        </div>
+        {{end}}
+
+        <div id="allocation-preview" class="allocation-preview" data-testid="allocation-preview-panel" aria-live="polite">
+            {{if .Preview}}{{template "allocation-batch-preview" (dict "Preview" .Preview "Labels" .Labels)}}{{end}}
+        </div>
+    </div>
+</form>
+
+<div class="sheet-footer">
+    <button type="button" class="btn btn-secondary" data-lf-action="sheet-close" data-testid="allocation-cancel">{{.CommonLabels.Buttons.Cancel}}</button>
+    {{if .Rows}}
+    {{/* The request is issued by the BUTTON, not the form: pyeza sheet.js closes the drawer on any
+         successful request whose element is a FORM inside the sheet (sheet.js global afterRequest),
+         and Preview must keep the drawer open. htmx still sends this enclosing form's fields and
+         lets them override the hx-included weights form's, so the path-bound signature is the
+         preview's own (C19). */}}
+    <form class="allocation-preview-form" data-testid="allocation-preview-form">
+        {{actionForm .PreviewURL .WorkspaceID}}
+        <button type="button" class="btn btn-secondary" id="allocation-preview-button" data-testid="allocation-preview"
+            hx-post="{{.PreviewURL}}" hx-include="#allocation-weights-form" hx-target="#allocation-preview" hx-swap="innerHTML">{{.Labels.Buttons.Preview}}</button>
+    </form>
+    <button type="submit" form="allocation-weights-form" class="btn btn-secondary" id="allocation-save-draft" data-testid="allocation-save-draft">{{.Labels.Buttons.SaveDraft}}</button>
+    {{if .CanPublish}}
+    <form class="allocation-publish-form" hx-post="{{.PublishURL}}" hx-include="#allocation-weights-form" hx-swap="none" data-hx-on="sheet-response"
+        hx-confirm="{{.Labels.Confirm.PublishMsg}}"
+        data-confirm-title="{{.Labels.Confirm.PublishTitle}}" data-confirm-variant="primary" data-testid="allocation-publish-form">
+        {{actionForm .PublishURL .WorkspaceID}}
+        <button type="submit" class="btn btn-primary" id="allocation-publish" data-testid="allocation-publish">{{.Labels.Buttons.Publish}}</button>
+    </form>
+    {{else}}
+    <button type="button" class="btn btn-primary" id="allocation-publish" data-testid="allocation-publish" disabled aria-disabled="true"
+        title="{{.PublishTooltip}}">{{.Labels.Buttons.Publish}}</button>
+    {{end}}
+    {{end}}
+</div>
+{{end}}
+
+{{/* Split preview panel (also used read-only). Data: (dict "Preview" *form.Preview "Labels" ab.Labels) or form.PreviewPage */}}
+{{define "allocation-batch-preview"}}
+{{if .Error}}
+<div class="alert alert-error" role="alert" data-testid="allocation-preview-error">{{.Error}}</div>
+{{else}}
+<h4 class="detail-section-title">{{.Labels.Form.PreviewTitle}}</h4>
+<table class="data-table" id="allocation-preview-table" data-testid="allocation-preview-table">
+    <thead>
+        <tr>
+            <th class="data-table__cell data-table__cell--header">{{.Labels.Columns.ShareKind}}</th>
+            <th class="data-table__cell data-table__cell--header">{{.Labels.Columns.Subscription}} / {{.Labels.Columns.Client}}</th>
+            <th class="data-table__cell data-table__cell--header">{{.Labels.Columns.Numerator}}</th>
+            <th class="data-table__cell data-table__cell--header">{{.Labels.Columns.Percentage}}</th>
+            <th class="data-table__cell data-table__cell--header">{{.Labels.Columns.Amount}}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Preview.Lines}}
+        <tr class="data-table__row" data-testid="allocation-preview-line">
+            <td class="data-table__cell">{{.KindLabel}}</td>
+            <td class="data-table__cell">{{.Name}}</td>
+            <td class="data-table__cell mono">{{.Weight}}</td>
+            <td class="data-table__cell mono">{{.Percent}}</td>
+            <td class="data-table__cell mono">{{$.Preview.Currency}} {{.Amount}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+    <tfoot>
+        <tr class="data-table__row">
+            <td class="data-table__cell" colspan="4">{{.Labels.Detail.TotalAllocated}}</td>
+            <td class="data-table__cell mono" data-testid="allocation-preview-total">{{.Preview.Currency}} {{.Preview.Total}}</td>
+        </tr>
+    </tfoot>
+</table>
+{{end}}
+{{end}}
+
+{{/* Read-only published allocation. Data: form.ViewData */}}
+{{define "allocation-batch-view"}}
+<div class="sheet-body" data-testid="allocation-view">
+    <div class="detail-info-grid">
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.ComponentLabel}}</span>
+            <span class="detail-info-value">{{.ServicePeriod}}</span>
+        </div>
+        <div class="detail-info-item">
+            <span class="detail-info-label">{{.Labels.Columns.Status}}</span>
+            <span class="detail-info-value" data-testid="allocation-view-status">{{.Status}} — {{.Revision}}</span>
+        </div>
+    </div>
+    {{if .Preview}}{{template "allocation-batch-preview" (dict "Preview" .Preview "Labels" .Labels)}}{{end}}
+</div>
+<div class="sheet-footer">
+    <button type="button" class="btn btn-secondary" data-lf-action="sheet-close" data-testid="allocation-view-close">{{.CommonLabels.Buttons.Cancel}}</button>
+</div>
+{{end}}

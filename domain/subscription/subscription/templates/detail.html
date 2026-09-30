@@ -25,6 +25,8 @@
         {{template "subscription-tab-invoices" .}}
         {{else if eq .ActiveTab "audit"}}
         {{template "subscription-tab-audit" .}}
+        {{else if eq .ActiveTab "charge-terms"}}
+        {{template "subscription-tab-charge-terms" .}}
         {{else if eq .ActiveTab "attachments"}}
         {{template "attachment-tab" .}}
         {{end}}

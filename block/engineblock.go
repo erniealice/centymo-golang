@@ -472,6 +472,9 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 		}
 
 		// -- PricePlan (top-level on centymo UseCases) --
+		if uc.Ledger != nil && uc.Ledger.ChargePolicy != nil && uc.Ledger.ChargePolicy.ListPickerChargePolicies != nil {
+			result.PricePlan.ListPickerChargePolicies = uc.Ledger.ChargePolicy.ListPickerChargePolicies.Execute
+		}
 		if uc.Subscription.PricePlan != nil {
 			result.PricePlan.ListPricePlans = uc.Subscription.PricePlan.ListPricePlans.Execute
 			result.PricePlan.ReadPricePlan = uc.Subscription.PricePlan.ReadPricePlan.Execute
@@ -1150,6 +1153,113 @@ func buildCentymoUseCases(uc *consumer.UseCases, db any) *UseCases {
 			result.Operation.JobActivity.ReadJobActivity = uc.Operation.JobActivity.ReadJobActivity.Execute
 		}
 	}
+
+	// Usage & pass-through S1 closures (consumed only by the units that WithRecoveryCharges /
+	// WithKnownCostRecovery mount; recovery_charges.go, known_cost_recovery.go). One binding
+	// style throughout: a per-field nil check, so a missing aggregate or an unwired closure leaves
+	// the field nil and the unit fails closed in Mount (R4).
+	if bc := uc.Subscription; bc != nil && bc.BillableCharge != nil {
+		if bc.BillableCharge.ListBillableCharges != nil {
+			result.BillableCharge.ListBillableCharges = bc.BillableCharge.ListBillableCharges.Execute
+		}
+		if bc.BillableCharge.AdjustBillableCharge != nil {
+			result.BillableCharge.AdjustBillableCharge = bc.BillableCharge.AdjustBillableCharge.Execute
+		}
+	}
+	if uc.Revenue != nil {
+		if rd := uc.Revenue.RecoveryDocument; rd != nil {
+			if rd.ListRecoveryDocuments != nil {
+				result.RecoveryDocument.ListRecoveryDocuments = rd.ListRecoveryDocuments.Execute
+			}
+			if rd.ReadRecoveryDocument != nil {
+				result.RecoveryDocument.ReadRecoveryDocument = rd.ReadRecoveryDocument.Execute
+			}
+			if rd.IssueRecoveryDocuments != nil {
+				result.RecoveryDocument.IssueRecoveryDocuments = rd.IssueRecoveryDocuments.Execute
+			}
+			if rd.VoidRecoveryDocument != nil {
+				result.RecoveryDocument.VoidRecoveryDocument = rd.VoidRecoveryDocument.Execute
+			}
+		}
+		if ds := uc.Revenue.DocumentSeries; ds != nil && ds.ListDocumentSeries != nil {
+			result.DocumentSeries.ListDocumentSeries = ds.ListDocumentSeries.Execute
+		}
+	}
+	if uc.Treasury != nil {
+		if ca := uc.Treasury.CollectionApplication; ca != nil {
+			if ca.ListCollectionApplications != nil {
+				result.CollectionApplication.ListCollectionApplications = ca.ListCollectionApplications.Execute
+			}
+			if ca.ReceiveAndApplyCollection != nil {
+				result.CollectionApplication.ReceiveAndApplyCollection = ca.ReceiveAndApplyCollection.Execute
+			}
+			if ca.PreviewCollectionApplication != nil {
+				result.CollectionApplication.PreviewCollectionApplication = ca.PreviewCollectionApplication.Execute
+			}
+			if ca.ReverseCollectionApplication != nil {
+				result.CollectionApplication.ReverseCollectionApplication = ca.ReverseCollectionApplication.Execute
+			}
+		}
+	}
+
+	// Usage & pass-through S1 known-cost recovery closures (consumed only by the units that
+	// WithKnownCostRecovery mounts; known_cost_recovery.go). Nil-safe: a missing aggregate
+	// leaves the closures nil and those units then fail closed in Mount (R4).
+	if e := uc.Expenditure; e != nil {
+		k := result
+		if c := e.CostSourceComponent; c != nil {
+			if c.CreateCostSourceComponent != nil {
+				k.CostSourceComponent.CreateCostSourceComponent = c.CreateCostSourceComponent.Execute
+			}
+			if c.ReadCostSourceComponent != nil {
+				k.CostSourceComponent.ReadCostSourceComponent = c.ReadCostSourceComponent.Execute
+				k.AllocationBatch.ReadCostSourceComponent = c.ReadCostSourceComponent.Execute
+			}
+			if c.UpdateCostSourceComponent != nil {
+				k.CostSourceComponent.UpdateCostSourceComponent = c.UpdateCostSourceComponent.Execute
+			}
+			if c.DeleteCostSourceComponent != nil {
+				k.CostSourceComponent.DeleteCostSourceComponent = c.DeleteCostSourceComponent.Execute
+			}
+			if c.ListCostSourceComponents != nil {
+				k.CostSourceComponent.ListCostSourceComponents = c.ListCostSourceComponents.Execute
+			}
+		}
+		if a := e.AllocationBatch; a != nil {
+			if a.CreateAllocationBatch != nil {
+				k.AllocationBatch.CreateAllocationBatch = a.CreateAllocationBatch.Execute
+			}
+			if a.UpdateAllocationBatchShares != nil {
+				k.AllocationBatch.UpdateAllocationBatchShares = a.UpdateAllocationBatchShares.Execute
+			}
+			if a.PublishAllocationBatch != nil {
+				k.AllocationBatch.PublishAllocationBatch = a.PublishAllocationBatch.Execute
+			}
+			if a.GetAllocationBatchListPageData != nil {
+				k.AllocationBatch.GetAllocationBatchListPageData = a.GetAllocationBatchListPageData.Execute
+			}
+		}
+		if s := e.AllocationShare; s != nil && s.GetAllocationShareListPageData != nil {
+			k.AllocationBatch.GetAllocationShareListPageData = s.GetAllocationShareListPageData.Execute
+		}
+	}
+	if s := uc.Subscription; s != nil && s.AgreementLineTerm != nil && s.AgreementLineTerm.ListAgreementLineTerms != nil {
+		list := s.AgreementLineTerm.ListAgreementLineTerms.Execute
+		result.AllocationBatch.ListAgreementLineTerms = list
+		result.AgreementLineTerm.ListAgreementLineTerms = list
+	}
+	if cp := uc.Ledger; cp != nil && cp.ChargePolicy != nil {
+		if cp.ChargePolicy.ReadChargePolicyVersion != nil {
+			result.AgreementLineTerm.ReadChargePolicyVersion = cp.ChargePolicy.ReadChargePolicyVersion.Execute
+		}
+		if cp.ChargePolicy.ReadChargePolicy != nil {
+			result.AgreementLineTerm.ReadChargePolicy = cp.ChargePolicy.ReadChargePolicy.Execute
+		}
+	}
+	// Reads bound above for other modules and shared with the known-cost recovery views.
+	result.AllocationBatch.GetSubscriptionItemPageData = result.Subscription.GetSubscriptionItemPageData
+	result.CostSourceComponent.ListExpenditureLineItems = result.Expenditure.ListExpenditureLineItems
+	result.AgreementLineTerm.ListProductPricePlans = result.PricePlan.ListProductPricePlans
 
 	return result
 }

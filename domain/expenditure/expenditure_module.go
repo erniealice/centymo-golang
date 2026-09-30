@@ -8,6 +8,8 @@ import (
 	"github.com/erniealice/pyeza-golang/types"
 	"github.com/erniealice/pyeza-golang/view"
 
+	ab "github.com/erniealice/centymo-golang/domain/expenditure/allocation_batch"
+	csc "github.com/erniealice/centymo-golang/domain/expenditure/cost_source_component"
 	epkg "github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	expenditureaction "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/action"
 	expenditurecategory "github.com/erniealice/centymo-golang/domain/expenditure/expenditure/category"
@@ -110,6 +112,13 @@ type ExpenditureModuleDeps struct {
 	// money display in the dashboards. Nil-safe — when absent, money strings
 	// omit the currency prefix.
 	GetFunctionalCurrency func(ctx context.Context) string
+
+	// Usage-and-pass-through S1 — the opt-in Recoverable costs tab. CostSourceComponents is
+	// nil unless the app opted in (block.WithKnownCostRecovery); the tab is then absent.
+	CostSourceComponents      *csc.UseCases
+	CostSourceComponentRoutes csc.Routes
+	CostSourceComponentLabels csc.Labels
+	AllocationBatchRoutes     ab.Routes
 
 	// Attachment operations (for expenditure detail attachments tab)
 	ListAttachments  func(ctx context.Context, moduleKey, foreignKey string) (*attachmentpb.ListAttachmentsResponse, error)
@@ -259,6 +268,10 @@ func NewExpenditureModule(deps *ExpenditureModuleDeps) *ExpenditureModule {
 			ExpenseRecognitionDetailURL: deps.ExpenseRecognitionDetailURL,
 			AccruedExpenseDetailURL:     deps.AccruedExpenseDetailURL,
 			RecognizeFromExpenditureURL: deps.RecognizeFromExpenditureURL,
+			CostSourceComponents:        deps.CostSourceComponents,
+			CostSourceComponentRoutes:   deps.CostSourceComponentRoutes,
+			CostSourceComponentLabels:   deps.CostSourceComponentLabels,
+			AllocationBatchRoutes:       deps.AllocationBatchRoutes,
 			// Phase 5 — wired by block.go via typed use cases; nil when not provisioned.
 			GetPaidAmount:             deps.GetPaidAmount,
 			ListDisbursementSchedules: deps.ListDisbursementSchedules,

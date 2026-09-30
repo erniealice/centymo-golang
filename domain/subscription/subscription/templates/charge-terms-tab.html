@@ -1,0 +1,17 @@
+{{/* Charge terms tab (usage-and-pass-through S1, opt-in, read-only). Data: .ChargeTerms (agreement_line_term.TabData) */}}
+{{define "subscription-tab-charge-terms"}}
+{{if .ChargeTerms}}
+<div class="tab-scroll" data-testid="charge-terms-tab">
+    <h4 class="detail-section-title">{{.ChargeTerms.Labels.Page.Title}}</h4>
+    <p class="detail-section-subtitle">{{.ChargeTerms.Labels.Page.Subtitle}}</p>
+    {{if .ChargeTerms.Failed}}
+    <div class="empty-state" role="alert" data-testid="charge-terms-error">
+        <p class="empty-state-message">{{.ChargeTerms.Labels.Detail.LoadFailed}}</p>
+    </div>
+    {{else}}
+    {{template "table-card" .ChargeTerms.Table}}
+    <p class="form-hint" data-testid="charge-terms-pinned-notice">{{.ChargeTerms.Labels.Detail.PinnedNotice}}</p>
+    {{end}}
+</div>
+{{end}}
+{{end}}

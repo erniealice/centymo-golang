@@ -72,6 +72,7 @@ import (
 	sgwuform "github.com/erniealice/centymo-golang/domain/subscription/subscription_group_workspace_user/form"
 	treasurydomain "github.com/erniealice/centymo-golang/domain/treasury"
 	collectionpkg "github.com/erniealice/centymo-golang/domain/treasury/collection"
+	collectionapplicationpkg "github.com/erniealice/centymo-golang/domain/treasury/collection_application"
 	disbursementpkg "github.com/erniealice/centymo-golang/domain/treasury/disbursement"
 	advancesdashboardpkg "github.com/erniealice/centymo-golang/domain/treasury/treasuryadvancesdashboard"
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
@@ -432,6 +433,7 @@ func PricePlanUnit(uc *UseCases, infra *Infra) compose.Unit {
 			UpdatePricePlan:           uc.PricePlan.UpdatePricePlan,
 			DeletePricePlan:           uc.PricePlan.DeletePricePlan,
 			ListProductPricePlans:     uc.PricePlan.ListProductPricePlans,
+			ListPickerChargePolicies:  uc.PricePlan.ListPickerChargePolicies,
 			CreateProductPricePlan:    uc.PricePlan.CreateProductPricePlan,
 			UpdateProductPricePlan:    uc.PricePlan.UpdateProductPricePlan,
 			DeleteProductPricePlan:    uc.PricePlan.DeleteProductPricePlan,
@@ -1308,6 +1310,7 @@ func SubscriptionUnit(uc *UseCases, infra *Infra, options ...subscriptionpkg.Cre
 			subscriptionLabels:  subscriptiondom.SubscriptionLabels(*l),
 			priceScheduleLabels: subscriptiondom.PriceScheduleLabels(priceScheduleLabels),
 			centymoTableLabels:  mc.Table,
+			chargeTerms:         chargeTermsWiringOf(mc, uc),
 		})
 		return nil
 	}
@@ -1347,6 +1350,9 @@ func CollectionUnit(uc *UseCases, infra *Infra) compose.Unit {
 			SettleUnscheduledAdvance: bridgeSettleAdvance(uc.Collection.SettleUnscheduledAdvance),
 			RefundUnscheduledAdvance: bridgeRefundAdvance(uc.Collection.RefundUnscheduledAdvance),
 			CancelAdvance:            bridgeCancelAdvance(uc.Collection.CancelAdvance),
+		}
+		if ar, ok := compose.RoutesOf[*collectionapplicationpkg.Routes](mc, "treasury.collection_application"); ok {
+			collDeps.ReceiveApplyURL = ar.ReceiveApplyURL
 		}
 		wireCashDashboard(collDeps, uc)
 		collDeps.GetFunctionalCurrency = func(fctx context.Context) string {
@@ -1434,6 +1440,7 @@ func ExpenditureUnit(uc *UseCases, infra *Infra) compose.Unit {
 		wireExpenditureDeps(deps, uc)
 		wirePurchaseDashboard(deps, uc)
 		wireExpenseDashboard(deps, uc)
+		wireRecoverableCosts(mc, deps, uc)
 		deps.GetFunctionalCurrency = func(fctx context.Context) string {
 			return getFunctionalCurrency(fctx, uc)
 		}
@@ -2024,6 +2031,12 @@ func AllUnits(uc *UseCases, infra *Infra, opts ...EngineOption) []compose.Unit {
 	}
 	if cfg.inventoryCatalogMounts {
 		units = append(units, ProductInventoryUnit(uc, infra), ProductSuppliesUnit(uc, infra), PriceScheduleInventoryUnit(uc, infra))
+	}
+	if cfg.recoveryCharges {
+		units = append(units, RecoveryChargeUnits(uc, infra)...)
+	}
+	if cfg.knownCostRecovery {
+		units = append(units, knownCostRecoveryUnits(uc, infra)...)
 	}
 	return units
 }

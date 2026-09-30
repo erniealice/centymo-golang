@@ -32,6 +32,15 @@ type Labels struct {
 	// Dashboard labels — Phase 5. One block per surface (purchase/expense).
 	PurchaseDashboard PurchaseDashboardLabels `json:"purchase_dashboard"`
 	ExpenseDashboard  ExpenseDashboardLabels  `json:"expense_dashboard"`
+
+	// Tabs holds the labels of tabs contributed by opt-in modules
+	// (usage-and-pass-through S1: the Recoverable costs tab).
+	Tabs TabLabels `json:"tabs"`
+}
+
+// TabLabels holds the labels of the opt-in expenditure detail tabs.
+type TabLabels struct {
+	RecoverableCosts string `json:"recoverable_costs"`
 }
 
 // PurchaseDashboardLabels holds translatable strings for the purchase
@@ -427,4 +436,6 @@ type DisbursementFormLabels struct {
 // DefaultLabels returns the zero-value label set. Every rendered string for
 // this entity must come from the lyngua cascade (general -> business-type
 // tier); there are no Go-side default strings to fall back on.
-func DefaultLabels() Labels { return Labels{} }
+func DefaultLabels() Labels {
+	return Labels{Tabs: TabLabels{RecoverableCosts: "Recoverable costs"}}
+}

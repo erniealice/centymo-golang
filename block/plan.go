@@ -137,6 +137,7 @@ func wirePlanModules(ctx *consumerapp.AppContext, cfg *blockConfig, useCases *Us
 				pricePlanDeps.UpdateProductPricePlan = useCases.PricePlan.UpdateProductPricePlan
 				pricePlanDeps.DeleteProductPricePlan = useCases.PricePlan.DeleteProductPricePlan
 			}
+			pricePlanDeps.ListPickerChargePolicies = useCases.PricePlan.ListPickerChargePolicies
 			// 2026-04-29 milestone-billing plan §5 / Phase D — milestone phase
 			// select on the PPP drawer needs ReadPlan (to resolve job_template_id)
 			// and ListByJobTemplate (to load phase rows).

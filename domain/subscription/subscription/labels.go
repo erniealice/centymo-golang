@@ -244,6 +244,9 @@ type TabLabels struct {
 	Attachments  string `json:"attachments"`
 	AuditTrail   string `json:"audit_trail"`
 	AuditHistory string `json:"audit_history"`
+	// ChargeTerms is the opt-in read-only agreement charge terms tab
+	// (usage-and-pass-through S1).
+	ChargeTerms string `json:"charge_terms"`
 }
 
 type InvoicesLabels struct {
@@ -718,6 +721,7 @@ func DefaultLabels() Labels {
 			Attachments:  "Attachments",
 			AuditTrail:   "Audit Trail",
 			AuditHistory: "History",
+			ChargeTerms:  "Charge terms",
 		},
 		Invoices: InvoicesLabels{
 			Title:             "Invoices",

@@ -50,6 +50,8 @@ type subscriptionWiring struct {
 	subscriptionLabels  subscriptiondom.SubscriptionLabels
 	priceScheduleLabels subscriptiondom.PriceScheduleLabels
 	centymoTableLabels  types.TableLabels
+	// chargeTerms is the opt-in read-only Charge terms tab (nil = tab absent).
+	chargeTerms *chargeTermsDeps
 }
 
 // wireSubscriptionModule lifts the body of the `if cfg.wantSubscription()`
@@ -480,6 +482,10 @@ func wireSubscriptionModule(ctx *consumerapp.AppContext, cfg *blockConfig, useCa
 				DeleteAttachment: w.deleteAttachment,
 				NewAttachmentID:  w.newAttachmentID,
 			},
+		}
+		if w.chargeTerms != nil {
+			subDetailDeps.ChargeTerms = w.chargeTerms.useCases
+			subDetailDeps.ChargeTermLabels = w.chargeTerms.labels
 		}
 		if useCases.Subscription.GetSubscriptionItemPageData != nil {
 			subDetailDeps.GetSubscriptionItemPageData = useCases.Subscription.GetSubscriptionItemPageData

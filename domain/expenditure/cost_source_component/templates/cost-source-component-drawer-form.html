@@ -1,0 +1,42 @@
+{{/* Recoverable cost line add/edit drawer. Data: form.Data. Fields use the pyeza form-group component;
+     data-testid sits on each field wrapper, ids on the inputs. */}}
+{{define "cost-source-component-drawer-form"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="cost-source-component-form">
+    {{actionForm .FormAction .WorkspaceID}}
+    <input type="hidden" name="currency" value="{{.Currency}}">
+
+    <div class="sheet-body">
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "select" "Name" "component_kind" "ID" "csc-component-kind" "Label" .Labels.Form.ComponentKindLabel "Placeholder" .Labels.Form.ComponentKindPlaceholder "Options" .Kinds "Required" true "TestId" "cost-source-component-kind")}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "text" "Name" "description" "ID" "csc-description" "Label" .Labels.Form.DescriptionLabel "Placeholder" .Labels.Form.DescriptionPlaceholder "Value" .Description "TestId" "cost-source-component-description")}}
+        </div>
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "text" "Name" "basis_quantity" "ID" "csc-quantity" "Label" .Labels.Form.BasisQuantityLabel "Value" .Quantity "TestId" "cost-source-component-quantity")}}
+            {{template "form-group" (dict "Type" "text" "Name" "basis_unit" "ID" "csc-unit" "Label" .Labels.Form.BasisUnitLabel "Placeholder" .Labels.Form.BasisUnitPlaceholder "Value" .BasisUnit "TestId" "cost-source-component-unit")}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "number" "Name" "amount" "ID" "csc-amount" "Label" .AmountLabel "Value" .Amount "Min" "0.01" "Step" "0.01" "Required" true "TestId" "cost-source-component-amount")}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "select" "Name" "tax_fact" "ID" "csc-tax-fact" "Label" .Labels.Form.TaxFactLabel "Options" .TaxFacts "TestId" "cost-source-component-tax-fact")}}
+        </div>
+        <div class="form-row">
+            {{template "form-group" (dict "Type" "date" "Name" "service_from" "ID" "csc-service-from" "Label" .Labels.Form.ServiceFromLabel "Value" .ServiceFrom "Required" true "TestId" "cost-source-component-service-from")}}
+            {{template "form-group" (dict "Type" "date" "Name" "service_to" "ID" "csc-service-to" "Label" .Labels.Form.ServiceToLabel "Value" .ServiceTo "Required" true "TestId" "cost-source-component-service-to")}}
+        </div>
+        {{if .BillLines}}
+        <div class="form-row single">
+            {{template "form-group" (dict "Type" "select" "Name" "expenditure_line_item_id" "ID" "csc-line-item" "Label" .Labels.Form.ExpenditureLineLabel "Options" .BillLines "TestId" "cost-source-component-line-item")}}
+        </div>
+        {{end}}
+    </div>
+
+    {{/* Same markup as the pyeza sheet-form-footer, with stable test ids (the component takes none). */}}
+    <div class="sheet-footer">
+        <button type="button" class="btn btn-secondary" data-lf-action="sheet-close" data-testid="cost-source-component-cancel">{{.CommonLabels.Buttons.Cancel}}</button>
+        <button type="submit" class="btn btn-primary" data-testid="cost-source-component-save">{{.SubmitLabel}}</button>
+    </div>
+</form>
+{{end}}

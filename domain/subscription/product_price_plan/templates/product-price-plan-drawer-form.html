@@ -165,6 +165,42 @@ Data: ProductPricePlanFormData — see views/price_plan/detail/page.go
         </div>
         {{end}}
         {{end}}
+
+        {{/* ── Charge policy (usage-and-pass-through S1) ──
+             Rendered only when the picker is wired and the parent package is
+             RECURRING/CONTRACT (ChargePolicyEnabled). Initially hidden unless
+             billing_treatment = USAGE_BASED; the pyeza data-lf-show-when helper
+             toggles it and disables the controls while hidden so they POST as absent.
+             markup_bps is read-only at 0 in S1 (at-cost recovery only) and is
+             never posted; the use-case guard is the authority on forged POSTs. */}}
+        {{if .ChargePolicyEnabled}}
+        <div id="ppp-charge-policy-section" data-testid="ppp-charge-policy-section" data-lf-show-when="billing_treatment" data-lf-show-values="BILLING_TREATMENT_USAGE_BASED"{{if not .ChargePolicyVisible}} hidden{{end}}>
+        {{template "form-section" (dict "Title" .Labels.SectionChargePolicy)}}
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "select"
+                "Name" "charge_policy_id"
+                "Label" .Labels.SectionChargePolicy
+                "Value" .ChargePolicyID
+                "Options" .ChargePolicyOptions
+                "Disabled" .ChargePolicyDisabled
+                "Info" .ChargePolicyDisabledReason
+                "TestId" "ppp-charge-policy"
+            )}}
+        </div>
+        <div class="form-row single">
+            {{template "form-group" (dict
+                "Type" "number"
+                "Name" "markup_percent"
+                "Label" .Labels.MarkupLabel
+                "Value" .MarkupPercent
+                "Disabled" true
+                "Info" .Labels.MarkupBlockedHint
+                "TestId" "ppp-markup"
+            )}}
+        </div>
+        </div>
+        {{end}}
     </div>
 
     {{template "sheet-form-footer" (dict "CommonLabels" .CommonLabels "ShowCancel" true "IsEdit" .IsEdit)}}

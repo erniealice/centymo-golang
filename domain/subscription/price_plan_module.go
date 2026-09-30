@@ -15,6 +15,7 @@ import (
 
 	epkg "github.com/erniealice/centymo-golang/domain/subscription/price_plan"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	chargepolicypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/charge_policy"
 	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
@@ -86,6 +87,11 @@ type PricePlanModuleDeps struct {
 	// Nil-safe: when not wired the selects render with no options.
 	ListTaxTreatments func(ctx context.Context, req *taxtreatmentpb.ListTaxTreatmentsRequest) (*taxtreatmentpb.ListTaxTreatmentsResponse, error)
 	ListTaxClasses    func(ctx context.Context, req *taxclasspb.ListTaxClassesRequest) (*taxclasspb.ListTaxClassesResponse, error)
+
+	// Package-line Charge policy picker (usage-and-pass-through S1). Nil-safe:
+	// when unwired the drawer omits the Charge policy section and the table
+	// omits the charge_policy column.
+	ListPickerChargePolicies func(ctx context.Context, req *chargepolicypb.ListPickerChargePoliciesRequest) (*chargepolicypb.ListPickerChargePoliciesResponse, error)
 }
 
 // PricePlanModule holds all constructed price_plan views.
@@ -163,6 +169,7 @@ func NewPricePlanModule(deps *PricePlanModuleDeps) *PricePlanModule {
 		ListJobTemplatePhasesByJobTemplate: deps.ListJobTemplatePhasesByJobTemplate,
 		ListTaxTreatments:                  deps.ListTaxTreatments,
 		ListTaxClasses:                     deps.ListTaxClasses,
+		ListPickerChargePolicies:           deps.ListPickerChargePolicies,
 	}
 	detailDeps.UploadFile = deps.UploadFile
 	detailDeps.ListAttachments = deps.ListAttachments

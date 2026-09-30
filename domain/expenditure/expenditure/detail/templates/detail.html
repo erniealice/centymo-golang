@@ -24,6 +24,8 @@
         {{template "expense-tab-recognition" .}}
         {{else if eq .ActiveTab "accrual"}}
         {{template "expense-tab-accrual" .}}
+        {{else if eq .ActiveTab "recoverable-costs"}}
+        {{template "expense-tab-recoverable-costs" .}}
         {{else if eq .ActiveTab "attachments"}}
         {{template "attachment-tab" .}}
         {{end}}
@@ -150,7 +152,7 @@
         <span class="transaction-summary-value">{{.TotalAmount}}</span>
     </div>
     <div class="transaction-items-actions">
-        <button type="button" class="btn btn-primary toolbar-primary-action"
+        <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="expense-line-item-add"
             title="{{.Labels.Detail.AddItem}}"
             aria-haspopup="dialog"
             hx-get="{{.LineItemAddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
@@ -310,8 +312,9 @@
 {{define "expense-line-item-drawer-form"}}
 <form
     hx-post="{{.FormAction}}"
-    hx-target="#sheetContent"
-    hx-swap="innerHTML"
+    hx-swap="none"
+    data-hx-on="sheet-response"
+    data-testid="expense-line-item-form"
     class="drawer-form">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .IsEdit}}
@@ -432,4 +435,47 @@
         </div>
     {{end}}
 </div>
+{{end}}
+
+{{/* ─── Recoverable costs tab (usage-and-pass-through S1, opt-in) ───────── */}}
+{{define "expense-tab-recoverable-costs"}}
+{{if .RecoverableCosts}}
+<div class="transaction-items-toolbar">
+    <div class="transaction-summary-item">
+        <span class="transaction-summary-label">{{.RecoverableCosts.Labels.Detail.TotalComponents}}</span>
+        <span class="transaction-summary-value mono" data-testid="recoverable-costs-total">{{.RecoverableCosts.Currency}} {{.RecoverableCosts.ComponentsSum}}</span>
+    </div>
+    <div class="transaction-summary-item">
+        <span class="transaction-summary-label">{{.RecoverableCosts.Labels.Detail.TotalBill}}</span>
+        <span class="transaction-summary-value mono" data-testid="recoverable-costs-bill-total">{{.RecoverableCosts.Currency}} {{.RecoverableCosts.BillTotal}}</span>
+    </div>
+    <div class="transaction-summary-item">
+        <span class="transaction-summary-label">{{.RecoverableCosts.Labels.Detail.Difference}}</span>
+        <span class="transaction-summary-value mono" data-testid="recoverable-costs-difference">{{.RecoverableCosts.Currency}} {{.RecoverableCosts.Difference}}</span>
+    </div>
+    <div class="transaction-items-actions">
+        {{if .RecoverableCosts.CanAdd}}
+        <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="cost-source-component-add"
+            title="{{.RecoverableCosts.Labels.Buttons.Add}}"
+            aria-haspopup="dialog"
+            hx-get="{{.RecoverableCosts.AddURL}}" hx-target="#sheetContent" hx-swap="innerHTML"
+            data-hx-on="sheet-open" data-lf-sheet-title="{{.RecoverableCosts.Labels.Buttons.Add}}">
+            {{.RecoverableCosts.Labels.Buttons.Add}}
+        </button>
+        {{else}}
+        <button type="button" class="btn btn-primary toolbar-primary-action" data-testid="cost-source-component-add" disabled aria-disabled="true"
+            title="{{.RecoverableCosts.AddTooltip}}">{{.RecoverableCosts.Labels.Buttons.Add}}</button>
+        {{end}}
+    </div>
+</div>
+<div class="tab-scroll">
+    {{if .RecoverableCosts.Failed}}
+    <div class="empty-state" role="alert" data-testid="recoverable-costs-error">
+        <p class="empty-state-message">{{.RecoverableCosts.Labels.Errors.Generic}}</p>
+    </div>
+    {{else if .RecoverableCosts.Table}}
+    {{template "table-card" .RecoverableCosts.Table}}
+    {{end}}
+</div>
+{{end}}
 {{end}}

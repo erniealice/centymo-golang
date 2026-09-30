@@ -1,0 +1,43 @@
+{{/*
+Receive and apply preview fragment (swapped into #receive-apply-preview).
+Data: .Labels .Rows (Number TargetKind DueDate Balance Apply Rank) .Applied
+.Unapplied .NoOpenItems .Error
+*/}}
+{{define "receive-apply-preview"}}
+{{if .Error}}
+<p class="form-error" role="alert" data-testid="receive-apply-preview-error">{{.Error}}</p>
+{{else}}
+<h4 class="detail-section-title">{{.Labels.Form.PreviewTitle}}</h4>
+{{if .NoOpenItems}}
+<p class="form-info" data-testid="receive-apply-preview-empty"><strong>{{.Labels.Empty.OpenItemsTitle}}</strong> {{.Labels.Empty.OpenItemsMessage}}</p>
+{{else}}
+<table class="data-table data-table--compact" id="receive-apply-preview-table" data-testid="receive-apply-preview-table">
+  <thead>
+    <tr>
+      <th>{{.Labels.Columns.DocumentNumber}}</th>
+      <th>{{.Labels.Columns.TargetKind}}</th>
+      <th>{{.Labels.Columns.DueDate}}</th>
+      <th class="cell-right">{{.Labels.Columns.OpenBalance}}</th>
+      <th class="cell-right">{{.Labels.Columns.Applied}}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .Rows}}
+    <tr data-testid="receive-apply-preview-row" data-rank="{{.Rank}}">
+      <td>{{.Number}}</td>
+      <td>{{.TargetKind}}</td>
+      <td>{{.DueDate}}</td>
+      <td class="cell-right">{{.Balance}}</td>
+      <td class="cell-right">{{.Apply}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{end}}
+<p class="form-info" data-testid="receive-apply-preview-totals">
+  {{.Labels.Detail.TotalApplied}}: <strong data-testid="receive-apply-preview-applied">{{.Applied}}</strong>
+  · {{.Labels.Detail.Unapplied}}: <strong data-testid="receive-apply-preview-unapplied">{{.Unapplied}}</strong>
+</p>
+<p class="form-info">{{.Labels.Detail.OrderNote}}</p>
+{{end}}
+{{end}}

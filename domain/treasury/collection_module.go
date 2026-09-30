@@ -39,6 +39,10 @@ type CollectionModuleDeps struct {
 	DeleteAttachment func(ctx context.Context, req *attachmentpb.DeleteAttachmentRequest) (*attachmentpb.DeleteAttachmentResponse, error)
 	NewID            func() string
 
+	// ReceiveApplyURL is the receive-and-apply drawer route of the sibling
+	// collection_application unit; empty keeps the Add Collection primary action.
+	ReceiveApplyURL string
+
 	// Cash dashboard data callback (Phase 5 — nil-safe; degrades to zero values).
 	// Orchestrator wraps the espyna treasury/collection/dashboard use case
 	// here, projecting workspace_id from the request context.
@@ -112,6 +116,7 @@ func NewCollectionModule(deps *CollectionModuleDeps) *CollectionModule {
 		Routes:          deps.Routes,
 		ListCollections: deps.ListCollections,
 		RefreshURL:      deps.Routes.ListURL,
+		ReceiveApplyURL: deps.ReceiveApplyURL,
 		Labels:          deps.Labels,
 		CommonLabels:    deps.CommonLabels,
 		TableLabels:     deps.TableLabels,

@@ -26,7 +26,10 @@ type engineConfig struct {
 	subscriptionCreateOptions subscriptionpkg.CreateOptions
 	productAssets             bool
 	inventoryCatalogMounts    bool
+	recoveryCharges           bool
 	subscriptionGroupOptions  subscriptiongrouppkg.Options
+	// knownCostRecovery mounts the usage-and-pass-through S1 surface (known_cost_recovery.go).
+	knownCostRecovery bool
 }
 
 // WithSubscriptionGroupOptions sets the subscription_group roster (enrollments

@@ -27,6 +27,9 @@ import (
 	workspacepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace"
 	workspaceuserpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/entity/workspace_user"
 	accruedexpensepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/accrued_expense"
+	allocationbatchpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/allocation_batch"
+	allocationsharepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/allocation_share"
+	costsourcecomponentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/cost_source_component"
 	expenditurepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure"
 	expenditurecategorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_category"
 	expenditurelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/expenditure/expenditure_line_item"
@@ -46,6 +49,8 @@ import (
 	inventoryserialpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_serial"
 	inventorytransactionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/inventory_transaction"
 	inventoryserialhistorypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/inventory/serial_history"
+	chargepolicypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/charge_policy"
+	chargepolicyversionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/charge_policy_version"
 	jobpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job"
 	jobactivitypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_activity"
 	jobphasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_phase"
@@ -77,11 +82,15 @@ import (
 	productvariantimagepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_image"
 	productvariantoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_variant_option"
 	resourcepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/resource"
+	documentseriespb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/document_series"
+	recoverydocumentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/recovery_document"
 	revenuepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue"
 	revenuelineitempb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_line_item"
 	revenuepaymentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_payment"
 	revenuerunpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_run"
 	revenuetaxlinepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/revenue/revenue_tax_line"
+	agreementlinetermpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/agreement_line_term"
+	billablechargepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billable_charge"
 	billingeventpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/billing_event"
 	planpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/plan"
 	priceplanpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/price_plan"
@@ -95,6 +104,7 @@ import (
 	subscriptiongroupproductplanstaffpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_product_plan_staff"
 	subscriptiongroupworkspaceuserpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/subscription/subscription_group_workspace_user"
 	collectionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection"
+	collectionapplicationpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_application"
 	collectionmethodpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/collection_method"
 	disbursementpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/treasury/disbursement"
 
@@ -135,6 +145,7 @@ type UseCases struct {
 	SetActive func(ctx context.Context, collection string, id string, active bool) error
 	// Domain CRUD + use-case groups (singular field, `XxxUseCases` type)
 	// Ordered alphabetically for easy scanning.
+	BillableCharge    BillableChargeUseCases
 	Collection        CollectionUseCases
 	CollectionMethod  CollectionMethodUseCases
 	Common            CommonUseCases
@@ -156,6 +167,7 @@ type UseCases struct {
 	Procurement       ProcurementUseCases
 	Product           ProductUseCases
 	ProductPlanStaff  ProductPlanStaffUseCases
+	RecoveryDocument  RecoveryDocumentUseCases
 	Revenue           RevenueUseCases
 	RevenueRun        RevenueRunUseCases
 	Subscription      SubscriptionUseCases
@@ -173,6 +185,51 @@ type UseCases struct {
 
 	// 20260517-expense-run Plan A Phase 4 — buying-side Expense Recognition Run.
 	ExpenseRecognitionRun ExpenseRecognitionRunUseCases
+
+	// Opt-in usage-and-pass-through S1 closure sets (known_cost_recovery.go / recovery_charges.go);
+	// field names are the proto folder nouns.
+	AllocationBatch       AllocationBatchUseCases
+	AgreementLineTerm     AgreementLineTermUseCases
+	CollectionApplication CollectionApplicationUseCases
+	CostSourceComponent   CostSourceComponentUseCases
+	DocumentSeries        DocumentSeriesUseCases
+}
+
+// CostSourceComponentUseCases — expenditure-domain recoverable cost line ops.
+type CostSourceComponentUseCases struct {
+	CreateCostSourceComponent func(context.Context, *costsourcecomponentpb.CreateCostSourceComponentRequest) (*costsourcecomponentpb.CreateCostSourceComponentResponse, error)
+	ReadCostSourceComponent   func(context.Context, *costsourcecomponentpb.ReadCostSourceComponentRequest) (*costsourcecomponentpb.ReadCostSourceComponentResponse, error)
+	UpdateCostSourceComponent func(context.Context, *costsourcecomponentpb.UpdateCostSourceComponentRequest) (*costsourcecomponentpb.UpdateCostSourceComponentResponse, error)
+	DeleteCostSourceComponent func(context.Context, *costsourcecomponentpb.DeleteCostSourceComponentRequest) (*costsourcecomponentpb.DeleteCostSourceComponentResponse, error)
+	ListCostSourceComponents  func(context.Context, *costsourcecomponentpb.ListCostSourceComponentsRequest) (*costsourcecomponentpb.ListCostSourceComponentsResponse, error)
+
+	// ListExpenditureLineItems feeds the optional "bill line" picker (bound from the
+	// expenditure line item list read the Expenditure group already carries).
+	ListExpenditureLineItems func(context.Context, *expenditurelineitempb.ListExpenditureLineItemsRequest) (*expenditurelineitempb.ListExpenditureLineItemsResponse, error)
+}
+
+// AllocationBatchUseCases — expenditure-domain cost allocation ops (batch + share list) plus
+// the participant reads the allocation drawers need.
+type AllocationBatchUseCases struct {
+	CreateAllocationBatch          func(context.Context, *allocationbatchpb.CreateAllocationBatchRequest) (*allocationbatchpb.CreateAllocationBatchResponse, error)
+	UpdateAllocationBatchShares    func(context.Context, *allocationbatchpb.UpdateAllocationBatchSharesRequest) (*allocationbatchpb.UpdateAllocationBatchSharesResponse, error)
+	PublishAllocationBatch         func(context.Context, *allocationbatchpb.PublishAllocationBatchRequest) (*allocationbatchpb.PublishAllocationBatchResponse, error)
+	GetAllocationBatchListPageData func(context.Context, *allocationbatchpb.GetAllocationBatchListPageDataRequest) (*allocationbatchpb.GetAllocationBatchListPageDataResponse, error)
+	GetAllocationShareListPageData func(context.Context, *allocationsharepb.GetAllocationShareListPageDataRequest) (*allocationsharepb.GetAllocationShareListPageDataResponse, error)
+
+	ReadCostSourceComponent     func(context.Context, *costsourcecomponentpb.ReadCostSourceComponentRequest) (*costsourcecomponentpb.ReadCostSourceComponentResponse, error)
+	ListAgreementLineTerms      func(context.Context, *agreementlinetermpb.ListAgreementLineTermsRequest) (*agreementlinetermpb.ListAgreementLineTermsResponse, error)
+	GetSubscriptionItemPageData func(context.Context, *subscriptionpb.GetSubscriptionItemPageDataRequest) (*subscriptionpb.GetSubscriptionItemPageDataResponse, error)
+}
+
+// AgreementLineTermUseCases — subscription-domain agreement term list plus the charge policy
+// and price plan reads the read-only Charge terms tab enriches with.
+type AgreementLineTermUseCases struct {
+	ListAgreementLineTerms func(context.Context, *agreementlinetermpb.ListAgreementLineTermsRequest) (*agreementlinetermpb.ListAgreementLineTermsResponse, error)
+
+	ReadChargePolicyVersion func(context.Context, *chargepolicyversionpb.ReadChargePolicyVersionRequest) (*chargepolicyversionpb.ReadChargePolicyVersionResponse, error)
+	ReadChargePolicy        func(context.Context, *chargepolicypb.ReadChargePolicyRequest) (*chargepolicypb.ReadChargePolicyResponse, error)
+	ListProductPricePlans   func(context.Context, *productpriceplanpb.ListProductPricePlansRequest) (*productpriceplanpb.ListProductPricePlansResponse, error)
 }
 
 // setActiveClosure adapts the capability-narrow UseCases.SetActive into the
@@ -458,6 +515,12 @@ type PricePlanUseCases struct {
 	CreateProductPricePlan func(context.Context, *productpriceplanpb.CreateProductPricePlanRequest) (*productpriceplanpb.CreateProductPricePlanResponse, error)
 	UpdateProductPricePlan func(context.Context, *productpriceplanpb.UpdateProductPricePlanRequest) (*productpriceplanpb.UpdateProductPricePlanResponse, error)
 	DeleteProductPricePlan func(context.Context, *productpriceplanpb.DeleteProductPricePlanRequest) (*productpriceplanpb.DeleteProductPricePlanResponse, error)
+
+	// ListPickerChargePolicies feeds the package-line "Charge policy" picker:
+	// ACTIVE policies that have an APPROVED version (usage-and-pass-through
+	// S1). Nil when the provider has no charge-policy adapters — the drawer
+	// then omits the section entirely.
+	ListPickerChargePolicies func(context.Context, *chargepolicypb.ListPickerChargePoliciesRequest) (*chargepolicypb.ListPickerChargePoliciesResponse, error)
 }
 
 // -- PriceSchedule -----------------------------------------------------------
@@ -1034,6 +1097,39 @@ type JobPhaseUseCases struct {
 
 type JobActivityUseCases struct {
 	ReadJobActivity func(context.Context, *jobactivitypb.ReadJobActivityRequest) (*jobactivitypb.ReadJobActivityResponse, error)
+}
+
+// -- Usage & pass-through S1 (mounted only by WithRecoveryCharges) ------------
+
+// BillableChargeUseCases — subscription-domain billable charge ops (proto
+// closures bound from `uc.Subscription.BillableCharge.<X>.Execute`).
+type BillableChargeUseCases struct {
+	ListBillableCharges  func(context.Context, *billablechargepb.ListBillableChargesRequest) (*billablechargepb.ListBillableChargesResponse, error)
+	AdjustBillableCharge func(context.Context, *billablechargepb.AdjustBillableChargeRequest) (*billablechargepb.AdjustBillableChargeResponse, error)
+}
+
+// RecoveryDocumentUseCases — revenue-domain recovery document + series ops
+// (bound from `uc.Revenue.RecoveryDocument` / `uc.Revenue.DocumentSeries`).
+type RecoveryDocumentUseCases struct {
+	ListRecoveryDocuments  func(context.Context, *recoverydocumentpb.ListRecoveryDocumentsRequest) (*recoverydocumentpb.ListRecoveryDocumentsResponse, error)
+	ReadRecoveryDocument   func(context.Context, *recoverydocumentpb.ReadRecoveryDocumentRequest) (*recoverydocumentpb.ReadRecoveryDocumentResponse, error)
+	IssueRecoveryDocuments func(context.Context, *recoverydocumentpb.IssueRecoveryDocumentsRequest) (*recoverydocumentpb.IssueRecoveryDocumentsResponse, error)
+	VoidRecoveryDocument   func(context.Context, *recoverydocumentpb.VoidRecoveryDocumentRequest) (*recoverydocumentpb.VoidRecoveryDocumentResponse, error)
+}
+
+// DocumentSeriesUseCases — revenue-domain document series read the issue drawers pick from
+// (bound from `uc.Revenue.DocumentSeries`).
+type DocumentSeriesUseCases struct {
+	ListDocumentSeries func(context.Context, *documentseriespb.ListDocumentSeriesRequest) (*documentseriespb.ListDocumentSeriesResponse, error)
+}
+
+// CollectionApplicationUseCases — cash receive/apply/reverse (bound from
+// `uc.Treasury.CollectionApplication`).
+type CollectionApplicationUseCases struct {
+	ReceiveAndApplyCollection    func(context.Context, *collectionapplicationpb.ReceiveAndApplyCollectionRequest) (*collectionapplicationpb.ReceiveAndApplyCollectionResponse, error)
+	PreviewCollectionApplication func(context.Context, *collectionapplicationpb.PreviewCollectionApplicationRequest) (*collectionapplicationpb.PreviewCollectionApplicationResponse, error)
+	ReverseCollectionApplication func(context.Context, *collectionapplicationpb.ReverseCollectionApplicationRequest) (*collectionapplicationpb.ReverseCollectionApplicationResponse, error)
+	ListCollectionApplications   func(context.Context, *collectionapplicationpb.ListCollectionApplicationsRequest) (*collectionapplicationpb.ListCollectionApplicationsResponse, error)
 }
 
 // ---------------------------------------------------------------------------

@@ -9,3 +9,27 @@
     {{template "table-card" .Table}}
 </div>
 {{end}}
+
+{{/* Secondary toolbar action beside Receive and apply (ToolbarPrefixTemplate).
+     Data: list.ToolbarAddData. */}}
+{{define "collection-list-toolbar-prefix"}}
+{{if .Disabled}}
+<button type="button" class="btn btn-secondary disabled"
+        data-testid="collection-add-secondary" disabled title="{{.DisabledTooltip}}">
+    {{template "icon-plus"}}
+    <span>{{.Label}}</span>
+</button>
+{{else}}
+<button type="button" class="btn btn-secondary"
+        data-testid="collection-add-secondary"
+        aria-haspopup="dialog"
+        hx-get="{{.ActionURL}}"
+        hx-target="#sheetContent"
+        hx-swap="innerHTML"
+        hx-push-url="false"
+        data-lf-action="sheet-open" data-lf-sheet-title="{{.Label}}">
+    {{template "icon-plus"}}
+    <span>{{.Label}}</span>
+</button>
+{{end}}
+{{end}}

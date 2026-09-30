@@ -1,0 +1,70 @@
+{{/*
+Issue recovery documents drawer (sheet). Data: .FormAction .WorkspaceID .Labels
+.Series (SelectOption list) .Charges (ID Client Subscription Period Amount Checked)
+.IssueDate .DueDate .IssuanceKey .Summary .NoSeries .NoCharges .CommonLabels
+
+.IssuanceKey is minted once per render and posted as a hidden field: a
+double-submit replays the original documents instead of issuing twice.
+One document is created per (client, agreement) group of the checked charges.
+*/}}
+{{define "billable-charge-issue-drawer"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="billable-charge-issue-form">
+  {{actionForm .FormAction .WorkspaceID}}
+  <input type="hidden" name="issuance_key" value="{{.IssuanceKey}}" data-testid="billable-charge-issuance-key">
+
+  <div class="sheet-body">
+    <p class="form-info" data-testid="billable-charge-issue-summary">{{.Summary}}</p>
+
+    <div class="form-row single">
+      {{template "form-group" (dict "Type" "select" "Name" "document_series_id" "ID" "billable-charge-series"
+        "Label" .Labels.Form.SeriesLabel "Placeholder" .Labels.Form.SeriesPlaceholder
+        "Options" .Series "Required" true "TestId" "billable-charge-series-group")}}
+    </div>
+    <div class="form-row">
+      {{template "form-group" (dict "Type" "date" "Name" "issue_date" "ID" "billable-charge-issue-date"
+        "Label" .Labels.Form.IssueDateLabel "Value" .IssueDate "Required" true "TestId" "billable-charge-issue-date-group")}}
+      {{template "form-group" (dict "Type" "date" "Name" "due_date" "ID" "billable-charge-due-date"
+        "Label" .Labels.Form.DueDateLabel "Value" .DueDate "TestId" "billable-charge-due-date-group")}}
+    </div>
+
+    {{if .NoCharges}}
+    <p class="form-info" data-testid="billable-charge-issue-empty">{{.Labels.Empty.OpenTitle}}</p>
+    {{else}}
+    <div class="recognize-preview" data-testid="billable-charge-issue-charges">
+      <table class="data-table data-table--compact" id="billable-charge-issue-table" data-testid="billable-charge-issue-table">
+        <thead>
+          <tr>
+            <th><span class="sr-only">{{.Labels.Columns.Select}}</span></th>
+            <th>{{.Labels.Columns.Client}}</th>
+            <th>{{.Labels.Columns.Subscription}}</th>
+            <th>{{.Labels.Columns.ServicePeriod}}</th>
+            <th class="cell-right">{{.Labels.Columns.Amount}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Charges}}
+          <tr data-testid="billable-charge-issue-row-{{.ID}}">
+            <td>
+              <input type="checkbox" name="charge_id" value="{{.ID}}" id="billable-charge-select-{{.ID}}"
+                     data-testid="billable-charge-select-{{.ID}}" aria-label="{{$.Labels.Columns.Select}}" {{if .Checked}}checked{{end}}>
+            </td>
+            <td>{{.Client}}</td>
+            <td>{{.Subscription}}</td>
+            <td>{{.Period}}</td>
+            <td class="cell-right">{{.Amount}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+    {{end}}
+
+    <p class="form-info">{{.Labels.Confirm.IssueMsg}}</p>
+  </div>
+
+  <div class="sheet-footer">
+    <button type="button" class="btn btn-secondary" data-lf-action="sheet-close" data-testid="billable-charge-issue-cancel">{{.CommonLabels.Buttons.Cancel}}</button>
+    <button type="submit" class="btn btn-primary" data-testid="billable-charge-issue-submit"{{if or .NoSeries .NoCharges}} disabled aria-disabled="true"{{end}}>{{.Labels.Buttons.Issue}}</button>
+  </div>
+</form>
+{{end}}

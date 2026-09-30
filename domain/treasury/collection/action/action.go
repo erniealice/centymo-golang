@@ -172,7 +172,7 @@ func NewEditAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to update collection %s: %v", id, err)
-			return view.HTMXError(err.Error())
+			return view.HTMXError(refusalMessage(deps, err))
 		}
 
 		return view.ViewResult{
@@ -207,7 +207,7 @@ func NewDeleteAction(deps *Deps) view.View {
 		})
 		if err != nil {
 			log.Printf("Failed to delete collection %s: %v", id, err)
-			return view.HTMXError(err.Error())
+			return view.HTMXError(refusalMessage(deps, err))
 		}
 
 		return view.HTMXSuccess("collections-table")
@@ -269,7 +269,7 @@ func NewSetStatusAction(deps *Deps) view.View {
 			Data: &collectionpb.Collection{Id: id, Status: targetStatus},
 		}); err != nil {
 			log.Printf("Failed to update collection status %s: %v", id, err)
-			return view.HTMXError(err.Error())
+			return view.HTMXError(refusalMessage(deps, err))
 		}
 
 		return view.HTMXSuccess("collections-table")
@@ -306,4 +306,13 @@ func NewBulkSetStatusAction(deps *Deps) view.View {
 
 		return view.HTMXSuccess("collections-table")
 	})
+}
+
+// refusalMessage maps a coded use-case refusal to its Lyngua message and falls back to
+// the error text for an uncoded one (the pre-existing behaviour).
+func refusalMessage(deps *Deps, err error) string {
+	if msg := deps.Labels.ErrorMessage(collection.ErrorKind(err)); msg != "" {
+		return msg
+	}
+	return err.Error()
 }

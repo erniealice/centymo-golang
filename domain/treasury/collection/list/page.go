@@ -25,6 +25,12 @@ type ListViewDeps struct {
 	Labels          collection.Labels
 	CommonLabels    pyeza.CommonLabels
 	TableLabels     types.TableLabels
+
+	// ReceiveApplyURL is the receive-and-apply drawer route (the sibling
+	// collection_application unit, mounted by apps that opt into recovery
+	// charges). When set it becomes the primary action of the list; empty keeps
+	// the Add Collection primary action unchanged.
+	ReceiveApplyURL string
 }
 
 // PageData holds the data for the collection list page.
@@ -130,14 +136,12 @@ func NewView(deps *ListViewDeps) view.View {
 				Title:   statusEmptyTitle(l, status),
 				Message: statusEmptyMessage(l, status),
 			},
-			PrimaryAction: &types.PrimaryAction{
-				Label:           l.Buttons.AddCollection,
-				ActionURL:       deps.Routes.AddURL,
-				Icon:            "icon-plus",
-				Disabled:        !perms.Can("collection", "create"),
-				DisabledTooltip: l.Errors.PermissionDenied,
-			},
-			BulkActions: &bulkCfg,
+			PrimaryAction: primaryAction(deps, l, perms),
+			BulkActions:   &bulkCfg,
+		}
+		if secondary := secondaryAddAction(deps, l, perms); secondary != nil {
+			tableConfig.ToolbarPrefixTemplate = "collection-list-toolbar-prefix"
+			tableConfig.ToolbarPrefixData = secondary
 		}
 		types.ApplyTableSettings(tableConfig)
 
@@ -230,6 +234,10 @@ func buildTableRows(collections []*collectionpb.Collection, status string, l col
 				Disabled:        !perms.Can("collection", "delete"),
 				DisabledTooltip: l.Errors.PermissionDenied,
 			})
+		}
+
+		if c.GetCollectionType() == collection.CollectionTypeReceipt {
+			actions = lockReceiptActions(actions, l)
 		}
 
 		rows = append(rows, types.TableRow{
@@ -406,5 +414,67 @@ func buildBulkActions(l collection.Labels, cl pyeza.CommonLabels, status string,
 		})
 	}
 
+	return actions
+}
+
+// primaryAction is Add Collection, or Receive and apply when the app mounted
+// the receive-and-apply flow (a bare Add Collection would bypass the
+// application plan for tenants with recoverable charges).
+func primaryAction(deps *ListViewDeps, l collection.Labels, perms *types.UserPermissions) *types.PrimaryAction {
+	if deps.ReceiveApplyURL != "" {
+		return &types.PrimaryAction{
+			Label:           l.Buttons.ReceiveApply,
+			ActionURL:       deps.ReceiveApplyURL,
+			SheetTitle:      l.Buttons.ReceiveApply,
+			Icon:            "icon-plus",
+			TestID:          "collection-receive-apply",
+			Disabled:        !perms.Can("collection_application", "create"),
+			DisabledTooltip: fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "collection_application:create"),
+		}
+	}
+	return &types.PrimaryAction{
+		Label:           l.Buttons.AddCollection,
+		ActionURL:       deps.Routes.AddURL,
+		Icon:            "icon-plus",
+		Disabled:        !perms.Can("collection", "create"),
+		DisabledTooltip: l.Errors.PermissionDenied,
+	}
+}
+
+// ToolbarAddData feeds the collection-list-toolbar-prefix template: the plain
+// Add Collection button kept beside Receive and apply.
+type ToolbarAddData struct {
+	Label           string
+	ActionURL       string
+	Disabled        bool
+	DisabledTooltip string
+}
+
+// secondaryAddAction returns the Add Collection secondary toolbar button. It
+// exists only when Receive and apply is the primary action; otherwise Add
+// Collection is already the primary action and the page is unchanged.
+func secondaryAddAction(deps *ListViewDeps, l collection.Labels, perms *types.UserPermissions) *ToolbarAddData {
+	if deps.ReceiveApplyURL == "" {
+		return nil
+	}
+	return &ToolbarAddData{
+		Label:           l.Buttons.AddCollection,
+		ActionURL:       deps.Routes.AddURL,
+		Disabled:        !perms.Can("collection", "create"),
+		DisabledTooltip: l.Errors.PermissionDenied,
+	}
+}
+
+// lockReceiptActions disables every mutating row action of a Receive & apply receipt (C25:
+// a receipt that applications reference is immutable; the use case refuses with
+// receipt_has_applications). The actions stay visible with the coded reason as tooltip.
+func lockReceiptActions(actions []types.TableAction, l collection.Labels) []types.TableAction {
+	for i := range actions {
+		switch actions[i].Action {
+		case "edit", "deactivate", "activate", "delete":
+			actions[i].Disabled = true
+			actions[i].DisabledTooltip = l.Errors.ReceiptHasApplications
+		}
+	}
 	return actions
 }

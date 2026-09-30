@@ -24,6 +24,7 @@ import (
 
 	commonpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/common"
 	attachmentpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/document/attachment"
+	chargepolicypb "github.com/erniealice/esqyma/pkg/schema/v1/domain/ledger/charge_policy"
 	jobtemplatephasepb "github.com/erniealice/esqyma/pkg/schema/v1/domain/operation/job_template_phase"
 	productpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product"
 	productoptionpb "github.com/erniealice/esqyma/pkg/schema/v1/domain/product/product_option"
@@ -86,6 +87,11 @@ type DetailViewDeps struct {
 	// Both are nil-safe; when not wired the selects render empty (no options).
 	ListTaxTreatments func(ctx context.Context, req *taxtreatmentpb.ListTaxTreatmentsRequest) (*taxtreatmentpb.ListTaxTreatmentsResponse, error)
 	ListTaxClasses    func(ctx context.Context, req *taxclasspb.ListTaxClassesRequest) (*taxclasspb.ListTaxClassesResponse, error)
+
+	// Usage-and-pass-through S1 — package-line Charge policy picker (ACTIVE
+	// policies with an APPROVED version). Nil-safe: when unwired the drawer
+	// omits the Charge policy section and the table omits its column.
+	ListPickerChargePolicies func(ctx context.Context, req *chargepolicypb.ListPickerChargePoliciesRequest) (*chargepolicypb.ListPickerChargePoliciesResponse, error)
 
 	attachment.AttachmentOps
 }
@@ -249,6 +255,28 @@ type ProductPricePlanFormData struct {
 	TaxTreatmentOptions     []types.SelectOption
 	WithholdingClassID      string
 	WithholdingClassOptions []types.SelectOption
+
+	// Advertised rate band (20260604-performance-evaluation Phase A). The shared
+	// drawer template reads these; without the fields the template cannot
+	// execute against this struct; the price-plan-scoped handlers now read and
+	// persist both bounds (decimal in the form, centavos in the record).
+	BillingAmountMin string
+	BillingAmountMax string
+
+	// Charge policy section (usage-and-pass-through S1). ChargePolicyEnabled is
+	// true only when the picker is wired and the parent package is RECURRING or
+	// CONTRACT (not TOTAL_PACKAGE); ChargePolicyVisible is the initial state
+	// (billing_treatment = USAGE_BASED); the pyeza data-lf-show-when helper toggles it live.
+	// Markup is displayed read-only at 0 (build-spec S1: markup_bps must be 0).
+	ChargePolicyEnabled bool
+	ChargePolicyVisible bool
+	ChargePolicyID      string
+	ChargePolicyOptions []types.SelectOption
+	// ChargePolicyDisabled is set when the picker could not be read (e.g. the user lacks
+	// charge_policy:list); the select renders disabled with ChargePolicyDisabledReason as its hint.
+	ChargePolicyDisabled       bool
+	ChargePolicyDisabledReason string
+	MarkupPercent              string
 }
 
 // NewView creates the price plan detail view (full page).
@@ -337,26 +365,32 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 			showJobTemplatePhase, jobTemplatePhaseOptions := loadJobTemplatePhaseOptions(ctx, deps, parent.pricePlan, "", pplLabels)
 			taxTreatmentOptions := loadTaxTreatmentOptions(ctx, deps, "")
 			withholdingClassOptions := loadTaxClassOptions(ctx, deps, "")
+			chargePolicyEnabled, chargePolicyOptions, chargePolicyUnreadable := loadChargePolicyOptions(ctx, deps, parent.pricePlan, "", pplLabels)
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
-				FormAction:              route.ResolveURL(deps.Routes.ProductPriceAddURL, "id", id),
-				PricePlanID:             id,
-				Currency:                currency,
-				ProductPlanOptions:      productPlanOptions,
-				CommonLabels:            deps.CommonLabels,
-				ShowTreatment:           showTreatment,
-				BasisBannerMessage:      basisBannerMessage(parentBasis, deps.PriceScheduleDetailLabels),
-				PlanName:                parent.planName,
-				RateCardName:            parent.rateCardName,
-				BillingKindDisplay:      parent.billingKindDisplay,
-				AmountBasisDisplay:      parent.amountBasisDisplay,
-				BillingCycleDisplay:     parent.billingCycleDisplay,
-				TermDisplay:             parent.termDisplay,
-				ParentCurrencyDisplay:   parent.parentCurrencyDisplay,
-				ShowJobTemplatePhase:    showJobTemplatePhase,
-				JobTemplatePhaseOptions: jobTemplatePhaseOptions,
-				TaxTreatmentOptions:     taxTreatmentOptions,
-				WithholdingClassOptions: withholdingClassOptions,
-				Labels:                  pplLabels,
+				ChargePolicyEnabled:        chargePolicyEnabled && showTreatment,
+				ChargePolicyOptions:        chargePolicyOptions,
+				ChargePolicyDisabled:       chargePolicyUnreadable,
+				ChargePolicyDisabledReason: chargePolicyDisabledReason(deps, chargePolicyUnreadable),
+				MarkupPercent:              "0",
+				FormAction:                 route.ResolveURL(deps.Routes.ProductPriceAddURL, "id", id),
+				PricePlanID:                id,
+				Currency:                   currency,
+				ProductPlanOptions:         productPlanOptions,
+				CommonLabels:               deps.CommonLabels,
+				ShowTreatment:              showTreatment,
+				BasisBannerMessage:         basisBannerMessage(parentBasis, deps.PriceScheduleDetailLabels),
+				PlanName:                   parent.planName,
+				RateCardName:               parent.rateCardName,
+				BillingKindDisplay:         parent.billingKindDisplay,
+				AmountBasisDisplay:         parent.amountBasisDisplay,
+				BillingCycleDisplay:        parent.billingCycleDisplay,
+				TermDisplay:                parent.termDisplay,
+				ParentCurrencyDisplay:      parent.parentCurrencyDisplay,
+				ShowJobTemplatePhase:       showJobTemplatePhase,
+				JobTemplatePhaseOptions:    jobTemplatePhaseOptions,
+				TaxTreatmentOptions:        taxTreatmentOptions,
+				WithholdingClassOptions:    withholdingClassOptions,
+				Labels:                     pplLabels,
 			})
 		}
 
@@ -394,12 +428,19 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 			billingTreatment = ""
 		}
 
+		bandMin, okMin := sibSubscriptionProductPricePlan.ParseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_min"))
+		bandMax, okMax := sibSubscriptionProductPricePlan.ParseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_max"))
+		if !okMin || !okMax {
+			return view.HTMXError(deps.Labels.Messages.InvalidPrice)
+		}
 		record := &productpriceplanpb.ProductPricePlan{
-			PricePlanId:     id,
-			ProductPlanId:   productPlanID,
-			BillingAmount:   priceCentavos,
-			BillingCurrency: currency,
-			Active:          true,
+			BillingAmountMin: bandMin,
+			BillingAmountMax: bandMax,
+			PricePlanId:      id,
+			ProductPlanId:    productPlanID,
+			BillingAmount:    priceCentavos,
+			BillingCurrency:  currency,
+			Active:           true,
 		}
 		if billingTreatment != "" {
 			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
@@ -422,10 +463,17 @@ func NewProductPriceAddAction(deps *DetailViewDeps) view.View {
 		if wcid := viewCtx.Request.FormValue("withholding_class_id"); wcid != "" {
 			record.WithholdingClassId = &wcid
 		}
+		// Usage-and-pass-through S1: charge policy opt-in. markup_bps is never
+		// posted (the input is read-only/disabled); the use-case guard also
+		// refuses it. The guard refuses a policy unless USAGE_BASED on a
+		// RECURRING/CONTRACT plan, so a forged POST fails closed server-side.
+		if cpid := strings.TrimSpace(viewCtx.Request.FormValue("charge_policy_id")); cpid != "" {
+			record.ChargePolicyId = &cpid
+		}
 
 		if _, err := deps.CreateProductPricePlan(ctx, &productpriceplanpb.CreateProductPricePlanRequest{Data: record}); err != nil {
 			log.Printf("Failed to create product price plan for price plan %s: %v", id, err)
-			return view.HTMXError(err.Error())
+			return view.HTMXError(deps.ProductPricePlanLabels.GuardErrorMessage(err))
 		}
 
 		return view.HTMXSuccess("price-plan-product-prices-table")
@@ -482,38 +530,49 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			existingWithholdingClassID := existing.GetWithholdingClassId()
 			taxTreatmentOptions := loadTaxTreatmentOptions(ctx, deps, existingTaxTreatmentID)
 			withholdingClassOptions := loadTaxClassOptions(ctx, deps, existingWithholdingClassID)
+			existingChargePolicyID := existing.GetChargePolicyId()
+			chargePolicyEnabled, chargePolicyOptions, chargePolicyUnreadable := loadChargePolicyOptions(ctx, deps, parent.pricePlan, existingChargePolicyID, pplLabels)
 			return view.OK("product-price-plan-drawer-form", &ProductPricePlanFormData{
-				FormAction:              route.ResolveURL(deps.Routes.ProductPriceEditURL, "id", id, "ppid", ppid),
-				IsEdit:                  true,
-				ID:                      ppid,
-				PricePlanID:             id,
-				ProductPlanID:           existingProductPlanID,
-				ProductPlanOptions:      productPlanOptions,
-				SelectedProductName:     productName,
-				SelectedVariantName:     variantName,
-				Price:                   fmt.Sprintf("%.2f", float64(existing.GetBillingAmount())/100.0),
-				Currency:                currency,
-				CommonLabels:            deps.CommonLabels,
-				BillingTreatment:        existing.GetBillingTreatment().String(),
-				DateStart:               existing.GetDateStart(),
-				DateEnd:                 existing.GetDateEnd(),
-				ShowTreatment:           showTreatment,
-				BasisBannerMessage:      basisBannerMessage(parentBasis, deps.PriceScheduleDetailLabels),
-				PlanName:                parent.planName,
-				RateCardName:            parent.rateCardName,
-				BillingKindDisplay:      parent.billingKindDisplay,
-				AmountBasisDisplay:      parent.amountBasisDisplay,
-				BillingCycleDisplay:     parent.billingCycleDisplay,
-				TermDisplay:             parent.termDisplay,
-				ParentCurrencyDisplay:   parent.parentCurrencyDisplay,
-				ShowJobTemplatePhase:    showJobTemplatePhase,
-				JobTemplatePhaseOptions: jobTemplatePhaseOptions,
-				JobTemplatePhaseID:      existingJobTemplatePhaseID,
-				TaxTreatmentID:          existingTaxTreatmentID,
-				TaxTreatmentOptions:     taxTreatmentOptions,
-				WithholdingClassID:      existingWithholdingClassID,
-				WithholdingClassOptions: withholdingClassOptions,
-				Labels:                  pplLabels,
+				ChargePolicyEnabled:        chargePolicyEnabled && showTreatment,
+				ChargePolicyVisible:        chargePolicyEnabled && showTreatment && existing.GetBillingTreatment() == productpriceplanpb.BillingTreatment_BILLING_TREATMENT_USAGE_BASED,
+				ChargePolicyID:             existingChargePolicyID,
+				BillingAmountMin:           sibSubscriptionProductPricePlan.FormatOptionalCentavos(existing.BillingAmountMin),
+				BillingAmountMax:           sibSubscriptionProductPricePlan.FormatOptionalCentavos(existing.BillingAmountMax),
+				ChargePolicyOptions:        chargePolicyOptions,
+				ChargePolicyDisabled:       chargePolicyUnreadable,
+				ChargePolicyDisabledReason: chargePolicyDisabledReason(deps, chargePolicyUnreadable),
+				MarkupPercent:              markupPercentDisplay(existing.MarkupBps),
+				FormAction:                 route.ResolveURL(deps.Routes.ProductPriceEditURL, "id", id, "ppid", ppid),
+				IsEdit:                     true,
+				ID:                         ppid,
+				PricePlanID:                id,
+				ProductPlanID:              existingProductPlanID,
+				ProductPlanOptions:         productPlanOptions,
+				SelectedProductName:        productName,
+				SelectedVariantName:        variantName,
+				Price:                      fmt.Sprintf("%.2f", float64(existing.GetBillingAmount())/100.0),
+				Currency:                   currency,
+				CommonLabels:               deps.CommonLabels,
+				BillingTreatment:           existing.GetBillingTreatment().String(),
+				DateStart:                  existing.GetDateStart(),
+				DateEnd:                    existing.GetDateEnd(),
+				ShowTreatment:              showTreatment,
+				BasisBannerMessage:         basisBannerMessage(parentBasis, deps.PriceScheduleDetailLabels),
+				PlanName:                   parent.planName,
+				RateCardName:               parent.rateCardName,
+				BillingKindDisplay:         parent.billingKindDisplay,
+				AmountBasisDisplay:         parent.amountBasisDisplay,
+				BillingCycleDisplay:        parent.billingCycleDisplay,
+				TermDisplay:                parent.termDisplay,
+				ParentCurrencyDisplay:      parent.parentCurrencyDisplay,
+				ShowJobTemplatePhase:       showJobTemplatePhase,
+				JobTemplatePhaseOptions:    jobTemplatePhaseOptions,
+				JobTemplatePhaseID:         existingJobTemplatePhaseID,
+				TaxTreatmentID:             existingTaxTreatmentID,
+				TaxTreatmentOptions:        taxTreatmentOptions,
+				WithholdingClassID:         existingWithholdingClassID,
+				WithholdingClassOptions:    withholdingClassOptions,
+				Labels:                     pplLabels,
 			})
 		}
 
@@ -554,13 +613,20 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 			billingTreatment = ""
 		}
 
+		bandMin, okMin := sibSubscriptionProductPricePlan.ParseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_min"))
+		bandMax, okMax := sibSubscriptionProductPricePlan.ParseOptionalCentavos(viewCtx.Request.FormValue("billing_amount_max"))
+		if !okMin || !okMax {
+			return view.HTMXError(deps.Labels.Messages.InvalidPrice)
+		}
 		updated := &productpriceplanpb.ProductPricePlan{
-			Id:              ppid,
-			PricePlanId:     id,
-			ProductPlanId:   productPlanID,
-			BillingAmount:   priceCentavos,
-			BillingCurrency: currency,
-			Active:          existing.GetActive(),
+			BillingAmountMin: bandMin,
+			BillingAmountMax: bandMax,
+			Id:               ppid,
+			PricePlanId:      id,
+			ProductPlanId:    productPlanID,
+			BillingAmount:    priceCentavos,
+			BillingCurrency:  currency,
+			Active:           existing.GetActive(),
 		}
 		if billingTreatment != "" {
 			if bt, ok := productpriceplanpb.BillingTreatment_value[billingTreatment]; ok {
@@ -583,10 +649,12 @@ func NewProductPriceEditAction(deps *DetailViewDeps) view.View {
 		if wcid := viewCtx.Request.FormValue("withholding_class_id"); wcid != "" {
 			updated.WithholdingClassId = &wcid
 		}
+		// Usage-and-pass-through S1: charge policy opt-in (see add action).
+		updated.ChargePolicyId = editChargePolicyPatch(viewCtx.Request, existing)
 
 		if _, err := deps.UpdateProductPricePlan(ctx, &productpriceplanpb.UpdateProductPricePlanRequest{Data: updated}); err != nil {
 			log.Printf("Failed to update product price plan %s: %v", ppid, err)
-			return view.HTMXError(err.Error())
+			return view.HTMXError(deps.ProductPricePlanLabels.GuardErrorMessage(err))
 		}
 
 		return view.HTMXSuccess("price-plan-product-prices-table")
@@ -836,6 +904,23 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 		{Key: "billing_treatment", Label: "Billing", WidthClass: "col-3xl"},
 		{Key: "price", Label: "Price", WidthClass: "col-4xl"},
 	}
+	// Usage-and-pass-through S1: charge_policy column, only when the picker is
+	// wired so non-leasing goldens/tables stay unchanged. Policy names come from
+	// the picker (ACTIVE + approved); a retired policy falls back to its id.
+	showChargePolicy := deps.ListPickerChargePolicies != nil
+	chargePolicyNames := map[string]string{}
+	if showChargePolicy {
+		columns = append(columns, types.TableColumn{Key: "charge_policy", Label: deps.ProductPricePlanLabels.Columns.ChargePolicy, NoSort: true, WidthClass: "col-4xl"})
+		if policies, err := listPickerChargePolicies(ctx, deps); err != nil {
+			log.Printf("buildProductPricesTable: charge policy picker unavailable: %v", err)
+		} else {
+			for _, cp := range policies {
+				if cp != nil {
+					chargePolicyNames[cp.GetId()] = cp.GetName()
+				}
+			}
+		}
+	}
 
 	// Build product ID → name map for display. Status-agnostic: an existing
 	// ProductPricePlan row may reference an inactive product, which the
@@ -949,13 +1034,24 @@ func buildProductPricesTable(ctx context.Context, deps *DetailViewDeps, pricePla
 					btLabel = item.GetBillingTreatment().String()
 				}
 
+				cells := []types.TableCell{
+					{Type: "text", Value: productName},
+					{Type: "text", Value: btLabel},
+					priceCell,
+				}
+				if showChargePolicy {
+					cpLabel := "—"
+					if cpID := item.GetChargePolicyId(); cpID != "" {
+						cpLabel = chargePolicyNames[cpID]
+						if cpLabel == "" {
+							cpLabel = deps.ProductPricePlanLabels.Form.ChargePolicyUnavailable
+						}
+					}
+					cells = append(cells, types.TableCell{Type: "text", Value: cpLabel})
+				}
 				rows = append(rows, types.TableRow{
-					ID: itemID,
-					Cells: []types.TableCell{
-						{Type: "text", Value: productName},
-						{Type: "text", Value: btLabel},
-						priceCell,
-					},
+					ID:    itemID,
+					Cells: cells,
 					Actions: []types.TableAction{
 						{
 							Type:            "edit",
@@ -1555,6 +1651,81 @@ func loadTaxClassOptions(ctx context.Context, deps *DetailViewDeps, selectedID s
 	return opts
 }
 
+// listPickerChargePolicies reads the picker's policies through the proto closure.
+func listPickerChargePolicies(ctx context.Context, deps *DetailViewDeps) ([]*chargepolicypb.ChargePolicy, error) {
+	resp, err := deps.ListPickerChargePolicies(ctx, &chargepolicypb.ListPickerChargePoliciesRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetData(), nil
+}
+
+// chargePolicyDisabledReason is the hint shown beside a disabled picker (the read failed, most
+// commonly for lack of charge_policy:list).
+func chargePolicyDisabledReason(deps *DetailViewDeps, unreadable bool) string {
+	if !unreadable {
+		return ""
+	}
+	return fmt.Sprintf(deps.CommonLabels.Errors.MissingPermission, "charge_policy:list")
+}
+
+// loadChargePolicyOptions returns whether the Charge policy section may render
+// for this package, its select options, and whether the picker was unreadable.
+// Enabled requires the picker wired and a RECURRING or CONTRACT parent that is
+// not TOTAL_PACKAGE (mirrors the use-case guard; the guard remains
+// authoritative). The stored selection is always kept as an option (labelled
+// "unavailable" when the picker no longer lists it) so editing a line whose policy
+// was later retired preserves the value instead of silently clearing it. When the
+// picker read fails the error is logged and the section renders disabled.
+func loadChargePolicyOptions(ctx context.Context, deps *DetailViewDeps, parent *priceplanpb.PricePlan, selectedID string, labels sibSubscriptionProductPricePlan.FormLabels) (bool, []types.SelectOption, bool) {
+	if deps.ListPickerChargePolicies == nil || parent == nil {
+		return false, nil, false
+	}
+	switch parent.GetBillingKind() {
+	case priceplanpb.BillingKind_BILLING_KIND_RECURRING, priceplanpb.BillingKind_BILLING_KIND_CONTRACT:
+	default:
+		return false, nil, false
+	}
+	if parent.GetAmountBasis() == priceplanpb.AmountBasis_AMOUNT_BASIS_TOTAL_PACKAGE {
+		return false, nil, false
+	}
+	policies, err := listPickerChargePolicies(ctx, deps)
+	unreadable := err != nil
+	if unreadable {
+		log.Printf("loadChargePolicyOptions: charge policy picker unavailable: %v", err)
+	}
+	// One empty option: a real "None" (value "") so an operator can deselect. No separate
+	// placeholder option, which would be a second empty choice.
+	opts := make([]types.SelectOption, 0, len(policies)+2)
+	opts = append(opts, types.SelectOption{Value: "", Label: labels.ChargePolicyNone, Selected: selectedID == ""})
+	seen := false
+	for _, p := range policies {
+		if p == nil {
+			continue
+		}
+		label := p.GetName()
+		if label == "" {
+			label = p.GetCode()
+		}
+		if p.GetId() == selectedID {
+			seen = true
+		}
+		opts = append(opts, types.SelectOption{Value: p.GetId(), Label: label, Selected: p.GetId() == selectedID})
+	}
+	if selectedID != "" && !seen {
+		opts = append(opts, types.SelectOption{Value: selectedID, Label: labels.ChargePolicyUnavailable, Selected: true})
+	}
+	return true, opts, unreadable
+}
+
+// markupPercentDisplay renders markup_bps as a percent string ("0" when unset).
+func markupPercentDisplay(bps *int32) string {
+	if bps == nil || *bps == 0 {
+		return "0"
+	}
+	return strconv.FormatFloat(float64(*bps)/100.0, 'f', -1, 64)
+}
+
 func loadJobTemplatePhaseOptions(ctx context.Context, deps *DetailViewDeps, parent *priceplanpb.PricePlan, selectedPhaseID string, labels sibSubscriptionProductPricePlan.FormLabels) (bool, []types.SelectOption) {
 	if parent == nil || parent.GetBillingKind().String() != "BILLING_KIND_MILESTONE" {
 		return false, nil
@@ -1770,4 +1941,30 @@ func collectBillingSummaryWarnings(
 		}
 	}
 	return out
+}
+
+// editChargePolicyPatch derives the charge_policy_id patch for an edit POST.
+//   - non-empty posted value: set that policy (the use-case guard validates it);
+//   - posted but empty ("None"): typed clear (present-and-empty) when the stored line has a
+//     policy; the use case + adapter map it to NULL, never an empty FK value;
+//   - not posted: nil (leave the stored value alone). Switching a line off USAGE_BASED clears the
+//     policy inside the UpdateProductPricePlan use case (C12), for every edit surface, so the
+//     view derives nothing.
+func editChargePolicyPatch(r *http.Request, existing *productpriceplanpb.ProductPricePlan) *string {
+	vals, posted := r.PostForm["charge_policy_id"]
+	if !posted {
+		return nil
+	}
+	v := ""
+	if len(vals) > 0 {
+		v = strings.TrimSpace(vals[0])
+	}
+	if v != "" {
+		return &v
+	}
+	if existing.GetChargePolicyId() != "" {
+		clear := ""
+		return &clear
+	}
+	return nil
 }

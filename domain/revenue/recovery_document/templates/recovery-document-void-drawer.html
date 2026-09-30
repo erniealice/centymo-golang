@@ -1,0 +1,28 @@
+{{/*
+Void recovery document drawer (sheet). Data: .FormAction .WorkspaceID .ID .Number
+.Labels .CommonLabels
+
+The document stays on record; its charges are cancelled. Refused while any
+payment is applied or an issued credit note corrects it.
+*/}}
+{{define "recovery-document-void-drawer"}}
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-testid="recovery-document-void-form">
+  {{actionForm .FormAction .WorkspaceID}}
+  <input type="hidden" name="id" value="{{.ID}}">
+
+  <div class="sheet-body">
+    <p class="form-info" data-testid="recovery-document-void-title">{{.Labels.Confirm.VoidTitle}} <strong>{{.Number}}</strong></p>
+    <div class="form-row single">
+      {{template "form-group" (dict "Type" "textarea" "Name" "reason" "ID" "recovery-document-void-reason"
+        "Label" .Labels.Form.VoidReasonLabel "Placeholder" .Labels.Form.VoidReasonPlaceholder "Required" true
+        "TestId" "recovery-document-void-reason-group")}}
+    </div>
+    <p class="form-info">{{.Labels.Confirm.VoidMsg}}</p>
+  </div>
+
+  <div class="sheet-footer">
+    <button type="button" class="btn btn-secondary" data-lf-action="sheet-close" data-testid="recovery-document-void-cancel">{{.CommonLabels.Buttons.Cancel}}</button>
+    <button type="submit" class="btn btn-danger" data-testid="recovery-document-void-submit">{{.Labels.Buttons.Void}}</button>
+  </div>
+</form>
+{{end}}

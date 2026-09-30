@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	ab "github.com/erniealice/centymo-golang/domain/expenditure/allocation_batch"
+	csc "github.com/erniealice/centymo-golang/domain/expenditure/cost_source_component"
 	"github.com/erniealice/centymo-golang/domain/expenditure/expenditure"
 	"github.com/erniealice/hybra-golang/views/attachment"
 	pyeza "github.com/erniealice/pyeza-golang"
@@ -63,6 +65,13 @@ type DetailViewDeps struct {
 	// trigger — surfaced as the empty-state CTA when an expenditure has no
 	// linked recognition. Optional; when empty no CTA is shown.
 	RecognizeFromExpenditureURL string
+
+	// Usage-and-pass-through S1 — the opt-in "Recoverable costs" tab. CostSourceComponents
+	// is nil unless the app opted in (block.WithKnownCostRecovery); the tab is then absent.
+	CostSourceComponents      *csc.UseCases
+	CostSourceComponentRoutes csc.Routes
+	CostSourceComponentLabels csc.Labels
+	AllocationBatchRoutes     ab.Routes
 
 	attachment.AttachmentOps
 }
@@ -147,6 +156,9 @@ type PageData struct {
 	AccrualDetailURL string
 
 	AttachmentTable *types.TableConfig
+
+	// Usage-and-pass-through S1 — Recoverable costs tab data.
+	RecoverableCosts *RecoverableCostsData
 }
 
 // expenditureToMap converts an Expenditure proto to a map for template use.
@@ -203,7 +215,7 @@ func NewView(deps *DetailViewDeps) view.View {
 		if activeTab == "" {
 			activeTab = "info"
 		}
-		tabItems := buildTabItems(deps.Labels, id, deps.Routes)
+		tabItems := buildTabItems(deps.Labels, id, deps.Routes, recoverableCostsEnabled(deps))
 
 		pageData := &PageData{
 			PageData: types.PageData{
@@ -247,6 +259,8 @@ func NewView(deps *DetailViewDeps) view.View {
 			populateRecognition(ctx, deps, data[0], pageData)
 		case "accrual":
 			populateAccruals(ctx, deps, data[0], pageData)
+		case "recoverable-costs":
+			populateRecoverableCosts(ctx, deps, data[0], pageData)
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := attachmentConfig(deps)
@@ -301,7 +315,7 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			Expense:      expense,
 			Labels:       deps.Labels,
 			ActiveTab:    tab,
-			TabItems:     buildTabItems(deps.Labels, id, deps.Routes),
+			TabItems:     buildTabItems(deps.Labels, id, deps.Routes, recoverableCostsEnabled(deps)),
 			SetStatusURL: deps.Routes.SetStatusURL,
 			PayURL:       route.ResolveURL(deps.Routes.PayURL, "id", id),
 		}
@@ -327,6 +341,8 @@ func NewTabAction(deps *DetailViewDeps) view.View {
 			populateRecognition(ctx, deps, data[0], pageData)
 		case "accrual":
 			populateAccruals(ctx, deps, data[0], pageData)
+		case "recoverable-costs":
+			populateRecoverableCosts(ctx, deps, data[0], pageData)
 		case "attachments":
 			if deps.ListAttachments != nil {
 				cfg := attachmentConfig(deps)
@@ -644,7 +660,7 @@ func buildPaymentsSchedule(ctx context.Context, deps *DetailViewDeps, expenditur
 // existing payments tab. Both tabs are nil-guarded — they render with
 // empty-state messaging when their corresponding closures on
 // DetailViewDeps are unset.
-func buildTabItems(l expenditure.Labels, id string, routes expenditure.Routes) []pyeza.TabItem {
+func buildTabItems(l expenditure.Labels, id string, routes expenditure.Routes, recoverableCosts bool) []pyeza.TabItem {
 	base := route.ResolveURL(routes.DetailURL, "id", id)
 	action := route.ResolveURL(routes.TabActionURL, "id", id, "tab", "")
 	tabDetails := l.Detail.TabDetails
@@ -671,14 +687,19 @@ func buildTabItems(l expenditure.Labels, id string, routes expenditure.Routes) [
 	if tabAttachments == "" {
 		tabAttachments = "Attachments"
 	}
-	return []pyeza.TabItem{
+	items := []pyeza.TabItem{
 		{Key: "info", Label: tabDetails, Href: base + "?tab=info", HxGet: action + "info", Icon: "icon-info"},
 		{Key: "items", Label: tabLineItems, Href: base + "?tab=items", HxGet: action + "items", Icon: "icon-list"},
 		{Key: "payments", Label: tabPayments, Href: base + "?tab=payments", HxGet: action + "payments", Icon: "icon-credit-card"},
 		{Key: "recognition", Label: tabRecognition, Href: base + "?tab=recognition", HxGet: action + "recognition", Icon: "icon-file-text"},
 		{Key: "accrual", Label: tabAccrual, Href: base + "?tab=accrual", HxGet: action + "accrual", Icon: "icon-clock"},
-		{Key: "attachments", Label: tabAttachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
 	}
+	if recoverableCosts {
+		items = append(items, pyeza.TabItem{Key: "recoverable-costs", Label: recoverableCostsTabLabel(l), Href: base + "?tab=recoverable-costs", HxGet: action + "recoverable-costs", Icon: "icon-dollar-sign"})
+	}
+	return append(items,
+		pyeza.TabItem{Key: "attachments", Label: tabAttachments, Href: base + "?tab=attachments", HxGet: action + "attachments", Icon: "icon-paperclip"},
+	)
 }
 
 // buildLineItemTable builds the line items table config.
