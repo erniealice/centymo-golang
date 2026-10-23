@@ -9,7 +9,10 @@ Data: .Code, .ClientID, .PricePlanID,
       .ID, .FormAction, .IsEdit, .CommonLabels, .Labels
 */}}
 {{define "subscription-drawer-form"}}
-<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-default-tz="{{.DefaultTZ}}">
+<form hx-post="{{.FormAction}}" hx-swap="none" data-hx-on="sheet-response" data-default-tz="{{.DefaultTZ}}"
+      data-subscription-drawer{{if not .SuggestPlanTerm}} data-subscription-date-sync{{end}}
+      data-billing-currency="{{.ClientBillingCurrency}}" data-client-id="{{.ClientID}}" data-client-name="{{.ClientLabel}}"
+      data-plan-placeholder="{{.Labels.PlanPlaceholder}}">
     {{actionForm .FormAction .WorkspaceID}}
     {{if .ID}}<input type="hidden" name="id" value="{{.ID}}">{{end}}
 
@@ -127,7 +130,11 @@ Data: .Code, .ClientID, .PricePlanID,
 			</div>
 			{{if not .IsEdit}}<p class="form-help">{{.Labels.EscalationCopyNotice}}</p>{{end}}
 
-			<div data-escalation-fixed-fields>
+			{{/* Shown only for a fixed-percentage escalation: the pyeza data-lf-show-when helper hides the
+			     section AND disables its inputs, so their `required` no longer blocks submitting an agreement
+			     with no escalation (plan default / NONE). Precedent: product-price-plan-drawer-form.html
+			     #ppp-charge-policy-section. */}}
+			<div data-escalation-fixed-fields data-testid="subscription-escalation-fixed-fields" data-lf-show-when="subscription-escalation-mode" data-lf-show-values="ESCALATION_MODE_FIXED_PERCENTAGE"{{if ne .EscalationMode "ESCALATION_MODE_FIXED_PERCENTAGE"}} hidden{{end}}>
 				<div class="form-row">
 					<div class="form-group">
 						<label class="form-label" for="subscription-escalation-scope">{{.Labels.EscalationScope}}</label>
@@ -148,7 +155,9 @@ Data: .Code, .ClientID, .PricePlanID,
 						"TestId" "subscription-escalation-rate"
 					)}}
 				</div>
-				<div class="form-row" data-escalation-interval-fields>
+				{{/* Intervals apply only within the agreement; subscription-drawer.js keeps them hidden and
+				     disabled for ON_RENEWAL (a compound mode+scope rule the single-control helper cannot express). */}}
+				<div class="form-row" data-escalation-interval-fields data-testid="subscription-escalation-interval-fields"{{if eq .EscalationScope "ESCALATION_SCOPE_ON_RENEWAL"}} hidden{{end}}>
 					{{template "form-group" (dict
 						"Type" "number"
 						"Name" "escalation_first_after_months"
@@ -279,196 +288,12 @@ Data: .Code, .ClientID, .PricePlanID,
     {{end}}
 </form>
 
-<script nonce="{{$.Nonce}}">
-(function () {
-	var script = document.currentScript;
-	var form = script ? script.previousElementSibling : null;
-	while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
-	if (!form) { return; }
-	var mode = form.querySelector('[name="escalation_mode"]');
-	var scope = form.querySelector('[name="escalation_scope"]');
-	var fixed = form.querySelector('[data-escalation-fixed-fields]');
-	var intervals = form.querySelector('[data-escalation-interval-fields]');
-	if (!mode || !scope || !fixed || !intervals) { return; }
-	function setEnabled(container, enabled) {
-		container.hidden = !enabled;
-		container.querySelectorAll('input, select').forEach(function (input) { input.disabled = !enabled; });
-	}
-	function refreshEscalation() {
-		var isFixed = mode.value === 'ESCALATION_MODE_FIXED_PERCENTAGE';
-		setEnabled(fixed, isFixed);
-		setEnabled(intervals, isFixed && scope.value === 'ESCALATION_SCOPE_WITHIN_AGREEMENT');
-	}
-	mode.addEventListener('change', refreshEscalation);
-	scope.addEventListener('change', refreshEscalation);
-	refreshEscalation();
-}());
-</script>
-
-{{if not .SuggestPlanTerm}}
-<script nonce="{{$.Nonce}}">
-(function () {
-    var form = document.currentScript.previousElementSibling;
-    while (form && form.tagName !== 'FORM') { form = form.previousElementSibling; }
-    if (!form) { return; }
-
-    var planContainer = form.querySelector('#plan-search');
-    var startDate = form.querySelector('[name="date_start_date"]');
-    var startTime = form.querySelector('[name="date_start_time"]');
-    var endDate   = form.querySelector('[name="date_end_date"]');
-    var endTime   = form.querySelector('[name="date_end_time"]');
-    var startISO  = form.querySelector('[name="date_time_start_iso"]');
-    var endISO    = form.querySelector('[name="date_time_end_iso"]');
-    var tzLabel   = form.querySelector('[data-tz-label]');
-
-    // Date+time → ISO conversion is required regardless of plan picker mode;
-    // the plan picker is optional (absent when PricePlanLocked).
-    if (!startDate || !endDate || !startISO || !endISO) {
-        return;
-    }
-
-    var planHidden = planContainer ? planContainer.querySelector('.auto-complete-input') : null;
-    var planTrigger = planContainer ? planContainer.querySelector('.auto-complete-trigger') : null;
-
-    var baseURL = planContainer ? (planContainer.dataset.searchUrl || '') : '';
-    var clientBillingCurrency = {{.ClientBillingCurrency}};
-    // 2026-05-03 — propagate client_id + client_name to the search endpoint so
-    // it can filter (drop other-client-scoped plans) and group (For {Client} /
-    // General) with the resolved client display name.
-    var clientIDForSearch = {{.ClientID}};
-    var clientNameForSearch = {{.ClientLabel}};
-    var defaultTZ = form.dataset.defaultTz || 'Asia/Manila';
-
-    var initialPlaceholderHTML = planContainer ? '<span class="auto-complete-placeholder">{{.Labels.PlanPlaceholder}}</span>' : '';
-
-    // Compute the offset (e.g. "+08:00") for the chosen IANA tz at the given
-    // wall-clock moment. Fallback to local browser offset if the Intl API
-    // can't render the named zone (very rare; the OS tzdata is missing it).
-    function offsetFor(tz, year, month, day, hour, minute) {
-        try {
-            var dtf = new Intl.DateTimeFormat('en-US', {
-                timeZone: tz, hourCycle: 'h23',
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', second: '2-digit'
-            });
-            // Build a UTC instant for the wall-clock time, then ask what time
-            // it is in tz; the difference IS the offset for that wall clock.
-            var asUTC = Date.UTC(year, month - 1, day, hour, minute, 0);
-            var parts = dtf.formatToParts(new Date(asUTC));
-            var lookup = {};
-            parts.forEach(function (p) { lookup[p.type] = p.value; });
-            var asTZ = Date.UTC(
-                Number(lookup.year), Number(lookup.month) - 1, Number(lookup.day),
-                Number(lookup.hour) % 24, Number(lookup.minute), Number(lookup.second)
-            );
-            var offsetMinutes = Math.round((asUTC - asTZ) / 60000);
-            // Convention: positive offsets mean "ahead of UTC" in RFC3339.
-            // Our delta is wall-clock(UTC) - wall-clock(tz); flip the sign.
-            offsetMinutes = -offsetMinutes;
-            var sign = offsetMinutes >= 0 ? '+' : '-';
-            var abs = Math.abs(offsetMinutes);
-            var hh = String(Math.floor(abs / 60)).padStart(2, '0');
-            var mm = String(abs % 60).padStart(2, '0');
-            return sign + hh + ':' + mm;
-        } catch (e) {
-            // Fallback: use the browser's local offset for this instant.
-            var local = new Date(year, month - 1, day, hour, minute, 0);
-            var offMin = -local.getTimezoneOffset();
-            var sgn = offMin >= 0 ? '+' : '-';
-            var a = Math.abs(offMin);
-            return sgn + String(Math.floor(a / 60)).padStart(2, '0') + ':' + String(a % 60).padStart(2, '0');
-        }
-    }
-
-    function buildISO(dateInput, timeInput) {
-        var d = dateInput && dateInput.value;
-        if (!d) { return ''; }
-        var t = (timeInput && timeInput.value) || '00:00';
-        var parts = d.split('-');
-        if (parts.length !== 3) { return ''; }
-        var y = Number(parts[0]), m = Number(parts[1]), day = Number(parts[2]);
-        var tparts = t.split(':');
-        var hh = Number(tparts[0]) || 0;
-        var mm = Number(tparts[1]) || 0;
-        var off = offsetFor(defaultTZ, y, m, day, hh, mm);
-        var pad = function (n) { return String(n).padStart(2, '0'); };
-        return parts[0] + '-' + pad(m) + '-' + pad(day) + 'T' + pad(hh) + ':' + pad(mm) + ':00' + off;
-    }
-
-    function refreshHidden() {
-        startISO.value = buildISO(startDate, startTime);
-        endISO.value   = buildISO(endDate, endTime);
-    }
-
-    function updatePlanSearchURL() {
-        if (!planContainer) { return; }
-        var url = baseURL;
-        var sep = '?';
-        if (startISO.value) {
-            url = url + sep + 'date_time_start_iso=' + encodeURIComponent(startISO.value);
-            sep = '&';
-        }
-        if (endISO.value) {
-            url = url + sep + 'date_time_end_iso=' + encodeURIComponent(endISO.value);
-            sep = '&';
-        }
-        if (clientBillingCurrency) {
-            url = url + sep + 'billing_currency=' + encodeURIComponent(clientBillingCurrency);
-            sep = '&';
-        }
-        if (clientIDForSearch) {
-            url = url + sep + 'client_id=' + encodeURIComponent(clientIDForSearch);
-            sep = '&';
-        }
-        if (clientNameForSearch) {
-            url = url + sep + 'client_name=' + encodeURIComponent(clientNameForSearch);
-            sep = '&';
-        }
-        planContainer.dataset.searchUrl = url;
-    }
-
-    function clearPlanSelection() {
-        if (!planContainer || !planHidden || !planTrigger) { return; }
-        planHidden.value = '';
-        planHidden.removeAttribute('value');
-
-        var display = planTrigger.querySelector('.auto-complete-display');
-        if (display) {
-            display.innerHTML = initialPlaceholderHTML;
-        }
-
-        var clearBtn = planContainer.querySelector('.auto-complete-clear');
-        if (clearBtn) {
-            clearBtn.style.display = 'none';
-        }
-    }
-
-    function onDateTimeChange() {
-        refreshHidden();
-        updatePlanSearchURL();
-        clearPlanSelection();
-        // 2026-05-03 — if the dropdown is open, force a refetch by toggling
-        // closed→open. Auto-complete's openDropdown() calls doSearch('') in
-        // action mode, so this picks up the new dataset.searchUrl.
-        if (planContainer && planContainer.classList.contains('open')) {
-            var trigger = planContainer.querySelector('.auto-complete-trigger');
-            if (trigger) {
-                trigger.click(); // close
-                trigger.click(); // reopen with refreshed URL
-            }
-        }
-    }
-
-    [startDate, startTime, endDate, endTime].forEach(function (el) {
-        if (el) { el.addEventListener('change', onDateTimeChange); }
-    });
-
-    refreshHidden();
-    updatePlanSearchURL();
-    if (tzLabel) { tzLabel.textContent = '{{.Labels.Timezone}}: ' + defaultTZ; }
-}());
-</script>
-{{end}}
+{{/* Escalation intervals + date/time -> ISO + plan-search URL wiring. Formerly two inline
+     <script nonce> blocks; HTMX inserts drawer scripts under the page CSP, whose nonce differs from
+     this partial response's, so the enforcing CSP blocked them (MMIS prod 2026-10-23: Save silently
+     did nothing and the typed start date was ignored). External <script src> needs no nonce; the
+     file is idempotent per form (see its header). Config comes from the form's data-* attributes. */}}
+<script src="/assets/js/centymo/subscription-drawer.js"></script>
 {{template "centymo-lf-delegation" .}}
 {{end}}
 
